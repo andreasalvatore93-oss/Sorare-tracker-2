@@ -8140,3 +8140,637 @@ di controllo** in output, non come filtro.
   quindi da GW3 in poi sono gratis quando ci sono, con `playing_status` come
   fallback per chi non le ha ancora;
 - step 3 mai iniziato: la **soglia prezzo** (centesimi per essenza di guadagno atteso).
+
+---
+
+## 55. Sessione 02/08 (sera) — lo scouting finito, e la porta aperta sui dati degli ALTRI manager
+
+Questa sezione è scritta per chi non c'era. Due filoni: il **tool di scouting**
+(finito e funzionante) e la **ricostruzione dei manager avversari** (avviata,
+verificata, da proseguire). Il secondo è quello da cui ripartire, ed è spiegato
+passo per passo in 55.8.
+
+---
+
+### 55.1 — Lo scouting acquisti: cos'è e come si usa
+
+**Il problema che risolve.** Il generatore parte dalle carte che l'utente
+possiede e si appoggia alle starter odds, che Sorare pubblica a 24-48h dal
+kickoff. Per COMPRARE serve l'opposto: sapere con giorni di anticipo chi
+scenderà in campo, comprese carte che non si hanno.
+
+**Il tool**: `scouting_gw.py` + workflow `Scouting acquisti`
+(`.github/workflows/scouting_gw.yml`). Input:
+
+| input | default | cosa fa |
+|---|---|---|
+| `gameweek` | vuoto | numero giornata; vuoto = prossima aperta |
+| `per_ruolo` | 40 | quanti candidati per ruolo, su TUTTE le leghe insieme |
+| `odds_min` | vuoto | soglia starter odds (es. 0.80). Vuoto o 0 = spento |
+| `predict` | true | fa girare il modello (riempie la colonna Atteso) |
+| `screma` | false | controllo 2-su-3, marca soltanto, non filtra |
+
+Uscita: `generatore_formazioni/output/scouting_ultimo.html`, committato su main
+e mandato su Telegram da `scouting_telegram_notify.py`.
+
+---
+
+### 55.2 — Come trova i candidati, e le trappole di searchPlayers
+
+La query è quella della pagina "Scouting" di Sorare: **`searchPlayers`**, una
+sola query paginata, ~12 chiamate, **7 secondi** per 505 candidati. Sostituisce
+75 query di roster + 2.400 di scrematura.
+
+**Trappola 1 — i nomi che si leggono nella RISPOSTA sono ALIAS.**
+`lastTenPlayedSo5AverageScore` non esiste come campo: il vero è
+`averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)`. L'errore GraphQL
+suggerisce `lastFortySo5Appearances` e manda fuori strada.
+
+**Trappola 2 — `rarity` e `inSeason` NON sono argomenti.** Tutto passa dai
+`refinements`: `playing_next` (la fixture), `player.playing_status`,
+`floor_prices.all_seasons.limited`.
+
+**Trappola 3 — il client conta.** Con il client di `discovery_global` la stessa
+query passa alla pagina 1 e viene respinta con "depth 8 / complexity 1404" da
+tutte le successive. Con quello di `scanners/bot_profit.py` passa sempre.
+
+**Cosa non si può fare**: il *valore* del floor price non è richiedibile (non
+esiste un campo `floorPrices` sull'oggetto), si può solo FILTRARE. Il prezzo
+arriva da `lowestPriceAnyCard(rarity: limited)`.
+
+**Le odds non si prendono da searchPlayers**: `anyGameStats(last: N)` torna solo
+partite GIÀ GIOCATE, e la giornata target è futura per definizione.
+
+---
+
+### 55.3 — Il campione a fasce, e perché NON si prendono i migliori per L10
+
+Errore che sembra ovvio e non lo è: prendere i top per L10 seleziona
+esattamente le carte che **saturano il cap**. Messi con L10 88 si mangia un
+terzo di un cap 260 da solo. Chi riempie bene un cap 220/260 è l'opposto: L10
+basso e atteso alto.
+
+Il problema è che l'atteso si conosce solo DOPO il predict, che gira solo sul
+campione: circolarità. Si rompe con un proxy calcolabile prima —
+`max(L10, L5, proiezione Sorare) / L10` — e campionando a **quattro fasce di
+L10 per quartili del ruolo** (misurati sul pool GW2: Q1 44, mediana 48, Q3 53),
+N/4 per fascia, con il resto alle fasce alte.
+
+Effetto misurato: il campione passa da "tutti sopra L10 50" a coprire da 36 a
+59, pescando gente come Arteaga (L10 37, proiezione 45, 0,40 €) che prima non
+entrava mai.
+
+---
+
+### 55.4 — I prezzi: solo limited, solo euro
+
+`lowestPriceAnyCard(rarity: limited)` — l'argomento `rarity` esiste ed è la
+chiave. USD e GBP si convertono con frankfurter.app (stessa fonte di
+`autobuy_sorare`). Le offerte in **cripto (ETH/SOL) fanno scartare il
+candidato**: l'utente compra solo in euro, e su GW2 erano ~40 giocatori.
+
+---
+
+### 55.5 — I predict: la lezione della matrice
+
+**Errore commesso, e segnalato dall'utente tre volte prima che lo capissi**: i
+predict giravano in un ciclo sequenziale dentro un job solo, e 155 candidati
+costavano **68 minuti**.
+
+La calibrazione di produzione (`calibrazione_lega.yml`) fa la stessa identica
+cosa da sempre con **`max-parallel: 8` e un giocatore per job**, e ne fa 185 in
+mezz'ora. Il tempo PER GIOCATORE è lo stesso (20-60s): cambia solo che li
+spalma.
+
+L'obiezione "il rate limit è sull'account, quindi parallelizzare non serve"
+vale per job che fanno MIGLIAIA di query l'uno (la scrematura a 8 shard: otto
+job, otto 429), non per job che ne fanno poche decine e poi muoiono.
+
+**Risultato: 215 predict in 37 minuti** invece di ~95.
+
+> **Lezione di metodo, da non ripetere.** Quando l'utente dice che qualcosa non
+> torna, la prima mossa è cercare la causa nel codice esistente, non produrre
+> un calcolo che spiega perché il tempo osservato è "giusto". Il workflow di
+> calibrazione era lì da giorni e conteneva già la risposta.
+
+**Due meccanismi di risparmio**, entrambi presi da Best Five:
+
+- la **cache** (`.cache` e `.game_log_cache`) è la STESSA del generatore, nelle
+  stesse cartelle `<lega>_<ruolo>_all`: un giocatore predetto qui parte dal
+  refresh leggero la volta dopo, e uno già posseduto è gratis subito. Misurato:
+  33s a freddo, **5,6s** con cache scritta dal generatore. Il workflow la
+  committa anche `if: always()`, perché una run interrotta non deve far
+  ripagare l'assorbimento a ritroso.
+- il **riuso della previsione** (`best_five._predizione_riutilizzabile`): se
+  esiste già una previsione la cui partita cade DENTRO la finestra della
+  fixture corrente, il giocatore non genera nemmeno il job della matrice. Non è
+  un refresh leggero: è zero query.
+
+---
+
+### 55.6 — Le arene ipotetiche nel report
+
+Il report costruisce le arene che converrebbe giocare **se si comprassero**
+quei candidati, con `genera_arene_efficienti` (sez. 53), cioè lo stesso motore
+della produzione: sceglie tipo e numero massimizzando le essenze e si ferma
+quando nessuna rende più.
+
+**Bug trovato e corretto**: i tipi `ARENA_ALLSTARS_*` leggono il pool `'mixed'`,
+che `_view_for` costruisce unendo `pools[lega]` per ogni lega nota al
+generatore. Una chiave inventata (`'scouting'`) non viene mai letta: **zero
+formazioni sempre, senza errore**.
+
+**Variante solo di questo tool**: `_arene_per_euro` sceglie per **essenze per
+euro** invece che per essenze, perché chi compra ha un vincolo che il
+generatore non ha (lì le carte sono già possedute e il prezzo non esiste).
+Limite noto: `generate_lineups_for_type` compone comunque la formazione a
+punteggio massimo, quindi l'ottimizzazione per euro sceglie il TIPO, non le
+carte dentro la formazione. Per andare oltre servirebbe filtrare il pool per
+prezzo prima di comporre.
+
+**Due bug del report, entrambi segnalati dall'utente:**
+
+1. le `.pcard` tengono il contenuto in `data-body` HTML-escapato e a disegnarlo
+   è uno **script** del template: copiando il solo `<style>` le carte restavano
+   vuote e il testo si impilava in colonna, illeggibile. Vanno copiati anche
+   gli `<script>`, e va tolto il raddoppio delle graffe (`{{` `}}`) perché
+   `HTML_REPORT_TEMPLATE` è una stringa destinata a `.format()`.
+2. il totale di formazione usava `_annota_prezzi_html`, che somma i prezzi IN
+   SEASON: le nostre carte sono tutte CLASSIC e usciva sempre 0. Sostituito con
+   un'annotazione propria che somma le classic e dichiara quante carte non
+   hanno prezzo.
+
+**Colonna Atteso**: si legge dai `consiglio_*.txt`, formato
+`1) slug: 36 pt (13-44)` — non `atteso=NN`, che non matchava nulla. Due filtri
+obbligatori: solo il file più recente per cartella, e **il KICKOFF del blocco
+deve cadere nella finestra della fixture** — senza, si mostrano attesi della
+giornata precedente (misurato: 55 righe su 55 erano di GW1).
+
+---
+
+### 55.7 — L'economia dell'acquisto nel report
+
+Una carta si schiera **una volta per giornata** in arena. Il campo vale ~259
+punti su 5 carte, quindi uno slot medio ~51,8; il gradiente misurato dà ~7,65
+essenze per punto. Da qui:
+
+| colonna | formula | a cosa serve |
+|---|---|---|
+| Ess/GW | `(atteso − 51,8) × 7,65` | vantaggio in essenze a giornata |
+| €/EssGW | `prezzo ÷ essenze-GW` | **ordinare i candidati** |
+| GW rientro | a 2 € per 1000 essenze, sul prezzo pieno | quando rientri |
+
+**Il punto che rende tutto solido**: il valore in euro dell'essenza NON serve
+per scegliere fra candidati — è un fattore comune, moltiplica tutto per lo
+stesso numero e non cambia l'ordine. Serve solo per decidere se comprare in
+assoluto, e quella resta una valutazione manuale dell'utente. Il tasso (2 €,
+scelto dall'utente come minimo prudente) serve solo alle "GW di rientro", ed è
+dichiarato nel tooltip. Il rientro si calcola sul **prezzo pieno**, caso
+pessimo: le classic si rivendono, ma una stima seria del deprezzamento non è
+possibile (Yamal da 187 in season a ~120 classic; per una carta di Liga MX non
+si sa nemmeno quante giornate Sorare coprirà).
+
+**Tabella dei candidati**: una sola, non quattro per ruolo. Il ruolo è una
+colonna e si ordina cliccando le intestazioni (primo clic decrescente). Le
+celle vuote restano sempre in fondo in entrambi i versi, altrimenti ordinando
+per prezzo crescente vincerebbero le carte senza prezzo.
+
+---
+
+### 55.8 — DA DOVE RIPARTIRE: i dati dei manager avversari
+
+Questo è il filone aperto. Leggere qui evita di rifare tutta l'esplorazione.
+
+#### Perché
+
+Finora il termine di paragone del modello è sempre stato l'utente: le sue 673
+arene, il suo ROI +13,3%. Un solo manager, per giunta uno che stava imparando.
+Osservando **altri manager** si ottiene un campione enorme di formazioni VERE,
+il modo in cui giocano i forti, e un banco di prova che non dipende dalle
+abitudini dell'utente. Serve anche per le **In Season**, non solo per le arene.
+
+#### Il manager scelto e perché
+
+**`forever-young`** (nickname "Forever Young 💎"). Scelto NON perché vince in
+arena — non si sa — ma perché **gioca molte competizioni e ha un mazzo simile**
+a quello dell'utente. È il criterio giusto: sceglierlo per il risultato
+introdurrebbe un bias, sarebbe la vittoria ad averlo selezionato.
+
+**Periodo**: lo stesso delle 673 arene dell'utente (giugno 2025 – luglio 2026).
+
+#### Le due query, verificate il 02/08
+
+**1. Le partecipazioni di una giornata** — richiede il COOKIE, `userSlug` è
+obbligatorio, ed è **PAGINATA**:
+
+```graphql
+so5Fixture(slug: $giornata) {
+  userFixtureResults(userSlug: $manager) {
+    so5LeaderboardContenders(first: 50, after: $cursore) {
+      pageInfo { hasNextPage endCursor }
+      nodes { slug so5Leaderboard { slug displayName } }
+    } } }
+```
+
+> **TRAPPOLA GRAVE, già caduta e risolta.** La stessa cosa si può chiedere a
+> `so5LeaderboardGroups(groupType: COMPETITION_WITH_ARENA)` con dentro
+> `so5LeaderboardContenders(userSlug:)`, e SEMBRA funzionare: risponde 52
+> contender pieni di In Season, Challenger e All Star. Ma contiene **ZERO
+> ARENE**. Ci si costruirebbe sopra un'analisi intera senza accorgersene. È
+> stata smascherata solo perché l'utente aveva contato a mano "una trentina di
+> arene" in quella giornata.
+
+Sulla giornata di prova `football-10-14-apr-2026`: **86 partecipazioni in due
+pagine (50 + 36)**, di cui **34 arene**. Fermarsi alla prima pagina ne avrebbe
+perse 36 in silenzio.
+
+**2. La formazione di un contender** — **PUBBLICA, nessun cookie**:
+
+```graphql
+so5LeaderboardContender(slug: $contender) {
+  so5Lineup {
+    user { slug }
+    so5Rankings { ranking score so5Leaderboard { slug } }
+    so5Appearances { score position captain
+                     player { slug displayName }
+                     anyCard { slug rarityTyped } } } }
+```
+
+Campi che **NON esistono** e fanno perdere tempo: su `So5LeaderboardContender`
+non ci sono `rank`, `score`, `user` (l'utente sta sotto `so5Lineup.user`); su
+`So5Lineup` non ci sono `ranking`, `rank`, `score` — **il piazzamento sta in
+`so5Lineup.so5Rankings`**.
+
+#### Lo strumento già scritto
+
+**`ricostruisci_manager.py`**, funzionante e verificato:
+
+```bash
+python ricostruisci_manager.py forever-young --giornate football-10-14-apr-2026 --solo-arene
+python ricostruisci_manager.py forever-young --dalle-mie-arene
+```
+
+`--dalle-mie-arene` prende le giornate da `dati_globali/arene_storico.json`,
+così il periodo è lo stesso dell'utente senza doverlo indovinare. Accumula su
+`dati_globali/manager_<slug>.json` e **riprende da dove si era fermato**.
+
+**Costo misurato: 18 secondi per una giornata intera.** Le ~40 giornate del
+periodo sono **circa 12 minuti**. Per confronto: il predict di 40 giocatori
+costava un'ora e dieci.
+
+#### Cosa è già uscito dalla giornata di prova
+
+```
+33 arene utili, 165 osservazioni
+punteggio formazione: media 266.5, dispersione 51.0, mediana 268.0
+  16 arena_limited (= "Cap 260")   13 capitano Forward    (39%)
+  11 beginner                      13 capitano Midfielder (39%)
+   6 uncapped                       7 capitano Defender   (21%)
+                                    0 capitano Portiere
+mazzo del giorno: 160 giocatori, 165 carte distinte, 0 riusate
+  (33 arene x 5 slot = 165: ha riempito ogni slot senza mai ripetere una carta,
+   il che conferma sui dati la regola "una carta, una volta per giornata")
+piazzamenti: 4 primi, 2 secondi, 1 terzo -> 7 premiati su 33 (21%)
+```
+
+**IL NUMERO PIÙ INTERESSANTE**: dispersione **51,0** contro i **43,3** delle
+40.000 formazioni sintetiche di `taratura_formazioni_sintetiche.py`. Le
+sintetiche sono combinazioni CASUALI, queste sono combinazioni SCELTE — chi
+sceglie concentra giocatori della stessa partita e dello stesso campionato. Se
+il dato regge su un campione grande, **le soglie di pareggio calcolate sulle
+sintetiche sono ottimiste** e la decisione d'ingresso è tarata troppo generosa.
+Con 33 formazioni l'intervallo di confidenza è largo (circa 41-67): non basta
+per cambiare una soglia.
+
+#### Regole di filtro decise dall'utente
+
+- **Escludere SEMPRE le `arena_rare`**: non le gioca. Nella giornata di prova
+  1 su 34, quindi 33 utili.
+- **Tenere le beginner**, anche se rendono male: sono comunque punteggi reali e
+  servono a capire se sono strutturalmente perdenti o se erano le carte
+  sbagliate. Nel suo storico: 182 ingressi, ROI −16,5%, la voce che gli è
+  costata di più.
+- Il tipo va marcato su ogni formazione: per le analisi **economiche** conta,
+  per la **taratura del modello** no — un punteggio realizzato vale uguale
+  ovunque, perché in arena le carte non danno bonus (solo il capitano, +20%,
+  uguale per tutti). Una super rare e una limited dello stesso giocatore fanno
+  lo stesso punteggio.
+
+#### La mappatura dei tipi (verificata, NON dedurla di nuovo)
+
+Il `displayName` della leaderboard è il dato autorevole:
+
+| slug contiene | displayName Sorare | costo | 1° | 2° | 3° |
+|---|---|---|---|---|---|
+| `arena_limited` | **Cap 260** | 300 | 1300 | 800 | 500 |
+| `arena_limited_beginner` | Beginner | 100 | 500 | 250 | 150 |
+| `arena_limited_uncapped` | Uncapped | 300 | 1300 | 800 | 500 |
+
+> **Errore commesso**: avevo dedotto la mappatura dai nomi dell'archivio
+> dell'utente e attribuito ad `arena_limited` il tipo "arena division" con
+> costo 100 e premi 500/250/150. Sbagliato: **le arene division costano come le
+> cap 260 e hanno gli stessi premi** — sono la stessa competizione, l'unica
+> differenza è che ammettono solo carte di un campionato, e nell'archivio
+> dell'utente sono infatti accorpate. Sempre leggere il `displayName`, mai
+> dedurre.
+
+Bilancio della giornata di prova coi valori giusti: −1.750 essenze su 7.700
+spese, −22,7%. **Da non interpretare**: una giornata sola ha varianza enorme,
+7 premiati su 33 (21%) contro un atteso del 30%.
+
+#### DA FARE, in ordine
+
+**Passo 1 — scaricare il periodo intero** (~12 minuti):
+
+```bash
+python ricostruisci_manager.py forever-young --dalle-mie-arene
+```
+
+Senza `--solo-arene`, così prende anche le In Season, che servono per la
+taratura del modello.
+
+**Passo 2 — la misura che può spostare le soglie**: confrontare la dispersione
+delle formazioni VERE con i 43,3 delle sintetiche, separando per tipo di
+competizione. È tutto in `dati_globali/manager_forever-young.json` e non serve
+nessuna previsione. Se le vere disperdono di più, va rifatto il calcolo di
+`PAREGGIO_ARENA` con la dispersione giusta — e questo tocca ogni decisione
+d'ingresso del generatore.
+
+**Passo 3 — le statistiche di comportamento**: su che ruolo mette il capitano
+(nella prova: mai il portiere, 39% attaccante, 39% centrocampista), quanto
+satura il cap, quante carte a punteggio zero accetta, quali competizioni evita.
+
+**Passo 4 — il backtest a parità di mazzo** (il pezzo caro). `backtest_arene.py`
+ha GIÀ il disegno giusto: walk-forward (ogni previsione vede solo partite
+precedenti a quella giornata), cap L10 ricostruito dal game log con la garanzia
+di non dichiarare mai illegale una formazione realmente esistita, capitano
+applicato esplicitamente sul punteggio grezzo. Va alimentato con il mazzo di un
+altro manager invece che con quello dell'utente. Costo: le previsioni
+walk-forward dei suoi giocatori — mitigato dal fatto che un manager ripete
+molto le stesse carte.
+
+**Quanto serve perché il confronto sia informativo**: la dispersione di una
+formazione è 43-51 punti. Per distinguere dal rumore una differenza di 5 punti
+servono **circa 150 formazioni confrontate**. Con 33 arene a giornata bastano
+5 giornate per le sole arene.
+
+#### Il tetto che limita tutto
+
+**L'APIKEY di Sorare è stata richiesta e non è ancora arrivata.** Senza, il
+tetto è ~60 query/minuto e complessità 500 per query (gli errori dell'API
+dichiarano che con APIKEY sarebbero 30.000 e profondità 13). È il vincolo che
+decide i tempi di tutto: scouting, backtest e ricostruzione. Se arriva, vanno
+riviste tutte le stime e ripresi i lavori accantonati per lentezza.
+
+**Ordine di grandezza di quello che c'è là fuori**: 20-30.000 partecipanti a
+giornata × 5-7 carte = ~150.000 osservazioni per giornata. Il collo non sono i
+dati, è quante query si possono fare.
+
+---
+
+## 56. Sessione 02/08 (sera) — il confronto previsione/realtà per GIOCATORE, e i due difetti che ne escono
+
+Prima sessione in cui il modello viene messo a confronto con la realtà **carta
+per carta** invece che formazione per formazione. È stato possibile perché la
+giornata 31 lug–4 ago è la prima schierata con le sue indicazioni, e perché le
+previsioni di produzione sono salvate su disco (`prediction_log.json`, scritto
+da `formazione_mls/predict/live_prediction_log.py` ad ogni run non di
+calibrazione: 1.777 voci pendenti su tutte le leghe).
+
+### 56.1 — LA REGOLA CHE MANCAVA: i bonus Sorare si SOMMANO
+
+Il primo confronto era **sbagliato** e lo ha visto l'utente. Il modello prevede
+il punteggio GREZZO del giocatore; Sorare pubblica il punteggio della CARTA,
+che ha dentro altri tre ingredienti. La regola vera, verificata **al centesimo
+su 16 casi reali**:
+
+    punteggio carta = grezzo × (1 + bonus_carta + bonus_formazione + capitano)
+
+- **bonus_carta** = somma dei basis point del `powerBreakdown` (season,
+  collection, xp, scarcity, special edition, active clubs, nationality,
+  positions). Solo In Season / All Star / Under 23. **In arena è zero.**
+- **bonus_formazione** = +2% "Multi-club" (**al massimo 2 giocatori dello
+  stesso club**) e +4% "Cap" (somma L10 **sotto** 260, o **370** nelle
+  formazioni da 7). Cumulabili. Stessi ambiti del bonus carta.
+- **capitano** = **+50%** In Season/All Star/Under 23, **+20%** in arena.
+
+Il caso che ha smontato l'ipotesi moltiplicativa (che era la mia): **Kim
+Bong-Soo**, capitano in una In Season K-League senza bonus cap. In cascata
+darebbe 60.20 × 1.14 × 1.5 = 101.14; sommando, 60.20 × (1+0.12+0.02+0.50) =
+**98.73**, che è esattamente il punteggio pubblicato.
+
+> **Trappola, già costata un'ora.** Sbagliare questa formula non produce un
+> errore: produce numeri plausibili e falsi. Il residuo che si vedeva era un
+> innocuo "+1.8% costante" che sembrava rumore, ed era il +2% multi-club
+> schiacciato dalla divisione in cascata. Il difetto emerge SOLO confrontando
+> lo stesso giocatore schierato in arena (dove non c'è nessun bonus) e in una
+> competizione che i bonus li ha.
+
+### 56.2 — Come si ricavano i bonus di formazione senza indovinarli
+
+Il pannello BONUS di Sorare non è nei dati, e la somma L10 **non è
+ricostruibile con la precisione che una soglia netta richiede** — provato: la
+ricostruzione sbaglia in entrambe le direzioni di qualche punto, e sui casi di
+confine (259.5 contro 260) ribalta il risultato. Quindi non si stima, si
+**ricava a catena** (`punteggi_grezzi.py`):
+
+1. ogni carta schierata in **arena** dà un grezzo certo (nessun bonus);
+2. una formazione che contiene un giocatore a grezzo noto **rivela il proprio
+   bonus** (l'unico dei quattro valori 0/2/4/6% che torna);
+3. noto il bonus, si ricavano i grezzi delle altre carte di quella formazione,
+   che aprono altre formazioni. Si itera.
+
+Sulla giornata 31 lug–4 ago: **15 formazioni su 18 risolte da sole**, 187 carte
+su 206 con grezzo certo. Le 3 rimanenti sono state lette dall'utente sul
+pannello Sorare e stanno in `dati_globali/bonus_formazione_note.json`, insieme
+alla **formazione annullata in corsa** (si può cancellare una formazione che
+sta andando male e riusare i giocatori non ancora scesi in campo — è la fonte
+delle 3 carte che risultavano schierate due volte nella stessa giornata, e va
+esclusa perché non è un esito reale).
+
+Controprova che il metodo regge: su una formazione la catena ha ricavato
+**+2%** da sola, e l'utente guardando il pannello Sorare ha confermato +2%.
+
+### 56.3 — Gli strumenti nuovi
+
+| file | cosa fa |
+|---|---|
+| `punteggi_grezzi.py` | la regola additiva e la catena che ricava i bonus di formazione |
+| `confronta_previsioni_giornata.py` | previsione di produzione contro realtà, per giocatore, per qualunque giornata |
+| `confronta_in_season.py` | le In Season di una lega, con la previsione del momento affiancata a quella rigiocata col modello di oggi |
+| `ottimizza_giornata.py` | l'ottimo col senno di poi, scomposto in capitano e collocazione |
+| `errore_modello_storico.py` | l'errore per giocatore su tutte le giornate di arene |
+| `scomponi_portieri.py` | il `detailedScore` di ogni portiere, voce per voce |
+| `quote_mls_test.py` | prova se le quote dei bookmaker aggiungono qualcosa |
+
+`ricostruisci_manager.py` è stato esteso: la query porta ora anche
+`powerBreakdown`, `inSeasonEligible`, `u23Eligible` e `activeClub` per ogni
+carta. Servono tutti e quattro, e viaggiano gratis nella query che già si fa.
+
+> **Non usare `player_card_counts.json` per la lega o il flag u23 di una
+> giornata passata**: contiene solo il pool della run PIÙ RECENTE (502
+> giocatori, 47 MLS), quindi per una giornata vecchia manca quasi tutto. La
+> lega giusta è la cartella `formazione_<lega>/` da cui viene la previsione.
+
+### 56.4 — Il difetto numero uno: il modello ORDINA bene e COMPRIME molto
+
+Misurato su **2.690 osservazioni** di arene vere (71 giornate, previsioni
+rigiocate walk-forward). Le arene sono il campione pulito: nessun bonus, il
+punteggio pubblicato È il grezzo.
+
+| ruolo | dispersione VERA dei livelli | dispersione PREVISTA | compressione | corr. sulle medie |
+|---|---|---|---|---|
+| Goalkeeper | 7.5 | **1.6** | **4.8x** | +0.571 |
+| Defender | 9.0 | 3.1 | 2.9x | +0.541 |
+| Midfielder | 8.0 | 2.7 | 2.9x | +0.478 |
+| Forward | 8.5 | 3.4 | 2.5x | +0.466 |
+
+Complessivo: correlazione per singola partita **+0.206**, MAE 15.2, **bias
+−0.0**. Il modello non sovrastima nessuno: semplicemente distingue poco.
+Dentro le fasce centrali di previsione la correlazione crolla a
+**+0.06 / +0.02 / +0.01 / +0.01**; regge solo la fascia alta (+0.150).
+
+Detto in modo pratico, sui 296 casi reali di un portiere previsto a 50: ne fa
+in media **48** (il livello è giusto), ma il singolo caso sbaglia di **15
+punti** e metà delle volte finisce **fra 36 e 60**.
+
+**Dove si paga.** Dentro uno slot l'ordinamento regge, quindi la scelta del
+portiere fra portieri è sana. Il danno è **fuori** dallo slot, dove numeri di
+ruoli diversi si confrontano fra loro: fascia di capitano, in quale
+competizione mandare una carta, soglie d'ingresso. Un portiere non emerge mai
+perché il suo numero non si muove.
+
+Caso reale, portato dall'utente: **Jonathan Sirois**, previsto 48.0 (sotto la
+media dei portieri), realizzato **98.2**, mandato in una **Beginner** da 100
+essenze d'ingresso — mentre le sei In Season MLS avevano portieri da 37 a 48.
+Sostituendolo al portiere di ognuna avrebbe portato **da +48.6 a +69.5 punti**
+a formazione. Stessa storia per Nicholas Defreitas-Hansen (73.2, previsto
+48.1), anche lui in Beginner.
+
+La causa è lo **shrinkage**, tarato per minimizzare il MAE — e il MAE si
+minimizza comprimendo verso la media. È la stessa trappola della sezione 27.C:
+**non ritararlo sul MAE.**
+
+### 56.5 — Il difetto numero due: il `level_score` del portiere è BINARIO
+
+Scomposti i `detailedScore` reali di 11 portieri della giornata
+(`scomponi_portieri.py`, dati in
+`dati_globali/scomposizione_portieri_gw1.json`):
+
+**Il `level_score` di un portiere vale 35.0 senza clean sheet e 60.0 con clean
+sheet. Nessun valore intermedio, 11 casi su 11.**
+
+Il modello ne prevede uno **continuo**, in quella giornata fra 36.6 e 45.3:
+cioè un numero che **non può mai verificarsi**. È il valore atteso di una
+variabile a due stati, usato poi come se fosse una stima puntuale.
+
+Esempio completo, Takaoka — previsione 54.26, passo per passo:
+
+| # | passaggio | valore |
+|---|---|---|
+| 1 | partite storiche (peso esponenziale, half_life 6) | n = 30 |
+| 2 | tasso eventi decisivi positivi | 0.4559 |
+| 3 | tasso eventi decisivi negativi | 0.1526 |
+| 4 | `level_score` atteso da quei tassi | 41.98 |
+| 5 | media pesata dei granulari | 7.89 |
+| 6 | fattore trend (spento, `TREND_INTENSITY=0`) | 1.0000 |
+| 7 | grezzo = 4 + 5×6 | 49.87 |
+| 8 | presenza 0.938 → prior di ruolo | 50.00 |
+| 9 | shrinkage k=30: metà grezzo, metà prior | 49.93 |
+| 10 | fattore casa/trasferta (in casa) | 1.0867 |
+| | **previsione** | **54.26** |
+
+Realizzato **37.70**, così composto: level_score 35.0, passaggi riusciti +1.9,
+passaggi ultimo terzo +0.5, lanci lunghi +0.8, uscita alta +1.5, uscita fuori
+area +3.0, **gol subiti −5.0**. I granulari erano quasi esatti (attesi 7.89):
+tutto lo scarto stava nel level_score.
+
+Sugli 11 portieri: errore medio assoluto **16.4** (7.2 dal level_score, 8.7 dai
+granulari), bias **−7.2** — sempre ottimista. Un solo clean sheet su 11.
+
+Si vede anche che lo shrinkage pesa **metà** e il prior è 50.00: qualunque
+portiere finisce schiacciato lì attorno.
+
+### 56.6 — L'ottimo col senno di poi: la leva più grande è il CAPITANO
+
+`ottimizza_giornata.py`, stesse carte e stesse formazioni, solo ricollocate.
+Il totale dei grezzi è un **invariante** (226 carte su 229 slot vengono
+schierate comunque): cambiano solo i moltiplicatori. Quindi il conto si
+scompone in due voci verificabili a parte.
+
+Sulla giornata 31 lug–4 ago: **+317.1 punti su 12.348 (+2.6%)**, di cui
+
+- **capitano: +203.8** — fasce sbagliate concentrate (Célestine capitano con 5
+  punti grezzi, −41.7 rispetto a Lee Dong-Gyeong; Seo Jin-Su −28.9);
+- **collocazione: +113.3** — carte con bonus alto finite dove il bonus non si
+  paga (Sirois +14.7, Seidl +13.0, Munie +10.8).
+
+> **Il +2.6% sottostima il danno**, e va detto: è il totale della giornata, ma
+> Sorare non paga il totale. Sirois in totale vale +14.7 punti; nella
+> formazione da 1000 dollari ne valeva **+63**. Il totale punti è una lente
+> debole per questo gioco.
+
+### 56.7 — Le quote dei bookmaker: prova preliminare, NON conclusa
+
+Unico segnale sulla singola partita mai provato (la checklist maestra non lo
+contiene). Fonte: **football-data.co.uk**, archivio "new leagues", `USA.csv` —
+gratuito, senza chiave, quote di chiusura. Copertura verificata: marzo-maggio
+2026 sì, **giugno 2026 manca**, luglio parziale. La K League non c'è.
+
+Su 244 osservazioni MLS:
+
+| ruolo | modello → reale | quote → reale | quote → ciò che il modello NON spiega |
+|---|---|---|---|
+| Goalkeeper | +0.175 | **+0.445** | **+0.352** |
+| Midfielder | +0.200 | +0.286 | +0.264 |
+| Defender | +0.246 | +0.193 | +0.093 |
+| Forward | +0.436 | +0.158 | +0.090 |
+
+Coerente con la 56.5: il punteggio di un portiere dipende da se la sua squadra
+prende gol, e la quota è una stima diretta di quello.
+
+> **NON considerarlo dimostrato.** L'utente ha sollevato il dubbio che
+> l'abbinamento partita/quota possa essere sbagliato, e il controllo che lo
+> chiuderebbe (confrontare i gol del CSV con quelli registrati da Sorare per
+> quel portiere in quella partita) **non è stato fatto**. Un abbinamento
+> sbagliato produce numeri plausibili e falsi — è già successo in questa
+> sessione con `new-york-rb-secaucus-new-jersey` mappato su "New York City"
+> invece che sui Red Bulls, perché il filtro scartava le sigle di due lettere.
+
+### 56.8 — Piste chiuse in questa sessione (non riproporle)
+
+- **Trend recente per i portieri**: già chiusa il 31/07 con due misure concordi
+  (`TREND_INTENSITY` GK = 0.0). I portieri reduci da una serie in miglioramento
+  rendono **−6.19 punti sotto** il proprio livello di lungo periodo.
+- **Costruirsi una stima di forza avversaria dai gol**: è già in produzione
+  (`opponent_strength.py`, punto 17 della checklist maestra). Il fattore su
+  `domesticLeagueRanking` era già stato rimosso, e quel dato era pure
+  contaminato.
+- **Rifare le previsioni walk-forward per la giornata corrente**: misurato che
+  la revisione del modello di ieri sera non sposta nulla — MAE 21.3 con le
+  previsioni scritte al momento contro 21.4 rigiocate oggi. Il
+  `prediction_log.json` è utilizzabile così com'è.
+
+### 56.9 — Da dove ripartire
+
+1. **Chiudere la verifica delle quote** (56.7) confrontando i gol del CSV con
+   quelli di Sorare. Se l'abbinamento regge, il segnale sul portiere vale
+   +0.352 su ciò che il modello non spiega, e va deciso come pesarlo: non un
+   canale nuovo, ma un input migliore per `opponent_strength`, con un solo
+   parametro `w` di miscelazione da tarare walk-forward — **e non sul MAE**.
+2. **Estendere la misura alle competizioni diverse dalle arene**. Le arene sono
+   pulite ma contengono le carte deboli: la coda alta dei punteggi è
+   sottorappresentata. Serve `ricostruisci_manager.py crowss --dalle-mie-arene`
+   (71 giornate, ~12 minuti di query) e poi la catena dei bonus.
+3. **La fascia di capitano** è la leva singola più grande misurata (+203.8 su
+   una giornata) ed è decisa dallo stesso numero compresso.
+
+### 56.10 — Come ha lavorato l'utente in questa sessione
+
+Ha corretto quattro errori miei, tutti su cose che dai numeri sembravano a
+posto: i bonus XP dimenticati, il capitano al +50% invece che +20%, i bonus
+additivi invece che moltiplicativi, e la formazione annullata che falsava il
+conteggio delle carte doppie. Ha chiesto esplicitamente di **fermarsi e
+chiedere a ogni singolo dubbio** invece di procedere con assunzioni, e di
+**leggere il codice e la checklist maestra** prima di proporre qualcosa — due
+volte ho proposto cose già fatte e documentate.

@@ -100,12 +100,47 @@ query Formazione($slug: String!) {
       slug
       so5Lineup {
         user { slug }
+        so5Rankings { ranking score so5Leaderboard { slug } }
         so5Appearances {
           score
           position
           captain
-          player { slug displayName }
-          anyCard { slug rarityTyped }
+          # activeClub serve al bonus "Multi-club" +2%, che scatta con meno di
+          # 3 carte della stessa squadra nella formazione: senza la squadra non
+          # si puo' sapere se quel bonus e' scattato, e sbagliarlo falsa il
+          # punteggio grezzo di tutte e 5 le carte.
+          player { slug displayName activeClub { slug name } }
+          anyCard {
+            slug
+            rarityTyped
+            # Vive sull'interfaccia, non sul tipo Card (vedi discovery_fixture.py,
+            # che infatti la chiede fuori dal fragment). Serve al vincolo "4 carte
+            # in season su 5" delle In Season: dedurlo dall'anno nello slug della
+            # carta sarebbe una supposizione, questo e' il dato di Sorare.
+            inSeasonEligible
+            # xp/powerBreakdown vivono sul tipo CONCRETO Card, non
+            # sull'interfaccia AnyCardInterface: senza il fragment esplicito
+            # la query fallisce per intero (stesso inciampo gia' documentato
+            # in discovery_fixture.py).
+            ... on Card {
+              xp
+              # Serve al pool delle Under 23. Il file player_card_counts.json
+              # ce l'ha, ma contiene solo il pool della run PIU' RECENTE: per
+              # una giornata passata la maggior parte dei giocatori non c'e'.
+              # Qui il flag arriva con la carta, per qualunque giornata.
+              u23Eligible
+              powerBreakdown {
+                seasonBasisPoints
+                collectionBasisPoints
+                xpBasisPoints
+                scarcityBasisPoints
+                specialEditionCardsBasisPoints
+                activeClubsBasisPoints
+                nationalityBasisPoints
+                positionsBasisPoints
+              }
+            }
+          }
         }
       }
     }
@@ -183,24 +218,47 @@ def partecipazioni(manager, fixture):
 
 
 def formazione(contender_slug):
-    """Le carte schierate: (lista_carte, manager). Pubblica."""
+    """(carte, manager, piazzamento) di un contender. Tutto pubblico.
+
+    Il piazzamento sta in `so5Lineup.so5Rankings`, non sul contender (li'
+    `rank` e `score` non esistono): una riga per leaderboard, con ranking e
+    punteggio totale gia' comprensivo del capitano."""
     d = graphql(FORMAZIONE_QUERY, {'slug': contender_slug}, con_cookie=False)
     if d.get('errors'):
-        return None, None
+        return None, None, None
     cont = ((d.get('data') or {}).get('so5') or {}).get('so5LeaderboardContender') or {}
     lineup = cont.get('so5Lineup') or {}
+    piazzamento = None
+    for r in lineup.get('so5Rankings') or []:
+        if ((r.get('so5Leaderboard') or {}).get('slug') or '') in contender_slug:
+            piazzamento = {'rank': r.get('ranking'), 'punteggio': r.get('score')}
+            break
     carte = []
     for a in lineup.get('so5Appearances') or []:
+        carta = a.get('anyCard') or {}
+        # Somma dei basis points del powerBreakdown come frazione (1000 bp =
+        # 10%), la stessa misura di CardPool.power_bonus_fraction. Serve per
+        # tornare al punteggio GREZZO del giocatore: Sorare applica questo
+        # bonus solo in In Season/All Stars, MAI in arena, e il modello
+        # prevede sempre il grezzo. Senza toglierlo il confronto
+        # previsione/realta' e' gonfiato proprio dove le carte sono migliori.
+        pb = carta.get('powerBreakdown') or {}
+        bonus = sum(v or 0 for k, v in pb.items() if k.endswith('BasisPoints')) / 10000.0
         carte.append({
             'slug': ((a.get('player') or {}).get('slug')),
             'nome': ((a.get('player') or {}).get('displayName')),
+            'squadra': ((((a.get('player') or {}).get('activeClub')) or {}).get('slug')),
             'ruolo': a.get('position'),
             'capitano': bool(a.get('captain')),
             'punteggio': a.get('score'),
-            'rarita': ((a.get('anyCard') or {}).get('rarityTyped')),
-            'carta': ((a.get('anyCard') or {}).get('slug')),
+            'rarita': carta.get('rarityTyped'),
+            'carta': carta.get('slug'),
+            'xp': carta.get('xp'),
+            'bonus_carta': round(bonus, 4),
+            'in_season': carta.get('inSeasonEligible'),
+            'u23': carta.get('u23Eligible'),
         })
-    return carte, ((lineup.get('user') or {}).get('slug'))
+    return carte, ((lineup.get('user') or {}).get('slug')), piazzamento
 
 
 def giornate_dalle_mie_arene():
@@ -322,7 +380,7 @@ def main():
         for r in da_scaricare:
             if r.get('tipo_arena') in TIPI_ARENA_ESCLUSI:
                 continue
-            carte, chi = formazione(r['contender'])
+            carte, chi, piazzamento = formazione(r['contender'])
             if carte is None:
                 continue
             if chi and chi != args.manager:
@@ -331,6 +389,7 @@ def main():
                 log(f"  ATTENZIONE: {r['contender'][:50]} appartiene a {chi}, saltata.")
                 continue
             r['carte'] = carte
+            r['piazzamento'] = piazzamento
         dati.setdefault('giornate', {})[giornata] = da_scaricare
         salva(dati, dest)
 

@@ -1,0 +1,17 @@
+{
+  "_nota": "Bonus di formazione che la catena automatica non riesce a ricavare, letti dall'utente sul pannello BONUS di Sorare. La catena (vedi punteggi_grezzi.py) parte dalle carte schierate in arena -- dove non c'e' nessun bonus, quindi il punteggio della carta E' il grezzo del giocatore -- e da li' risale: nota una carta, si ricava il bonus della sua formazione; noto il bonus, si ricavano i grezzi delle altre carte, che aprono altre formazioni. Sulla giornata 31 lug-4 ago ha risolto 15 formazioni su 18 da sola. Le altre vanno chieste, UNA VOLTA, e restano qui.",
+  "_valori": "bonus di formazione = 0.02 (solo Multi-club) | 0.04 (solo Cap) | 0.06 (entrambi) | 0.0 (nessuno). Si SOMMANO al bonus della carta e al capitano, non si moltiplicano: verificato al centesimo su 16 casi.",
+  "_regole_lette_sulla_UI_sorare": {
+    "multi_club": "+2% se al massimo 2 giocatori dello stesso club nella formazione",
+    "cap": "+4% se la somma delle L10 e' MINORE della soglia (260 In Season, 370 nelle formazioni da 7). Stretto, non <=.",
+    "capitano": "+50% In Season/All Star/Under 23, +20% in arena. Additivo."
+  },
+  "formazioni_annullate": {
+    "football-31-jul-4-aug-2026-seasonal-under_twenty_one-all_seasons_under_twenty_one_limited~so5-lineup~ed7cb069-fae4-4d81-9090-f97c14669002": "Formazione cancellata dall'utente in corsa: si puo' fare quando sta andando male, riusando i giocatori non ancora scesi in campo. E' la fonte delle 3 carte che risultavano schierate due volte nella stessa giornata. Va esclusa: i suoi punteggi non sono un esito reale."
+  },
+  "bonus": {
+    "football-31-jul-4-aug-2026-seasonal-under_twenty_one-all_seasons_under_twenty_one_limited~so5-lineup~5ffa6b30-6ae7-4961-ad2e-b27ead6f7f28": 0.06,
+    "football-31-jul-4-aug-2026-seasonal-under_twenty_one-all_seasons_under_twenty_one_limited~so5-lineup~08682ea0-8ab2-40e3-854d-cafed5a83228": 0.06,
+    "football-31-jul-4-aug-2026-seasonal-us-in_season_us_limited_pve~so5-lineup~066a1759-16d5-4cd6-9645-e86bf18389c3": 0.02
+  }
+}
