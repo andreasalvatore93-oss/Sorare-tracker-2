@@ -826,6 +826,70 @@ def stampa_candidati(pool, limite=None):
                   f"  [{g.get('cartella')}]{nota}")
 
 
+# --- IL FILTRO STARTER ODDS ------------------------------------------------
+#
+# Identico a quello del generatore, e non "ispirato a": si chiama la sua
+# `discovery_fixture.odds_e_l10_singola`, stessa query e stessa finestra di
+# fixture. Stessa convenzione, che e' la parte che conta: ODDS ASSENTI =
+# ESCLUSO. Un giocatore senza odds pubblicate non e' "forse titolare", e'
+# ignoto -- trattarlo come idoneo rimetterebbe dentro proprio quelli che il
+# filtro serve a togliere.
+#
+# Va usato SOLO quando le odds sono uscite (24-48h dal kickoff): prima, la
+# soglia scarterebbe tutti. Per questo il default e' spento (0), che e' la
+# differenza rispetto al generatore, dove le odds ci sono sempre perche' gira
+# a ridosso della giornata.
+#
+# Si applica PRIMA del campionamento: scremare dopo vorrebbe dire scegliere i
+# 40 migliori e poi scoprire che meta' non gioca, invece di scegliere i 40
+# migliori FRA CHI GIOCA.
+def filtra_per_odds(pool, soglia, worker=None):
+    """Tiene solo chi ha starter odds >= soglia. Una query a giocatore."""
+    fx = pool.get('fixture') or {}
+    inizio = (fx.get('startDate') or '')[:19]
+    fine = (fx.get('endDate') or '')[:19]
+    giocatori = pool['giocatori']
+    log(f"Filtro starter odds >= {soglia:.0%} su {len(giocatori)} candidati "
+        f"(finestra {inizio}..{fine}); odds assenti = escluso, come in produzione.")
+
+    client = _client_ritmato()
+    worker = worker or (WORKER if client is not None else 1)
+    fatti = [0]
+    inizio_t = time.time()
+
+    def _uno(g):
+        try:
+            odds, _data, l10 = _df.odds_e_l10_singola(g['slug'], inizio, fine)
+        except Exception as e:
+            odds, l10 = None, None
+            g['odds_errore'] = str(e)[:100]
+        g['starter_odds'] = odds
+        if l10 is not None and not g.get('l10'):
+            g['l10'] = l10
+        fatti[0] += 1
+        if fatti[0] % 100 == 0 or fatti[0] == len(giocatori):
+            trascorso = time.time() - inizio_t
+            log(f"  odds {fatti[0]}/{len(giocatori)} ({trascorso:.0f}s, "
+                f"{fatti[0] / max(trascorso, 1e-9) * 60:.0f}/min)")
+
+    if worker > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=worker) as pool_thread:
+            list(pool_thread.map(_uno, giocatori))
+    else:
+        for g in giocatori:
+            _uno(g)
+
+    tenuti = [g for g in giocatori if (g.get('starter_odds') or 0) >= soglia]
+    senza = sum(1 for g in giocatori if g.get('starter_odds') is None)
+    log(f"Odds: {len(tenuti)}/{len(giocatori)} sopra soglia "
+        f"({senza} senza odds pubblicate, esclusi).")
+    if not tenuti and senza == len(giocatori):
+        log("ATTENZIONE: NESSUN candidato ha odds. Probabilmente non sono "
+            "ancora uscite per questa giornata: rilancia senza --odds-min.")
+    pool['filtri'] = dict(pool.get('filtri') or {}, odds_min=soglia)
+    return tenuti
+
+
 # --- IL CAMPIONE -----------------------------------------------------------
 #
 # Prendere i migliori N per L10 e' l'errore che sembra ovvio e non lo e'.
@@ -1280,7 +1344,8 @@ def scrivi_html(pool, dest, formazioni=()):
         'quando': datetime.datetime.utcnow().strftime('%d/%m/%Y %H:%M UTC'),
         'n': len(pool['giocatori']),
         'filtri': ('stati ' + '/'.join(filtri.get('stati') or ['tutti'])
-                   + (', solo con limited in vendita' if filtri.get('solo_in_vendita') else '')),
+                   + (', solo con limited in vendita' if filtri.get('solo_in_vendita') else '')
+                   + (f", starter odds >= {filtri['odds_min']:.0%}" if filtri.get('odds_min') else '')),
     }
     scremati = any('idoneo' in g for g in pool['giocatori'])
     pezzi = [testa]
@@ -1312,6 +1377,7 @@ def scrivi_html(pool, dest, formazioni=()):
                      f"<th title='Giornate perche&apos; il vantaggio ripaghi il prezzo "
                      f"PIENO, a {EURO_PER_1000_ESSENZE:.2f} EUR per 1000 essenze'>GW rientro</th>"
                      "<th>L10</th><th>L5</th><th>L40</th>"
+                     "<th title='Starter odds Sorare, quando pubblicate'>Odds</th>"
                      "<th>Pres.15</th><th>Proj</th><th>Prezzo</th><th>Club</th><th>Avversario</th>"
                      "<th>Quando</th><th>Lega</th><th>Note</th></tr>")
         for g in righe:
@@ -1338,6 +1404,10 @@ def scrivi_html(pool, dest, formazioni=()):
                 eff = atteso / l10_g
                 classe = 'mia' if eff >= SOGLIA_PUNTI_PER_L10 else 'warn'
                 eff_txt = f"<span class='{classe}'>{eff:.2f}</span>"
+            odds_txt = ('&mdash;' if g.get('starter_odds') is None
+                        else "<span class='%s'>%.0f%%</span>"
+                             % ('mia' if g['starter_odds'] >= 0.8 else 'warn',
+                                g['starter_odds'] * 100))
             essenze_gw, euro_ess, rientro = _economia(atteso, g.get('prezzo_eur'))
             if essenze_gw is None:
                 ess_txt = '&mdash;'
@@ -1368,6 +1438,7 @@ def scrivi_html(pool, dest, formazioni=()):
                 f"<td class='n'>{num(g.get('l10'))}</td>"
                 f"<td class='n'>{num(g.get('l5'))}</td>"
                 f"<td class='n'>{num(g.get('l40'))}</td>"
+                f"<td class='n'>{odds_txt}</td>"
                 f"<td class='n'>{num(g.get('presenze_15'))}</td>"
                 f"<td class='n'>{num(g.get('proiezione_sorare'))}</td>"
                 f"<td class='n'><a href='https://sorare.com/football/players/{g['slug']}/cards' "
@@ -1501,6 +1572,10 @@ def main():
                     help="non filtrare per playing_status (pool completo della giornata)")
     ap.add_argument('--anche-non-in-vendita', action='store_true',
                     help="tieni anche chi non ha nessuna limited in vendita")
+    ap.add_argument('--odds-min', type=float, default=None,
+                    help="tieni solo chi ha starter odds >= X (es. 0.80), come il "
+                         "generatore: odds assenti = escluso. Usalo solo quando le "
+                         "odds sono uscite, altrimenti scarta tutti")
     ap.add_argument('--lega', default=None,
                     help="tieni solo queste cartelle lega, separate da virgola (es. mls,messico)")
     ap.add_argument('--per-ruolo', type=int, default=None,
@@ -1536,9 +1611,20 @@ def main():
             pool['giocatori'] = _shard(pool['giocatori'])
             screma(pool['giocatori'])
     else:
+        # Con le odds attive il prefiltro `playing_status` si spegne da solo.
+        # Non e' un conflitto tecnico -- sarebbero in AND -- ma un
+        # restringimento che fa perdere gente: chi Sorare classifica
+        # 'substitute' non entrerebbe MAI nel pool, nemmeno con odds all'85%.
+        # E quando le odds sono pubblicate sono il dato migliore che abbiamo:
+        # e' una probabilita' misurata da Sorare su quella partita, mentre
+        # playing_status e' un'etichetta generica sul giocatore.
+        stati = () if (args.tutti_gli_stati or args.odds_min) else STATI_TITOLARE
+        if args.odds_min and not args.tutti_gli_stati:
+            log("Odds attive: prefiltro starter/regular disattivato, decidono le "
+                "odds (piu' affidabili e specifiche di quella partita).")
         pool = pool_da_search(
             args.gameweek, args.fixture,
-            stati=() if args.tutti_gli_stati else STATI_TITOLARE,
+            stati=stati,
             solo_in_vendita=not args.anche_non_in_vendita)
         if not pool:
             return 1
@@ -1547,6 +1633,22 @@ def main():
             prima = len(pool['giocatori'])
             pool['giocatori'] = [g for g in pool['giocatori'] if g.get('cartella') in leghe]
             log(f"Filtro lega {sorted(leghe)}: {len(pool['giocatori'])}/{prima} candidati")
+        if args.odds_min:
+            # Prima del campionamento: cosi' si scelgono i migliori FRA CHI
+            # GIOCA, invece di scegliere i migliori e scoprire poi che meta'
+            # non scende in campo.
+            pool['giocatori'] = filtra_per_odds(pool, args.odds_min)
+            # Fermarsi QUI se non e' rimasto nessuno, prima di toccare la
+            # discovery. Altrimenti il caso "odds non ancora pubblicate" --
+            # cioe' il caso normale se si lancia troppo presto -- scriverebbe
+            # player_slugs.json VUOTI sopra quelli di produzione: nessun
+            # predict, report vuoto, e le liste dell'utente da rigenerare.
+            if not pool['giocatori']:
+                log("ERRORE: nessun candidato supera la soglia odds. Non scrivo "
+                    "niente e mi fermo -- le odds probabilmente non sono ancora "
+                    "uscite (escono a 24-48h dal calcio d'inizio). Rilancia con "
+                    "odds_min vuoto per lavorare senza.")
+                return 1
         if args.per_ruolo:
             pool['giocatori'] = campiona(pool['giocatori'], args.per_ruolo,
                                          a_fasce=not args.solo_l10)

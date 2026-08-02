@@ -41,6 +41,11 @@ on:
         required: false
         default: '10'
         type: string
+      odds_min:
+        description: 'Soglia starter-odds 0-1 (es. 0.80). Vuoto = spento. Odds assenti = escluso'
+        required: false
+        default: ''
+        type: string
       predict:
         description: 'Far girare il modello sui candidati (piu lento, riempie la colonna Atteso)'
         required: false
@@ -81,6 +86,7 @@ jobs:
         run: |
           ARGS="--per-ruolo ${{ inputs.per_ruolo }}"
           if [ -n "${{ inputs.gameweek }}" ]; then ARGS="$ARGS --gameweek ${{ inputs.gameweek }}"; fi
+          if [ -n "${{ inputs.odds_min }}" ]; then ARGS="$ARGS --odds-min ${{ inputs.odds_min }}"; fi
           if [ "${{ inputs.screma }}" = "true" ]; then ARGS="$ARGS --screen"; fi
           if [ "${{ inputs.predict }}" = "true" ]; then ARGS="$ARGS --scrivi-discovery"; fi
           python scouting_gw.py $ARGS --html generatore_formazioni/output/scouting_ultimo.html
@@ -133,6 +139,7 @@ jobs:
         run: |
           ARGS="--per-ruolo ${{ inputs.per_ruolo }}"
           if [ -n "${{ inputs.gameweek }}" ]; then ARGS="$ARGS --gameweek ${{ inputs.gameweek }}"; fi
+          if [ -n "${{ inputs.odds_min }}" ]; then ARGS="$ARGS --odds-min ${{ inputs.odds_min }}"; fi
           python scouting_gw.py $ARGS --html generatore_formazioni/output/scouting_ultimo.html
 
       # Il link Telegram passa da raw.githack, che serve il file da GitHub:
