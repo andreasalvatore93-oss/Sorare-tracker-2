@@ -1058,7 +1058,8 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
                 'check_cap260': check_cap260, 'stack_guard': stack_guard,
                 'avoid_captain_slugs': avoid_snapshot,
             })
-            print(f"Formazione {label} #{idx}: generata ({sum(r['atteso'] for _, r, _ in formazione)} pt)")
+            print(f"Formazione {label} #{idx}: generata "
+                  f"({sum(r['atteso'] for _, r, _ in formazione):.1f} pt)")
         return risultati
 
     if not force_cap370_first:
@@ -1482,7 +1483,7 @@ def main():
     total_generated = sum(generated_by_type.values())
     print(f"\nFormazioni generate: {total_generated}/{num_totale}")
     if total_generated > 1:
-        print(f"TOTALE COMPLESSIVO: {grand_total} pt")
+        print(f"TOTALE COMPLESSIVO: {grand_total:.1f} pt")
 
     _stampa_verdetto_arene(all_results)
 
@@ -1510,9 +1511,14 @@ def main():
             avoid_captain_slugs=r['avoid_captain_slugs'], apply_xp_bonus=False)
         _et, _col = _etichetta_arena(r['tipo'], _atteso_con_capitano(r))
         if _et:
-            lineup_html += (f'<div style="margin:-6px 0 14px 0;padding:6px 10px;'
-                            f'border-left:3px solid {_col};background:rgba(255,255,255,.03);'
-                            f'font-size:.85rem;color:{_col}"><b>{_et}</b></div>')
+            # La formazione viene RACCHIUSA in una cornice del colore del
+            # verdetto, con l'etichetta dentro: con una riga staccata non si
+            # capiva a quale arena si riferisse (segnalato dall'utente).
+            lineup_html = (
+                f'<div style="border:2px solid {_col};border-radius:10px;'
+                f'padding:10px 12px 4px 12px;margin:0 0 18px 0">'
+                f'<div style="font-size:.85rem;color:{_col};margin-bottom:8px">'
+                f'<b>{_et}</b></div>{lineup_html}</div>')
         # Formazioni OPZIONALI (30/07): separatore ben visibile la prima
         # volta che se ne incontra una, poi ogni blocco un po' piu' piccolo
         # (font-size ridotto) per distinguerle a colpo d'occhio da quelle
