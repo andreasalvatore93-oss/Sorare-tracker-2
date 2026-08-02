@@ -2165,19 +2165,26 @@ def _render_cheapest(bff, card_pool, label, risultato, titolo='Cheapest'):
 # Chi ha L10 ignoto e' ESCLUSO: qui il cap e' un vincolo vero, contarlo 0
 # falserebbe tutto (vedi il bug del 31/07 in fetch_l10_reale).
 FILL_QUOTA_MAX = float(os.environ.get('BEST_FIVE_FILL_QUOTA_MAX', '1.6'))
-# Pareggio misurato di un'arena cap 260: 282.9 punti attesi, su 673 arene reali
-# (vedi consiglio_arena.py). Sotto quella riga l'ingresso costa piu' di quanto
-# renda. Il target di 300 -- scelto a occhio prima di avere la misura -- ne
-# esce confermato: e' il pareggio piu' un margine.
-PAREGGIO_ARENA_260 = 282.9
+# Pareggio di un'arena cap 260, RIMISURATO il 02/08 su 40.000 formazioni
+# sintetiche costruite da 69.151 coppie previsione/realizzato: 264.4 punti
+# REALI (era 282.9, calcolato come se il punteggio fosse certo).
+PAREGGIO_ARENA_260 = 264.4
 TARGET_PUNTEGGIO = float(os.environ.get('BEST_FIVE_TARGET_PUNTEGGIO', '300'))
 
+# La previsione del modello va CALIBRATA prima di confrontarla con l'L10:
+# misurato `realizzato = 10.21 + 0.767 x previsto`, cioe' il modello esagera
+# gli scarti (proiezione 60 -> 56.2 reali, proiezione 40 -> 40.9). Senza questa
+# correzione una carta con L10 50 e proiezione 60 sembra avere rapporto 1.20,
+# mentre quello vero e' 1.12.
+CALIB_A, CALIB_B = 10.21, 0.767
+
+
+def calibra(v):
+    return None if v is None else CALIB_A + CALIB_B * v
+
+
 # Sotto un cap la valuta non e' il punteggio ma il punteggio PER UNITA' DI L10:
-# cinque carte devono fare 282.9 punti con 260 di L10 in tutto, cioe' 1.09
-# punti per unita'. Un giocatore da 45 punti con L10 30 (1.50) vale piu' di uno
-# da 55 con L10 60 (0.92) anche se in assoluto e' piu' debole -- e di solito
-# costa molto meno. Esempio reale: Jack McGlynn, 75 attesi con L10 60
-# (rapporto 1.25), 2 euro in classic.
+# cinque carte devono fare 264.4 punti reali con 260 di L10 in tutto.
 RAPPORTO_ARENA_MINIMO = PAREGGIO_ARENA_260 / 260.0
 
 

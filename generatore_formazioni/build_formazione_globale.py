@@ -306,6 +306,43 @@ def _is_arena_type(tipo):
         or tipo in {arena_type(lg) for lg in ARENA_LEAGUES}
 
 
+# --- CALIBRAZIONE DELLA PREVISIONE (02/08) ------------------------------
+# Misurato su 69.151 coppie previsione/realizzato, walk-forward, sull'intero
+# storico in cache: il modello ESAGERA gli scarti.
+#
+#     realizzato = 10.21 + 0.767 x previsto
+#
+# Proiezione 60 -> valore realistico 56.2; proiezione 40 -> 40.9. Il punto di
+# equilibrio e' a 44: sotto il modello sottostima, sopra sovrastima.
+#
+# Si applica QUI, all'ingresso, cosi' da avere una scala sola in tutto il
+# sistema. Conseguenze, tutte gia' recepite:
+#   - le soglie d'arena tornano al pareggio VERO (264.4 per la cap 260) invece
+#     che al suo equivalente in previsione grezza (274.1): applicare la
+#     calibrazione E tenere 274.1 sarebbe una doppia correzione (trappola
+#     notata dall'utente)
+#   - i bonus di sinergia erano gia' calcolati in punti REALI, quindi ora sono
+#     nella scala giusta senza toccarli
+#   - i punteggi mostrati nel report diventano onesti: prima una formazione
+#     data a 290 ne realizzava tipicamente 276
+CALIB_A = float(os.environ.get('CALIB_A', '10.21'))
+CALIB_B = float(os.environ.get('CALIB_B', '0.767'))
+
+
+def calibra(valore):
+    if valore is None:
+        return None
+    return CALIB_A + CALIB_B * valore
+
+
+def calibra_riga(row):
+    """Porta previsione e intervallo sulla scala del punteggio realizzato."""
+    for chiave in ('atteso', 'low', 'high', 'ordinamento', 'sort_score'):
+        if row.get(chiave) is not None:
+            row[chiave] = calibra(row[chiave])
+    return row
+
+
 # Punteggio atteso oltre il quale l'ingresso si ripaga, misurato su 673 arene
 # reali (consiglio_arena.py). Sotto questa riga si pagano piu' essenze di
 # quante se ne incassino, e le carte rendono di piu' in una competizione senza
@@ -315,12 +352,15 @@ def _is_arena_type(tipo):
 # l'incasso medio -- calcolato pescando i nove avversari da arene vere e i
 # premi da quelli davvero visti, arene gold incluse -- uguaglia il costo.
 PAREGGIO_ARENA = {
-    'ARENA_ALLSTARS_260': 274.1,
-    'ARENA_ALLSTARS_220': 245.7,
-    'ARENA_ALLSTARS_UNCAPPED': 306.5,
-    'ARENA_ALLSTARS_ELITE': 380.5,
+    # In punteggio REALE, perche' la previsione arriva gia' calibrata (vedi
+    # calibra_riga). Prima erano espresse in previsione grezza -- 274.1 per la
+    # cap 260 -- che e' lo stesso pareggio letto sull'altra scala.
+    'ARENA_ALLSTARS_260': 264.4,
+    'ARENA_ALLSTARS_220': 243.5,
+    'ARENA_ALLSTARS_UNCAPPED': 288.2,
+    'ARENA_ALLSTARS_ELITE': 342.7,
 }
-PAREGGIO_ARENA.update({arena_type(lg): 274.1 for lg in ARENA_LEAGUES})
+PAREGGIO_ARENA.update({arena_type(lg): 264.4 for lg in ARENA_LEAGUES})
 
 def _stampa_verdetto_arene(all_results):
     """Per ogni arena generata: conviene pagare l'ingresso con questa formazione?
@@ -425,10 +465,11 @@ def _verdetto_arene_html(all_results):
 # probabilita' di finire nei primi tre. In cap 260 un solo punto vale 29
 # essenze, quindi anche un margine di mezzo punto NON e' zero (vale 14).
 GUADAGNO_PER_PUNTO = {
-    'ARENA_ALLSTARS_260': 5.1, 'ARENA_ALLSTARS_220': 5.2,
-    'ARENA_ALLSTARS_UNCAPPED': 5.1, 'ARENA_ALLSTARS_ELITE': 7.1,
+    # Essenze guadagnate per ogni punto REALE sopra il pareggio.
+    'ARENA_ALLSTARS_260': 7.5, 'ARENA_ALLSTARS_220': 7.4,
+    'ARENA_ALLSTARS_UNCAPPED': 7.3, 'ARENA_ALLSTARS_ELITE': 10.0,
 }
-GUADAGNO_PER_PUNTO.update({arena_type(lg): 5.1 for lg in ARENA_LEAGUES})
+GUADAGNO_PER_PUNTO.update({arena_type(lg): 7.5 for lg in ARENA_LEAGUES})
 
 COSTO_INGRESSO = {
     'ARENA_ALLSTARS_260': 300, 'ARENA_ALLSTARS_220': 200,
@@ -695,6 +736,7 @@ def load_league_role_data():
             for row in rows:
                 row['league'] = league
                 row['_source_ts'] = ts_file
+                calibra_riga(row)
             counts, _ = bff.load_card_counts(DISCOVERY_DIRS[league][role])
             # starterOdds sulle righe (31/07): il valore e' gia' dentro
             # player_card_counts.json, scritto da discovery_fixture.py nella
