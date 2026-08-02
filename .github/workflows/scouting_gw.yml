@@ -137,12 +137,30 @@ jobs:
 
       # Il link Telegram passa da raw.githack, che serve il file da GitHub:
       # deve essere gia' su main quando parte la notifica.
-      - name: 4. Commit del report
+      # Si committa ANCHE la cache dei predict, non solo il report. I predict
+      # scrivono `.cache` (dettaglio giocatore) e `.game_log_cache` (storico
+      # partite) negli stessi percorsi che usa il generatore di produzione:
+      # buttarle via a fine job significherebbe ripagare 33 secondi a giocatore
+      # (misurato il 02/08 a freddo) la prossima volta che quel giocatore
+      # serve, sia qui sia quando lo si schiera davvero dopo averlo comprato.
+      #
+      # Vale anche al contrario, ed e' il motivo per cui non c'e' niente da
+      # scrivere: per un giocatore gia' posseduto la cache del generatore e'
+      # gia' in repo, e il predict la trova da solo perche' legge dalla stessa
+      # cartella. Nessun doppio lavoro.
+      - name: 4. Commit di report e cache
         run: |
           git config user.name  "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
           git add generatore_formazioni/output/scouting_ultimo.html
-          git commit -m "Scouting acquisti: report candidati" || echo "niente da committare"
+          # Pathspec :(glob), non un glob di shell: senza, git non scende nelle
+          # cartelle che iniziano con un punto e la add fallisce con
+          # "did not match any files" (verificato).
+          git add -f ':(glob)formazione_*/output/**/.cache/*' \
+                     ':(glob)formazione_*/output/**/.game_log_cache/*' || true
+          git add ':(glob)formazione_*/output/**/prediction_log.json' || true
+          git commit -m "Scouting acquisti: report candidati e cache dei predict" \
+            || echo "niente da committare"
           git pull --rebase --autostash origin main || true
           git push origin main
 
