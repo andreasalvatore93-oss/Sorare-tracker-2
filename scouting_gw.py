@@ -730,6 +730,175 @@ def stampa_candidati(pool, limite=None):
                   f"  [{g.get('cartella')}]{nota}")
 
 
+# --- IL PONTE VERSO I PREDICT ---------------------------------------------
+#
+# I predict NON vanno modificati: ognuno legge la sua lista da
+# `formazione_<lega>/output/<lega>_<ruolo>_discovery/player_slugs.json` (o un
+# singolo giocatore da TARGET_SLUG). Basta scrivere quel file con i candidati
+# dello scouting e la pipeline esistente gira su carte che l'utente NON ha,
+# senza toccare una riga dei suoi 2.500.
+#
+# Va saputo che questo SOVRASCRIVE la discovery di produzione della lega: la
+# prossima run di `formazione_giornata` la rigenera comunque (e' il primo job),
+# ma nel frattempo un run manuale dei predict userebbe questa lista. Per questo
+# il default e' un campione piccolo e una lega sola.
+RUOLO_DIR = {'GK': 'gk', 'DEF': 'def', 'MID': 'mid', 'FWD': 'fwd'}
+
+
+def scrivi_discovery(pool, leghe=None, limite_per_ruolo=None):
+    """Scrive player_slugs.json per ogni (lega, ruolo) presente nel pool.
+
+    Ritorna la lista di (cartella, ruolo, quanti) scritti, cosi' il workflow
+    sa esattamente cosa lanciare."""
+    per_gruppo = defaultdict(list)
+    for g in sorted(pool['giocatori'], key=lambda x: -(x.get('l10') or 0)):
+        cartella = g.get('cartella')
+        if not cartella or (leghe and cartella not in leghe):
+            continue
+        for ruolo in g['ruoli']:
+            per_gruppo[(cartella, ruolo)].append(g['slug'])
+
+    scritti = []
+    for (cartella, ruolo), slugs in sorted(per_gruppo.items()):
+        if limite_per_ruolo:
+            slugs = slugs[:limite_per_ruolo]
+        # La MLS ha un solo predict per gli attaccanti (test_mls_fwd_all.py) ma
+        # la cartella di discovery segue lo stesso schema degli altri ruoli.
+        dest_dir = os.path.join(REPO_ROOT, f"formazione_{cartella}", 'output',
+                                f"{cartella}_{RUOLO_DIR[ruolo]}_discovery")
+        os.makedirs(dest_dir, exist_ok=True)
+        dest = os.path.join(dest_dir, 'player_slugs.json')
+        with open(dest, 'w', encoding='utf-8') as f:
+            json.dump(slugs, f, ensure_ascii=False, indent=1)
+        scritti.append((cartella, ruolo, len(slugs)))
+        log(f"  discovery scritta: {os.path.relpath(dest, REPO_ROOT)} ({len(slugs)} slug)")
+    return scritti
+
+
+# --- IL REPORT ------------------------------------------------------------
+_HTML_TESTA = """<!doctype html><html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scouting %(fixture)s</title><style>
+:root{color-scheme:dark}
+body{background:#12141a;color:#e6e8ee;font:14px/1.45 -apple-system,Segoe UI,Roboto,sans-serif;margin:0;padding:16px}
+h1{font-size:18px;margin:0 0 4px} h2{font-size:15px;margin:22px 0 8px;color:#8ab4ff}
+.meta{color:#9aa0ad;font-size:12px;margin-bottom:8px}
+.wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%%;min-width:640px}
+th,td{padding:6px 8px;text-align:left;border-bottom:1px solid #232733;white-space:nowrap}
+th{position:sticky;top:0;background:#1a1d26;color:#9aa0ad;font-weight:600;font-size:12px}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:nth-child(even){background:#161922}
+.mia{color:#7ee787} .ko{color:#ff7b72} .warn{color:#ffa657} .muted{color:#6e7481}
+a{color:inherit;text-decoration:none;border-bottom:1px dotted #4a5164}
+a:hover{color:#8ab4ff}
+</style></head><body>
+<h1>Scouting -- %(fixture)s</h1>
+<div class="meta">%(quando)s &middot; %(n)d candidati &middot; %(filtri)s</div>
+<div class="meta">Prezzo = carta piu' economica di QUALUNQUE rarita' e stagione (non per forza
+una classic limited). Proj = proiezione di Sorare. L10 = media ultime 10 giocate.
+Atteso = il nostro modello, gia' calibrato su scala reale.</div>
+"""
+
+_HTML_CODA = "</body></html>"
+
+
+def _atteso_dai_consigli(pool):
+    """Il punteggio atteso dei predict, se i consigli sono gia' stati generati.
+
+    Legge i file di consiglio delle leghe presenti nel pool. Se non ci sono
+    (predict non ancora lanciato) la colonna resta vuota: il report si legge
+    lo stesso, e non si finge un numero che non e' stato calcolato."""
+    per_slug = {}
+    cartelle = {g.get('cartella') for g in pool['giocatori'] if g.get('cartella')}
+    for cartella in sorted(cartelle):
+        for path in glob.glob(os.path.join(REPO_ROOT, f"formazione_{cartella}",
+                                           'output', '**', 'consiglio*.txt'), recursive=True):
+            try:
+                with open(path, encoding='utf-8') as f:
+                    testo = f.read()
+            except OSError:
+                continue
+            # Le righe di consiglio hanno forma "slug ... atteso=NN.N": si
+            # prende quello che c'e', senza reimplementare il parser (che vive
+            # in build_formazione_finale ed e' la fonte unica).
+            for m in re.finditer(r'^([a-z0-9\-]+).*?atteso[=: ]\s*([0-9]+(?:\.[0-9]+)?)',
+                                 testo, re.M):
+                per_slug[m.group(1)] = float(m.group(2))
+    return per_slug
+
+
+def scrivi_html(pool, dest):
+    attesi = _atteso_dai_consigli(pool)
+    filtri = pool.get('filtri') or {}
+    testa = _HTML_TESTA % {
+        'fixture': pool['fixture']['slug'],
+        'quando': datetime.datetime.utcnow().strftime('%d/%m/%Y %H:%M UTC'),
+        'n': len(pool['giocatori']),
+        'filtri': ('stati ' + '/'.join(filtri.get('stati') or ['tutti'])
+                   + (', solo con limited in vendita' if filtri.get('solo_in_vendita') else '')),
+    }
+    scremati = any('idoneo' in g for g in pool['giocatori'])
+    pezzi = [testa]
+    for ruolo in ('GK', 'DEF', 'MID', 'FWD'):
+        righe = [g for g in pool['giocatori'] if ruolo in g['ruoli']]
+        if not righe:
+            continue
+        righe.sort(key=lambda g: -(attesi.get(g['slug']) or g.get('l10') or 0))
+        pezzi.append(f"<h2>{ruolo} &mdash; {len(righe)} candidati</h2><div class='wrap'><table>"
+                     "<tr><th>Giocatore</th><th>Atteso</th><th>L10</th><th>L5</th><th>L40</th>"
+                     "<th>Pres.15</th><th>Proj</th><th>Prezzo</th><th>Club</th><th>Avversario</th>"
+                     "<th>Quando</th><th>Lega</th><th>Note</th></tr>")
+        for g in righe:
+            atteso = attesi.get(g['slug'])
+            prezzo = '&mdash;'
+            if g.get('prezzo_minimo') is not None:
+                prezzo = ('%.2f&nbsp;%s' % (g['prezzo_minimo'] / 100, g.get('prezzo_valuta') or '')
+                          if g.get('prezzo_valuta') != 'WEI' else 'in&nbsp;ETH')
+            note = []
+            if g.get('infortunato'):
+                note.append("<span class='ko'>infortunato</span>")
+            if scremati and g.get('idoneo') is False:
+                note.append("<span class='warn'>non 2su3</span>")
+            if scremati and g.get('idoneo') is None:
+                note.append("<span class='muted'>non valutabile</span>")
+            if g.get('carte_mie'):
+                note.append(f"<span class='mia'>ne ho {g['carte_mie']}</span>")
+
+            def num(v, fmt='%.0f'):
+                return '&mdash;' if v in (None, '') else fmt % v
+
+            pezzi.append(
+                "<tr>"
+                # Il nome porta alla pagina del giocatore, il prezzo al mercato
+                # gia' filtrato sulle sue carte: cosi' dal report si compra
+                # senza cercare a mano.
+                f"<td><a href='https://sorare.com/football/players/{g['slug']}' "
+                f"target='_blank' rel='noopener'>{(g.get('nome') or g['slug'])}</a></td>"
+                f"<td class='n'>{num(atteso, '%.1f')}</td>"
+                f"<td class='n'>{num(g.get('l10'))}</td>"
+                f"<td class='n'>{num(g.get('l5'))}</td>"
+                f"<td class='n'>{num(g.get('l40'))}</td>"
+                f"<td class='n'>{num(g.get('presenze_15'))}</td>"
+                f"<td class='n'>{num(g.get('proiezione_sorare'))}</td>"
+                f"<td class='n'><a href='https://sorare.com/football/players/{g['slug']}/cards' "
+                f"target='_blank' rel='noopener'>{prezzo}</a></td>"
+                f"<td>{g.get('club') or ''}</td>"
+                f"<td>{g.get('avversario') or ''}</td>"
+                f"<td>{(g.get('data') or '')[:10]}</td>"
+                f"<td>{g.get('cartella') or '<span class=\"warn\">senza pipeline</span>'}</td>"
+                f"<td>{' '.join(note)}</td>"
+                "</tr>")
+        pezzi.append("</table></div>")
+    pezzi.append(_HTML_CODA)
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    with open(dest, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(pezzi))
+    log(f"Report HTML: {dest}" + (f" ({len(attesi)} attesi dai consigli)" if attesi
+                                  else " (nessun consiglio trovato: colonna Atteso vuota)"))
+    return dest
+
+
 def stampa_idonei(pool, limite=None):
     """L'elenco dei candidati, ordinato per L10 dentro ciascun ruolo."""
     idonei = [g for g in pool['giocatori'] if g.get('idoneo')]
@@ -762,6 +931,16 @@ def main():
                     help="non filtrare per playing_status (pool completo della giornata)")
     ap.add_argument('--anche-non-in-vendita', action='store_true',
                     help="tieni anche chi non ha nessuna limited in vendita")
+    ap.add_argument('--lega', default=None,
+                    help="tieni solo queste cartelle lega, separate da virgola (es. mls,messico)")
+    ap.add_argument('--per-ruolo', type=int, default=None,
+                    help="campione: al massimo N candidati per ruolo (i migliori per L10)")
+    ap.add_argument('--scrivi-discovery', action='store_true',
+                    help="scrive player_slugs.json per lega/ruolo, cosi' i predict "
+                         "girano sui candidati SOVRASCRIVENDO la discovery di produzione")
+    ap.add_argument('--html', default=None,
+                    help="report HTML (default con --scrivi-discovery: "
+                         "generatore_formazioni/output/scouting_<fixture>.html)")
     args = ap.parse_args()
 
     if args.unisci:
@@ -790,6 +969,21 @@ def main():
             solo_in_vendita=not args.anche_non_in_vendita)
         if not pool:
             return 1
+        if args.lega:
+            leghe = {x.strip() for x in args.lega.split(',') if x.strip()}
+            prima = len(pool['giocatori'])
+            pool['giocatori'] = [g for g in pool['giocatori'] if g.get('cartella') in leghe]
+            log(f"Filtro lega {sorted(leghe)}: {len(pool['giocatori'])}/{prima} candidati")
+        if args.per_ruolo:
+            # Campione: i migliori per L10 dentro OGNI ruolo. Un giocatore con
+            # due ruoli entra se e' fra i migliori in almeno uno.
+            tenuti = set()
+            for ruolo in ('GK', 'DEF', 'MID', 'FWD'):
+                righe = sorted((g for g in pool['giocatori'] if ruolo in g['ruoli']),
+                               key=lambda g: -(g.get('l10') or 0))[:args.per_ruolo]
+                tenuti.update(g['slug'] for g in righe)
+            pool['giocatori'] = [g for g in pool['giocatori'] if g['slug'] in tenuti]
+            log(f"Campione: max {args.per_ruolo} per ruolo -> {len(pool['giocatori'])} candidati")
         if args.screen:
             # Qui la scrematura non filtra: e' il controllo sui candidati che
             # Sorare ha gia' selezionato, e costa 1 query a testa su qualche
@@ -821,6 +1015,22 @@ def main():
         # non vale peso nell'albero (il checkout di ogni job lo paga).
         json.dump(pool, f, ensure_ascii=False, separators=(',', ':'))
     log(f"Scritto {dest}")
+
+    if args.scrivi_discovery:
+        leghe = {x.strip() for x in (args.lega or '').split(',') if x.strip()} or None
+        scritti = scrivi_discovery(pool, leghe=leghe)
+        if not scritti:
+            log("ATTENZIONE: nessuna discovery scritta (nessun candidato con una "
+                "cartella formazione_* fra quelli rimasti).")
+        else:
+            totale = sum(n for _, _, n in scritti)
+            log(f"Discovery scritte: {len(scritti)} gruppi lega/ruolo, {totale} slug in tutto. "
+                f"Ora i predict di quelle leghe girano su QUESTI giocatori.")
+
+    if args.html or args.scrivi_discovery:
+        scrivi_html(pool, args.html or os.path.join(
+            REPO_ROOT, 'generatore_formazioni', 'output',
+            f"scouting_{pool['fixture']['slug']}.html"))
     return 0
 
 
