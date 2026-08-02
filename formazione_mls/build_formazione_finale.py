@@ -278,6 +278,37 @@ STACK_GUARD_PENALTY = 8_000  # come ANTI_SYNERGY_PENALTY: spinge in fondo, non e
 # backlog. Per rifare la misura:
 #   TIPI=ALLSTARS QUANTE=4 SCALA=12 SOGLIE="470,490,510,530,550,570" \
 #     python formazione_mls/diagnostics/ab_arena_synergy_threshold.py
+# Quanto vale la varianza dipende da DOVE sei rispetto al pareggio: misurato in
+# arena, un punto di dispersione vale 0.78 punti di punteggio atteso su una
+# formazione da 265, 0.53 a 280, 0.31 a 295. Sotto il pareggio serve rischiare,
+# sopra si rischia solo di buttare via un piazzamento gia' in mano.
+#
+# I bonus qui sotto sono tarati a 280. Questo fattore li scala in base a quanto
+# forte sta venendo la formazione: pieno e mezzo se e' debole, un terzo se e'
+# gia' forte. Con forza ignota resta 1.0, cioe' il comportamento tarato.
+FORZA_RIFERIMENTO = 280.0
+_CAMBIO_DISPERSIONE = ((265.0, 0.78), (280.0, 0.53), (295.0, 0.31))
+
+
+def fattore_varianza(forza_attesa):
+    """Quanto scalare i bonus di sinergia, data la forza della formazione."""
+    if forza_attesa is None:
+        return 1.0
+    punti = _CAMBIO_DISPERSIONE
+    if forza_attesa <= punti[0][0]:
+        v = punti[0][1]
+    elif forza_attesa >= punti[-1][0]:
+        v = punti[-1][1]
+    else:
+        v = punti[-1][1]
+        for (x0, y0), (x1, y1) in zip(punti, punti[1:]):
+            if x0 <= forza_attesa <= x1:
+                v = y0 + (y1 - y0) * (forza_attesa - x0) / (x1 - x0)
+                break
+    base = 0.53   # il valore a FORZA_RIFERIMENTO, su cui i bonus sono tarati
+    return max(0.3, min(1.6, v / base))
+
+
 SAME_TEAM_SYNERGY_BONUS_BY_PAIR = {
     # RIMISURATO il 02/08 su 69.151 coppie previsione/realizzato, walk-forward.
     # I valori precedenti (4/3/3/2/1...) venivano da correlazioni dei PUNTEGGI
@@ -543,7 +574,7 @@ def _cross_team_penalty(role, row, chosen_roles_by_team):
 def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False,
                       variance_mode=False, apply_positive_synergy=True, used_matches=None,
                       chosen_roles_by_team=None, synergy_bonus_dict=None,
-                      apply_cross_team_penalty=True):
+                      apply_cross_team_penalty=True, forza_attesa=None):
     """Punteggio AGGIUSTATO solo per decidere l'ORDINE di scelta tra candidati
     dello stesso ruolo, dato il portiere gia' selezionato per questa lineup.
     Non altera mai 'atteso' nel dict originale (usato per punteggio/range in
@@ -586,7 +617,9 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
     # costa tutto.
     if role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
         gia_presi = (chosen_roles_by_team or {}).get(gk_team_slug, {}).get('DEF', 0)
-        adjusted += GK_DEF_PAIR_BONUS if gia_presi == 0 else GK_DEF_PAIR_BONUS_2
+        # scalato sulla forza: la varianza serve sotto il pareggio, non sopra
+        adjusted += fattore_varianza(forza_attesa) * (
+            GK_DEF_PAIR_BONUS if gia_presi == 0 else GK_DEF_PAIR_BONUS_2)
     # PENALITA' CROSS-TEAM SCORPORATA dal gate (31/07, bug reale trovato
     # dall'utente su una formazione In Season MLS reale: Markanich (DEF,
     # Minnesota) schierato INSIEME a Dreyer e Tverskov (MID, San Diego), cioe'
@@ -621,7 +654,8 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
     # formazioni da 5, top 10%: DEF+DEF 11.5% vs 10.0% (vale 4 pt), MID+MID e
     # MID+FWD 10.9%/10.8% (2.5 pt). Valori coerenti con la tabella, che resta.
     if variance_mode and team_slug:
-        adjusted += _same_team_synergy_bonus(role, row, chosen_roles_by_team, synergy_bonus_dict)
+        adjusted += fattore_varianza(forza_attesa) * _same_team_synergy_bonus(
+            role, row, chosen_roles_by_team, synergy_bonus_dict)
     if (apply_stack_guard and team_slug and team_counts
             and team_counts.get(team_slug, 0) >= IN_SEASON_STACK_LIMIT
             and not stack_consentito(row)):
@@ -634,7 +668,7 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
 def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug, team_counts=None, apply_stack_guard=False,
                            variance_mode=False, apply_positive_synergy=True, used_matches=None,
                            chosen_roles_by_team=None, synergy_bonus_dict=None,
-                           apply_cross_team_penalty=True):
+                           apply_cross_team_penalty=True, forza_attesa=None):
     """Ritorna i candidati di un ruolo di movimento riordinati per sinergia/
     anti-sinergia col portiere scelto (vedi synergy_sort_key), la sinergia
     da correlazione misurata (SOLO variance_mode) ed eventualmente per il
@@ -652,7 +686,7 @@ def synergy_adjusted_rows(role, rows, gk_team_slug, gk_opponent_slug, team_count
                                                            team_counts, apply_stack_guard, variance_mode,
                                                            apply_positive_synergy, used_matches,
                                                            chosen_roles_by_team, synergy_bonus_dict,
-                                                           apply_cross_team_penalty),
+                                                           apply_cross_team_penalty, forza_attesa),
                   reverse=True)
 
 
@@ -1147,7 +1181,22 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
         picks = []
         # con quale ruolo e' stata scelta ogni carta: serve a consumare la
         # copia giusta, visto che le copie dipendono dal ruolo della carta
-        ruolo_scelto = {}
+        ruolo_scelto = {}
+
+        def _forza_stimata():
+            """Quanto forte sta venendo la formazione, proiettata a 5 slot.
+
+            Serve a scalare i bonus di sinergia: la varianza vale 0.78 punti
+            per punto sotto il pareggio e 0.31 sopra, quindi un bonus fisso e'
+            giusto in media e sbagliato agli estremi. Con meno di due slot
+            scelti non c'e' abbastanza per stimare e si resta al valore tarato.
+            """
+            scelti = [r for _s, r, _c in picks]
+            if len(scelti) < 2:
+                return None
+            n_slot = len(shape['role_slots']) + 1
+            return sum(r['atteso'] for r in scelti) * n_slot / len(scelti)
+
 
         def pick(pool_rows, role_slot_l10_check, reserve=0.0, slot_label=None,
                  role_by_slug=None):
@@ -1258,7 +1307,7 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
                 candidates = synergy_adjusted_rows(role, pool_rows, gk_team_slug, gk_opponent_slug,
                                                     team_counts, apply_stack_guard, variance_mode,
                                                     apply_positive_synergy, used_matches, chosen_roles_by_team,
-                                                    synergy_bonus_dict)
+                                                    synergy_bonus_dict, forza_attesa=_forza_stimata())
                 row, ctype = pick(candidates, l10_cap is not None, reserve, slot_label=slot_label,
                                   role_by_slug={r['slug']: role for r in candidates})
 
