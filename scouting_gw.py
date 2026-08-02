@@ -973,6 +973,121 @@ def scrivi_discovery(pool, leghe=None, limite_per_ruolo=None):
     return scritti
 
 
+# --- LE FORMAZIONI IPOTETICHE ---------------------------------------------
+#
+# "Se comprassi questi, che arena ci farei?" Non si costruisce niente a mano:
+# si chiama la STESSA generate_lineups_for_type della produzione, con i tipi
+# arena veri (ARENA_ALLSTARS_260 / _220 / _UNCAPPED), esattamente come fa
+# best_five.costruisci_formazione_contender per il pool multi-lega. Cap L10,
+# anti-stack, sinergie e capitano arrivano dai dizionari di quel modulo: se
+# domani cambiano in produzione, cambiano anche qui.
+#
+# DUE COSE CHE QUESTE FORMAZIONI NON SANNO, e vanno lette sapendolo:
+#   1. assumono che i candidati GIOCHINO. Senza odds (che escono a 24-48h dal
+#      kickoff) la titolarita' e' una scommessa: qui c'e' solo il filtro
+#      `playing_status` di Sorare e, se richiesto, il controllo 2-su-3. Con le
+#      odds pubblicate lo stesso codice diventa molto piu' affidabile.
+#   2. sono carte che NON POSSIEDI. E' una simulazione d'acquisto, non una
+#      formazione schierabile.
+TIPI_ARENA = ('ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED')
+
+# Quante arene al massimo provare a comporre. Non e' un obiettivo: il motore si
+# ferma da solo quando la prossima non renderebbe piu' essenze.
+MAX_ARENE = int(os.environ.get('SCOUTING_MAX_ARENE', '5'))
+
+
+def componi_arene(pool, tipi=TIPI_ARENA, massimo=None):
+    """Le arene che converrebbe giocare coi soli candidati del pool.
+
+    Ritorna [(etichetta, blocco_testo)]. Lista vuota se i consigli non ci sono
+    ancora: senza punteggio atteso non si compone niente, e inventarlo sarebbe
+    peggio che non mostrare la sezione."""
+    try:
+        bf = _import('scouting_best_five', 'best_five.py')
+        gg = bf._import_gg()
+        bff = gg.bff
+    except Exception as e:
+        log(f"ATTENZIONE: motore formazioni non caricabile ({e}), sezione arene saltata.")
+        return []
+
+    massimo = MAX_ARENE if massimo is None else massimo
+    candidati = {g['slug'] for g in pool['giocatori']}
+    l10_per_slug = {g['slug']: g.get('l10') for g in pool['giocatori']}
+    gruppi = {(g['cartella'], r) for g in pool['giocatori'] if g.get('cartella') for r in g['ruoli']}
+
+    merged = {ROLE: [] for ROLE in gg.ROLES}
+    for cartella, ROLE in sorted(gruppi):
+        out_dir = bf.output_dir_per_ruolo(cartella, RUOLO_DIR[ROLE])
+        path = bff.latest_consiglio(out_dir)
+        if not path:
+            continue
+        try:
+            righe = bf._parse_consiglio_calibrato(bff, gg, path)
+        except Exception as e:
+            log(f"ATTENZIONE: consiglio {os.path.basename(path)} non leggibile ({e}).")
+            continue
+        # SOLO i candidati di questo scouting: quei consigli contengono anche
+        # i giocatori gia' posseduti, che qui non c'entrano -- la domanda e'
+        # cosa comprare, non cosa schierare.
+        righe = [r for r in righe if r.get('slug') in candidati]
+        for r in righe:
+            r['league'] = cartella
+        merged[ROLE].extend(righe)
+
+    if not any(merged.values()):
+        log("Nessun consiglio utilizzabile: sezione formazioni saltata.")
+        return []
+
+    role_data = {'scouting': merged}
+    pools = {'scouting': {role: gg._NoFilterPool(role, 'scouting', merged[role])
+                          for role in gg.ROLES}}
+    # L10 vero nella CardPool: senza, il cap 260/220 non morde e le tre
+    # formazioni verrebbero identiche (stesso inciampo documentato in
+    # best_five, RISPETTA_CAP_L10). Le carte sono classic: in arena si gioca
+    # con quelle.
+    counts = {ROLE: {r['slug']: {'in_season': 0, 'classic': 1,
+                                 'l10': l10_per_slug.get(r['slug'])}
+                     for r in righe}
+              for ROLE, righe in merged.items()}
+    card_pool = bff.CardPool(counts)
+
+    # genera_arene_efficienti, non un ciclo di generate_lineups_for_type per
+    # tipo: e' la funzione che la produzione usa dal 02/08 (sez. 53). Sceglie
+    # da sola TIPO e NUMERO massimizzando le ESSENZE invece dei punti --
+    # provando a ogni passo tutti i tipi e tenendo il migliore, e fermandosi
+    # quando nessuno rende piu'. Sullo stesso mazzo valeva +20% di essenze
+    # contro il mix deciso a mano, e le uncapped venivano scartate da sole
+    # perche' restavano sotto la loro soglia di 288.2.
+    #
+    # Qui conta doppio: un pool di ACQUISTI ha senso solo se si vede in quale
+    # arena quelle carte renderebbero, e con che margine sopra il pareggio.
+    if not hasattr(gg, 'genera_arene_efficienti'):
+        log("ATTENZIONE: genera_arene_efficienti non disponibile in questo "
+            "generatore -- sezione arene saltata invece di usare un motore "
+            "diverso da quello di produzione.")
+        return []
+    try:
+        risultati = gg.genera_arene_efficienti(list(tipi), massimo, role_data, pools, card_pool)
+    except Exception as e:
+        log(f"ATTENZIONE: arene non generate ({e}).")
+        return []
+    if not risultati:
+        log("Nessuna arena conviene con questi candidati: nessuna formazione "
+            "arriva sopra la propria soglia di pareggio.")
+        return []
+    _gen, _tot, blocchi, _html = bf._renderizza_risultati(bff, risultati, card_pool)
+    formazioni = []
+    for risultato, blocco in zip(risultati, blocchi):
+        tipo = risultato.get('type') or risultato.get('tipo') or ''
+        etichetta = getattr(gg, 'LABELS', {}).get(tipo, tipo or 'Arena')
+        soglia = getattr(gg, 'PAREGGIO_ARENA', {}).get(tipo)
+        if soglia:
+            etichetta += f" &mdash; pareggio a {soglia:.1f}"
+        formazioni.append((etichetta, blocco))
+    log(f"  arene efficienti: {len(formazioni)} formazioni scelte dal motore.")
+    return formazioni
+
+
 # --- IL REPORT ------------------------------------------------------------
 _HTML_TESTA = """<!doctype html><html lang="it"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1063,7 +1178,11 @@ def _atteso_dai_consigli(pool):
     return per_slug
 
 
-def scrivi_html(pool, dest):
+def _escape(testo):
+    return (testo.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;'))
+
+
+def scrivi_html(pool, dest, formazioni=()):
     attesi = _atteso_dai_consigli(pool)
     filtri = pool.get('filtri') or {}
     testa = _HTML_TESTA % {
@@ -1170,6 +1289,18 @@ def scrivi_html(pool, dest):
                 f"<td>{' '.join(note)}</td>"
                 "</tr>")
         pezzi.append("</table></div>")
+
+    if formazioni:
+        pezzi.append("<h2>Se le comprassi &mdash; arene ipotetiche</h2>"
+                     "<div class='meta'>Costruite con lo stesso motore della produzione "
+                     "(cap L10, anti-stack, sinergie, capitano). Due avvertenze: "
+                     "<b>assumono che questi giocatori scendano in campo</b> &mdash; senza "
+                     "starter odds la titolarita' e' una scommessa &mdash; e sono carte che "
+                     "<b>non possiedi</b>: e' una simulazione d'acquisto.</div>")
+        for etichetta, blocco in formazioni:
+            pezzi.append(f"<h3 style='font-size:14px;margin:14px 0 4px;color:#9aa0ad'>{etichetta}</h3>"
+                         f"<pre style='background:#161922;padding:10px;overflow-x:auto;"
+                         f"border-radius:6px;font-size:12px'>{_escape(blocco)}</pre>")
     pezzi.append(_HTML_CODA)
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     with open(dest, 'w', encoding='utf-8') as f:
@@ -1304,9 +1435,13 @@ def main():
                 f"Ora i predict di quelle leghe girano su QUESTI giocatori.")
 
     if args.html or args.scrivi_discovery:
+        # Le formazioni si possono comporre solo quando i consigli esistono
+        # gia': alla prima passata (quella che SCRIVE la discovery) non ci
+        # sono ancora, e la sezione semplicemente non compare.
+        formazioni = () if args.scrivi_discovery else componi_arene(pool)
         scrivi_html(pool, args.html or os.path.join(
             REPO_ROOT, 'generatore_formazioni', 'output',
-            f"scouting_{pool['fixture']['slug']}.html"))
+            f"scouting_{pool['fixture']['slug']}.html"), formazioni)
     return 0
 
 
