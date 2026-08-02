@@ -104,13 +104,18 @@ jobs:
         run: |
           git config user.name  "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add ':(glob)formazione_*/output/**/player_slugs.json' dati_globali/scouting_da_predire.tsv || true
+          git add ':(glob)formazione_*/output/**/player_slugs.json'                   dati_globali/scouting_da_predire.tsv dati_globali/scouting_lavori.txt || true
           git commit -m "Scouting: discovery dei candidati" || echo "niente da committare"
           git pull --rebase --autostash origin main || true
           git push origin main
 
       # Una voce per giocatore, "lega|ruolo|slug". La matrice di GitHub ne
       # accetta al massimo 256: si tronca dicendolo, invece di fallire.
+      # La lista la scrive scouting_gw.py, che sa gia' chi ha una previsione
+      # valida per QUESTA giornata e lo esclude (best_five._predizione_
+      # riutilizzabile, agganciata alla finestra della fixture). Alla seconda
+      # run sulla stessa giornata la matrice e' quasi vuota: non e' un refresh
+      # leggero, e' zero query.
       - name: Prepara la lista dei predict
         id: lista
         if: ${{ inputs.predict }}
@@ -118,27 +123,14 @@ jobs:
           python - <<'PY' >> "$GITHUB_OUTPUT"
           import json, os
           lavori = []
-          indice = 'dati_globali/scouting_da_predire.tsv'
-          if os.path.exists(indice):
-              for riga in open(indice, encoding='utf-8'):
-                  pezzi = riga.strip().split('\t')
-                  if len(pezzi) < 2:
-                      continue
-                  lega, ruolo = pezzi[0], pezzi[1]
-                  lista = f'formazione_{lega}/output/{lega}_{ruolo}_discovery/player_slugs.json'
-                  if not os.path.exists(lista):
-                      continue
-                  for slug in json.load(open(lista, encoding='utf-8')):
-                      lavori.append(f'{lega}|{ruolo}|{slug}')
-          visti, unici = set(), []
-          for x in lavori:
-              if x not in visti:
-                  visti.add(x); unici.append(x)
-          if len(unici) > 256:
-              print(f'::warning::{len(unici)} predict richiesti, la matrice ne accetta 256: tronco.')
-              unici = unici[:256]
-          print(f'lavori={json.dumps(unici)}')
-          print(f'quanti={len(unici)}')
+          f = 'dati_globali/scouting_lavori.txt'
+          if os.path.exists(f):
+              lavori = [r.strip() for r in open(f, encoding='utf-8') if r.strip()]
+          if len(lavori) > 256:
+              print(f'::warning::{len(lavori)} predict richiesti, la matrice ne accetta 256: tronco.')
+              lavori = lavori[:256]
+          print(f'lavori={json.dumps(lavori)}')
+          print(f'quanti={len(lavori)}')
           PY
 
   predict:
