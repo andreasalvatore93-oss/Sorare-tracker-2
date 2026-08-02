@@ -1191,6 +1191,27 @@ def _import_gg():
     return module
 
 
+def _parse_consiglio_calibrato(bff, gg, path):
+    """Le righe di un consiglio, sulla STESSA scala della produzione.
+
+    Il generatore calibra all'ingresso (`calibra_riga` in
+    `load_league_role_data`, misurato 02/08: `realizzato = 10.21 + 0.767 x
+    previsto`), cosi' che in tutto il sistema esista una scala sola: le soglie
+    d'arena, i bonus di sinergia e il rapporto punti/L10 sono tutti espressi in
+    punteggio REALE. Best Five leggeva gli stessi file SENZA calibrarli, quindi
+    confrontava previsioni grezze con costanti tarate sull'altra scala e
+    sopravvalutava ogni carta di circa il 13% -- proprio nel numero su cui si
+    decide un acquisto.
+
+    Si chiama `gg.calibra_riga`, non una copia locale: i coefficienti devono
+    vivere in un posto solo (in questo progetto i file gemelli disallineati
+    hanno gia' causato bug veri)."""
+    rows = bff.parse_consiglio(path)
+    for row in rows:
+        gg.calibra_riga(row)
+    return rows
+
+
 # --- Prezzo minimo di mercato (31/07, richiesta esplicita utente) ----------
 #
 # Riusa il meccanismo di SCANSIONE di scanners/bot_profit.py (query
@@ -1668,7 +1689,7 @@ def costruisci_formazione_vera(lega, count):
     for ruolo, ROLE in (('gk', 'GK'), ('def', 'DEF'), ('mid', 'MID'), ('fwd', 'FWD')):
         consiglio_path = esegui_consiglio(lega, ruolo)
         if consiglio_path and os.path.exists(consiglio_path):
-            role_data_lega[ROLE] = bff.parse_consiglio(consiglio_path)
+            role_data_lega[ROLE] = _parse_consiglio_calibrato(bff, gg, consiglio_path)
         else:
             log(f"[{ruolo}] Nessun consiglio disponibile, ruolo vuoto per la formazione vera.")
             role_data_lega[ROLE] = []
@@ -2171,18 +2192,14 @@ FILL_QUOTA_MAX = float(os.environ.get('BEST_FIVE_FILL_QUOTA_MAX', '1.6'))
 PAREGGIO_ARENA_260 = 264.4
 TARGET_PUNTEGGIO = float(os.environ.get('BEST_FIVE_TARGET_PUNTEGGIO', '300'))
 
-# La previsione del modello va CALIBRATA prima di confrontarla con l'L10:
-# misurato `realizzato = 10.21 + 0.767 x previsto`, cioe' il modello esagera
-# gli scarti (proiezione 60 -> 56.2 reali, proiezione 40 -> 40.9). Senza questa
-# correzione una carta con L10 50 e proiezione 60 sembra avere rapporto 1.20,
-# mentre quello vero e' 1.12.
-CALIB_A, CALIB_B = 10.21, 0.767
-
-
-def calibra(v):
-    return None if v is None else CALIB_A + CALIB_B * v
-
-
+# La previsione va CALIBRATA prima di confrontarla con l'L10 (il modello
+# esagera gli scarti: proiezione 60 -> 56.2 reali, 40 -> 40.9). Qui non serve
+# nessuna costante: le righe arrivano gia' calibrate da
+# _parse_consiglio_calibrato, che usa `gg.calibra_riga` -- gli unici
+# coefficienti del sistema stanno in build_formazione_globale.py. Una copia
+# locale c'era, non era chiamata da nessuno, ed era un secondo posto dove i
+# numeri potevano divergere: rimossa.
+#
 # Sotto un cap la valuta non e' il punteggio ma il punteggio PER UNITA' DI L10:
 # cinque carte devono fare 264.4 punti reali con 260 di L10 in tutto.
 RAPPORTO_ARENA_MINIMO = PAREGGIO_ARENA_260 / 260.0
@@ -2634,7 +2651,7 @@ def costruisci_formazione_contender(leghe, count):
                 log(f"[{lega}/{ruolo}] Nessun consiglio_*.txt trovato in {out_dir} -- "
                     f"esegui prima 'python best_five.py {lega} --run' per questa lega.")
                 continue
-            rows = bff.parse_consiglio(path)
+            rows = _parse_consiglio_calibrato(bff, gg, path)
             for row in rows:
                 row['league'] = lega
             merged_role_data[ROLE].extend(rows)

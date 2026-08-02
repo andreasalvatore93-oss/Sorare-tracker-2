@@ -137,6 +137,12 @@ LEAGUE_DIR = {
     'ligat-ha-al': 'israele', 'ukrainian-premier-league': 'ucraina',
     'chinese-super-league': 'cina', 'primera-division-ve': 'venezuela',
     'tipsport-liga': 'slovacchia', 'premyer-liqa': 'azerbaigian',
+    # Aggiunte 02/08: leghe presenti nella giornata 2 (football-4-7-aug-2026)
+    # ma senza cartella -- i loro club scendevano in campo e i giocatori
+    # sarebbero stati scartati come "lega senza pipeline". Slug presi dal vivo
+    # da club.domesticLeague dei 74 club della fixture, mai indovinati.
+    'primera-division-pe': 'peru', '1-division-cy': 'cipro',
+    'urvalsdeild': 'islanda',
 }
 
 # Split delle cartelle di destinazione in n quote -- usato solo se
