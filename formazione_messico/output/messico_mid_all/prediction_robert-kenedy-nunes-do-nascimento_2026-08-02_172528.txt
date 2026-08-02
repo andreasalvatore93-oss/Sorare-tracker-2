@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-01T07:01:17.709362Z
+Generato: 2026-08-02T17:25:28.532902Z
 Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) robert-kenedy-nunes-do-nascimento: 52 pt attesi (40-69)
-   SQUADRA: pachuca-pachuca-de-soto | AVVERSARIO: leon-leon-de-los-aldamas
+1) robert-kenedy-nunes-do-nascimento: 51 pt attesi (38-67)
+   SQUADRA: pachuca-pachuca-de-soto | AVVERSARIO: cincinnati-cincinnati-ohio
 ======================================================================
 
 ######################################################################
@@ -13,14 +13,14 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: robert-kenedy-nunes-do-nascimento (squadra: pachuca-pachuca-de-soto)
-Generato: 2026-08-01T07:01:17.708677Z
+Generato: 2026-08-02T17:25:28.532035Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
-Partite considerate: 39
-Escluse (DID_NOT_PLAY): 3
-Escluse (minutaggio < 60', subentri): 14
-Competizione partita target: liga-mx (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite considerate: 42
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 16
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
 Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2025-09-24 | PUE vs PAC | liga-mx | score=42.0 | peso=0.559
   2025-09-27 | PAC vs ASL | liga-mx | score=47.5 | peso=0.574
@@ -49,15 +49,15 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 Media pesata esponenziale (half-life 25.0 partite): 52.70
   di cui Punteggio decisivo (level_score) medio: 43.38 | Punteggio complessivo (granulari) medio: 9.32 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
   Punteggio decisivo condizionato per venue: 42.49 (delta -0.90)
-  Efficacia offensiva condizionata: delta venue +0.46, delta avversario +0.00 | Passaggio condizionato: delta venue -0.21, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+  Efficacia offensiva condizionata: delta venue +0.46, delta avversario -1.03 | Passaggio condizionato: delta venue -0.21, delta avversario -0.43 | Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
 Deviazione standard pesata: 12.80
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.5 - 69.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.63 (differenza: +1.17)
 Media score in casa: 53.54 | Media score fuori casa: 52.24
 Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
-Ranking medio avversari affrontati (storico): 8.3
-Ranking prossimo avversario: 17
-Fattore forza avversario applicato: 1.301
+Ranking medio avversari affrontati (storico): 8.6
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.911
 Fattore falli (casa/trasferta, da dati reali): 1.006
 Fattore duelli (casa/trasferta, da dati reali): 1.001
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
@@ -66,17 +66,17 @@ Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
 Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
 Fattore gol subiti (goals_conceded, con cap): 1.000
 Fattore trend (media ultime 5: 49.0 vs media ultime 10: 54.4): 0.980
-P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+P(gioca): 52.38% (fonte: tasso di presenza storico (22/42))
 
 --- PROSSIMA PARTITA ---
-Data: 2026-08-02T01:06
-Casa: Club León | Trasferta: CF Pachuca
-Competizione: liga-mx
+Data: 2026-08-04T23:30
+Casa: FC Cincinnati | Trasferta: CF Pachuca
+Competizione: leagues-cup-mls
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 52.2 (range 40.0 - 68.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 50.7 (range 38.5 - 67.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 53.90
@@ -94,25 +94,25 @@ Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
 P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
 
  idx  storico  predetto   reale   errore   range  in_range
-   6        6      47.2    52.8     +5.6    15.5        SI
-   7        7      46.2    40.0     -6.2    14.2        SI
-   8        8      44.2    47.6     +3.4    14.2        SI
-   9        9      48.2    43.4     -4.8    13.4        SI
-  10       10      56.6    40.5    -16.1    12.9        NO
-  11       11      50.0    71.9    +21.9    12.7        NO
-  12       12      43.1    75.9    +32.8    14.1        NO
-  13       13      65.3    62.1     -3.2    15.5        SI
-  14       14      58.0    69.1    +11.1    15.0        SI
-  15       15      42.8    41.0     -1.8    15.0        SI
-  16       16      58.4    51.0     -7.4    15.1        SI
-  17       17      57.1    66.3     +9.2    14.6        SI
-  18       18      41.7    45.6     +3.9    14.4        SI
-  19       19      41.6    53.0    +11.4    14.2        SI
-  20       20      41.7    46.1     +4.4    13.7        SI
-  21       21      59.6    33.9    -25.7    13.5        NO
+   6        6      45.3    52.8     +7.5    15.5        SI
+   7        7      44.6    40.0     -4.6    14.2        SI
+   8        8      41.1    47.6     +6.5    14.2        SI
+   9        9      52.6    43.4     -9.2    13.4        SI
+  10       10      58.7    40.5    -18.2    12.9        NO
+  11       11      53.5    71.9    +18.4    12.7        NO
+  12       12      41.2    75.9    +34.7    14.1        NO
+  13       13      67.2    62.1     -5.1    15.5        SI
+  14       14      40.8    69.1    +28.3    15.0        NO
+  15       15      41.8    41.0     -0.8    15.0        SI
+  16       16      63.4    51.0    -12.4    15.1        SI
+  17       17      61.7    66.3     +4.6    14.6        SI
+  18       18      40.3    45.6     +5.3    14.4        SI
+  19       19      40.3    53.0    +12.7    14.2        SI
+  20       20      40.5    46.1     +5.6    13.7        SI
+  21       21      47.6    33.9    -13.7    13.5        NO
 
-MAE (errore assoluto medio): 10.56
-% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+MAE (errore assoluto medio): 11.72
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 68.8%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
 
