@@ -332,7 +332,9 @@ CALIB_B = float(os.environ.get('CALIB_B', '0.767'))
 def calibra(valore):
     if valore is None:
         return None
-    return CALIB_A + CALIB_B * valore
+    # arrotondato a un decimale: la calibrazione moltiplica per 0.767 e
+    # altrimenti i punteggi escono con dodici cifre decimali nei log
+    return round(CALIB_A + CALIB_B * valore, 1)
 
 
 def calibra_riga(row):
