@@ -274,10 +274,15 @@ bff.CAP260_L10_THRESHOLD_BY_TYPE.update(CAP260_THRESHOLD_BY_TYPE)
 # -> Arena All Stars -> All Stars (da 7, sempre per ultima). Il CardPool e'
 # condiviso: se le carte finiscono, restano scoperte le formazioni meno
 # prioritarie.
+# Ordine di priorita' (02/08, spostato dall'utente): le Under 23 stavano
+# davanti alle arene, ma le arene rendono essenze misurabili mentre le Under 23
+# sono gratuite e difficili da vincere. Ora:
+#   In Season  ->  arene (dedicate, poi All Stars)  ->  Under 23  ->  All Stars
 PRIORITY_ORDER = (
-    ['MLS_IN_SEASON', 'KLEAGUE_IN_SEASON', 'ALLSTARS_U23']
+    ['MLS_IN_SEASON', 'KLEAGUE_IN_SEASON']
     + [arena_type(lg) for lg in ARENA_LEAGUES]
-    + ['ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED', 'ALLSTARS']
+    + ['ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED']
+    + ['ALLSTARS_U23', 'ALLSTARS']
 )
 
 POOL_LEAGUE_BY_TYPE = {
