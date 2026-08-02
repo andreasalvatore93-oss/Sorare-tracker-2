@@ -8,25 +8,28 @@ name: Scouting acquisti
 # scrivere a mano -- le leghe le scopre il tool dal pool, e un solo slug
 # sbagliato qui dentro non darebbe errore, darebbe zero risultati in silenzio.
 #
-# Cosa fa, in ordine:
-#   1. scouting_gw.py trova i candidati della giornata (searchPlayers: una
-#      query paginata, ~7 secondi) e tiene i migliori per L10 in ogni ruolo,
-#      MESCOLANDO le leghe -- il confronto interessante e' fra tutti i
-#      centrocampisti comprabili, non dentro un campionato.
-#   2. scrive il player_slugs.json da cui i predict gia' leggono, e l'elenco di
-#      cosa e' stato scritto; i predict girano su quella lista senza che nessuno
-#      li modifichi.
-#   3. consigli -> colonna "Atteso" del report HTML -> commit su main ->
-#      link su Telegram.
+# Tre job:
+#   1. candidati   searchPlayers (~12 query, 7 secondi), scrive le discovery e
+#                  l'elenco dei predict da fare
+#   2. predict     UNA MATRICE, un giocatore per job -- vedi sotto
+#   3. consigli    consigli, report, commit, Telegram
 #
-# ATTENZIONE: il passo 2 SOVRASCRIVE la discovery di produzione delle leghe
-# toccate. La prossima run di `formazione_giornata` la rigenera da se' (e' il
-# suo primo job), ma fino ad allora un run manuale dei predict userebbe questa
-# lista invece delle carte possedute. E' il motivo per cui il campione e'
-# piccolo di default.
+# PERCHE' LA MATRICE (imparato male il 02/08, dopo che l'utente l'aveva fatto
+# notare tre volte): la prima versione faceva i predict in un ciclo sequenziale
+# dentro un job solo, e 155 candidati costavano 68 minuti. La calibrazione di
+# produzione fa la stessa identica cosa con `max-parallel: 8` e un giocatore per
+# job, e ne fa 185 in mezz'ora. Il tempo PER GIOCATORE e' lo stesso (20-60s):
+# cambia solo che li spalma.
 #
-# Le odds non servono: MIN_STARTER_ODDS e' a 0 dal 28/07, il predict gira anche
-# su chi non le ha ancora -- che e' il caso normale quando si compra in anticipo.
+# L'obiezione "il rate limit e' sull'account, quindi parallelizzare non serve"
+# vale per job che fanno MIGLIAIA di query a testa -- la scrematura a 8 shard
+# del 02/08, otto job e otto 429. Un job per giocatore fa poche decine di
+# chiamate e poi muore: e' il regime in cui la calibrazione gira da sempre senza
+# problemi. max-parallel: 8 e' il suo stesso valore, tarato li'.
+#
+# ATTENZIONE: il job 1 SOVRASCRIVE la discovery di produzione delle leghe
+# toccate. La prossima run di `formazione_giornata` la rigenera (e' il suo primo
+# job), ma fino ad allora un run manuale dei predict userebbe questa lista.
 
 on:
   workflow_dispatch:
@@ -37,9 +40,9 @@ on:
         default: ''
         type: string
       per_ruolo:
-        description: 'Quanti candidati per ruolo, su TUTTE le leghe insieme (10 = ~40 giocatori)'
+        description: 'Quanti candidati per ruolo, su TUTTE le leghe insieme (40 = ~155 giocatori)'
         required: false
-        default: '10'
+        default: '40'
         type: string
       odds_min:
         description: 'Soglia starter-odds 0-1 (es. 0.80). Vuoto = spento. Odds assenti = escluso'
@@ -47,7 +50,7 @@ on:
         default: ''
         type: string
       predict:
-        description: 'Far girare il modello sui candidati (piu lento, riempie la colonna Atteso)'
+        description: 'Far girare il modello sui candidati (riempie la colonna Atteso)'
         required: false
         default: true
         type: boolean
@@ -61,9 +64,12 @@ permissions:
   contents: write
 
 jobs:
-  scouting:
+  candidati:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 30
+    outputs:
+      lavori: ${{ steps.lista.outputs.lavori }}
+      quanti: ${{ steps.lista.outputs.quanti }}
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
@@ -77,7 +83,7 @@ jobs:
 
       # Il cookie serve: senza, searchPlayers viene respinta dai limiti di
       # complessita' dopo la prima pagina (misurato il 02/08).
-      - name: 1. Candidati della giornata
+      - name: Trova i candidati e scrivi le discovery
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
@@ -91,48 +97,152 @@ jobs:
           if [ "${{ inputs.predict }}" = "true" ]; then ARGS="$ARGS --scrivi-discovery"; fi
           python scouting_gw.py $ARGS --html generatore_formazioni/output/scouting_ultimo.html
 
-      # Le leghe da elaborare escono dal passo 1, non da un input: nessuno deve
-      # sapere che la Liga MX si chiama 'messico' nel filesystem.
-      - name: 2. Predict e consigli
+      # Le discovery vanno su main PRIMA della matrice: ogni job della matrice
+      # fa il proprio checkout e deve trovarcele.
+      - name: Salva discovery e pool
         if: ${{ inputs.predict }}
+        run: |
+          git config user.name  "sorare-tracker-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add ':(glob)formazione_*/output/**/player_slugs.json' dati_globali/scouting_da_predire.tsv || true
+          git commit -m "Scouting: discovery dei candidati" || echo "niente da committare"
+          git pull --rebase --autostash origin main || true
+          git push origin main
+
+      # Una voce per giocatore, "lega|ruolo|slug". La matrice di GitHub ne
+      # accetta al massimo 256: si tronca dicendolo, invece di fallire.
+      - name: Prepara la lista dei predict
+        id: lista
+        if: ${{ inputs.predict }}
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          lavori = []
+          indice = 'dati_globali/scouting_da_predire.tsv'
+          if os.path.exists(indice):
+              for riga in open(indice, encoding='utf-8'):
+                  pezzi = riga.strip().split('\t')
+                  if len(pezzi) < 2:
+                      continue
+                  lega, ruolo = pezzi[0], pezzi[1]
+                  lista = f'formazione_{lega}/output/{lega}_{ruolo}_discovery/player_slugs.json'
+                  if not os.path.exists(lista):
+                      continue
+                  for slug in json.load(open(lista, encoding='utf-8')):
+                      lavori.append(f'{lega}|{ruolo}|{slug}')
+          visti, unici = set(), []
+          for x in lavori:
+              if x not in visti:
+                  visti.add(x); unici.append(x)
+          if len(unici) > 256:
+              print(f'::warning::{len(unici)} predict richiesti, la matrice ne accetta 256: tronco.')
+              unici = unici[:256]
+          print(f'lavori={json.dumps(unici)}')
+          print(f'quanti={len(unici)}')
+          PY
+
+  predict:
+    needs: candidati
+    if: ${{ inputs.predict && needs.candidati.outputs.quanti != '0' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      # Stesso valore della calibrazione di produzione, tarato li'.
+      max-parallel: 8
+      matrix:
+        lavoro: ${{ fromJson(needs.candidati.outputs.lavori) }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests curl_cffi websocket-client
+
+      - name: Predict
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           PYTHONUNBUFFERED: "1"
         run: |
+          IFS='|' read -r LEGA RUOLO SLUG <<< "${{ matrix.lavoro }}"
+          case "$RUOLO" in
+            gk)  PY=test_gk.py ;;
+            def) PY=test_def.py ;;
+            mid) PY=test_mid.py ;;
+            fwd) PY=test_mls_fwd_all.py ;;
+          esac
+          if [ ! -f "formazione_$LEGA/predict/$PY" ]; then
+            echo "::warning::manca formazione_$LEGA/predict/$PY"
+            exit 0
+          fi
+          TARGET_SLUG="$SLUG" python "formazione_$LEGA/predict/$PY"
+
+      # Commit per giocatore con retry, come la calibrazione: con otto job che
+      # scrivono insieme il push va in conflitto di continuo, e perdere la cache
+      # di un giocatore significa ripagarne l'assorbimento a ritroso.
+      - name: Salva previsione e cache
+        if: always()
+        run: |
+          IFS='|' read -r LEGA RUOLO SLUG <<< "${{ matrix.lavoro }}"
+          git config user.name  "sorare-tracker-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -f ':(glob)formazione_*/output/**/.cache/*' \
+                     ':(glob)formazione_*/output/**/.game_log_cache/*' || true
+          git add ':(glob)formazione_*/output/**/prediction_*.txt' \
+                  ':(glob)formazione_*/output/**/prediction_log.json' \
+                  ':(glob)formazione_*/output/**/grid_search/*' || true
+          if git diff --cached --quiet; then echo "niente da salvare"; exit 0; fi
+          git commit -m "Scouting: predict $LEGA/$RUOLO $SLUG"
+          tentativo=0
+          until git push; do
+            tentativo=$((tentativo + 1))
+            [ $tentativo -ge 15 ] && { echo "push fallito 15 volte, abbandono"; exit 1; }
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main || true
+          done
+
+  consigli:
+    needs: [candidati, predict]
+    if: ${{ always() && inputs.predict }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements-formazione.txt
+      - run: pip install -r requirements-formazione.txt
+      - run: pip install curl_cffi websocket-client
+
+      - name: Consigli
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          PYTHONUNBUFFERED: "1"
+        run: |
           set +e
-          INDICE=dati_globali/scouting_da_predire.tsv
-          if [ ! -s "$INDICE" ]; then echo "nessuna discovery scritta, salto"; exit 0; fi
           while IFS=$'\t' read -r LEGA RUOLO QUANTI; do
             [ -n "$LEGA" ] || continue
             case "$RUOLO" in
-              gk)  PY=test_gk.py;  CO=build_consiglio_gk.py ;;
-              def) PY=test_def.py; CO=build_consiglio_def.py ;;
-              mid) PY=test_mid.py; CO=build_consiglio_mid.py ;;
-              fwd) PY=test_mls_fwd_all.py; CO=build_consiglio.py ;;
+              gk)  CO=build_consiglio_gk.py ;;
+              def) CO=build_consiglio_def.py ;;
+              mid) CO=build_consiglio_mid.py ;;
+              fwd) CO=build_consiglio.py ;;
             esac
-            if [ ! -f "formazione_$LEGA/predict/$PY" ]; then
-              echo ">> manca formazione_$LEGA/predict/$PY, salto ($QUANTI giocatori)"
-              continue
-            fi
-            echo ">> $LEGA/$RUOLO: $QUANTI giocatori"
-            # Un giocatore per processo, come in produzione: il tetto di
-            # complessita' dell'API riparte pieno a ogni avvio.
-            for SLUG in $(python -c "import json,sys;print(' '.join(json.load(open(sys.argv[1]))))" \
-                          "formazione_$LEGA/output/${LEGA}_${RUOLO}_discovery/player_slugs.json"); do
-              TARGET_SLUG="$SLUG" python "formazione_$LEGA/predict/$PY" >/dev/null \
-                || echo "   predict fallito: $SLUG"
-            done
-            [ -f "formazione_$LEGA/consiglio/$CO" ] && \
-              python "formazione_$LEGA/consiglio/$CO" >/dev/null || echo "   consiglio non generato"
-          done < "$INDICE"
+            [ -f "formazione_$LEGA/consiglio/$CO" ] || continue
+            python "formazione_$LEGA/consiglio/$CO" >/dev/null || echo "   consiglio non generato: $LEGA/$RUOLO"
+          done < dati_globali/scouting_da_predire.tsv
           set -e
 
       # Rigenerato DOPO i consigli: e' il passaggio che riempie la colonna
-      # "Atteso" (prima sarebbe vuota).
-      - name: 3. Report
-        if: ${{ inputs.predict }}
+      # "Atteso" e compone le arene.
+      - name: Report
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           PYTHONUNBUFFERED: "1"
@@ -142,45 +252,21 @@ jobs:
           if [ -n "${{ inputs.odds_min }}" ]; then ARGS="$ARGS --odds-min ${{ inputs.odds_min }}"; fi
           python scouting_gw.py $ARGS --html generatore_formazioni/output/scouting_ultimo.html
 
-      # Il link Telegram passa da raw.githack, che serve il file da GitHub:
-      # deve essere gia' su main quando parte la notifica.
-      # Si committa ANCHE la cache dei predict, non solo il report. I predict
-      # scrivono `.cache` (dettaglio giocatore) e `.game_log_cache` (storico
-      # partite) negli stessi percorsi che usa il generatore di produzione:
-      # buttarle via a fine job significherebbe ripagare 33 secondi a giocatore
-      # (misurato il 02/08 a freddo) la prossima volta che quel giocatore
-      # serve, sia qui sia quando lo si schiera davvero dopo averlo comprato.
-      #
-      # Vale anche al contrario, ed e' il motivo per cui non c'e' niente da
-      # scrivere: per un giocatore gia' posseduto la cache del generatore e'
-      # gia' in repo, e il predict la trova da solo perche' legge dalla stessa
-      # cartella. Nessun doppio lavoro.
-      # always(): la cache vale piu' del report. Se il job viene interrotto, va
-      # in timeout o un predict fa saltare tutto, questi 30-40 minuti di
-      # assorbimento a ritroso NON devono andare persi -- si ripagherebbero
-      # daccapo alla run dopo. Senza questa riga il passo non gira proprio.
-      - name: 4. Commit di report e cache
+      - name: Commit di report, consigli e cache
         if: always()
         run: |
           git config user.name  "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
           git add generatore_formazioni/output/scouting_ultimo.html
-          # Pathspec :(glob), non un glob di shell: senza, git non scende nelle
-          # cartelle che iniziano con un punto e la add fallisce con
-          # "did not match any files" (verificato).
           git add -f ':(glob)formazione_*/output/**/.cache/*' \
                      ':(glob)formazione_*/output/**/.game_log_cache/*' || true
-          git add ':(glob)formazione_*/output/**/prediction_log.json' || true
-          # Anche i consigli: sono l'unica fonte della colonna Atteso, e senza
-          # di loro il report non si puo' rigenerare se non rifacendo tutti i
-          # predict (60+ minuti). Pesano pochi kB.
-          git add ':(glob)formazione_*/output/**/consiglio_*.txt' || true
-          git commit -m "Scouting acquisti: report candidati e cache dei predict" \
-            || echo "niente da committare"
+          git add ':(glob)formazione_*/output/**/consiglio_*.txt' \
+                  ':(glob)formazione_*/output/**/prediction_log.json' || true
+          git commit -m "Scouting acquisti: report e consigli" || echo "niente da committare"
           git pull --rebase --autostash origin main || true
           git push origin main
 
-      - name: 5. Telegram
+      - name: Telegram
         if: success()
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
