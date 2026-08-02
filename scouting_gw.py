@@ -772,6 +772,17 @@ def scrivi_discovery(pool, leghe=None, limite_per_ruolo=None):
             json.dump(slugs, f, ensure_ascii=False, indent=1)
         scritti.append((cartella, ruolo, len(slugs)))
         log(f"  discovery scritta: {os.path.relpath(dest, REPO_ROOT)} ({len(slugs)} slug)")
+
+    # L'elenco di cosa e' stato scritto, cosi' il workflow sa quali predict
+    # lanciare SENZA che nessuno debba elencare le leghe a mano (18 slug scritti
+    # a mano sono 18 occasioni di sbagliarne uno, e uno slug sbagliato in questo
+    # progetto non da' errore: da' zero risultati in silenzio).
+    indice = os.path.join(REPO_ROOT, 'dati_globali', 'scouting_da_predire.tsv')
+    os.makedirs(os.path.dirname(indice), exist_ok=True)
+    with open(indice, 'w', encoding='utf-8') as f:
+        for cartella, ruolo, quanti in scritti:
+            f.write(f"{cartella}\t{RUOLO_DIR[ruolo]}\t{quanti}\n")
+    log(f"Indice per i predict: {os.path.relpath(indice, REPO_ROOT)}")
     return scritti
 
 
