@@ -7627,3 +7627,284 @@ fattore da aggiungere dopo.
 
 L'utente gioca la partita opposta — poche carte, edge alto — che e' l'unica
 praticabile senza capitale enorme, e la sola in cui il modello serve davvero.
+
+---
+
+## 52. Sessione 02/08 — il backtest, la calibrazione, e una scala sola in tutto il sistema
+
+Sessione lunga e con parecchie correzioni a cose gia' in produzione. Le
+sezioni 50 e 51 restano valide per le regole del gioco; questa le aggiorna su
+tutto cio' che riguarda i numeri.
+
+---
+
+### 52.1 — Il backtest: cosa dice davvero
+
+`backtest_arene.py` rigioca le formazioni arena dell'utente col modello, a
+parita' di mazzo (le carte che ha schierato quella giornata) e di arene.
+
+**Su 306 arene ricostruite:**
+
+| | punteggio medio realizzato |
+|---|---|
+| allocazione casuale | 264.6 |
+| **utente** | **267.7** |
+| **modello** | **271.9** |
+
+Il modello fa **+4.2 punti** a formazione, ma vince solo in **141 casi su 306
+(46%)**. Non e' una contraddizione: quando vince guadagna **+56.2** punti,
+quando perde ne lascia **41.8**. Perde piu' spesso e vince piu' grosso, e la
+media la salvano poche formazioni molto migliori. La mediana della differenza
+e' **-1.4**.
+
+Tradotto: **il modello non seleziona meglio dell'utente**. Il valore non e'
+nella scelta dei giocatori.
+
+**Il handicap va messo a verbale**, perche' il confronto e' severo con il
+modello: in una giornata tipo l'utente aveva gia' tolto dal mazzo 28 giocatori
+per le All Stars, 28 per le Under 23, ~100 per le In Season di sei campionati
+— **e non a caso, i migliori** — piu' un numero imprecisato lasciato in
+panchina su 2.000 carte. Al modello arriva il fondo del barile, e non puo'
+correggere le scelte dell'utente, solo riordinarle.
+
+E il modello ha **una settimana**: l'utente ha vent'anni di partite viste.
+
+**Dove sta il valore, invece:** applicando la regola d'ingresso il saldo passa
+da +7.550 a **+15.800 essenze** sulle stesse 306 arene, giocandone 178 invece
+di 306. **ROI dal +12.6% al +45.7%.**
+
+---
+
+### 52.2 — La soglia, tarata sul serio
+
+L'utente ha chiesto una soglia precisa, perche' e' il numero a cui agganciare
+gli acquisti: un punto sposta la scelta fra una carta e un'altra.
+
+**Prima misura, dalle 306 formazioni del backtest**: 269.1 punti, ma con
+intervallo al 90% fra 258.8 e 273.9. **Quindici punti: inutilizzabile.**
+
+Il bootstrap dice dove sta l'incertezza: **4.6 punti dalla taratura** (612
+coppie previsione/realizzato) contro **2.1 dal campo avversario**, che con 673
+arene e ~6.000 punteggi e' gia' campionato bene.
+
+**Quindi non servivano altre arene, servivano altre coppie.** E per calibrare
+non serve che le formazioni siano dell'utente ne' che siano arene: bastano una
+previsione walk-forward e un punteggio realizzato, che esistono per **ogni
+giocatore in ogni partita** dello storico gia' in cache.
+
+**Tre passaggi** (`taratura_giocatore.py`, `taratura_formazioni_sintetiche.py`):
+
+1. **69.151 coppie** previsione/realizzato per singolo giocatore, walk-forward
+2. **40.000 formazioni sintetiche** da cinque giocatori della stessa giornata,
+   col capitano al x1.2 come fa il generatore — serve perche' la taratura per
+   singolo giocatore ignora il capitano e sbagliava di 7 punti
+3. la soglia dove l'incasso medio uguaglia l'ingresso, con la dispersione vera
+
+**Risultato: `realizzato = 62.56 + 0.736 x previsto`, dispersione 43.3.**
+Incertezza della soglia scesa da **±4.1 a ±1.7 punti**.
+
+---
+
+### 52.3 — La calibrazione, e la trappola della doppia correzione
+
+Misurato sul singolo giocatore: **`realizzato = 10.21 + 0.767 x previsto`**.
+Il modello **esagera gli scarti**: proiezione 60 -> 56.2 reali, proiezione 40
+-> 40.9, punto di equilibrio a **44**.
+
+Da notare: la **pendenza e' quasi giusta** (0.767), quindi il modello non e'
+"schiacciato" come avevo diagnosticato su un campione piccolo. Il problema e'
+che il rumore residuo e' enorme (49 punti su formazione) rispetto
+all'intervallo delle previsioni.
+
+**LA TRAPPOLA, notata dall'utente**: la soglia 274.1 era espressa in previsione
+GREZZA, ricavata invertendo la calibrazione. Calibrare le previsioni **e**
+tenere 274.1 sarebbe stata una **doppia correzione**, e avrebbe reso il
+generatore molto piu' severo del dovuto. Le due impostazioni sono equivalenti
+ma non si mescolano:
+
+| previsione | soglia |
+|---|---|
+| grezza | 274.1 |
+| calibrata | 264.4 |
+
+Scelta: **calibrare all'ingresso** (`calibra_riga` in
+build_formazione_globale), cosi' esiste **una scala sola** in tutto il sistema,
+e i punteggi mostrati nel report diventano onesti — prima una formazione data a
+290 ne realizzava tipicamente 276.
+
+---
+
+### 52.4 — Le sinergie, rimisurate su 69.000 osservazioni
+
+I bonus di sinergia venivano da correlazioni misurate su **4 formazioni di una
+sola giornata** (il file stesso lo segnalava come limite).
+
+**Correlazione degli ERRORI di previsione fra compagni**, per coppia di ruoli:
+
+| coppia | n | rho |
+|---|---|---|
+| **Difensore + Portiere** | 13.905 | **+0.297** |
+| Difensore + Difensore | 25.927 | +0.174 |
+| Attaccante + Attaccante | 12.195 | +0.117 |
+| Difensore + Centrocampista | 53.924 | +0.077 |
+| Centrocampista + Centrocampista | 20.388 | +0.067 |
+| Difensore + Attaccante | 43.176 | +0.031 |
+
+Portiere e difensore correlano **tre volte piu' della media**: e' la porta
+inviolata che li premia insieme. Difensore e attaccante sono quasi
+indipendenti, fasi di gioco diverse.
+
+**L'ordinamento conferma le misure vecchie, i livelli no**: sono circa la
+meta'. La differenza ha una spiegazione precisa — le vecchie erano correlazioni
+dei **punteggi**, che includono la parte gia' prevista dal modello; per la
+varianza dell'errore servono quelle dei **residui**.
+
+**Errore di una formazione da 5**: 39.0 punti se i cinque fossero indipendenti,
+**45.7** con la correlazione misurata, contro **49.4** misurati sulle
+formazioni vere. Il divario residuo e' probabilmente la correlazione fra
+avversari nella stessa partita.
+
+---
+
+### 52.5 — Quanto vale la varianza, e perche' i bonus ora sono dinamici
+
+Misurato in arena, il cambio dispersione/punteggio dipende da **dove sei
+rispetto al pareggio**:
+
+| punteggio della formazione | quanto vale 1 punto di dispersione |
+|---|---|
+| 255 | 0.84 |
+| 265 | 0.78 |
+| 280 | 0.53 |
+| 295 | 0.31 |
+| 300 | 0.07 |
+
+**La varianza serve solo quando la formazione e' debole.** Sopra soglia sei
+gia' in corsa e rischiare butta via un piazzamento in mano.
+
+Da cui il verdetto sul bonus GK+DEF, che era **5**: la coppia vale **1.77 su
+una formazione da 265 e 0.16 su una da 300**. Il vecchio 5 faceva sacrificare
+fino a cinque punti certi per comprarne uno probabilistico.
+
+Ora `fattore_varianza()` scala i bonus fra 1.47 e 0.58 secondo la forza stimata
+della formazione mentre si costruisce (proiettando a cinque slot i giocatori
+gia' scelti; con meno di due scelti resta al valore tarato).
+
+---
+
+### 52.6 — Il bonus anti-stack: confermato, non cambiato
+
+Regola data dall'utente: in **In Season** c'e' un bonus del **2% su ogni
+carta** se si hanno al massimo 2 carte della stessa squadra. **In arena questo
+bonus non esiste.**
+
+Vale 5.6 punti su una formazione da 280, e cambia completamente la convenienza
+dello stack:
+
+| composizione | In Season | Arena |
+|---|---|---|
+| una coppia | +0.6 | +0.6 |
+| due coppie | +1.1 | +1.1 |
+| un terzetto | **-3.9** | +1.7 |
+| stack completo | -0.3 | **+5.3** |
+
+**In In Season lo stack non conviene mai** (il massimo e' due coppie, che
+mantengono il bonus); **in arena lo stack pieno e' la mossa migliore**.
+
+Verificato che la produzione lo fa gia' correttamente: `STACK_GUARD_TYPES`
+contiene solo In Season e All Stars, e la soglia scatta a 3+ come deve. Prima
+volta che una scelta del generatore viene **confermata** da 69.000 osservazioni
+invece che corretta.
+
+---
+
+### 52.7 — Le arene fra loro: quale conviene
+
+| tipo | mediana campo | 3o classificato | rake |
+|---|---|---|---|
+| cap 260 | 260.6 | 290.8 | 13.3% |
+| Beginner | 255.6 | 288.8 | **10.0%** |
+| **cap 220** | **248.0** | **275.9** | **10.0%** |
+| Uncapped | 283.7 | 315.3 | 13.3% |
+
+**Beginner**: il campo NON e' piu' debole (2 punti di differenza sul terzo
+posto). Il bias "li ci si manda la roba scarsa" vale per tutti, quindi il
+livello relativo resta lo stesso. Ha un rake piu' basso, ed e' per questo che
+la sua soglia esce persino **sotto** quella della cap 260. Conclusione:
+**stesso sforzo per un terzo del premio** — con carte limitate va sempre
+preferita la 260.
+
+**cap 220**: **domina nettamente**. A parita' di formazione rende 2-3 volte
+tanto (a 280 punti: +180 contro +38). Campo piu' debole di 15 punti, rake piu'
+basso, ingresso piu' economico. Il vincolo e' il cap L10 piu' stretto: servono
+carte piu' efficienti, non piu' forti.
+
+**Quanto vale superare la soglia** (cap 260):
+
+| previsione | saldo a ingresso | a premio |
+|---|---|---|
+| 274 (pareggio) | 0 | ~32% |
+| 280 | +40 | 35% |
+| 290 | +107 | 41% |
+| 300 | +182 | 47% |
+| 320 | +334 | 58% |
+
+**Non c'e' saturazione**: ogni punto vale fra 21 e 41 essenze e il valore
+**cresce** salendo, perche' si compra probabilita' di **vincere** l'arena (1300)
+e non solo di andare a premio (500).
+
+**Concentrare batte spalmare**, e molto. Con le stesse 25 carte:
+
+| strategia | giocando tutte | giocando solo sopra soglia |
+|---|---|---|
+| 5 formazioni pari da 280 | +188 | +188 |
+| concentrate (310/290/280/270/250) | +254 | **+395** |
+| molto concentrate (330/300/275/255/240) | +345 | **+595** |
+
+E' la sinergia fra le due leve: concentrare crea formazioni forti **e**
+formazioni scarse, e la soglia dice di buttare le seconde invece di pagarne
+l'ingresso.
+
+---
+
+### 52.8 — Cosa e' cambiato in produzione
+
+| costante | prima | adesso |
+|---|---|---|
+| previsioni | grezze | **calibrate** (`10.21 + 0.767 x`) |
+| soglia cap 260 | 282.9 (grezza) | **264.4** (reale) |
+| soglia cap 220 | 265.0 | 243.5 |
+| soglia uncapped | 305.5 | 288.2 |
+| soglia elite | 305.8 | 342.7 |
+| essenze per punto | 5.1 | 7.5 |
+| GK_DEF_PAIR_BONUS | 5 | **1.2, dinamico 1.77-0.70** |
+| GK_DEF_PAIR_BONUS_2 | 5 | 0.7 |
+| tabella sinergie arena | 4/3/3/2/1 | 1.2/0.7/0.5/0.3/0.1 |
+| best_five, rapporto punti/L10 | 1.09 | **1.017** (su proiezione calibrata) |
+
+**Le In Season non sono state toccate**: le sinergie positive sono spente per
+quei tipi (`apply_positive_synergy` esclude IN_SEASON_TYPES) e le soglie
+valgono solo per le arene.
+
+**`backtest_arene_economia` resta deliberatamente sulla scala GREZZA** (non
+calibra) e usa 274.1. E' documentato nel file per non creare confusione.
+
+---
+
+### 52.9 — Cosa resta da fare
+
+1. **Il criterio d'acquisto**, che ora ha tutti i pezzi: rapporto minimo
+   **1.017** su proiezione calibrata, e **7.5 essenze per ogni punto** sopra il
+   pareggio. Manca solo incrociarlo coi prezzi di mercato veri.
+2. **Il valore delle essenze in euro**: l'unico numero della catena ancora
+   basato sulla memoria dell'utente invece che su una misura. Stima attuale
+   **~3 EUR per 1000 essenze**, con due conferme deboli (calcolo con le fasce
+   al minimo, e l'offerta di Sorare che pero' non e' un prezzo di mercato).
+   Va tarato sui prezzi reali delle Limited in season.
+3. **La cache del backtest** era ferma a 306 arene su 673 quando la sessione e'
+   finita: `cache_backtest_arene.yml` scarica a blocchi di 20 con commit dopo
+   ognuno, e riprende da dove era. I giocatori rimasti bloccano poche
+   formazioni, quindi il guadagno e' marginale.
+4. **La correlazione fra AVVERSARI** nella stessa partita non e' misurata:
+   spiegherebbe i 3.7 punti di divario fra l'errore calcolato (45.7) e quello
+   osservato (49.4).
