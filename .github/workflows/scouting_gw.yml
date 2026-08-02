@@ -171,6 +171,10 @@ jobs:
           git add -f ':(glob)formazione_*/output/**/.cache/*' \
                      ':(glob)formazione_*/output/**/.game_log_cache/*' || true
           git add ':(glob)formazione_*/output/**/prediction_log.json' || true
+          # Anche i consigli: sono l'unica fonte della colonna Atteso, e senza
+          # di loro il report non si puo' rigenerare se non rifacendo tutti i
+          # predict (60+ minuti). Pesano pochi kB.
+          git add ':(glob)formazione_*/output/**/consiglio_*.txt' || true
           git commit -m "Scouting acquisti: report candidati e cache dei predict" \
             || echo "niente da committare"
           git pull --rebase --autostash origin main || true

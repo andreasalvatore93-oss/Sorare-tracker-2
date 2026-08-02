@@ -1327,7 +1327,14 @@ def _css_delle_carte(bf):
     try:
         template = bf._import_gg().bff.HTML_REPORT_TEMPLATE
         m = re.search(r'<style>.*?</style>', template, re.S)
-        return m.group(0) if m else ''
+        if not m:
+            return ''
+        # HTML_REPORT_TEMPLATE e' una stringa da passare a .format(), quindi le
+        # graffe letterali del CSS sono RADDOPPIATE. Estraendola grezza il
+        # browser riceve `.pcard {{ ... }}`, che non e' CSS valido: lo ignora in
+        # silenzio e le formazioni appaiono vuote (successo il 02/08 -- le card
+        # c'erano tutte nel sorgente, 476 nodi, ma non si vedeva niente).
+        return m.group(0).replace('{{', '{').replace('}}', '}')
     except Exception:
         return ''
 
