@@ -175,13 +175,25 @@ FORMATION_SHAPES = {
 ANTI_SYNERGY_PENALTY = 10_000  # abbastanza grande da finire sempre in fondo alla classifica di scelta
 POSITIVE_SYNERGY_BONUS = 3  # piccolo nudge, non ribalta differenze di punteggio importanti
 # Quanto punteggio atteso conviene sacrificare per accoppiare GK e DEF della
-# stessa squadra. Misurato DENTRO formazioni complete da 5 (non su coppie
-# isolate: gli altri tre slot smorzano la correlazione e dimezzano l'effetto):
-# 3.5 pt per il top 25%, 5 per il top 10% e per il top 5%.
-GK_DEF_PAIR_BONUS = float(os.environ.get('GK_DEF_PAIR_BONUS', '5'))
-# Secondo difensore della stessa squadra del portiere: l'effetto cresce
-# (top 10%: 14.9% con due contro 11.8% con uno), quindi il bonus resta pieno.
-GK_DEF_PAIR_BONUS_2 = float(os.environ.get('GK_DEF_PAIR_BONUS_2', '5'))
+# stessa squadra.
+#
+# RIMISURATO il 02/08 su 69.151 coppie previsione/realizzato (era 5, stimato su
+# 4 formazioni di una sola giornata). La catena e' questa:
+#   - la correlazione degli ERRORI fra portiere e difensore e' +0.297, la piu'
+#     alta di tutte le coppie di ruoli: e' la porta inviolata che li premia
+#     insieme. (Le misure precedenti davano +0.333 ma erano correlazioni dei
+#     PUNTEGGI, che includono la parte gia' prevista dal modello: per la
+#     varianza dell'errore serve questa.)
+#   - dentro una formazione da 5 quella coppia aggiunge +2.25 punti di
+#     dispersione, perche' gli altri tre slot la smorzano
+#   - in arena un punto di dispersione vale 0.78 punti di punteggio atteso su
+#     una formazione da 265, 0.53 a 280, 0.31 a 295: piu' si e' sopra il
+#     pareggio, meno serve rischiare
+# Il valore a 280 -- la zona in cui le arene si giocano davvero -- e' 1.19.
+GK_DEF_PAIR_BONUS = float(os.environ.get('GK_DEF_PAIR_BONUS', '1.2'))
+# Secondo difensore della stessa squadra del portiere: la coppia DEF+DEF vale
+# 0.71 a 280, quindi il secondo aggiunge meno del primo, non quanto il primo.
+GK_DEF_PAIR_BONUS_2 = float(os.environ.get('GK_DEF_PAIR_BONUS_2', '0.7'))
 
 # Bonus anti-stack Sorare (26/07, scoperto dall'utente per In Season, CONFERMATO
 # valido anche per All Stars il 26/07 sera -- stessa soglia, non scalata a 7
@@ -267,15 +279,21 @@ STACK_GUARD_PENALTY = 8_000  # come ANTI_SYNERGY_PENALTY: spinge in fondo, non e
 #   TIPI=ALLSTARS QUANTE=4 SCALA=12 SOGLIE="470,490,510,530,550,570" \
 #     python formazione_mls/diagnostics/ab_arena_synergy_threshold.py
 SAME_TEAM_SYNERGY_BONUS_BY_PAIR = {
-    frozenset(('GK', 'DEF')): 4,    # +0.333 * 12 ~= 4.0 (31/07, era 7 con x20)
-    frozenset(('DEF', 'DEF')): 3,   # +0.219 * 12 ~= 2.6 (31/07, era 4)
-    frozenset(('FWD', 'MID')): 2,   # +0.135 * 12 ~= 1.6 (31/07, era 3)
-    frozenset(('GK', 'MID')): 1,    # +0.107 * 12 ~= 1.3 (31/07, era 2)
-    frozenset(('DEF', 'MID')): 1,   # +0.094 * 12 ~= 1.1 (31/07, era 2)
-    frozenset(('MID', 'MID')): 1,   # +0.108 * 12 ~= 1.3 (31/07, era 2)
-    frozenset(('FWD', 'FWD')): 3,   # +0.223 * 12 ~= 2.7 (31/07, era 4)
-    frozenset(('DEF', 'FWD')): 1,   # +0.060 * 12 ~= 0.7 (31/07, era 1)
-    # GK-FWD/GK-GK: non significativi nella ri-misurazione, non modellati.
+    # RIMISURATO il 02/08 su 69.151 coppie previsione/realizzato, walk-forward.
+    # I valori precedenti (4/3/3/2/1...) venivano da correlazioni dei PUNTEGGI
+    # moltiplicate per 12; quelle giuste per la varianza dell'errore sono le
+    # correlazioni dei RESIDUI, che sono circa la meta'. Qui sotto il valore in
+    # punti di punteggio atteso su una formazione da 280, cioe' la zona in cui
+    # le arene si giocano davvero (a 265 vale il 50% in piu', a 295 il 40% in
+    # meno: la varianza serve solo quando si e' sotto il pareggio).
+    frozenset(('GK', 'DEF')): 1.2,    # rho +0.297, la piu' alta
+    frozenset(('DEF', 'DEF')): 0.7,   # rho +0.174
+    frozenset(('FWD', 'FWD')): 0.5,   # rho +0.117
+    frozenset(('DEF', 'MID')): 0.3,   # rho +0.077
+    frozenset(('GK', 'MID')): 0.3,    # rho +0.071
+    frozenset(('FWD', 'MID')): 0.3,   # rho +0.068
+    frozenset(('MID', 'MID')): 0.3,   # rho +0.067
+    frozenset(('DEF', 'FWD')): 0.1,   # rho +0.031, quasi indipendenti
 }
 
 # Sinergia same-team per In Season (30/07, NUOVO -- prima esclusa del tutto,
