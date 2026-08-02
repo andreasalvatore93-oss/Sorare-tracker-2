@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)
+Generato: 2026-08-02T15:15:12.929727Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) koki-anzai: 46 pt attesi (23-78)
+   ORDINAMENTO: 49.75
+   SQUADRA: kashima-antlers-kashima-ibaraki | AVVERSARIO: yokohama-f-marinos-yokohama
+======================================================================
+
+######################################################################
+# GIOCATORE: koki-anzai
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: koki-anzai (squadra: kashima-antlers-kashima-ibaraki)
+Generato: 2026-08-02T15:15:12.928919Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 23
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: j1-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-18 | ANT vs RED | j1-100-year-vision-league | score=48.6 | peso=0.831
+  2026-04-24 | REY vs ANT | j1-100-year-vision-league | score=54.5 | peso=0.851
+  2026-04-29 | VER vs ANT | j1-100-year-vision-league | score=6.4 | peso=0.871
+  2026-05-06 | ANT vs HOL | j1-100-year-vision-league | score=86.5 | peso=0.891
+  2026-05-10 | FMA vs ANT | j1-100-year-vision-league | score=54.4 | peso=0.912
+  2026-05-17 | JEF vs ANT | j1-100-year-vision-league | score=68.2 | peso=0.933
+  2026-05-23 | ANT vs TOK | j1-100-year-vision-league | score=48.8 | peso=0.955
+  2026-05-30 | VIS vs ANT | j1-100-year-vision-league | score=31.5 | peso=0.977
+  2026-06-06 | ANT vs VIS | j1-100-year-vision-league | score=85.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 54.25
+  di cui Punteggio decisivo (level_score) medio: 38.63 | Punteggio complessivo (granulari) medio: 15.61 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -1.10, delta avversario -0.45 | Passaggio condizionato: delta venue +0.18, delta avversario -0.35 | Clean sheet/disimpegni condizionato: delta venue -1.23, delta avversario -0.53 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 23.84
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.5 - 85.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.34 (differenza: +7.50)
+Media score in casa: 67.45 | Media score fuori casa: 43.00
+Fattore casa/trasferta applicato: 0.994 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.4
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 1.054
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.001
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.995
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 26.47% (fonte: tasso di presenza storico (9/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-07T10:25
+Casa: Yokohama F. Marinos | Trasferta: Kashima Antlers
+Competizione: j1-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.0 (range 23.2 - 77.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la classifica del consiglio): 49.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.86
+Punteggio REALE ottenuto in quella partita: 85.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +36.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      43.7    48.8     +5.0    26.7        SI
+   7        7      42.1    31.5    -10.7    24.7        SI
+   8        8      41.5    85.9    +44.5    24.3        NO
+
+MAE (errore assoluto medio): 20.06
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
