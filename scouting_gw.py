@@ -1015,6 +1015,12 @@ def componi_arene(pool, tipi=TIPI_ARENA, massimo=None):
     l10_per_slug = {g['slug']: g.get('l10') for g in pool['giocatori']}
     gruppi = {(g['cartella'], r) for g in pool['giocatori'] if g.get('cartella') for r in g['ruoli']}
 
+    # Le righe vanno tenute PER LEGA, non in un unico contenitore: le arene All
+    # Stars hanno pool_league 'mixed', e `_view_for` costruisce quel pool
+    # unendo pools[lg] per ogni lg in gg.LEAGUES. Una chiave inventata (il
+    # primo tentativo usava 'scouting') non verrebbe mai letta: zero
+    # formazioni sempre, senza errore, qualunque cosa ci sia nei consigli.
+    per_lega = {lega: {ROLE: [] for ROLE in gg.ROLES} for lega in gg.LEAGUES}
     merged = {ROLE: [] for ROLE in gg.ROLES}
     for cartella, ROLE in sorted(gruppi):
         out_dir = bf.output_dir_per_ruolo(cartella, RUOLO_DIR[ROLE])
@@ -1033,14 +1039,20 @@ def componi_arene(pool, tipi=TIPI_ARENA, massimo=None):
         for r in righe:
             r['league'] = cartella
         merged[ROLE].extend(righe)
+        if cartella in per_lega:
+            per_lega[cartella][ROLE].extend(righe)
+        else:
+            log(f"ATTENZIONE: lega '{cartella}' non fra quelle note al generatore "
+                f"({len(gg.LEAGUES)}): i suoi {len(righe)} candidati non entreranno "
+                f"nelle arene.")
 
     if not any(merged.values()):
         log("Nessun consiglio utilizzabile: sezione formazioni saltata.")
         return []
 
-    role_data = {'scouting': merged}
-    pools = {'scouting': {role: gg._NoFilterPool(role, 'scouting', merged[role])
-                          for role in gg.ROLES}}
+    role_data = {lega: dati for lega, dati in per_lega.items()}
+    pools = {lega: {role: gg._NoFilterPool(role, lega, dati[role]) for role in gg.ROLES}
+             for lega, dati in per_lega.items()}
     # L10 vero nella CardPool: senza, il cap 260/220 non morde e le tre
     # formazioni verrebbero identiche (stesso inciampo documentato in
     # best_five, RISPETTA_CAP_L10). Le carte sono classic: in arena si gioca
