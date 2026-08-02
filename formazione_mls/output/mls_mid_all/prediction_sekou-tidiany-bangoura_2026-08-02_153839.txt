@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-07-30T22:10:22.878904Z
+Generato: 2026-08-02T15:38:39.866923Z
 Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) sekou-tidiany-bangoura: 52 pt attesi (37-62)
-   SQUADRA: columbus-crew-columbus-ohio | AVVERSARIO: inter-miami
+1) sekou-tidiany-bangoura: 53 pt attesi (38-63)
+   SQUADRA: columbus-crew-columbus-ohio | AVVERSARIO: atlas-guadalajara
 ======================================================================
 
 ######################################################################
@@ -13,14 +13,14 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: sekou-tidiany-bangoura (squadra: columbus-crew-columbus-ohio)
-Generato: 2026-07-30T22:10:22.877775Z
+Generato: 2026-08-02T15:38:39.852625Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
-Partite considerate: 17
+Partite considerate: 18
 Escluse (DID_NOT_PLAY): 2
-Escluse (minutaggio < 60', subentri): 10
-Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
 Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2026-04-25 | CLB vs PHI | mlspa | score=69.3 | peso=0.895
   2026-05-13 | RBNY vs CLB | mlspa | score=67.9 | peso=0.920
@@ -30,36 +30,36 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 25.0 partite): 59.07
-  di cui Punteggio decisivo (level_score) medio: 45.00 | Punteggio complessivo (granulari) medio: 14.07 (Stadio A, solo diagnostico -- non applicato a score_atteso)
-  Punteggio decisivo condizionato per venue: 45.66 (delta +0.67)
-  Efficacia offensiva condizionata: delta venue -0.44, delta avversario -0.22 | Passaggio condizionato: delta venue -0.13, delta avversario +0.65 | Gol subiti condizionato: delta venue -0.45, delta avversario -0.73 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+  di cui Punteggio decisivo (level_score) medio: 45.00 | Punteggio complessivo (granulari) medio: 14.07 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 44.43 (delta -0.57)
+  Efficacia offensiva condizionata: delta venue +0.38, delta avversario -0.22 | Passaggio condizionato: delta venue +0.11, delta avversario +0.65 | Gol subiti condizionato: delta venue +0.38, delta avversario -0.73 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
 Deviazione standard pesata: 11.64
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 44.2 - 69.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.53 (differenza: +1.11)
 Media score in casa: 60.87 | Media score fuori casa: 57.05
-Fattore casa/trasferta applicato: 1.001 (TRASFERTA nella prossima partita)
-Ranking medio avversari affrontati (storico): 11.2
-Ranking prossimo avversario: 2
-Fattore forza avversario applicato: 0.683
+Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.8
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.869
 Fattore falli (casa/trasferta, da dati reali): 1.000
-Fattore duelli (casa/trasferta, da dati reali): 0.998
-Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
-Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
 Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
-Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
-Fattore gol subiti (goals_conceded, con cap): 0.997
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 1.003
 Fattore trend: N/D (servono almeno 10 partite nella finestra)
-P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+P(gioca): 27.78% (fonte: tasso di presenza storico (5/18))
 
 --- PROSSIMA PARTITA ---
-Data: 2026-08-01T23:30
-Casa: Inter Miami CF | Trasferta: Columbus Crew
-Competizione: mlspa
+Data: 2026-08-04T23:45
+Casa: Columbus Crew | Trasferta: Atlas FC de Guadalajara
+Competizione: leagues-cup-mls
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 52.1 (range 37.2 - 62.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 52.9 (range 38.0 - 63.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 63.05
