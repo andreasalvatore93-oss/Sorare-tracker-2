@@ -1087,17 +1087,80 @@ def componi_arene(pool, tipi=TIPI_ARENA, massimo=None):
         log("Nessuna arena conviene con questi candidati: nessuna formazione "
             "arriva sopra la propria soglia di pareggio.")
         return []
-    _gen, _tot, blocchi, _html = bf._renderizza_risultati(bff, risultati, card_pool)
+    # Servono i blocchi HTML, non solo il testo: sono le stesse card del
+    # generatore (.pcard con data-slug), e su quelle best_five sa gia'
+    # annotare prezzo per carta e totale di formazione.
+    _gen, _tot, blocchi, blocchi_html = bf._renderizza_risultati(bff, risultati, card_pool)
+    prezzi_per_slug = {g['slug']: g.get('prezzo_eur') for g in pool['giocatori']}
+
     formazioni = []
-    for risultato, blocco in zip(risultati, blocchi):
-        tipo = risultato.get('type') or risultato.get('tipo') or ''
-        etichetta = getattr(gg, 'LABELS', {}).get(tipo, tipo or 'Arena')
-        soglia = getattr(gg, 'PAREGGIO_ARENA', {}).get(tipo)
-        if soglia:
-            etichetta += f" &mdash; pareggio a {soglia:.1f}"
-        formazioni.append((etichetta, blocco))
+    for risultato, blocco, blocco_html in zip(risultati, blocchi, blocchi_html):
+        conto = _conto_arena(gg, risultato, prezzi_per_slug)
+        conto['blocco'] = blocco
+        conto['blocco_html'] = blocco_html
+        formazioni.append(conto)
+
+    # Ordine per RESA PER EURO, non per essenze assolute. Un'arena da 5 euro con
+    # +30 sopra soglia batte una da 15 con +35: rende meno in assoluto ma molto
+    # di piu' per euro investito, e le carte comprate restano comunque tue.
+    # Chi non ha un prezzo completo finisce in fondo: e' un conto incompleto,
+    # non un buon affare da nascondere in cima.
+    formazioni.sort(key=lambda c: -(c['essenze_per_euro'] if c['essenze_per_euro'] is not None else -1))
     log(f"  arene efficienti: {len(formazioni)} formazioni scelte dal motore.")
+    for c in formazioni:
+        log(f"    {c['etichetta_breve']}: atteso {c['atteso']:.1f} "
+            f"(margine {c['margine']:+.1f}), {c['essenze']:+.0f} essenze, "
+            f"costo {'n/d' if c['costo'] is None else format(c['costo'], '.2f') + ' EUR'}"
+            + ('' if c['essenze_per_euro'] is None
+               else f", {c['essenze_per_euro']:.0f} essenze/EUR"))
     return formazioni
+
+
+def _conto_arena(gg, risultato, prezzi_per_slug):
+    """Costo, margine sopra il pareggio e resa per euro di una formazione.
+
+    Soglie, guadagno per punto, costo d'ingresso e verdetto arrivano TUTTI dal
+    generatore (PAREGGIO_ARENA, GUADAGNO_PER_PUNTO, COSTO_INGRESSO,
+    _etichetta_arena): sono misurati su 673 arene reali e vivono in un posto
+    solo. Qui si aggiunge la sola cosa che il generatore non ha motivo di
+    sapere -- il PREZZO IN EURO delle carte, perche' lui gioca con carte che
+    l'utente possiede gia' e per lui l'acquisto non esiste."""
+    tipo = risultato.get('tipo') or ''
+    soglia = getattr(gg, 'PAREGGIO_ARENA', {}).get(tipo)
+    try:
+        atteso = gg._atteso_con_capitano(risultato)
+    except Exception:
+        atteso = sum(row.get('atteso', 0) for _s, row, _c in risultato.get('formazione') or [])
+    margine = (atteso - soglia) if soglia is not None else None
+    per_punto = getattr(gg, 'GUADAGNO_PER_PUNTO', {}).get(tipo, 7.5)
+    # Guadagno NETTO sopra l'ingresso: il pareggio e' per definizione il punto
+    # in cui il premio atteso copre le essenze spese per entrare.
+    essenze = margine * per_punto if margine is not None else None
+    ingresso = getattr(gg, 'COSTO_INGRESSO', {}).get(tipo, 300)
+    try:
+        verdetto, colore = gg._etichetta_arena(tipo, atteso)
+    except Exception:
+        verdetto, colore = None, None
+
+    slug_schierati = [row.get('slug') for _s, row, _c in risultato.get('formazione') or []]
+    prezzi = [prezzi_per_slug.get(s) for s in slug_schierati]
+    noti = [p for p in prezzi if p is not None]
+    # Il costo si dichiara solo se si conoscono TUTTI i prezzi: sommare quelli
+    # che ci sono darebbe un totale piu' basso del vero, cioe' un affare
+    # migliore di quello che e'.
+    costo = round(sum(noti), 2) if len(noti) == len(prezzi) and prezzi else None
+    senza_prezzo = len(prezzi) - len(noti)
+    essenze_per_euro = (essenze / costo) if (essenze and costo and costo > 0) else None
+
+    etichetta = getattr(gg, 'LABELS', {}).get(tipo, tipo or 'Arena')
+    return {
+        'tipo': tipo, 'etichetta_breve': etichetta, 'soglia': soglia,
+        'atteso': atteso, 'margine': margine, 'essenze': essenze,
+        'ingresso': ingresso, 'verdetto': verdetto, 'colore': colore,
+        'costo': costo, 'senza_prezzo': senza_prezzo,
+        'essenze_per_euro': essenze_per_euro,
+        'carte': slug_schierati,
+    }
 
 
 # --- IL REPORT ------------------------------------------------------------
@@ -1188,6 +1251,21 @@ def _atteso_dai_consigli(pool):
             f"{ORE_CONSIGLIO_VALIDO:.0f}h, {fuori_giornata} righe con kickoff "
             f"fuori da {inizio}..{fine}. Sono attesi di altre giornate.")
     return per_slug
+
+
+def _css_delle_carte(bf):
+    """Il foglio di stile delle .pcard, preso dal template del generatore.
+
+    Estratto da HTML_REPORT_TEMPLATE invece di ricopiato: se domani cambia il
+    look delle carte in produzione, cambia anche qui. Se il template non fosse
+    piu' in quella forma si torna a stringa vuota -- le formazioni restano
+    leggibili, perdono solo la grafica."""
+    try:
+        template = bf._import_gg().bff.HTML_REPORT_TEMPLATE
+        m = re.search(r'<style>.*?</style>', template, re.S)
+        return m.group(0) if m else ''
+    except Exception:
+        return ''
 
 
 def _escape(testo):
@@ -1309,14 +1387,83 @@ def scrivi_html(pool, dest, formazioni=()):
                      "<b>assumono che questi giocatori scendano in campo</b> &mdash; senza "
                      "starter odds la titolarita' e' una scommessa &mdash; e sono carte che "
                      "<b>non possiedi</b>: e' una simulazione d'acquisto.</div>")
-        for etichetta, blocco in formazioni:
-            pezzi.append(f"<h3 style='font-size:14px;margin:14px 0 4px;color:#9aa0ad'>{etichetta}</h3>"
-                         f"<pre style='background:#161922;padding:10px;overflow-x:auto;"
-                         f"border-radius:6px;font-size:12px'>{_escape(blocco)}</pre>")
+        # Prima il quadro d'insieme, ordinato per resa per euro: e' la domanda
+        # vera ("quale conviene comprare?"), e un'arena da 5 EUR con +30 sopra
+        # soglia batte una da 15 EUR con +35 pur rendendo meno in assoluto.
+        pezzi.append("<div class='wrap'><table><tr><th>Arena</th><th>Atteso</th>"
+                     "<th title='Punti sopra la soglia di pareggio'>Margine</th>"
+                     "<th title='Essenze nette attese, oltre l&apos;ingresso gia&apos; "
+                     "coperto dal pareggio'>Essenze</th>"
+                     "<th title='Ingresso in essenze'>Ingresso</th>"
+                     "<th title='Somma dei prezzi delle 5 carte'>Costo carte</th>"
+                     "<th title='Essenze nette a giornata per euro speso: il rapporto "
+                     "che dice quale conviene'>Ess/&euro;</th><th>Verdetto</th></tr>")
+        for c in formazioni:
+            costo_txt = ('&mdash;' if c['costo'] is None
+                         else '%.2f&nbsp;&euro;' % c['costo'])
+            if c['senza_prezzo']:
+                costo_txt = (f"<span class='warn'>{c['senza_prezzo']} senza prezzo</span>")
+            rapporto = ('&mdash;' if c['essenze_per_euro'] is None
+                        else '%.0f' % c['essenze_per_euro'])
+            colore = c.get('colore') or '#9aa0ad'
+            verdetto = (c.get('verdetto') or '').split('--')[0].strip() or '&mdash;'
+            pezzi.append(
+                f"<tr><td>{c['etichetta_breve']}</td>"
+                f"<td class='n'>{c['atteso']:.1f}</td>"
+                f"<td class='n'>{c['margine']:+.1f}</td>"
+                f"<td class='n'>{c['essenze']:+.0f}</td>"
+                f"<td class='n'>{c['ingresso']}</td>"
+                f"<td class='n'>{costo_txt}</td>"
+                f"<td class='n'>{rapporto}</td>"
+                f"<td style='color:{colore}'>{verdetto}</td></tr>")
+        totale_costo = [c['costo'] for c in formazioni if c['costo'] is not None]
+        totale_ess = [c['essenze'] for c in formazioni if c['essenze'] is not None]
+        if totale_costo:
+            pezzi.append(
+                f"<tr><td><b>Tutte insieme</b></td><td colspan='2'></td>"
+                f"<td class='n'><b>{sum(totale_ess):+.0f}</b></td>"
+                f"<td class='n'>{sum(c['ingresso'] for c in formazioni)}</td>"
+                f"<td class='n'><b>{sum(totale_costo):.2f}&nbsp;&euro;</b></td>"
+                f"<td class='n'><b>{sum(totale_ess) / sum(totale_costo):.0f}</b></td>"
+                f"<td class='muted'>carte distinte, si sommano</td></tr>")
+        pezzi.append("</table></div>")
+
+        for c in formazioni:
+            etichetta = c['etichetta_breve']
+            if c['soglia']:
+                etichetta += f" &mdash; pareggio a {c['soglia']:.1f}"
+            pezzi.append(f"<h3 style='font-size:14px;margin:14px 0 4px;color:#9aa0ad'>{etichetta}</h3>")
+            # Le card grafiche del generatore quando ci sono (stesse .pcard,
+            # con prezzo per carta e totale annotati sopra); il testo solo se
+            # per qualche motivo l'HTML manca.
+            if c.get('blocco_html'):
+                pezzi.append(c['blocco_html'])
+            else:
+                pezzi.append(f"<pre style='background:#161922;padding:10px;overflow-x:auto;"
+                             f"border-radius:6px;font-size:12px'>{_escape(c['blocco'])}</pre>")
     pezzi.append(_HTML_CODA)
+    documento = '\n'.join(pezzi)
+
+    # I blocchi formazione sono le .pcard del generatore, e senza il suo CSS
+    # sarebbero un elenco slavato. Il foglio di stile arriva da li' -- non
+    # ricopiato, letto -- e con lui i due post-processing che best_five applica
+    # gia' ai suoi report: prezzo su ogni carta piu' totale di formazione, e
+    # click sulla carta che apre la pagina Sorare del giocatore.
+    if any(c.get('blocco_html') for c in formazioni):
+        try:
+            bf = _import('scouting_best_five_html', 'best_five.py')
+            documento = documento.replace('</head>', _css_delle_carte(bf) + '</head>')
+            prezzi_carte = {g['slug']: {'classic': g.get('prezzo_eur'), 'in_season': None}
+                            for g in pool['giocatori'] if g.get('prezzo_eur') is not None}
+            documento = bf._annota_prezzi_html(documento, prezzi_carte)
+            documento = bf.rendi_carte_cliccabili(documento)
+        except Exception as e:
+            log(f"ATTENZIONE: stile/prezzi delle card non applicati ({e}); "
+                f"le formazioni restano leggibili ma senza grafica.")
+
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     with open(dest, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(pezzi))
+        f.write(documento)
     log(f"Report HTML: {dest}" + (f" ({len(attesi)} attesi dai consigli)" if attesi
                                   else " (nessun consiglio trovato: colonna Atteso vuota)"))
     return dest
