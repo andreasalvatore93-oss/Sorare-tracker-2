@@ -24,36 +24,20 @@ on:
         description: 'Soglia starter-odds (0-1). Odds assenti = escluso.'
         required: false
         default: '0.80'
+      in_season:
+        description: 'In Season per lega, priorita 1 (es. mls:6,kleague:6). Vuoto = nessuna.'
+        required: false
+        default: ''
+      arene:
+        description: 'Quante arene, priorita 2. Il bot sceglie tipo e numero per resa in essenze. 0 = nessuna.'
+        required: false
+        default: '0'
       allstars:
-        description: 'Numero di All Stars da 7'
+        description: 'Numero di All Stars da 7, priorita 3. 0 = nessuna.'
         required: false
         default: '0'
       allstars_u23:
-        description: 'Numero di All Stars Under 23 (precedenza su All Stars da 7)'
-        required: false
-        default: '0'
-      arena_allstars_260:
-        description: 'Arena All Stars cap 260'
-        required: false
-        default: '0'
-      arena_allstars_220:
-        description: 'Arena All Stars cap 220'
-        required: false
-        default: '0'
-      arena_allstars_uncapped:
-        description: 'Arena All Stars senza cap'
-        required: false
-        default: '0'
-      in_season:
-        description: 'In Season per lega (es. mls:6,kleague:6). Vuoto o 0 = nessuna.'
-        required: false
-        default: ''
-      arena_dedicata:
-        description: 'Arene dedicate per lega (es. mls:1,belgio:1). Slug validi: mls, kleague, belgio, olanda (=Eredivisie), turchia, portogallo, spagna, germania, francia (=Ligue 1), croazia, scozia'
-        required: false
-        default: ''
-      arene_efficienti:
-        description: 'Quante arene al massimo, con tipo scelto dal bot per resa in essenze (0 = off)'
+        description: 'Numero di All Stars Under 23 da 7, priorita 4. 0 = nessuna.'
         required: false
         default: '0'
       list_unused_candidates:
@@ -121,7 +105,7 @@ jobs:
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           GAMEWEEK: ${{ github.event.inputs.gameweek }}
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
-          ARENE_EFFICIENTI: ${{ github.event.inputs.arene_efficienti }}
+          ARENE_EFFICIENTI: ${{ github.event.inputs.arene }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           CFG: ${{ matrix.gruppo.cfg }}
           IDX: ${{ strategy.job-index }}
@@ -453,12 +437,8 @@ jobs:
           # finestra e' quella e basta, nessuna tolleranza.
           GAMEWEEK: ${{ github.event.inputs.gameweek }}
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
-          ARENE_EFFICIENTI: ${{ github.event.inputs.arene_efficienti }}
+          ARENE_EFFICIENTI: ${{ github.event.inputs.arene }}
           IN_SEASON: ${{ github.event.inputs.in_season }}
-          ARENA_DEDICATA: ${{ github.event.inputs.arena_dedicata }}
-          ARENA_ALLSTARS_260: ${{ github.event.inputs.arena_allstars_260 }}
-          ARENA_ALLSTARS_220: ${{ github.event.inputs.arena_allstars_220 }}
-          ARENA_ALLSTARS_UNCAPPED: ${{ github.event.inputs.arena_allstars_uncapped }}
           ALLSTARS: ${{ github.event.inputs.allstars }}
           ALLSTARS_U23: ${{ github.event.inputs.allstars_u23 }}
           LIST_UNUSED_CANDIDATES: ${{ github.event.inputs.list_unused_candidates }}

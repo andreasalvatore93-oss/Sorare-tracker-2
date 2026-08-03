@@ -749,14 +749,18 @@ def _within_window(row, now=None):
         # inefficace, i giocatori stantii ricomparivano). Si usa invece il
         # timestamp nel NOME del file (consiglio_YYYY-MM-DD_HHMMSS.txt),
         # scritto dal generatore e immune al checkout.
+        # Freschezza ancorata ad ADESSO, non all'inizio della finestra: una GW
+        # richiesta esplicitamente puo' iniziare fra giorni (GW2 il 04/08 con
+        # run del 03/08), e i consigli -- anche quelli appena rigenerati in
+        # questa stessa pipeline -- sono per forza precedenti all'inizio. Con
+        # l'ancoraggio vecchio (inizio - 24h) venivano scartati TUTTI (bug run
+        # 30802358443: 59->0 su ogni ruolo). Il guardiano anti-stantio
+        # (kodai-sano) resta: un file vecchio di giorni non passa comunque.
         scritto = row.get('_source_ts')
         if scritto is None:
             return not REQUIRE_KICKOFF
-        try:
-            inizio_dt = datetime.datetime.fromisoformat(inizio)
-        except ValueError:
-            return True
-        return scritto >= inizio_dt - datetime.timedelta(hours=24)
+        freschezza = datetime.timedelta(hours=float(os.environ.get('CONSIGLIO_MAX_AGE_HOURS', '48')))
+        return scritto >= datetime.datetime.utcnow() - freschezza
 
     now = now or datetime.datetime.utcnow()
     try:
