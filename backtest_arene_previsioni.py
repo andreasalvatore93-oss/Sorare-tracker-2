@@ -241,6 +241,56 @@ def _avversario(ctx):
             'hist_date': s.get('date')}
 
 
+# Blend porta inviolata squadra per i GK (03/08). Default 0.5 = come produzione
+# (test_gk.GK_TEAM_CS_WEIGHT), cosi' calibrazione/backtest misurano il modello
+# VERO. Si mette 0 via env per l'A/B spento-vs-acceso.
+_GK_CS_WEIGHT = float(os.environ.get('GK_TEAM_CS_WEIGHT', '0.5') or 0)
+_FORZE_CS = None   # (checkpoint settimanali, forze) del modello_partita, pigro
+
+
+def _pcs_squadra(ctx):
+    """P(porta inviolata) della squadra del GK per QUESTA partita, dal
+    modello_partita (walk-forward: forza stimata sul solo passato rispetto al
+    cutoff). None se squadra/avversario non abbastanza noti."""
+    import math as _m, bisect as _b
+    global _FORZE_CS
+    A, B, cutoff = ctx.get('squadra'), ctx.get('opp_slug'), ctx.get('cutoff')
+    if not A or not B or not cutoff:
+        return None
+    if _FORZE_CS is None:
+        import modello_partita as mp
+        oss = mp.osservazioni(mp.partite_da_cache())
+        oss.sort(key=lambda o: o['data'])
+        darr = [o['data'] for o in oss]
+        cps, fz = [], []
+        if oss:
+            d = oss[0]['data']
+            while d <= oss[-1]['data'] + datetime.timedelta(days=7):
+                lo = _b.bisect_left(darr, d)
+                if lo >= 400:
+                    cps.append(d)
+                    fz.append(mp.stima(oss[:lo], riferimento=d,
+                                       regolarizzazione=0.30, emivita=120.0))
+                d += datetime.timedelta(days=7)
+        _FORZE_CS = (cps, fz)
+    cps, fz = _FORZE_CS
+    if not cps:
+        return None
+    try:
+        co = datetime.datetime.strptime(str(cutoff)[:10], '%Y-%m-%d')
+    except ValueError:
+        return None
+    i = _b.bisect_right(cps, co) - 1
+    if i < 0:
+        return None
+    f = fz[i]
+    if not (f.conosciuta(A) and f.conosciuta(B)):
+        return None
+    # gol attesi di B (avversario) contro A = quanti A ne subisce; B in casa se A fuori
+    lam = f.lambda_atteso(B, A, in_casa=not ctx.get('casa'))
+    return _m.exp(-lam)
+
+
 def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None,
             usa_avversario=False):
     """La previsione di produzione dagli ingressi di `contesto`.
@@ -270,6 +320,11 @@ def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None,
             extra['pen_area_delta'] = ops.gk_def_pen_area_granular_delta(
                 av['lega'], av['opp_slug'], av['quando'],
                 modulo.weighted_mean(s['goalkeeping'], w))
+        if _GK_CS_WEIGHT > 0:
+            pcs = _pcs_squadra(ctx)
+            if pcs is not None:
+                extra['team_cs_prob'] = pcs
+                extra['team_cs_weight'] = _GK_CS_WEIGHT
         return modulo.compute_score_atteso_gk(
             s['scores'], s['is_home'], s['granulari'], s['pos_dec'], s['neg_dec'],
             target_is_home=casa, presence_rate=presenza, **extra)

@@ -115,6 +115,61 @@ PLAYER_SLUGS = load_player_slugs()
 
 WINDOW_SIZE = 30  # AMPLIATO (29/07) da 15 a 30 su richiesta esplicita dell'utente, dopo il caso Daniel De Sousa Brito -- mantenuto lo stesso half_life per ruolo, l'allargamento serve a dare piu' contesto storico alla media pesata
 HALF_LIFE_GAMES = 6.0  # AGGIORNATO (29/07): ridotto da 12.0 a 6.0 SOLO per GK, su richiesta esplicita dell'utente dopo un caso reale (Daniel De Sousa Brito, media pesata 46.6 vs media reale ultime 11 partite 41.2 -- il modello si aspettava un punteggio del 29% sopra lo standard recente senza nessun segnale di miglioramento). Verificato con backtest rigoroso pooled su 66 portieri/538 partite (16 campionati): l'intera griglia half_life 4-30 sta in una forbice di MAE dell'1.4%, quindi accorciarlo non peggiora sensibilmente l'accuratezza aggregata mentre risolve l'incoerenza logica sui casi con un tratto di forma alta ormai superato nella finestra storica.
+# Blend porta inviolata squadra (03/08, vedi compute_score_atteso_gk): quanto
+# vale ~una porta inviolata in punti, e la P(clean sheet) media di riferimento
+# (gol medi a partita ~1.29 -> exp(-1.29) ~ 0.28). Tarabili via env per il test.
+GK_TEAM_CS_POINTS = float(os.environ.get('GK_TEAM_CS_POINTS', '35'))
+GK_TEAM_CS_BASELINE = float(os.environ.get('GK_TEAM_CS_BASELINE', '0.28'))
+# Peso del blend porta-inviolata (03/08): ACCESO di default (0.5) dopo il
+# backtest sulle arene reali (corr previsto/reale 0.157->0.211, piu' arene a
+# premio). 0 lo spegne. Vale in produzione E nello scouting (stesso modulo).
+GK_TEAM_CS_WEIGHT = float(os.environ.get('GK_TEAM_CS_WEIGHT', '0.5'))
+_FORZE_CS_PROD = None   # cache pigra delle forze squadre (modello_partita)
+
+
+def _pcs_squadra_prod(team, opp, is_home, cutoff):
+    """P(porta inviolata) della squadra del portiere per la prossima partita,
+    dal modello_partita (forza attacco/difesa stimata sul solo passato). None
+    -- quindi nessun blend -- se il dato non c'e' o qualcosa fallisce: la
+    produzione non deve mai rompersi per questo."""
+    global _FORZE_CS_PROD
+    if GK_TEAM_CS_WEIGHT <= 0 or not team or not opp:
+        return None
+    if not isinstance(cutoff, datetime.datetime):
+        return None
+    try:
+        import bisect as _b
+        if _FORZE_CS_PROD is None:
+            import modello_partita as _mp
+            oss = _mp.osservazioni(_mp.partite_da_cache())
+            oss.sort(key=lambda o: o['data'])
+            darr = [o['data'] for o in oss]
+            cps, fz = [], []
+            if oss:
+                d = oss[0]['data']
+                while d <= oss[-1]['data'] + datetime.timedelta(days=7):
+                    lo = _b.bisect_left(darr, d)
+                    if lo >= 400:
+                        cps.append(d)
+                        fz.append(_mp.stima(oss[:lo], riferimento=d,
+                                            regolarizzazione=0.30, emivita=120.0))
+                    d += datetime.timedelta(days=7)
+            _FORZE_CS_PROD = (cps, fz)
+        cps, fz = _FORZE_CS_PROD
+        if not cps:
+            return None
+        i = _b.bisect_right(cps, cutoff) - 1
+        if i < 0:
+            return None
+        f = fz[i]
+        if not (f.conosciuta(team) and f.conosciuta(opp)):
+            return None
+        # gol attesi dell'avversario contro la squadra del GK = quanti ne subisce
+        lam = f.lambda_atteso(opp, team, in_casa=not is_home)
+        return math.exp(-lam)
+    except Exception:
+        return None
+
 RANGE_MULTIPLIER = 1.15  # AGGIORNATO (30/07, richiesta esplicita utente): centrato sulla copertura reale target ~68% (validate_range_multiplier_coverage.py, 233 giocatori/3293 punti test: 1.4 dava 78.0% di copertura, troppo largo). Solo cosmetico -- non tocca score_atteso/selezione, cambia solo l'ampiezza del range mostrato.
 OPPONENT_SENSITIVITY = 29.0  # AGGIORNATO (26/07): grid search allargato su 13 portieri qualificati (>=3 partite test, 26 qualificati totali) — opp_sens=29.0 batte 20.0 del -4.3% di MAE (18.96 vs 19.81), coerente con DEF/MID/FWD e col bootstrap di stabilita' (opp_sens=29.0 mai cambiato in nessun ruolo). range_multiplier=1.6 confermato invariato (tie con 1.4 in questo campione, nessun segnale per cambiarlo).
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
@@ -1381,7 +1436,8 @@ def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
                             shrink_k=SHRINK_K_OUTLIER_GK,
                             media_ruolo_prior=MEDIA_RUOLO_GK_PRIOR,
                             presence_rate=None, opponent_lambda_mult=1.0,
-                            detail_ok_flags=None, pen_area_delta=0.0):
+                            detail_ok_flags=None, pen_area_delta=0.0,
+                            team_cs_prob=None, team_cs_weight=0.0):
     """FUNZIONE CONDIVISA (28/07): calcola lo `score_atteso` GK di PRODUZIONE,
     da usare SIA in build_prediction (predizione reale) SIA nel backtest
     walk-forward di calibrazione (rigorous_backtest_prod_gk) -- cosi' le due
@@ -1451,7 +1507,21 @@ def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
     # logica era scritta due volte, qui e nel report.
     fattore_casa_trasferta = venue_factor_gk(scores, is_home_flags, target_is_home, weights)
 
-    return grezzo_corretto * fattore_casa_trasferta
+    risultato = grezzo_corretto * fattore_casa_trasferta
+
+    # BLEND PORTA INVIOLATA DELLA SQUADRA (03/08). Il voto di un portiere dipende
+    # quasi solo dai gol subiti, ma qui sopra tutto viene dallo STORICO del
+    # singolo portiere: il modello non ordina i GK (corr previsto/realizzato
+    # 0.02). team_cs_prob e' la P(porta inviolata) della SUA squadra per QUESTA
+    # partita (dal modello_partita, attacco/difesa delle due squadre). Misurato
+    # walk-forward su 3885 GK: un blend sposta il lift di selezione da +0.3% a
+    # +9.4% e la correlazione da 0.02 a 0.08, MAE piatto. Una porta inviolata
+    # vale ~GK_TEAM_CS_POINTS punti; si sposta il voto rispetto alla media lega.
+    # Default team_cs_weight=0.0 -> produzione INVARIATA finche' non si accende.
+    if team_cs_weight and team_cs_prob is not None:
+        risultato += team_cs_weight * GK_TEAM_CS_POINTS * (team_cs_prob - GK_TEAM_CS_BASELINE)
+
+    return risultato
 
 
 def rigorous_backtest_prod_gk(scores, is_home_flags, granulari_values,
@@ -2158,11 +2228,17 @@ def build_prediction(player_slug):
     _gk_pen_area_delta = opponent_strength.gk_def_pen_area_granular_delta(
         'mls', next_opponent_team_slug, _opp_cutoff,
         weighted_mean(goalkeeping_values, weights_det))
+    # P(porta inviolata) della squadra del portiere per QUESTA partita (blend
+    # acceso di default, vedi GK_TEAM_CS_WEIGHT). Stesso calcolo dello scouting,
+    # che passa da questo stesso modulo -> allineati.
+    _team_cs = _pcs_squadra_prod(current_team_slug, next_opponent_team_slug,
+                                 next_is_home, _opp_cutoff)
     score_atteso = compute_score_atteso_gk(
         scores, is_home_flags, granulari_values, pos_decisive_values, neg_decisive_values,
         target_is_home=next_is_home, presence_rate=presence_rate,
         opponent_lambda_mult=_opp_lambda_mult, detail_ok_flags=detail_ok_flags,
-        pen_area_delta=_gk_pen_area_delta)
+        pen_area_delta=_gk_pen_area_delta,
+        team_cs_prob=_team_cs, team_cs_weight=GK_TEAM_CS_WEIGHT)
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) --
     # RIMOSSO da score_atteso il 26/07 (mattina), DECISO CON L'UTENTE dopo
