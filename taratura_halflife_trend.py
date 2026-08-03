@@ -181,7 +181,19 @@ def main():
     ap.add_argument('--ruoli', default='gk,def,mid,fwd')
     ap.add_argument('--max', type=int, default=0)
     ap.add_argument('--json', default='dati_globali/taratura_halflife_trend.json')
+    # Griglie personalizzabili: servono quando il vincitore cade sul BORDO
+    # (successo il 03/08 con FWD a half_life=4.0, il valore piu' basso
+    # provato) -- un minimo al bordo non e' un minimo, e' una griglia troppo
+    # corta, e va riaperta prima di applicare qualunque cosa.
+    ap.add_argument('--hl', help='griglia half_life, es. 1.5,2,3,4,6')
+    ap.add_argument('--ti', help='griglia trend_intensity, es. 0,0.05')
     args = ap.parse_args()
+
+    global HL_GRID, TI_GRID
+    if args.hl:
+        HL_GRID = [float(x) for x in args.hl.split(',')]
+    if args.ti:
+        TI_GRID = [float(x) for x in args.ti.split(',')]
 
     brevi = [r.strip() for r in args.ruoli.split(',') if r.strip()]
     voluti = {RUOLI[b] for b in brevi}
