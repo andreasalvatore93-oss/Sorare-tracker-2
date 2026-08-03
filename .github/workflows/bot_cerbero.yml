@@ -11,13 +11,13 @@ on:
         required: false
         default: "no"
       listen_seconds:
-        description: "Secondi di ascolto, max 18000 (5h)"
+        description: "Secondi di ascolto/apprendimento. 10800 = 3 ore (max 18000 = 5h)"
         required: false
-        default: "18000"
+        default: "10800"
       target_matches:
-        description: "Quanti casi notificare prima di fermarsi (1-100)"
+        description: "Casi dopo cui fermarsi (1-100). In apprendimento tienilo ALTO (100) per non fermarsi e continuare a raccogliere"
         required: false
-        default: "20"
+        default: "100"
       min_price_eur:
         description: "Prezzo minimo carta (EUR)"
         required: false
@@ -78,10 +78,12 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
           LISTA_NERA_PATH: "sorare_lista_nera_cerbero.txt"
+          CERBERO_OSSERVAZIONI_PATH: "cerbero_osservazioni.csv"
+          COMMIT_INTERVAL_SECONDS: "300"
           AUTOBUY_LIVE_MODE: ${{ github.event.inputs.autobuy_live_mode || 'no' }}
           MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.makeoffer_live_mode || 'no' }}
-          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
-          AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '20' }}
+          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '10800' }}
+          AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '100' }}
           AUTOBUY_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
           AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
           CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}

@@ -4430,18 +4430,24 @@ def _commit_lista_nera_se_serve():
     caso di errore (rete, conflitto git, ecc.) -- logga e continua, la prossima
     esecuzione periodica ritentera' comunque."""
     try:
+        # [CERBERO] commit periodico (ogni COMMIT_INTERVAL_SECONDS, default 5 min):
+        # salva lista nera E osservazioni di mercato (dati di apprendimento), cosi'
+        # se la run viene interrotta non si perde nulla di quanto raccolto.
+        _files = [p for p in (LISTA_NERA_PATH, CERBERO_OSSERVAZIONI_PATH) if p and os.path.exists(p)]
+        if not _files:
+            return
         status = subprocess.run(
-            ['git', 'status', '--porcelain', '--', LISTA_NERA_PATH],
+            ['git', 'status', '--porcelain', '--'] + _files,
             capture_output=True, text=True, timeout=30
         )
         if not status.stdout.strip():
             return  # nessuna modifica, niente da committare
-        subprocess.run(['git', 'config', 'user.name', 'bot-terzo'], timeout=30)
+        subprocess.run(['git', 'config', 'user.name', 'bot-cerbero'], timeout=30)
         subprocess.run(['git', 'config', 'user.email',
-                         'bot-terzo@users.noreply.github.com'], timeout=30)
-        subprocess.run(['git', 'add', LISTA_NERA_PATH], timeout=30)
+                         'bot-cerbero@users.noreply.github.com'], timeout=30)
+        subprocess.run(['git', 'add'] + _files, timeout=30)
         commit = subprocess.run(
-            ['git', 'commit', '-m', 'Bot terzo: commit periodico lista nera (run in corso)'],
+            ['git', 'commit', '-m', 'Cerbero: commit periodico (lista nera + osservazioni, run in corso)'],
             capture_output=True, text=True, timeout=30
         )
         if commit.returncode != 0:
