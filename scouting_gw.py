@@ -1450,63 +1450,57 @@ _HTML_CODA = _HTML_ORDINAMENTO + "</body></html>"
 
 
 def _atteso_dai_consigli(pool):
-    """Il punteggio atteso dei predict, se i consigli sono gia' stati generati.
+    """L'atteso di ogni candidato, letto dalle PREDIZIONI GREZZE
+    (prediction_<slug>_*.txt), non dai consigli aggregati.
 
-    Legge i file di consiglio delle leghe presenti nel pool. Se non ci sono
-    (predict non ancora lanciato) la colonna resta vuota: il report si legge
-    lo stesso, e non si finge un numero che non e' stato calcolato."""
-    # L'anti-stantio e' il KICKOFF-in-finestra piu' sotto (controllo ESATTO): un
-    # consiglio vecchio ha un kickoff di un'altra giornata e viene scartato li'.
-    # NON si filtra piu' per mtime del file: git checkout in CI riscrive/preserva
-    # gli mtime a caso e faceva scartare consigli freschi validi come "vecchi"
-    # (run 30818735703: 33 consigli buttati, 46/179 attesi invece di ~tutti) --
-    # stessa causa radice del fix freschezza in build_formazione_globale.
+    Il consiglio e' una lista TRONCATA per lega/ruolo: i candidati sotto la sua
+    soglia restavano senza Atteso pur AVENDO la predizione (run 30835805352:
+    79/196 candidati con predizione ma fuori dal consiglio). Qui ogni candidato
+    del pool che ha una predizione per QUESTA giornata prende il suo numero,
+    direttamente dal file di predizione.
+
+    Per ogni slug si tiene l'ULTIMA predizione (timestamp nel nome, non mtime:
+    git checkout in CI lo riscrive). Il KICKOFF (riga 'Data:') dev'essere nella
+    finestra della fixture: una predizione vecchia punta a un'altra partita.
+    Predict non ancora lanciato = colonna vuota, nessun numero inventato."""
     inizio = (pool['fixture'].get('startDate') or '')[:10]
     fine = (pool['fixture'].get('endDate') or '')[:10]
-    per_slug, fuori_giornata = {}, 0
+    slugs_pool = {g['slug'] for g in pool['giocatori'] if g.get('slug')}
     cartelle = {g.get('cartella') for g in pool['giocatori'] if g.get('cartella')}
-    _ts_nome = re.compile(r'(\d{4}-\d{2}-\d{2})_(\d{2})(\d{2})(\d{2})')
-    def _ts(path):
-        m = _ts_nome.search(os.path.basename(path))
-        return m.groups() if m else ('',)
+    _re_nome = re.compile(r'prediction_(.+)_(\d{4}-\d{2}-\d{2})_(\d{2})(\d{2})(\d{2})\.txt$')
+    ultimo = {}   # slug -> (timestamp, path)
     for cartella in sorted(cartelle):
-        trovati = glob.glob(os.path.join(REPO_ROOT, f"formazione_{cartella}",
-                                         'output', '**', 'consiglio*.txt'), recursive=True)
-        # UN file per cartella, il piu' recente PER TIMESTAMP DEL NOME (non
-        # mtime, inaffidabile in CI). Quelle directory conservano decine di
-        # consigli di giornate passate: leggerli tutti mescolerebbe le run.
-        ultimo_per_dir = {}
-        for path in trovati:
-            d = os.path.dirname(path)
-            if d not in ultimo_per_dir or _ts(path) > _ts(ultimo_per_dir[d]):
-                ultimo_per_dir[d] = path
-        for path in ultimo_per_dir.values():
-            try:
-                with open(path, encoding='utf-8') as f:
-                    testo = f.read()
-            except OSError:
+        for path in glob.glob(os.path.join(REPO_ROOT, f"formazione_{cartella}",
+                                           'output', '**', 'prediction_*.txt'),
+                              recursive=True):
+            m = _re_nome.search(os.path.basename(path))
+            if not m:
                 continue
-            # Formato reale di una riga di consiglio (verificato il 02/08):
-            #     1) nicolas-hernan-otamendi: 36 pt (13-44)
-            # Il "pt" e' il punteggio atteso gia' calibrato. La prima versione
-            # cercava "atteso=NN" e non matchava nulla: colonna sempre vuota,
-            # senza un errore che lo dicesse.
-            # Il KICKOFF nel blocco e' il controllo ESATTO, e riduce l'eta' del
-            # file a un semplice prefiltro: se la partita del consiglio non cade
-            # nella finestra della giornata target, quell'atteso e' di un'altra
-            # partita. Succede coi consigli di stanotte -- freschi di poche ore
-            # ma riferiti alla giornata precedente.
-            for m in re.finditer(
-                    r'^\s*\d+\)\s*([a-z0-9\-]+):\s*([0-9]+(?:\.[0-9]+)?)\s*pt'
-                    r'(?:(?!^\s*\d+\)).)*?KICKOFF:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})',
-                    testo, re.M | re.S):
-                if inizio and fine and not (inizio <= m.group(3) <= fine):
-                    fuori_giornata += 1
-                    continue
-                per_slug[m.group(1)] = float(m.group(2))
+            slug, ts = m.group(1), m.groups()[1:]
+            if slug not in slugs_pool:
+                continue
+            if slug not in ultimo or ts > ultimo[slug][0]:
+                ultimo[slug] = (ts, path)
+    per_slug, fuori_giornata = {}, 0
+    for slug, (_ts, path) in ultimo.items():
+        try:
+            with open(path, encoding='utf-8') as f:
+                testo = f.read()
+        except OSError:
+            continue
+        mk = re.search(r'^Data:\s*(\d{4}-\d{2}-\d{2})', testo, re.M)
+        if mk and inizio and fine and not (inizio <= mk.group(1) <= fine):
+            fuori_giornata += 1
+            continue
+        # Riga d'intestazione: "1) <slug>: 52 pt attesi (37-68)". Il "pt" e' gia'
+        # calibrato su scala reale.
+        ms = re.search(r'^\s*\d+\)\s*' + re.escape(slug) +
+                       r':\s*([0-9]+(?:\.[0-9]+)?)\s*pt', testo, re.M)
+        if ms:
+            per_slug[slug] = float(ms.group(1))
     if fuori_giornata:
-        log(f"Consigli ignorati: {fuori_giornata} righe con kickoff fuori da "
-            f"{inizio}..{fine} (attesi di altre giornate, scartati dal KICKOFF).")
+        log(f"Attesi: {fuori_giornata} predizioni con kickoff fuori da "
+            f"{inizio}..{fine} (altre giornate, scartate).")
     return per_slug
 
 
@@ -1608,104 +1602,94 @@ def scrivi_html(pool, dest, formazioni=()):
         righe = list(pool['giocatori'])
         if not righe:
             continue
-        # L'ordine e' per EFFICIENZA sotto cap (atteso diviso L10), non per
-        # atteso assoluto: sotto un cap si comprano punti per unita' di L10, e
-        # ordinare per atteso rimetterebbe in cima proprio le carte che il
-        # cap non lascia schierare insieme. Chi non ha ancora l'atteso scende
-        # in fondo, ordinato per il proxy.
-        def _chiave(g):
-            atteso = attesi.get(g['slug'])
-            l10 = g.get('l10') or 0
-            if atteso and l10 > 0:
-                return (0, -(atteso / l10), -atteso)
-            return (1, -_efficienza_attesa(g), -(g.get('l10') or 0))
+        # VERDETTO d'acquisto (03/08, richiesta utente: tabella semplice, "chi
+        # conviene comprare e chi no"). La domanda e' il rapporto fra atteso,
+        # costo ed essenze guadagnate a giornata: se una carta rende essenze in
+        # piu' di uno slot medio (essenze_gw > 0) e si ripaga in poche giornate
+        # (rientro basso), conviene. Ordinato coi migliori affari in cima.
+        soglia_odds = filtri.get('odds_min') or 0
 
-        righe.sort(key=_chiave)
-        pezzi.append(f"<h2>{len(righe)} candidati</h2>"
-                     "<div class='meta'>Clicca un'intestazione per ordinare: "
-                     "primo clic decrescente, secondo crescente.</div>"
-                     "<div class='wrap'><table id='candidati'>"
-                     "<tr><th>Giocatore</th><th>Ruolo</th><th>Atteso</th><th title='Atteso diviso L10: "
-                     f"sotto cap 260 serve almeno {RAPPORTO_ARENA_MINIMO_TESTO}'>Att/L10</th>"
-                     "<th title='Essenze guadagnate a giornata rispetto a uno slot "
-                     f"medio da {PUNTI_SLOT_MEDIO} punti ({ESSENZE_PER_PUNTO} essenze per punto)'>Ess/GW</th>"
-                     "<th title='Prezzo diviso essenze a giornata. NON dipende dal "
-                     "valore in euro dell&apos;essenza: serve a ordinare i candidati'>"
-                     "&euro;/EssGW</th>"
-                     f"<th title='Giornate perche&apos; il vantaggio ripaghi il prezzo "
-                     f"PIENO, a {EURO_PER_1000_ESSENZE:.2f} EUR per 1000 essenze'>GW rientro</th>"
-                     "<th>L10</th><th>L5</th><th>L40</th>"
-                     "<th title='Starter odds Sorare, quando pubblicate'>Odds</th>"
-                     "<th>Pres.15</th><th>Proj</th><th>Prezzo</th><th>Club</th><th>Avversario</th>"
-                     "<th>Quando</th><th>Lega</th><th>Note</th></tr>")
+        def _giudizio(g):
+            atteso = attesi.get(g['slug'])
+            if atteso is None:
+                return (4, None, 'muted', 'dati mancanti', None, None)
+            essenze_gw, _e, rientro = _economia(atteso, g.get('prezzo_eur'))
+            odds = g.get('starter_odds')
+            if odds is not None and odds < soglia_odds:
+                return (3, essenze_gw, 'ko', 'NO', rientro, 'odds basse')
+            if essenze_gw is None or essenze_gw <= 0:
+                return (3, essenze_gw, 'ko', 'NO', rientro, 'non rende')
+            if g.get('prezzo_eur') is None:
+                return (2, essenze_gw, 'warn', 'FORSE', rientro, 'prezzo ignoto')
+            # Soglie tarate sui dati reali (mediana rientro ~38 GW): le essenze
+            # in euro rendono poco, quindi ripagare il prezzo pieno e' lungo --
+            # COMPRA = fra i piu' efficienti (si ripaga in <=15 GW).
+            if rientro is not None and rientro <= 15:
+                return (0, essenze_gw, 'mia', 'COMPRA', rientro, None)
+            if rientro is not None and rientro <= 40:
+                return (1, essenze_gw, 'warn', 'FORSE', rientro, None)
+            return (3, essenze_gw, 'ko', 'NO', rientro, 'poco efficiente')
+
+        # ordine: prima i COMPRA, poi rientro piu' basso (affare migliore), poi
+        # atteso piu' alto.
+        righe.sort(key=lambda g: (_giudizio(g)[0],
+                                  _giudizio(g)[4] if _giudizio(g)[4] is not None else 1e9,
+                                  -(attesi.get(g['slug']) or 0)))
+        pezzi.append(
+            f"<h2>{len(righe)} candidati &mdash; ordinati dal miglior affare</h2>"
+            "<div class='meta'>Verdetto sul rapporto <b>atteso / costo / essenze a "
+            "giornata</b>. <span class='mia'>COMPRA</span> = rende e si ripaga "
+            "in poche giornate; <span class='warn'>FORSE</span> = rende ma caro o "
+            "prezzo ignoto; <span class='ko'>NO</span> = non rende piu' di uno slot "
+            "medio. Clicca un'intestazione per riordinare.</div>"
+            "<div class='wrap'><table id='candidati'>"
+            "<tr><th>Conviene</th><th>Giocatore</th><th>R</th><th>Atteso</th>"
+            "<th>Prezzo</th>"
+            "<th title='Essenze in piu' a giornata rispetto a uno slot medio "
+            f"da {PUNTI_SLOT_MEDIO} punti'>Ess/GW</th>"
+            "<th title='In quante giornate le essenze guadagnate ripagano il "
+            "prezzo pieno della carta'>Si ripaga in</th>"
+            "<th title='Starter odds Sorare'>Odds</th><th>Note</th></tr>")
         for g in righe:
             atteso = attesi.get(g['slug'])
+            rank, essenze_gw, classe, etichetta, rientro, motivo = _giudizio(g)
             prezzo = ('&mdash;' if g.get('prezzo_eur') is None
                       else '%.2f&nbsp;&euro;' % g['prezzo_eur'])
-            note = []
-            if g.get('infortunato'):
-                note.append("<span class='ko'>infortunato</span>")
-            if scremati and g.get('idoneo') is False:
-                note.append("<span class='warn'>non 2su3</span>")
-            if scremati and g.get('idoneo') is None:
-                note.append("<span class='muted'>non valutabile</span>")
-            if g.get('carte_mie'):
-                note.append(f"<span class='mia'>ne ho {g['carte_mie']}</span>")
-
-            lega_txt = (g.get('cartella')
-                        or "<span class='warn'>senza pipeline</span>")
-            # Efficienza sotto cap: colorata sulla soglia misurata del cap 260.
-            # Sopra 1.017 la carta "paga" il posto che occupa, sotto no.
-            eff_txt = '&mdash;'
-            l10_g = g.get('l10') or 0
-            if atteso and l10_g > 0:
-                eff = atteso / l10_g
-                classe = 'mia' if eff >= SOGLIA_PUNTI_PER_L10 else 'warn'
-                eff_txt = f"<span class='{classe}'>{eff:.2f}</span>"
+            verdetto = f"<span class='{classe}'><b>{etichetta}</b></span>"
+            if motivo:
+                verdetto += f" <span class='muted'>{motivo}</span>"
+            if essenze_gw is None:
+                ess_txt = '&mdash;'
+            elif essenze_gw <= 0:
+                ess_txt = "<span class='ko'>%+.0f</span>" % essenze_gw
+            else:
+                ess_txt = "<span class='mia'>+%.0f</span>" % essenze_gw
+            rientro_txt = ('&mdash;' if rientro is None
+                           else "%.0f&nbsp;GW" % rientro)
             odds_txt = ('&mdash;' if g.get('starter_odds') is None
                         else "<span class='%s'>%.0f%%</span>"
                              % ('mia' if g['starter_odds'] >= 0.8 else 'warn',
                                 g['starter_odds'] * 100))
-            essenze_gw, euro_ess, rientro = _economia(atteso, g.get('prezzo_eur'))
-            if essenze_gw is None:
-                ess_txt = '&mdash;'
-            elif essenze_gw <= 0:
-                # Sotto uno slot medio: la carta non aggiunge essenze. Va
-                # scritto, non lasciato in bianco -- e' un'informazione.
-                ess_txt = "<span class='ko'>%+.0f</span>" % essenze_gw
-            else:
-                ess_txt = "<span class='mia'>+%.0f</span>" % essenze_gw
-            euro_ess_txt = '&mdash;' if euro_ess is None else '%.3f' % euro_ess
-            rientro_txt = '&mdash;' if rientro is None else '%.0f' % rientro
-
-            def num(v, fmt='%.0f'):
-                return '&mdash;' if v in (None, '') else fmt % v
+            note = []
+            if g.get('carte_mie'):
+                note.append(f"<span class='mia'>ne ho {g['carte_mie']}</span>")
+            if g.get('infortunato'):
+                note.append("<span class='ko'>infortunato</span>")
+            if scremati and g.get('idoneo') is False:
+                note.append("<span class='warn'>non 2su3</span>")
 
             pezzi.append(
                 "<tr>"
-                # Il nome porta alla pagina del giocatore, il prezzo al mercato
-                # gia' filtrato sulle sue carte: cosi' dal report si compra
-                # senza cercare a mano.
+                f"<td>{verdetto}</td>"
                 f"<td><a href='https://sorare.com/football/players/{g['slug']}' "
                 f"target='_blank' rel='noopener'>{(g.get('nome') or g['slug'])}</a></td>"
                 f"<td>{'/'.join(g['ruoli'])}</td>"
-                f"<td class='n'>{num(atteso, '%.1f')}</td>"
-                f"<td class='n'>{eff_txt}</td>"
-                f"<td class='n'>{ess_txt}</td>"
-                f"<td class='n'>{euro_ess_txt}</td>"
-                f"<td class='n'>{rientro_txt}</td>"
-                f"<td class='n'>{num(g.get('l10'))}</td>"
-                f"<td class='n'>{num(g.get('l5'))}</td>"
-                f"<td class='n'>{num(g.get('l40'))}</td>"
-                f"<td class='n'>{odds_txt}</td>"
-                f"<td class='n'>{num(g.get('presenze_15'))}</td>"
-                f"<td class='n'>{num(g.get('proiezione_sorare'))}</td>"
+                f"<td class='n'>{'&mdash;' if atteso is None else '%.1f' % atteso}</td>"
                 f"<td class='n'><a href='https://sorare.com/football/players/{g['slug']}/cards' "
                 f"target='_blank' rel='noopener'>{prezzo}</a></td>"
-                f"<td>{g.get('club') or ''}</td>"
-                f"<td>{g.get('avversario') or ''}</td>"
-                f"<td>{(g.get('data') or '')[:10]}</td>"
-                f"<td>{lega_txt}</td>"
+                f"<td class='n'>{ess_txt}</td>"
+                f"<td class='n'>{rientro_txt}</td>"
+                f"<td class='n'>{odds_txt}</td>"
                 f"<td>{' '.join(note)}</td>"
                 "</tr>")
         pezzi.append("</table></div>")
