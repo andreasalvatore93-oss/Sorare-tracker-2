@@ -68,12 +68,12 @@ candidati.
 
 | Env | Default | Cosa |
 |---|---|---|
-| `TERZO_LOOKBACK_DAYS` | 2 | finestra media recente della carta |
-| `TERZO_TEMP_DISC_MIN` | 5.0 | sconto% temporale minimo (sotto: non è cheap vs sé) |
-| `TERZO_MIN_ABS_GAIN_EUR` | 0.50 | guadagno assoluto atteso minimo (lordo) per flip |
-| `TERZO_TREND_FLAT_PCT` | 5.0 | soglia up/down del trend |
-| `TERZO_DOWN_OVERRIDE_DISC` | 12.0 | sconto oltre cui si accetta anche un trend down |
-| `TERZO_PREZZO_MIN/MAX_EUR` | 1 / 30 | fascia prezzo (storica di Definitivo) |
+| `CERBERO_LOOKBACK_DAYS` | 2 | finestra media recente della carta |
+| `CERBERO_TEMP_DISC_MIN` | 5.0 | sconto% temporale minimo (sotto: non è cheap vs sé) |
+| `CERBERO_MIN_ABS_GAIN_EUR` | 0.50 | guadagno assoluto atteso minimo (lordo) per flip |
+| `CERBERO_TREND_FLAT_PCT` | 5.0 | soglia up/down del trend |
+| `CERBERO_DOWN_OVERRIDE_DISC` | 12.0 | sconto oltre cui si accetta anche un trend down |
+| `CERBERO_PREZZO_MIN/MAX_EUR` | 1 / 30 | fascia prezzo (storica di Definitivo) |
 | `AUTOBUY_LIVE_MODE` / `MAKEOFFER_LIVE_MODE` | no / no | esecuzione reale (default OFF) |
 | `LISTA_NERA_PATH` | sorare_lista_nera_terzo.txt | lista nera dedicata |
 

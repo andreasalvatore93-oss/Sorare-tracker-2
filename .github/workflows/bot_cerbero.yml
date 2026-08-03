@@ -1,0 +1,111 @@
+name: Cerbero (diagnostica)
+on:
+  workflow_dispatch:
+    inputs:
+      autobuy_live_mode:
+        description: "'si' = ACQUISTO REALE. Default 'no' = solo diagnostica (consigliato finche' non validato)."
+        required: false
+        default: "no"
+      makeoffer_live_mode:
+        description: "'si' = OFFERTE REALI. Default 'no' = solo diagnostica."
+        required: false
+        default: "no"
+      listen_seconds:
+        description: "Secondi di ascolto, max 18000 (5h)"
+        required: false
+        default: "18000"
+      target_matches:
+        description: "Quanti casi notificare prima di fermarsi (1-100)"
+        required: false
+        default: "20"
+      min_price_eur:
+        description: "Prezzo minimo carta (EUR)"
+        required: false
+        default: "1"
+      max_price_eur:
+        description: "Prezzo massimo carta (EUR)"
+        required: false
+        default: "30"
+      check_classic:
+        description: "Valuta anche le carte CLASSIC"
+        required: false
+        default: "si"
+      cerbero_lookback_days:
+        description: "[gate temporale] finestra media recente della carta (backtest: 1-2gg meglio di 7)"
+        required: false
+        default: "2"
+      cerbero_temp_disc_min:
+        description: "[gate temporale] sconto% minimo vs media recente per agire"
+        required: false
+        default: "5"
+      cerbero_min_abs_gain_eur:
+        description: "[gate temporale] guadagno assoluto atteso minimo (EUR) per flip -- 0.30/0.50 sweet spot; oltre peggiora"
+        required: false
+        default: "0.50"
+permissions:
+  contents: write
+concurrency:
+  group: sorare-bot-cerbero
+  cancel-in-progress: false
+jobs:
+  cerbero:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install sorare-sign dependencies (serve solo se live_mode=si)
+        run: |
+          cd bots/sorare-sign
+          npm install
+      - run: pip install requests websocket-client curl_cffi
+      - name: Run Cerbero
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
+          SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
+          SORARE_WALLET_PASSWORD: ${{ secrets.SORARE_WALLET_PASSWORD }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONUNBUFFERED: "1"
+          LISTA_NERA_PATH: "sorare_lista_nera_cerbero.txt"
+          AUTOBUY_LIVE_MODE: ${{ github.event.inputs.autobuy_live_mode || 'no' }}
+          MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.makeoffer_live_mode || 'no' }}
+          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
+          AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '20' }}
+          AUTOBUY_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
+          AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
+          CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
+          CERBERO_LOOKBACK_DAYS: ${{ github.event.inputs.cerbero_lookback_days || '2' }}
+          CERBERO_TEMP_DISC_MIN: ${{ github.event.inputs.cerbero_temp_disc_min || '5' }}
+          CERBERO_MIN_ABS_GAIN_EUR: ${{ github.event.inputs.cerbero_min_abs_gain_eur || '0.50' }}
+          CERBERO_PREZZO_MIN_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
+          CERBERO_PREZZO_MAX_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
+          RECENT_AVG_PRICE_DIAGNOSTIC_LOG: "no"
+          PRICE_BASED_THRESHOLDS_ENABLED: "si"
+          AGGRESSIVE_MODE: "no"
+        run: |
+          set -o pipefail
+          python bots/cerbero/cerbero.py
+      - name: Commit lista nera dedicata Cerbero
+        if: always()
+        run: |
+          if [ -z "$(git status --porcelain -- sorare_lista_nera_cerbero.txt)" ]; then
+            echo "Nessuna modifica alla lista nera, niente da committare."
+          else
+            git config user.name "bot-cerbero"
+            git config user.email "bot-cerbero@users.noreply.github.com"
+            git add sorare_lista_nera_cerbero.txt
+            git commit -m "Cerbero: aggiorna lista nera dedicata"
+            git pull --rebase --autostash origin main
+            git push
+          fi

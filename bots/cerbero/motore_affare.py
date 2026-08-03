@@ -16,7 +16,7 @@ Divisione dei compiti nel bot (regola a due assi, in AND):
 
 Le soglie sono tarate sul backtest del 03/08 (dataset pattern_raw_transactions,
 solo leghe di Profit, 6 giorni) e sono PROVVISORIE: tutte sovrascrivibili da env,
-da ritarare con piu' dati. Vedi docs/BOT_TERZO_PROGETTO.md.
+da ritarare con piu' dati. Vedi docs/BOT_CERBERO_PROGETTO.md.
 """
 import os
 
@@ -42,11 +42,11 @@ CURVA_RITORNO_CAP = 20.0           # tetto: oltre non ci sono dati che reggano
 
 # Finestra di lookback per la media recente della carta. Il backtest mostra che 7gg
 # NON e' speciale: 1-2 giorni danno il lift migliore. Default 2gg (robusto).
-LOOKBACK_DAYS = float(os.environ.get('TERZO_LOOKBACK_DAYS', '2'))
+LOOKBACK_DAYS = float(os.environ.get('CERBERO_LOOKBACK_DAYS', '2'))
 
 # Sconto temporale minimo perche' la carta sia "davvero cheap vs se stessa" (sotto,
 # il rendimento mediano e' <=0). 5% e' il punto in cui diventa nettamente positivo.
-TEMP_DISC_MIN = float(os.environ.get('TERZO_TEMP_DISC_MIN', '5.0'))
+TEMP_DISC_MIN = float(os.environ.get('CERBERO_TEMP_DISC_MIN', '5.0'))
 
 # 'down' = sconto sospetto (mercato in caduta): a pari sconto rende meno. Sul dataset
 # a 12 giorni down/flat = 7.3/12.7 = 0.57 (a pari sconto>=10%: down +7.3%/61% pos,
@@ -54,8 +54,8 @@ TEMP_DISC_MIN = float(os.environ.get('TERZO_TEMP_DISC_MIN', '5.0'))
 # Moltiplicatore prudente 0.6 e override piu' basso (un down con sconto reale >=12%
 # resta positivo, non va scartato).
 TREND_MULT = {'up': 1.0, 'flat': 1.0, 'down': 0.6, None: 0.85}
-TREND_FLAT_THRESHOLD_PERCENT = float(os.environ.get('TERZO_TREND_FLAT_PCT', '5.0'))
-DOWN_OVERRIDE_DISC = float(os.environ.get('TERZO_DOWN_OVERRIDE_DISC', '12.0'))
+TREND_FLAT_THRESHOLD_PERCENT = float(os.environ.get('CERBERO_TREND_FLAT_PCT', '5.0'))
+DOWN_OVERRIDE_DISC = float(os.environ.get('CERBERO_DOWN_OVERRIDE_DISC', '12.0'))
 
 # Guadagno ASSOLUTO minimo atteso (EUR, LORDO) perche' valga il flip. PROVVISORIO.
 # TENSIONE MISURATA (backtest 03/08): alzare troppo questa soglia PEGGIORA i risultati
@@ -65,11 +65,11 @@ DOWN_OVERRIDE_DISC = float(os.environ.get('TERZO_DOWN_OVERRIDE_DISC', '12.0'))
 # (~+5/+6% mediano, 57% positivi). Oltre 0.75EUR il rendimento realizzato va NEGATIVO.
 # Default prudente 0.50 (taglia i micro-flip da centesimi senza spingere sui big cards
 # non ancora validati). Da rivedere quando ci saranno piu' dati sulla fascia alta.
-MIN_ABS_GAIN_EUR = float(os.environ.get('TERZO_MIN_ABS_GAIN_EUR', '0.50'))
+MIN_ABS_GAIN_EUR = float(os.environ.get('CERBERO_MIN_ABS_GAIN_EUR', '0.50'))
 
 # Fascia prezzo (storica di Definitivo: 1-30). Estendibile senza costo query.
-PREZZO_MIN_EUR = float(os.environ.get('TERZO_PREZZO_MIN_EUR', '1.0'))
-PREZZO_MAX_EUR = float(os.environ.get('TERZO_PREZZO_MAX_EUR', '30.0'))
+PREZZO_MIN_EUR = float(os.environ.get('CERBERO_PREZZO_MIN_EUR', '1.0'))
+PREZZO_MAX_EUR = float(os.environ.get('CERBERO_PREZZO_MAX_EUR', '30.0'))
 
 # Fee venditore Sorare: chi vende incassa il 95%. Serve per stimare l'utile NETTO.
 SORARE_SELLER_NET = 0.95
