@@ -1578,6 +1578,39 @@ def main():
         merged_counts[role] = acc
     card_pool = bff.CardPool(merged_counts, names=player_names)
 
+    # TOP-UP L10 (fix strutturale, 03/08): l'L10 e' un campo Sorare player-level
+    # dinamico, sempre esposto. Se la discovery non l'ha persistita per un
+    # candidato (query odds+L10 fallita, 429), a valle card_pool.l10() torna
+    # None e il cap arena la contava 0 -> la formazione sforava il tetto in
+    # silenzio (i 5 L10 veri superano 260). Qui, per QUALUNQUE pool, si chiede
+    # all'API l'L10 mancante di ogni candidato prima di generare le arene.
+    # Gira solo se sono coinvolte arene (il cap riguarda solo loro) e se c'e' il
+    # cookie (in locale senza rete si usa quel che c'e' gia' in cache).
+    arene_coinvolte = int(os.environ.get('ARENE_EFFICIENTI', '0') or 0) > 0 or \
+        any(_is_arena_type(t) and counts.get(t, 0) > 0 for t in counts)
+    if arene_coinvolte and os.environ.get('SORARE_COOKIE'):
+        _slugs_pool, _visti = [], set()
+        for _lg, _roles in role_data.items():
+            for _role, _rows in _roles.items():
+                for _r in _rows:
+                    _s = _r.get('slug')
+                    if _s and _s not in _visti:
+                        _visti.add(_s)
+                        if card_pool.l10(_s) is None:
+                            _slugs_pool.append(_s)
+        if _slugs_pool:
+            _df = _import_module('discovery_fixture_l10', 'discovery_fixture.py')
+            print(f"\nTop-up L10: {len(_slugs_pool)} candidati senza L10 in cache, "
+                  f"li chiedo all'API (il cap arena non puo' contarli 0).")
+            _ok = 0
+            for _s in _slugs_pool:
+                _v = _df.l10_da_api(_s)
+                if _v is not None:
+                    card_pool.set_l10(_s, _v)
+                    _ok += 1
+            print(f"Top-up L10: riempiti {_ok}/{len(_slugs_pool)} "
+                  f"(i restanti hanno L10 API nulla = nessuna So5 giocata, valgono ~0).")
+
     run_number = os.environ.get('GITHUB_RUN_NUMBER')
 
     # FASE 1: genera (e consuma il card_pool) per tutti i tipi, in ordine di

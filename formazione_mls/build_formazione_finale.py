@@ -929,6 +929,14 @@ class CardPool:
         nel calcolo del budget, mai come esclusione)."""
         return self._l10.get(slug)
 
+    def set_l10(self, slug, valore):
+        """Fissa l'L10 di uno slug (usato dal top-up del generatore che la
+        recupera dall'API player-level quando la discovery non l'ha
+        persistita). L'L10 e' un campo Sorare sempre esposto: un buco qui
+        faceva contare 0 quel giocatore nel cap arena, sforando il tetto."""
+        if valore is not None:
+            self._l10[slug] = valore
+
     def power_bonus_fraction(self, slug):
         """Somma dei basis points del powerBreakdown Sorare (season/collection/
         xp/scarcity/special edition/active clubs/nationality/positions) per
@@ -1181,7 +1189,7 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
         picks = []
         # con quale ruolo e' stata scelta ogni carta: serve a consumare la
         # copia giusta, visto che le copie dipendono dal ruolo della carta
-        ruolo_scelto = {}
+        ruolo_scelto = {}
 
         def _forza_stimata():
             """Quanto forte sta venendo la formazione, proiettata a 5 slot.
@@ -1196,7 +1204,7 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
                 return None
             n_slot = len(shape['role_slots']) + 1
             return sum(r['atteso'] for r in scelti) * n_slot / len(scelti)
-
+
 
         def pick(pool_rows, role_slot_l10_check, reserve=0.0, slot_label=None,
                  role_by_slug=None):

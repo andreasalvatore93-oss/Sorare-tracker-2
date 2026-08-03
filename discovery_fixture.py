@@ -320,6 +320,34 @@ def odds_e_l10_singola(slug, inizio, fine):
     return None, None, l10
 
 
+# L10 puro, senza le odds e senza la finestra: serve al top-up del generatore
+# (build_formazione_globale) per riempire l'L10 di un candidato a cui la
+# discovery non l'ha persistito -- l'L10 e' un campo API player-level, dinamico
+# (si aggiorna dopo ogni partita) e SEMPRE esposto, quindi un candidato senza
+# L10 e' un buco di raccolta nostro, mai un dato inesistente. Contarlo 0 nel
+# cap arena faceva sforare il tetto in silenzio.
+L10_ONLY_QUERY = """
+query L10Only($slug: String!) {
+  anyPlayer(slug: $slug) {
+    lastTenPlayedAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
+  }
+}
+"""
+
+
+def l10_da_api(slug):
+    """L10 (lastTenPlayedAvgScore) di un giocatore, o None solo se l'API la
+    torna davvero nulla (giocatore senza nessuna So5 giocata). base.graphql_query
+    ha gia' il suo retry, quindi un 429/blocco transitorio non lascia il buco."""
+    try:
+        d = base.graphql_query(L10_ONLY_QUERY, {"slug": slug}, operation_name="L10Only")
+    except Exception as e:
+        log(f"  L10 non ottenuta per {slug}: {e!r}")
+        return None
+    p = ((d or {}).get('data') or {}).get('anyPlayer') or {}
+    return p.get('lastTenPlayedAvgScore')
+
+
 def log(msg):
     print(f"[discovery_fixture] {msg}", flush=True)
 

@@ -27,5 +27,8 @@ Riguardano SOLO come mi rapporto all'utente. Nessuna istruzione operativa sui to
 - Rigore da giurista: verifico le ipotesi su **casi reali** (partite/popup Sorare), non solo in astratto.
 - Riporto gli esiti fedelmente: se un test fallisce, lo dico con l'output.
 
+## Sorare API
+- **L'introspezione GraphQL è disabilitata** su Sorare (`__type`/`__schema` → errore). Non riprovarci mai: per scoprire lo schema, prova una query mirata e leggi il messaggio d'errore, che indica i campi validi.
+
 ## Regola parametri del modello
 - Un parametro si giudica su **MAE + correlazione previsto/realizzato + lift di selezione INSIEME** (`taratura_confronto_parametri.py`). Si applica solo se si muovono tutte e tre nello stesso verso. Il MAE da solo premia i modelli che non ordinano niente.
