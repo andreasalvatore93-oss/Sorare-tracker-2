@@ -348,6 +348,70 @@ def l10_da_api(slug):
     return p.get('lastTenPlayedAvgScore')
 
 
+_GAMES_DELLA_FIXTURE = """
+query FixtureGameIds($slug: String!) {
+  so5 { so5Fixture(slug: $slug) { anyGames { id } } }
+}
+"""
+
+_ODDS_DI_UNA_PARTITA = """
+query OddsPartita($id: ID!) {
+  anyGame(id: $id) {
+    playerGameScores {
+      anyPlayer { slug }
+      anyPlayerGameStats {
+        ... on PlayerGameStats { footballPlayingStatusOdds { starterOddsBasisPoints } }
+      }
+    }
+  }
+}
+"""
+
+
+def odds_per_giornata(fixture_slug, worker=6):
+    """Map slug -> starter odds (0-1) di TUTTA la giornata, presa dalle sue
+    partite invece che giocatore per giocatore.
+
+    Le odds stanno su ogni partita (anyGame.playerGameScores), non solo sul
+    giocatore: una query a partita porta le odds di TUTTI i suoi giocatori
+    (~76). Una giornata ha ~37 partite, quindi ~37 query in <1s contro le
+    centinaia (una a candidato) del percorso vecchio, che sotto rate-limit
+    arrivava a 12 minuti. Ritorna {} se le odds non sono ancora uscite.
+
+    ATTENZIONE (verificato 03/08): l'argomento id di anyGame e' ID!, non
+    String! -- con String! la query fallisce con 'Type mismatch' e la map
+    resta vuota (= tutte le odds mancanti = tutti esclusi in silenzio)."""
+    import concurrent.futures
+    d = base.graphql_query(_GAMES_DELLA_FIXTURE, {"slug": fixture_slug},
+                           operation_name="FixtureGameIds")
+    fx = (((d or {}).get('data') or {}).get('so5') or {}).get('so5Fixture') or {}
+    ids = [g['id'] for g in (fx.get('anyGames') or []) if g.get('id')]
+    if not ids:
+        return {}
+
+    def _una(gid):
+        try:
+            r = base.graphql_query(_ODDS_DI_UNA_PARTITA, {"id": gid}, operation_name="OddsPartita")
+        except Exception:
+            return {}
+        node = ((r or {}).get('data') or {}).get('anyGame') or {}
+        out = {}
+        for p in (node.get('playerGameScores') or []):
+            sl = (p.get('anyPlayer') or {}).get('slug')
+            bp = ((p.get('anyPlayerGameStats') or {}).get('footballPlayingStatusOdds') or {}).get('starterOddsBasisPoints')
+            if sl and bp is not None:
+                out[sl] = bp / 10000.0
+        return out
+
+    odds = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=worker) as ex:
+        for parziale in ex.map(_una, ids):
+            odds.update(parziale)
+    log(f"Odds giornata da {len(ids)} partite: {len(odds)} giocatori con odds "
+        f"({sum(1 for v in odds.values() if v >= 0.80)} sopra 0.80).")
+    return odds
+
+
 def log(msg):
     print(f"[discovery_fixture] {msg}", flush=True)
 

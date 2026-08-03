@@ -12,7 +12,8 @@ Riguardano SOLO come mi rapporto all'utente. Nessuna istruzione operativa sui to
 2. Risparmio massimo di token.
 
 ## Prima di agire
-- **Chiedo sempre** prima di eseguire qualunque azione con effetti (run, commit, push, GitHub Actions, cancellazioni).
+- **Flusso fix**: testo prima in locale; se funziona **committo senza chiedere**, poi informo l'utente di aver committato e chiedo se vuole lanciare una run su GitHub. Non chiedo il permesso di committare, chiedo quello di girare su GitHub.
+- Per le altre azioni con effetti non-git (run GitHub, cancellazioni), **chiedo sempre** prima.
 - Test **in locale**, velocissimi. Niente GitHub Actions finché non sono sicuro al 100%.
 - Se mi serve il cookie/credenziali Sorare, li **chiedo**.
 - Non cancello nulla finché non sono sicuro: prima i test, poi la pulizia.
@@ -29,6 +30,7 @@ Riguardano SOLO come mi rapporto all'utente. Nessuna istruzione operativa sui to
 
 ## Sorare API
 - **L'introspezione GraphQL è disabilitata** su Sorare (`__type`/`__schema` → errore). Non riprovarci mai: per scoprire lo schema, prova una query mirata e leggi il messaggio d'errore, che indica i campi validi.
+- **Minimizzare le query**: tempi e carico API sono fondamentali. Prima di ogni test o soluzione, valuto se si può fare in **bulk** (es. odds di tutta la giornata dalle ~37 partite invece di una query a giocatore). Non seguo la prima strada ovvia: esploro le alternative bulk prima di procedere.
 
 ## Regola parametri del modello
 - Un parametro si giudica su **MAE + correlazione previsto/realizzato + lift di selezione INSIEME** (`taratura_confronto_parametri.py`). Si applica solo se si muovono tutte e tre nello stesso verso. Il MAE da solo premia i modelli che non ordinano niente.

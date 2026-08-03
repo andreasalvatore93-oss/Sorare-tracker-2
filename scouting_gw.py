@@ -853,48 +853,31 @@ def stampa_candidati(pool, limite=None):
 # 40 migliori e poi scoprire che meta' non gioca, invece di scegliere i 40
 # migliori FRA CHI GIOCA.
 def filtra_per_odds(pool, soglia, worker=None):
-    """Tiene solo chi ha starter odds >= soglia. Una query a giocatore."""
+    """Tiene solo chi ha starter odds >= soglia, prendendo le odds in BLOCCO
+    dalle partite della giornata (discovery_fixture.odds_per_giornata): ~37
+    query in <1s invece di una a candidato (che sotto rate-limit arrivava a
+    12 minuti). Se le odds non sono ancora uscite (map vuota) NON si scarta
+    nessuno: si analizza tutto il pool -- e' l'unico dato onesto prima delle
+    24-48h dal kickoff."""
     fx = pool.get('fixture') or {}
-    inizio = (fx.get('startDate') or '')[:19]
-    fine = (fx.get('endDate') or '')[:19]
     giocatori = pool['giocatori']
-    log(f"Filtro starter odds >= {soglia:.0%} su {len(giocatori)} candidati "
-        f"(finestra {inizio}..{fine}); odds assenti = escluso, come in produzione.")
+    slug_fixture = fx.get('slug')
 
-    client = _client_ritmato()
-    worker = worker or (WORKER if client is not None else 1)
-    fatti = [0]
-    inizio_t = time.time()
+    odds_map = _df.odds_per_giornata(slug_fixture) if slug_fixture else {}
+    for g in giocatori:
+        o = odds_map.get(g['slug'])
+        g['starter_odds'] = o
 
-    def _uno(g):
-        try:
-            odds, _data, l10 = _df.odds_e_l10_singola(g['slug'], inizio, fine)
-        except Exception as e:
-            odds, l10 = None, None
-            g['odds_errore'] = str(e)[:100]
-        g['starter_odds'] = odds
-        if l10 is not None and not g.get('l10'):
-            g['l10'] = l10
-        fatti[0] += 1
-        if fatti[0] % 100 == 0 or fatti[0] == len(giocatori):
-            trascorso = time.time() - inizio_t
-            log(f"  odds {fatti[0]}/{len(giocatori)} ({trascorso:.0f}s, "
-                f"{fatti[0] / max(trascorso, 1e-9) * 60:.0f}/min)")
-
-    if worker > 1:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=worker) as pool_thread:
-            list(pool_thread.map(_uno, giocatori))
-    else:
-        for g in giocatori:
-            _uno(g)
+    if not odds_map:
+        log(f"Odds della giornata non ancora uscite: analizzo TUTTO il pool "
+            f"({len(giocatori)} candidati), nessun filtro odds.")
+        pool['filtri'] = dict(pool.get('filtri') or {}, odds_min=None)
+        return giocatori
 
     tenuti = [g for g in giocatori if (g.get('starter_odds') or 0) >= soglia]
     senza = sum(1 for g in giocatori if g.get('starter_odds') is None)
-    log(f"Odds: {len(tenuti)}/{len(giocatori)} sopra soglia "
-        f"({senza} senza odds pubblicate, esclusi).")
-    if not tenuti and senza == len(giocatori):
-        log("ATTENZIONE: NESSUN candidato ha odds. Probabilmente non sono "
-            "ancora uscite per questa giornata: rilancia senza --odds-min.")
+    log(f"Filtro starter odds >= {soglia:.0%}: {len(tenuti)}/{len(giocatori)} sopra soglia "
+        f"({senza} senza odds pubblicate per la loro partita, esclusi).")
     pool['filtri'] = dict(pool.get('filtri') or {}, odds_min=soglia)
     return tenuti
 
@@ -1913,34 +1896,21 @@ def main():
             pool['giocatori'] = [g for g in pool['giocatori'] if g.get('cartella') in leghe]
             log(f"Filtro lega {sorted(leghe)}: {len(pool['giocatori'])}/{prima} candidati")
         if args.odds_min:
-            # PRIMA si campiona LARGO, poi si chiedono le odds. Le odds costano
-            # UNA QUERY A GIOCATORE: su GW2 (1.147 in pool) erano gia' tante,
-            # su GW3 il pool e' di 5.749 e sarebbero state 5.749 chiamate,
-            # cioe' un'ora e mezza solo per scremare (segnalato dall'utente il
-            # 02/08, run fermata).
-            #
-            # Campionare prima e chiedere le odds dopo costa quanto il campione
-            # allargato: con `--per-ruolo 40` sono 40 x MARGINE_ODDS x 4 ruoli
-            # invece dell'intero pool. Il margine serve perche' il filtro odds
-            # scarta, e senza margine si finirebbe con meno candidati del
-            # richiesto.
-            if args.per_ruolo:
-                pool['giocatori'] = campiona(pool['giocatori'],
-                                             args.per_ruolo * MARGINE_ODDS,
-                                             a_fasce=not args.solo_l10)
+            # Le odds si prendono in BLOCCO dalle partite della giornata
+            # (filtra_per_odds -> odds_per_giornata): ~37 query in <1s, non piu'
+            # una a candidato. Quindi niente campione "largo" preventivo: si
+            # analizzano TUTTI quelli con odds >= soglia. Se le odds non sono
+            # ancora uscite, filtra_per_odds torna l'intero pool (nessun filtro).
             pool['giocatori'] = filtra_per_odds(pool, args.odds_min)
-            # Fermarsi QUI se non e' rimasto nessuno, prima di toccare la
-            # discovery. Altrimenti il caso "odds non ancora pubblicate" --
-            # cioe' il caso normale se si lancia troppo presto -- scriverebbe
-            # player_slugs.json VUOTI sopra quelli di produzione: nessun
-            # predict, report vuoto, e le liste dell'utente da rigenerare.
             if not pool['giocatori']:
-                log("ERRORE: nessun candidato supera la soglia odds. Non scrivo "
-                    "niente e mi fermo -- le odds probabilmente non sono ancora "
-                    "uscite (escono a 24-48h dal calcio d'inizio). Rilancia con "
-                    "odds_min vuoto per lavorare senza.")
+                log("ERRORE: le odds sono uscite ma nessun candidato supera la "
+                    "soglia. Non scrivo niente e mi fermo. Abbassa odds_min o "
+                    "rilancia senza.")
                 return 1
         if args.per_ruolo:
+            # Retrocompatibile: se qualcuno passa ancora --per-ruolo si campiona,
+            # ma NON e' piu' il percorso normale (ora si analizza tutto il pool
+            # con odds valorizzata).
             pool['giocatori'] = campiona(pool['giocatori'], args.per_ruolo,
                                          a_fasce=not args.solo_l10)
         if args.screen:

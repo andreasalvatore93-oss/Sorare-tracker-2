@@ -39,15 +39,10 @@ on:
         required: false
         default: ''
         type: string
-      per_ruolo:
-        description: 'Quanti candidati per ruolo, su TUTTE le leghe insieme (40 = ~155 giocatori)'
-        required: false
-        default: '40'
-        type: string
       odds_min:
-        description: 'Soglia starter-odds 0-1 (es. 0.80). Vuoto = spento. Odds assenti = escluso'
+        description: 'Soglia starter-odds 0-1 (es. 0.80). Odds uscite: analizza tutti quelli >= soglia. Odds non uscite: analizza tutto il pool.'
         required: false
-        default: ''
+        default: '0.80'
         type: string
       predict:
         description: 'Far girare il modello sui candidati (riempie la colonna Atteso)'
@@ -90,7 +85,7 @@ jobs:
           SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           PYTHONUNBUFFERED: "1"
         run: |
-          ARGS="--per-ruolo ${{ inputs.per_ruolo }}"
+          ARGS=""
           if [ -n "${{ inputs.gameweek }}" ]; then ARGS="$ARGS --gameweek ${{ inputs.gameweek }}"; fi
           if [ -n "${{ inputs.odds_min }}" ]; then ARGS="$ARGS --odds-min ${{ inputs.odds_min }}"; fi
           if [ "${{ inputs.screma }}" = "true" ]; then ARGS="$ARGS --screen"; fi
@@ -106,8 +101,19 @@ jobs:
           git config user.email "bot@users.noreply.github.com"
           git add ':(glob)formazione_*/output/**/player_slugs.json'                   dati_globali/scouting_da_predire.tsv dati_globali/scouting_lavori.txt || true
           git commit -m "Scouting: discovery dei candidati" || echo "niente da committare"
-          git pull --rebase --autostash origin main || true
-          git push origin main
+          # Push a prova di conflitto: se un'altra run (es. il generatore) ha
+          # toccato gli stessi player_slugs.json, il rebase andava in CONFLICT e
+          # il job moriva (run 30811889298). Le discovery di scouting sono cio'
+          # che vogliamo per QUESTA run: in caso di conflitto vince la nostra
+          # versione (-X ours), stesso schema del job predict.
+          tentativo=0
+          until git push origin main; do
+            tentativo=$((tentativo + 1))
+            [ $tentativo -ge 15 ] && { echo "push fallito 15 volte, abbandono"; exit 1; }
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main || true
+          done
 
       # Una voce per giocatore, "lega|ruolo|slug". La matrice di GitHub ne
       # accetta al massimo 256: si tronca dicendolo, invece di fallire.
@@ -239,7 +245,7 @@ jobs:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           PYTHONUNBUFFERED: "1"
         run: |
-          ARGS="--per-ruolo ${{ inputs.per_ruolo }}"
+          ARGS=""
           if [ -n "${{ inputs.gameweek }}" ]; then ARGS="$ARGS --gameweek ${{ inputs.gameweek }}"; fi
           if [ -n "${{ inputs.odds_min }}" ]; then ARGS="$ARGS --odds-min ${{ inputs.odds_min }}"; fi
           python scouting_gw.py $ARGS --html generatore_formazioni/output/scouting_ultimo.html
