@@ -99,11 +99,17 @@ jobs:
         run: |
           git config user.name  "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
-          # scouting_*.json: il pool della giornata, che porta il PREZZO MINIMO
-          # ancorato alla fixture. Committato qui (non solo artifact) cosi' il
-          # prezzo persiste per giornata e sopravvive a un'interruzione manuale
-          # della matrice predict, insieme ai predict gia' cachati.
-          git add ':(glob)formazione_*/output/**/player_slugs.json'                   dati_globali/scouting_da_predire.tsv dati_globali/scouting_lavori.txt                   'dati_globali/scouting_*.json' || true
+          # add SEPARATI: un pathspec che non matcha (es. il pool ancora non
+          # scritto) fa fallire l'INTERO 'git add' combinato -- ed e' quello che
+          # e' successo (run 30817534591): 'dati_globali/scouting_*.json' plain
+          # non matchava il file untracked, abortiva tutto, e ne' discovery ne'
+          # pool venivano committati -> --riusa-pool poi non trovava il pool.
+          # Il glob del pool usa :(glob) come player_slugs (matcha gli untracked).
+          # scouting_*.json porta il PREZZO MINIMO ancorato alla fixture e serve
+          # a --riusa-pool nel job report.
+          git add ':(glob)formazione_*/output/**/player_slugs.json' || true
+          git add dati_globali/scouting_da_predire.tsv dati_globali/scouting_lavori.txt || true
+          git add ':(glob)dati_globali/scouting_*.json' || true
           git commit -m "Scouting: discovery dei candidati" || echo "niente da committare"
           # Push a prova di conflitto: se un'altra run (es. il generatore) ha
           # toccato gli stessi player_slugs.json, il rebase andava in CONFLICT e
@@ -258,8 +264,12 @@ jobs:
           # lascia senza Atteso i candidati non piu' selezionati). Carica lo
           # stesso pool committato da 'candidati', cosi' i mostrati sono
           # esattamente i predetti, tutti con l'Atteso.
+          # --odds-min serve solo al FALLBACK (se il pool committato manca):
+          # con --riusa-pool presente e il pool trovato, si usa quello e le odds
+          # non si riguardano.
           ARGS=""
           if [ -n "${{ inputs.gameweek }}" ]; then ARGS="$ARGS --gameweek ${{ inputs.gameweek }}"; fi
+          if [ -n "${{ inputs.odds_min }}" ]; then ARGS="$ARGS --odds-min ${{ inputs.odds_min }}"; fi
           python scouting_gw.py $ARGS --riusa-pool --html generatore_formazioni/output/scouting_ultimo.html
 
       - name: Commit di report, consigli e cache
@@ -273,7 +283,8 @@ jobs:
           git add ':(glob)formazione_*/output/**/consiglio_*.txt' \
                   ':(glob)formazione_*/output/**/prediction_log.json' || true
           # Pool della giornata col prezzo minimo, ancorato alla fixture.
-          git add 'dati_globali/scouting_*.json' || true
+          # :(glob) per matchare anche il file untracked (plain non lo fa).
+          git add ':(glob)dati_globali/scouting_*.json' || true
           git commit -m "Scouting acquisti: report e consigli" || echo "niente da committare"
           tentativo=0
           until git push origin main; do

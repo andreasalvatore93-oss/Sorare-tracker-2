@@ -1860,7 +1860,29 @@ def main():
                          "un'ora di distanza")
     args = ap.parse_args()
 
-    if args.unisci:
+    pool = None
+    if args.riusa_pool:
+        # Il report NON ricostruisce il pool: carica quello gia' scritto e
+        # committato dal job candidati. Ricostruirlo con searchPlayers+odds a
+        # un'ora di distanza dava un set DIVERSO (le odds cambiano) e lasciava
+        # senza Atteso i candidati non piu' selezionati -- 125 analizzati ma
+        # solo ~60 con l'Atteso (run 30814827740). Se il pool committato manca
+        # (commit fallito), si RICOSTRUISCE (fallback) invece di fallire secco.
+        fx = risolvi_giornata(args.gameweek, args.fixture)
+        ppath = (os.path.join(REPO_ROOT, 'dati_globali', f"scouting_{fx['slug']}.json")
+                 if fx else None)
+        if ppath and os.path.exists(ppath):
+            with open(ppath, encoding='utf-8') as f:
+                pool = json.load(f)
+            log(f"Report dallo STESSO pool di candidati: {len(pool['giocatori'])} "
+                f"giocatori (giornata {fx['slug']}).")
+        else:
+            log("ATTENZIONE: pool committato non trovato -> RICOSTRUISCO con "
+                "searchPlayers+odds (fallback, set potenzialmente diverso).")
+
+    if pool is not None:
+        pass  # gia' caricato da --riusa-pool
+    elif args.unisci:
         pool = unisci(args.unisci)
         if not pool:
             return 1
@@ -1872,26 +1894,6 @@ def main():
             f"(giornata {pool['fixture']['slug']})")
         pool['giocatori'] = _shard(pool['giocatori'])
         screma(pool['giocatori'])
-    elif args.riusa_pool:
-        # Il report NON ricostruisce il pool: carica quello gia' scritto e
-        # committato dal job candidati. Ricostruirlo con searchPlayers+odds a
-        # un'ora di distanza dava un set DIVERSO (le odds cambiano), e i
-        # giocatori predetti non combaciavano piu' con quelli mostrati -- 125
-        # analizzati ma solo ~60 con l'Atteso (run 30814827740). Cosi' invece
-        # i mostrati sono esattamente i predetti.
-        fx = risolvi_giornata(args.gameweek, args.fixture)
-        if not fx:
-            log("ERRORE: giornata non risolta, --riusa-pool non puo' caricare il pool.")
-            return 1
-        ppath = os.path.join(REPO_ROOT, 'dati_globali', f"scouting_{fx['slug']}.json")
-        if not os.path.exists(ppath):
-            log(f"ERRORE: pool {ppath} non trovato (il job candidati deve averlo "
-                f"scritto e committato). Report non generato.")
-            return 1
-        with open(ppath, encoding='utf-8') as f:
-            pool = json.load(f)
-        log(f"Report dallo STESSO pool di candidati: {len(pool['giocatori'])} "
-            f"giocatori (giornata {fx['slug']}).")
     elif args.roster:
         pool = costruisci_pool(args.gameweek, args.fixture)
         if not pool:
