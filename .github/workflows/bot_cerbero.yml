@@ -11,9 +11,9 @@ on:
         required: false
         default: "no"
       listen_seconds:
-        description: "Secondi di ascolto/apprendimento. 10800 = 3 ore (max 18000 = 5h)"
+        description: "Secondi di ascolto/apprendimento. 18000 = 5 ore (massimo). Commit ogni 5 min: interruzione-sicuro"
         required: false
-        default: "10800"
+        default: "18000"
       target_matches:
         description: "Casi dopo cui fermarsi (1-100). In apprendimento tienilo ALTO (100) per non fermarsi e continuare a raccogliere"
         required: false
@@ -82,7 +82,7 @@ jobs:
           COMMIT_INTERVAL_SECONDS: "300"
           AUTOBUY_LIVE_MODE: ${{ github.event.inputs.autobuy_live_mode || 'no' }}
           MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.makeoffer_live_mode || 'no' }}
-          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '10800' }}
+          LISTEN_SECONDS: ${{ github.event.inputs.listen_seconds || '18000' }}
           AUTOBUY_TARGET_MATCHES: ${{ github.event.inputs.target_matches || '100' }}
           AUTOBUY_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
           AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
