@@ -2288,7 +2288,7 @@ def format_output(result):
                  f"Stadio C: percentili pesati ri-centrati sull'avversario/trend)")
     if result.get('score_ordinamento') is not None:
         lines.append(f"Score di ordinamento (senza shrinkage, usato SOLO per la "
-                     f"classifica del consiglio): {result['score_ordinamento']:.1f}")
+                     f"DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): {result['score_ordinamento']:.1f}")
 
     lines.append("")
     lines.append("--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---")
@@ -2495,7 +2495,7 @@ def main():
 
     summary_lines = []
     summary_lines.append("=" * 70)
-    summary_lines.append("CONSIGLIO DIFENSORI — ORDINATO PER SCORE DI ORDINAMENTO (senza shrinkage)")
+    summary_lines.append("CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)")
     summary_lines.append(f"Generato: {datetime.datetime.utcnow().isoformat()}Z")
     summary_lines.append(f"Parametri fissi per tutti: half_life={HALF_LIFE_GAMES}, "
                          f"range_mult={RANGE_MULTIPLIER}, min_starter_odds={MIN_STARTER_ODDS:.0%}")
