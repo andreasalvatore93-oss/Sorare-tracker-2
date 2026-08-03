@@ -13,13 +13,26 @@ lo RENDE invece di scaricarlo -- funziona solo su repo pubblici, questo lo e').
 """
 import glob
 import os
+import subprocess
 
 import requests
 
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
-GIT_REF = os.environ.get('GIT_REF', 'main').strip() or 'main'
 REPO_SLUG = os.environ.get('GITHUB_REPOSITORY', 'andreasalvatore93-oss/Sorare-tracker-2').strip()
+
+
+def _ref():
+    """Il commit ESATTO che contiene l'HTML, non 'main': raw.githack.com cacha
+    l'URL di un branch e servirebbe la copia VECCHIA del report. Lo SHA e'
+    immutabile. Il notify gira dopo il push dell'HTML, quindi HEAD e' giusto."""
+    try:
+        sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+        if sha:
+            return sha
+    except Exception:
+        pass
+    return os.environ.get('GIT_REF', 'main').strip() or 'main'
 
 OUTPUT_DIR = 'generatore_formazioni/output'
 
@@ -38,7 +51,7 @@ def _latest_html():
 
 def _viewer_url(path):
     path_url = path.replace(os.sep, '/')
-    return f"https://raw.githack.com/{REPO_SLUG}/{GIT_REF}/{path_url}"
+    return f"https://raw.githack.com/{REPO_SLUG}/{_ref()}/{path_url}"
 
 
 def main():

@@ -7,13 +7,30 @@ browser lo RENDE invece di scaricarlo -- funziona solo su repo pubblici).
 """
 import os
 import re
+import subprocess
 
 import requests
 
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '').strip()
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '').strip()
-GIT_REF = os.environ.get('GIT_REF', 'main').strip() or 'main'
 REPO_SLUG = os.environ.get('GITHUB_REPOSITORY', 'andreasalvatore93-oss/Sorare-tracker-2').strip()
+
+
+def _ref():
+    """Il commit ESATTO che contiene il report, non 'main'. raw.githack.com
+    cacha per un pezzo l'URL di un branch: col branch l'utente riapriva la
+    copia VECCHIA del report (segnalato piu' volte come 'report incompleto'
+    anche quando su main era completo). Lo SHA e' immutabile -> nessuna cache
+    stantia. Il notify gira DOPO il commit del report, quindi HEAD e' quello
+    giusto. Ripiego su GIT_REF/main solo se git non e' disponibile."""
+    try:
+        sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'],
+                                      text=True).strip()
+        if sha:
+            return sha
+    except Exception:
+        pass
+    return os.environ.get('GIT_REF', 'main').strip() or 'main'
 
 REPORT = os.environ.get('SCOUTING_REPORT',
                         'generatore_formazioni/output/scouting_ultimo.html')
@@ -41,7 +58,7 @@ def main():
         return
 
     fixture, quanti = _riassunto(REPORT)
-    url_report = f"https://raw.githack.com/{REPO_SLUG}/{GIT_REF}/{REPORT}"
+    url_report = f"https://raw.githack.com/{REPO_SLUG}/{_ref()}/{REPORT}"
     testa = f"🔎 <b>Scouting acquisti{' -- ' + fixture if fixture else ''}</b>"
     corpo = f"\n{quanti} candidati" if quanti else ''
     message = f"{testa}{corpo}\n<a href=\"{url_report}\">Apri il report</a>"
