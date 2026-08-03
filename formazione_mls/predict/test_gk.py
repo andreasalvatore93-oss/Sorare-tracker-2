@@ -1488,6 +1488,7 @@ def rigorous_backtest_prod_gk(scores, is_home_flags, granulari_values,
         # aggiustamento avversario, a differenza della produzione).
         _mult = 1.0
         _pen_delta = 0.0
+        _pen_delta = 0.0
         if opponent_team_slugs_hist and game_dates_hist:
             _opp, _dt = opponent_team_slugs_hist[i], game_dates_hist[i]
             _mult = opponent_strength.opponent_lambda_multiplier(league, 'gk', _opp, _dt)
@@ -2140,7 +2141,7 @@ def build_prediction(player_slug):
     _opp_lambda_mult = opponent_strength.opponent_lambda_multiplier(
         'mls', 'gk', next_opponent_team_slug, _opp_cutoff)
     # Bonus AGGIUNTIVO (29/07, si affianca al bonus goalkeeping esistente,
-    # non lo sostituisce -- vedi opponent_strength.gk_def_pen_area_multiplier):
+    # non lo sostituisce -- vedi opponent_strength.gk_def_pen_area_granular_delta):
     # isola le pen_area_entries dei SOLI difensori avversari (da corner/palle
     # inattive), separato dal segnale FWD+MID gia' in produzione. Validato
     # -0.13% MAE (formazione_mls/diagnostics/validate_cross_role_combos.py,

@@ -1493,9 +1493,15 @@ def build_prediction(player_slug):
     level_score_values = []  # NUOVO (26/07, Stadio A): "Punteggio decisivo" per partita
     granulari_values = []  # NUOVO (26/07, Stadio A): resto del punteggio (= score - level_score)
 
+    detail_ok_flags = []  # NUOVO (03/08): la partita ha davvero il detailedScore? Vedi mask_weights
+
     for node, detail in zip(usable, details):
         game_score = node.get('score', 0.0)
         scores.append(game_score)
+        # Il dettaglio c'e' davvero? (03/08) Se manca, tutti i valori derivati
+        # sotto sono segnaposto e la partita dovra' pesare zero -- vedi
+        # mask_weights per il perche' trattarli come dati veri sovrastimava.
+        detail_ok_flags.append(bool(detail and detail.get('detailedScore')))
         game = node['anyGame']
         own_rank, opp_rank, is_home = team_ranking_from_game(game, player_team_slug)
         # fallback: se il ranking non e' nel game log base, prova dal dettaglio granulare
@@ -1517,6 +1523,15 @@ def build_prediction(player_slug):
 
     n = len(scores)
     weights = exponential_weights(n, HALF_LIFE_GAMES)
+    # Pesi per le grandezze che vengono dal detailedScore (03/08, vedi
+    # mask_weights). 'weights' resta quello pieno per punteggio/range, che dal
+    # dettaglio non dipendono.
+    weights_det = mask_weights(weights, detail_ok_flags)
+    _n_senza_dettaglio = sum(1 for ok in detail_ok_flags if not ok)
+    if _n_senza_dettaglio:
+        log(f"[FASE 4/4] {_n_senza_dettaglio}/{n} partite senza detailedScore: "
+            f"escluse (peso 0) da level_score/granulare/eventi decisivi, "
+            f"restano nel punteggio e nel contesto casa/trasferta.")
 
     media_pesata = weighted_mean(scores, weights)
     dev_std_pesata = weighted_stddev(scores, weights, media_pesata)
@@ -1529,8 +1544,8 @@ def build_prediction(player_slug):
     # scomposizione additiva score=level_score+granulari verificata su dati
     # reali) -- eventuali scarti sono dovuti al floor (level_score>=60 puo'
     # rendere la scomposizione per-partita non lineare, la media resta valida).
-    media_level_score_pesata = weighted_mean(level_score_values, weights)
-    media_granulari_pesata = weighted_mean(granulari_values, weights)
+    media_level_score_pesata = weighted_mean(level_score_values, weights_det)
+    media_granulari_pesata = weighted_mean(granulari_values, weights_det)
 
     # --- Stadio B (26/07, tema level_score): range di confidenza a
     # percentili pesati sullo storico REALE, in alternativa a media+deviazione
@@ -1554,6 +1569,17 @@ def build_prediction(player_slug):
         return None
     next_node = future_games[0]['playerGameScore']
     next_game = next_node['anyGame']
+    # Cutoff alla data della partita TARGET, non ad "adesso" (03/08): gli
+    # aggiustamenti guardano le ultime 10 partite dell'avversario PRIMA del
+    # cutoff, e con un target a 5-7 giorni "adesso" tagliava fuori le partite
+    # che l'avversario gioca nel frattempo.
+    _next_game_dt = None
+    try:
+        _next_game_dt = datetime.datetime.fromisoformat(
+            (next_game.get('date') or '').replace('Z', '+00:00')).replace(tzinfo=None)
+    except (ValueError, AttributeError):
+        _next_game_dt = None
+    _opp_cutoff = _next_game_dt or datetime.datetime.utcnow()
     log(f"[FASE 4/4] Partita target: {(next_game.get('date') or '')[:16]} - "
         f"{(next_game.get('homeTeam') or {}).get('name', '?')} vs "
         f"{(next_game.get('awayTeam') or {}).get('name', '?')}")
@@ -1592,10 +1618,10 @@ def build_prediction(player_slug):
     # inspect_granular_weights.py) ---
     # Ognuno e' un fattore casa/trasferta indipendente, calcolato sui dati REALI
     # del detailedScore delle 14 partite (non stime).
-    fattore_possesso = compute_split_factor(possession_values, is_home_flags, next_is_home)
-    fattore_passaggio = compute_split_factor(passing_values, is_home_flags, next_is_home)
-    fattore_goalkeeping = compute_split_factor(goalkeeping_values, is_home_flags, next_is_home)
-    fattore_gol_subiti = compute_split_factor(goals_conceded_values, is_home_flags, next_is_home)
+    fattore_possesso = compute_split_factor(possession_values, is_home_flags, next_is_home, weights_det)
+    fattore_passaggio = compute_split_factor(passing_values, is_home_flags, next_is_home, weights_det)
+    fattore_goalkeeping = compute_split_factor(goalkeeping_values, is_home_flags, next_is_home, weights_det)
+    fattore_gol_subiti = compute_split_factor(goals_conceded_values, is_home_flags, next_is_home, weights_det)
 
     # --- Bonus clean sheet (25/07, gestione SPECIALE per il portiere) ---
     # Non e' un fattore moltiplicativo granulare come gli altri (il totalScore
@@ -1641,7 +1667,8 @@ def build_prediction(player_slug):
 
     # --- Fattore trend (ultime 5 vs ultime 10, stesso pool gia' filtrato) ---
     fattore_trend, trend_avg_short, trend_avg_long = compute_trend_factor(
-        scores, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
+        scores, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY,
+        weights=weights)
 
     # FIX (25/07): i fattori granulari NON entrano piu' nello score_atteso di
     # produzione. La calibrazione che ha fissato i parametri sopra (grid
@@ -1693,22 +1720,22 @@ def build_prediction(player_slug):
     next_forte = (next_opp_rank < avg_opp_rank_hist) if (
         next_opp_rank is not None and avg_opp_rank_hist is not None) else None
     media_level_score_condizionata = media_condizionata(
-        level_score_values, weights, opponent_forte_flags, next_forte, media_level_score_pesata)
+        level_score_values, weights_det, opponent_forte_flags, next_forte, media_level_score_pesata)
     delta_condizionamento_avversario = media_level_score_condizionata - media_level_score_pesata
 
     media_gol_subiti_condizionata_venue = media_condizionata(
-        goals_conceded_values, weights, is_home_flags, next_is_home, weighted_mean(goals_conceded_values, weights))
+        goals_conceded_values, weights_det, is_home_flags, next_is_home, weighted_mean(goals_conceded_values, weights_det))
     media_gol_subiti_condizionata_avversario = media_condizionata(
-        goals_conceded_values, weights, opponent_forte_flags, next_forte, weighted_mean(goals_conceded_values, weights))
+        goals_conceded_values, weights_det, opponent_forte_flags, next_forte, weighted_mean(goals_conceded_values, weights_det))
     media_possesso_condizionata_venue = media_condizionata(
-        possession_values, weights, is_home_flags, next_is_home, weighted_mean(possession_values, weights))
+        possession_values, weights_det, is_home_flags, next_is_home, weighted_mean(possession_values, weights_det))
     media_goalkeeping_condizionata_venue = media_condizionata(
-        goalkeeping_values, weights, is_home_flags, next_is_home, weighted_mean(goalkeeping_values, weights))
+        goalkeeping_values, weights_det, is_home_flags, next_is_home, weighted_mean(goalkeeping_values, weights_det))
 
-    delta_gol_subiti_venue = media_gol_subiti_condizionata_venue - weighted_mean(goals_conceded_values, weights)
-    delta_gol_subiti_avversario = media_gol_subiti_condizionata_avversario - weighted_mean(goals_conceded_values, weights)
-    delta_possesso_venue = media_possesso_condizionata_venue - weighted_mean(possession_values, weights)
-    delta_goalkeeping_venue = media_goalkeeping_condizionata_venue - weighted_mean(goalkeeping_values, weights)
+    delta_gol_subiti_venue = media_gol_subiti_condizionata_venue - weighted_mean(goals_conceded_values, weights_det)
+    delta_gol_subiti_avversario = media_gol_subiti_condizionata_avversario - weighted_mean(goals_conceded_values, weights_det)
+    delta_possesso_venue = media_possesso_condizionata_venue - weighted_mean(possession_values, weights_det)
+    delta_goalkeeping_venue = media_goalkeeping_condizionata_venue - weighted_mean(goalkeeping_values, weights_det)
     # NOTA: nessuno dei delta sopra viene piu' sommato a score_atteso (vedi motivazione).
 
     # --- Stadio C (26/07, tema level_score, DECISO CON L'UTENTE dopo analisi
