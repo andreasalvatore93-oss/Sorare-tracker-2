@@ -1,6 +1,21 @@
 # Sessione 4 agosto 2026 — fix leak, generatore vero nel backtest, bilancio pulito, capitano
 
-## FILONE CAPITANO DEF/MID/FWD — fatto il primo test, PROSSIMO PASSO sotto
+## FILONE CAPITANO DEF/MID/FWD — CHIUSO, nessuna modifica al codice
+
+Bias di ruolo misurato (vedi sotto), POI verificato con un backtest della
+policy vera (non solo il bias astratto): su 513 formazioni reali storiche
+(tutte quelle in `arene_formazioni.json`, walk-forward, nessuna nuova
+query), capitanare per "atteso corretto per bias di ruolo"
+(`atteso + BIAS[ruolo]`, BIAS = DEF -8.37/MID -6.00/FWD -7.37) invece che
+per atteso grezzo cambia la scelta nel 17.3% dei casi (89/513, sposta molto
+il mix: MID 48.1%→63.9%, DEF 32.2%→19.7%) ma il bonus capitano REALE
+catturato è quasi identico: +6.3 punti totali su 513 formazioni
+(+0.012 pt/formazione) — rumore, non un guadagno vero. Per la regola del
+CLAUDE.md (MAE+correlazione+lift insieme) il lift qui è ~zero:
+**`pick_captain()` NON va toccato per DEF/MID/FWD.** Resta valida solo
+l'esclusione del portiere, già in produzione (GK_CAPTAIN_MARGIN).
+
+Dettaglio della misura del bias (primo passo, poi superato dal test sopra):
 
 L'utente è già convinto di **escludere il portiere** dalla scelta capitano
 (non solo penalizzarlo col margine GK_CAPTAIN_MARGIN=6.7,
@@ -33,10 +48,12 @@ della fascia, non una regola operativa. NON dice:
 - cosa succeda ai casi non-DEF/MID/FWD-puri (es. formazioni dove il migliore
   per atteso NON è comunque un DEF/MID/FWD "tipico" della zona capitano).
 
-**PROSSIMO PASSO**: backtest della policy vera (capitanare MID a parità
-quasi-di-atteso invece di DEF/FWD) e verificare con la regola del CLAUDE.md
-(MAE + correlazione + lift di selezione insieme, mai il MAE da solo) prima
-di toccare `pick_captain()`. Nessuna nuova query: tutto già in cache.
+Script del backtest della policy: era in `_tmp_policy_backtest.py`, cancellato
+a fine sessione (non salvato nel repo, era solo verifica puntuale). Se serve
+rifarlo: stessa logica di `analyze_captain_bias_outfield.py` per i dati, poi
+per ogni formazione reale in `arene_formazioni.json` confrontare
+`max(atteso)` vs `max(atteso + BIAS[ruolo])` fra i 4 movimento e sommare il
+bonus reale (0.2×reale del capitano scelto) sulle formazioni vere.
 
 ## Cosa è stato fatto oggi (tutto committato su main salvo dove indicato)
 
