@@ -26,6 +26,9 @@ import websocket  # pip install websocket-client
 import sys as _sys
 _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from motore_affare import gate_temporale, classifica_trend, LOOKBACK_DAYS as _LOOKBACK_DAYS
+# Finestra "vecchia" per il calcolo del TREND (fissa, indipendente dal lookback dello
+# sconto): media ultimo 1gg vs media [1gg .. _TREND_OLD_DAYS gg]. Vedi _medie_temporali_da_nodi.
+_TREND_OLD_DAYS = float(os.environ.get('CERBERO_TREND_OLD_DAYS', '3'))
 
 # --- CERBERO: log osservazioni per l'APPRENDIMENTO ---
 # Ogni candidato che arriva al gate (in QUALSIASI lega -- Cerbero e' reattivo, vede
@@ -1970,32 +1973,42 @@ def _medie_temporali_da_nodi(nodes, is_in_season, league_slug, eth_rate):
     import statistics as _st
     excluded = is_asia_americas_excluded_league(league_slug)
     now = datetime.datetime.now(datetime.timezone.utc)
-    lo = now - datetime.timedelta(days=_LOOKBACK_DAYS)
+    # [CERBERO/fix 03/08] Finestra del TREND SEPARATA da quella dello sconto: con
+    # lookback 1gg la vecchia finestra trend era vuota (bug: trend sempre None ->
+    # persa la protezione anti-"coltello che cade"). Ora:
+    #   - SCONTO (media_full): media vendite manager negli ultimi _LOOKBACK_DAYS
+    #   - TREND: media ultimo 1gg (rec) vs media [1gg .. _TREND_OLD_DAYS] (old),
+    #     su una finestra fissa piu' lunga, indipendente dal lookback.
+    lo_full = now - datetime.timedelta(days=_LOOKBACK_DAYS)
     soglia_rec = now - datetime.timedelta(days=1)
+    old_lo = now - datetime.timedelta(days=_TREND_OLD_DAYS)
+    lo_scan = min(lo_full, old_lo)  # il piu' indietro dei due
     full, rec, old = [], [], []
     for n in nodes or []:
         if excluded:
             card = n.get('card') or {}
             if bool(card.get('inSeasonEligible')) != is_in_season:
                 continue
-        # [CERBERO/fix 03/08] SOLO vendite tra manager (TokenOffer, che ha 'type'):
-        # escluse ASTE (TokenAuction) e acquisti dalla riserva Sorare (TokenPrimaryOffer),
-        # che NON sono prezzi di mercato e gonfiano la media (caso reale Song Bumkeun:
-        # picchi 15-20EUR erano aste). Stesso identico criterio di Bot Profit
-        # (_is_countable_transaction), su cui e' tarato il dataset del backtest.
+        # SOLO vendite tra manager (TokenOffer, che ha 'type'): escluse ASTE
+        # (TokenAuction) e acquisti dalla riserva (TokenPrimaryOffer), che gonfiano
+        # la media (caso reale Song Bumkeun). Stesso criterio di Bot Profit / dataset.
         if not (n.get('deal') or {}).get('type'):
             continue
         try:
             dt = datetime.datetime.fromisoformat((n.get('date') or '').replace('Z', '+00:00'))
         except (ValueError, AttributeError):
             continue
-        if dt < lo:
+        if dt < lo_scan:
             continue
         price = eur_price_from_amounts(n.get('amounts'), eth_rate)
         if price is None:
             continue
-        full.append(price)
-        (rec if dt >= soglia_rec else old).append(price)
+        if dt >= lo_full:
+            full.append(price)          # baseline dello sconto (finestra lookback)
+        if dt >= soglia_rec:
+            rec.append(price)           # trend: ultimo giorno
+        elif dt >= old_lo:
+            old.append(price)           # trend: finestra piu' vecchia
     media_full = _st.mean(full) if full else None
     media_rec1d = _st.mean(rec) if rec else None
     media_old = _st.mean(old) if old else None

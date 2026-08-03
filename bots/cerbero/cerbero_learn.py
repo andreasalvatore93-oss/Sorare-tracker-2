@@ -89,6 +89,77 @@ def candidati_da_dataset():
     return per
 
 
+def candidati_da_osservazioni(path, forward_lo_h=36.0, forward_hi_h=60.0, max_age_days=6.0):
+    """RISOLUTORE FORWARD: per ogni osservazione (carta vista a un prezzo, con un dato
+    sconto, in una data lega, a una certa ora) misura il prezzo REALE della stessa
+    carta nelle ore successive (finestra forward_lo_h..forward_hi_h, tipicamente 48h)
+    interrogando le transazioni tra manager (aste escluse) -> rendimento realizzato.
+    Ritorna dict league_slug -> lista (sconto%, rendimento48h%). Servono credenziali
+    Sorare (query). Le osservazioni troppo FRESCHE (finestra forward non ancora chiusa)
+    o troppo VECCHIE (> max_age_days, fuori dalla finestra di fetch) vengono saltate.
+
+    NB stagione: senza is_in_season nel log si usa un'euristica sull'anno nel card_slug
+    per le leghe a doppio mercato (MLS/K-League/...); per le altre non serve (mercato unico).
+    """
+    import cerbero as C  # query gia' pronte e testate (lazy: serve il cookie)
+    eth = C.get_eth_rate()
+    now = datetime.datetime.now(datetime.timezone.utc)
+    anno_corrente = now.year
+    per = collections.defaultdict(list)
+    risolte = saltate_fresche = saltate_vecchie = 0
+    # cache per giocatore: una sola fetch transazioni per slug
+    cache_nodi = {}
+    with open(path, encoding='utf-8') as f:
+        osservazioni = list(csv.DictReader(f))
+    for r in osservazioni:
+        try:
+            ts = datetime.datetime.fromisoformat(r['ts_utc'])
+            prezzo = float(r['prezzo_min_eur']); sconto = float(r['sconto_temporale_pct'])
+        except (ValueError, KeyError, TypeError):
+            continue
+        eta_h = (now - ts).total_seconds() / 3600.0
+        if eta_h < forward_hi_h:
+            saltate_fresche += 1; continue
+        if eta_h > max_age_days * 24:
+            saltate_vecchie += 1; continue
+        slug = r['player_slug']; league = r['league_slug']; card = r.get('card_slug', '')
+        if slug not in cache_nodi:
+            try:
+                cache_nodi[slug] = C._fetch_paginated_transaction_nodes(slug)
+            except Exception:
+                cache_nodi[slug] = []
+        nodi = cache_nodi[slug]
+        excluded = C.is_asia_americas_excluded_league(league)
+        is_season = None
+        if excluded:  # euristica: anno nel card_slug == anno corrente -> in season
+            is_season = (f"-{anno_corrente}-" in (card or ''))
+        lo = ts + datetime.timedelta(hours=forward_lo_h); hi = ts + datetime.timedelta(hours=forward_hi_h)
+        prezzi_fwd = []
+        for n in nodi:
+            if not (n.get('deal') or {}).get('type'):   # solo TokenOffer (no aste)
+                continue
+            if excluded and is_season is not None:
+                if bool((n.get('card') or {}).get('inSeasonEligible')) != is_season:
+                    continue
+            try:
+                dt = datetime.datetime.fromisoformat((n.get('date') or '').replace('Z', '+00:00'))
+            except (ValueError, AttributeError):
+                continue
+            if not (lo < dt <= hi):
+                continue
+            p = C.eur_price_from_amounts(n.get('amounts'), eth)
+            if p is not None:
+                prezzi_fwd.append(p)
+        if not prezzi_fwd:
+            continue
+        fwd = statistics.median(prezzi_fwd)
+        per[league].append((sconto, (fwd - prezzo) / prezzo * 100.0))
+        risolte += 1
+    print(f"[risolutore] osservazioni: {len(osservazioni)} | risolte {risolte} | "
+          f"saltate troppo fresche {saltate_fresche} | troppo vecchie {saltate_vecchie}")
+    return per
+
+
 def impara(per_lega_cands):
     """Per ogni lega sceglie la soglia sconto minima che qualifica. Ritorna dict lega->info."""
     out = {}
@@ -131,12 +202,28 @@ def main():
     args = ap.parse_args()
 
     if args.osservazioni:
-        print("Modalita' osservazioni live non ancora collegata al fetch forward -- "
-              "serve girare la diagnostica abbastanza a lungo e poi risolvere i prezzi "
-              "successivi. Per ora uso il dataset storico come bootstrap.")
-    per = candidati_da_dataset()
-    learned = impara(per)
-    doc = scrivi_json(learned, 'dataset_storico', args.out)
+        oss_path = os.environ.get('CERBERO_OSSERVAZIONI_PATH', 'cerbero_osservazioni.csv')
+        if not os.path.exists(oss_path):
+            print(f"Nessun file osservazioni ({oss_path}). Lancia prima la diagnostica.")
+            return
+        # dataset storico = bootstrap per le 4 leghe note; live = per TUTTE (anche nuove).
+        learned_ds = impara(candidati_da_dataset())
+        # espandi il dataset a slug reali
+        base_slug = {}
+        for lega_ds, info in learned_ds.items():
+            for slug in GRUPPO_A_SLUG.get(lega_ds, [lega_ds]):
+                base_slug[slug] = info
+        learned_live = impara(candidati_da_osservazioni(oss_path))
+        # merge: live VINCE se qualificata; altrimenti dataset; altrimenti prudente (gia' in impara).
+        final = dict(base_slug)
+        for slug, info in learned_live.items():
+            if info['qualificata'] or slug not in final:
+                final[slug] = info
+        learned = final
+        doc = scrivi_json(learned, 'osservazioni_live+dataset', args.out)
+    else:
+        learned = impara(candidati_da_dataset())
+        doc = scrivi_json(learned, 'dataset_storico', args.out)
     print("=" * 70)
     print(f"SOGLIE APPRESE (lookback {M.LOOKBACK_DAYS:.0f}gg) scritte in {args.out}")
     for lega_ds, info in learned.items():
