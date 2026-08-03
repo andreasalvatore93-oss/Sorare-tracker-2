@@ -1794,6 +1794,11 @@ def get_last_transaction_prices(player_slug, is_in_season, league_slug, eth_rate
             card = node.get('card') or {}
             if bool(card.get('inSeasonEligible')) != is_in_season:
                 continue
+        # [CERBERO/fix 03/08] esclude aste/riserva (solo TokenOffer): il confronto
+        # "prezzo da pagare vs ultime transazioni" deve usare prezzi di mercato tra
+        # manager, non aste che gonfiano (coerente con la media temporale e con Profit).
+        if not (node.get('deal') or {}).get('type'):
+            continue
         price = eur_price_from_amounts(node.get('amounts'), eth_rate)
         if price is not None:
             prezzi_trovati.append(price)
@@ -1973,6 +1978,13 @@ def _medie_temporali_da_nodi(nodes, is_in_season, league_slug, eth_rate):
             card = n.get('card') or {}
             if bool(card.get('inSeasonEligible')) != is_in_season:
                 continue
+        # [CERBERO/fix 03/08] SOLO vendite tra manager (TokenOffer, che ha 'type'):
+        # escluse ASTE (TokenAuction) e acquisti dalla riserva Sorare (TokenPrimaryOffer),
+        # che NON sono prezzi di mercato e gonfiano la media (caso reale Song Bumkeun:
+        # picchi 15-20EUR erano aste). Stesso identico criterio di Bot Profit
+        # (_is_countable_transaction), su cui e' tarato il dataset del backtest.
+        if not (n.get('deal') or {}).get('type'):
+            continue
         try:
             dt = datetime.datetime.fromisoformat((n.get('date') or '').replace('Z', '+00:00'))
         except (ValueError, AttributeError):
