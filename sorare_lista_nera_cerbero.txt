@@ -1,0 +1,104 @@
+# LISTA NERA DEL BOT SUPREMO
+# Sezioni giocatore/manager/campionato: ogni riga 'slug,durata' (es. 'clem777,5
+# giorni'). La durata e' il tempo rimanente, aggiornata automaticamente ad ogni
+# scrittura -- modificabile a mano in qualunque momento (es. '3 ore', '10 giorni').
+# Sezioni thin_market/cooldown_acquisto: ogni riga 'slug,scadenza_ISO' -- data/ora
+# ASSOLUTA di scadenza in UTC (fix 22/07: una durata testuale si 'rinnovava' da
+# sola ad ogni lettura se il file restava statico tra le run). Dopo la virgola, un
+# commento '# scade: ...' mostra lo stesso istante in ora di Roma (Europe/Rome, si
+# adatta automaticamente a legale/solare) solo per comodita' di lettura -- il bot
+# usa SEMPRE e SOLO il valore ISO prima della virgola/cancelletto, il commento e'
+# puramente informativo e viene ignorato in lettura. NON pensate per modifica a
+# mano, gestite automaticamente dal bot. Per rimuovere un blocco in ogni sezione,
+# cancella semplicemente la riga.
+
+## manager
+# MANAGER BLACKLISTATI -- da questi manager non compriamo carte ne' facciamo offerte, ma le loro carte contano comunque nel calcolo del prezzo minimo di mercato (non vengono escluse dal conteggio, solo dagli acquisti/offerte).
+clem44,365 giorni
+clem777,365 giorni
+eli-aquim,365 giorni
+satonio,365 giorni
+zenlock,365 giorni
+🔵 clem44 🔵,365 giorni
+
+## giocatore
+# GIOCATORI BLACKLISTATI -- questi giocatori vengono ignorati sia per gli acquisti diretti (AutoBuy) sia per le offerte (MakeOffer).
+aoto-nanamure,3 giorni
+brian-graham,365 giorni
+cican-stankovic,3 giorni
+cristiano-ronaldo-dos-santos-aveiro,3 giorni
+denis-kolinger,365 giorni
+diegosorare85-trade-swap-bot-eth-counter-bot,3 giorni
+elias-ocampo,365 giorni
+fabijan-krivak,365 giorni
+felix-gerstmayer,365 giorni
+finn-stokkers,365 giorni
+gustavo-adolfo-puerta-molano,3 giorni
+hugo-cuypers,3 giorni
+in-hyeok-park,365 giorni
+isaac-pappoe,365 giorni
+isak-dahlqvist,3 giorni
+jakov-biljan,365 giorni
+juan-guilherme-nunes-jesus,365 giorni
+kennet-eichhorn,3 giorni
+kobe-cools,365 giorni
+labian-londono-bedoya,3 giorni
+leonardo-lukacevic,365 giorni
+leoni-schmidt-pereira-gastaldelo,365 giorni
+lukas-grgic,365 giorni
+manuel-maranda,365 giorni
+marcel-schantl,365 giorni
+matteo-darmian,365 giorni
+matthias-wetschka,365 giorni
+mickey-van-der-hart,365 giorni
+nelson-pierre,365 giorni
+petar-musa,3 giorni
+satonio,3 giorni
+selim-amallah,365 giorni
+shohei-takeda,365 giorni
+sir-hiss,3 giorni
+sir-hiss-the-swap-bot,3 giorni
+steevy-mazikou,365 giorni
+tim-goller,3 giorni
+valentin-oelz,365 giorni
+vedran-jugovic,365 giorni
+veljko-vukojevic,3 giorni
+yi-seok-kim,3 giorni
+
+## cooldown_acquisto
+# COOLDOWN ACQUISTI/OFFERTE -- giocatori appena comprati o a cui abbiamo appena fatto un'offerta: ignorati per il tempo indicato, per non ricomprare/riproporre subito lo stesso giocatore.
+# (vuoto)
+
+## thin_market
+# THIN MARKET -- giocatori con mercato troppo ristretto (poche transazioni recenti): i loro annunci vengono ignorati per il tempo indicato, per evitare di comprare/offrire su un mercato poco liquido.
+darwin-gabriel-nunez-ribeiro-inseason,2026-08-05T17:06:32.315520+00:00  # scade: 05/08/2026 19:06 ora di Roma
+marcus-wendel-valle-da-silva-classic,2026-08-05T17:05:57.705770+00:00  # scade: 05/08/2026 19:05 ora di Roma
+miha-zajc-classic,2026-08-05T17:04:34.476848+00:00  # scade: 05/08/2026 19:04 ora di Roma
+
+## campionato
+# CAMPIONATI BLACKLISTATI -- slug del campionato (es. 'premiership-gb-sct'), SEZIONE SEPARATA da manager/giocatori/thin_market/cooldown, non confonderla con le altre. Ogni carta di un giocatore attivo in uno di questi campionati viene ignorata COMPLETAMENTE (nessun acquisto, nessuna offerta), controllato PRIMA di qualunque altra valutazione per risparmiare tempo. Durata di default 15 giorni, rinnovabile o modificabile a mano come le altre sezioni.
+# (vuoto)
+
+## campionato_inseason_temp
+# BLACKLIST TRANSITORIA IN-SEASON -- slug del campionato: SOLO le carte in_season di questo campionato vengono ignorate (nessun acquisto, nessuna offerta), le carte classic dello stesso campionato restano valutate normalmente. Pensata per campionati con carte in_season appena uscite e dal prezzo ancora troppo variabile/instabile per fidarsi. Per questi campionati il confronto di mercato usa lo stesso modello di MLS/K League (classic confrontata solo con classic, in_season solo con in_season) -- vedi EXCLUDED_LEAGUE_SLUGS. Durata di default 15 giorni. Scadenza ASSOLUTA in ISO (come thin_market/cooldown_acquisto/fix_urgente, FIX 29/07: prima era durata testuale, che si reinterpretava 'da adesso' ad ogni lettura e non scorreva mai davvero se la riga non veniva riscritta -- vedi commento in _lista_nera_leggi_righe).
+# (vuoto)
+
+## forma_bassa_ultime_5
+# FORMA BASSA ULTIME 5 -- giocatori con media punti SO5 nelle ultime 5 partite giocate inferiore a 30: ignorati per il tempo indicato (default 1 mese), SEZIONE SEPARATA e distinta dai blacklist permanenti (coverage/media-zero restano in 'giocatore'), perche' questa e' una condizione transitoria che puo' rientrare -- non merita un blocco di 365gg.
+alvaro-odriozola-arzallus,2026-08-06T17:06:09.759604+00:00  # scade: 06/08/2026 19:06 ora di Roma
+bart-nieuwkoop,2026-08-06T17:07:10.531100+00:00  # scade: 06/08/2026 19:07 ora di Roma
+brian-djomeni-madjo,2026-08-06T17:04:33.133692+00:00  # scade: 06/08/2026 19:04 ora di Roma
+daiki-suga,2026-08-06T17:07:09.177895+00:00  # scade: 06/08/2026 19:07 ora di Roma
+harvey-elliot,2026-08-06T17:04:32.904677+00:00  # scade: 06/08/2026 19:04 ora di Roma
+ivan-fiolic,2026-08-06T17:08:22.870436+00:00  # scade: 06/08/2026 19:08 ora di Roma
+jon-pacheco-dozagarat,2026-08-06T17:05:59.458476+00:00  # scade: 06/08/2026 19:05 ora di Roma
+marcel-hoffmeier,2026-08-06T17:08:22.768863+00:00  # scade: 06/08/2026 19:08 ora di Roma
+medon-berisha,2026-08-06T17:04:33.648272+00:00  # scade: 06/08/2026 19:04 ora di Roma
+pau-lopez-sabata,2026-08-06T17:07:22.209941+00:00  # scade: 06/08/2026 19:07 ora di Roma
+souleymane-alio,2026-08-06T17:08:05.958255+00:00  # scade: 06/08/2026 19:08 ora di Roma
+yuto-iwasaki,2026-08-06T17:07:08.783616+00:00  # scade: 06/08/2026 19:07 ora di Roma
+
+## fix_urgente
+# FIX URGENTI -- sezione SEPARATA dalla blacklist 'giocatore' normale, per casi particolari/situazioni impreviste che richiedono uno stop immediato su un giocatore specifico (acquisti E offerte bloccati), senza mescolarli con la blacklist manuale ordinaria. Scadenza ASSOLUTA in ISO (come thin_market/cooldown_acquisto), non una durata testuale rinnovabile.
+# (vuoto)
+
