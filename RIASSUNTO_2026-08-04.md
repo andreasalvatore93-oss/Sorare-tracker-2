@@ -2,6 +2,30 @@
 
 ## FILONE CAPITANO DEF/MID/FWD — CHIUSO, nessuna modifica al codice
 
+Tre ipotesi testate, tutte negative (la regola attuale, "capitana per atteso
+del modello", resta la migliore misurata):
+
+1. **Bias per ruolo** (DEF/MID/FWD) — bias reale ma lift ~zero nella policy
+   vera. Dettagli sotto.
+2. **Volatilita' del singolo giocatore** (dev_std storica pesata, stesso dato
+   gia' calcolato da ogni test_<ruolo>.py per il range di confidenza,
+   nessuna nuova query): bias per bucket di volatilita' (zona capitano,
+   atteso>=55, n=2019/2020/2020) — bassa -6.58, media -6.79, **alta -8.37**
+   (freq. crollo 8.9% contro 6.3% delle altre due). Gap bassa-vs-alta
+   +1.80pt, PIU' PICCOLO del gap DEF-vs-MID (2.37pt) che aveva gia' dato
+   lift zero — non testata la policy per questo (segnale troppo debole per
+   valere il tempo, dato il precedente). Script:
+   `formazione_mls/diagnostics/analyze_captain_bias_variance.py` (committato).
+3. **Forma recente grezza (L40/L10/L5) al posto dell'atteso del modello**:
+   su 1798 formazioni reali (513 mie + 1285 di forever-young, walk-forward,
+   nessuna nuova query) — L10 e L5 chiaramente PEGGIO dell'atteso
+   (-0.164 e -0.377 pt/formazione). L40 sembrava leggermente meglio
+   (+0.074 pt/formazione) ma l'IC 95% bootstrap è [-0.15, +0.31]: include lo
+   zero, non distinguibile dal rumore (conferma diretta: L40 vince 390 volte,
+   perde 379, quasi simmetrico). **Nessuna euristica di forma batte
+   l'atteso del modello.** Script non salvato (era solo verifica puntuale,
+   vedi in fondo per rifarlo).
+
 Bias di ruolo misurato (vedi sotto), POI verificato con un backtest della
 policy vera (non solo il bias astratto): su 513 formazioni reali storiche
 (tutte quelle in `arene_formazioni.json`, walk-forward, nessuna nuova
@@ -54,6 +78,19 @@ rifarlo: stessa logica di `analyze_captain_bias_outfield.py` per i dati, poi
 per ogni formazione reale in `arene_formazioni.json` confrontare
 `max(atteso)` vs `max(atteso + BIAS[ruolo])` fra i 4 movimento e sommare il
 bonus reale (0.2×reale del capitano scelto) sulle formazioni vere.
+
+Script del test L40/L10/L5 (punto 3 sopra): stessa idea, ma il capitano si
+sceglie per `max(L40)`/`max(L10)`/`max(L5)` invece che per atteso o atteso
+corretto. L40/L10/L5 si calcolano dal game log gia' in cache (`cache.gamelog`,
+media degli ultimi N punteggi validi con data < cutoff — stessa logica del
+calcolo L10 gia' in `backtest_arene_previsioni.score_atteso`, generalizzata a
+N=40/10/5). Per allargare il campione, unire le formazioni di
+`arene_formazioni.json` (mie, 593) con quelle di
+`dati_globali/manager_forever-young.json` (`d['giornate'][fixture]`, ogni
+voce con `carte`+`piazzamento`, ~3326 con carte) sulla stessa giornata/cutoff
+— dà ~1800 formazioni valutabili invece di ~513. Significativita' con
+bootstrap sulle differenze per-formazione (stesso approccio di
+`intervallo_media()` in backtest_arene.py).
 
 ## Cosa è stato fatto oggi (tutto committato su main salvo dove indicato)
 
