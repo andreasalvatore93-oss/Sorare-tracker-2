@@ -189,7 +189,7 @@ def _serie(modulo, cache, slug, usable, squadra):
     return s
 
 
-def contesto(cache, slug, ruolo, fine_giornata):
+def contesto(cache, slug, ruolo, fine_giornata, cutoff_giornata=None):
     """Tutti gli ingressi della previsione, senza ancora calcolarla.
 
     Estratto da score_atteso (03/08) perche' la taratura di half_life e
@@ -197,14 +197,20 @@ def contesto(cache, slug, ruolo, fine_giornata):
     giocatore-partita: ricostruire la finestra storica e le serie granulari
     una volta per combinazione costerebbe ore, e sarebbe anche l'occasione
     perfetta per farle divergere. Qui si costruiscono una volta sola e si
-    ricalcola solo la formula."""
+    ricalcola solo la formula.
+
+    `cutoff_giornata`, se passato, e' il momento di BLOCCO della giornata
+    (primo calcio d'inizio) e sostituisce la data della partita-bersaglio
+    del singolo giocatore come taglio per storia/L10. Senza, un giocatore con
+    piu' partite dentro la stessa finestra-giornata vede nella sua storia
+    risultati che sono in realta' della giornata stessa (leak, 03/08)."""
     modulo = _MODULO.get(ruolo)
     if modulo is None:
         return None
     target = partita_target(cache, slug, fine_giornata)
     if target is None:
         return None
-    cutoff = _data(target)
+    cutoff = cutoff_giornata if cutoff_giornata is not None else _data(target)
     competizione = ((target['anyGame'].get('competition') or {}).get('slug'))
     usable, presenza = finestra_storica(cache, slug, cutoff, competizione)
     if not usable:
@@ -396,12 +402,13 @@ def calcola_con_maschera(ctx, half_life=None, trend_intensity=None):
         offensive_values=s['offensive'], **extra)
 
 
-def score_atteso(cache, slug, ruolo, fine_giornata):
+def score_atteso(cache, slug, ruolo, fine_giornata, cutoff_giornata=None):
     """Il punteggio atteso di produzione per quella giornata, o None.
 
     Ritorna un dizionario con previsione, L10 al momento della scelta e la
-    partita target (serve per sapere in casa/fuori e per il taglio storico)."""
-    ctx = contesto(cache, slug, ruolo, fine_giornata)
+    partita target (serve per sapere in casa/fuori e per il taglio storico).
+    `cutoff_giornata`: vedi contesto()."""
+    ctx = contesto(cache, slug, ruolo, fine_giornata, cutoff_giornata)
     if ctx is None:
         return None
     s, casa, cutoff, squadra = ctx['s'], ctx['casa'], ctx['cutoff'], ctx['squadra']

@@ -244,7 +244,24 @@ def _valore(carte):
 # Backtest
 # --------------------------------------------------------------------------
 
-def esegui(verbose=True):
+def inizio_giornata(cache, fd, carte):
+    """Il momento di blocco della giornata: la piu' precoce fra le date
+    delle partite-bersaglio di TUTTE le carte usate quel giorno. Evita il
+    leak (03/08): senza, il cutoff di ogni giocatore era la data della SUA
+    partita-bersaglio, quindi un giocatore con 2+ partite nella stessa
+    finestra-giornata vedeva nella sua storia risultati della giornata
+    stessa."""
+    date = []
+    for slug, ruolo in carte:
+        t = P.partita_target(cache, slug, fd)
+        if t is not None:
+            d = P._data(t)
+            if d is not None:
+                date.append(d)
+    return min(date) if date else None
+
+
+def esegui(verbose=True, solo_fixture=None):
     cache = C.CacheLocale()
     formazioni_utente = carica('dati_globali/arene_formazioni.json')['formazioni']
     arene_storico = carica('dati_globali/arene_storico.json')['arene']
@@ -257,10 +274,10 @@ def esegui(verbose=True):
 
     previsioni = {}
 
-    def previsione(slug, ruolo, fd):
-        ch = (slug, ruolo, fd)
+    def previsione(slug, ruolo, fd, cutoff_giornata):
+        ch = (slug, ruolo, fd, cutoff_giornata)
         if ch not in previsioni:
-            previsioni[ch] = P.score_atteso(cache, slug, ruolo, fd)
+            previsioni[ch] = P.score_atteso(cache, slug, ruolo, fd, cutoff_giornata)
         return previsioni[ch]
 
     confronti = []
@@ -268,10 +285,17 @@ def esegui(verbose=True):
     giornate_usate = 0
 
     for fixture in sorted(per_giornata):
+        if solo_fixture and fixture != solo_fixture:
+            continue
         fd = fine.get(fixture)
         if fd is None:
             saltate['giornata senza data'] += len(per_giornata[fixture])
             continue
+
+        carte_giornata = list(set(
+            (g['slug'], g['ruolo'])
+            for _chiave, v in per_giornata[fixture] for g in v['giocatori']))
+        cutoff_g = inizio_giornata(cache, fd, carte_giornata)
 
         # Pool della giornata: ogni carta una volta sola, prevista e realizzata.
         pool = {}
@@ -281,7 +305,7 @@ def esegui(verbose=True):
             ok = True
             for g in v['giocatori']:
                 reale = punteggio_grezzo(g)
-                r = previsione(g['slug'], g['ruolo'], fd)
+                r = previsione(g['slug'], g['ruolo'], fd, cutoff_g)
                 if reale is None or r is None or r['l10'] is None:
                     ok = False
                     break
@@ -450,8 +474,9 @@ def rapporto(confronti, saltate, giornate):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--json', help='salva il dettaglio arena per arena')
+    ap.add_argument('--fixture', help='una sola giornata (es. football-1-5-may-2026)')
     args = ap.parse_args()
-    confronti, saltate, giornate = esegui()
+    confronti, saltate, giornate = esegui(solo_fixture=args.fixture)
     rapporto(confronti, saltate, giornate)
     arene_storico = carica('dati_globali/arene_storico.json')['arene']
     ris, dettaglio = backtest_arene_economia.bilancio(confronti, arene_storico)
