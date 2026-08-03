@@ -205,7 +205,7 @@ def contesto(cache, slug, ruolo, fine_giornata):
             'squadra': squadra}
 
 
-def calcola(ctx, half_life=None, trend_intensity=None):
+def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None):
     """La previsione di produzione dagli ingressi di `contesto`.
 
     half_life/trend_intensity servono SOLO alla taratura: lasciati a None si
@@ -218,6 +218,8 @@ def calcola(ctx, half_life=None, trend_intensity=None):
         extra['half_life'] = half_life
     if trend_intensity is not None:
         extra['trend_intensity'] = trend_intensity
+    if shrink_k is not None:
+        extra['shrink_k'] = shrink_k
 
     if ruolo == 'Goalkeeper':
         return modulo.compute_score_atteso_gk(
@@ -229,6 +231,41 @@ def calcola(ctx, half_life=None, trend_intensity=None):
             s['pos_dec'], s['neg_dec'], s['goals_conceded'], s['passing'], s['clean_sheet'],
             target_is_home=casa, target_opp_rank=opp_rank, presence_rate=presenza, **extra)
     if ruolo == 'Midfielder':
+        return modulo.compute_score_atteso_mid(
+            s['scores'], s['is_home'], s['opp_rank'], s['residual'], s['granulari'],
+            s['pos_dec'], s['neg_dec'], s['offensive'], s['passing'], s['goals_conceded'],
+            target_is_home=casa, target_opp_rank=opp_rank, presence_rate=presenza, **extra)
+    return modulo.compute_score_atteso_fwd(
+        s['scores'], s['is_home'], s['residual'], s['granulari'],
+        s['pos_dec'], s['neg_dec'], s['passing'],
+        target_is_home=casa, presence_rate=presenza,
+        offensive_values=s['offensive'], **extra)
+
+
+def calcola_con_maschera(ctx, half_life=None, trend_intensity=None):
+    """Come `calcola`, ma passando anche detail_ok_flags al modello.
+
+    Serve a confronta_fix_dettaglio.py: `calcola` da solo non puo' esercitare
+    la maschera, perche' `finestra_storica` scarta gia' le partite senza
+    dettaglio e quindi la maschera non avrebbe niente da mascherare."""
+    modulo, s, ruolo_ = ctx['modulo'], ctx['s'], ctx['ruolo']
+    casa, opp_rank, presenza = ctx['casa'], ctx['opp_rank'], ctx['presenza']
+    extra = {'detail_ok_flags': ctx.get('detail_ok_flags')}
+    if half_life is not None:
+        extra['half_life'] = half_life
+    if trend_intensity is not None:
+        extra['trend_intensity'] = trend_intensity
+
+    if ruolo_ == 'Goalkeeper':
+        return modulo.compute_score_atteso_gk(
+            s['scores'], s['is_home'], s['granulari'], s['pos_dec'], s['neg_dec'],
+            target_is_home=casa, presence_rate=presenza, **extra)
+    if ruolo_ == 'Defender':
+        return modulo.compute_score_atteso_def(
+            s['scores'], s['is_home'], s['opp_rank'], s['residual'], s['granulari'],
+            s['pos_dec'], s['neg_dec'], s['goals_conceded'], s['passing'], s['clean_sheet'],
+            target_is_home=casa, target_opp_rank=opp_rank, presence_rate=presenza, **extra)
+    if ruolo_ == 'Midfielder':
         return modulo.compute_score_atteso_mid(
             s['scores'], s['is_home'], s['opp_rank'], s['residual'], s['granulari'],
             s['pos_dec'], s['neg_dec'], s['offensive'], s['passing'], s['goals_conceded'],

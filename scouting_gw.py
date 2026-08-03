@@ -357,7 +357,11 @@ PAGINA_SEARCH = int(os.environ.get('SCOUTING_PAGINA_SEARCH', '50'))
 ORE_CONSIGLIO_VALIDO = float(os.environ.get('SCOUTING_ORE_CONSIGLIO', '12'))
 
 PUNTI_SLOT_MEDIO = float(os.environ.get('SCOUTING_PUNTI_SLOT', '51.8'))
-ESSENZE_PER_PUNTO = float(os.environ.get('SCOUTING_ESSENZE_PUNTO', '7.65'))
+# AGGIORNATO (03/08): 7.65 -> 8.8, rimisurato insieme alle soglie d'arena con
+# la dispersione nuova (consiglio_arena.py, pendenza della curva dell'incasso
+# attorno al pareggio). Era il valore medio dei vecchi 7.5/7.4/7.3, ricalcolati
+# oggi a 8.8/6.3/8.0: si compra per giocare in cap 260, quindi vale quella.
+ESSENZE_PER_PUNTO = float(os.environ.get('SCOUTING_ESSENZE_PUNTO', '8.8'))
 EURO_PER_1000_ESSENZE = float(os.environ.get('SCOUTING_EURO_1000_ESSENZE', '2'))
 
 
@@ -1117,6 +1121,10 @@ PER_EURO = os.environ.get('SCOUTING_ARENE_PER_EURO', '1').strip() not in ('0', '
 # apposta: e' l'unico modo di non far vincere le formazioni piene di incognite.
 PREZZO_IGNOTO = float(os.environ.get('SCOUTING_PREZZO_IGNOTO', '25'))
 
+# Quanto allargare il campione PRIMA di chiedere le odds: il filtro scarta, e
+# senza margine resterebbero meno candidati di quanti richiesti.
+MARGINE_ODDS = int(os.environ.get('SCOUTING_MARGINE_ODDS', '3'))
+
 
 def componi_arene(pool, tipi=TIPI_ARENA, massimo=None):
     """Le arene che converrebbe giocare coi soli candidati del pool.
@@ -1150,7 +1158,13 @@ def componi_arene(pool, tipi=TIPI_ARENA, massimo=None):
         if not path:
             continue
         try:
-            righe = bf._parse_consiglio_calibrato(bff, gg, path)
+            # ROLE va passato (03/08): dal 03/08 la retta di calibrazione e'
+            # diversa per ruolo (CALIB_PER_RUOLO nel generatore), perche'
+            # quella unica appiattiva tre punti fra portieri e attaccanti.
+            # Senza il ruolo lo scouting ricadeva sulla retta media, e avrebbe
+            # dato allo stesso giocatore un punteggio DIVERSO da quello del
+            # generatore: comprato su un numero, schierato su un altro.
+            righe = bf._parse_consiglio_calibrato(bff, gg, path, ROLE)
         except Exception as e:
             log(f"ATTENZIONE: consiglio {os.path.basename(path)} non leggibile ({e}).")
             continue
@@ -1253,7 +1267,7 @@ def _arene_per_euro(gg, tipi, massimo, role_data, pools, card_pool, prezzi_per_s
             if not valide:
                 continue
             atteso = gg._atteso_con_capitano(valide[0])
-            essenze = (atteso - soglia) * getattr(gg, 'GUADAGNO_PER_PUNTO', {}).get(tipo, 7.5)
+            essenze = (atteso - soglia) * getattr(gg, 'GUADAGNO_PER_PUNTO', {}).get(tipo, 8.8)
             if essenze <= 0:
                 continue
             costo = 0.0
@@ -1418,10 +1432,21 @@ _HTML_ORDINAMENTO = """
         var ca = a.cells[colonna], cb = b.cells[colonna];
         if (!ca || !cb) return 0;
         var na = numero(ca), nb = numero(cb);
-        // Le celle senza valore stanno SEMPRE in fondo, in entrambi i versi:
-        // altrimenti ordinando per prezzo crescente vincerebbero le carte di
-        // cui non sappiamo il prezzo.
-        if (na === null && nb === null) return 0;
+        // Colonne di TESTO (Giocatore, Ruolo, Club, Avversario, Lega, Note):
+        // si ordinano alfabeticamente. Prima non funzionavano perche' il
+        // confronto era solo numerico e ogni cella valeva "null", quindi
+        // finivano tutte in fondo e l'ordine non cambiava mai.
+        if (na === null && nb === null) {
+          var ta = (ca.textContent || '').trim(), tb = (cb.textContent || '').trim();
+          if (!ta && !tb) return 0;
+          if (!ta) return 1;
+          if (!tb) return -1;
+          var cmp = ta.localeCompare(tb, 'it', { sensitivity: 'base' });
+          return discendente ? -cmp : cmp;
+        }
+        // Miste: la cella senza valore sta SEMPRE in fondo, in entrambi i
+        // versi -- altrimenti ordinando per prezzo crescente vincerebbero le
+        // carte di cui non sappiamo il prezzo.
         if (na === null) return 1;
         if (nb === null) return -1;
         return discendente ? nb - na : na - nb;
@@ -1883,9 +1908,21 @@ def main():
             pool['giocatori'] = [g for g in pool['giocatori'] if g.get('cartella') in leghe]
             log(f"Filtro lega {sorted(leghe)}: {len(pool['giocatori'])}/{prima} candidati")
         if args.odds_min:
-            # Prima del campionamento: cosi' si scelgono i migliori FRA CHI
-            # GIOCA, invece di scegliere i migliori e scoprire poi che meta'
-            # non scende in campo.
+            # PRIMA si campiona LARGO, poi si chiedono le odds. Le odds costano
+            # UNA QUERY A GIOCATORE: su GW2 (1.147 in pool) erano gia' tante,
+            # su GW3 il pool e' di 5.749 e sarebbero state 5.749 chiamate,
+            # cioe' un'ora e mezza solo per scremare (segnalato dall'utente il
+            # 02/08, run fermata).
+            #
+            # Campionare prima e chiedere le odds dopo costa quanto il campione
+            # allargato: con `--per-ruolo 40` sono 40 x MARGINE_ODDS x 4 ruoli
+            # invece dell'intero pool. Il margine serve perche' il filtro odds
+            # scarta, e senza margine si finirebbe con meno candidati del
+            # richiesto.
+            if args.per_ruolo:
+                pool['giocatori'] = campiona(pool['giocatori'],
+                                             args.per_ruolo * MARGINE_ODDS,
+                                             a_fasce=not args.solo_l10)
             pool['giocatori'] = filtra_per_odds(pool, args.odds_min)
             # Fermarsi QUI se non e' rimasto nessuno, prima di toccare la
             # discovery. Altrimenti il caso "odds non ancora pubblicate" --
