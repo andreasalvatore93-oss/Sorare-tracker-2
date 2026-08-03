@@ -92,6 +92,49 @@ voce con `carte`+`piazzamento`, ~3326 con carte) sulla stessa giornata/cutoff
 bootstrap sulle differenze per-formazione (stesso approccio di
 `intervallo_media()` in backtest_arene.py).
 
+## FILONE CAPITANO — 4 idee nuove testate (04/08 sera), TUTTE CHIUSE, nessuna modifica
+
+Richieste esplicite dell'utente dopo la chiusura sopra: margine-soglia,
+stabilità per lega, più potenza statistica, fattore favorita/sfavorita.
+Nuova harness riusabile `formazione_mls/diagnostics/backtest_captain_policy.py`
+(riusa `P.score_atteso`/`B.inizio_giornata`/`B.fine_giornate`, nessuna nuova
+query) che unisce 3 fonti di formazioni reali: mie (513 valutabili),
+forever-young (1285) e **crowss** (1332, mai usato prima — trovato in
+`dati_globali/manager_crowss.json`, manager Korea-centrico) — **3130
+formazioni reali totali**, 6x il campione precedente.
+
+1. **Stabilità del bias di ruolo per lega** (`analyze_captain_bias_by_league.py`,
+   nuovo, committato): il gap DEF-vs-MID (zona capitano) ha lo stesso segno
+   (DEF peggio) in 11/12 leghe misurabili, gap medio -2.28pt vicino
+   all'aggregato -2.37pt. **Non è un artefatto di poche leghe** — il bias è
+   reale e stabile, ma resta troppo piccolo per generare lift.
+2. **Bias di ruolo su campione 6x più grande**: stesso identico test già
+   bocciato su 513 formazioni, rifatto su 3130 → lift +0.0398 pt/formazione,
+   IC95% bootstrap [-0.059, +0.138] — **include lo zero**. Il campione più
+   grande CONFERMA il rumore, non era un problema di potenza statistica.
+3. **Bias di ruolo applicato solo nei casi "in bilico"** (grid soglie
+   3/5/8/12/20pt sul margine tra i top-2 candidati): risultato **identico**
+   a "sempre applicato" per OGNI soglia. Non e' un bug: il differenziale
+   massimo tra i bias di ruolo (DEF vs MID = 2.37pt) e' già più piccolo di
+   qualunque soglia testata, quindi il correttivo non può mai ribaltare una
+   scelta con margine ampio — il gating è matematicamente inerte qui.
+4. **Fattore favorita/sfavorita** (`opp_rank`, già dentro l'atteso di
+   produzione via `P.contesto()`): bias residuo nella zona capitano diviso
+   in terzili — FAVORITO (avversario debole) +8.58, NEUTRO +6.41, SFAVORITO
+   +6.43 (gap FAVORITO-vs-resto +2.15/+2.17pt, stesso ordine di grandezza
+   del ruolo). Testato come policy (bonus +2.17 se favorito): lift
+   +0.0688 pt/formazione, IC95% **[-0.0015, +0.1411]** — il più vicino a
+   uscire dal rumore delle 4 idee, ma il limite inferiore resta (di un pelo)
+   sotto zero. Per la regola del CLAUDE.md non basta.
+
+**Verdetto**: nessuna delle 4 idee supera la soglia per toccare
+`pick_captain()`. La più promettente è la 4 (favorita/sfavorita) — se in
+futuro si aggiunge altro campione reale (altri manager) vale la pena
+rifare SOLO questo test prima di chiuderlo definitivamente; le altre 3 sono
+chiuse con margine più netto. Script nuovi committati:
+`formazione_mls/diagnostics/analyze_captain_bias_by_league.py`,
+`formazione_mls/diagnostics/backtest_captain_policy.py`.
+
 ## Cosa è stato fatto oggi (tutto committato su main salvo dove indicato)
 
 ### 1) Fix del data leak nel backtest arene
