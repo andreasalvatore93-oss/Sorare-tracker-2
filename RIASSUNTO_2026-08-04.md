@@ -170,6 +170,74 @@ capitano resta con la regola attuale dopo 8 ipotesi testate in due round
 (vedi anche la sezione sopra); l'unico segnale mai arrivato vicino alla
 significativita' è la favorita/sfavorita (round 1, IC95% [-0.0015,+0.14]).
 
+## FILONE CAPITANO — DIAGNOSTICA DI METODO (04/08 notte, la parte che conta)
+
+Dopo 8 ipotesi tutte negative, invece di provarne una nona abbiamo misurato
+**il problema invece delle soluzioni** (`diagnostica_di_metodo()` in
+`backtest_captain_policy.py`). Tre numeri mai guardati prima:
+
+**1. HEADROOM — quanto vale l'INTERA decisione capitano** (3130 formazioni):
+```
+  peggior candidato (pavimento)    7.04 pt/formazione
+  candidato a CASO                12.07
+  REGOLA ATTUALE (max atteso)     13.11
+  ORACOLO (max reale, tetto)      17.39
+```
+La regola attuale batte il caso di **+1.04 pt/formazione** e azzecca il
+miglior candidato nel **32.4%** dei casi contro il 23.7% del caso puro: il
+modello ordina, e ordina meglio del caso. Il "margine residuo" di +4.28 fino
+all'oracolo **NON è un obiettivo raggiungibile**: il divario caso→oracolo
+(+5.33) è per costruzione indipendente dall'atteso, cioè è interamente la
+dispersione casuale del massimo fra 4 punteggi reali — è il valore della
+CHIAROVEGGENZA, non di una migliore euristica. Su una formazione da ~280 pt,
+l'intera partita si gioca su ~1-2 punti: **spiega perché 8 ipotesi di fila
+hanno dato lift ~0 — non erano ipotesi sbagliate, è il premio a essere
+piccolo**.
+
+**2. MALEDIZIONE DEL VINCITORE — assente.** Tutti i bias finora erano
+misurati su TUTTI i candidati, mai CONDIZIONATI all'essere stati scelti: ma
+argmax su una stima rumorosa tende a selezionare chi è stato sovrastimato.
+Misurato: bias del candidato scelto +5.86 contro +5.47 di tutti i candidati,
+differenza **+0.39 pt, IC95% [-0.35,+1.14]** → nessuna distorsione da
+selezione. Chiude in blocco l'intera famiglia "shrinkage / penalizza le
+stime inaffidabili" senza doverla testare una per una.
+
+**3. SCALA — l'atteso è COMPRESSO 1.53x.** Pendenza reale~atteso in zona
+capitano: **b=1.53**, cioè 1 pt di differenza di atteso vale 1.53 pt di
+differenza reale. Difetto comune a TUTTE le correzioni testate: sommare un
+bonus misurato in punti reali direttamente all'atteso lo sovradimensiona.
+Ri-testata su griglia di scala la sola favorita/sfavorita: il lift disegna
+una **U rovesciata** con picco a x1.5 (bonus +3.25 invece di +2.17) →
++0.094 pt/formazione, IC95% [+0.013, +0.174], poi decresce e diventa
+negativo a bonus grandi. La forma a U rovesciata è quella di un segnale
+vero (non di un artefatto monotono).
+
+**MA NON VA APPLICATO COSÌ**: il picco è stato scelto guardando gli stessi
+dati su cui è misurato, dopo ~30 confronti di policy — esattamente la
+trappola "tarare su una misura rumorosa" già costata cara (vedi
+`feedback_fix_generali_non_tarati_sul_test`). Prima di toccare
+`pick_captain()` serve una **validazione fuori campione**: tarare il fattore
+su forever-young+crowss e verificarlo sulle formazioni dell'utente (o split
+temporale). Finché non passa quello, `pick_captain()` resta com'è.
+
+### Cosa resta DAVVERO non testato (in ordine di valore atteso)
+1. **L'obiettivo è sbagliato**: misuriamo punti, ma il premio dell'arena è
+   una funzione a gradini del RANK. Con un payoff a soglia la varianza ha
+   valore (se sei sotto soglia il capitano volatile ti serve; se sei sopra
+   ti danneggia). Riformula da capo la domanda sulla volatilità, chiusa in
+   round 1 come "bias" — che era la domanda sbagliata. Fattibile con
+   quello che c'è: `arene_storico.json` ha i 10 punteggi reali del campo e
+   `E.piazzamento`/`E.premio` esistono già.
+2. **Il backtest è cieco al rischio più grande della realtà**: contiene solo
+   carte che HANNO giocato (p_gioca=1 per costruzione). In produzione un
+   capitano che non scende in campo costa ~14 pt di bonus — un ordine di
+   grandezza più dei ±0.09 inseguiti finora. Nessuno degli 8 test poteva
+   vederlo.
+3. **Correlazione col resto della formazione**: capitanare chi gioca la
+   stessa partita di altre tue carte concentra la varianza del totale. Mai
+   guardato per il capitano (esiste solo per la costruzione formazione,
+   `CROSS_TEAM_PENALTY_BY_PAIR`).
+
 ## Cosa è stato fatto oggi (tutto committato su main salvo dove indicato)
 
 ### 1) Fix del data leak nel backtest arene

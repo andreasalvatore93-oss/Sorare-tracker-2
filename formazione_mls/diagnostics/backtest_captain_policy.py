@@ -329,6 +329,24 @@ def main():
 
         confronta(risultati, 'favorita (sempre)', policy_favorita, base_bonus)
 
+        # 04/08 notte: la pendenza reale~atteso e' b=1.53 (vedi
+        # diagnostica_di_metodo): le differenze di atteso sono COMPRESSE di
+        # 1.53x rispetto a quelle reali, quindi un bonus misurato in punti
+        # REALI va diviso per b prima di sommarlo all'atteso, altrimenti
+        # ribalta scelte che non dovrebbe. Tutte le correzioni testate finora
+        # avevano questo difetto: qui la griglia sul fattore di scala.
+        print("\n=== Idea 4 ri-scalata: stesso bonus diviso per la compressione (grid) ===")
+        for fattore in (0.4, 0.65, 1.0, 1.5, 2.0, 3.0, 5.0, 10.0, 25.0):
+            b_scalato = BONUS_FAVORITO * fattore
+
+            def policy_scalata(candidati, _b=b_scalato):
+                def score(c):
+                    extra = _b if (c.get('opp_rank') is not None and c['opp_rank'] > t2) else 0.0
+                    return c['atteso'] + extra
+                return max(candidati, key=score)
+
+            confronta(risultati, f'favorita x{fattore} (+{b_scalato:.2f})', policy_scalata, base_bonus)
+
         print("\n=== Nuova idea A: favorita + ruolo COMBINATI ===")
 
         def policy_favorita_e_ruolo(candidati):
@@ -442,6 +460,84 @@ def main():
         print("\n=== Nuova idea D, gating per margine (il bonus e' grande, qui puo' contare) ===")
         for soglia in (3, 5, 8, 12):
             confronta(risultati, f'ambiente_gol_margine<={soglia}', make_policy_gol_margine(soglia), base_bonus)
+
+    diagnostica_di_metodo(risultati, base_bonus)
+
+
+def diagnostica_di_metodo(risultati, base_bonus):
+    """Le due domande MAI poste nei due round di test (04/08 notte):
+
+    1. HEADROOM: quanto vale l'intera decisione? Finora abbiamo confrontato
+       policy fra loro senza mai misurare il tetto (capitano scelto con
+       preveggenza) e il pavimento (peggior candidato). Se il tetto e'
+       piccolo, nessuna euristica potra' mai pagare e il filone e' chiuso
+       per aritmetica, non per sfortuna.
+    2. MALEDIZIONE DEL VINCITORE: tutti i bias li abbiamo misurati su TUTTI
+       i candidati, mai CONDIZIONATI all'essere stati scelti. Ma argmax su
+       una stima rumorosa seleziona preferenzialmente chi e' stato
+       sovrastimato: e' il meccanismo che pick_captain() usa davvero.
+    3. SCALA: se reale ~ a + b*atteso con b>1, le differenze di atteso sono
+       COMPRESSE rispetto a quelle reali -- e ogni correzione additiva in
+       punti reali (tutte quelle testate) e' sovradimensionata di un fattore
+       b quando la si somma all'atteso.
+    """
+    print("\n" + "=" * 78)
+    print("DIAGNOSTICA DI METODO (mai fatta prima)")
+    print("=" * 78)
+
+    q = MOLTIPLICATORE_CAPITANO - 1.0
+    oracolo = [q * max(c['reale'] for c in r['candidati']) for r in risultati]
+    pessimo = [q * min(c['reale'] for c in r['candidati']) for r in risultati]
+    casuale = [q * statistics.mean(c['reale'] for c in r['candidati']) for r in risultati]
+
+    mb = statistics.mean(base_bonus)
+    print("\n--- 1. HEADROOM: quanto vale l'intera decisione capitano ---")
+    print(f"  peggior candidato (pavimento)  {statistics.mean(pessimo):7.3f} pt/formazione")
+    print(f"  candidato a caso               {statistics.mean(casuale):7.3f} pt/formazione")
+    print(f"  REGOLA ATTUALE (max atteso)    {mb:7.3f} pt/formazione")
+    print(f"  ORACOLO (max reale, tetto)     {statistics.mean(oracolo):7.3f} pt/formazione")
+    print(f"\n  Guadagno gia' catturato dalla regola attuale sul caso: "
+          f"{mb - statistics.mean(casuale):+.3f} pt/formazione")
+    print(f"  Margine RESIDUO fino all'oracolo:                     "
+          f"{statistics.mean(oracolo) - mb:+.3f} pt/formazione")
+    quota = (mb - statistics.mean(casuale)) / (statistics.mean(oracolo) - statistics.mean(casuale))
+    print(f"  => la regola attuale cattura il {quota:.1%} del guadagno disponibile "
+          f"(caso -> oracolo)")
+
+    colpi = sum(1 for r in risultati
+                if policy_baseline(r['candidati'])['reale'] == max(c['reale'] for c in r['candidati']))
+    attesi_a_caso = sum(1.0 / len(r['candidati']) for r in risultati)
+    print(f"\n  Quante volte pick_captain() azzecca il candidato migliore: "
+          f"{colpi}/{len(risultati)} ({colpi/len(risultati):.1%})")
+    print(f"  Quante ne azzeccherebbe scegliendo a caso:                 "
+          f"{attesi_a_caso:.0f}/{len(risultati)} ({attesi_a_caso/len(risultati):.1%})")
+
+    print("\n--- 2. MALEDIZIONE DEL VINCITORE (bias condizionato alla selezione) ---")
+    bias_scelto, bias_tutti = [], []
+    for r in risultati:
+        sel = policy_baseline(r['candidati'])
+        bias_scelto.append(sel['reale'] - sel['atteso'])
+        bias_tutti.append(statistics.mean(c['reale'] - c['atteso'] for c in r['candidati']))
+    ic = intervallo_media([a - b for a, b in zip(bias_scelto, bias_tutti)])
+    print(f"  bias medio del candidato SCELTO da pick_captain : {statistics.mean(bias_scelto):+6.2f} pt")
+    print(f"  bias medio di TUTTI i candidati                 : {statistics.mean(bias_tutti):+6.2f} pt")
+    print(f"  differenza (scelto - tutti)                     : "
+          f"{statistics.mean(bias_scelto) - statistics.mean(bias_tutti):+6.2f} pt  "
+          f"IC95%=[{ic[0]:+.2f}, {ic[1]:+.2f}]")
+    print("  (negativo = argmax seleziona preferenzialmente chi era SOVRASTIMATO)")
+
+    print("\n--- 3. SCALA: compressione dell'atteso rispetto al reale (zona capitano) ---")
+    zona = [c for r in risultati for c in r['candidati'] if c['atteso'] >= 55]
+    xs = [c['atteso'] for c in zona]
+    ys = [c['reale'] for c in zona]
+    mx, my = statistics.mean(xs), statistics.mean(ys)
+    var = sum((x - mx) ** 2 for x in xs)
+    b = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / var if var else float('nan')
+    print(f"  n={len(zona)}  pendenza reale~atteso: b={b:.2f}")
+    print(f"  => 1 pt di differenza di ATTESO vale {b:.2f} pt di differenza REALE attesa.")
+    if b > 1:
+        print(f"  => ogni correzione additiva in punti reali andrebbe divisa per b "
+              f"prima di sommarla all'atteso: quelle testate erano ~{b:.1f}x troppo grandi.")
 
 
 if __name__ == '__main__':
