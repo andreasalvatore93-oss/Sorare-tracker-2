@@ -135,7 +135,11 @@ def _serie(modulo, cache, slug, usable, squadra):
     s = {k: [] for k in ('scores', 'is_home', 'opp_rank', 'granulari', 'pos_dec',
                          'neg_dec', 'passing', 'offensive', 'goals_conceded',
                          'clean_sheet', 'residual', 'duels', 'fouls',
-                         'defense_rare', 'defensive_actions', 'goalkeeping')}
+                         'defense_rare', 'defensive_actions', 'goalkeeping',
+                         # avversario e data di OGNI partita storica (03/08):
+                         # servono allo Stadio D di DEF/MID, che condiziona
+                         # sull'avversario forte/debole a quella data
+                         'opp_slug', 'date')}
     for nodo in usable:
         score = nodo.get('score') or 0.0
         det = cache.dettaglio_partita(slug, nodo['id'].replace('So5Score:', ''))
@@ -174,6 +178,14 @@ def _serie(modulo, cache, slug, usable, squadra):
         s['goalkeeping'].append(gruppo('GOALKEEPING_STATS'))
         coperto = (fouls + duels + offensive + passing + rare + azioni + subiti + clean)
         s['residual'].append(score - coperto)
+        casa_t, fuori_t = gioco.get('homeTeam') or {}, gioco.get('awayTeam') or {}
+        if casa_t.get('slug') == squadra:
+            s['opp_slug'].append(fuori_t.get('slug'))
+        elif fuori_t.get('slug') == squadra:
+            s['opp_slug'].append(casa_t.get('slug'))
+        else:
+            s['opp_slug'].append(None)
+        s['date'].append(_data(nodo))
     return s
 
 
@@ -200,12 +212,37 @@ def contesto(cache, slug, ruolo, fine_giornata):
     squadra = _squadra(usable, competizione)
     _own, opp_rank, casa = modulo.team_ranking_from_game(target['anyGame'], squadra)
     s = _serie(modulo, cache, slug, usable, squadra)
+    g = target['anyGame']
+    casa_t, fuori_t = g.get('homeTeam') or {}, g.get('awayTeam') or {}
+    if casa_t.get('slug') == squadra:
+        opp_slug = fuori_t.get('slug')
+    elif fuori_t.get('slug') == squadra:
+        opp_slug = casa_t.get('slug')
+    else:
+        opp_slug = None
     return {'modulo': modulo, 'ruolo': ruolo, 's': s, 'casa': casa,
             'opp_rank': opp_rank, 'presenza': presenza, 'cutoff': cutoff,
-            'squadra': squadra}
+            'squadra': squadra, 'opp_slug': opp_slug,
+            'lega': None}
 
 
-def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None):
+def _avversario(ctx):
+    """Gli argomenti che accendono gli aggiustamenti avversario.
+
+    Il banco li teneva spenti "perche' i file di forza avversario sono
+    costruiti sul dato odierno, che in un backtest sarebbe informazione dal
+    futuro". Non regge piu': ogni funzione di opponent_strength filtra su
+    `dt < cutoff_dt`, quindi passando la data della partita storica si guarda
+    solo il passato. Tenendoli spenti si finiva invece per tarare i loro
+    coefficienti su un modello in cui quei coefficienti non agivano."""
+    s = ctx['s']
+    return {'opp_slug': ctx.get('opp_slug'), 'quando': ctx.get('cutoff'),
+            'lega': ctx.get('lega'), 'hist_slug': s.get('opp_slug'),
+            'hist_date': s.get('date')}
+
+
+def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None,
+            usa_avversario=False):
     """La previsione di produzione dagli ingressi di `contesto`.
 
     half_life/trend_intensity servono SOLO alla taratura: lasciati a None si
@@ -221,20 +258,47 @@ def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None):
     if shrink_k is not None:
         extra['shrink_k'] = shrink_k
 
+    av = _avversario(ctx) if usa_avversario else None
+
     if ruolo == 'Goalkeeper':
+        if av:
+            import opponent_strength as ops
+            extra['opponent_lambda_mult'] = ops.opponent_lambda_multiplier(
+                av['lega'], 'gk', av['opp_slug'], av['quando'])
+            w = modulo.exponential_weights(
+                len(s['scores']), extra.get('half_life', modulo.HALF_LIFE_GAMES))
+            extra['pen_area_delta'] = ops.gk_def_pen_area_granular_delta(
+                av['lega'], av['opp_slug'], av['quando'],
+                modulo.weighted_mean(s['goalkeeping'], w))
         return modulo.compute_score_atteso_gk(
             s['scores'], s['is_home'], s['granulari'], s['pos_dec'], s['neg_dec'],
             target_is_home=casa, presence_rate=presenza, **extra)
     if ruolo == 'Defender':
+        if av:
+            extra.update({'next_opponent_team_slug': av['opp_slug'],
+                          'next_game_date': av['quando'], 'league': av['lega'],
+                          'opponent_team_slugs_hist': av['hist_slug'],
+                          'game_dates_hist': av['hist_date']})
         return modulo.compute_score_atteso_def(
             s['scores'], s['is_home'], s['opp_rank'], s['residual'], s['granulari'],
             s['pos_dec'], s['neg_dec'], s['goals_conceded'], s['passing'], s['clean_sheet'],
             target_is_home=casa, target_opp_rank=opp_rank, presence_rate=presenza, **extra)
     if ruolo == 'Midfielder':
+        if av:
+            import opponent_strength as ops
+            extra.update({'opponent_lambda_mult': ops.opponent_lambda_multiplier(
+                              av['lega'], 'mid', av['opp_slug'], av['quando']),
+                          'target_opponent_team_slug': av['opp_slug'],
+                          'target_cutoff_dt': av['quando'], 'league': av['lega'],
+                          'opponent_team_slugs': av['hist_slug'],
+                          'game_dates': av['hist_date']})
         return modulo.compute_score_atteso_mid(
             s['scores'], s['is_home'], s['opp_rank'], s['residual'], s['granulari'],
             s['pos_dec'], s['neg_dec'], s['offensive'], s['passing'], s['goals_conceded'],
             target_is_home=casa, target_opp_rank=opp_rank, presence_rate=presenza, **extra)
+    if av:
+        extra.update({'next_opponent_team_slug': av['opp_slug'],
+                      'next_game_date': av['quando'], 'league': av['lega']})
     return modulo.compute_score_atteso_fwd(
         s['scores'], s['is_home'], s['residual'], s['granulari'],
         s['pos_dec'], s['neg_dec'], s['passing'],
