@@ -78,6 +78,19 @@ def tasso_uscita_precoce(cache, slug, cutoff):
     return sum(1 for m in valori if m < 60) / len(valori)
 
 
+def dev_std_storica(cache, slug, cutoff, ultimi=15):
+    """Deviazione standard dei punteggi storici del giocatore prima del
+    cutoff -- la VOLATILITA' del singolo, che serve alle policy che cercano
+    (o evitano) varianza a seconda del premio in palio."""
+    validi = [n.get('score') or 0.0 for n in cache.gamelog(slug)
+              if (P._data(n) or cutoff) < cutoff
+              and n.get('scoreStatus') in ('FINAL', 'REVIEWING')]
+    ultimi_n = validi[-ultimi:]
+    if len(ultimi_n) < 4:
+        return None
+    return statistics.pstdev(ultimi_n)
+
+
 _FORZE_GOL = None
 
 
@@ -136,12 +149,22 @@ def _reale(g):
 
 
 def raccogli_formazioni():
-    """Ritorna lista di formazioni {fixture, giocatori, fonte}, dalle 3 fonti."""
+    """Ritorna lista di formazioni {fixture, giocatori, fonte, competizione,
+    piazzamento}, dalle 3 fonti.
+
+    `competizione`/`piazzamento` servono a captain_per_competizione.py: la
+    domanda "il capitano migliore dipende dal tipo di premio?" ha senso solo
+    sapendo in che competizione si giocava e in che posizione si e' finiti.
+    Le formazioni mie (arene_formazioni.json) non hanno il campo
+    competizione: si usa il tipo dell'arena, che e' l'informazione
+    equivalente li'."""
     out = []
     mie = carica('dati_globali/arene_formazioni.json')['formazioni']
     for v in mie.values():
         if v.get('giocatori'):
-            out.append({'fixture': v['fixture'], 'giocatori': v['giocatori'], 'fonte': 'mie'})
+            out.append({'fixture': v['fixture'], 'giocatori': v['giocatori'], 'fonte': 'mie',
+                        'competizione': v.get('tipo'), 'slug_arena': v.get('slug'),
+                        'rank_reale': v.get('mio_rank'), 'punteggio_reale': v.get('mio_score')})
 
     for fonte, path in (('forever-young', 'dati_globali/manager_forever-young.json'),
                         ('crowss', 'dati_globali/manager_crowss.json')):
@@ -149,8 +172,12 @@ def raccogli_formazioni():
         for fixture, arene in d['giornate'].items():
             for a in arene:
                 carte = a.get('carte')
-                if carte:
-                    out.append({'fixture': fixture, 'giocatori': carte, 'fonte': fonte})
+                pz = a.get('piazzamento')
+                if not carte or not isinstance(pz, dict):
+                    continue
+                out.append({'fixture': fixture, 'giocatori': carte, 'fonte': fonte,
+                            'competizione': a.get('competizione'),
+                            'rank_reale': pz.get('rank'), 'punteggio_reale': pz.get('punteggio')})
     return out
 
 
@@ -203,11 +230,37 @@ def calcola_previsioni(cache, fine, formazioni):
                               'reale': r, 'nome': g['nome'], 'opp_rank': opp_rank,
                               'partite_storiche': pred.get('partite_storiche'),
                               'uscita_precoce': tasso_uscita_precoce(cache, g['slug'], cutoff),
-                              'gol_totali': gol_tot})
+                              'gol_totali': gol_tot,
+                              'dev_std': dev_std_storica(cache, g['slug'], cutoff)})
         if not ok or len(candidati) < 2:
             scartate_no_pred += 1
             continue
-        risultati.append({'candidati': candidati, 'fonte': f['fonte']})
+
+        # somma GREZZA di tutte e 5 le carte (GK compreso), senza bonus
+        # capitano: serve a captain_per_competizione.py per ricostruire il
+        # punteggio totale sotto una scelta di capitano diversa
+        # (totale = base + 0.2 * reale_del_capitano).
+        base = 0.0
+        somma_grezza = 0.0
+        base_ok = True
+        for g in f['giocatori']:
+            r = _reale(g)
+            if r is None or g.get('punteggio') is None:
+                base_ok = False
+                break
+            base += r
+            somma_grezza += g['punteggio']
+
+        risultati.append({'candidati': candidati, 'fonte': f['fonte'],
+                          'competizione': f.get('competizione'),
+                          'slug_arena': f.get('slug_arena'),
+                          'rank_reale': f.get('rank_reale'),
+                          'punteggio_reale': f.get('punteggio_reale'),
+                          # controllo d'integrita': la somma delle carte deve
+                          # tornare col punteggio dichiarato (stesso presidio
+                          # di bilancio_stesse_carte, ~2% di righe sporche)
+                          'somma_grezza': somma_grezza if base_ok else None,
+                          'base_reale': base if base_ok else None})
 
     print(f"Formazioni raccolte: {len(formazioni)}  "
           f"scartate (fixture/cutoff mancante)={scartate_no_fd}  "

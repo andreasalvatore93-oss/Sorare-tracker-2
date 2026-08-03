@@ -220,6 +220,67 @@ trappola "tarare su una misura rumorosa" già costata cara (vedi
 su forever-young+crowss e verificarlo sulle formazioni dell'utente (o split
 temporale). Finché non passa quello, `pick_captain()` resta com'è.
 
+## CAPITANO PER TIPO DI COMPETIZIONE (04/08 notte, richiesta esplicita utente)
+
+Il punto 1 della lista sotto, eseguito — ed **esteso alle competizioni
+In-Season/classifica, non solo alle arene** come chiesto dall'utente.
+Script nuovo: `formazione_mls/diagnostics/captain_per_competizione.py`.
+
+**Il dato era piu' ricco di quanto pensassimo**: nei dataset manager il
+campo `piazzamento` non e' un numero ma `{rank, punteggio}` — quindi
+abbiamo posizione E punteggio reale per ogni formazione, in ogni
+competizione. Da qui, due mondi ben distinti (classificati dal rank massimo
+osservato, non da una lista di nomi):
+- **ARENE** (Arena/Cap 260/Cap 220/Beginner): campo da 10, rank 1-10.
+- **CLASSIFICHE GRANDI** (All Star, Limited, Under 23, Challenger, LALIGA,
+  Champion, Hot Streak...): fino a ~59.000 manager.
+
+**Metodo**: curva empirica punteggio→piazzamento per famiglia (k-vicini,
+media geometrica dei rank), poi a parita' di 5 carte si cambia capitano, si
+ricalcola il totale e si legge il nuovo piazzamento. Policy testate:
+`atteso + k*volatilita'` con k da -0.60 a +0.60 (k>0 = cerca varianza).
+
+**Risultato ARENE — segno concorde, magnitudine trascurabile.** Tutte e 4
+le famiglie preferiscono k>0 (capitano piu' volatile): Beginner +0.15,
+Cap 260 +0.60, Arena-Limited +0.60, cap260-mie +0.30; e su Arena-Limited
+k=-0.60 e' significativamente PEGGIO. Coerente con la teoria (in un campo
+da 10 con premio ai primi 3 sei spesso a meta' classifica e ti serve il
+salto). **Poi la misura ESATTA, senza surrogati** (468 arene dell'utente
+con i 10 punteggi veri del campo e i premi veri, via `E.piazzamento`/
+`E.premio`):
+```
+  baseline (max atteso)     244.7 essenze/arena
+  atteso -0.30*volatilita    -0.64/arena
+  atteso +0.15*volatilita    +1.60/arena  IC95% [+0.00,+4.27]
+  atteso +1.00*volatilita    +1.60/arena  IC95% [-0.96,+4.81]
+  ORACOLO (max reale)       +15.71/arena
+```
+Il segno conferma (varianza meglio, prudenza peggio) ma vale **+1.6 essenze
+su 245, lo 0.6%**, e nessun IC esclude davvero lo zero. Il perche' e' il
+numero piu' istruttivo di tutta la sessione: **cambiando capitano il PREMIO
+cambia solo in 3-9 arene su 468** (<2%). Il capitano quasi mai sposta
+l'esito attraverso un confine di premio.
+
+**Risultato CLASSIFICHE GRANDI — misto e con strumento debole.** 3 famiglie
+su 5 preferiscono k<0 (LALIGA -0.60 significativo, All Star -0.60, Under 23
+-0.15), 2 preferiscono k>0 (Challenger, Limited): nessuna storia coerente.
+**E la misura li' e' poco affidabile**, va detto: la curva punteggio→rank
+sbaglia di 0.30-0.75 in log-rank (fattore 1.4-2.1x sul piazzamento) contro
+0.15-0.24 delle arene, e soprattutto **il log-rank non e' denaro**: in una
+classifica da 60.000 i premi stanno solo in cima, quindi guadagnare
+posizioni a meta' gruppo non vale nulla ma il nostro indicatore lo premia.
+
+**VERDETTO**: nessuna prova che la regola del capitano debba cambiare in
+base alla competizione. `pick_captain()` resta unico e invariato. La
+spiegazione unifica tutta la sessione: il capitano cambia il premio in meno
+del 2% dei casi, quindi non esiste una regola — per quanto raffinata — che
+possa spostare molto.
+
+**Cosa servirebbe per chiudere davvero il lato In-Season**: le tabelle
+premi per fascia di rank delle competizioni a classifica (quali posizioni
+prendono cosa). Non le abbiamo: senza, il lato "classifiche grandi" resta
+misurato con un surrogato invece che in premi veri.
+
 ### Cosa resta DAVVERO non testato (in ordine di valore atteso)
 1. **L'obiettivo è sbagliato**: misuriamo punti, ma il premio dell'arena è
    una funzione a gradini del RANK. Con un payoff a soglia la varianza ha
