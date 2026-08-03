@@ -135,6 +135,41 @@ chiuse con margine più netto. Script nuovi committati:
 `formazione_mls/diagnostics/analyze_captain_bias_by_league.py`,
 `formazione_mls/diagnostics/backtest_captain_policy.py`.
 
+## FILONE CAPITANO — round 2, altre 4 idee (04/08 notte), TUTTE CHIUSE
+
+Richieste ancora dall'utente dopo il round sopra. Stessa harness
+(`backtest_captain_policy.py`), esteso con 3 nuovi segnali per candidato:
+`partite_storiche` (gia' in `score_atteso`), tasso di "uscita precoce"
+storica (mins_played<60, da `cache.dettagli`), gol totali attesi della
+partita (nuovo `modello_partita.py` non ancora tracciato — Poisson
+attacco/difesa/campo, checkpoint settimanali walk-forward, stesso pattern
+gia' in produzione per `_pcs_squadra`/GK clean sheet).
+
+- **A) Favorita+ruolo combinati**: peggio della favorita da sola
+  (+0.042 pt/formazione, IC ancora piu' largo) — il bias di ruolo (gia'
+  nullo) diluisce il segnale, non lo rinforza.
+- **B) Bias per profondita' di storico** (poco/medio/molto storico,
+  zona capitano): nessun pattern monotono (poco storico +7.91, medio +6.47,
+  molto +6.69) — segnale debole/incoerente, non testato in policy.
+- **C) Rischio "sostituito presto"** (mins_played<60 storico): degenere —
+  quasi tutti i candidati in zona capitano hanno tasso 0 (chi ha un atteso
+  alto e' quasi sempre chi gioca tutta la partita), i terzili collassano.
+  Nessun segnale da testare.
+- **D) Ambiente gol della partita** (gol totali attesi squadra+avversario,
+  dal nuovo modello Poisson): il bias grezzo per bucket sembrava forte
+  (partita APERTA +10.80 vs CHIUSA/MEDIA +5.17, gap +5.6pt — il piu' grande
+  misurato finora) MA **testato come policy il lift e' NEGATIVO**
+  (-0.092 pt/formazione, IC95% [-0.20, +0.02], gating per margine non lo
+  salva). Conferma diretta della trappola gia' vista col bias di ruolo: un
+  bias marginale forte non implica un buon criterio di SCELTA tra candidati
+  della stessa formazione — qui il bonus spingeva verso ruoli/partite "calde"
+  anche quando il vero miglior atteso era altrove.
+
+**Verdetto**: chiuse tutte e 4, nessuna tocca `pick_captain()`. Il filone
+capitano resta con la regola attuale dopo 8 ipotesi testate in due round
+(vedi anche la sezione sopra); l'unico segnale mai arrivato vicino alla
+significativita' è la favorita/sfavorita (round 1, IC95% [-0.0015,+0.14]).
+
 ## Cosa è stato fatto oggi (tutto committato su main salvo dove indicato)
 
 ### 1) Fix del data leak nel backtest arene

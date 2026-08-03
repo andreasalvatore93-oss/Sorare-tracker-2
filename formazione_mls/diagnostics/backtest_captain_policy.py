@@ -27,6 +27,8 @@ import os
 import sys
 import glob
 import random
+import bisect
+import datetime
 import statistics
 from collections import defaultdict
 
@@ -41,6 +43,85 @@ MOLTIPLICATORE_CAPITANO = BP.MOLTIPLICATORE_CAPITANO
 _RUOLO_TO_CODICE = BP._RUOLO_TO_CODICE
 
 BIAS_RUOLO = {'DEF': -8.37, 'MID': -6.00, 'FWD': -7.37}  # gia' misurato, zona capitano
+MIN_STORICO_USCITA = 6
+
+
+def _stat(dettaglio, nome):
+    for riga in dettaglio:
+        if riga.get('stat') == nome:
+            return riga.get('statValue', 0.0) or 0.0
+    return None
+
+
+def tasso_uscita_precoce(cache, slug, cutoff):
+    """Frazione di partite storiche (prima di `cutoff`) uscite con
+    mins_played<60 -- proxy del rischio 'sostituito presto', diverso dalla
+    volatilita' del punteggio gia' testata (quella guarda la dispersione del
+    punteggio finale, non il minutaggio)."""
+    valori = []
+    for v in cache.dettagli(slug).values():
+        g = v.get('anyGame')
+        if not g or v.get('scoreStatus') not in ('FINAL', 'REVIEWING'):
+            continue
+        data = P._data(v)
+        if data is None or not (data < cutoff):
+            continue
+        ds = v.get('detailedScore')
+        if not ds:
+            continue
+        minuti = _stat(ds, 'mins_played')
+        if minuti is None:
+            continue
+        valori.append(minuti)
+    if len(valori) < MIN_STORICO_USCITA:
+        return None
+    return sum(1 for m in valori if m < 60) / len(valori)
+
+
+_FORZE_GOL = None
+
+
+def _forze_checkpoint():
+    """Checkpoint settimanali di ForzaSquadre (modello_partita), stesso
+    pattern gia' in produzione per _pcs_squadra (GK team clean sheet) --
+    qui riusato per i gol totali attesi della partita (idea 'ambiente gol')."""
+    global _FORZE_GOL
+    if _FORZE_GOL is None:
+        import modello_partita as mp
+        oss = mp.osservazioni(mp.partite_da_cache())
+        oss.sort(key=lambda o: o['data'])
+        darr = [o['data'] for o in oss]
+        cps, fz = [], []
+        if oss:
+            d = oss[0]['data']
+            while d <= oss[-1]['data'] + datetime.timedelta(days=7):
+                lo = bisect.bisect_left(darr, d)
+                if lo >= 400:
+                    cps.append(d)
+                    fz.append(mp.stima(oss[:lo], riferimento=d,
+                                       regolarizzazione=0.30, emivita=120.0))
+                d += datetime.timedelta(days=7)
+        _FORZE_GOL = (cps, fz)
+    return _FORZE_GOL
+
+
+def gol_totali_attesi(squadra, opp_slug, cutoff, in_casa):
+    cps, fz = _forze_checkpoint()
+    if not cps or not squadra or not opp_slug or cutoff is None:
+        return None
+    try:
+        co = datetime.datetime.strptime(str(cutoff)[:10], '%Y-%m-%d')
+    except ValueError:
+        return None
+    i = bisect.bisect_right(cps, co) - 1
+    if i < 0:
+        return None
+    f = fz[i]
+    if not (f.conosciuta(squadra) and f.conosciuta(opp_slug)):
+        return None
+    lam_mio = f.lambda_atteso(squadra, opp_slug, in_casa=in_casa)
+    lam_avv = f.lambda_atteso(opp_slug, squadra, in_casa=not in_casa)
+    return lam_mio + lam_avv
 
 
 def carica(path):
@@ -115,8 +196,14 @@ def calcola_previsioni(cache, fine, formazioni):
                 break
             ctx = P.contesto(cache, g['slug'], g['ruolo'], fd, cutoff)
             opp_rank = ctx.get('opp_rank') if ctx else None
+            gol_tot = None
+            if ctx:
+                gol_tot = gol_totali_attesi(ctx.get('squadra'), ctx.get('opp_slug'), cutoff, ctx.get('casa'))
             candidati.append({'ruolo': _RUOLO_TO_CODICE[g['ruolo']], 'atteso': pred['atteso'],
-                              'reale': r, 'nome': g['nome'], 'opp_rank': opp_rank})
+                              'reale': r, 'nome': g['nome'], 'opp_rank': opp_rank,
+                              'partite_storiche': pred.get('partite_storiche'),
+                              'uscita_precoce': tasso_uscita_precoce(cache, g['slug'], cutoff),
+                              'gol_totali': gol_tot})
         if not ok or len(candidati) < 2:
             scartate_no_pred += 1
             continue
@@ -241,6 +328,120 @@ def main():
             return max(candidati, key=score)
 
         confronta(risultati, 'favorita (sempre)', policy_favorita, base_bonus)
+
+        print("\n=== Nuova idea A: favorita + ruolo COMBINATI ===")
+
+        def policy_favorita_e_ruolo(candidati):
+            def score(c):
+                extra = BONUS_FAVORITO if (c.get('opp_rank') is not None and c['opp_rank'] > t2) else 0.0
+                return c['atteso'] + extra + BIAS_RUOLO.get(c['ruolo'], 0.0)
+            return max(candidati, key=score)
+
+        confronta(risultati, 'favorita+ruolo', policy_favorita_e_ruolo, base_bonus)
+
+    print("\n=== Nuova idea B (diagnostica): bias per profondita' di storico, zona capitano ===")
+    zona_b = [c for r in risultati for c in r['candidati']
+             if c['atteso'] >= 55 and c.get('partite_storiche') is not None]
+    print(f"n candidati con partite_storiche noto: {len(zona_b)}")
+    if zona_b:
+        vals = sorted(c['partite_storiche'] for c in zona_b)
+        n = len(vals)
+        u1, u2 = vals[n // 3], vals[2 * n // 3]
+
+        def bucket_storico(v):
+            if v <= u1:
+                return 'POCO storico'
+            if v <= u2:
+                return 'MEDIO storico'
+            return 'MOLTO storico'
+        per_b = defaultdict(list)
+        for c in zona_b:
+            per_b[bucket_storico(c['partite_storiche'])].append(c)
+        for nome_b in ('POCO storico', 'MEDIO storico', 'MOLTO storico'):
+            cs = per_b[nome_b]
+            if not cs:
+                continue
+            mp_ = statistics.mean(c['atteso'] for c in cs)
+            mr_ = statistics.mean(c['reale'] for c in cs)
+            print(f"  {nome_b:<16} n={len(cs):>5}  atteso medio={mp_:6.1f}  reale medio={mr_:6.1f}  "
+                  f"bias={mr_-mp_:+6.2f}")
+
+    print("\n=== Nuova idea C (diagnostica): bias per rischio 'uscita precoce' (mins<60), zona capitano ===")
+    zona_c = [c for r in risultati for c in r['candidati']
+             if c['atteso'] >= 55 and c.get('uscita_precoce') is not None]
+    print(f"n candidati con tasso uscita precoce noto: {len(zona_c)}")
+    if zona_c:
+        vals = sorted(c['uscita_precoce'] for c in zona_c)
+        n = len(vals)
+        v1, v2 = vals[n // 3], vals[2 * n // 3]
+
+        def bucket_uscita(v):
+            if v <= v1:
+                return 'BASSO rischio uscita'
+            if v <= v2:
+                return 'MEDIO rischio uscita'
+            return 'ALTO rischio uscita'
+        per_c = defaultdict(list)
+        for c in zona_c:
+            per_c[bucket_uscita(c['uscita_precoce'])].append(c)
+        for nome_c in ('BASSO rischio uscita', 'MEDIO rischio uscita', 'ALTO rischio uscita'):
+            cs = per_c[nome_c]
+            if not cs:
+                continue
+            mp_ = statistics.mean(c['atteso'] for c in cs)
+            mr_ = statistics.mean(c['reale'] for c in cs)
+            print(f"  {nome_c:<22} n={len(cs):>5}  atteso medio={mp_:6.1f}  reale medio={mr_:6.1f}  "
+                  f"bias={mr_-mp_:+6.2f}")
+
+    print("\n=== Nuova idea D (diagnostica): bias per ambiente gol della partita, zona capitano ===")
+    zona_d = [c for r in risultati for c in r['candidati']
+             if c['atteso'] >= 55 and c.get('gol_totali') is not None]
+    print(f"n candidati con gol_totali_attesi noto: {len(zona_d)}")
+    if zona_d:
+        vals = sorted(c['gol_totali'] for c in zona_d)
+        n = len(vals)
+        g1, g2 = vals[n // 3], vals[2 * n // 3]
+
+        def bucket_gol(v):
+            if v <= g1:
+                return 'partita CHIUSA (pochi gol attesi)'
+            if v <= g2:
+                return 'partita MEDIA'
+            return 'partita APERTA (molti gol attesi)'
+        per_d = defaultdict(list)
+        for c in zona_d:
+            per_d[bucket_gol(c['gol_totali'])].append(c)
+        for nome_d in ('partita CHIUSA (pochi gol attesi)', 'partita MEDIA', 'partita APERTA (molti gol attesi)'):
+            cs = per_d[nome_d]
+            if not cs:
+                continue
+            mp_ = statistics.mean(c['atteso'] for c in cs)
+            mr_ = statistics.mean(c['reale'] for c in cs)
+            print(f"  {nome_d:<36} n={len(cs):>5}  atteso medio={mp_:6.1f}  reale medio={mr_:6.1f}  "
+                  f"bias={mr_-mp_:+6.2f}")
+
+        print("\n=== Nuova idea D in policy: bonus se partita APERTA (gol_totali > terzile alto) ===")
+        BONUS_APERTA = 5.6  # gap misurato sopra, APERTA vs resto
+
+        def policy_ambiente_gol(candidati):
+            def score(c):
+                extra = BONUS_APERTA if (c.get('gol_totali') is not None and c['gol_totali'] > g2) else 0.0
+                return c['atteso'] + extra
+            return max(candidati, key=score)
+
+        confronta(risultati, 'ambiente_gol (sempre)', policy_ambiente_gol, base_bonus)
+
+        def make_policy_gol_margine(soglia):
+            def policy(candidati):
+                ordinati = sorted(candidati, key=lambda c: c['atteso'], reverse=True)
+                if len(ordinati) < 2 or (ordinati[0]['atteso'] - ordinati[1]['atteso']) > soglia:
+                    return ordinati[0]
+                return policy_ambiente_gol(candidati)
+            return policy
+
+        print("\n=== Nuova idea D, gating per margine (il bonus e' grande, qui puo' contare) ===")
+        for soglia in (3, 5, 8, 12):
+            confronta(risultati, f'ambiente_gol_margine<={soglia}', make_policy_gol_margine(soglia), base_bonus)
 
 
 if __name__ == '__main__':
