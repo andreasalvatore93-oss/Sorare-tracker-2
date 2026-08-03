@@ -894,7 +894,11 @@ class CardPool:
         return self._names.get(slug) or _slug_display_name(slug)
 
     def _total_for(self, slug):
-        return self._total.get(slug, {'in_season': 1, 'classic': 0})
+        # Slug non nei conteggi = mai visto posseduto (bug run 112: player_slugs
+        # e player_card_counts disallineati dal merge shard, uno slug puo' finire
+        # nei candidati senza una entry di conteggio). Default a 0, non 1: mai
+        # schierare un giocatore di cui non c'e' prova di possesso.
+        return self._total.get(slug, {'in_season': 0, 'classic': 0})
 
     def _used_for(self, slug):
         return self._used.get(slug, {'in_season': 0, 'classic': 0})
