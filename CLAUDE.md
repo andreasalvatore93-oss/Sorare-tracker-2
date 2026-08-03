@@ -10,6 +10,7 @@ Riguardano SOLO come mi rapporto all'utente. Nessuna istruzione operativa sui to
 ## Priorità
 1. Velocità di esecuzione (run e debug).
 2. Risparmio massimo di token.
+3. HO UNA FORMA GRAVE DI ADHD (DISTURBO DEFICIT ATTENZIONE). COMPORTARTI DI CONSEGUENZA
 
 ## Prima di agire
 - **Flusso fix**: testo prima in locale; se funziona **committo senza chiedere**, poi informo l'utente di aver committato e chiedo se vuole lanciare una run su GitHub. Non chiedo il permesso di committare, chiedo quello di girare su GitHub.
