@@ -151,7 +151,11 @@ jobs:
     strategy:
       fail-fast: false
       # Stesso valore della calibrazione di produzione, tarato li'.
-      max-parallel: 8
+      # 20 = il vero tetto di concorrenza dell'account (lo stesso che usa la
+      # matrice predict del generatore, verificato). A 8 la matrice scouting era
+      # inutilmente 2.5x piu' lenta: 126 predict ci mettevano ~24 min (run
+      # 30814827740) invece di ~10.
+      max-parallel: 20
       matrix:
         lavoro: ${{ fromJson(needs.candidati.outputs.lavori) }}
     steps:
@@ -249,10 +253,14 @@ jobs:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           PYTHONUNBUFFERED: "1"
         run: |
+          # --riusa-pool: il report NON ricostruisce il pool con searchPlayers+
+          # odds (che a un'ora di distanza da 'candidati' da' un set diverso e
+          # lascia senza Atteso i candidati non piu' selezionati). Carica lo
+          # stesso pool committato da 'candidati', cosi' i mostrati sono
+          # esattamente i predetti, tutti con l'Atteso.
           ARGS=""
           if [ -n "${{ inputs.gameweek }}" ]; then ARGS="$ARGS --gameweek ${{ inputs.gameweek }}"; fi
-          if [ -n "${{ inputs.odds_min }}" ]; then ARGS="$ARGS --odds-min ${{ inputs.odds_min }}"; fi
-          python scouting_gw.py $ARGS --html generatore_formazioni/output/scouting_ultimo.html
+          python scouting_gw.py $ARGS --riusa-pool --html generatore_formazioni/output/scouting_ultimo.html
 
       - name: Commit di report, consigli e cache
         if: always()

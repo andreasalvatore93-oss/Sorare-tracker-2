@@ -1851,6 +1851,13 @@ def main():
     ap.add_argument('--html', default=None,
                     help="report HTML (default con --scrivi-discovery: "
                          "generatore_formazioni/output/scouting_<fixture>.html)")
+    ap.add_argument('--riusa-pool', action='store_true',
+                    help="il report riusa lo STESSO pool gia' scritto dal job "
+                         "candidati (dati_globali/scouting_<fixture>.json) invece "
+                         "di ricostruirlo con searchPlayers+odds: cosi' i "
+                         "giocatori mostrati sono ESATTAMENTE quelli predetti, "
+                         "tutti con l'Atteso, e non un set diverso pescato a "
+                         "un'ora di distanza")
     args = ap.parse_args()
 
     if args.unisci:
@@ -1865,6 +1872,26 @@ def main():
             f"(giornata {pool['fixture']['slug']})")
         pool['giocatori'] = _shard(pool['giocatori'])
         screma(pool['giocatori'])
+    elif args.riusa_pool:
+        # Il report NON ricostruisce il pool: carica quello gia' scritto e
+        # committato dal job candidati. Ricostruirlo con searchPlayers+odds a
+        # un'ora di distanza dava un set DIVERSO (le odds cambiano), e i
+        # giocatori predetti non combaciavano piu' con quelli mostrati -- 125
+        # analizzati ma solo ~60 con l'Atteso (run 30814827740). Cosi' invece
+        # i mostrati sono esattamente i predetti.
+        fx = risolvi_giornata(args.gameweek, args.fixture)
+        if not fx:
+            log("ERRORE: giornata non risolta, --riusa-pool non puo' caricare il pool.")
+            return 1
+        ppath = os.path.join(REPO_ROOT, 'dati_globali', f"scouting_{fx['slug']}.json")
+        if not os.path.exists(ppath):
+            log(f"ERRORE: pool {ppath} non trovato (il job candidati deve averlo "
+                f"scritto e committato). Report non generato.")
+            return 1
+        with open(ppath, encoding='utf-8') as f:
+            pool = json.load(f)
+        log(f"Report dallo STESSO pool di candidati: {len(pool['giocatori'])} "
+            f"giocatori (giornata {fx['slug']}).")
     elif args.roster:
         pool = costruisci_pool(args.gameweek, args.fixture)
         if not pool:
