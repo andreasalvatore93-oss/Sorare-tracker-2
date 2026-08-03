@@ -362,6 +362,11 @@ PUNTI_SLOT_MEDIO = float(os.environ.get('SCOUTING_PUNTI_SLOT', '51.8'))
 # attorno al pareggio). Era il valore medio dei vecchi 7.5/7.4/7.3, ricalcolati
 # oggi a 8.8/6.3/8.0: si compra per giocare in cap 260, quindi vale quella.
 ESSENZE_PER_PUNTO = float(os.environ.get('SCOUTING_ESSENZE_PUNTO', '8.8'))
+# Solo per il testo del tooltip. Il valore vivo sta in best_five
+# (PAREGGIO_ARENA_260 / 260), ma qui best_five non e' importato e un tooltip
+# non vale una dipendenza a runtime: si scrive il numero e si dice da dove
+# viene, cosi' chi lo cambia sa che c'e' anche questo da toccare.
+RAPPORTO_ARENA_MINIMO_TESTO = '1.019'   # = 265.0 / 260, vedi best_five.RAPPORTO_ARENA_MINIMO
 EURO_PER_1000_ESSENZE = float(os.environ.get('SCOUTING_EURO_1000_ESSENZE', '2'))
 
 
@@ -1343,7 +1348,7 @@ def _conto_arena(gg, risultato, prezzi_per_slug):
     except Exception:
         atteso = sum(row.get('atteso', 0) for _s, row, _c in risultato.get('formazione') or [])
     margine = (atteso - soglia) if soglia is not None else None
-    per_punto = getattr(gg, 'GUADAGNO_PER_PUNTO', {}).get(tipo, 7.5)
+    per_punto = getattr(gg, 'GUADAGNO_PER_PUNTO', {}).get(tipo, 8.8)
     # Guadagno NETTO sopra l'ingresso: il pareggio e' per definizione il punto
     # in cui il premio atteso copre le essenze spese per entrare.
     essenze = margine * per_punto if margine is not None else None
@@ -1639,9 +1644,9 @@ def scrivi_html(pool, dest, formazioni=()):
                      "primo clic decrescente, secondo crescente.</div>"
                      "<div class='wrap'><table id='candidati'>"
                      "<tr><th>Giocatore</th><th>Ruolo</th><th>Atteso</th><th title='Atteso diviso L10: "
-                     "sotto cap 260 serve almeno 1.017'>Att/L10</th>"
+                     f"sotto cap 260 serve almeno {RAPPORTO_ARENA_MINIMO_TESTO}'>Att/L10</th>"
                      "<th title='Essenze guadagnate a giornata rispetto a uno slot "
-                     "medio da 51.8 punti (7.65 essenze per punto)'>Ess/GW</th>"
+                     f"medio da {PUNTI_SLOT_MEDIO} punti ({ESSENZE_PER_PUNTO} essenze per punto)'>Ess/GW</th>"
                      "<th title='Prezzo diviso essenze a giornata. NON dipende dal "
                      "valore in euro dell&apos;essenza: serve a ordinare i candidati'>"
                      "&euro;/EssGW</th>"
