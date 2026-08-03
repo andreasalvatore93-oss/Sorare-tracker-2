@@ -333,20 +333,58 @@ def _is_arena_type(tipo):
 CALIB_A = float(os.environ.get('CALIB_A', '10.21'))
 CALIB_B = float(os.environ.get('CALIB_B', '0.767'))
 
+# --- UNA RETTA PER RUOLO (03/08) ---------------------------------------
+# La calibrazione unica sopra e' affine e monotona, quindi dentro un ruolo non
+# cambia niente: l'ordine dei candidati resta identico. Cambia pero' i
+# confronti FRA ruoli, che e' esattamente cio' che fa il generatore quando
+# riempie 1 slot di portiere e 4 di movimento pescando da leghe diverse.
+#
+# Misurato sulle 2.690 righe di dati_globali/errore_storico_tutte.json (arene
+# reali: nessun bonus carta ne' di formazione, il punteggio pubblicato E'
+# quello grezzo che il modello prova a prevedere), RIFATTO il 03/08 dopo i fix
+# al modello, la retta non e' la stessa per tutti:
+#
+#     ruolo          n      a       b    prev. 60 -> reale    MAE
+#     Goalkeeper   525   12.17   0.731         56.0          15.35
+#     Defender     701   15.89   0.718         59.0          15.10
+#     Midfielder   748   15.60   0.706         58.0          14.58
+#     Forward      716   10.03   0.817         59.1          15.81
+#     (unica)     2690    9.22   0.825         56.7  per tutti
+#
+# Tre punti di scarto fra portiere e attaccante che la retta unica appiattisce.
+# Dentro un ruolo la calibrazione non cambia niente (e' affine e monotona), ma
+# in una formazione da cinque quello scarto e' un errore sistematico di
+# allocazione fra lo slot del portiere e i quattro di movimento.
+#
+# I coefficienti reggono al fix: prima e dopo cambiano di 0.005 sulla pendenza,
+# perche' errore_modello_storico.py scartava gia' per conto suo le partite
+# senza dettaglio granulare (lo dice il commento in backtest_arene_previsioni.py:
+# "senza dettaglio extract_level_score torna 0.0 [...] gonfiando la previsione,
+# misurato +10-15 punti"). Era il MISURATORE ad aggirare il problema, mentre la
+# produzione continuava a subirlo: la misura non poteva vederlo, ed e' per
+# questo che il bug e' rimasto in piedi.
+CALIB_PER_RUOLO = {
+    'GK':  (float(os.environ.get('CALIB_A_GK', '12.17')), float(os.environ.get('CALIB_B_GK', '0.731'))),
+    'DEF': (float(os.environ.get('CALIB_A_DEF', '15.89')), float(os.environ.get('CALIB_B_DEF', '0.718'))),
+    'MID': (float(os.environ.get('CALIB_A_MID', '15.60')), float(os.environ.get('CALIB_B_MID', '0.706'))),
+    'FWD': (float(os.environ.get('CALIB_A_FWD', '10.03')), float(os.environ.get('CALIB_B_FWD', '0.817'))),
+}
 
-def calibra(valore):
+
+def calibra(valore, ruolo=None):
     if valore is None:
         return None
-    # arrotondato a un decimale: la calibrazione moltiplica per 0.767 e
+    a, b = CALIB_PER_RUOLO.get(ruolo, (CALIB_A, CALIB_B))
+    # arrotondato a un decimale: la calibrazione moltiplica per ~0.7 e
     # altrimenti i punteggi escono con dodici cifre decimali nei log
-    return round(CALIB_A + CALIB_B * valore, 1)
+    return round(a + b * valore, 1)
 
 
-def calibra_riga(row):
+def calibra_riga(row, ruolo=None):
     """Porta previsione e intervallo sulla scala del punteggio realizzato."""
     for chiave in ('atteso', 'low', 'high', 'ordinamento', 'sort_score'):
         if row.get(chiave) is not None:
-            row[chiave] = calibra(row[chiave])
+            row[chiave] = calibra(row[chiave], ruolo)
     return row
 
 
@@ -743,7 +781,10 @@ def load_league_role_data():
             for row in rows:
                 row['league'] = league
                 row['_source_ts'] = ts_file
-                calibra_riga(row)
+                # 'role' e' la chiave del ciclo (GK/DEF/MID/FWD): la retta di
+                # calibrazione e' diversa per ruolo, vedi CALIB_PER_RUOLO.
+                row['role_key'] = role
+                calibra_riga(row, role)
             counts, _ = bff.load_card_counts(DISCOVERY_DIRS[league][role])
             # starterOdds sulle righe (31/07): il valore e' gia' dentro
             # player_card_counts.json, scritto da discovery_fixture.py nella
@@ -820,11 +861,34 @@ PREFERENZA_ODDS_SOGLIA = float(os.environ.get('PREFERENZA_ODDS_SOGLIA', '0.80'))
 PREFERENZA_ODDS_SCARTO = float(os.environ.get('PREFERENZA_ODDS_SCARTO', '2'))
 
 
+def _bonus_odds(row):
+    """I 2 punti di preferenza, portati sulla scala giusta (03/08).
+
+    La regola e' stata definita in punti di PREVISIONE GREZZA (l'esempio era
+    Son 66 contro Zinckernagel 64, che sono i numeri che si leggevano allora).
+    Ma `calibra_riga` gira PRIMA di qui, quindi lo scarto veniva confrontato
+    con punteggi gia' calibrati: 2 punti calibrati valgono 2 / b punti grezzi,
+    cioe' circa 2.7 -- la regola scattava un terzo delle volte in piu' di
+    quanto l'utente avesse chiesto. Qui lo scarto viene moltiplicato per la
+    pendenza del ruolo, cosi' resta 2 punti nella scala in cui e' stato
+    deciso."""
+    odds = row.get('starter_odds') or 0.0
+    if odds < PREFERENZA_ODDS_SOGLIA:
+        return 0.0
+    _a, b = CALIB_PER_RUOLO.get(row.get('role_key'), (CALIB_A, CALIB_B))
+    # + il passo di arrotondamento: `calibra` arrotonda a un decimale, quindi
+    # due punti grezzi possono presentarsi qui come 1.7 invece di 1.63 e la
+    # regola non scatterebbe proprio nel caso limite che l'utente ha portato
+    # come esempio (Son 66 con odds 0.70 contro Zinckernagel 64 con 0.80, dove
+    # deve vincere Zinckernagel). Meglio sbagliare di un centesimo dalla parte
+    # della regola che tradirla sul suo caso di riferimento.
+    return PREFERENZA_ODDS_SCARTO * b + 0.1
+
+
 def _chiave_ordinamento(row):
     base = row.get('sort_score', row['atteso'])
     odds = row.get('starter_odds') or 0.0
-    bonus = PREFERENZA_ODDS_SCARTO if odds >= PREFERENZA_ODDS_SOGLIA else 0.0
-    return (base + bonus, odds)
+    return (base + _bonus_odds(row), odds)
 
 
 def _sort_ordinamento(rows):

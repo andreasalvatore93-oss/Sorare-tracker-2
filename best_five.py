@@ -1191,7 +1191,7 @@ def _import_gg():
     return module
 
 
-def _parse_consiglio_calibrato(bff, gg, path):
+def _parse_consiglio_calibrato(bff, gg, path, ruolo=None):
     """Le righe di un consiglio, sulla STESSA scala della produzione.
 
     Il generatore calibra all'ingresso (`calibra_riga` in
@@ -1205,10 +1205,15 @@ def _parse_consiglio_calibrato(bff, gg, path):
 
     Si chiama `gg.calibra_riga`, non una copia locale: i coefficienti devono
     vivere in un posto solo (in questo progetto i file gemelli disallineati
-    hanno gia' causato bug veri)."""
+    hanno gia' causato bug veri).
+
+    ruolo (03/08): dal 03/08 la retta di calibrazione e' diversa per ruolo
+    (`CALIB_PER_RUOLO`), perche' quella unica appiattiva tre punti di scarto
+    fra portieri e attaccanti -- e Best Five confronta proprio carte di ruoli
+    diversi fra loro. Senza il ruolo si ricade sulla retta media di prima."""
     rows = bff.parse_consiglio(path)
     for row in rows:
-        gg.calibra_riga(row)
+        gg.calibra_riga(row, ruolo)
     return rows
 
 
@@ -1689,7 +1694,7 @@ def costruisci_formazione_vera(lega, count):
     for ruolo, ROLE in (('gk', 'GK'), ('def', 'DEF'), ('mid', 'MID'), ('fwd', 'FWD')):
         consiglio_path = esegui_consiglio(lega, ruolo)
         if consiglio_path and os.path.exists(consiglio_path):
-            role_data_lega[ROLE] = _parse_consiglio_calibrato(bff, gg, consiglio_path)
+            role_data_lega[ROLE] = _parse_consiglio_calibrato(bff, gg, consiglio_path, ROLE)
         else:
             log(f"[{ruolo}] Nessun consiglio disponibile, ruolo vuoto per la formazione vera.")
             role_data_lega[ROLE] = []
@@ -2651,7 +2656,7 @@ def costruisci_formazione_contender(leghe, count):
                 log(f"[{lega}/{ruolo}] Nessun consiglio_*.txt trovato in {out_dir} -- "
                     f"esegui prima 'python best_five.py {lega} --run' per questa lega.")
                 continue
-            rows = _parse_consiglio_calibrato(bff, gg, path)
+            rows = _parse_consiglio_calibrato(bff, gg, path, ROLE)
             for row in rows:
                 row['league'] = lega
             merged_role_data[ROLE].extend(rows)
