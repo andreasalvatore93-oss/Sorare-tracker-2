@@ -109,7 +109,7 @@ jobs:
           # a --riusa-pool nel job report.
           git add ':(glob)formazione_*/output/**/player_slugs.json' || true
           git add dati_globali/scouting_da_predire.tsv dati_globali/scouting_lavori.txt || true
-          git add ':(glob)dati_globali/scouting_*.json' || true
+          git add -f ':(glob)dati_globali/scouting_*.json' || true
           git commit -m "Scouting: discovery dei candidati" || echo "niente da committare"
           # Push a prova di conflitto: se un'altra run (es. il generatore) ha
           # toccato gli stessi player_slugs.json, il rebase andava in CONFLICT e
@@ -284,7 +284,7 @@ jobs:
                   ':(glob)formazione_*/output/**/prediction_log.json' || true
           # Pool della giornata col prezzo minimo, ancorato alla fixture.
           # :(glob) per matchare anche il file untracked (plain non lo fa).
-          git add ':(glob)dati_globali/scouting_*.json' || true
+          git add -f ':(glob)dati_globali/scouting_*.json' || true
           git commit -m "Scouting acquisti: report e consigli" || echo "niente da committare"
           tentativo=0
           until git push origin main; do
