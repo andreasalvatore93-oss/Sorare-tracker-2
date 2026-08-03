@@ -1455,32 +1455,32 @@ def _atteso_dai_consigli(pool):
     Legge i file di consiglio delle leghe presenti nel pool. Se non ci sono
     (predict non ancora lanciato) la colonna resta vuota: il report si legge
     lo stesso, e non si finge un numero che non e' stato calcolato."""
-    # Solo consigli FRESCHI. Quelle cartelle conservano i consigli di tutte le
-    # giornate passate, e un atteso vecchio e' calcolato contro un ALTRO
-    # avversario: nel report sembrerebbe buono e sarebbe sbagliato. Misurato il
-    # 02/08: senza questo filtro il report leggeva 415 attesi ancor prima che i
-    # predict di quella run fossero partiti.
-    limite = time.time() - ORE_CONSIGLIO_VALIDO * 3600
+    # L'anti-stantio e' il KICKOFF-in-finestra piu' sotto (controllo ESATTO): un
+    # consiglio vecchio ha un kickoff di un'altra giornata e viene scartato li'.
+    # NON si filtra piu' per mtime del file: git checkout in CI riscrive/preserva
+    # gli mtime a caso e faceva scartare consigli freschi validi come "vecchi"
+    # (run 30818735703: 33 consigli buttati, 46/179 attesi invece di ~tutti) --
+    # stessa causa radice del fix freschezza in build_formazione_globale.
     inizio = (pool['fixture'].get('startDate') or '')[:10]
     fine = (pool['fixture'].get('endDate') or '')[:10]
-    per_slug, scartati_vecchi, fuori_giornata = {}, 0, 0
+    per_slug, fuori_giornata = {}, 0
     cartelle = {g.get('cartella') for g in pool['giocatori'] if g.get('cartella')}
+    _ts_nome = re.compile(r'(\d{4}-\d{2}-\d{2})_(\d{2})(\d{2})(\d{2})')
+    def _ts(path):
+        m = _ts_nome.search(os.path.basename(path))
+        return m.groups() if m else ('',)
     for cartella in sorted(cartelle):
         trovati = glob.glob(os.path.join(REPO_ROOT, f"formazione_{cartella}",
                                          'output', '**', 'consiglio*.txt'), recursive=True)
-        # UN file per cartella, il piu' recente. Quelle directory conservano
-        # decine di consigli di giornate passate (in argentina ce ne sono del
-        # 27/07): leggerli tutti mescolerebbe run diverse, e l'ultimo letto
-        # vincerebbe per ordine alfabetico invece che per data.
+        # UN file per cartella, il piu' recente PER TIMESTAMP DEL NOME (non
+        # mtime, inaffidabile in CI). Quelle directory conservano decine di
+        # consigli di giornate passate: leggerli tutti mescolerebbe le run.
         ultimo_per_dir = {}
         for path in trovati:
             d = os.path.dirname(path)
-            if d not in ultimo_per_dir or os.path.getmtime(path) > os.path.getmtime(ultimo_per_dir[d]):
+            if d not in ultimo_per_dir or _ts(path) > _ts(ultimo_per_dir[d]):
                 ultimo_per_dir[d] = path
         for path in ultimo_per_dir.values():
-            if os.path.getmtime(path) < limite:
-                scartati_vecchi += 1
-                continue
             try:
                 with open(path, encoding='utf-8') as f:
                     testo = f.read()
@@ -1504,10 +1504,9 @@ def _atteso_dai_consigli(pool):
                     fuori_giornata += 1
                     continue
                 per_slug[m.group(1)] = float(m.group(2))
-    if scartati_vecchi or fuori_giornata:
-        log(f"Consigli ignorati: {scartati_vecchi} file piu' vecchi di "
-            f"{ORE_CONSIGLIO_VALIDO:.0f}h, {fuori_giornata} righe con kickoff "
-            f"fuori da {inizio}..{fine}. Sono attesi di altre giornate.")
+    if fuori_giornata:
+        log(f"Consigli ignorati: {fuori_giornata} righe con kickoff fuori da "
+            f"{inizio}..{fine} (attesi di altre giornate, scartati dal KICKOFF).")
     return per_slug
 
 
