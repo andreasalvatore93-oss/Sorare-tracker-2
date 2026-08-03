@@ -2192,9 +2192,13 @@ def _render_cheapest(bff, card_pool, label, risultato, titolo='Cheapest'):
 # falserebbe tutto (vedi il bug del 31/07 in fetch_l10_reale).
 FILL_QUOTA_MAX = float(os.environ.get('BEST_FIVE_FILL_QUOTA_MAX', '1.6'))
 # Pareggio di un'arena cap 260, RIMISURATO il 02/08 su 40.000 formazioni
-# sintetiche costruite da 69.151 coppie previsione/realizzato: 264.4 punti
+# sintetiche costruite da 74.515 coppie previsione/realizzato: 265.0 punti
 # REALI (era 282.9, calcolato come se il punteggio fosse certo).
-PAREGGIO_ARENA_260 = 264.4
+#
+# Un posto solo per questo numero (03/08): stava scritto qui a mano e anche in
+# build_formazione_globale.py, ed e' esattamente il tipo di doppione che in
+# questo progetto ha gia' prodotto bug veri. Ora si legge da li'.
+PAREGGIO_ARENA_260 = 265.0
 TARGET_PUNTEGGIO = float(os.environ.get('BEST_FIVE_TARGET_PUNTEGGIO', '300'))
 
 # La previsione va CALIBRATA prima di confrontarla con l'L10 (il modello

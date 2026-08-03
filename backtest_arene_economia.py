@@ -27,28 +27,50 @@ COSTO_INGRESSO = {
     'Beginner': 100,
     'cap 220': 200,
     'cap 260': 300,
-    'arena division': 300,   # arena dedicata: stesso ingresso della cap 260
+    # DA CHIARIRE (03/08): i premi davvero incassati nelle 191 'arena division'
+    # in archivio sono 500/250/150, cioe' quelli del Beginner (che costa 100),
+    # non i 1300/800/500 della cap 260. Il costo non e' mai stato registrato.
+    # Questo 300 e' l'ipotesi storica, ed e' quella che porta il pareggio a
+    # 352.8 grezzi; con 100 sarebbe molto piu' basso. Il generatore assume
+    # l'altra ipotesi: i due file non concordano, e serve il dato vero.
+    'arena division': 300,   # ipotesi: stesso ingresso della cap 260
     'Uncapped': 300,
     'arena uncapped': 300,
 }
 
-# Punteggio atteso oltre il quale l'ingresso si ripaga (sezione 48.C, misurato
-# sulle 673 arene reali) e quanto vale un punto sopra la soglia (48.H).
+# Punteggio atteso oltre il quale l'ingresso si ripaga, e quanto vale un punto
+# sopra la soglia.
+#
+# CORRETTE (03/08). I valori precedenti (282.9 cap 260, 265.0 cap 220, 305.5
+# uncapped, 281.9 Beginner) sono esattamente quelli che consiglio_arena.py
+# produce con SIGMA=0, cioe' facendo finta che il punteggio previsto si
+# realizzi con certezza. Non e' "la scala grezza" come dichiarava il commento:
+# e' un'ipotesi diversa, e sbagliata -- la previsione di una formazione sbaglia
+# di 42.7 punti di deviazione standard, e ignorarlo fa sembrare la regola
+# d'ingresso molto piu' selettiva di quanto sia (fra le due letture ballano
+# nove punti sulla cap 260). Anche i guadagni per punto venivano da li': 29
+# essenze a punto contro le 8.8 vere.
+#
+# Questo file resta deliberatamente sulla scala GREZZA (non calibra le
+# previsioni), quindi le soglie sono l'equivalente grezzo di quelle reali di
+# build_formazione_globale.py, invertendo la retta di formazione
+# realizzato = 63.43 + 0.736 x previsto:  grezza = (reale - 63.43) / 0.736.
 PAREGGIO = {
-    'Beginner': 281.9,
-    'cap 220': 265.0,
-    'cap 260': 282.9,
-    'arena division': 282.9,
-    'Uncapped': 305.5,
+    'Beginner': 272.6,        # reale 264.1
+    'cap 220': 245.5,         # reale 244.1
+    'cap 260': 273.9,         # reale 265.0
+    'arena division': 352.8,  # reale 323.1 -- vedi la nota sul costo, sotto
+    'Uncapped': 305.5,        # reale 288.3
     'arena uncapped': 305.5,
 }
+# Essenze per ogni punto GREZZO sopra la soglia = per punto reale x 0.736.
 GUADAGNO_PER_PUNTO = {
-    'Beginner': 7.0,
-    'cap 220': 20.0,
-    'cap 260': 29.0,
-    'arena division': 29.0,
-    'Uncapped': 22.0,
-    'arena uncapped': 22.0,
+    'Beginner': 2.1,
+    'cap 220': 4.6,
+    'cap 260': 6.5,
+    'arena division': 2.9,
+    'Uncapped': 5.9,
+    'arena uncapped': 5.9,
 }
 # Si entra se il guadagno atteso vale almeno il 10% di cio' che si rischia
 # (48.H: la soglia va ricavata dalla curva, non scelta a occhio).

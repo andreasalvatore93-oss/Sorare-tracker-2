@@ -330,8 +330,8 @@ def _is_arena_type(tipo):
 #     nella scala giusta senza toccarli
 #   - i punteggi mostrati nel report diventano onesti: prima una formazione
 #     data a 290 ne realizzava tipicamente 276
-CALIB_A = float(os.environ.get('CALIB_A', '10.21'))
-CALIB_B = float(os.environ.get('CALIB_B', '0.767'))
+CALIB_A = float(os.environ.get('CALIB_A', '10.76'))
+CALIB_B = float(os.environ.get('CALIB_B', '0.757'))
 
 # --- UNA RETTA PER RUOLO (03/08) ---------------------------------------
 # La calibrazione unica sopra e' affine e monotona, quindi dentro un ruolo non
@@ -339,35 +339,45 @@ CALIB_B = float(os.environ.get('CALIB_B', '0.767'))
 # confronti FRA ruoli, che e' esattamente cio' che fa il generatore quando
 # riempie 1 slot di portiere e 4 di movimento pescando da leghe diverse.
 #
-# Misurato sulle 2.690 righe di dati_globali/errore_storico_tutte.json (arene
-# reali: nessun bonus carta ne' di formazione, il punteggio pubblicato E'
-# quello grezzo che il modello prova a prevedere), RIFATTO il 03/08 dopo i fix
-# al modello, la retta non e' la stessa per tutti:
+# Misurato sulle 74.515 coppie previsione/realizzato di
+# dati_globali/taratura_coppie.json (walk-forward su tutto lo storico in cache,
+# punteggi grezzi senza alcun bonus), rigenerate il 03/08 col modello corretto
+# E con i parametri ritarati. E' la stessa fonte da cui veniva la retta unica
+# in produzione, quindi i due numeri sono confrontabili: la retta non e' la
+# stessa per tutti.
 #
-#     ruolo          n      a       b    prev. 60 -> reale    MAE
-#     Goalkeeper   525   12.17   0.731         56.0          15.35
-#     Defender     701   15.89   0.718         59.0          15.10
-#     Midfielder   748   15.60   0.706         58.0          14.58
-#     Forward      716   10.03   0.817         59.1          15.81
-#     (unica)     2690    9.22   0.825         56.7  per tutti
+#     ruolo            n      a       b    prev. 60 -> reale   sd residua
+#     Goalkeeper    6019   35.78   0.264         51.6           19.23
+#     Defender     25437    7.28   0.831         57.1           18.51
+#     Midfielder   24067   11.61   0.740         56.0           16.20
+#     Forward      18992    8.40   0.789         55.7           16.83
+#     (unica)      74515   10.76   0.757         56.2  per tutti
+#
+# LA PENDENZA DEL PORTIERE (0.264) NON E' UN ERRORE, ed e' il numero piu'
+# importante di questa tabella. La previsione del portiere e' quasi scorrelata
+# dal realizzato (r = 0.034 su 6.019 casi) e varia pochissimo (dev.std. 2.5
+# punti contro i 19.2 del realizzato): il modello, sui portieri, non distingue.
+# La calibrazione lo dice a voce alta, schiacciando ogni portiere verso ~52
+# punti. La conseguenza operativa e' giusta: se il portiere non e' prevedibile,
+# nella cap 260 conviene metterci quello che consuma meno budget L10, non
+# quello con la previsione piu' alta.
 #
 # Tre punti di scarto fra portiere e attaccante che la retta unica appiattisce.
 # Dentro un ruolo la calibrazione non cambia niente (e' affine e monotona), ma
 # in una formazione da cinque quello scarto e' un errore sistematico di
 # allocazione fra lo slot del portiere e i quattro di movimento.
 #
-# I coefficienti reggono al fix: prima e dopo cambiano di 0.005 sulla pendenza,
-# perche' errore_modello_storico.py scartava gia' per conto suo le partite
-# senza dettaglio granulare (lo dice il commento in backtest_arene_previsioni.py:
-# "senza dettaglio extract_level_score torna 0.0 [...] gonfiando la previsione,
-# misurato +10-15 punti"). Era il MISURATORE ad aggirare il problema, mentre la
-# produzione continuava a subirlo: la misura non poteva vederlo, ed e' per
-# questo che il bug e' rimasto in piedi.
+# Verificato che le due strade portano allo stesso posto: sommando cinque
+# giocatori calibrati per ruolo (col capitano) su 40.000 formazioni sintetiche
+# si ottiene una media di 260.4 contro i 262.3 realizzati, bias +1.9 e
+# dispersione dell'errore 42.70 -- gli stessi numeri della vecchia retta unica.
+# Cambia la ripartizione fra i ruoli, non la scala: quindi le soglie d'arena,
+# che vivono nella scala del realizzato, restano confrontabili coi totali.
 CALIB_PER_RUOLO = {
-    'GK':  (float(os.environ.get('CALIB_A_GK', '12.17')), float(os.environ.get('CALIB_B_GK', '0.731'))),
-    'DEF': (float(os.environ.get('CALIB_A_DEF', '15.89')), float(os.environ.get('CALIB_B_DEF', '0.718'))),
-    'MID': (float(os.environ.get('CALIB_A_MID', '15.60')), float(os.environ.get('CALIB_B_MID', '0.706'))),
-    'FWD': (float(os.environ.get('CALIB_A_FWD', '10.03')), float(os.environ.get('CALIB_B_FWD', '0.817'))),
+    'GK':  (float(os.environ.get('CALIB_A_GK', '35.78')), float(os.environ.get('CALIB_B_GK', '0.264'))),
+    'DEF': (float(os.environ.get('CALIB_A_DEF', '7.28')), float(os.environ.get('CALIB_B_DEF', '0.831'))),
+    'MID': (float(os.environ.get('CALIB_A_MID', '11.61')), float(os.environ.get('CALIB_B_MID', '0.740'))),
+    'FWD': (float(os.environ.get('CALIB_A_FWD', '8.40')), float(os.environ.get('CALIB_B_FWD', '0.789'))),
 }
 
 
@@ -396,16 +406,38 @@ def calibra_riga(row, ruolo=None):
 # Il valore dipende dal campo, non dall'utente: e' il punteggio al quale
 # l'incasso medio -- calcolato pescando i nove avversari da arene vere e i
 # premi da quelli davvero visti, arene gold incluse -- uguaglia il costo.
+# RIFATTE (03/08) dopo i fix e la ritaratura del modello, ripercorrendo la
+# stessa catena che le aveva prodotte:
+#   1. taratura_giocatore.py       -> 74.515 coppie previsione/realizzato
+#   2. taratura_formazioni_sintetiche.py -> 40.000 formazioni da cinque col
+#      capitano: realizzato = 63.43 + 0.736 x previsto, dispersione 42.70
+#   3. SIGMA=42.70 consiglio_arena.py -> le soglie qui sotto
+#
+# Si spostano di mezzo punto, e non per fortuna: nella catena l'UNICO ingresso
+# che dipende dal modello e' SIGMA, la dispersione dell'errore a livello di
+# formazione, e quella e' passata da 43.3 a 42.70 (-1.3%). Il campo avversario
+# e i premi vengono dalle 673 arene reali, che il modello non tocca. Verificato
+# a monte: con SIGMA=43.3 il tool ristampa esattamente le soglie precedenti
+# (264.5/243.6/287.9/342.9), quindi la catena e' quella giusta.
 PAREGGIO_ARENA = {
     # In punteggio REALE, perche' la previsione arriva gia' calibrata (vedi
     # calibra_riga). Prima erano espresse in previsione grezza -- 274.1 per la
     # cap 260 -- che e' lo stesso pareggio letto sull'altra scala.
-    'ARENA_ALLSTARS_260': 264.4,
-    'ARENA_ALLSTARS_220': 243.5,
-    'ARENA_ALLSTARS_UNCAPPED': 288.2,
-    'ARENA_ALLSTARS_ELITE': 342.7,
+    'ARENA_ALLSTARS_260': 265.0,      # era 264.4
+    'ARENA_ALLSTARS_220': 244.1,      # era 243.5
+    'ARENA_ALLSTARS_UNCAPPED': 288.3,  # era 288.2
+    'ARENA_ALLSTARS_ELITE': 342.7,    # invariata
 }
-PAREGGIO_ARENA.update({arena_type(lg): 264.4 for lg in ARENA_LEAGUES})
+# Arene dedicate a un campionato. DA CHIARIRE (03/08): in archivio sono 191
+# ('arena division') e i premi DAVVERO incassati sono 500/250/150, cioe' quelli
+# del Beginner, non i 1300/800/500 della cap 260 a cui questa riga le
+# equipara. Il loro costo d'ingresso non e' mai stato registrato (`costo` e'
+# sempre null). Se costano 100 come il Beginner il pareggio e' 264.6, cioe'
+# questa riga e' giusta; se ne costassero 300 come si assume in
+# backtest_arene_economia.py sarebbe 323.1, e giocarle a 265 brucerebbe
+# essenze. Lasciato al valore della cap 260 -- l'ipotesi piu' coerente coi
+# premi osservati -- ma serve il dato vero per chiudere la questione.
+PAREGGIO_ARENA.update({arena_type(lg): 265.0 for lg in ARENA_LEAGUES})
 
 def _stampa_verdetto_arene(all_results):
     """Per ogni arena generata: conviene pagare l'ingresso con questa formazione?
@@ -509,12 +541,14 @@ def _verdetto_arene_html(all_results):
 # curva e' ripida vicino alla soglia, perche' pochi punti spostano molto la
 # probabilita' di finire nei primi tre. In cap 260 un solo punto vale 29
 # essenze, quindi anche un margine di mezzo punto NON e' zero (vale 14).
+# RIMISURATE (03/08) insieme alle soglie, come pendenza della curva
+# dell'incasso nell'intorno del pareggio (+-5 punti), con la stessa SIGMA=42.70.
 GUADAGNO_PER_PUNTO = {
     # Essenze guadagnate per ogni punto REALE sopra il pareggio.
-    'ARENA_ALLSTARS_260': 7.5, 'ARENA_ALLSTARS_220': 7.4,
-    'ARENA_ALLSTARS_UNCAPPED': 7.3, 'ARENA_ALLSTARS_ELITE': 10.0,
+    'ARENA_ALLSTARS_260': 8.8, 'ARENA_ALLSTARS_220': 6.3,   # erano 7.5 e 7.4
+    'ARENA_ALLSTARS_UNCAPPED': 8.0, 'ARENA_ALLSTARS_ELITE': 9.1,  # erano 7.3 e 10.0
 }
-GUADAGNO_PER_PUNTO.update({arena_type(lg): 7.5 for lg in ARENA_LEAGUES})
+GUADAGNO_PER_PUNTO.update({arena_type(lg): 8.8 for lg in ARENA_LEAGUES})
 
 COSTO_INGRESSO = {
     'ARENA_ALLSTARS_260': 300, 'ARENA_ALLSTARS_220': 200,
