@@ -44,7 +44,7 @@ portieri quando avremo piu' giocatori di test.
 Cache incrementale del game log integrata (stessa logica di
 centrocampisti/difensori/attaccanti).
 
-Nessun giocatore di test verificato ancora per questo campionato (nessun accesso API in questa sessione) -- fallback vuoto, verra' popolato dalla prima discovery reale.
+Giocatore di test: Hugo Lloris (Goalkeeper, slug hugo-lloris).
 
 Filtro secco su starterOddsBasisPoints della partita target — se <
 MIN_STARTER_ODDS (70%), il giocatore viene ESCLUSO dall'analisi.
@@ -65,10 +65,12 @@ import requests
 # formazione_azerbaigian/predict/test_gk.py`, quindi l'import diretto funziona a
 # prescindere dalla cwd.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from live_prediction_log import log_live_prediction
-
+# NUOVO (29/07, aggiustamento forza avversario validato con backtest --
+# vedi opponent_strength.py alla root del repo): sys.path fino alla root
+# per importare il modulo condiviso (nessuna duplicazione della logica).
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 import opponent_strength
+from live_prediction_log import log_live_prediction
 
 try:
     from curl_cffi import requests as curl_requests
@@ -89,10 +91,12 @@ DISCOVERY_FILE = os.path.join(
     'formazione_azerbaigian/output/azerbaigian_gk_discovery_global' if CALIBRATION_MODE else 'formazione_azerbaigian/output/azerbaigian_gk_discovery',
     'player_slugs.json')
 
-# Fallback statico SOLO se azerbaigian_gk_discovery/player_slugs.json non esiste
-# ancora (nessuna discovery portieri ancora fatta): nessun giocatore
-# verificato per questo campionato, lista vuota fino al primo run reale.
-_FALLBACK_PLAYER_SLUGS = []
+# Fallback statico SOLO se mls_gk_discovery/player_slugs.json non esiste
+# ancora (nessuna discovery portieri ancora fatta): singolo giocatore
+# di test, Mohamed Farsi.
+_FALLBACK_PLAYER_SLUGS = [
+    'hugo-lloris',
+]
 
 
 def load_player_slugs():
@@ -111,10 +115,73 @@ PLAYER_SLUGS = load_player_slugs()
 
 WINDOW_SIZE = 30  # AMPLIATO (29/07) da 15 a 30 su richiesta esplicita dell'utente, dopo il caso Daniel De Sousa Brito -- mantenuto lo stesso half_life per ruolo, l'allargamento serve a dare piu' contesto storico alla media pesata
 HALF_LIFE_GAMES = 6.0  # AGGIORNATO (29/07): ridotto da 12.0 a 6.0 SOLO per GK, su richiesta esplicita dell'utente dopo un caso reale (Daniel De Sousa Brito, media pesata 46.6 vs media reale ultime 11 partite 41.2 -- il modello si aspettava un punteggio del 29% sopra lo standard recente senza nessun segnale di miglioramento). Verificato con backtest rigoroso pooled su 66 portieri/538 partite (16 campionati): l'intera griglia half_life 4-30 sta in una forbice di MAE dell'1.4%, quindi accorciarlo non peggiora sensibilmente l'accuratezza aggregata mentre risolve l'incoerenza logica sui casi con un tratto di forma alta ormai superato nella finestra storica.
-RANGE_MULTIPLIER = 1.15  # AGGIORNATO (30/07, richiesta esplicita utente): centrato sulla copertura reale target ~68% (validate_range_multiplier_coverage.py). Solo cosmetico -- non tocca score_atteso/selezione.
-OPPONENT_SENSITIVITY = 29.0  # AGGIORNATO (26/07): grid search allargato K League su 3 portieri qualificati (>=3 partite test, campione MOLTO piccolo -- MAE 17.47 vs 17.6x circa con 20.0). Applicato per coerenza con MLS GK (stesso fix, stesso giorno) e con opp_sens=29.0 confermato su TUTTI gli altri ruoli K League (MID/FWD gia' a 29.0) tranne DEF (vedi nota separata, segnale opposto non applicato).
+# Blend porta inviolata squadra (03/08, vedi compute_score_atteso_gk): quanto
+# vale ~una porta inviolata in punti, e la P(clean sheet) media di riferimento
+# (gol medi a partita ~1.29 -> exp(-1.29) ~ 0.28). Tarabili via env per il test.
+GK_TEAM_CS_POINTS = float(os.environ.get('GK_TEAM_CS_POINTS', '35'))
+GK_TEAM_CS_BASELINE = float(os.environ.get('GK_TEAM_CS_BASELINE', '0.28'))
+# Peso del blend porta-inviolata (03/08): ACCESO di default (0.5) dopo il
+# backtest sulle arene reali (corr previsto/reale 0.157->0.211, piu' arene a
+# premio). 0 lo spegne. Vale in produzione E nello scouting (stesso modulo).
+GK_TEAM_CS_WEIGHT = float(os.environ.get('GK_TEAM_CS_WEIGHT', '0.5'))
+_FORZE_CS_PROD = None   # cache pigra delle forze squadre (modello_partita)
+
+
+def _pcs_squadra_prod(team, opp, is_home, cutoff):
+    """P(porta inviolata) della squadra del portiere per la prossima partita,
+    dal modello_partita (forza attacco/difesa stimata sul solo passato). None
+    -- quindi nessun blend -- se il dato non c'e' o qualcosa fallisce: la
+    produzione non deve mai rompersi per questo."""
+    global _FORZE_CS_PROD
+    if GK_TEAM_CS_WEIGHT <= 0 or not team or not opp:
+        return None
+    if not isinstance(cutoff, datetime.datetime):
+        return None
+    try:
+        import bisect as _b
+        if _FORZE_CS_PROD is None:
+            import modello_partita as _mp
+            oss = _mp.osservazioni(_mp.partite_da_cache())
+            oss.sort(key=lambda o: o['data'])
+            darr = [o['data'] for o in oss]
+            cps, fz = [], []
+            if oss:
+                d = oss[0]['data']
+                while d <= oss[-1]['data'] + datetime.timedelta(days=7):
+                    lo = _b.bisect_left(darr, d)
+                    if lo >= 400:
+                        cps.append(d)
+                        fz.append(_mp.stima(oss[:lo], riferimento=d,
+                                            regolarizzazione=0.30, emivita=120.0))
+                    d += datetime.timedelta(days=7)
+            _FORZE_CS_PROD = (cps, fz)
+        cps, fz = _FORZE_CS_PROD
+        if not cps:
+            return None
+        i = _b.bisect_right(cps, cutoff) - 1
+        if i < 0:
+            return None
+        f = fz[i]
+        if not (f.conosciuta(team) and f.conosciuta(opp)):
+            return None
+        # gol attesi dell'avversario contro la squadra del GK = quanti ne subisce
+        lam = f.lambda_atteso(opp, team, in_casa=not is_home)
+        return math.exp(-lam)
+    except Exception:
+        return None
+
+RANGE_MULTIPLIER = 1.15  # AGGIORNATO (30/07, richiesta esplicita utente): centrato sulla copertura reale target ~68% (validate_range_multiplier_coverage.py, 233 giocatori/3293 punti test: 1.4 dava 78.0% di copertura, troppo largo). Solo cosmetico -- non tocca score_atteso/selezione, cambia solo l'ampiezza del range mostrato.
+OPPONENT_SENSITIVITY = 29.0  # AGGIORNATO (26/07): grid search allargato su 13 portieri qualificati (>=3 partite test, 26 qualificati totali) — opp_sens=29.0 batte 20.0 del -4.3% di MAE (18.96 vs 19.81), coerente con DEF/MID/FWD e col bootstrap di stabilita' (opp_sens=29.0 mai cambiato in nessun ruolo). range_multiplier=1.6 confermato invariato (tie con 1.4 in questo campione, nessun segnale per cambiarlo).
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto)
 TREND_INTENSITY = 0.0  # ABBASSATO 0.7 -> 0.0 (31/07). Due misure indipendenti concordi: (1) grid search aggregato, a parita' di half_life/range il MAE PEGGIORA in modo MONOTONO al crescere del trend -- a hl=6 (produzione) 16.82/16.86/16.88/17.08/17.27/17.46 per trend 0.0/0.2/0.3/0.7/1.0/1.3, e identico andamento a hl=12; (2) analizza_trend_breve_vs_lungo.py, i GK reduci da una serie in MIGLIORAMENTO rendono -6.19 pt sotto il proprio livello di lungo periodo (IC95% [-11.15, -1.22]), cioe' premiare la salita e' proprio il contrario di cio' che serve. Il vecchio 0.7 era 'FISSATO (25/07)' senza una misura a supporto.
+# Shrinkage verso il prior di ruolo (28/07, stesso principio EmpiricalBayes di
+# DEF/FWD, mai avuto da GK prima -- caso reale: Michael Collodi, 8 partite,
+# preferito a Takaoka con 10 per un fattore casa/trasferta enorme su 3-4
+# partite per bucket). k=5 scelto con backtest walk-forward (selection_quality,
+# 45 giornate reali). MEDIA_RUOLO_GK_PRIOR = media reale su 2664 partite GK
+# cache multi-campionato.
+SHRINK_K_OUTLIER_GK = 30.0  # AGGIORNATO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~7500 punti di test conferma k=30 pulito su entrambi i segmenti n<8/n>=8 (-5.36%/-9.28%/-4.31%), il vecchio timore "overfitting al bordo griglia" non regge piu' con questo volume di dati -- stesso valore ora su TUTTE le leghe incluso MLS/Korea
+MEDIA_RUOLO_GK_PRIOR = 48.81
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
@@ -122,14 +189,27 @@ SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Ac
 OUTPUT_DIR = 'formazione_azerbaigian/output/azerbaigian_gk_calibration' if CALIBRATION_MODE else 'formazione_azerbaigian/output/azerbaigian_gk_all'
 CACHE_DIR = os.path.join(OUTPUT_DIR, '.cache')
 
-# Circuit breaker CloudFront (29/07, propagato a questa lega il 31/07): un
-# HTTP 403 "Request blocked" NON e' un errore del singolo giocatore, e' un
-# blocco IP/sessione -- ritentare con attese progressive non lo risolve e
-# costa minuti (il 29/07 una run e' passata da ~4 a 22 minuti). Rilevato una
-# volta, per il resto del job si fa un solo tentativo secco per giocatore.
-# Il marker sta in /tmp ed e' per-lega/per-ruolo, quindi job diversi non si
-# influenzano a vicenda.
+# Circuit breaker per blocco CloudFront (29/07, fix reale: una run e' passata
+# da ~4 a 22 minuti perche' CloudFront ha bloccato TUTTE le chiamate di uno
+# shard con HTTP 403 "Request blocked" -- non un errore per-giocatore, un
+# blocco a livello di IP/sessione che non si risolve MAI ritentando lo
+# STESSO giocatore. Ogni giocatore di quello shard bruciava comunque i 3
+# tentativi (~60s) prima di arrendersi, perche' ogni giocatore e' un
+# PROCESSO SEPARATO (vedi TARGET_SLUG nel workflow) senza stato condiviso.
+# Il marker vive in /tmp (non nel repo, non committato) -- sopravvive tra i
+# processi separati della STESSA job (stesso runner) ma non tra run diverse
+# (runner nuovo ogni volta). Appena la PRIMA chiamata rileva la firma
+# CloudFront, i tentativi successivi per QUALSIASI giocatore restante in
+# questa job diventano un singolo tentativo secco, senza attesa.
 _CIRCUIT_BREAKER_PATH = '/tmp/sorare_cloudfront_block_azerbaigian_gk.marker'
+
+# Flag "non ritentare" (29/07, fix reale: molti retry da 60s sprecati su
+# giocatori con storico REALMENTE insufficiente -- es. panchinari con quasi
+# solo DID_NOT_PLAY -- che non cambia riprovando la stessa query pochi
+# secondi dopo. Il loop di retry in main() lo controlla per uscire subito
+# invece di aspettare fino a 60s per un fallimento STRUTTURALE (non
+# transitorio come un 403/timeout, dove riprovare puo' davvero aiutare).
+_STRUCTURAL_INSUFFICIENCY = False
 
 
 def _circuit_breaker_tripped():
@@ -143,7 +223,6 @@ def _trip_circuit_breaker(reason):
                 f.write(reason)
         except OSError:
             pass
-
 
 COOKIES = os.environ.get('SORARE_COOKIE', '')
 
@@ -273,13 +352,11 @@ def graphql_query(query, variables=None, operation_name=None):
             if resp.status_code >= 400:
                 log(f"[GraphQL ERRORE] {label} HTTP {resp.status_code} | dump completo: {debug_file}")
                 log(f"[GraphQL ERRORE] {label} body (primi 1500 char): {resp.text[:1500]}")
-                if resp.status_code == 403 and ('cloudfront' in resp.text.lower()
-                                                or 'request blocked' in resp.text.lower()):
+                if resp.status_code == 403 and ('cloudfront' in resp.text.lower() or 'request blocked' in resp.text.lower()):
                     if not _circuit_breaker_tripped():
-                        log(f"[CIRCUIT BREAKER] Blocco CloudFront rilevato (HTTP 403, "
-                            f"'Request blocked') -- non e' un errore per-giocatore, e' un "
-                            f"blocco IP/sessione che ritentare non risolve. Disattivo i "
-                            f"retry con attesa per il resto di questa job.")
+                        log(f"[CIRCUIT BREAKER] Blocco CloudFront rilevato (HTTP 403, 'Request blocked') -- "
+                            f"non e' un errore per-giocatore, e' un blocco IP/sessione che ritentare non risolve. "
+                            f"Disattivo i retry con attesa per il resto di questa job.")
                     _trip_circuit_breaker(f"HTTP 403 CloudFront su {label}")
                 return {}
 
@@ -803,7 +880,7 @@ def weighted_percentile(values, weights, percentile):
 def media_condizionata(values, weights, condition_flags, target_condition, fallback_mean, shrink_k=5.0):
     """Stadio D (26/07, tema level_score/correlazione venue-avversario, DECISO
     CON L'UTENTE dopo verifica statistica su migliaia di partite reali in
-    cache -- vedi formazione_mls/diagnostics/inspect_decisive_event_conditioning.py
+    cache -- vedi formazione_azerbaigian/diagnostics/inspect_decisive_event_conditioning.py
     e docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md): ricalcola la media
     pesata SOLO sul sottoinsieme storico del giocatore che condivide la
     stessa condizione (casa/trasferta, o avversario piu' forte/debole della
@@ -935,10 +1012,67 @@ def extract_level_score(detail):
 
 
 # --- level_score ATTESO da tasso di eventi decisivi (27/07 notte, sezione 22
-# del riassunto) -- vedi formazione_mls/predict/test_def.py per la stessa
-# implementazione commentata per esteso.
+# del riassunto) -- vedi formazione_azerbaigian/predict/test_def.py per la stessa
+# implementazione commentata per esteso. Rivalidato su 6 campionati: -0.87% MAE.
 LEVEL_TABLE = {-2: 5, -1: 15, 0: 35, 1: 60, 2: 70, 3: 80, 4: 90, 5: 100}
 LEVEL_SCORE_POISSON_K_MAX = 6
+
+# Shrinkage del fattore casa/trasferta del PORTIERE (ALZATO 5.0->20.0 il
+# 30/07 dopo il caso reale Turner/Sirois, validato con backtest walk-forward).
+# UNIFICATO a livello di modulo il 31/07 (audit): il valore era ripetuto in
+# due punti -- dentro compute_score_atteso_gk (quello che entra nello score) e
+# inline in build_prediction (quello mostrato nel report) -- e andavano tenuti
+# allineati a mano, tanto che il cambio del 30/07 richiese un replace_all. Se
+# fossero divergiti, il report avrebbe mostrato un fattore diverso da quello
+# davvero applicato al punteggio.
+SPLIT_SHRINK_K_GK = 20.0
+
+
+def venue_factor_gk(scores, is_home_flags, target_is_home, weights):
+    """Fattore casa/trasferta del portiere: rapporto fra la media dei punteggi
+    nel contesto della prossima partita e la media generale, tirato verso 1.0
+    proporzionalmente a quante partite ci sono in quel contesto (shrinkage,
+    vedi SPLIT_SHRINK_K_GK).
+
+    A differenza degli altri ruoli il portiere lo calcola sui punteggi PIENI e
+    non sui residui: verificato il 31/07 (formazione_azerbaigian/diagnostics/
+    test_venue_base_residui_vs_punteggi.py) che le due basi danno la stessa
+    MAE (differenze sotto lo 0.01% su 15.000 punti di test), quindi la
+    differenza fra i ruoli e' innocua e non vale un cambio di produzione.
+
+    FUNZIONE UNICA (31/07, audit): prima questa logica era duplicata in due
+    punti del file, con rischio di divergenza silenziosa fra il numero
+    applicato e quello mostrato.
+
+    FIX (03/08), tre difetti nello stesso punto:
+
+    1. CONDIZIONE IGNOTA. 'if target_is_home: ... else: ...' mandava sul
+       bucket TRASFERTA anche quando target_is_home era None, cioe' quando la
+       squadra del portiere non e' riconosciuta nella partita target: un
+       'trasferta' dato per buono senza saperlo. Ora torna 1.0.
+    2. MEDIE PIATTE. home_avg/away_avg erano medie semplici, mentre il
+       portiere ha half_life 6 su una finestra di 30 partite: il fattore dava
+       lo stesso peso a una partita di un anno fa e a quella di domenica,
+       e poi moltiplicava una media pesata. Ora sono pesate come il resto.
+    3. BASELINE. 'overall = (home_avg + away_avg) / 2' e' il punto di mezzo
+       fra i due bucket, non la media del giocatore: un portiere con 20
+       partite in casa e 3 fuori veniva confrontato con un riferimento
+       'meta' trasferta' che i suoi dati non sostengono. Ora il riferimento
+       e' la media pesata vera.
+    """
+    if target_is_home is None:
+        return 1.0
+    media_pesata = weighted_mean(scores, weights)
+    if media_pesata <= 0:
+        return 1.0
+    ctx = [(s, w) for s, w, h in zip(scores, weights, is_home_flags)
+           if h is not None and bool(h) == bool(target_is_home)]
+    if not ctx:
+        return 1.0
+    context_avg = weighted_mean([s for s, _ in ctx], [w for _, w in ctx])
+    raw, n_bucket = context_avg / media_pesata, len(ctx)
+    shrink = n_bucket / (n_bucket + SPLIT_SHRINK_K_GK)
+    return 1.0 + shrink * (raw - 1.0)
 
 
 def netto_to_level(netto):
@@ -1056,57 +1190,6 @@ def compute_split_factor(values, is_home_flags, target_is_home, weights=None):
     return max(0.7, min(1.3, fattore))  # limitato per evitare correzioni estreme
 
 
-
-SPLIT_SHRINK_K_GK = 20.0  # ALZATO 5.0->20.0 (30/07, caso reale Turner/Sirois): validato con backtest walk-forward, migliora la MAE
-
-
-def venue_factor_gk(scores, is_home_flags, target_is_home, weights):
-    """Fattore casa/trasferta del portiere: rapporto fra la media dei punteggi
-    nel contesto della prossima partita e la media generale, tirato verso 1.0
-    proporzionalmente a quante partite ci sono in quel contesto (shrinkage,
-    vedi SPLIT_SHRINK_K_GK).
-
-    A differenza degli altri ruoli il portiere lo calcola sui punteggi PIENI e
-    non sui residui: verificato il 31/07 (formazione_mls/diagnostics/
-    test_venue_base_residui_vs_punteggi.py) che le due basi danno la stessa
-    MAE (differenze sotto lo 0.01% su 15.000 punti di test), quindi la
-    differenza fra i ruoli e' innocua e non vale un cambio di produzione.
-
-    FUNZIONE UNICA (31/07, audit): prima questa logica era duplicata in due
-    punti del file, con rischio di divergenza silenziosa fra il numero
-    applicato e quello mostrato.
-
-    FIX (03/08), tre difetti nello stesso punto:
-
-    1. CONDIZIONE IGNOTA. 'if target_is_home: ... else: ...' mandava sul
-       bucket TRASFERTA anche quando target_is_home era None, cioe' quando la
-       squadra del portiere non e' riconosciuta nella partita target: un
-       'trasferta' dato per buono senza saperlo. Ora torna 1.0.
-    2. MEDIE PIATTE. home_avg/away_avg erano medie semplici, mentre il
-       portiere ha half_life 6 su una finestra di 30 partite: il fattore dava
-       lo stesso peso a una partita di un anno fa e a quella di domenica,
-       e poi moltiplicava una media pesata. Ora sono pesate come il resto.
-    3. BASELINE. 'overall = (home_avg + away_avg) / 2' e' il punto di mezzo
-       fra i due bucket, non la media del giocatore: un portiere con 20
-       partite in casa e 3 fuori veniva confrontato con un riferimento
-       'meta' trasferta' che i suoi dati non sostengono. Ora il riferimento
-       e' la media pesata vera.
-    """
-    if target_is_home is None:
-        return 1.0
-    media_pesata = weighted_mean(scores, weights)
-    if media_pesata <= 0:
-        return 1.0
-    ctx = [(s, w) for s, w, h in zip(scores, weights, is_home_flags)
-           if h is not None and bool(h) == bool(target_is_home)]
-    if not ctx:
-        return 1.0
-    context_avg = weighted_mean([s for s, _ in ctx], [w for _, w in ctx])
-    raw, n_bucket = context_avg / media_pesata, len(ctx)
-    shrink = n_bucket / (n_bucket + SPLIT_SHRINK_K_GK)
-    return 1.0 + shrink * (raw - 1.0)
-
-
 def compute_trend_factor(scores, short_window=5, long_window=10, trend_intensity=1.0,
                           weights=None):
     """Confronta la media delle ultime 'short_window' partite con quella delle
@@ -1203,12 +1286,16 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
         dev_std = weighted_stddev(hist_scores, w, media)
 
         # fattore casa/trasferta calcolato SOLO sullo storico precedente
-        # (03/08) Era ricopiato a mano qui e in build_prediction, con la stessa
-        # baseline sbagliata (punto di mezzo fra i due bucket) e le stesse medie
-        # piatte: due gemelli da tenere allineati a mano. Ora chiamano
-        # venue_factor_gk, funzione unica.
+        h_scores = [s for s, h in zip(hist_scores, hist_home_flags) if h is True]
+        a_scores = [s for s, h in zip(hist_scores, hist_home_flags) if h is False]
+        h_avg = sum(h_scores) / len(h_scores) if h_scores else media
+        a_avg = sum(a_scores) / len(a_scores) if a_scores else media
+        overall_avg = (h_avg + a_avg) / 2 if (h_scores and a_scores) else media
+
         target_is_home = is_home_flags[i]
-        fattore_ct = venue_factor_gk(hist_scores, hist_home_flags, target_is_home, w)
+        fattore_ct = 1.0
+        if overall_avg > 0:
+            fattore_ct = (h_avg / overall_avg) if target_is_home else (a_avg / overall_avg)
 
         # fattore forza avversario calcolato SOLO sullo storico precedente
         valid_ranks = [r for r in hist_opp_ranks if r is not None]
@@ -1278,10 +1365,18 @@ def rigorous_backtest(scores, is_home_flags, opponent_rankings, min_history=6,
 # dimensione trend_intensity, per restare comunque a un numero di
 # combinazioni gestibile pur avendo aggiunto una variabile in piu'.
 def _build_grid_combinations():
-    half_lives = [9.0, 12.0]
+    # ALLARGATA (30/07): la griglia era ferma a [9.0, 12.0], residuo di una
+    # versione precedente -- non includeva nemmeno i valori REALMENTE in
+    # produzione oggi (GK=6.0, DEF=20.0, MID/FWD=25.0, trovati con una ricerca
+    # piu' ampia mai riportata in questa griglia), rendendo il "vincitore" del
+    # grid search non comparabile alla produzione vera. Ora include tutti i
+    # valori di produzione attuali come candidati.
+    half_lives = [6.0, 9.0, 12.0, 15.0, 20.0, 25.0, 30.0]
     range_mults = [1.2, 1.4, 1.6]  # 1.6 aggiunto: range di default alzato per la copertura
     opp_sens_values = [20.0, 29.0]
-    trend_intensities = [0.7, 1.0, 1.3]  # NUOVO: trend attenuato / originale / amplificato
+    # ALLARGATA (30/07): includeva solo [0.7, 1.0, 1.3], non i valori reali di
+    # produzione (DEF=0.0, MID=0.2, FWD=0.3, GK=0.7 gia' incluso).
+    trend_intensities = [0.0, 0.2, 0.3, 0.7, 1.0, 1.3]
     combos = []
     for hl in half_lives:
         for rm in range_mults:
@@ -1334,6 +1429,265 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
     return results
 
 
+def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
+                            pos_decisive_values, neg_decisive_values,
+                            target_is_home, p_gioca=1.0,
+                            half_life=None, trend_intensity=None,
+                            shrink_k=SHRINK_K_OUTLIER_GK,
+                            media_ruolo_prior=MEDIA_RUOLO_GK_PRIOR,
+                            presence_rate=None, opponent_lambda_mult=1.0,
+                            detail_ok_flags=None, pen_area_delta=0.0,
+                            team_cs_prob=None, team_cs_weight=0.0):
+    """FUNZIONE CONDIVISA (28/07): calcola lo `score_atteso` GK di PRODUZIONE,
+    da usare SIA in build_prediction (predizione reale) SIA nel backtest
+    walk-forward di calibrazione (rigorous_backtest_prod_gk) -- cosi' le due
+    non possono piu' divergere (stesso principio gia' in produzione su
+    DEF/FWD, mancante per GK fino ad oggi: rigorous_backtest usava una
+    formula duplicata indipendente, quindi qualunque backtest/calibrazione
+    ignorava silenziosamente lo shrinkage aggiunto oggi).
+
+    p_gioca accettato per simmetria di firma con gli altri ruoli ma non
+    usato (rimosso da score_atteso il 28/07, vedi commento in build_prediction).
+    Nessun opponent_rankings/Stadio D: entrambi rimossi da score_atteso GK
+    (vedi commenti storici in build_prediction), quindi non servono qui.
+
+    opponent_lambda_mult (29/07, vedi opponent_strength.py): moltiplicatore
+    su lambda_pos_dec basato sui gol FATTI dal prossimo avversario nelle sue
+    ultime 10 partite (dato storico reale, non il domesticLeagueRanking
+    contaminato del vecchio fattore_forza_avversario). Default 1.0 (nessun
+    effetto) -- i chiamanti di backtest/calibrazione non lo passano, quindi
+    restano invariati."""
+    if half_life is None:
+        half_life = HALF_LIFE_GAMES
+    if trend_intensity is None:
+        trend_intensity = TREND_INTENSITY
+
+    n = len(scores)
+    weights = exponential_weights(n, half_life)
+
+    # Pesi per tutto cio' che viene dal detailedScore: le partite senza
+    # dettaglio pesano zero invece di entrare con level_score=0 (03/08, vedi
+    # mask_weights).
+    weights_det = mask_weights(weights, detail_ok_flags)
+
+    media_granulari_pesata = weighted_mean(granulari_values, weights_det)
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights_det) * opponent_lambda_mult
+    lambda_neg_dec = weighted_mean(neg_decisive_values, weights_det)
+    level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
+    fattore_trend_granulare, _s, _l = compute_trend_factor(
+        granulari_values, short_window=5, long_window=10, trend_intensity=trend_intensity,
+        weights=weights_det)
+    # Prior di ruolo DINAMICO (28/07, bug reale trovato dall'utente: Jack
+    # Skahan, David Vazquez -- giocatori di riserva veri, P(gioca) storico
+    # 19-26%, non sfortunati con pochi dati -- venivano tirati dallo
+    # shrinkage verso la media di TUTTI i giocatori (dominata dai titolari),
+    # gonfiando artificialmente il punteggio di chi gioca poco PERCHE'
+    # strutturalmente debole. Misurato sui dati reali (n=115 portieri, corr
+    # presenza/punteggio +0.245): chi gioca poco rende MENO anche quando
+    # gioca, non solo per varianza campionaria. Prior = intercetta + pendenza
+    # * presenza storica (regressione reale), non piu' un numero fisso
+    # uguale per titolari e riserve. presence_rate=None (calibrazione/
+    # backtest, nessun concetto di "storico totale esaminato" disponibile)
+    # ricade sul prior fisso originale, comportamento INVARIATO.
+    # Ricalibrato 30/07 (n=146, pool post-fix anyPlayers->activePlayers,
+    # decisione utente via popup): era 46.20 + 4.05 * presence_rate.
+    if presence_rate is not None:
+        media_ruolo_prior = max(0.0, 46.20 + 4.05 * presence_rate)
+    # pen_area_delta (03/08): delta ADDITIVO sul granulare, non piu' un
+    # moltiplicatore su lambda_pos -- vedi
+    # opponent_strength.gk_def_pen_area_granular_delta per il perche'
+    # (componente sbagliata E segno sbagliato).
+    grezzo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare + pen_area_delta
+    grezzo_corretto = (
+        (n / (n + shrink_k)) * grezzo
+        + (shrink_k / (n + shrink_k)) * media_ruolo_prior
+    )
+
+    # Funzione condivisa con build_prediction (31/07, audit): prima la stessa
+    # logica era scritta due volte, qui e nel report.
+    fattore_casa_trasferta = venue_factor_gk(scores, is_home_flags, target_is_home, weights)
+
+    risultato = grezzo_corretto * fattore_casa_trasferta
+
+    # BLEND PORTA INVIOLATA DELLA SQUADRA (03/08). Il voto di un portiere dipende
+    # quasi solo dai gol subiti, ma qui sopra tutto viene dallo STORICO del
+    # singolo portiere: il modello non ordina i GK (corr previsto/realizzato
+    # 0.02). team_cs_prob e' la P(porta inviolata) della SUA squadra per QUESTA
+    # partita (dal modello_partita, attacco/difesa delle due squadre). Misurato
+    # walk-forward su 3885 GK: un blend sposta il lift di selezione da +0.3% a
+    # +9.4% e la correlazione da 0.02 a 0.08, MAE piatto. Una porta inviolata
+    # vale ~GK_TEAM_CS_POINTS punti; si sposta il voto rispetto alla media lega.
+    # Default team_cs_weight=0.0 -> produzione INVARIATA finche' non si accende.
+    if team_cs_weight and team_cs_prob is not None:
+        risultato += team_cs_weight * GK_TEAM_CS_POINTS * (team_cs_prob - GK_TEAM_CS_BASELINE)
+
+    return risultato
+
+
+def rigorous_backtest_prod_gk(scores, is_home_flags, granulari_values,
+                              pos_decisive_values, neg_decisive_values,
+                              min_history=6, half_life=None, trend_intensity=None,
+                              range_multiplier=1.0,
+                              opponent_team_slugs_hist=None, game_dates_hist=None,
+                              presence_rate=None, league='azerbaigian',
+                              detail_ok_flags=None, goalkeeping_values=None):
+    """Backtest walk-forward ALLINEATO ALLA PRODUZIONE per GK (28/07): ad ogni
+    partita richiama compute_score_atteso_gk() -- la STESSA funzione della
+    predizione reale -- sul solo storico precedente. Sostituisce, per gli usi
+    che richiedono coerenza con la produzione, il vecchio rigorous_backtest
+    (formula duplicata indipendente, non allineata dopo il fix shrinkage del
+    28/07). Stessa struttura di ritorno del vecchio rigorous_backtest.
+
+    opponent_team_slugs_hist/game_dates_hist/presence_rate (31/07, audit):
+    senza questi tre la funzione, pur dichiarandosi "allineata", restava
+    diversa dalla produzione -- niente opponent_lambda_mult e prior FISSO
+    invece di quello dinamico. Opzionali per retrocompatibilita' con i
+    chiamanti esistenti (diagnostici), ma il grid search di calibrazione li
+    passa sempre."""
+    if half_life is None:
+        half_life = HALF_LIFE_GAMES
+    if trend_intensity is None:
+        trend_intensity = TREND_INTENSITY
+
+    rows = []
+    n = len(scores)
+    for i in range(min_history, n):
+        # opponent_lambda_mult calcolato con cutoff alla data della partita
+        # testata: walk-forward, nessun dato futuro (31/07, audit -- prima
+        # non veniva passato affatto e il backtest misurava una formula senza
+        # aggiustamento avversario, a differenza della produzione).
+        _mult = 1.0
+        _pen_delta = 0.0
+        _pen_delta = 0.0
+        if opponent_team_slugs_hist and game_dates_hist:
+            _opp, _dt = opponent_team_slugs_hist[i], game_dates_hist[i]
+            _mult = opponent_strength.opponent_lambda_multiplier(league, 'gk', _opp, _dt)
+            # (03/08) Era un secondo moltiplicatore su lambda_pos; ora e' un
+            # delta additivo sul granulare, come in produzione -- altrimenti il
+            # backtest tornerebbe a misurare una formula diversa da quella che
+            # schiera, l'errore gia' visto e chiuso il 31/07.
+            if goalkeeping_values is not None:
+                _w = mask_weights(exponential_weights(i, half_life),
+                                  detail_ok_flags[:i] if detail_ok_flags else None)
+                _pen_delta = opponent_strength.gk_def_pen_area_granular_delta(
+                    league, _opp, _dt, weighted_mean(goalkeeping_values[:i], _w))
+        predetto = compute_score_atteso_gk(
+            scores[:i], is_home_flags[:i], granulari_values[:i],
+            pos_decisive_values[:i], neg_decisive_values[:i],
+            target_is_home=is_home_flags[i], p_gioca=1.0,
+            half_life=half_life, trend_intensity=trend_intensity,
+            presence_rate=presence_rate, opponent_lambda_mult=_mult,
+            detail_ok_flags=detail_ok_flags[:i] if detail_ok_flags else None,
+            pen_area_delta=_pen_delta)
+        reale = scores[i]
+        w = exponential_weights(i, half_life)
+        dev_std = weighted_stddev(scores[:i], w, weighted_mean(scores[:i], w))
+        range_conf = dev_std * range_multiplier
+        dentro_range = abs(reale - predetto) <= range_conf if range_conf > 0 else None
+        rows.append({'i': i, 'indice': i, 'partite_storico_usate': i,
+                     'predetto': predetto, 'reale': reale,
+                     'errore': reale - predetto, 'range_conf': range_conf,
+                     'dentro_range': dentro_range})
+
+    if not rows:
+        return {'rows': [], 'mae': None, 'pct_dentro_range': None, 'n_test': 0}
+    errori = [abs(r['errore']) for r in rows]
+    mae = sum(errori) / len(errori)
+    coperti = [r['dentro_range'] for r in rows if r['dentro_range'] is not None]
+    pct = (sum(1 for c in coperti if c) / len(coperti) * 100.0) if coperti else None
+    return {'rows': rows, 'mae': mae, 'pct_dentro_range': pct, 'n_test': len(rows)}
+
+
+def _build_grid_combinations_prod():
+    """Griglia per il grid search ALLINEATO. Include SEMPRE i valori reali di
+    produzione (hl=6.0, ti=0.7, rm=1.15), altrimenti il vincitore non
+    sarebbe confrontabile con cio' che gira davvero -- errore gia' commesso
+    con la griglia vecchia e corretto il 30/07 per DEF."""
+    combos = []
+    for hl in (4.0, 6.0, 9.0, 12.0, 15.0, 20.0, 25.0, 30.0):
+        for ti in (0.0, 0.2, 0.3, 0.7, 1.0, 1.3):
+            for rm in (1.0, 1.1, 1.15, 1.2, 1.4):
+                combos.append((hl, ti, rm, f"hl={hl}+trend_int={ti}+range={rm}x"))
+    return combos
+
+
+GRID_SEARCH_COMBINATIONS_PROD = _build_grid_combinations_prod()
+
+
+def run_grid_search_prod_gk(scores, is_home_flags, granulari_values,
+                            pos_decisive_values, neg_decisive_values,
+                            min_history=6,
+                            opponent_team_slugs_hist=None, game_dates_hist=None,
+                            presence_rate=None, league='azerbaigian',
+                            detail_ok_flags=None, goalkeeping_values=None):
+    """Grid search ALLINEATO per GK (31/07, audit): gira
+    rigorous_backtest_prod_gk -- che internamente chiama
+    compute_score_atteso_gk, la STESSA funzione della predizione reale --
+    invece della vecchia run_grid_search.
+
+    Perche' e' stato aggiunto: fino al 31/07 la calibrazione del portiere
+    girava su `rigorous_backtest`, cioe' media pesata x fattore casa x
+    fattore forza avversario x trend. Quella formula non ha il level_score
+    da tassi Poisson, non ha lo shrinkage verso il prior di ruolo, non ha
+    lo shrinkage venue e usa il fattore ranking avversario che dalla
+    produzione era stato RIMOSSO il 26/07 perche' peggiorava il MAE.
+    Misurata la distanza fra le due su 233 portieri/3293 partite: 16.970
+    contro 15.757 di MAE, il 7%. I parametri erano quindi scelti
+    ottimizzando un modello diverso da quello che schiera (per fortuna il
+    ricontrollo del 31/07 ha mostrato che i valori attuali restano i
+    migliori anche sulla formula giusta -- ma era un colpo di fortuna,
+    non un risultato).
+
+    Stesso composite score e stesso formato di ritorno del vecchio
+    run_grid_search, cosi' aggregate_grid_search.py resta compatibile
+    (le chiavi assenti sono esportate a None)."""
+    results = []
+    for half_life, trend_intensity, range_mult, label in GRID_SEARCH_COMBINATIONS_PROD:
+        bt = rigorous_backtest_prod_gk(
+            scores, is_home_flags, granulari_values,
+            pos_decisive_values, neg_decisive_values,
+            min_history=min_history, half_life=half_life,
+            trend_intensity=trend_intensity, range_multiplier=range_mult,
+            opponent_team_slugs_hist=opponent_team_slugs_hist,
+            game_dates_hist=game_dates_hist,
+            presence_rate=presence_rate, league=league,
+            detail_ok_flags=detail_ok_flags, goalkeeping_values=goalkeeping_values)
+        bt.update({'label': label, 'half_life': half_life,
+                   'range_multiplier': range_mult, 'trend_intensity': trend_intensity,
+                   'opponent_sensitivity': None})
+        if bt['mae'] is not None:
+            coverage_penalty = abs((bt['pct_dentro_range'] or 0) - 68.0) * 0.3
+            bt['composite_score'] = bt['mae'] + coverage_penalty
+        else:
+            bt['composite_score'] = float('inf')
+        results.append(bt)
+    results.sort(key=lambda r: r['composite_score'])
+    return results
+
+
+def salva_grid_results(slug, result):
+    """Scrive <slug>_grid.json per il job 'aggregate' separato.
+
+    FUNZIONE UNICA (01/08): la chiamano sia il percorso normale sia quello di
+    sola calibrazione (nessuna partita futura). Prima era un blocco inline;
+    duplicarlo avrebbe significato due copie che possono divergere in
+    silenzio, l'errore gia' visto altrove nel progetto."""
+    grid_dir = os.path.join(OUTPUT_DIR, 'grid_search')
+    if not os.path.exists(grid_dir):
+        os.makedirs(grid_dir)
+    grid_export = [
+        {'label': r['label'], 'half_life': r['half_life'], 'range_multiplier': r['range_multiplier'],
+         'opponent_sensitivity': r['opponent_sensitivity'], 'trend_intensity': r['trend_intensity'],
+         'mae': r['mae'], 'pct_dentro_range': r['pct_dentro_range'],
+         'n_test': len(r.get('rows') or [])}
+        for r in (result.get('grid_results') or []) if r.get('mae') is not None
+    ]
+    grid_path = os.path.join(grid_dir, f'{slug}_grid.json')
+    with open(grid_path, 'w', encoding='utf-8') as f:
+        json.dump(grid_export, f, ensure_ascii=False, indent=2)
+    return len(grid_export)
+
+
 
 _CLUB_NOTI = None
 
@@ -1357,6 +1711,8 @@ def club_da_sorare(player_slug):
 
 
 def build_prediction(player_slug):
+    global _STRUCTURAL_INSUFFICIENCY
+    _STRUCTURAL_INSUFFICIENCY = False
     log("[FASE 1/4] Avvio recupero game log...")
     past_games, future_games, live_team_slug = fetch_game_log_incremental(player_slug, target_window_size=WINDOW_SIZE)
     # Finestra temporale massima per lo storico (28/07, richiesta esplicita
@@ -1383,6 +1739,7 @@ def build_prediction(player_slug):
     past_games = [n for n in past_games if (_game_dt(n) or _cutoff_storico) >= _cutoff_storico]
     if not past_games:
         log("[FASE 1/4] INTERROTTO: nessuna partita passata trovata, impossibile procedere oltre.")
+        _STRUCTURAL_INSUFFICIENCY = True
         return None
     if not future_games:
         log("[FASE 1/4] ATTENZIONE: nessuna partita futura trovata (anyFutureGames vuoto). "
@@ -1479,6 +1836,7 @@ def build_prediction(player_slug):
             f"(< soglia minima {MIN_USABLE_GAMES}), su {total_considered} esaminate "
             f"({dnp_count} DID_NOT_PLAY, {low_minutes_count} sotto soglia minutaggio, "
             f"altri status: {other_status_count}).")
+        _STRUCTURAL_INSUFFICIENCY = True
         return None
 
     # Ordine cronologico: allPlayerGameScores arriva dal piu' recente al piu' vecchio,
@@ -1528,7 +1886,19 @@ def build_prediction(player_slug):
     # piccolo gruppo per disambiguare casa/trasferta dello stesso avversario,
     # ma la squadra vecchia (games piu' vecchi di 5 partite) non puo' piu'
     # vincere sulla nuova.
-    _recent_window = usable[-5:] if len(usable) >= 5 else usable
+    # FIX (29/07, bug reale trovato dall'utente su FWD, propagato qui: la
+    # finestra delle ultime 5 partite poteva essere dominata da competizioni
+    # non-mlspa -- global-cup, amichevoli, nazionale -- che hanno homeTeam/
+    # awayTeam VUOTI o riferiti a un contesto diverso -- la maggioranza
+    # finiva su nessuna squadra o sulla squadra SBAGLIATA. Ora si preferiscono
+    # le partite della STESSA competizione della partita target; si ripiega
+    # sulla finestra multi-competizione SOLO se il giocatore non ha alcuna
+    # partita nella competizione target nello storico (permissivo).
+    _same_comp_usable = ([n for n in usable
+                           if (n['anyGame'].get('competition') or {}).get('slug') == target_competition]
+                          if target_competition else [])
+    _team_source = _same_comp_usable if _same_comp_usable else usable
+    _recent_window = _team_source[-5:] if len(_team_source) >= 5 else _team_source
     team_counts = {}
     for node in _recent_window:
         g = node['anyGame']
@@ -1549,6 +1919,8 @@ def build_prediction(player_slug):
     is_home_flags = []
     opponent_rankings = []
     own_rankings = []
+    opponent_team_slugs_hist = []  # NUOVO (31/07, audit): per il grid search allineato, vedi sotto
+    game_dates_hist = []
     possession_values = []
     passing_values = []
     goalkeeping_values = []
@@ -1558,7 +1930,6 @@ def build_prediction(player_slug):
     granulari_values = []  # NUOVO (26/07, Stadio A): resto del punteggio (= score - level_score)
     pos_decisive_values = []  # NUOVO (27/07 notte): conteggio eventi POSITIVE_DECISIVE_STAT per partita
     neg_decisive_values = []  # NUOVO (27/07 notte): conteggio eventi NEGATIVE_DECISIVE_STAT per partita
-
     detail_ok_flags = []  # NUOVO (03/08): la partita ha davvero il detailedScore? Vedi mask_weights
 
     for node, detail in zip(usable, details):
@@ -1576,14 +1947,28 @@ def build_prediction(player_slug):
         is_home_flags.append(is_home)
         opponent_rankings.append(opp_rank)
         own_rankings.append(own_rank)
+        # Slug/data dell'avversario per ogni partita storica (31/07, audit):
+        # servono al grid search ALLINEATO (run_grid_search_prod_gk), che
+        # altrimenti non potrebbe applicare opponent_lambda_mult e resterebbe
+        # a misurare una formula diversa da quella di produzione. Stesso
+        # identico pattern gia' in uso in test_def.py dal 29/07.
+        _g_home, _g_away = game.get('homeTeam') or {}, game.get('awayTeam') or {}
+        if _g_home.get('slug') == player_team_slug:
+            opponent_team_slugs_hist.append(_g_away.get('slug'))
+        elif _g_away.get('slug') == player_team_slug:
+            opponent_team_slugs_hist.append(_g_home.get('slug'))
+        else:
+            opponent_team_slugs_hist.append(None)
+        game_dates_hist.append(_game_dt(node))
 
         possession_values.append(extract_group_score(detail, POSSESSION_STATS))
         passing_values.append(extract_group_score(detail, PASSING_STATS))
         goalkeeping_values.append(extract_group_score(detail, GOALKEEPING_STATS))  # nessun cap: e' il cuore del punteggio portiere
         goals_conceded_raw = extract_group_score(detail, GOALS_CONCEDED_STATS)
-        # RIMOSSO CAP (29/07, esteso a tutte le leghe): bug reale confermato su piu' partite
-        # MLS+K League (GK/DEF/MID: -5/-4/-2 a gol, LINEARE, nessun tetto osservato nei dati
-        # reali Sorare -- il vecchio cap troncava artificialmente le goleade subite).
+        # RIMOSSO CAP (29/07, bug reale confermato dall'utente su piu' partite MLS+K League,
+        # GK/DEF/MID: -5/-4/-2 a gol rispettivamente, LINEARE fino a 6-7 gol subiti in un
+        # solo game -- nessun tetto osservato nei dati reali Sorare, il vecchio cap a +-10
+        # troncava artificialmente le partite con tante reti subite).
         goals_conceded_values.append(goals_conceded_raw)
         clean_sheet_flag_values.append(extract_clean_sheet_flag(detail))
         level_score_v = extract_level_score(detail)
@@ -1595,6 +1980,7 @@ def build_prediction(player_slug):
 
     n = len(scores)
     weights = exponential_weights(n, HALF_LIFE_GAMES)
+
     # Pesi per le grandezze che vengono dal detailedScore (03/08, vedi
     # mask_weights). 'weights' resta quello pieno per punteggio/range, che dal
     # dettaglio non dipendono.
@@ -1627,31 +2013,40 @@ def build_prediction(player_slug):
     p16_score = weighted_percentile(scores, weights, 16)
     p84_score = weighted_percentile(scores, weights, 84)
 
-    # --- Medie casa/trasferta (solo descrittive, per l'output) ---
+    # --- Fattore casa/trasferta (score totale, gia' esistente) ---
     home_scores = [s for s, h in zip(scores, is_home_flags) if h is True]
     away_scores = [s for s, h in zip(scores, is_home_flags) if h is False]
     home_avg = sum(home_scores) / len(home_scores) if home_scores else media_pesata
     away_avg = sum(away_scores) / len(away_scores) if away_scores else media_pesata
+    overall_avg_for_factor = (home_avg + away_avg) / 2 if (home_scores and away_scores) else media_pesata
 
     # --- Prossima partita: contesto target ---
     log("[FASE 4/4] Calcolo fattori e predizione finale sulla prossima partita target...")
+    # CALIBRAZIONE FUORI STAGIONE (01/08): il grid search e' un backtest
+    # sullo STORICO e non ha bisogno di una partita futura. Il controllo
+    # qui sotto protegge la PREDIZIONE, che senza avversario non si puo'
+    # calcolare; senza questo ramo, con i campionati fermi ogni giocatore
+    # usciva a mani vuote pur avendo storico completo (run italia/gk del
+    # 01/08: 34 job verdi, zero dati raccolti).
+    if CALIBRATION_MODE and not future_games:
+        presence_rate = len(usable) / total_considered if total_considered else 1.0
+        log(f"CALIBRATION_MODE senza partita futura: grid search ALLINEATO "
+            f"sullo storico ({len(GRID_SEARCH_COMBINATIONS_PROD)} combinazioni)...")
+        grid_results = run_grid_search_prod_gk(
+            scores, is_home_flags, granulari_values,
+            pos_decisive_values, neg_decisive_values, min_history=6,
+            opponent_team_slugs_hist=opponent_team_slugs_hist,
+            game_dates_hist=game_dates_hist,
+            presence_rate=presence_rate, league='azerbaigian',
+            detail_ok_flags=detail_ok_flags, goalkeeping_values=goalkeeping_values)
+        return {'solo_calibrazione': True, 'grid_results': grid_results}
+
     if not future_games:
         log("[FASE 4/4] INTERROTTO: nessuna partita futura trovata (anyFutureGames vuoto), "
             "impossibile calcolare una predizione senza un target.")
         return None
     next_node = future_games[0]['playerGameScore']
     next_game = next_node['anyGame']
-    # Cutoff alla data della partita TARGET, non ad "adesso" (03/08): gli
-    # aggiustamenti guardano le ultime 10 partite dell'avversario PRIMA del
-    # cutoff, e con un target a 5-7 giorni "adesso" tagliava fuori le partite
-    # che l'avversario gioca nel frattempo.
-    _next_game_dt = None
-    try:
-        _next_game_dt = datetime.datetime.fromisoformat(
-            (next_game.get('date') or '').replace('Z', '+00:00')).replace(tzinfo=None)
-    except (ValueError, AttributeError):
-        _next_game_dt = None
-    _opp_cutoff = _next_game_dt or datetime.datetime.utcnow()
     log(f"[FASE 4/4] Partita target: {(next_game.get('date') or '')[:16]} - "
         f"{(next_game.get('homeTeam') or {}).get('name', '?')} vs "
         f"{(next_game.get('awayTeam') or {}).get('name', '?')}")
@@ -1691,8 +2086,13 @@ def build_prediction(player_slug):
 
     # Shrinkage per campione piccolo (28/07, richiesta esplicita utente, caso
     # reale Collodi: 1.319 calcolato su 3-4 partite per bucket casa/trasferta,
-    # rumore spacciato per segnale). Il fattore viene tirato verso il neutro
-    # 1.0 proporzionalmente al numero di partite nel bucket usato.
+    # rumore spacciato per segnale). A differenza degli altri ruoli (che usano
+    # compute_split_factor, gia' corretto con lo stesso principio), GK calcola
+    # il fattore casa/trasferta con un rapporto grezzo home_avg/away_avg senza
+    # alcuna cautela sul campione -- qui il fattore viene tirato verso il
+    # neutro 1.0 proporzionalmente al numero di partite nel bucket usato.
+    # STESSA funzione usata da compute_score_atteso_gk (31/07, audit): il
+    # fattore mostrato nel report non puo' piu' divergere da quello applicato.
     fattore_casa_trasferta = venue_factor_gk(scores, is_home_flags, next_is_home, weights)
 
     # --- Fattori granulari SEPARATI (26/07: falli/efficacia offensiva/eventi
@@ -1700,10 +2100,10 @@ def build_prediction(player_slug):
     # inspect_granular_weights.py) ---
     # Ognuno e' un fattore casa/trasferta indipendente, calcolato sui dati REALI
     # del detailedScore delle 14 partite (non stime).
-    fattore_possesso = compute_split_factor(possession_values, is_home_flags, next_is_home, weights_det)
-    fattore_passaggio = compute_split_factor(passing_values, is_home_flags, next_is_home, weights_det)
+    fattore_possesso = compute_split_factor(possession_values, is_home_flags, next_is_home)
+    fattore_passaggio = compute_split_factor(passing_values, is_home_flags, next_is_home)
     fattore_goalkeeping = compute_split_factor(goalkeeping_values, is_home_flags, next_is_home, weights_det)
-    fattore_gol_subiti = compute_split_factor(goals_conceded_values, is_home_flags, next_is_home, weights_det)
+    fattore_gol_subiti = compute_split_factor(goals_conceded_values, is_home_flags, next_is_home)
 
     # --- Bonus clean sheet (25/07, gestione SPECIALE per il portiere) ---
     # Non e' un fattore moltiplicativo granulare come gli altri (il totalScore
@@ -1737,12 +2137,11 @@ def build_prediction(player_slug):
     # --- P(gioca) ---
     p_gioca = None
     p_source = None
-    # presence_rate (28/07, propagato da formazione_mls): calcolata SEMPRE,
-    # non solo come fallback di p_gioca -- serve al prior dinamico dello
-    # shrinkage verso il prior di ruolo (vedi sotto, blocco
-    # MEDIA_RUOLO_GK_PRIOR), che deve sapere se il giocatore e' un titolare
-    # o una riserva a prescindere da starterOdds disponibili o meno per la
-    # prossima partita specifica.
+    # presence_rate (28/07): calcolata SEMPRE, non solo come fallback di
+    # p_gioca -- serve al prior dinamico dello shrinkage (vedi
+    # compute_score_atteso_gk), che deve sapere se il giocatore e' un
+    # titolare o una riserva a prescindere da starterOdds disponibili o meno
+    # per la prossima partita specifica.
     presence_rate = len(usable) / total_considered if total_considered else 1.0
     next_odds = ((next_node.get('anyPlayerGameStats') or {}).get('footballPlayingStatusOdds') or {})
     starter_odds = next_odds.get('starterOddsBasisPoints')
@@ -1769,7 +2168,7 @@ def build_prediction(player_slug):
     # I fattori restano calcolati sopra e nel result dict solo a scopo
     # diagnostico/di visualizzazione nell'output.
     # RIMOSSO da score_atteso il 26/07 (terza sessione), DECISO CON L'UTENTE
-    # dopo backtest walk-forward rigoroso (formazione_mls/diagnostics/
+    # dopo backtest walk-forward rigoroso (formazione_azerbaigian/diagnostics/
     # validate_team_defense_strength.py): fattore_forza_avversario (ranking
     # di campionato) PEGGIORA il MAE reale -- rimuoverlo del tutto batte sia
     # il ranking attuale sia una metrica alternativa piu' specifica (gol
@@ -1784,60 +2183,66 @@ def build_prediction(player_slug):
     # Il fattore resta calcolato sopra e nel result dict solo a scopo
     # diagnostico/di visualizzazione nell'output.
     # --- level_score ATTESO da tasso di eventi (27/07 notte, sezione 22):
-    # vedi test_def.py per la spiegazione estesa.
+    # vedi test_def.py per la spiegazione estesa. Rivalidato su 6 campionati: -0.87% MAE.
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights_det)
+    lambda_neg_dec = weighted_mean(neg_decisive_values, weights_det)
+    level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
+    fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
+        granulari_values, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY)
+    # RIMOSSO p_gioca da score_atteso (28/07, richiesta esplicita utente): la
+    # probabilita' di scendere in campo non deve deprimere il punteggio
+    # proiettato -- score_atteso e' "quanto rende SE gioca", il rischio di
+    # assenza va gestito come filtro secco (starterOdds/MIN_STARTER_ODDS),
+    # non come sconto continuo sul punteggio.
+    # score_atteso calcolato tramite compute_score_atteso_gk (28/07, refactor
+    # a funzione condivisa: build_prediction e rigorous_backtest_prod_gk
+    # chiamano la STESSA funzione, non possono piu' divergere). Le variabili
+    # sopra (lambda_pos_dec/level_score_atteso/fattore_trend_granulare)
+    # restano calcolate qui solo per il result dict diagnostico/di
+    # visualizzazione -- lo stesso identico calcolo avviene dentro la funzione
+    # condivisa per lo score_atteso vero e proprio.
+    _next_game_dt = None
+    try:
+        _next_game_dt = datetime.datetime.fromisoformat(
+            (next_game.get('date') or '').replace('Z', '+00:00')).replace(tzinfo=None)
+    except (ValueError, AttributeError):
+        _next_game_dt = None
+    _opp_cutoff = _next_game_dt or datetime.datetime.utcnow()
     _opp_lambda_mult = opponent_strength.opponent_lambda_multiplier(
         'azerbaigian', 'gk', next_opponent_team_slug, _opp_cutoff)
-    # Bonus AGGIUNTIVO (29/07, esteso a tutte le leghe, si affianca al bonus goalkeeping esistente,
-    # non lo sostituisce -- vedi opponent_strength.gk_def_pen_area_granular_delta): isola le
-    # pen_area_entries dei SOLI difensori avversari (da corner/palle inattive), separato dal
-    # segnale FWD+MID gia' in produzione. Validato -0.13% MAE (MLS/Korea).
+    # Bonus AGGIUNTIVO (29/07, si affianca al bonus goalkeeping esistente,
+    # non lo sostituisce -- vedi opponent_strength.gk_def_pen_area_granular_delta):
+    # isola le pen_area_entries dei SOLI difensori avversari (da corner/palle
+    # inattive), separato dal segnale FWD+MID gia' in produzione. Validato
+    # -0.13% MAE (formazione_azerbaigian/diagnostics/validate_cross_role_combos.py,
+    # gruppo gk_vs_def_only).
     # RISCRITTO (03/08): era '_opp_lambda_mult *= gk_def_pen_area_multiplier(...)',
     # cioe' un moltiplicatore su lambda_pos. Due errori sovrapposti (vedi
     # opponent_strength.gk_def_pen_area_granular_delta per la storia completa):
     # la validazione misurava un delta ADDITIVO sul granulare di parate, non un
     # moltiplicatore sul tasso di eventi decisivi; e il segno era rovesciato,
     # perche' lambda_pos del portiere e' dominato da clean_sheet_60 (piu'
-    # pressione avversaria = MENO clean sheet, non piu'). Ora e' additivo e col
-    # segno giusto, mentre il rischio sul clean sheet resta a
+    # pressione avversaria = MENO clean sheet, non piu'). Ora e' additivo sul
+    # granulare e col segno giusto, mentre il rischio sul clean sheet resta a
     # opponent_lambda_multiplier, che ha gia' SIGN_BY_ROLE['gk'] = -1.
     _gk_pen_area_delta = opponent_strength.gk_def_pen_area_granular_delta(
-        'azerbaigian', next_opponent_team_slug, _opp_cutoff,
+        'mls', next_opponent_team_slug, _opp_cutoff,
         weighted_mean(goalkeeping_values, weights_det))
-    lambda_pos_dec = weighted_mean(pos_decisive_values, weights_det) * _opp_lambda_mult
-    lambda_neg_dec = weighted_mean(neg_decisive_values, weights_det)
-    level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
-    fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
-        granulari_values, short_window=5, long_window=10, trend_intensity=TREND_INTENSITY,
-        weights=weights_det)
-    # Shrinkage verso il prior di ruolo (28/07, stesso principio EmpiricalBayes
-    # di DEF/FWD, mai avuto da GK -- caso reale: Michael Collodi, 8 partite,
-    # preferito a Takaoka per un fattore casa/trasferta enorme su 3-4 partite
-    # per bucket). k=5 scelto con backtest walk-forward reale (selection_quality).
-    SHRINK_K_OUTLIER_GK = 30.0  # AGGIORNATO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~7500 punti di test conferma k=30 pulito su entrambi i segmenti n<8/n>=8 (-5.36%/-9.28%/-4.31%), il vecchio timore "overfitting al bordo griglia" non regge piu' con questo volume di dati -- stesso valore ora su TUTTE le leghe incluso MLS/Korea
-    MEDIA_RUOLO_GK_PRIOR = 48.81
-    # Prior di ruolo DINAMICO (28/07, propagato da formazione_mls: bug reale
-    # trovato dall'utente, giocatori di riserva veri con P(gioca) storico
-    # basso venivano tirati dallo shrinkage verso la media di TUTTI i
-    # giocatori, dominata dai titolari, gonfiando artificialmente il
-    # punteggio di chi gioca poco. Misurato sui dati reali, n=115 portieri,
-    # corr presenza/punteggio +0.245: chi gioca poco rende MENO anche quando
-    # gioca, non solo per varianza campionaria. Prior = intercetta + pendenza
-    # * presenza storica (regressione reale), non piu' un numero fisso
-    # uguale per titolari e riserve).
-    media_ruolo_prior = MEDIA_RUOLO_GK_PRIOR
-    if presence_rate is not None:
-        media_ruolo_prior = max(0.0, 46.20 + 4.05 * presence_rate)
-    _grezzo_gk = (level_score_atteso + media_granulari_pesata * fattore_trend_granulare
-                  + _gk_pen_area_delta)
-    _grezzo_gk_corretto = (
-        (n / (n + SHRINK_K_OUTLIER_GK)) * _grezzo_gk
-        + (SHRINK_K_OUTLIER_GK / (n + SHRINK_K_OUTLIER_GK)) * media_ruolo_prior
-    )
-    score_atteso = _grezzo_gk_corretto * fattore_casa_trasferta
+    # P(porta inviolata) della squadra del portiere per QUESTA partita (blend
+    # acceso di default, vedi GK_TEAM_CS_WEIGHT). Stesso calcolo dello scouting,
+    # che passa da questo stesso modulo -> allineati.
+    _team_cs = _pcs_squadra_prod(current_team_slug, next_opponent_team_slug,
+                                 next_is_home, _opp_cutoff)
+    score_atteso = compute_score_atteso_gk(
+        scores, is_home_flags, granulari_values, pos_decisive_values, neg_decisive_values,
+        target_is_home=next_is_home, presence_rate=presence_rate,
+        opponent_lambda_mult=_opp_lambda_mult, detail_ok_flags=detail_ok_flags,
+        pen_area_delta=_gk_pen_area_delta,
+        team_cs_prob=_team_cs, team_cs_weight=GK_TEAM_CS_WEIGHT)
 
     # --- Stadio D (26/07, tema level_score/correlazione venue-avversario) --
     # RIMOSSO da score_atteso il 26/07 (mattina), DECISO CON L'UTENTE dopo
-    # backtest walk-forward rigoroso su dati reali (formazione_mls/diagnostics/
+    # backtest walk-forward rigoroso su dati reali (formazione_azerbaigian/diagnostics/
     # validate_stadio_d_mae.py): le correlazioni aggregate erano statisticamente
     # solide (z fino a -3.49 per Gol subiti), ma applicate per-giocatore con
     # shrinkage PEGGIORAVANO il MAE reale del +4.21% (129 punti di test walk-
@@ -1912,12 +2317,18 @@ def build_prediction(player_slug):
         # Grid search allargato (25/07): riesegue tutte le combinazioni su
         # tutti i portieri MLS di qualita' (non solo i posseduti), per
         # ricalibrare i parametri su un campione molto piu' ampio.
-        log("CALIBRATION_MODE attivo: esecuzione grid search completo (72 combinazioni)...")
-        grid_results = run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
-                                        possession_values=possession_values,
-                                        passing_values=passing_values,
-                                        goalkeeping_values=goalkeeping_values,
-                                        goals_conceded_values=goals_conceded_values)
+        # ALLINEATO (31/07, audit): prima girava run_grid_search, cioe' la
+        # vecchia formula moltiplicativa, distante il 7% di MAE da quella
+        # reale -- si calibrava un modello diverso da quello che schiera.
+        log(f"CALIBRATION_MODE attivo: grid search ALLINEATO "
+            f"({len(GRID_SEARCH_COMBINATIONS_PROD)} combinazioni)...")
+        grid_results = run_grid_search_prod_gk(
+            scores, is_home_flags, granulari_values,
+            pos_decisive_values, neg_decisive_values, min_history=6,
+            opponent_team_slugs_hist=opponent_team_slugs_hist,
+            game_dates_hist=game_dates_hist,
+            presence_rate=presence_rate, league='azerbaigian',
+            detail_ok_flags=detail_ok_flags, goalkeeping_values=goalkeeping_values)
         rigorous_bt = grid_results[0] if grid_results else None
     else:
         log("Esecuzione backtest rigoroso sui parametri fissati...")
@@ -1973,6 +2384,8 @@ def build_prediction(player_slug):
         'next_opponent_team_slug': next_opponent_team_slug,
         'next_is_home': next_is_home,
         'fattore_forza_avversario': fattore_forza_avversario,
+        'opp_lambda_mult': _opp_lambda_mult,
+        'gk_pen_area_delta': _gk_pen_area_delta,
         'fattore_possesso': fattore_possesso,
         'fattore_passaggio': fattore_passaggio,
         'fattore_goalkeeping': fattore_goalkeeping,
@@ -2053,7 +2466,18 @@ def format_output(result):
     opp_rank_hist_str = f"{result['avg_opp_rank_hist']:.1f}" if result['avg_opp_rank_hist'] else "N/D"
     lines.append(f"Ranking medio avversari affrontati (storico): {opp_rank_hist_str}")
     lines.append(f"Ranking prossimo avversario: {result['next_opp_rank']}")
-    lines.append(f"Fattore forza avversario applicato: {result['fattore_forza_avversario']:.3f}")
+    # AVV_FACTOR (03/08, fix output ingannevole): questa riga e' quella che
+    # build_consiglio.py porta fino al report come 'AVV_FACTOR', cioe' l'unico
+    # numero sull'avversario che arriva sotto gli occhi. Mostrava
+    # 'fattore_forza_avversario', costruito su domesticLeagueRanking, che pero'
+    # e' documentato come contaminato e RIMOSSO da score_atteso il 26/07: il
+    # report esibiva come 'applicato' un fattore che non veniva applicato, e
+    # nascondeva quello vero. Ora mostra il moltiplicatore davvero in uso.
+    lines.append(f"Fattore forza avversario applicato: {result['opp_lambda_mult']:.3f} "
+                 f"(gol fatti reali dell'avversario, ultime 10; delta granulare "
+                 f"parate {result['gk_pen_area_delta']:+.2f} pt)")
+    lines.append(f"Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): "
+                 f"{result['fattore_forza_avversario']:.3f}")
     lines.append("NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello "
                  "score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). "
                  "Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 "
@@ -2066,7 +2490,7 @@ def format_output(result):
                  f"(bonus atteso incorporato nella media pesata: ~{result['bonus_clean_sheet_atteso']:.1f}pt)")
     if result['trend_avg_short'] is not None:
         lines.append(f"Fattore trend (media ultime 5: {result['trend_avg_short']:.1f} vs "
-                     f"media ultime 10: {result['trend_avg_long']:.1f}): {result['fattore_trend']:.3f}")
+                     f"media 5 PRECEDENTI: {result['trend_avg_long']:.1f}): {result['fattore_trend']:.3f}")
     else:
         lines.append("Fattore trend: N/D (servono almeno 10 partite nella finestra)")
     lines.append(f"P(gioca): {result['p_gioca']:.2%} (fonte: {result['p_source']})")
@@ -2174,7 +2598,7 @@ def main():
     for idx, slug in enumerate(slugs_to_process, 1):
         breaker_active = _circuit_breaker_tripped()
         if idx > 1 and not breaker_active:
-            pause_s = 10.0  # pausa base tra giocatori
+            pause_s = 2.0  # pausa base tra giocatori (29/07, ridotta da 10s: zero 429 osservati anche a parallelismo molto piu' alto in discovery, vedi RIASSUNTO sez. 30)
             log(f"Pausa di {pause_s}s prima del prossimo giocatore...")
             time.sleep(pause_s)
 
@@ -2184,14 +2608,17 @@ def main():
         # complessita' dell'API): 10s, poi 20s, poi 40s di attesa tra i tentativi,
         # fino a un totale cumulativo di attesa di circa 60s, poi si desiste e si
         # passa comunque al giocatore successivo (senza bloccare l'intero test).
+        # Circuit breaker (29/07): con un blocco CloudFront gia' rilevato su un
+        # giocatore precedente in questa job, ritentare e' inutile -- un solo
+        # tentativo secco, zero attesa, si passa subito al prossimo.
         result = None
         last_exception = None
         retry_delays = [] if breaker_active else [10.0, 20.0, 40.0]
-        if breaker_active:
-            log(f"[{slug}] Circuit breaker attivo (blocco CloudFront gia' rilevato in "
-                f"questa job) -- salto i retry con attesa, un solo tentativo secco.")
         attempt = 0
         cumulative_wait = 0.0
+        if breaker_active:
+            log(f"[{slug}] Circuit breaker attivo (blocco CloudFront gia' rilevato in questa job) "
+                f"-- salto i retry con attesa, un solo tentativo secco.")
 
         while True:
             attempt += 1
@@ -2206,6 +2633,10 @@ def main():
             # Successo (anche se escluso per starterOdds, quello NON e' un fallimento
             # tecnico e non va ritentato) o eccezione irrecuperabile: esci dal ciclo.
             if result is not None or attempt > len(retry_delays):
+                break
+            if _STRUCTURAL_INSUFFICIENCY:
+                log(f"[{slug}] Fallimento STRUTTURALE (storico realmente insufficiente, "
+                    f"non transitorio) -- nessun retry, non cambierebbe nulla.")
                 break
 
             delay = retry_delays[attempt - 1]
@@ -2236,6 +2667,17 @@ def main():
             all_sections.append(f"\n{'#'*70}\n# {slug}: DATI INSUFFICIENTI (dopo {attempt} tentativi)\n{'#'*70}\n")
             continue
 
+        # Sola calibrazione (01/08): il giocatore ha storico ma nessuna partita
+        # futura (fuori stagione). C'e' un grid search da salvare e nessuna
+        # predizione da mettere a report.
+        if result.get('solo_calibrazione'):
+            n_comb = salva_grid_results(slug, result)
+            log(f"[{slug}] SOLO CALIBRAZIONE: {n_comb} combinazioni salvate "
+                f"(nessuna partita futura, grid search fatto sullo storico).")
+            summary_rows.append((slug, 'SOLO CALIBRAZIONE', None, None,
+                                 'nessuna partita futura'))
+            continue
+
         if result.get('excluded'):
             log(f"[{slug}] ESCLUSO: {result.get('exclusion_reason')}")
             summary_rows.append((slug, 'ESCLUSO', None, None, result.get('exclusion_reason', '')))
@@ -2261,19 +2703,7 @@ def main():
         # Salvataggio grid_results per QUESTO giocatore, su disco, per il job
         # 'aggregate' separato che calcolera' la combinazione vincente cross-player
         # (stessa strategia usata per gli attaccanti).
-        grid_dir = os.path.join(OUTPUT_DIR, 'grid_search')
-        if not os.path.exists(grid_dir):
-            os.makedirs(grid_dir)
-        grid_export = [
-            {'label': r['label'], 'half_life': r['half_life'], 'range_multiplier': r['range_multiplier'],
-             'opponent_sensitivity': r['opponent_sensitivity'], 'trend_intensity': r['trend_intensity'],
-             'mae': r['mae'], 'pct_dentro_range': r['pct_dentro_range'],
-             'n_test': len(r.get('rows') or [])}
-            for r in (result.get('grid_results') or []) if r.get('mae') is not None
-        ]
-        grid_path = os.path.join(grid_dir, f'{slug}_grid.json')
-        with open(grid_path, 'w', encoding='utf-8') as f:
-            json.dump(grid_export, f, ensure_ascii=False, indent=2)
+        salva_grid_results(slug, result)
 
     # --- Riepilogo comparativo in cima al file ---
     # NUOVO (25/07): tiering ordinato per score atteso decrescente, con
