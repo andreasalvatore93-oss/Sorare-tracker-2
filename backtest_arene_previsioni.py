@@ -425,4 +425,7 @@ def score_atteso(cache, slug, ruolo, fine_giornata, cutoff_giornata=None):
             'in_casa': casa, 'data_partita': cutoff,
             # la squadra del giocatore, dedotta dallo storico: serve a
             # raggruppare i COMPAGNI quando si misura la correlazione
-            'squadra': squadra}
+            'squadra': squadra,
+            # avversario della partita target: serve alla sinergia/anti-sinergia
+            # GK vs movimento in build_formazione_finale.synergy_sort_key
+            'opp_slug': ctx.get('opp_slug')}
