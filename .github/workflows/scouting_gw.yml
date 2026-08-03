@@ -99,7 +99,11 @@ jobs:
         run: |
           git config user.name  "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add ':(glob)formazione_*/output/**/player_slugs.json'                   dati_globali/scouting_da_predire.tsv dati_globali/scouting_lavori.txt || true
+          # scouting_*.json: il pool della giornata, che porta il PREZZO MINIMO
+          # ancorato alla fixture. Committato qui (non solo artifact) cosi' il
+          # prezzo persiste per giornata e sopravvive a un'interruzione manuale
+          # della matrice predict, insieme ai predict gia' cachati.
+          git add ':(glob)formazione_*/output/**/player_slugs.json'                   dati_globali/scouting_da_predire.tsv dati_globali/scouting_lavori.txt                   'dati_globali/scouting_*.json' || true
           git commit -m "Scouting: discovery dei candidati" || echo "niente da committare"
           # Push a prova di conflitto: se un'altra run (es. il generatore) ha
           # toccato gli stessi player_slugs.json, il rebase andava in CONFLICT e
@@ -260,9 +264,17 @@ jobs:
                      ':(glob)formazione_*/output/**/.game_log_cache/*' || true
           git add ':(glob)formazione_*/output/**/consiglio_*.txt' \
                   ':(glob)formazione_*/output/**/prediction_log.json' || true
+          # Pool della giornata col prezzo minimo, ancorato alla fixture.
+          git add 'dati_globali/scouting_*.json' || true
           git commit -m "Scouting acquisti: report e consigli" || echo "niente da committare"
-          git pull --rebase --autostash origin main || true
-          git push origin main
+          tentativo=0
+          until git push origin main; do
+            tentativo=$((tentativo + 1))
+            [ $tentativo -ge 15 ] && { echo "push fallito 15 volte, abbandono"; exit 1; }
+            sleep $((RANDOM % 12 + 5))
+            git fetch origin main
+            git merge --no-edit -X ours origin/main || true
+          done
 
       - name: Telegram
         if: success()
