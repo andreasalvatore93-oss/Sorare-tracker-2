@@ -177,11 +177,15 @@ def _serie(modulo, cache, slug, usable, squadra):
     return s
 
 
-def score_atteso(cache, slug, ruolo, fine_giornata):
-    """Il punteggio atteso di produzione per quella giornata, o None.
+def contesto(cache, slug, ruolo, fine_giornata):
+    """Tutti gli ingressi della previsione, senza ancora calcolarla.
 
-    Ritorna un dizionario con previsione, L10 al momento della scelta e la
-    partita target (serve per sapere in casa/fuori e per il taglio storico)."""
+    Estratto da score_atteso (03/08) perche' la taratura di half_life e
+    trend_intensity deve valutare DECINE di combinazioni sullo stesso
+    giocatore-partita: ricostruire la finestra storica e le serie granulari
+    una volta per combinazione costerebbe ore, e sarebbe anche l'occasione
+    perfetta per farle divergere. Qui si costruiscono una volta sola e si
+    ricalcola solo la formula."""
     modulo = _MODULO.get(ruolo)
     if modulo is None:
         return None
@@ -196,27 +200,56 @@ def score_atteso(cache, slug, ruolo, fine_giornata):
     squadra = _squadra(usable, competizione)
     _own, opp_rank, casa = modulo.team_ranking_from_game(target['anyGame'], squadra)
     s = _serie(modulo, cache, slug, usable, squadra)
+    return {'modulo': modulo, 'ruolo': ruolo, 's': s, 'casa': casa,
+            'opp_rank': opp_rank, 'presenza': presenza, 'cutoff': cutoff,
+            'squadra': squadra}
+
+
+def calcola(ctx, half_life=None, trend_intensity=None):
+    """La previsione di produzione dagli ingressi di `contesto`.
+
+    half_life/trend_intensity servono SOLO alla taratura: lasciati a None si
+    usano le costanti di produzione del modulo, cioe' il comportamento
+    invariato."""
+    modulo, s, ruolo = ctx['modulo'], ctx['s'], ctx['ruolo']
+    casa, opp_rank, presenza = ctx['casa'], ctx['opp_rank'], ctx['presenza']
+    extra = {}
+    if half_life is not None:
+        extra['half_life'] = half_life
+    if trend_intensity is not None:
+        extra['trend_intensity'] = trend_intensity
 
     if ruolo == 'Goalkeeper':
-        atteso = modulo.compute_score_atteso_gk(
+        return modulo.compute_score_atteso_gk(
             s['scores'], s['is_home'], s['granulari'], s['pos_dec'], s['neg_dec'],
-            target_is_home=casa, presence_rate=presenza)
-    elif ruolo == 'Defender':
-        atteso = modulo.compute_score_atteso_def(
+            target_is_home=casa, presence_rate=presenza, **extra)
+    if ruolo == 'Defender':
+        return modulo.compute_score_atteso_def(
             s['scores'], s['is_home'], s['opp_rank'], s['residual'], s['granulari'],
             s['pos_dec'], s['neg_dec'], s['goals_conceded'], s['passing'], s['clean_sheet'],
-            target_is_home=casa, target_opp_rank=opp_rank, presence_rate=presenza)
-    elif ruolo == 'Midfielder':
-        atteso = modulo.compute_score_atteso_mid(
+            target_is_home=casa, target_opp_rank=opp_rank, presence_rate=presenza, **extra)
+    if ruolo == 'Midfielder':
+        return modulo.compute_score_atteso_mid(
             s['scores'], s['is_home'], s['opp_rank'], s['residual'], s['granulari'],
             s['pos_dec'], s['neg_dec'], s['offensive'], s['passing'], s['goals_conceded'],
-            target_is_home=casa, target_opp_rank=opp_rank, presence_rate=presenza)
-    else:
-        atteso = modulo.compute_score_atteso_fwd(
-            s['scores'], s['is_home'], s['residual'], s['granulari'],
-            s['pos_dec'], s['neg_dec'], s['passing'],
-            target_is_home=casa, presence_rate=presenza,
-            offensive_values=s['offensive'])
+            target_is_home=casa, target_opp_rank=opp_rank, presence_rate=presenza, **extra)
+    return modulo.compute_score_atteso_fwd(
+        s['scores'], s['is_home'], s['residual'], s['granulari'],
+        s['pos_dec'], s['neg_dec'], s['passing'],
+        target_is_home=casa, presence_rate=presenza,
+        offensive_values=s['offensive'], **extra)
+
+
+def score_atteso(cache, slug, ruolo, fine_giornata):
+    """Il punteggio atteso di produzione per quella giornata, o None.
+
+    Ritorna un dizionario con previsione, L10 al momento della scelta e la
+    partita target (serve per sapere in casa/fuori e per il taglio storico)."""
+    ctx = contesto(cache, slug, ruolo, fine_giornata)
+    if ctx is None:
+        return None
+    s, casa, cutoff, squadra = ctx['s'], ctx['casa'], ctx['cutoff'], ctx['squadra']
+    atteso = calcola(ctx)
 
     # L10 al momento della scelta: la stessa misura che Sorare usa per il cap
     # delle arene (media degli ultimi 10 punteggi validi prima della giornata).

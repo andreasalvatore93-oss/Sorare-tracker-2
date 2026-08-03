@@ -32,11 +32,27 @@ import sys
 
 ARCHIVIO = 'dati_globali/arene_storico.json'
 
-# costo d'ingresso e premi ai primi tre, dichiarati dall'utente
+# costo d'ingresso e premi ai primi tre, dichiarati dall'utente (tabella
+# completa nella sezione 48 del RIASSUNTO).
+#
+# COMPLETATA (03/08): c'erano solo tre tipi, ma le soglie che finiscono in
+# produzione (`PAREGGIO_ARENA` nel generatore) sono quattro, e due di quelle
+# venivano da un calcolo fatto a mano fuori da qui. Con i tipi mancanti
+# dichiarati, `python consiglio_arena.py` ristampa da solo TUTTE le soglie di
+# produzione: rifarle dopo un cambio al modello diventa un comando, non una
+# ricostruzione archeologica.
+#
+# 'campo' e' il tipo di archivio da cui pescare i nove avversari: le arene
+# elite non sono mai state giocate, quindi non hanno storico proprio, ma sono
+# uncapped come le Uncapped -- cambia il prezzo del biglietto, non il campo.
 REGOLE = {
     'cap 260': {'costo': 300, 'premi': (1300, 800, 500)},
+    'cap 220': {'costo': 200, 'premi': (1000, 500, 300)},
     'Uncapped': {'costo': 300, 'premi': (1300, 800, 500)},
     'Beginner': {'costo': 100, 'premi': (500, 250, 150)},
+    'arena division': {'costo': 300, 'premi': (1300, 800, 500)},
+    'arena uncapped': {'costo': 300, 'premi': (1300, 800, 500)},
+    'elite': {'costo': 800, 'premi': (4000, 2000, 1000), 'campo': 'Uncapped'},
 }
 
 # Quanto il punteggio vero si discosta da quello PREVISTO. Attenzione: gli
@@ -214,16 +230,20 @@ def main():
         if r.get('mio_score') is not None:
             miei[r['tipo']].append(r['mio_score'])
     for tipo, regole in REGOLE.items():
-        avversari = campo.get(tipo) or []
+        # 'campo': da quale archivio pescare gli avversari (le elite non hanno
+        # storico proprio, vedi REGOLE)
+        fonte = regole.get('campo', tipo)
+        avversari = campo.get(fonte) or []
         if len(avversari) < 20:
+            print(f'{tipo:16s} {len(avversari):>7}  storico troppo corto, saltato')
             continue
-        soglia = pareggio(avversari, regole['costo'], regole['premi'], tipo=tipo)
+        soglia = pareggio(avversari, regole['costo'], regole['premi'], tipo=fonte)
         tipico = statistics.median(miei[tipo]) if miei.get(tipo) else None
-        if tipico is None:
-            continue
-        saldo = incasso_medio(tipico, avversari, regole['premi'], tipo=tipo) - regole['costo']
-        print(f'{tipo:16s} {len(avversari):>7} {soglia:>9.1f} {tipico:>11.1f} '
-              f'{saldo:>+8.0f}')
+        saldo = (incasso_medio(tipico, avversari, regole['premi'], tipo=fonte)
+                 - regole['costo']) if tipico is not None else None
+        print(f'{tipo:16s} {len(avversari):>7} {soglia:>9.1f} '
+              + (f'{tipico:>11.1f} {saldo:>+8.0f}' if tipico is not None
+                 else f"{'--':>11} {'--':>8}"))
 
     print('\nCome si usa: al momento di schierare, confronta il punteggio atteso')
     print('della formazione col pareggio del suo tipo. Sopra si entra, sotto no --')
