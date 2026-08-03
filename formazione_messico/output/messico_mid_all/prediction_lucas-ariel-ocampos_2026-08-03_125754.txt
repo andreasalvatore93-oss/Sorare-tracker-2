@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-03T12:57:54.019291Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) lucas-ariel-ocampos: 64 pt attesi (43-83)
+   SQUADRA: monterrey-monterrey | AVVERSARIO: orlando-city-lake-mary-florida
+======================================================================
+
+######################################################################
+# GIOCATORE: lucas-ariel-ocampos
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: lucas-ariel-ocampos (squadra: monterrey-monterrey)
+Generato: 2026-08-03T12:57:54.018448Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 44
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 13
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-04 | MON vs RBNY | leagues-cup-mls | score=46.2 | peso=0.559
+  2025-08-07 | MON vs CLT | leagues-cup-mls | score=55.2 | peso=0.574
+  2025-08-18 | MON vs MAZ | liga-mx | score=95.9 | peso=0.590
+  2025-08-24 | MON vs NEC | liga-mx | score=79.4 | peso=0.607
+  2025-08-30 | PUE vs MON | liga-mx | score=94.2 | peso=0.624
+  2025-09-21 | MON vs AME | liga-mx | score=68.6 | peso=0.642
+  2025-09-28 | MON vs SAN | liga-mx | score=70.6 | peso=0.660
+  2025-10-06 | TIJ vs MON | liga-mx | score=73.3 | peso=0.678
+  2025-10-19 | MON vs PUM | liga-mx | score=42.5 | peso=0.697
+  2025-10-22 | MON vs JUA | liga-mx | score=63.0 | peso=0.717
+  2025-10-26 | CAZ vs MON | liga-mx | score=45.7 | peso=0.737
+  2025-11-02 | MON vs TIG | liga-mx | score=50.3 | peso=0.758
+  2026-02-05 | XEL vs MON | concacaf-champions-league | score=43.0 | peso=0.779
+  2026-02-08 | AME vs MON | liga-mx | score=29.7 | peso=0.801
+  2026-03-01 | MON vs CAZ | liga-mx | score=40.3 | peso=0.824
+  2026-04-12 | ATS vs MON | liga-mx | score=46.7 | peso=0.847
+  2026-04-19 | MON vs PAC | liga-mx | score=76.1 | peso=0.871
+  2026-04-22 | MON vs PUE | liga-mx | score=69.6 | peso=0.895
+  2026-04-26 | SAN vs MON | liga-mx | score=55.1 | peso=0.920
+  2026-07-19 | MON vs SAN | liga-mx | score=100.0 | peso=0.946
+  2026-07-26 | NEC vs MON | liga-mx | score=72.1 | peso=0.973
+  2026-08-02 | ATS vs MON | liga-mx | score=82.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 63.76
+  di cui Punteggio decisivo (level_score) medio: 51.01 | Punteggio complessivo (granulari) medio: 12.75 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 52.83 (delta +1.82)
+  Efficacia offensiva condizionata: delta venue +0.00, delta avversario -0.70 | Passaggio condizionato: delta venue +0.10, delta avversario -0.51 | Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 19.30
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 43.0 - 82.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.44 (differenza: +2.85)
+Media score in casa: 65.98 | Media score fuori casa: 60.28
+Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.9
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.038
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore trend (media ultime 5: 76.1 vs media ultime 10: 47.6): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-05T23:30
+Casa: CF Monterrey | Trasferta: Orlando City SC
+Competizione: leagues-cup-mls
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 64.2 (range 43.4 - 83.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 62.56
+Punteggio REALE ottenuto in quella partita: 82.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +20.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      94.5    70.6    -23.9    20.2        NO
+   7        7      50.6    73.3    +22.7    18.6        NO
+   8        8      55.8    42.5    -13.3    17.3        SI
+   9        9      66.6    63.0     -3.6    19.6        SI
+  10       10      61.9    45.7    -16.2    18.6        SI
+  11       11      85.0    50.3    -34.7    19.2        NO
+  12       12      65.0    43.0    -22.0    19.0        NO
+  13       13      61.8    29.7    -32.1    19.4        NO
+  14       14      53.5    40.3    -13.2    21.1        SI
+  15       15      55.6    46.7     -8.9    21.1        SI
+  16       16      65.8    76.1    +10.3    20.6        SI
+  17       17      62.9    69.6     +6.7    20.5        SI
+  18       18      76.4    55.1    -21.3    20.0        NO
+  19       19      76.4   100.0    +23.6    19.4        NO
+  20       20      58.4    72.1    +13.7    21.7        SI
+  21       21      46.3    82.7    +36.4    21.2        NO
+
+MAE (errore assoluto medio): 18.91
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
