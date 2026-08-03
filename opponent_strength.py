@@ -315,7 +315,20 @@ FWD_OFFENSIVE_STATS = ('ontarget_scoring_att', 'big_chance_created', 'big_chance
 # GLOBAL_MEAN_CONCEDED sopra).
 GLOBAL_MEAN_DEF_POSS_LOST = 9.97
 GLOBAL_STD_DEF_POSS_LOST = 4.48
-FWD_OFFENSE_SENSITIVITY = 3.0
+# SPENTO (03/08, 3.0 -> 0.0). Stessa storia del pen-area del portiere.
+# Rimisurato su 18.992 previsioni di attaccante walk-forward:
+#
+#     sensibilita      MAE     corr   selezione
+#         0.0       14.038   0.259     28.9%
+#         1.5       14.040   0.259     27.5%
+#         3.0       14.044   0.257     27.5%   <- era in produzione
+#         6.0       14.048   0.256     27.6%
+#
+# Monotono: piu' se ne mette, peggio va, su tutte e tre le misure. Il -0.38% di
+# MAE che lo aveva giustificato veniva da un banco che teneva SPENTI gli
+# aggiustamenti avversario, quindi misurava il pezzo isolato invece che dentro
+# la formula in cui doveva vivere.
+FWD_OFFENSE_SENSITIVITY = 0.0
 
 _DEF_POSS_CACHE = {}
 
@@ -421,7 +434,22 @@ def fwd_offense_granular_delta(league, opponent_team_slug, cutoff_dt, own_offens
 
 GLOBAL_MEAN_DEF_PEN_AREA = 1.9428
 GLOBAL_STD_DEF_PEN_AREA = 2.2335
-GK_PEN_AREA_SENSITIVITY = 0.5
+# SPENTO (03/08, 0.5 -> 0.0). Rimisurato col banco che ora accende davvero gli
+# aggiustamenti avversario, su 6.019 previsioni di portiere walk-forward, e
+# provato in combinazione con la sensibilita' del ruolo:
+#
+#     sens   pen_area     MAE     corr   selezione
+#     0.7      0.5     15.961   0.043      4.9%   <- era in produzione
+#     0.7      0.0     15.960   0.045      6.4%
+#     1.0      0.0     15.958   0.047      6.0%
+#
+# Spegnerlo migliora tutte e tre le misure. Ha senso: la validazione che lo
+# aveva introdotto (-0.13% di MAE) misurava un delta additivo sul granulare di
+# parate, mentre in produzione era finito a moltiplicare lambda_pos col segno
+# rovesciato -- quindi quel -0.13% non ha mai descritto cio' che girava. Rimesso
+# nella forma giusta, il segnale non c'e'. La formula resta al suo posto e
+# riaccenderla e' cambiare questo numero, se una misura futura dira' altro.
+GK_PEN_AREA_SENSITIVITY = 0.0
 # Tetto al delta, stesso ordine di grandezza di FWD_OFFENSE_DELTA_CAP: il
 # granulare GOALKEEPING vale in mediana 13.7 punti a partita (misurato su 4
 # leghe), quindi senza tetto 0.5*z*13.7*0.3 arriverebbe a +-4 punti.
