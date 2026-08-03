@@ -27,13 +27,10 @@ COSTO_INGRESSO = {
     'Beginner': 100,
     'cap 220': 200,
     'cap 260': 300,
-    # DA CHIARIRE (03/08): i premi davvero incassati nelle 191 'arena division'
-    # in archivio sono 500/250/150, cioe' quelli del Beginner (che costa 100),
-    # non i 1300/800/500 della cap 260. Il costo non e' mai stato registrato.
-    # Questo 300 e' l'ipotesi storica, ed e' quella che porta il pareggio a
-    # 352.8 grezzi; con 100 sarebbe molto piu' basso. Il generatore assume
-    # l'altra ipotesi: i due file non concordano, e serve il dato vero.
-    'arena division': 300,   # ipotesi: stesso ingresso della cap 260
+    # Le arene dedicate a un campionato sono cap 260 (utente, 03/08): stesso
+    # ingresso, stessi premi. NB: in arene_storico.json i loro premi risultano
+    # 500/250/150, che e' un errore di registrazione, non una regola diversa.
+    'arena division': 300,
     'Uncapped': 300,
     'arena uncapped': 300,
 }
@@ -59,7 +56,7 @@ PAREGGIO = {
     'Beginner': 272.6,        # reale 264.1
     'cap 220': 245.5,         # reale 244.1
     'cap 260': 273.9,         # reale 265.0
-    'arena division': 352.8,  # reale 323.1 -- vedi la nota sul costo, sotto
+    'arena division': 271.0,  # reale 262.9 (sono cap 260 a tutti gli effetti)
     'Uncapped': 305.5,        # reale 288.3
     'arena uncapped': 305.5,
 }
@@ -68,7 +65,7 @@ GUADAGNO_PER_PUNTO = {
     'Beginner': 2.1,
     'cap 220': 4.6,
     'cap 260': 6.5,
-    'arena division': 2.9,
+    'arena division': 6.5,
     'Uncapped': 5.9,
     'arena uncapped': 5.9,
 }

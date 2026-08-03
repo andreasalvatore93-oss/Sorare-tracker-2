@@ -50,7 +50,17 @@ REGOLE = {
     'cap 220': {'costo': 200, 'premi': (1000, 500, 300)},
     'Uncapped': {'costo': 300, 'premi': (1300, 800, 500)},
     'Beginner': {'costo': 100, 'premi': (500, 250, 150)},
-    'arena division': {'costo': 300, 'premi': (1300, 800, 500)},
+    # Le arene dedicate a un campionato SONO cap 260 (confermato dall'utente
+    # 03/08): stesso ingresso, stessi premi. Quindi anche il campo dei premi
+    # osservati va preso da 'cap 260'.
+    #
+    # ATTENZIONE, c'e' un dato sbagliato in archivio: nelle 191 'arena
+    # division' i premi registrati sono 500/250/150 (n=18/19/23), cioe' quelli
+    # del Beginner. Non e' una regola di gioco diversa, e' un errore di
+    # registrazione dello storico -- ma se lo si lascia usare, incasso_medio
+    # pesca da li' e il pareggio esce a 323 invece che a 265. Da correggere
+    # all'origine in chi scrive arene_storico.json.
+    'arena division': {'costo': 300, 'premi': (1300, 800, 500), 'campo_premi': 'cap 260'},
     'arena uncapped': {'costo': 300, 'premi': (1300, 800, 500)},
     'elite': {'costo': 800, 'premi': (4000, 2000, 1000), 'campo': 'Uncapped'},
 }
@@ -237,9 +247,11 @@ def main():
         if len(avversari) < 20:
             print(f'{tipo:16s} {len(avversari):>7}  storico troppo corto, saltato')
             continue
-        soglia = pareggio(avversari, regole['costo'], regole['premi'], tipo=fonte)
+        soglia = pareggio(avversari, regole['costo'], regole['premi'],
+                          tipo=regole.get('campo_premi', fonte))
         tipico = statistics.median(miei[tipo]) if miei.get(tipo) else None
-        saldo = (incasso_medio(tipico, avversari, regole['premi'], tipo=fonte)
+        saldo = (incasso_medio(tipico, avversari, regole['premi'],
+                               tipo=regole.get('campo_premi', fonte))
                  - regole['costo']) if tipico is not None else None
         print(f'{tipo:16s} {len(avversari):>7} {soglia:>9.1f} '
               + (f'{tipico:>11.1f} {saldo:>+8.0f}' if tipico is not None

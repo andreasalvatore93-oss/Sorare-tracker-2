@@ -428,16 +428,11 @@ PAREGGIO_ARENA = {
     'ARENA_ALLSTARS_UNCAPPED': 288.3,  # era 288.2
     'ARENA_ALLSTARS_ELITE': 342.7,    # invariata
 }
-# Arene dedicate a un campionato. DA CHIARIRE (03/08): in archivio sono 191
-# ('arena division') e i premi DAVVERO incassati sono 500/250/150, cioe' quelli
-# del Beginner, non i 1300/800/500 della cap 260 a cui questa riga le
-# equipara. Il loro costo d'ingresso non e' mai stato registrato (`costo` e'
-# sempre null). Se costano 100 come il Beginner il pareggio e' 264.6, cioe'
-# questa riga e' giusta; se ne costassero 300 come si assume in
-# backtest_arene_economia.py sarebbe 323.1, e giocarle a 265 brucerebbe
-# essenze. Lasciato al valore della cap 260 -- l'ipotesi piu' coerente coi
-# premi osservati -- ma serve il dato vero per chiudere la questione.
-PAREGGIO_ARENA.update({arena_type(lg): 265.0 for lg in ARENA_LEAGUES})
+# Arene dedicate a un campionato: SONO cap 260 (confermato dall'utente 03/08),
+# stesso ingresso e stessi premi. La soglia e' comunque leggermente piu' bassa,
+# 262.9 contro 265.0, perche' il campo avversario e' un po' piu' debole:
+# misurata sulle 191 arene dedicate in archivio, non copiata dalla cap 260.
+PAREGGIO_ARENA.update({arena_type(lg): 262.9 for lg in ARENA_LEAGUES})
 
 def _stampa_verdetto_arene(all_results):
     """Per ogni arena generata: conviene pagare l'ingresso con questa formazione?
