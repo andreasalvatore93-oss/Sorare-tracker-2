@@ -27,6 +27,41 @@ import sys as _sys
 _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from motore_affare import gate_temporale, classifica_trend, LOOKBACK_DAYS as _LOOKBACK_DAYS
 
+# --- CERBERO: log osservazioni per l'APPRENDIMENTO ---
+# Ogni candidato che arriva al gate (in QUALSIASI lega -- Cerbero e' reattivo, vede
+# tutto il mercato) viene registrato qui: prezzo visto, sconto vs media recente, lega,
+# trend, ora. cerbero_learn.py ci associa poi il prezzo REALE nelle ore successive e
+# impara le soglie per campionato. E' il "vede a 1EUR, un'ora dopo transazione a 2EUR".
+import csv as _csv
+CERBERO_OSSERVAZIONI_PATH = os.environ.get('CERBERO_OSSERVAZIONI_PATH', 'cerbero_osservazioni.csv')
+_oss_lock = threading.Lock()
+_OSS_HEADER = ['ts_utc', 'league_slug', 'player_slug', 'card_slug', 'prezzo_min_eur',
+               'media_recente_eur', 'sconto_temporale_pct', 'trend', 'rendimento_atteso_pct',
+               'guadagno_atteso_eur', 'gate_passa']
+
+
+def _log_osservazione(league_slug, player_slug, card_slug, prezzo, media_recente,
+                       sconto, trend, rend_atteso, gain_atteso, passa):
+    try:
+        with _oss_lock:
+            nuovo = not os.path.exists(CERBERO_OSSERVAZIONI_PATH)
+            with open(CERBERO_OSSERVAZIONI_PATH, 'a', newline='', encoding='utf-8') as f:
+                w = _csv.writer(f)
+                if nuovo:
+                    w.writerow(_OSS_HEADER)
+                w.writerow([
+                    datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),
+                    league_slug or '', player_slug or '', card_slug or '',
+                    round(prezzo, 4) if prezzo is not None else '',
+                    round(media_recente, 4) if media_recente is not None else '',
+                    round(sconto, 2) if sconto is not None else '',
+                    trend or '', round(rend_atteso, 2) if rend_atteso is not None else '',
+                    round(gain_atteso, 4) if gain_atteso is not None else '',
+                    '1' if passa else '0',
+                ])
+    except Exception:
+        pass  # il logging osservazioni non deve mai far fallire una valutazione
+
 try:
     from curl_cffi import requests as curl_requests
     _HAS_CURL_CFFI = True
@@ -3551,7 +3586,13 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     # Calibrato sul backtest 03/08 (vedi motore_affare.py). Zero query extra: usa i nodi
     # transazione gia' scaricati.
     _trend_temp = classifica_trend(_media_rec1d_temp, _media_old_temp)
-    _gate = gate_temporale(true_min_price, _media_full_temp, _trend_temp)
+    _gate = gate_temporale(true_min_price, _media_full_temp, _trend_temp, league_slug=league_slug)
+    # [CERBERO] APPRENDIMENTO: registra l'osservazione (carta vista ORA a questo prezzo,
+    # con sconto/lega/trend) -- serve a cerbero_learn.py per misurare, dai dati veri di
+    # TUTTO il mercato, cosa succede al prezzo dopo e imparare le soglie per campionato.
+    _log_osservazione(league_slug, player_slug, card_slug, true_min_price, _media_full_temp,
+                       _gate.get('sconto_temporale'), _trend_temp, _gate.get('rendimento_atteso_pct'),
+                       _gate.get('guadagno_atteso_eur'), _gate['passa'])
     if not _gate['passa']:
         log(f"{player_name}: scarto -- GATE TEMPORALE non passato ({_gate['motivo']})")
         return False

@@ -117,9 +117,34 @@ il 03/08 l'export è fallito con HTTP 403 perché scaduti (poi rinfrescati).
 5. **Rivendita**: fuori scope per ora (gestita a mano). Facile da aggiungere: la firma
    crittografata di Definitivo è già lì.
 
-## 8. File
+## 8. Apprendimento automatico per campionato (03/08)
 
-- `bots/bot_terzo/motore_affare.py` — il gate temporale (funzioni pure, tarate sul backtest).
-- `bots/bot_terzo/bot_terzo.py` — il bot (reattivo Definitivo + gate, diagnostica-first).
-- `bots/bot_terzo/backtest_e_test.py` — unit test + backtest + taratura soglia (riproducibile).
-- `sorare_lista_nera_terzo.txt` — lista nera dedicata (creata alla prima run).
+Cerbero **impara dal mercato e adatta le soglie da solo, per campionato** (richiesta
+esplicita utente). Ciclo:
+1. **Osserva** — girando in diagnostica registra ogni carta che vede (prezzo, sconto vs
+   media recente, lega, trend, ora) in `cerbero_osservazioni.csv`. Essendo reattivo,
+   copre **tutto il mercato**, non solo le 4 leghe del dataset storico.
+2. **Impara** — `bots/cerbero/cerbero_learn.py` misura cosa succede al prezzo nelle ore
+   successive e sceglie, per ogni lega, la soglia di sconto minima che rende il flip
+   positivo (rend. mediano ≥3%, ≥55% positivi, ≥30 campioni). Scrive
+   `cerbero_soglie_apprese.json`.
+3. **Adatta** — `motore_affare.py` legge quel JSON: le soglie apprese **vincono** sui
+   default. Leghe mai viste → default prudente (10%) finché non arrivano dati.
+
+Soglie apprese al 03/08 (lookback 1gg, bootstrap dal dataset storico):
+**MLS 15%** (edge debole, serve barra alta), **K-League / Eredivisie / Belgio 5%** (edge forte).
+Più il bot gira, più leghe impara.
+
+**Lookback = 1gg** (non 2): il backtest mostra che 1gg vince ovunque e su MLS **cambia
+il segno** (a 2gg MLS era negativo, a 1gg positivo — il mercato MLS si muove veloce).
+
+## 9. File
+
+- `bots/cerbero/motore_affare.py` — gate temporale + soglie per-lega apprese/di default.
+- `bots/cerbero/cerbero.py` — il bot (reattivo Definitivo + gate, diagnostica-first, log osservazioni).
+- `bots/cerbero/cerbero_learn.py` — impara le soglie per-lega dai dati → JSON.
+- `bots/cerbero/backtest_e_test.py` — unit test + backtest + taratura (riproducibile, zero query).
+- `.github/workflows/bot_cerbero.yml` — workflow diagnostica-first.
+- `cerbero_soglie_apprese.json` — soglie per-lega apprese (rigenerato da cerbero_learn.py).
+- `cerbero_osservazioni.csv` — log osservazioni di mercato (dati di apprendimento).
+- `sorare_lista_nera_cerbero.txt` — lista nera dedicata (creata alla prima run).

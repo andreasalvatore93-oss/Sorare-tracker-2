@@ -31,13 +31,13 @@ on:
         required: false
         default: "si"
       cerbero_lookback_days:
-        description: "[gate temporale] finestra media recente della carta (backtest: 1-2gg meglio di 7)"
+        description: "[gate temporale] finestra media recente della carta (backtest: 1gg vince, e su MLS risolve il segno)"
         required: false
-        default: "2"
+        default: "1"
       cerbero_temp_disc_min:
-        description: "[gate temporale] sconto% minimo vs media recente per agire"
+        description: "[gate temporale] sconto% minimo per le leghe NON ancora calibrate (default prudente). Le leghe note usano le soglie APPRESE in cerbero_soglie_apprese.json"
         required: false
-        default: "5"
+        default: "10"
       cerbero_min_abs_gain_eur:
         description: "[gate temporale] guadagno assoluto atteso minimo (EUR) per flip -- 0.30/0.50 sweet spot; oltre peggiora"
         required: false
@@ -85,8 +85,8 @@ jobs:
           AUTOBUY_MIN_PRICE_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
           AUTOBUY_MAX_PRICE_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
           CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
-          CERBERO_LOOKBACK_DAYS: ${{ github.event.inputs.cerbero_lookback_days || '2' }}
-          CERBERO_TEMP_DISC_MIN: ${{ github.event.inputs.cerbero_temp_disc_min || '5' }}
+          CERBERO_LOOKBACK_DAYS: ${{ github.event.inputs.cerbero_lookback_days || '1' }}
+          CERBERO_TEMP_DISC_MIN: ${{ github.event.inputs.cerbero_temp_disc_min || '10' }}
           CERBERO_MIN_ABS_GAIN_EUR: ${{ github.event.inputs.cerbero_min_abs_gain_eur || '0.50' }}
           CERBERO_PREZZO_MIN_EUR: ${{ github.event.inputs.min_price_eur || '1' }}
           CERBERO_PREZZO_MAX_EUR: ${{ github.event.inputs.max_price_eur || '30' }}
@@ -96,16 +96,17 @@ jobs:
         run: |
           set -o pipefail
           python bots/cerbero/cerbero.py
-      - name: Commit lista nera dedicata Cerbero
+      - name: Commit lista nera + osservazioni per l'apprendimento
         if: always()
         run: |
-          if [ -z "$(git status --porcelain -- sorare_lista_nera_cerbero.txt)" ]; then
-            echo "Nessuna modifica alla lista nera, niente da committare."
+          FILES="sorare_lista_nera_cerbero.txt cerbero_osservazioni.csv cerbero_soglie_apprese.json"
+          if [ -z "$(git status --porcelain -- $FILES)" ]; then
+            echo "Nessuna modifica, niente da committare."
           else
             git config user.name "bot-cerbero"
             git config user.email "bot-cerbero@users.noreply.github.com"
-            git add sorare_lista_nera_cerbero.txt
-            git commit -m "Cerbero: aggiorna lista nera dedicata"
+            git add $FILES 2>/dev/null || true
+            git commit -m "Cerbero: lista nera + osservazioni mercato (apprendimento)"
             git pull --rebase --autostash origin main
             git push
           fi

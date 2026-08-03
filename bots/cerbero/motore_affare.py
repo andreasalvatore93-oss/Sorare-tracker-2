@@ -40,13 +40,59 @@ CURVA_RITORNO_ATTESO = [
 CURVA_RITORNO_SLOPE_OLTRE = 0.40   # pendenza prudente oltre il 25% di sconto
 CURVA_RITORNO_CAP = 20.0           # tetto: oltre non ci sono dati che reggano
 
-# Finestra di lookback per la media recente della carta. Il backtest mostra che 7gg
-# NON e' speciale: 1-2 giorni danno il lift migliore. Default 2gg (robusto).
-LOOKBACK_DAYS = float(os.environ.get('CERBERO_LOOKBACK_DAYS', '2'))
+# Finestra di lookback per la media recente della carta. Il backtest (03/08) mostra
+# che 7gg NON e' speciale e che 1gg e' il migliore -- E su MLS RISOLVE il problema:
+# a 2gg MLS era negativo, a 1gg diventa positivo (il mercato MLS si muove veloce,
+# una baseline a 2gg e' gia' stantia). Default 1gg.
+LOOKBACK_DAYS = float(os.environ.get('CERBERO_LOOKBACK_DAYS', '1'))
 
-# Sconto temporale minimo perche' la carta sia "davvero cheap vs se stessa" (sotto,
-# il rendimento mediano e' <=0). 5% e' il punto in cui diventa nettamente positivo.
-TEMP_DISC_MIN = float(os.environ.get('CERBERO_TEMP_DISC_MIN', '5.0'))
+# Sconto temporale minimo perche' la carta sia "davvero cheap vs se stessa".
+# ADATTIVO PER CAMPIONATO (richiesta esplicita utente: non escludere MLS, adattare).
+# A lookback 1gg (backtest 03/08): Eredivisie/Belgio e K-League hanno edge FORTE
+# (70-100% positivi) -> barra standard 5%. MLS ha edge DEBOLE (+3-4% ma ~50-58%
+# positivi) -> barra piu' alta 10% per restare selettivi. Le leghe NON ancora nel
+# dataset storico (il ~90% del mercato che Cerbero vede solo dal vivo) usano un
+# DEFAULT PRUDENTE alto finche' non arrivano dati -- si abbassano per-lega man mano
+# che il loop diagnostico live accumula esiti.
+TEMP_DISC_MIN_DEFAULT = float(os.environ.get('CERBERO_TEMP_DISC_MIN', '10.0'))
+TEMP_DISC_MIN_PER_LEGA = {
+    'mlspa': 10.0,
+    'k-league-1': 5.0,
+    'eredivisie': 5.0,
+    'jupiler-pro-league': 5.0,
+}
+
+
+# SOGLIE APPRESE dal mercato (richiesta esplicita utente: il bot deve imparare e
+# adattarsi da solo). cerbero_learn.py, dai log di osservazione della diagnostica
+# ("carta vista a X, transazione a Y un'ora dopo"), calcola per OGNI lega la soglia
+# sconto che rende il flip positivo e la scrive qui. Se il file esiste, VINCE sui
+# valori hardcoded sopra -- cosi' col tempo il bot copre anche le leghe che offline
+# non abbiamo mai visto. Ricaricato ad ogni avvio.
+SOGLIE_APPRESE_PATH = os.environ.get('CERBERO_SOGLIE_PATH', 'cerbero_soglie_apprese.json')
+_soglie_apprese = {}
+try:
+    import json as _json
+    if os.path.exists(SOGLIE_APPRESE_PATH):
+        with open(SOGLIE_APPRESE_PATH, encoding='utf-8') as _f:
+            _d = _json.load(_f)
+        _soglie_apprese = (_d.get('per_lega') or {}) if isinstance(_d, dict) else {}
+except Exception:
+    _soglie_apprese = {}
+
+
+def temp_disc_min_per_lega(league_slug):
+    """Soglia sconto minima per la lega. Priorita': appresa dal mercato > hardcoded
+    (leghe note dal backtest) > default prudente (leghe mai viste)."""
+    lg = (league_slug or '').lower()
+    appresa = _soglie_apprese.get(lg)
+    if isinstance(appresa, dict) and appresa.get('temp_disc_min') is not None:
+        return float(appresa['temp_disc_min'])
+    return TEMP_DISC_MIN_PER_LEGA.get(lg, TEMP_DISC_MIN_DEFAULT)
+
+
+# Compat: alcuni test/tool leggono ancora TEMP_DISC_MIN come valore singolo.
+TEMP_DISC_MIN = TEMP_DISC_MIN_DEFAULT
 
 # 'down' = sconto sospetto (mercato in caduta): a pari sconto rende meno. Sul dataset
 # a 12 giorni down/flat = 7.3/12.7 = 0.57 (a pari sconto>=10%: down +7.3%/61% pos,
@@ -120,7 +166,7 @@ def classifica_trend(media_recente, media_piu_vecchia):
     return 'flat'
 
 
-def gate_temporale(true_min_price, media_recente, trend,
+def gate_temporale(true_min_price, media_recente, trend, league_slug=None,
                     min_abs_gain_eur=None, temp_disc_min=None):
     """GATE dell'asse temporale. Ritorna un dict con il verdetto:
       {'passa': bool, 'motivo': str, 'sconto_temporale': float|None,
@@ -131,7 +177,7 @@ def gate_temporale(true_min_price, media_recente, trend,
     scontata) e incassa il 95% in rivendita -- questa e' la stima prudente 'a parita'
     di prezzo' per il floor assoluto."""
     min_abs = MIN_ABS_GAIN_EUR if min_abs_gain_eur is None else min_abs_gain_eur
-    disc_min = TEMP_DISC_MIN if temp_disc_min is None else temp_disc_min
+    disc_min = temp_disc_min_per_lega(league_slug) if temp_disc_min is None else temp_disc_min
 
     disc = sconto_temporale(true_min_price, media_recente)
     if disc is None:
