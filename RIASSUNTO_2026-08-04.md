@@ -1,37 +1,42 @@
 # Sessione 4 agosto 2026 — fix leak, generatore vero nel backtest, bilancio pulito, capitano
 
-## PROSSIMO TEST DA FARE (se la sessione si interrompe, riparti da qui)
-
-**Approccio 1 confermato con l'utente**: misurare se DEF/MID/FWD hanno bias di
-calibrazione diversi fra loro nella "zona capitano" (atteso ≥ 55), stessa
-metodologia già usata per GK_CAPTAIN_MARGIN (`formazione_mls/build_formazione_finale.py:1445-1467`).
+## FILONE CAPITANO DEF/MID/FWD — fatto il primo test, PROSSIMO PASSO sotto
 
 L'utente è già convinto di **escludere il portiere** dalla scelta capitano
-(non solo penalizzarlo col margine 6.7). Il test riguarda i 4 slot rimanenti:
-oggi `pick_captain()` sceglie fra DEF/MID/FWD solo per atteso grezzo più alto,
-senza nessuna correzione di ruolo — l'ipotesi è che, come per GK, uno dei tre
-ruoli sovra/sottostimi sistematicamente il reale rispetto agli altri due
-proprio nella fascia che conta per la scelta capitano.
+(non solo penalizzarlo col margine GK_CAPTAIN_MARGIN=6.7,
+`formazione_mls/build_formazione_finale.py:1445-1467`). Restava da capire se
+tra i 4 slot rimanenti (oggi `pick_captain()` sceglie DEF/MID/FWD solo per
+atteso grezzo più alto, nessuna correzione di ruolo) uno dei tre ruoli
+sovra/sottostimi il reale piu' degli altri nella "zona capitano" (atteso≥55),
+come succede per GK.
 
-**Test esatto da fare**:
-1. File: `formazione_mls/diagnostics/analyze_gk_captain_value.py`. Ha già
-   `by_role_detail['DEF']/['MID']/['FWD']` (coppie predetto/reale walk-forward,
-   parametri UFFICIALI di produzione, nessuna nuova query — dati già in cache).
-2. La sezione "zona capitano" (righe 298-312) oggi confronta solo
-   GK vs OUTFIELD (DEF+MID+FWD lumped insieme). Va estesa per stampare
-   DEF/MID/FWD **separatamente** nella stessa fascia (predetto ≥ 55): n,
-   atteso medio, reale medio, bias (reale-atteso), frequenza crollo
-   (reale < 50% del predetto).
-3. Confrontare i tre bias a coppie. Se la differenza fra due ruoli è di
-   ordine simile al gap GK-vs-movimento che ha prodotto GK_CAPTAIN_MARGIN
-   (6.69 pt), è motivo per un margine/correzione specifico anche fra
-   DEF/MID/FWD nella scelta capitano — non solo escludere il portiere.
-4. Regola di giudizio (CLAUDE.md): un eventuale margine si applica solo se
-   riduce MAE E migliora la correlazione previsto/realizzato E il lift di
-   selezione, tutti e tre nello stesso verso — mai il MAE da solo.
+**Test fatto**: `formazione_mls/diagnostics/analyze_captain_bias_outfield.py`
+(nuovo file, committato), riusa la raccolta dati di `analyze_gk_captain_value.py`
+(nessuna nuova query, parametri ufficiali di produzione). Esteso anche
+`analyze_gk_captain_value.py` per scoprire automaticamente TUTTE le 53 leghe
+(prima ne usava solo 10 su una lista fissa — buco scoperto dall'utente,
+mancavano Francia/Germania/Inghilterra/Italia/Giappone/Turchia e altre 17).
 
-Nessuna nuova query API: tutto materiale già in cache, girare solo lo script
-modificato.
+**Risultato (53 leghe, zona capitano atteso≥55)**:
+  DEF n=2294 bias=-8.37  MID n=2213 bias=-6.00  FWD n=1552 bias=-7.37
+  Gap DEF vs MID: -2.37pt (per confronto, il gap GK-vs-movimento che ha
+  giustificato GK_CAPTAIN_MARGIN era +6.69pt — qui e' circa 1/3).
+
+**COSA DICE E COSA NON DICE QUESTO TEST (richiesta esplicita dell'utente,
+non equivocare)**: dice solo che, IN MEDIA, il DEF non è il ruolo migliore
+da capitanare rispetto a MID/FWD — un bias osservato su tutte le partite
+della fascia, non una regola operativa. NON dice:
+- se un margine/correzione applicato davvero a `pick_captain()` migliori il
+  risultato reale (serve un backtest della POLICY, non solo il bias astratto);
+- se il gap sia stabile per singola lega/periodo o sia una media che nasconde
+  variazione forte (es. potrebbe essere trascinato da poche leghe/giocatori);
+- cosa succeda ai casi non-DEF/MID/FWD-puri (es. formazioni dove il migliore
+  per atteso NON è comunque un DEF/MID/FWD "tipico" della zona capitano).
+
+**PROSSIMO PASSO**: backtest della policy vera (capitanare MID a parità
+quasi-di-atteso invece di DEF/FWD) e verificare con la regola del CLAUDE.md
+(MAE + correlazione + lift di selezione insieme, mai il MAE da solo) prima
+di toccare `pick_captain()`. Nessuna nuova query: tutto già in cache.
 
 ## Cosa è stato fatto oggi (tutto committato su main salvo dove indicato)
 

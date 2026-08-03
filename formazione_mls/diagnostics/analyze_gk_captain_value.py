@@ -109,12 +109,27 @@ _PARAMS_BY_ROLE = {
 _MODULE_BY_ROLE = {
     'GK': 'test_gk', 'DEF': 'test_def', 'MID': 'test_mid', 'FWD': 'test_mls_fwd_all',
 }
-_NEW_LEAGUES = {
-    'BRASILE': 'formazione_brasile', 'CROAZIA': 'formazione_croazia',
-    'PORTOGALLO': 'formazione_portogallo', 'AUSTRIA': 'formazione_austria',
-    'SCOZIA': 'formazione_scozia', 'BELGIO': 'formazione_belgio',
-    'OLANDA': 'formazione_olanda', 'SPAGNA': 'formazione_spagna',
-}
+_ESCLUSE = {'mls', 'kleague'}  # gia' in CONFIGS sopra, con le loro cartelle _calibration
+
+
+def _scopri_leghe():
+    """Tutte le leghe con predict/test_gk.py (prova di modello propagato,
+    stesso criterio di _discover_leagues() in build_formazione_globale.py),
+    MLS/K League escluse (gia' esplicite sopra). 04/08: prima qui c'era una
+    lista fissa di 8 leghe -- ne mancavano 19-24 a seconda del ruolo (Francia,
+    Germania, Inghilterra, Italia, Giappone, Turchia comprese), scoperto
+    dall'utente confrontando col totale reale delle cartelle formazione_*."""
+    trovate = {}
+    for _predict_dir in sorted(glob.glob(os.path.join('formazione_*', 'predict', 'test_gk.py'))):
+        _pkg = _predict_dir.split(os.sep)[0]
+        _folder = _pkg[len('formazione_'):]
+        if _folder in _ESCLUSE:
+            continue
+        trovate[_folder.upper()] = _pkg
+    return trovate
+
+
+_NEW_LEAGUES = _scopri_leghe()
 for _league, _pkg in _NEW_LEAGUES.items():
     _folder = _pkg.split('_', 1)[1]
     for _ruolo in ('GK', 'DEF', 'MID', 'FWD'):
