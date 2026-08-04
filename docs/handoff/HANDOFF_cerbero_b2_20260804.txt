@@ -1,0 +1,141 @@
+HANDOFF — CERBERO / B2 RACCOLTA DATI POTENZIATA — 2026-08-04
+============================================================
+Perimetro toccato: bots/cerbero/cerbero.py (solo registrazione osservazioni),
+bots/cerbero/cerbero_learn.py (risolutore), bots/cerbero/backtest_e_test.py (test), docs.
+NON toccato: formazione_*/, generatore_formazioni/, dati_globali/, predict/,
+bot_definitivo.py, scanners/bot_profit.py.
+git pull a inizio sessione: "Already up to date".
+
+DIVIETO RISPETTATO: LIVE_MODE resta 'no'. Soglie del gate NON toccate. Curve di prezzo
+NON toccate. Nessun cambio a quali carte il bot compra/offre: l'unica aggiunta è una
+scrittura CSV su un ramo che già faceva `return False`, dopo tutta la logica esistente
+(bid periodico incluso). Zero impatto decisionale.
+
+Nota R1 (CLAUDE.md vince): chat tenuta al minimo; niente run GitHub senza ok.
+
+
+1) PUNTO ESATTO DELLA SCRITTURA + COSTO QUERY (T1)
+--------------------------------------------------
+Inserita in evaluate_event, dentro il ramo `if margin_percent < eff_makeoffer_min:`,
+subito PRIMA del `return False` finale (bots/cerbero/cerbero.py, ~riga 3603).
+Verifica del numero di riga del brief (~3554): CONFERMATO — margin_percent è calcolato a
+riga 3554 da `second_min_price`/`true_min_price`, che vengono da `prices` (riga ~3502,
+get_in_season_prices / get_classic_prices). Lo scarto per margine<soglia è a ~3566-3610.
+
+COSTO QUERY — precisazione onesta (regola di decisione T1):
+ - Il margine NASCE da un fetch a pagamento (get_in_season_prices/get_classic_prices).
+   Letto alla lettera, "il calcolo del margine è dopo un fetch a pagamento" -> la regola
+   T1 direbbe di fermarsi. MA quel fetch NON è aggiunto da b2: è già pagato da OGNI
+   candidato che arriva alla riga del margine (serve a calcolare il margine stesso, cioè
+   l'asse trasversale, che esiste solo grazie a quel fetch). Ho verificato il flusso ramo
+   per ramo: ogni evento che raggiunge lo scarto margine<soglia ha GIÀ pagato la scansione
+   prezzi; il fetch TRANSAZIONI (asse temporale) NON è ancora avvenuto e NON avverrà (il
+   return è subito dopo). Quindi b2 aggiunge ZERO query e ZERO lavoro bloccante: scrive
+   solo valori già in memoria.
+ - Interpretazione applicata: l'OBIETTIVO del brief ("senza costare query né velocità") è
+   sul costo INCREMENTALE, che è zero. Ho quindi implementato. Se per l'utente conta la
+   lettura letterale della regola (qualsiasi fetch a monte = stop), è una scelta di scope:
+   vedi DECISIONE PER L'UTENTE. Non è comunque possibile avere l'asse trasversale senza
+   quel fetch — è la sua unica fonte.
+ - La scrittura usa la stessa _log_osservazione già esistente (append sotto _oss_lock,
+   try/except che non fa mai fallire la valutazione): identico percorso delle righe
+   'completa', non più bloccante di quello.
+
+Schema: aggiunta la 15a colonna `tipo_riga` ('completa' | 'trasversale_only') a _OSS_HEADER.
+_aggiorna_intestazione_osservazioni riallinea da sola l'intestazione 14->15 alla prima
+scrittura della prossima run; le righe vecchie a 11/14 campi restano corte e csv.DictReader
+le completa a None (= 'completa', è ciò che sono). Nessuna migrazione, nessuna riscrittura
+del CSV. La riga trasversale_only ha: prezzo_min, prezzo_secondo, margine valorizzati;
+media/sconto/trend/rendimento/guadagno VUOTI; gate_passa=0; tipo_riga='trasversale_only'.
+
+
+2) VOLUME ATTESO (T2) — misurato su run reale 30885713370 (3h20m di ascolto)
+---------------------------------------------------------------------------
+Contati nel log: 2466 candidati con margine calcolato -> 2153 con margine<soglia (righe
+b2) + 313 sopra soglia. Gate temporale ok: 12.
+ - b2: ~644 righe / ora di ascolto.
+ - Riga CSV attuale ~129 byte (le trasversale_only sono più corte: stima conservativa).
+
+Per run manuale da 5h: b2 ~3.200 righe (totale con completa ~3.450).
+Equivalente 24h continuo: b2 ~15.450 righe/giorno (totale ~16.550/giorno).
+Regime manuale realistico (2 run da 5h/giorno): totale ~6.900 righe/giorno.
+
+Crescita CSV:
+ - continuo 24h:   7gg ~116k righe (~15 MB) | 30gg ~497k righe (~64 MB).
+ - manuale 2x5h/gg: 7gg ~48k righe (~6 MB)  | 30gg ~207k righe (~27 MB).
+
+REGOLA T2: la soglia è 20.000 righe/giorno. b2 aggiunge ~15.450/giorno SOLO nel caso
+limite 24h-continuo (irraggiungibile: il cron non parte, regime manuale), e ~6.900/giorno
+nel regime reale. Sotto soglia -> PROCEDO SENZA CAMPIONARE. (Se un giorno il cron partisse
+e si girasse ~24h/giorno, si arriverebbe vicino alla soglia: vedi DECISIONE PER L'UTENTE.)
+
+
+3) CONFRONTO SOGLIE PRIMA/DOPO (T3) — IDENTICHE
+-----------------------------------------------
+Il risolutore soglie (candidati_da_osservazioni) ora salta le righe trasversale_only via
+il nuovo helper e_trasversale_only(row). È un NO-OP sui dati esistenti, dimostrato:
+ - Sul CSV attuale (686 righe) il filtro esclude 0 righe (nessuna trasversale_only ancora
+   esiste). Quindi l'input al risolutore è bit-per-bit lo stesso di prima -> soglie
+   identiche per costruzione.
+ - Inoltre una riga trasversale_only ha sconto_temporale_pct vuoto: sarebbe già stata
+   saltata dal `float(r['sconto_temporale_pct'])` esistente. Il filtro esplicito rende
+   solo l'intento leggibile e a prova di futuro, senza cambiare comportamento.
+ - Path dataset_storico (candidati_da_dataset): non toccato.
+Non ho potuto lanciare --osservazioni end-to-end (richiede cookie Sorare fresco e righe
+mature, che ad oggi non esistono — vedi handoff accelerazione), ma la modifica alla sola
+selezione righe è provata no-op sopra. R5 soddisfatta.
+ESITO T3: soglie prima/dopo IDENTICHE.
+
+
+4) RISOLUTORE TRASVERSALE (T4) — predisposizione
+------------------------------------------------
+Aggiunta modalità `python bots/cerbero/cerbero_learn.py --trasversale`:
+ - legge le righe con margine_trasversale_pct valorizzato (completa E trasversale_only),
+ - recupera il prezzo reale a 24h (finestra 18-30h, stessi env CERBERO_LEARN_FORWARD_LO_H/
+   _HI_H),
+ - stampa n / rendimento mediano / %positivi per bucket di margine:
+   <5, 5-8, 8-11, 11-14, 14-17, 17-20, 20-25, 25-35, >35.
+ - NON scrive soglie, NON tocca cerbero_soglie_apprese.json.
+ - Se <30 righe risolvibili stampa solo "campione insufficiente, N=x" e nessuna conclusione.
+ESITO OGGI: non eseguito end-to-end (serve cookie + righe mature; nessuna riga
+trasversale_only esiste ancora — verranno dalla prossima run). Atteso oggi: "campione
+insufficiente, N=0". È previsto e corretto. Da lanciare dopo il 05/08 ~01:00Z insieme a
+--osservazioni. Codice verificato per import/sintassi.
+
+
+5) TEST (T5) — VERDI
+--------------------
+python bots/cerbero/backtest_e_test.py:
+ - 1) UNIT TEST funzioni pure: TUTTI OK (invariati).
+ - 1-bis) UNIT TEST b2: TUTTI OK. Coprono:
+     * riga trasversale_only scritta con campi temporali vuoti e gate_passa=0, asse
+       trasversale valorizzato;
+     * e_trasversale_only la esclude e NON esclude la 'completa';
+     * riga a 11 campi (formato vecchio): tipo_riga assente -> None -> trattata 'completa'.
+ - 2) backtest lift +12.4 | 2-bis) confronto orizzonti (ratio 24h/48h 0.923) | 3) taratura:
+   invariati.
+AST/import di cerbero.py, cerbero_learn.py, backtest_e_test.py: OK.
+
+
+6) COSA RESTA CHIUSO
+--------------------
+ - Bias di selezione sull'asse trasversale (limite #1 del progetto): CHIUSO a monte. Dalla
+   prossima run i margini bassi entrano nel CSV come trasversale_only. La validazione vera
+   della soglia trasversale resta da FARE quando i dati matureranno (T4), ma non è più
+   impossibile per costruzione.
+ - Campionamento: non serve (volume sotto soglia in regime manuale). Non riaprire salvo il
+   caso 24h-continuo (punto in decisione).
+ - Contaminazione apprendimento soglie temporali: esclusa (T3 no-op provato). Non riaprire.
+
+
+7) DECISIONE PER L'UTENTE
+-------------------------
+A) Lettura della regola di costo T1: b2 registra su un ramo il cui margine deriva da un
+   fetch prezzi già pagato da ogni candidato (zero query incrementali, zero rallentamento).
+   Ho implementato leggendo l'obiettivo "zero query/velocità" in senso INCREMENTALE. Se
+   invece intendevi "nessun fetch a monte di alcun tipo", è l'unico punto da rivedere: fai
+   sapere e revert immediato. (Nota: senza quel fetch l'asse trasversale non esisterebbe.)
+B) Campionamento futuro: se un giorno il cron partisse e si girasse ~24h/giorno, b2
+   arriverebbe a ~15.450 righe/giorno, vicino alla soglia 20.000. In regime manuale attuale
+   non è un problema. Decidere solo se/quando si passa a raccolta continua.
+Se nessuna delle due ti riguarda: nessun'altra decisione richiesta.
