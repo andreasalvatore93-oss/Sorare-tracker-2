@@ -161,7 +161,19 @@ def fetch_next_match_starter_odds(slug):
 # accettabile solo se l'utente lo chiede esplicitamente, per questo resta
 # disattivato di default. Utile per generare Arene dedicate DAVVERO valide
 # su Sorare invece di formazioni generiche senza vincolo di livello.
-RISPETTA_CAP_L10 = os.environ.get('BEST_FIVE_RISPETTA_CAP_L10', '0').strip() not in ('0', 'false', 'no', '')
+# ACCESO DI DEFAULT dal 04/08 (era '0', cioe' spento, dal 31/07). Motivo:
+# l'audit di coerenza scouting/generatore ha trovato che il generatore applica
+# SEMPRE il cap L10 alle arene (260/220, build_formazione_globale.py) mentre
+# qui era spento, quindi lo scouting consigliava acquisti che in arena non
+# sarebbero stati schierabili -- "si comprano carte che non si schierano".
+# Le arene sono il canale che conta, quindi il default deve riflettere il
+# vincolo vero.
+# COSTO, che resta quello descritto sotto: con il cap attivo serve l'L10 REALE
+# di ogni candidato, cioe' una query in piu' per giocatore (fetch_l10_per_ruoli).
+# COSA NON CAMBIA: nessuna carta sparisce dall'output. Questo flag decide solo
+# quali FORMAZIONI sono costruibili; l'elenco dei candidati dello scouting
+# arriva dai consiglio_*.txt e non passa di qui.
+RISPETTA_CAP_L10 = os.environ.get('BEST_FIVE_RISPETTA_CAP_L10', '1').strip() not in ('0', 'false', 'no', '')
 
 # Pausa prima del secondo giro sugli L10 non letti (vedi fetch_l10_per_ruoli).
 L10_RETRY_PAUSA = float(os.environ.get('BEST_FIVE_L10_RETRY_PAUSA', '30'))
