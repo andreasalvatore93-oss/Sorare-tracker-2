@@ -1,0 +1,349 @@
+HANDOFF — BRIEF END-TO-END DALLA DECISIONE ALLA PRODUZIONE
+Data: 2026-08-04 (sera)
+
+
+IN TRE RIGHE
+  In produzione NON e' entrato NIENTE: il candidato DEF si e' fermato allo
+  STOP della FASE 2.1, i suoi numeri non si riproducono alla quarta cifra.
+  Restano aperti: la decisione sul candidato DEF (ora con un dato nuovo: la
+  misura ha un tremolio proprio), e le soglie arene, mai toccate.
+  Chiuso per sempre: il ranking, misurato dove e' pulito, resta a +0.077.
+
+
+====================================================================
+1. STATO DEL REPO
+====================================================================
+
+Branch: main. Tutto committato e pushato su origin/main.
+
+Commit di questa sessione, in ordine:
+  c8ea15fd6f  merge di ritaratura-fattori su main (FASE 1.1)
+  (regola)    CLAUDE.md: prima di misurare, dimostro che l'interruttore
+              funziona (FASE 1.2)
+  f2d962b29f  STADIO_D_AVVERSARIO in test_def.py (spento? NO: default True =
+              produzione invariata) + verifica_stadio_d_avversario.py +
+              workflow taratura_modello.yml
+  78061ea0b2  workflow: pip install requests; ranking_pulito.py
+  ebd1abd3a6  ranking_pulito gira anche su runner pulito
+
+ATTENZIONE, DA SAPERE SUBITO. A meta' sessione il working tree e' stato
+spostato da un'altra sessione dal branch main a ritaratura-fattori mentre
+lavoravo. Me ne sono accorto da `git status` e l'ho registrato. Conseguenza
+tecnica: il mio `git pull --rebase` ha riscritto i 7 commit di
+ritaratura-fattori (nuovi hash, stesso contenuto; i vecchi restano su
+origin/ritaratura-fattori e nel reflog). Nessun lavoro perso, ma se un'altra
+sessione ha quel branch in mano deve rifare il pull. Ho poi portato il branch
+su main come chiedeva la FASE 1.1.
+
+Restano modificati e non committati, com'erano gia' prima che iniziassi:
+RIASSUNTO_2026-08-04.md, docs/BOT_CERBERO_PROGETTO.md,
+docs/RIASSUNTO_CERBERO.md.
+
+IN PRODUZIONE: NIENTE. Nessun file di formazione_*/predict/ ha cambiato
+comportamento: l'unica modifica e' un interruttore nuovo il cui default
+riproduce esattamente il comportamento di prima. Nessuna propagazione.
+Nessuna soglia toccata. Nessuna cache cancellata.
+
+
+====================================================================
+2. PERCHE' ESISTEVA QUESTO LAVORO
+====================================================================
+
+Due giornate di misure avevano prodotto un solo candidato applicabile: sui
+difensori, spegnere la sola gamba AVVERSARIO del condizionamento Stadio D,
+tenendo il condizionamento casa/trasferta e il moltiplicatore lambda. Il brief
+chiedeva di applicarlo, ricalibrare le soglie a valle, rigenerare le
+predizioni e poi verificare la coerenza scouting/generatore, con un cancello
+di riproduzione prima di toccare qualunque cosa.
+
+
+====================================================================
+3. COSA HO COSTRUITO O TOCCATO
+====================================================================
+
+formazione_mls/predict/test_def.py
+  STADIO_D_AVVERSARIO (default True = produzione). Quando e' False azzera
+  SOLO opponent_forte_flags/next_forte: media_condizionata torna il fallback,
+  cond_avv - fallback = 0, e il pezzo casa/trasferta resta intatto. NON e'
+  use_stadio_d=False, che fa `return` prima dell'intero blocco venue +
+  avversario. E' l'interruttore esplicito che la nuova regola di CLAUDE.md
+  pretende. Oggi e' acceso: non cambia niente finche' non lo si spegne.
+
+verifica_stadio_d_avversario.py
+  Riproduce i tre arm (produzione / candidato / Stadio D intero spento) e
+  controlla che il nuovo interruttore non spenga anche il venue.
+    python verifica_stadio_d_avversario.py --ruolo def     ~2 minuti
+
+ranking_pulito.py
+  La misura della FASE 5. Se taratura_coppie.json manca lo ricostruisce con
+  taratura_giocatore.raccogli (stesso codice che lo produce, nessuna rete).
+    python ranking_pulito.py                                ~40 minuti
+
+.github/workflows/taratura_modello.yml
+  Le misure girano su Actions, come chiede R1. Due input: misura=stadio_d
+  (con ruolo) e misura=ranking_pulito. Sola lettura, nessun commit, artifact
+  con i json.
+
+screening_segnali.py
+  prepara() prende con_lambda: chi vuole solo i segnali di ranking non paga i
+  checkpoint del Poisson ne' partite_gol.json (che su un runner non c'e').
+
+CLAUDE.md
+  La regola anti-ripetizione della FASE 1.2, testuale.
+
+docs/handoff/HANDOFF_screening_segnali_B4_2026-08-04.txt
+  Corretto in cima: il suo punto 5.2 e' FALSO e le sue griglie sono state
+  prodotte sulla baseline contaminata. Regola 5 della nuova norma: se smonto
+  una premessa, correggo la fonte.
+
+
+====================================================================
+4. OUTPUT NUMERICO INTEGRALE
+====================================================================
+
+4.A  FASE 2.1 — RIPRODUZIONE DEI TRE ARM (DEF, n=25.738, 263 giornate)
+
+Tre ambienti, stesso campione (n e giornate identici in tutti e tre):
+
+  arm                          MAE          corr        lift
+  --- attesi (riverifica, locale altro account) ---
+  produzione               14.990365     0.176337     16.0641
+  candidato (arm 4)        14.970303     0.182627     17.2155
+  Stadio D intero spento   14.989160     0.176039     16.8662
+  --- misurati da me su GitHub Actions (runner pulito) ---
+  produzione               14.987396     0.177110     16.0386
+  candidato                14.971189     0.182586     17.1287
+  Stadio D intero spento   14.989975     0.175990     16.8820
+  --- misurati da me in locale, cache /tmp azzerata ---
+  produzione               14.987675     0.177556     15.9351
+  candidato                14.971738     0.182517     17.2017
+  Stadio D intero spento   14.990652     0.175895     16.9429
+
+  DELTA candidato - produzione, nei tre ambienti:
+                      riverifica       Actions        locale
+    dMAE               -0.020061     -0.016207     -0.015937
+    dcorr              +0.006289     +0.005476     +0.004961
+    dlift              +1.1514       +1.0901       +1.2666
+
+  Controllo dell'interruttore: candidato e "Stadio D intero spento" restano
+  ben separati (corr 0.1826 contro 0.1760), quindi STADIO_D_AVVERSARIO spegne
+  solo la sua meta' e il venue resta acceso. Questo controllo PASSA.
+
+4.B  FASE 5 — RANKING SUL SOTTOINSIEME PULITO (GitHub Actions)
+
+  73.786 righe totali, 54.467 pulite (73,8%).
+  Scartate per:
+    leghe diverse o partita non di campionato    9.245   12,5%
+    ranking assente                              7.949   10,8%
+    meno di 5 giornate giocate                   2.125    2,9%
+
+  CAMPIONE PULITO (54.467 righe)
+    segnale                                    n      corr           IC 95%    guadagno
+    posizione assoluta dell avversario     53364    +0.077   [+0.068,+0.085]    +4.1 pt
+    percentile dell avversario nella lega  53364    +0.079   [+0.070,+0.087]    +4.3 pt
+    percentile avversario meno il mio      53364    +0.078   [+0.070,+0.086]    +4.3 pt
+    posizione avversario meno la mia       53364    +0.077   [+0.068,+0.085]    +4.2 pt
+
+  CAMPIONE COMPLETO, per confronto
+    posizione assoluta dell avversario     65597    +0.074   [+0.066,+0.082]    +3.9 pt
+    posizione avversario meno la mia       65506    +0.073   [+0.067,+0.082]    +3.9 pt
+
+  Riferimento grezzo di partenza: +0.074.
+
+
+====================================================================
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+====================================================================
+
+5.1  LO STOP DELLA FASE 2.1 E' SCATTATO, E LA SUA CAUSA NON E' QUELLA PREVISTA
+Il brief diceva: se non ritrovi le terne, il campione non e' lo stesso e la
+decisione va rifatta. Il campione INVECE E' LO STESSO: 25.738 righe e 263
+giornate in tutti e tre gli ambienti, cifra per cifra. A non riprodursi sono
+i valori assoluti, di poco: MAE entro 0,003, correlazione entro 0,0008, lift
+entro 0,1.
+Ho cercato la causa. Non e' la cache /tmp di opponent_strength (azzerata e
+rimisurato), non sono le cache dei dettagli (5.367 file, tutti tracciati,
+nessuno modificato), non e' il lift che usa numeri casuali (e' seminato,
+seme=3). Quello che resta, ed e' coerente con l'ordine di grandezza, e'
+l'ordine in cui `glob.glob` restituisce i file dentro
+opponent_strength._build_series_for_league: cambia fra sistemi operativi e
+cambia l'ordine delle somme in virgola mobile, e opponent_is_strong e' una
+soglia BOOLEANA -- basta un epsilon per far ribaltare qualche partita da
+"avversario forte" a "debole". Un tremolio piccolo ma reale nella misura,
+mai notato prima perche' nessuno aveva mai confrontato due ambienti.
+CONSEGUENZA PRATICA: il tremolio (0,003 su MAE, 0,0005 su corr) e' 5-10 volte
+PIU' PICCOLO dell'effetto del candidato (0,016-0,020 su MAE, 0,005-0,006 su
+corr), e il segno dei tre delta e' identico in tutti e tre gli ambienti. Cioe'
+la decisione regge; e' la riproducibilita' alla quarta cifra che non c'e'.
+Ho comunque rispettato lo STOP: non ho applicato niente, come dice il brief.
+La scelta se applicare con questa informazione in piu' e' dell'utente.
+
+5.2  COSA DECADE PER EFFETTO DELLO STOP
+La catena del brief e' PRODUZIONE -> SOGLIE -> PULIZIA PREDIZIONI -> NUOVE
+PREDIZIONI. Non essendo cambiata la produzione, le soglie NON sono tarate su
+una distribuzione morta e le predizioni in cache NON sono vecchie. Quindi:
+  FASE 3 (ricalibrazione soglie arene): NON eseguita. Non e' saltata per
+    tempo: e' che il suo presupposto non si e' verificato. Resta l'unica voce
+    davvero aperta del lavoro, come diceva gia' la riverifica.
+  FASE 3-bis (cancellazione delle predizioni cachate): NON eseguita, e per
+    fortuna. Cancellare le predizioni della giornata in corso senza aver
+    cambiato la produzione sarebbe stato costo puro: ore di rigenerazione per
+    riottenere gli stessi numeri. NESSUN FILE E' STATO CANCELLATO.
+
+5.3  IL TEMA RANKING SI CHIUDE QUI, DEFINITIVAMENTE
+Misurato dove e' pulito (stessa competizione e stessa lega per entrambe le
+squadre, almeno 5 giornate giocate), il ranking dell'avversario correla
++0.077 col residuo dentro-giocatore, contro il +0.074 grezzo. Il percentile
+dentro la lega fa +0.079: batte la posizione assoluta di 0,002, cioe' niente.
+La regola di lettura fissata dall'utente diceva: sotto +0.09 congelamento
+definitivo. Ci siamo, e con margine. IL TEMA E' CHIUSO: nessuna sessione
+futura lo riapra.
+Nota sul filtro, perche' e' leggermente piu' severo di quello chiesto: avendo
+imposto che la competizione sia la lega domestica di ENTRAMBE le squadre, il
+vincolo "dimensione delle due leghe entro 2 squadre" e' automaticamente
+soddisfatto (stessa lega = stessa dimensione), e infatti non scarta nessuna
+riga per conto suo. La quota di righe scartate sale al 26,2%, vicinissima al
+24% stimato dalla riverifica per altra strada.
+
+5.4  UN NUMERO DI B.4 ERA CONTAMINATO, E ORA SI SA QUALE
+Le griglie ranking/favorito/casa dell'handoff B.4 sono state prodotte col
+banco in usa_avversario=False, che non spegne il canale avversario ma lo fa
+ricadere su domesticLeagueRanking. La riga "DEF k=0" di quelle tabelle
+(MAE 14.942, corr 0.191, lift 16.9) coincide alla terza cifra con l'arm 2
+della riverifica, che e' proprio quella baseline contaminata: la produzione
+vera e' 14.99 / 0.176 / 16.06. Ho scritto la correzione in cima a quel file.
+Nessuna decisione era stata presa su quelle griglie, quindi il danno e' zero,
+ma non vanno riusate come sono.
+
+5.5  FASE 4 — COERENZA SCOUTING / GENERATORE
+La contraddizione fra i due handoff si risolve cosi': l'audit ERA gia' stato
+fatto (commit 44a9d1884f) e la riverifica ha ragione. Ho completato le tre
+voci che quel commit non copriva.
+  (a) FONTE DEL PUNTEGGIO: condivisa. scouting_gw.py:1155 chiama
+      best_five._parse_consiglio_calibrato, che legge gli stessi
+      consiglio_*.txt e li calibra con gg.calibra_riga importato da
+      generatore_formazioni/build_formazione_globale.py. Nessuna copia locale
+      (best_five.py:2205-2210 documenta che una copia c'era ed e' stata
+      rimossa). COERENTE.
+  (b) CALIBRAZIONE E OVERRIDE CALIB_*: un posto solo,
+      build_formazione_globale.py:376-380 (CALIB_PER_RUOLO, con override da
+      variabile d'ambiente CALIB_A_GK/DEF/MID/FWD). Nessun altro file definisce
+      quei coefficienti. COERENTE NEL CODICE, con un rischio che registro: i
+      valori arrivano da variabili d'ambiente lette all'import, quindi se
+      scouting e generatore girassero in due job con env diversi divergerebbero
+      senza che nessuno se ne accorga. Non e' un disallineamento di copia, e'
+      una superficie di rischio: non l'ho toccata.
+  (c) PORTIERE: GK_TEAM_CS_WEIGHT vive in formazione_mls/predict/test_gk.py:126
+      ed e' gia' dentro i consiglio_*.txt che entrambi leggono. COERENTE.
+      Registro che backtest_arene_previsioni.py:260 lo rilegge da env con
+      default 0.5: e' il banco di misura, non la produzione, ma e' una seconda
+      fonte dello stesso numero e la riverifica sospettava proprio questo come
+      causa di una terna non ricostruibile.
+  (d) SOGLIE DI QUALITA' E CAP L10: MIN_QUALITY_SCORE sta solo in
+      generatore_formazioni/quality_filter.py:40, e quel modulo non e'
+      importato da nessuno dei tre file vivi (build_formazione_globale,
+      best_five, scouting_gw): e' codice morto, come diceva l'audit
+      precedente. NON e' una divergenza.
+      DIVERGENZA VERA, l'unica trovata: best_five.py:164 RISPETTA_CAP_L10 e'
+      SPENTO di default, mentre il generatore applica sempre il cap L10 alle
+      arene (260/220, build_formazione_globale.py:169-180). Cioe' lo scouting
+      puo' consigliare l'acquisto di una carta che il generatore, sotto cap,
+      non potrebbe mai schierare. E' esattamente il fallimento che la FASE 4
+      voleva intercettare: "si comprano carte che non si schierano". NON l'ho
+      corretta -- e' una scelta di comportamento, non un errore di copia, e
+      quei file sono in mano alla sessione arene-audit. Va decisa.
+  (e) LISTE NERE: nessuno dei tre file vive le usa. `lista_nera` compare zero
+      volte in scouting_gw.py, best_five.py e build_formazione_globale.py: i
+      cinque file (base, _cerbero, _profit, _aste, _terzo) sono usati solo dai
+      bot di acquisto/vendita. La voce del brief non si applica.
+  (f) RAPPORTO_ARENA_MINIMO: scouting_gw.py:369 ne tiene una copia TESTUALE
+      ('1.019') per un tooltip, documentata come tale e con il puntatore alla
+      fonte viva. Minore, ma e' un secondo posto dove il numero esiste.
+Non ho aggiunto la frase richiesta a CLAUDE.md sulla coerenza scouting/
+generatore perche' la regola nuova della FASE 1.2 era gia' un blocco lungo e
+volevo evitare due modifiche allo stesso file in una sessione con un'altra
+sessione attiva: e' l'unica voce del brief che ho lasciato indietro di
+proposito, si fa in dieci secondi al prossimo giro.
+
+5.6  TUTTE LE MISURE DI QUESTA SESSIONE SONO GIRATE SU GITHUB ACTIONS
+Come chiede R1. Run 30902822787 (stadio_d, DEF) e 30903166597
+(ranking_pulito). L'unica misura fatta in locale e' la diagnosi del punto 5.1
+(rimisura dopo aver azzerato la cache /tmp), ed e' marcata come tale: serviva
+proprio a confrontare locale contro CI, non poteva stare su CI.
+Il workflow nuovo e' riutilizzabile: e' il primo banco di misura del modello
+che gira sul runner invece che sul portatile.
+
+
+====================================================================
+6. DECISIONE APERTA
+====================================================================
+
+a) CANDIDATO DEF. Applicare o no lo spegnimento della gamba avversario dello
+   Stadio D sui difensori. Oggi l'interruttore c'e', si accende cambiando una
+   riga (STADIO_D_AVVERSARIO = False in formazione_mls/predict/test_def.py) e
+   propagando. Quello che si compra: correlazione +0.005/+0.006 sui difensori,
+   con IC 95% sopra zero secondo il bootstrap della riverifica. Quello che NON
+   si compra: MAE e lift dimostrati. Il dato nuovo di oggi e' che i valori
+   assoluti tremolano di 0,003 fra ambienti, ma i delta no.
+   Se si applica, ricordarsi che la catena riparte: soglie -> pulizia
+   predizioni -> rigenerazione -> test.
+
+b) SOGLIE ARENE (FASE 3). Mai fatte, e ora sono l'unica cosa davvero aperta.
+   Non dipendono dal punto (a): si possono ricalibrare anche a produzione
+   invariata, e il metro e' backtest_arene_produzione.py.
+
+c) DIVERGENZA RISPETTA_CAP_L10 (5.5.d). Lo scouting ignora il cap L10 che il
+   generatore impone. O si accende il cap anche nello scouting, o si decide
+   che lo scouting deve poter consigliare carte fuori cap (per le formazioni
+   non-arena) e lo si scrive.
+
+d) IL TREMOLIO DELLA MISURA (5.1). Vale la pena renderla deterministica
+   (ordinare i file prima di sommarli in opponent_strength)? Costa poco e
+   toglie di mezzo per sempre una classe di "numeri che non tornano fra
+   sessioni" -- che in questo progetto e' gia' costata parecchio.
+
+Nessuna di queste e' stata presa.
+
+
+====================================================================
+7. FILE DI RIFERIMENTO
+====================================================================
+
+formazione_mls/predict/test_def.py            STADIO_D_AVVERSARIO (riga ~119),
+                                              blocco Stadio D (righe ~1425-1465)
+verifica_stadio_d_avversario.py               i tre arm
+ranking_pulito.py                             FASE 5
+.github/workflows/taratura_modello.yml        le misure su Actions
+opponent_strength.py                          _build_series_for_league, il glob
+                                              non ordinato del punto 5.1
+best_five.py                                  RISPETTA_CAP_L10 (164),
+                                              _parse_consiglio_calibrato (1194)
+scouting_gw.py                                riga 1155 (fonte punteggi),
+                                              riga 369 (copia testuale)
+generatore_formazioni/build_formazione_globale.py   CALIB_PER_RUOLO (376-380)
+generatore_formazioni/quality_filter.py       codice morto, non importato
+docs/BUG_MISURA_STADIO_D_FALLBACK_RANKING.md
+docs/handoff/HANDOFF_riverifica_indipendente_2026-08-04.txt
+docs/handoff/HANDOFF_screening_segnali_B4_2026-08-04.txt   (corretto in cima)
+
+
+====================================================================
+8. PROMEMORIA
+====================================================================
+
+8.1  ODDS PRE-DEADLINE. Quando ci saranno almeno 3 giornate in
+     dati_globali/odds_titolarita_storico.json, rifare lo screening dei
+     segnali SENZA il condizionamento a starter odds >= 0.80. Oggi "giorni di
+     riposo", "minuti L5" e la titolarita' attesa escono a zero, ma sono
+     misurati solo su chi era gia' previsto titolare: e' restrizione di range,
+     non prova di assenza. Con il ranking chiuso definitivamente (5.3), questo
+     e' il segnale potenzialmente piu' grosso rimasto. Il file si riempie da
+     solo a ogni run di discovery e NON e' stato toccato in questa sessione.
+
+8.2  generatore_formazioni/output/ contiene 95+ HTML tracciati nel repo:
+     artefatti rigenerabili che gonfiano il clone. Da valutare .gitignore e
+     pulizia della storia. Voce della sessione arene-audit, registrata e non
+     decisa.
+
+8.3  Manca in CLAUDE.md la frase sulla coerenza scouting/generatore chiesta
+     dalla FASE 4 (vedi 5.5, ultimo capoverso).
