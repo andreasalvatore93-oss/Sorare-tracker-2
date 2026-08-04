@@ -1,0 +1,209 @@
+HANDOFF — audit scouting/generatore + test end-to-end reali, nessuna modifica applicata
+Data: 2026-08-04
+Segue: HANDOFF_taratura_sensitivity_2026-08-04.txt
+Branch: ritaratura-fattori (NON mergiato su main, NIENTE propagato, NIENTE soglie toccate)
+
+
+====================================================================
+1. STATO DEL REPO
+====================================================================
+
+Branch: ritaratura-fattori. Nessuna modifica a formazione_mls/predict/*,
+nessuna soglia arena toccata, nessuna cache di prezzi/previsioni invalidata.
+
+Aggiunti (nuovi, non modificati) due output reali generati dai test
+end-to-end di questa sessione (sezione 4), consistenti con la convenzione
+gia' in uso nel repo (100 file .html gia' tracciati in
+generatore_formazioni/output/):
+  generatore_formazioni/output/generatore_formazioni_2026-08-04_101214.html
+  generatore_formazioni/output/generatore_formazioni_2026-08-04_101227.html
+
+File modificati preesistenti (non miei, invariati): RIASSUNTO_2026-08-04.md,
+docs/BOT_CERBERO_PROGETTO.md, docs/RIASSUNTO_CERBERO.md.
+
+Parte 2 (soglie arene) e Parte 3 (pulizia cache) SALTATE per priorita' di
+tempo, come esplicitamente concesso dal brief ("Parte 1 e Parte 4 sono le
+uniche obbligatorie: se il tempo stringe, salta la Parte 2").
+
+
+====================================================================
+2. PERCHE' ESISTEVA QUESTO LAVORO
+====================================================================
+
+A poche ore da una deadline di schieramento, con la previsione NON
+cambiata oggi (DEF scartato, SENSITIVITY_BY_ROLE invariata), serviva sapere
+se scouting_gw.py (con cui l'utente decide gli acquisti) e il generatore
+di formazioni (con cui schiera) guardano davvero gli stessi numeri, e se i
+due strumenti funzionano ancora, con una prova pratica non solo teorica.
+
+
+====================================================================
+3. COSA HO COSTRUITO O TOCCATO
+====================================================================
+
+Nessuna modifica di codice. Solo lettura (audit, sezione 4) e due run reali
+(scouting_gw.py, generatore_formazioni/build_formazione_globale.py) i cui
+output sono ora nel repo (sezione 1).
+
+
+====================================================================
+4. OUTPUT NUMERICO INTEGRALE
+====================================================================
+
+4.A AUDIT SCOUTING VS GENERATORE (Parte 1.1)
+
+  DOMANDA PIU' IMPORTANTE: scouting ricalcola l'atteso per conto suo?
+  NO. scouting_gw.py (righe 1046, 1124, 1768) importa DINAMICAMENTE
+  best_five.py, che a sua volta (best_five.py:1186-1191, _import_gg)
+  importa l'INTERO modulo generatore_formazioni/build_formazione_globale.py
+  come oggetto Python (non una copia di codice) e ne usa le funzioni
+  DIRETTAMENTE:
+    - calibrazione: best_five.py:1194-1215 chiama gg.calibra_riga (STESSA
+      funzione, STESSI coefficienti CALIB_PER_RUOLO, generatore_formazioni/
+      build_formazione_globale.py:376-393). Nessuna copia locale.
+    - generazione formazioni: scouting_gw.py:1212/1250/1277 chiama
+      gg.generate_lineups_for_type -- la STESSA funzione che produce le
+      formazioni vere, non una simulazione.
+    - soglie/cap: scouting_gw.py/best_five.py leggono gg.L10_CAP_BY_TYPE,
+      gg.bff.CAP260_L10_THRESHOLD_BY_TYPE, gg.FORMATION_SHAPES,
+      gg.CAPTAIN_BONUS_BY_TYPE -- stessa fonte, nessuna copia.
+    - pool/candidati: scouting_gw.py:1178 usa gg._NoFilterPool (la stessa
+      classe del generatore).
+
+  MIN_QUALITY_SCORE / gate L5/L10/L40 (generatore_formazioni/quality_
+  filter.py): CODICE MORTO. Disattivato il 28/07 (commento esplicito in
+  build_formazione_globale.py:844-852, caso reale citato: Inaki Pena
+  escluso a torto con L10=46/L40=49 solidi ma L5=26), sostituito da
+  _NoFilterPool (nessun filtro qualita', il filtro starter-odds in
+  discovery_fixture.py basta). Il brief chiedeva di includerli nella
+  griglia soglie arene (Parte 2, non eseguita per tempo): griglia inutile,
+  quei parametri non influenzano nessuna previsione ne' selezione oggi.
+
+  Trattamento GK: nessuna divergenza trovata -- entrambi passano dagli
+  stessi consiglio_*.txt (build_consiglio_gk.py, chiamato da entrambi via
+  best_five.py:857 esegui_consiglio) e dalla stessa calibra_riga.
+
+  Liste nere / esclusioni: NON APPLICABILE. sorare_lista_nera*.txt e'
+  usato SOLO dai bot di trading (bots/bot_definitivo.py, bots/cerbero/
+  cerbero.py, scanners/bot_profit.py) -- ne' lo scouting ne' il generatore
+  hanno un meccanismo di blacklist persistente. "Esclusi" nel generatore
+  significa "candidato non entrato in nessuna formazione", non blacklist.
+
+  VERDETTO: nessuna divergenza grave trovata. L'architettura condivide il
+  modulo per importazione diretta, non per duplicazione -- il rischio che
+  il brief temeva (scouting fermo alla previsione vecchia) non c'e' per
+  costruzione. L'unico punto morto (MIN_QUALITY_SCORE) e' morto per
+  ENTRAMBI gli strumenti allo stesso modo, quindi non e' nemmeno una
+  divergenza fra i due, solo un parametro inutile da non tarare.
+
+4.B CENSIMENTO CACHE SCOUTING (Parte 1.2)
+
+  dati_globali/scouting_<fixture>.json -- pool completo della giornata con
+    giudizio 'idoneo' (None finche' non gira lo --screen). DIPENDE da:
+    previsione (score_atteso via consiglio_*.txt) + soglie. Rigenerabile
+    in ~30 secondi (commento nel codice, scouting_gw.py:1954-1956).
+    NON invalidato: nessuna soglia e' cambiata oggi.
+  _consiglio_slugs_{ruolo}.json (tmp) -- lista slug effimera per invocare
+    build_consiglio_<ruolo>.py, non e' una cache persistente.
+  Prezzi (prezzi_per_slug) -- NON risulta scritto su disco da scouting:
+    usato in-memory/HTML embed (scouting_gw.py:1523-1529), niente da
+    invalidare.
+
+4.C TEST END-TO-END REALI (Parte 4, OBBLIGATORIA)
+
+  4.C.1 SCOUTING (run reale, non simulata):
+    comando: python scouting_gw.py --fixture football-4-7-aug-2026
+             --riusa-pool --html <path>
+    esito: exit 0. Report HTML scritto (216.733 byte, 632 righe).
+    "238 attesi dai consigli" (candidati con punteggio atteso).
+    9 arene "efficienti" generate (Arena All Stars cap260/cap220/uncapped),
+    margini fra +2.8 e +26.9 pt sopra soglia, costi 9.77-33.70 EUR.
+
+  4.C.2 GENERATORE (run reale, tutte le leghe):
+    comando: python generatore_formazioni/build_formazione_globale.py
+    esito: exit 0. "Formazioni generate: 3/2, TOTALE COMPLESSIVO: 779.5 pt".
+    In Season MLS: generata (270.5 pt) + 2 extra opzionali (261.9, 247.1).
+    In Season K League: NON generata -- nessun candidato per lo slot GK
+    (consiglio vuoto/copie esaurite). NON e' un problema introdotto oggi:
+    nessun codice di predict/ e' cambiato, e' un buco di dati/discovery
+    pre-esistente su quella lega specifica. Segnalato, non indagato oltre
+    per tempo.
+    Candidati non schierati: 198 (GK:25 DEF:59 MID:64 FWD:50) -- normale.
+
+  4.C.3 COERENZA INCROCIATA (7 giocatori in comune, non solo 5):
+    michael-boxall, ryan-hollingshead, thomas-muller, denis-bouanga,
+    antoine-griezmann, hugo-lloris, adrian-andres-cubas.
+    Punteggio atteso mostrato: IDENTICO in entrambi i report per tutti e 7
+    (57.1, 64.6, 71.5, 80.2, 65.2, 55.8, 65.6 rispettivamente). 0
+    divergenze su 7 confronti. Conferma pratica di 4.A: stessa fonte,
+    stesso numero.
+
+  Nessun rollback necessario: nessuna modifica era stata applicata prima
+  del test (nessuna soglia, nessuna previsione).
+
+
+====================================================================
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+====================================================================
+
+5.1 L'UNICO PROBLEMA REALE TROVATO OGGI E' IL BUCO DATI SU K LEAGUE
+    IN SEASON (4.C.2), NON UNA DIVERGENZA SCOUTING/GENERATORE
+
+Nessun candidato GK disponibile per quella formazione specifica. Non
+riguarda ne' il DEF (congelato oggi) ne' SENSITIVITY_BY_ROLE (invariata):
+e' un buco di consiglio_*.txt/discovery per quella lega, probabilmente
+gia' presente prima di questa sessione (nessun codice toccato la
+spiegherebbe). Da investigare in una sessione dedicata, non urgente per lo
+schieramento di oggi (K League non e' la lega su cui verte la deadline
+citata nel brief, MLS che e' quella rilevante ha generato correttamente).
+
+5.2 PARTE 2 (SOGLIE ARENE) SALTATA PER SCELTA, NON PER ERRORE
+
+Il brief la rendeva esplicitamente sacrificabile sotto pressione di tempo.
+In piu', meta' dei parametri che avrebbe testato (MIN_QUALITY_SCORE,
+gate L5/L10/L40) sono risultati morti (4.A) -- la griglia utile si sarebbe
+ridotta comunque al solo cap L10 per tipo.
+
+5.3 QUESTA SESSIONE HA GENERATO NUOVI OUTPUT REALI (non e' un semplice
+prima/dopo)
+
+Il brief (Parte 5) chiedeva una tabella prima/dopo. Non e' applicabile in
+senso stretto: nessuna soglia o previsione e' cambiata oggi, quindi non
+c'e' un "prima" diverso dal codice di produzione gia' in uso da giorni.
+Quello che ho prodotto (4.C) e' una CONFERMA fresca che il codice attuale
+(quello di sempre, DEF e sensitivity invariati) funziona ancora, non un
+confronto fra due configurazioni diverse.
+
+5.4 CAVEAT INVARIATI
+
+Ranking congelato, split casa/trasferta non misurato, contaminazione
+domesticLeagueRanking nota, canale avversario DEF non toccato (scartato,
+vedi HANDOFF_risolutivo_produzione), SENSITIVITY_BY_ROLE non toccata
+(esito nullo, vedi HANDOFF_taratura_sensitivity).
+
+
+====================================================================
+6. DECISIONE APERTA — tre righe secche
+====================================================================
+
+(1) Soglie cambiate: NO, nessuna (Parte 2 saltata per tempo, come concesso
+    dal brief).
+(2) I tre strumenti girano: SI' -- scouting (exit 0, report reale scritto,
+    238 candidati con atteso), generatore (exit 0, MLS 3 formazioni/779.5
+    pt), predict/ non toccato oggi quindi nessun nuovo rischio introdotto.
+(3) Divergenza scouting/generatore piu' grave: NESSUNA trovata. L'unico
+    problema reale e' un buco dati pre-esistente su K League In Season
+    (nessun candidato GK), non una divergenza fra i due strumenti.
+
+
+====================================================================
+7. FILE DI RIFERIMENTO
+====================================================================
+
+BRIEF_2026-08-04_allineamento_operativo.txt (Downloads, non nel repo)
+scouting_gw.py               righe 1046/1124/1155/1178/1212/1768 (import gg)
+best_five.py                 righe 857/1186-1215 (_import_gg, _parse_consiglio_calibrato)
+generatore_formazioni/build_formazione_globale.py   righe 376-393 (calibra_riga), 844-868 (_NoFilterPool)
+generatore_formazioni/quality_filter.py             MIN_QUALITY_SCORE, codice morto dal 28/07
+generatore_formazioni/output/generatore_formazioni_2026-08-04_101214.html   run reale di oggi
+generatore_formazioni/output/generatore_formazioni_2026-08-04_101227.html  run reale di oggi (usato per 4.C.3)
