@@ -116,6 +116,26 @@ HALF_LIFE_GAMES = 30.0  # AGGIORNATO (01/08): 20.0 -> 30.0. Rimisurato sul pool 
 # HALF_LIFE_GAMES = 20.0  # AGGIORNATO (29/07): retuning post-fix opponent_lambda_mult/Stadio D/goals_conceded cap, backtest walk-forward su TUTTE le 28 leghe (551 giocatori) -- ginocchio rendimento decrescente a 20 (MAE -0.55% circa vs 9.0), grid esteso fino a 150 senza vero minimo interno (monotono, convergenza asintotica verso nessun decadimento).
 RANGE_MULTIPLIER = 1.1  # AGGIORNATO (30/07, richiesta esplicita utente): centrato sulla copertura reale target ~68% (validate_range_multiplier_coverage.py, 917 giocatori/11004 punti test: 1.2 dava 72.8% di copertura, un po' largo; 1.1 da' 68.7%). Solo cosmetico -- non tocca score_atteso/selezione, cambia solo l'ampiezza del range mostrato.
 OPPONENT_SENSITIVITY = 29.0  # invariato
+# Gamba AVVERSARIO dello Stadio D: SPENTA (04/08). Era True fino al 04/08,
+# cioe' il condizionamento granulare (gol subiti / passaggio / clean sheet) su
+# "avversario forte o debole" entrava nel punteggio dei difensori.
+# PERCHE' SPENTA: peggiorava l'ORDINAMENTO dei difensori. Riverifica
+# indipendente del 04/08 (arm 4), n=25.738 righe e 263 giornate, confermata su
+# GitHub Actions e in locale con numeri identici a 6 decimali dopo la messa in
+# ordine dei glob: correlazione +0.005/+0.006 (IC 95% bootstrap sulle giornate
+# [+0.00186, +0.01055], tutto sopra zero), MAE -0.016/-0.020, lift +1.09/+1.27.
+# Segno identico in tutti e tre gli ambienti misurati.
+# Cosa NON si compra: MAE e lift non sono dimostrati dal bootstrap (i loro IC
+# comprendono lo zero). Si compra un miglioramento piccolo e reale di
+# ordinamento, niente di piu'.
+# SOLO i difensori: sui centrocampisti lo stesso intervento e' misurato nullo
+# (MID n=24.478, tutte e tre le differenze dentro il rumore).
+# Interruttore ESPLICITO, non l'assenza di un dato: omettere gli slug
+# avversario NON spegne niente, fa scattare il fallback su
+# domesticLeagueRanking -- vedi docs/BUG_MISURA_STADIO_D_FALLBACK_RANKING.md.
+# NB: NON e' use_stadio_d=False, che spegne anche il condizionamento
+# casa/trasferta. Quello resta acceso.
+STADIO_D_AVVERSARIO = False
 SPLIT_FACTOR_SCALE_PER_STD = 0.05  # NUOVO (25/07, audit logica): sensibilita' dei fattori granulari, in %/deviazione standard storica del gruppo (sostituisce la vecchia scala fissa 1%/punto) -- non piu' applicato in produzione per DEF (granulari rimossi da score_atteso, vedi sotto), resta per il grid search/diagnostica
 TREND_INTENSITY = 0.0  # AGGIORNATO (29/07): backtest walk-forward su tutte le leghe post-retuning half_life, MAE -1.25% -- applicato SOLO MLS/Korea per richiesta esplicita utente, altre 26 leghe restano a 0.7 (backlog)
 # FISSATO (27/07, tema backlog "outlier/hot-streak" per DEF, dopo il FWD gia'
@@ -1440,6 +1460,14 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
         ]
         next_forte = (target_opp_rank < avg_opp_rank_hist) if (
             target_opp_rank is not None and avg_opp_rank_hist is not None) else None
+
+    if not STADIO_D_AVVERSARIO:
+        # Azzerando le flag, media_condizionata torna il fallback (riga 851-856)
+        # e quindi cond_avv - fallback = 0: si spegne SOLO la gamba avversario,
+        # il condizionamento casa/trasferta resta intatto. NON usare
+        # use_stadio_d=False, che spegne l'intero blocco venue+avversario.
+        opponent_forte_flags = [None] * len(is_home_flags)
+        next_forte = None
 
     def _delta_venue_avversario(values):
         fallback = weighted_mean(values, weights_det)

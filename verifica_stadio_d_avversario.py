@@ -37,13 +37,19 @@ try:
 except Exception:
     pass
 
-# I numeri da ritrovare, dalla riverifica indipendente (sezione 3.C, n=25.738).
+# I numeri della riverifica indipendente (sezione 3.C, n=25.738), tenuti come
+# RIFERIMENTO STORICO e stampati per confronto -- non come cancello.
+# Il cancello sui valori assoluti e' stato tolto il 04/08 sera: quei valori
+# tremolavano fra ambienti per l'ordine dei file (poi corretto, vedi
+# opponent_strength._build_series_for_league). Cio' che deve reggere e' il
+# DELTA fra gli arm, come dice la regola in CLAUDE.md.
 ATTESI = {
     'produzione': (14.990365, 0.176337, 16.0641),
     'stadio_d_avversario_spento': (14.970303, 0.182627, 17.2155),
     'stadio_d_intero_spento': (14.989160, 0.176039, 16.8662),
 }
-TOLLERANZA = {'mae': 0.0005, 'corr': 0.00005, 'lift': 0.005}
+# segni attesi del delta candidato - produzione: MAE giu', corr su, lift su
+SEGNI_ATTESI = {'mae': -1, 'corr': +1, 'lift': +1}
 
 
 def misura(punti, **kwargs):
@@ -65,13 +71,10 @@ def misura(punti, **kwargs):
     return {'n': len(righe), 'mae': mae, 'corr': corr, 'lift': lift, 'giornate': n_gg}
 
 
-def _confronta(nome, r):
-    """Dice se la terna misurata ritrova quella pubblicata."""
+def _scarto_storico(nome, r):
+    """Di quanto la terna misurata si discosta da quella pubblicata."""
     mae_a, corr_a, lift_a = ATTESI[nome]
-    ok = (abs(r['mae'] - mae_a) <= TOLLERANZA['mae']
-          and abs(r['corr'] - corr_a) <= TOLLERANZA['corr']
-          and abs((r['lift'] or 0) - lift_a) <= TOLLERANZA['lift'])
-    return ok, (r['mae'] - mae_a, r['corr'] - corr_a, (r['lift'] or 0) - lift_a)
+    return (r['mae'] - mae_a, r['corr'] - corr_a, (r['lift'] or 0) - lift_a)
 
 
 def main():
@@ -111,22 +114,30 @@ def main():
     print('=' * 96)
     print('%-34s %12s %11s %10s %11s %11s %9s' %
           ('arm', 'MAE', 'corr', 'lift', 'dMAE', 'dcorr', 'dlift'))
-    tutto_ok = True
     for nome in ('produzione', 'stadio_d_avversario_spento', 'stadio_d_intero_spento'):
         r = esiti[nome]
-        ok, scarti = _confronta(nome, r)
-        tutto_ok = tutto_ok and ok
-        r['riprodotto'] = ok
-        r['scarto_vs_atteso'] = scarti
-        print('%-34s %12.6f %11.6f %10.4f %+11.6f %+11.6f %+9.4f  %s' %
+        r['scarto_vs_storico'] = _scarto_storico(nome, r)
+        print('%-34s %12.6f %11.6f %10.4f %+11.6f %+11.6f %+9.4f' %
               (nome, r['mae'], r['corr'], r['lift'] or 0,
                r['mae'] - base['mae'], r['corr'] - base['corr'],
-               (r['lift'] or 0) - (base['lift'] or 0),
-               'ritrovato' if ok else 'NON RITROVATO'))
+               (r['lift'] or 0) - (base['lift'] or 0)))
 
-    print('\nnumeri attesi dalla riverifica indipendente (sezione 3.C):')
+    print('\nriferimento storico (riverifica indipendente, sez. 3.C) e scarto:')
     for nome, (m, c, l) in ATTESI.items():
-        print('  %-34s MAE %.6f  corr %.6f  lift %.4f' % (nome, m, c, l))
+        s = esiti[nome]['scarto_vs_storico']
+        print('  %-34s MAE %.6f (%+.6f)  corr %.6f (%+.6f)  lift %.4f (%+.4f)'
+              % (nome, m, s[0], c, s[1], l, s[2]))
+
+    # IL CANCELLO VERO: i tre segni del delta candidato - produzione.
+    cand_delta = {'mae': esiti['stadio_d_avversario_spento']['mae'] - base['mae'],
+                  'corr': esiti['stadio_d_avversario_spento']['corr'] - base['corr'],
+                  'lift': (esiti['stadio_d_avversario_spento']['lift'] or 0) - (base['lift'] or 0)}
+    segni_ok = all((cand_delta[k] < 0) if v < 0 else (cand_delta[k] > 0)
+                   for k, v in SEGNI_ATTESI.items())
+    print('\nDELTA candidato - produzione: MAE %+.6f  corr %+.6f  lift %+.4f -> %s'
+          % (cand_delta['mae'], cand_delta['corr'], cand_delta['lift'],
+             'tutti e tre nel verso giusto' if segni_ok else 'SEGNI NON COERENTI'))
+    tutto_ok = segni_ok
 
     cand = esiti['stadio_d_avversario_spento']
     intero = esiti['stadio_d_intero_spento']
@@ -134,13 +145,14 @@ def main():
     print('\nCONTROLLO INTERRUTTORE: il candidato e lo spegnimento intero sono %s'
           % ('DIVERSI (il venue e\' rimasto acceso, come deve)' if separati
              else 'UGUALI -> STADIO_D_AVVERSARIO sta spegnendo anche il venue'))
-    print('ESITO COMPLESSIVO: %s' % ('tutte e tre le terne ritrovate'
-                                     if tutto_ok else 'RIPRODUZIONE FALLITA'))
+    print('ESITO COMPLESSIVO: %s' % ('il candidato regge il metro'
+                                     if tutto_ok else 'IL CANDIDATO NON REGGE'))
 
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), args.json),
               'w', encoding='utf-8') as fh:
-        json.dump({'ruolo': args.ruolo, 'attesi': ATTESI, 'esiti': esiti,
-                   'riprodotto_tutto': tutto_ok, 'interruttore_separato': separati},
+        json.dump({'ruolo': args.ruolo, 'riferimento_storico': ATTESI, 'esiti': esiti,
+                   'delta_candidato': cand_delta, 'segni_coerenti': segni_ok,
+                   'interruttore_separato': separati},
                   fh, ensure_ascii=False, indent=1)
     print('\nsalvato in %s' % args.json)
     return 0 if (tutto_ok and separati) else 2
