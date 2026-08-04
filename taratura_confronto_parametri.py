@@ -89,12 +89,13 @@ def lift_selezione(righe, quanti=5, prove=200, seme=3):
     return (statistics.mean(quote) * 100 if quote else None), len(quote)
 
 
-def valuta(punti, hl, ti, favorito_k=None):
+def valuta(punti, hl, ti, favorito_k=None, ranking_k=None, casa_k=None):
     righe = []
     for ruolo, slug, data, ctx, reale in punti:
         try:
             p = prev.calcola(ctx, half_life=hl, trend_intensity=ti,
-                             favorito_k=favorito_k)
+                             favorito_k=favorito_k, ranking_k=ranking_k,
+                             casa_k=casa_k)
         except Exception:
             continue
         righe.append((ruolo, slug, data, p, reale))
@@ -110,27 +111,58 @@ def valuta(punti, hl, ti, favorito_k=None):
             'bias': my - mx, 'lift': lift, 'giornate': n_gg, 'n': len(righe)}
 
 
-def griglia_favorito(breve, punti, prod, spec):
+CORREZIONI = {
+    'favorito': ('CONTESTO PARTITA (k punti per gol di differenziale atteso)',
+                 'favorito_k'),
+    # stessa forma, variabile diversa: il ranking grezzo dell'avversario come
+    # scarto dalla media di quelli gia' affrontati. Sul pool grande batte il
+    # differenziale di gol attesi (corr +0.074 contro +0.057) e in regressione
+    # congiunta lo assorbe del tutto -- vedi docs/handoff del 04/08.
+    'ranking': ('CONTESTO PARTITA (k punti per posizione di classifica)',
+                'ranking_k'),
+    # secondo termine casa/trasferta SOPRA lo split che il modello applica
+    # gia': serve a misurare quanto e' rimasto fuori da quello split, non a
+    # essere applicato cosi'. Vedi delta_casa in backtest_arene_previsioni.
+    'casa': ('CASA/TRASFERTA residuo (k punti per quota di partite in casa)',
+             'casa_k'),
+}
+
+
+def griglia_favorito(breve, punti, prod, spec, quale='favorito', fissi=None):
     """La correzione di contesto partita, giudicata sullo stesso metro.
 
     Tiene half_life/trend di produzione e muove solo k: cosi' l'unica cosa che
     cambia fra le righe e' la correzione, e il confronto e' pulito. La riga
-    k=0 e' il modello di oggi."""
+    k=0 e' il modello di oggi.
+
+    `quale` sceglie la variabile su cui e' costruita la correzione
+    (vedi CORREZIONI): la griglia, il campione e il metro restano gli stessi,
+    cosi' le varianti si confrontano ad armi pari.
+
+    `fissi` tiene accese altre correzioni mentre la griglia muove questa: e' il
+    modo di chiedere "quanto aggiunge la seconda ALLA prima", non "quanto vale
+    da sola"."""
+    titolo, chiave = CORREZIONI[quale]
+    fissi = dict(fissi or {})
     ks = [float(x) for x in spec.split(',') if x.strip()]
     if 0.0 not in ks:
         ks.insert(0, 0.0)
     hl, ti = prod
     print('=' * 96)
-    print('%s -- %d punti | CONTESTO PARTITA (k punti per gol di differenziale atteso)' %
-          (breve.upper(), len(punti)))
+    print('%s -- %d punti | %s' % (breve.upper(), len(punti), titolo))
+    if fissi:
+        print('sopra: ' + ', '.join('%s=%g' % kv for kv in sorted(fissi.items())))
     print('half_life=%s trend=%s tenuti a produzione' % (hl, ti))
     print('=' * 96)
     print('%-16s %8s %8s %9s %8s %8s %7s' %
           ('k', 'MAE', 'corr', 'sd prev', 'sd real', 'bias', 'lift%'))
     risultati = []
     for k in ks:
-        r = valuta(punti, hl, ti, favorito_k=k)
+        r = valuta(punti, hl, ti, **dict(fissi, **{chiave: k}))
         r['favorito_k'] = k
+        r['correzione'] = quale
+        if fissi:
+            r['fissi'] = fissi
         r['produzione'] = (k == 0.0)
         risultati.append(r)
         print('%-16s %8.3f %8.3f %9.2f %8.2f %+8.2f %7s%s' %
@@ -158,6 +190,16 @@ def main():
                     help='griglia di k per la correzione di contesto partita, '
                          'es. 0,1,2,4 (punti per gol di differenziale atteso). '
                          'Tiene half_life/trend di produzione e muove solo k.')
+    ap.add_argument('--ranking', default='',
+                    help='come --favorito ma sul ranking grezzo dell avversario '
+                         '(punti per posizione di classifica), es. 0,0.1,0.2,0.5')
+    ap.add_argument('--casa', default='',
+                    help='griglia di k per un secondo termine casa/trasferta SOPRA '
+                         'lo split gia applicato dal modello: misura quanto lo split '
+                         'esistente lascia fuori')
+    ap.add_argument('--con-ranking', default='', dest='con_ranking',
+                    help='tiene acceso il ranking mentre la griglia --casa si muove, '
+                         'per ruolo: es. fwd:0.3,mid:0.05,def:0.3,gk:0.5')
     ap.add_argument('--max', type=int, default=0)
     ap.add_argument('--json', default='dati_globali/taratura_confronto_parametri.json')
     args = ap.parse_args()
@@ -177,8 +219,18 @@ def main():
             continue
         modulo = sotto[0][3]['modulo']
         prod = (modulo.HALF_LIFE_GAMES, getattr(modulo, 'TREND_INTENSITY', 0.0))
-        if args.favorito:
-            esiti[b] = griglia_favorito(b, sotto, prod, args.favorito)
+        if args.favorito or args.ranking or args.casa:
+            esiti[b] = []
+            if args.ranking:
+                esiti[b] += griglia_favorito(b, sotto, prod, args.ranking, 'ranking')
+            if args.favorito:
+                esiti[b] += griglia_favorito(b, sotto, prod, args.favorito, 'favorito')
+            if args.casa:
+                fissi = {}
+                for pezzo in args.con_ranking.split(','):
+                    if ':' in pezzo and pezzo.split(':')[0].strip() == b:
+                        fissi['ranking_k'] = float(pezzo.split(':')[1])
+                esiti[b] += griglia_favorito(b, sotto, prod, args.casa, 'casa', fissi)
             continue
         if args.candidati:
             cand = [tuple(float(x) for x in c.split(':')) for c in args.candidati.split(',')]

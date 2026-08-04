@@ -36,6 +36,33 @@ Riguardano SOLO come mi rapporto all'utente. Nessuna istruzione operativa sui to
 ## Regola parametri del modello
 - Un parametro si giudica su **MAE + correlazione previsto/realizzato + lift di selezione INSIEME** (`taratura_confronto_parametri.py`). Si applica solo se si muovono tutte e tre nello stesso verso. Il MAE da solo premia i modelli che non ordinano niente.
 
+## Sincronizzazione fra sessioni e fra account
+
+L'utente lavora con piu' account e piu' sessioni sullo stesso repo. Il repo e'
+l'unico canale di memoria condivisa fra loro.
+
+- All'INIZIO di ogni sessione: `git pull`, poi leggo i file in `docs/handoff/`
+  con data piu' recente e il CONTEXT piu' aggiornato. Non chiedo all'utente di
+  raccontarmi cosa e' stato fatto: sta nel repo.
+- Alla FINE di ogni sessione: scrivo l'handoff, committo TUTTO (handoff
+  incluso) e faccio `git push`. Un lavoro non pushato non esiste per le altre
+  sessioni.
+- Se trovo commit locali non pushati fatti da altre sessioni, lo segnalo
+  all'utente prima di pushare, elencandoli.
+- Se il mio lavoro tocca file che un'altra sessione sta usando, lavoro su un
+  branch dedicato e lo dico nell'handoff.
+
+## Come rispondere all'utente
+
+L'utente paga a token e non vuole leggere prosa lunga in chat.
+
+- In chat scrivo il minimo: cosa sto per fare, cosa ho fatto, il percorso del
+  file prodotto, e le domande che mi bloccano.
+- Tutto il resto — analisi, tabelle, ragionamenti, risultati, dubbi — va nei
+  file di `docs/handoff/`, non nel messaggio di chat.
+- Non ripeto in chat quello che ho gia' scritto nel file.
+- Se devo fare una domanda, la faccio secca e con le opzioni gia' elencate.
+
 ## Handoff di fine sessione (automatico)
 
 Quando una sessione di lavoro si chiude — cioe' quando ho committato, oppure

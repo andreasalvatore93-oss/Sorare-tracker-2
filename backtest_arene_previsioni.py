@@ -383,24 +383,98 @@ def delta_favorito(ctx):
     return ora - (sum(storici) / len(storici))
 
 
+def delta_ranking(ctx):
+    """Quanto l'avversario di QUESTA partita e' piu' debole del solito, in
+    posizioni di classifica.
+
+    Stessa forma di `delta_favorito` (scarto dalla media degli avversari gia'
+    affrontati, mai il livello assoluto: quello sta gia' dentro lo storico dei
+    punteggi e sommarlo sarebbe doppio conteggio) ma con la variabile che sul
+    pool grande batte il Poisson: 74.515 coppie, ranking grezzo corr +0.074
+    contro +0.057 del differenziale di gol attesi, e in regressione congiunta
+    il lambda non aggiunge piu' niente (IC [-0.300, +0.565], R2 +0.001%)
+    mentre il ranking tiene (+0.236, IC [+0.203, +0.275]).
+
+    Ranking ALTO = squadra messa peggio in classifica, quindi delta positivo
+    = avversario piu' debole del solito = k positivo alza la previsione.
+
+    Il taglio temporale e' automatico: `s['opp_rank']` contiene solo le
+    partite precedenti al cutoff, e il ranking e' quello del blocco anyGame di
+    allora, non quello di oggi.
+
+    ATTENZIONE, doppio conteggio possibile: GK/DEF/MID applicano gia' un
+    fattore MOLTIPLICATIVO sulla stessa idea (fattore_forza_avversario, delta
+    di ranking rispetto alla media storica diviso OPPONENT_SENSITIVITY=29,
+    limitato a 0.5-1.5). Il FWD no. Il residuo dentro-giocatore correla ancora
+    +0.074 col ranking DOPO quel fattore, quindi o e' sotto-tarato o non basta,
+    ma un k additivo si somma a quello che c'e' gia'."""
+    ora = ctx.get('opp_rank')
+    if ora is None:
+        return None
+    storici = [r for r in (ctx['s'].get('opp_rank') or []) if r is not None]
+    if len(storici) < 5:
+        return None
+    return float(ora) - sum(storici) / len(storici)
+
+
+def delta_casa(ctx):
+    """Casa/trasferta come scarto dalla quota di partite in casa gia' giocate.
+
+    PERCHE' ESISTE, visto che il modello uno split casa/trasferta ce l'ha gia'
+    (compute_split_factor): sul pool grande il residuo dentro-giocatore correla
+    ancora +0.056 col flag grezzo DOPO quello split, e in regressione congiunta
+    col ranking il fattore campo NON viene assorbito (+1.868 punti,
+    IC [+1.423, +2.265], R2 +0.208%). Questo termine misura quanto e' rimasto
+    sul tavolo: e' un TETTO, non la correzione giusta.
+
+    LA CORREZIONE GIUSTA sarebbe ritarare lo split che c'e' gia' (SPLIT_SHRINK_K,
+    alzato 5->20 il 30/07) invece di sommarne un secondo sulla stessa cosa. Non
+    e' stato possibile qui: quella costante e' una variabile LOCALE dentro
+    compute_split_factor, non si puo' ne' passare ne' sostituire da fuori, e
+    toccare formazione_mls/predict/* era escluso in questa sessione."""
+    casa = ctx.get('casa')
+    if casa is None:
+        return None
+    storici = [c for c in (ctx['s'].get('is_home') or []) if c is not None]
+    if len(storici) < 5:
+        return None
+    return (1.0 if casa else 0.0) - sum(1.0 for c in storici if c) / len(storici)
+
+
 def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None,
-            usa_avversario=False, favorito_k=None):
+            usa_avversario=False, favorito_k=None, ranking_k=None, casa_k=None):
     """La previsione di produzione dagli ingressi di `contesto`.
 
     half_life/trend_intensity servono SOLO alla taratura: lasciati a None si
     usano le costanti di produzione del modulo, cioe' il comportamento
     invariato. `favorito_k` (punti per gol di differenziale) accende la
-    correzione di contesto partita: 0 o None la lascia spenta."""
+    correzione di contesto partita: 0 o None la lascia spenta.
+    `ranking_k` (punti per posizione di classifica) accende la stessa
+    correzione presa dal ranking grezzo invece che dal Poisson -- sono
+    alternative, si tarano una alla volta."""
     base = _calcola_base(ctx, half_life, trend_intensity, shrink_k, usa_avversario)
     if isinstance(favorito_k, dict):
         # il portiere ha gia' questo segnale per un'altra strada (il blend
         # P(porta inviolata) di squadra, GK_TEAM_CS_WEIGHT, stesso
         # modello_partita): sommarglielo di nuovo peggiora tutto, misurato.
         favorito_k = favorito_k.get(ctx['ruolo'], 0.0)
-    if not favorito_k:
-        return base
-    delta = delta_favorito(ctx)
-    return base if delta is None else base + favorito_k * delta
+    if isinstance(ranking_k, dict):
+        ranking_k = ranking_k.get(ctx['ruolo'], 0.0)
+    if favorito_k:
+        delta = delta_favorito(ctx)
+        if delta is not None:
+            base = base + favorito_k * delta
+    if ranking_k:
+        delta = delta_ranking(ctx)
+        if delta is not None:
+            base = base + ranking_k * delta
+    if isinstance(casa_k, dict):
+        casa_k = casa_k.get(ctx['ruolo'], 0.0)
+    if casa_k:
+        delta = delta_casa(ctx)
+        if delta is not None:
+            base = base + casa_k * delta
+    return base
 
 
 def _calcola_base(ctx, half_life=None, trend_intensity=None, shrink_k=None,
@@ -505,7 +579,7 @@ def calcola_con_maschera(ctx, half_life=None, trend_intensity=None):
 
 
 def score_atteso(cache, slug, ruolo, fine_giornata, cutoff_giornata=None,
-                 favorito_k=None):
+                 favorito_k=None, ranking_k=None):
     """Il punteggio atteso di produzione per quella giornata, o None.
 
     Ritorna un dizionario con previsione, L10 al momento della scelta e la
@@ -515,7 +589,7 @@ def score_atteso(cache, slug, ruolo, fine_giornata, cutoff_giornata=None,
     if ctx is None:
         return None
     s, casa, cutoff, squadra = ctx['s'], ctx['casa'], ctx['cutoff'], ctx['squadra']
-    atteso = calcola(ctx, favorito_k=favorito_k)
+    atteso = calcola(ctx, favorito_k=favorito_k, ranking_k=ranking_k)
 
     # L10 al momento della scelta: la stessa misura che Sorare usa per il cap
     # delle arene (media degli ultimi 10 punteggi validi prima della giornata).
