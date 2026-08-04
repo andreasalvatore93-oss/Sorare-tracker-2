@@ -383,11 +383,32 @@ odds da solo (troppo aleatorio) e "più dati stesse feature" (il tetto è
   predetti. Confronto NAIVE: pari selezione, lui piu' rischio-disponibilita'
   (odds 0.74 vs 0.84). Realizzato in sospeso finche' GW2 non gioca.
 
-### Prossimo passo concreto (al ritorno)
-1. Verificare esito run 47 (quanti cachati, quanti strutturalmente esclusi).
-2. **Misura residuo smart-money GW1**: walk-forward as-of pre-GW1 sui pick dei
-  manager (atteso) vs `punteggio` realizzato nelle loro carte. E' un calcolo
-  LOCALE a costo zero sulla cache appena riempita. ≠0 → scala; ~0 → STOP.
+### VERDETTO GW1 (04/08 sera) — nessun segnale smart-money in aggregato
+Misura walk-forward pulita su **290 pick** (8 manager attivi, cache rinfrescata
+force a GW1): **residuo medio −1.35, a giocatore unico −0.00**. Corr atteso/reale
++0.23, compressione 4.2x. Il modello **cattura già** i loro pick, non li
+battono. Correlazioni residuo↔(atteso/L10/storico) tutte ~0 → il residuo è alea,
+conferma la piattezza §5 anche qui. Strutture da seguire su più GW: GK bias −5.7
+/ FWD −4.1 (il modello li **sovrastima** — problema modello), capitani con
+residuo +4.6 vs non-capitani −1.7 (i loro capitani sovraperformano), corr
+atteso-somma↔rank arena debole (~0/−0.26 a seconda del filtro). NON si chiude il
+filone: una GW sola, il valore è nell'ACCUMULO.
+
+### Casa del filone: `analisi_manager/` (vedi CLAUDE.md)
+Metodologia + `analizza_gw.py` (script unico, riusa `score_atteso` walk-forward)
++ dataset/report PER-GW in `dati/` + `INDICE.md` che accumula i verdetti. Dati
+sempre distinti per GW (slug fixture nel nome). Strumenti a monte già pronti e
+su GitHub: `ricostruisci_manager` (estrae arene), `predici_manager.yml`
+(refresh/predict cache, flag `force` per appendere la GW nuova ai gamelog).
+
+### Prossimo passo concreto
+1. **Accumulare GW a ritroso** sugli stessi 12 manager (GW95/94/93 =
+  football-28-31-jul / 24-28-jul / 21-24-jul-2026): estrai arene, refresh
+  gamelog, `analizza_gw.py --gw <slug> --fine <data>`. Cercare segni STABILI.
+2. Se un manager mostra residuo positivo persistente su GW indipendenti (asse F)
+  → è lo sharp vero, pesare i suoi pick.
+3. **forever-young**: la GW2 (football-4-7-aug-2026) ora è iniziata; quando
+  chiude, misurare il realizzato (primo test smart-money su mazzo simile).
 
 ### Piste secondarie (non urgenti)
 - **Tabelle premi** delle competizioni a classifica grande (All Star, Limited,

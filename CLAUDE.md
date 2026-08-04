@@ -205,3 +205,22 @@ strumenti insieme, mai separatamente (vedi regola sopra).
 - Gli altri file storici (`RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md`,
   `RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `HANDOFF_BEST_FIVE.md`) restano
   come archivio, non piu' da consultare o aggiornare.
+
+## Filone smart-money / analisi manager: cartella unica
+
+Tutto il filone "i pick dei manager battono il nostro atteso?" (analisi delle
+formazioni-arena di manager reali su GW chiuse) ha UNA home in repo:
+`analisi_manager/`. Contiene la metodologia (`METODOLOGIA.md`), lo script unico
+di analisi (`analizza_gw.py`), i dataset e report PER-GW in `dati/`
+(`righe_<gw>.json`, `formazioni_<gw>.json`, `report_<gw>.md`) e `INDICE.md` che
+accumula un verdetto per GW.
+
+Regole:
+- I dati si ACCUMULANO e vanno SEMPRE distinti per GW (slug fixture nel nome,
+  es. `football-31-jul-4-aug-2026`): così, aggiungendo altri manager, basta
+  targettare le stesse GW per confronti puliti.
+- I dati grezzi dei manager restano dove li scrive `ricostruisci_manager`
+  (`dati_globali/manager_*.json`, versionati).
+- Le run pesanti (estrazione arene + refresh cache game-log + predizione) vanno
+  su GitHub (`predici_manager.yml`), non in locale.
+- Il verdetto vale solo se il segno è STABILE su più GW (regola del delta).
