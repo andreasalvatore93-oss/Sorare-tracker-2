@@ -41,6 +41,9 @@ jobs:
           ref: ${{ inputs.ref }}
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
+      # i moduli predict/ importano requests al caricamento, anche se qui
+      # nessuna misura fa chiamate di rete
+      - run: pip install requests curl_cffi
       - name: Riproduzione dei tre arm dello Stadio D
         if: inputs.misura == 'stadio_d'
         env:
