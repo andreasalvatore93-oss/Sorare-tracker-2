@@ -35,18 +35,77 @@ _TREND_OLD_DAYS = float(os.environ.get('CERBERO_TREND_OLD_DAYS', '3'))
 # tutto il mercato) viene registrato qui: prezzo visto, sconto vs media recente, lega,
 # trend, ora. cerbero_learn.py ci associa poi il prezzo REALE nelle ore successive e
 # impara le soglie per campionato. E' il "vede a 1EUR, un'ora dopo transazione a 2EUR".
+#
+# 04/08: aggiunte le colonne dell'ASSE TRASVERSALE (prezzo_secondo_eur,
+# margine_trasversale_pct). Era il limite #1 dichiarato del progetto: lo spread
+# 1o/2o prezzo live non vive nelle transazioni storiche, quindi non era mai stato
+# validato da nessun backtest. Il bot lo calcola gia' per decidere (margin_percent),
+# costava zero registrarlo: ora il risolutore forward a 48h puo' misurare anche se
+# QUELLO predice il profitto, non solo lo sconto temporale.
+# Aggiunta anche scarto_thin_market: vedi la nota al punto di chiamata (le carte
+# scartate per mercato sottile sono dati gia' pagati con una query, prima venivano
+# cestinati senza registrarli).
+#
+# Le righe scritte prima del 04/08 hanno 11 campi invece di 14: cerbero_learn.py
+# legge con csv.DictReader, che riempie a None le colonne mancanti -- nessuna
+# migrazione necessaria, le vecchie osservazioni restano valide sull'asse temporale.
 import csv as _csv
+import io
 CERBERO_OSSERVAZIONI_PATH = os.environ.get('CERBERO_OSSERVAZIONI_PATH', 'cerbero_osservazioni.csv')
 _oss_lock = threading.Lock()
 _OSS_HEADER = ['ts_utc', 'league_slug', 'player_slug', 'card_slug', 'prezzo_min_eur',
                'media_recente_eur', 'sconto_temporale_pct', 'trend', 'rendimento_atteso_pct',
-               'guadagno_atteso_eur', 'gate_passa']
+               'guadagno_atteso_eur', 'gate_passa',
+               'prezzo_secondo_eur', 'margine_trasversale_pct', 'scarto_thin_market']
+
+
+_intestazione_verificata = False
+
+
+def _aggiorna_intestazione_osservazioni():
+    """Riscrive la sola riga di intestazione se il file e' di uno schema precedente.
+
+    Il file gia' raccolto ha l'intestazione a 11 colonne: appendendoci righe a 14
+    campi, csv.DictReader (usato da cerbero_learn.py) ficcherebbe i valori nuovi in
+    un restkey senza nome e le colonne aggiunte sarebbero illeggibili. Qui si
+    riallinea la sola prima riga -- le righe dati vecchie restano corte e DictReader
+    le completa a None, che e' esattamente il significato giusto ("questa
+    osservazione non ha l'asse trasversale"). Si esegue una volta per processo,
+    dentro _oss_lock.
+    """
+    global _intestazione_verificata
+    if _intestazione_verificata:
+        return
+    _intestazione_verificata = True
+    try:
+        if not os.path.exists(CERBERO_OSSERVAZIONI_PATH):
+            return
+        with open(CERBERO_OSSERVAZIONI_PATH, 'r', newline='', encoding='utf-8') as f:
+            righe = f.readlines()
+        if not righe:
+            return
+        attuale = next(_csv.reader([righe[0]]), [])
+        if attuale == _OSS_HEADER:
+            return
+        buf = io.StringIO()
+        _csv.writer(buf, lineterminator='\n').writerow(_OSS_HEADER)
+        righe[0] = buf.getvalue()
+        tmp = CERBERO_OSSERVAZIONI_PATH + '.tmp'
+        with open(tmp, 'w', newline='', encoding='utf-8') as f:
+            f.writelines(righe)
+        os.replace(tmp, CERBERO_OSSERVAZIONI_PATH)
+        log(f"[osservazioni] intestazione aggiornata allo schema a "
+            f"{len(_OSS_HEADER)} colonne (le righe precedenti restano valide).")
+    except Exception:
+        pass  # mai far fallire una valutazione per l'intestazione
 
 
 def _log_osservazione(league_slug, player_slug, card_slug, prezzo, media_recente,
-                       sconto, trend, rend_atteso, gain_atteso, passa):
+                       sconto, trend, rend_atteso, gain_atteso, passa,
+                       prezzo_secondo=None, margine_pct=None, thin_market=False):
     try:
         with _oss_lock:
+            _aggiorna_intestazione_osservazioni()
             nuovo = not os.path.exists(CERBERO_OSSERVAZIONI_PATH)
             with open(CERBERO_OSSERVAZIONI_PATH, 'a', newline='', encoding='utf-8') as f:
                 w = _csv.writer(f)
@@ -61,6 +120,9 @@ def _log_osservazione(league_slug, player_slug, card_slug, prezzo, media_recente
                     trend or '', round(rend_atteso, 2) if rend_atteso is not None else '',
                     round(gain_atteso, 4) if gain_atteso is not None else '',
                     '1' if passa else '0',
+                    round(prezzo_secondo, 4) if prezzo_secondo is not None else '',
+                    round(margine_pct, 2) if margine_pct is not None else '',
+                    '1' if thin_market else '0',
                 ])
     except Exception:
         pass  # il logging osservazioni non deve mai far fallire una valutazione
@@ -3591,8 +3653,27 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     _media_full_temp, _media_rec1d_temp, _media_old_temp = _medie_temporali_da_nodi(
         _tx_nodes, is_in_season, league_slug, eth_rate)
     _t_liquidita = time.monotonic()
+
+    # [CERBERO] APPRENDIMENTO: gate + registrazione osservazione PRIMA di qualunque
+    # scarto (04/08). Prima il log stava dopo il filtro thin market, che fa
+    # `return False`: quelle carte avevano gia' pagato la query delle transazioni e
+    # avevano gia' media recente e sconto calcolati qui sopra, ma venivano cestinate
+    # senza registrarle. Sono dati gratis per l'apprendimento (colonna
+    # scarto_thin_market: il risolutore puo' tenerle o escluderle a seconda che
+    # "mercato sottile" risulti predittivo o no). Il gate serve solo a calcolare i
+    # valori registrati, la decisione vera resta piu' sotto, invariata.
+    _trend_temp = classifica_trend(_media_rec1d_temp, _media_old_temp)
+    _gate = gate_temporale(true_min_price, _media_full_temp, _trend_temp, league_slug=league_slug)
+    _thin_market = (not AGGRESSIVE_MODE and count_7d is not None
+                    and count_7d < MIN_RECENT_TRANSACTIONS)
+    _log_osservazione(league_slug, player_slug, card_slug, true_min_price, _media_full_temp,
+                       _gate.get('sconto_temporale'), _trend_temp, _gate.get('rendimento_atteso_pct'),
+                       _gate.get('guadagno_atteso_eur'), _gate['passa'],
+                       prezzo_secondo=second_min_price, margine_pct=margin_percent * 100.0,
+                       thin_market=_thin_market)
+
     # MODALITA' AGGRESSIVA: filtro transazioni minime (thin market) disattivato quando attiva.
-    if not AGGRESSIVE_MODE and count_7d is not None and count_7d < MIN_RECENT_TRANSACTIONS:
+    if _thin_market:
         log(f"{player_name}: scarto -- solo {count_7d} transazioni negli ultimi "
             f"{RECENT_TRANSACTIONS_WINDOW_DAYS} giorni (minimo richiesto "
             f"{MIN_RECENT_TRANSACTIONS}), mercato troppo sottile")
@@ -3610,14 +3691,8 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
     # il trend non in caduta, e il guadagno assoluto atteso deve valere il flip.
     # Calibrato sul backtest 03/08 (vedi motore_affare.py). Zero query extra: usa i nodi
     # transazione gia' scaricati.
-    _trend_temp = classifica_trend(_media_rec1d_temp, _media_old_temp)
-    _gate = gate_temporale(true_min_price, _media_full_temp, _trend_temp, league_slug=league_slug)
-    # [CERBERO] APPRENDIMENTO: registra l'osservazione (carta vista ORA a questo prezzo,
-    # con sconto/lega/trend) -- serve a cerbero_learn.py per misurare, dai dati veri di
-    # TUTTO il mercato, cosa succede al prezzo dopo e imparare le soglie per campionato.
-    _log_osservazione(league_slug, player_slug, card_slug, true_min_price, _media_full_temp,
-                       _gate.get('sconto_temporale'), _trend_temp, _gate.get('rendimento_atteso_pct'),
-                       _gate.get('guadagno_atteso_eur'), _gate['passa'])
+    # Il gate e' gia' stato calcolato (e l'osservazione registrata) sopra, prima del
+    # filtro thin market: qui resta solo la decisione.
     if not _gate['passa']:
         log(f"{player_name}: scarto -- GATE TEMPORALE non passato ({_gate['motivo']})")
         return False
