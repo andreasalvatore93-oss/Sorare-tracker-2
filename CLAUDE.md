@@ -149,3 +149,23 @@ Scouting e generatore formazioni devono restare coerenti: ogni modifica alla
 previsione, alla calibrazione o alle soglie va verificata su ENTRAMBI. Il
 generatore ottimizza il mazzo esistente, lo scouting decide come cresce: se
 divergono, si comprano carte che non si schierano.
+
+## Riassunto unico per modello predittivo e scouting
+
+Per il tema "modello predittivo" (= generatore formazioni, stessa cosa con
+nomi diversi) e per il tema "scouting acquisti" esiste UN SOLO riassunto di
+riferimento: `docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md`. Tratta i due
+strumenti insieme, mai separatamente (vedi regola sopra).
+
+- Non crearne altri per questi due temi: niente nuovi
+  `RIASSUNTO_EVOLUZIONE_*`/`HANDOFF_BEST_FIVE`/handoff sparsi in `docs/` o
+  `docs/handoff/` che li riguardino.
+- Ad ogni sessione che tocca uno dei due strumenti, aggiornare QUESTO file:
+  aggiungere cosa e' cambiato, chiudere/aprire filoni, tenere lo stato
+  dell'arte vero. Non accumulare in coda: quando una sezione supera la sua
+  utilita' (filone chiuso, dato superato), riscriverla snella invece di
+  lasciarla accanto alla versione nuova.
+  Obiettivo: restare digeribile, leggibile per intero a inizio sessione.
+- Gli altri file storici (`RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md`,
+  `RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `HANDOFF_BEST_FIVE.md`) restano
+  come archivio, non piu' da consultare o aggiornare.
