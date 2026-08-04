@@ -11,8 +11,9 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 05/08/2026, ore 01:00 (Roma, CEST)**.
-Sessione attuale = filone "smart money" (vedi §7). Regola di stile: questo
+Ultimo aggiornamento: **sessione 05/08/2026, ore 02:10 (Roma, CEST)**.
+Sessione attuale: chiusa la domanda "smart money", si apre l'esplorazione dei
+**pattern delle arene** su 435 arene reali (vedi §7). Regola di stile: questo
 file resta SNELLO (max ~4 pagine) e ogni aggiornamento riporta sessione,
 giorno e ora nel fuso di Roma.
 
@@ -320,85 +321,62 @@ riprende il filone backtest.
 del modello in denaro: **l'unica leva rimasta è la PRECISIONE della
 previsione**, non le regole di decisione (tutte misurate e chiuse, §5).
 
-## 7. Da dove ripartire — SESSIONE ATTIVA: "smart money"
+## 7. Da dove ripartire — DIREZIONE VOLUTA DALL'UTENTE: pattern delle arene
 
-### Deliverable e metodo
-Domanda: **i pick dei bravi manager battono il nostro `atteso`?** SÌ → feature
-nuova + edge. NO → il modello è il tetto anche contro gli umani → si chiude.
-Metodo: campione non-bias = **12 slug** (`eoghankelly, badamt, milkyfresht,
-lairdinho, bxl-spartak, spillo678, braddersfc, bryanmid, shirimimi, matangel716,
-fins49, ninoshooter`) **+ qtn** (`qtn-d8cd72ac-...`). **satonio FUORI dal
-campione** (whale, solo per gonfiare la cache). Solo **arene LIMITED** (rare e
-`arena_altro` escluse: mint diverso, inaffidabili). Per ogni GW chiusa: estrai
-arene → `atteso` in **walk-forward as-of pre-GW** (`backtest_arene_previsioni.
-score_atteso`) → **residuo = realizzato − atteso** (realizzato = `punteggio`
-grezzo, tolto capitano +20%). Dati **sempre distinti per GW** (slug nel nome).
+### >>> LEGGERE PRIMA DI TUTTO — indirizzo dell'utente (05/08, esplicito)
+L'utente vuole **esplorare i PATTERN DELLE ARENE**, non chiudere. Abbiamo un
+dataset grande e poco sfruttato (**435 arene reali con l'esito di OGNI carta**,
+`analisi_manager/dati/formazioni_*.json` + `righe_*.json`, 8 GW). La domanda
+smart-money ("i manager battono l'atteso?") è finita — risposta NO — ma quei
+dati servono a domande diverse e più utili. **Si può scavare, e va scavato.**
+
+Nota di autocritica per la prossima sessione: in questa sessione l'assistente
+ha spinto per CHIUDERE invece di scavare, ha risposto con bias/σ/correlazioni
+al posto di numeri concreti che l'utente potesse usare, ed è stato poco
+collaborativo. L'utente ha ragione: **i dati ci sono, l'impegno mancava.** La
+consegna è generare numeri OPERATIVI (economia, soglie, cosa serve per
+vincere), non ripetere che "il modello è al tetto".
+
+### Cosa ESPLORARE nelle 435 arene (agganci concreti già trovati)
+- **Economia per tipo arena** (10 manager, 8 GW): ROI totale −25%. Solo
+  **Cap 220 in attivo (+11.7%)**; Cap 260 −26%, Uncapped −24.5%, Elite −33%
+  (e costa 800/ingresso), Beginner −20.5%. → capire QUALE arena conviene
+  giocare col nostro mazzo, non col loro.
+- **Cosa serve per vincere** (punteggio formazione, cap. incluso): media 261,
+  podio ≈294, vittoria ≈352. Scalino 3°→4° solo 12 pt: podio su margini
+  stretti. Una carta ≥75 ("boom") capita nel 13.9% dei pick.
+- **I boom decidono**: 0 carte ≥75 → podio 7.7%; 1 → 36%; 2 → 68%; 3 → 100%.
+  Un flop (<25) uccide: 0 flop → podio 37%, 2 flop → 0%. → la leva è
+  massimizzare P(almeno una carta esplode), non alzare la media.
+- **Il modello ordina i boom**: quintile-alto di atteso 26% boom vs 11%
+  quintile-basso; dentro la stessa formazione la carta #1-atteso fa boom 21%
+  vs 8% della #5. MA `corr(atteso_somma, rank arena) = −0.02` ≈ zero: **il
+  totale-atteso NON predice il piazzamento** (mentre `corr(reale_somma,rank)=
+  −0.83`). Domanda aperta: serve un indice "P(boom nella formazione)" al posto
+  del totale-atteso per decidere in quale arena entrare?
 
 ### Infrastruttura — cartella `analisi_manager/`
-- `METODOLOGIA.md` (assi A–I), `analizza_gw.py` (`--gw <slug> --fine <data>` →
-  `dati/righe_/formazioni_/report_<gw>` + `INDICE.md`), `aggrega.py` (pool +
-  persistenza/edge per manager → `AGGREGATO.md`), `pipeline_manager.py` (tutto in
-  una run GitHub: estrai→cacha→analizza→aggrega, scrive `dati/copertura_cache.json`),
-  `censimento_cache.py` (gamelog per lega, stana le inerti).
-- Root: `predici_manager_batch.py` (cacha, `--force` per appendere GW nuova),
-  `ricostruisci_manager.py` (estrae arene, esclude rare+altro). Workflow:
-  `analisi_manager.yml` (pipeline), `predici_manager.yml` (solo cache).
-- Whitelist manager e `ARENE_AMMESSE` in `analizza_gw.py`; leghe in
-  `discovery_fixture.LEAGUE_DIR`. Cache condivisa con generatore/scouting.
+- `analizza_gw.py` (`--gw <slug> --fine <data>` → `dati/righe_/formazioni_/
+  report_<gw>` + `INDICE.md`), `aggrega.py` (pool/edge → `AGGREGATO.md`),
+  `pipeline_manager.py` (run GitHub: estrai→cacha→analizza→aggrega),
+  `censimento_cache.py` (gamelog per lega). `METODOLOGIA.md` (assi A–I).
+- Root: `predici_manager_batch.py` (cacha, `--force`), `ricostruisci_manager.py`
+  (estrae arene, esclude rare+altro). Workflow: `analisi_manager.yml`.
+- `righe_*.json` = 1 riga per (carta, manager) con atteso/reale/l10/ruolo/lega/
+  casa/storico/capitano. `formazioni_*.json` = 1 per arena, con rank, punteggio,
+  atteso_sum, capitano e le 5 carte annidate. **Nota: righe duplicate quando +
+  manager schierano lo stesso giocatore** → per test onesti de-duplicare su
+  `(gw, slug)`, vedi trappola §8.15.
+- Metodo dati grezzi: solo arene LIMITED (rare/`arena_altro` escluse); atteso in
+  walk-forward as-of pre-GW; realizzato = `punteggio` grezzo (tolto cap +20%).
 
-### Verdetto (8 GW, 2045 pick, satonio escluso) — nessun segnale, filone da chiudere
-Bias pool = **+0.14** (n 2045, MAE 14.8, corr +0.253). Skill controllata per
-ambiente-GW (edge = residuo − media GW): **nessun manager raggiunge 2σ**.
-Il candidato più promettente a 4 GW, eoghankelly, è passato da +2.4σ (n 29) a
-**+1.9σ (n 54)**: raddoppiando i dati l'effetto si è ridotto, cioè regressione
-verso il rumore — il comportamento atteso di un falso positivo. Nessuno ha
-segno stabile su tutte le GW (tutti "misto", incluso qtn con n=1231).
-Consenso: bias sale con l'accordo (1 man +0.0 → 2 +0.5 → 3 +1.1) ma resta
-piccolo e n crolla.
-**Conclusione: i pick dei manager NON battono il nostro atteso.** Il modello
-cattura già le loro scelte. Conferma §5 dal lato umano.
-
-### Prossimi passi
-- **Il filone smart-money può essere CHIUSO** (obiettivo 8-10 GW raggiunto,
-  segnale ~0 e in calo). Decisione dell'utente, vedi §7bis.
-- Le 4 GW vecchie hanno reso solo +400 osservazioni (meno manager attivi/più
-  scarti): accumulare ancora costa molto e rende poco.
-- Russia: cache da 3 a 20 gamelog (05/08), ancora INERTE (<100).
-
-### Analisi pooled 4 GW — `analisi_manager/dati/analisi_debolezze_capitano.md`
-Fatta il 05/08 mentre girava l'accumulo. Sintesi (dettaglio nel file):
-- **De-duplicando, nessun effetto supera 2.1σ.** Il modello non ha una
-  debolezza sistematica catturabile con le feature disponibili (conferma §5).
-- **La debolezza vera è il salto giocatore→formazione**: corr(atteso, reale) a
-  livello giocatore +0.22, ma sommando 5 carte NON sale (+0.18) e
-  **corr(atteso_somma, rank in arena) = −0.02, cioè zero**. Non è la
-  classifica a essere rumorosa (corr(reale_somma, rank) = −0.83): siamo noi a
-  non anticiparla. Il segnale esiste solo negli esiti (quintile alto vs basso
-  = +19.4 pt reali su 5 carte), invisibile nella correlazione media.
-- **Capitano: riconfermato chiuso.** `pick_captain` pareggia con gli umani
-  (+0.19 pt/form., +0.7σ) e nessuna delle 6 policy alternative testate lo
-  batte ("più storico" lo peggiora a −2.6σ). Il capitano vale poco comunque:
-  3.8 pt fra scelta peggiore e casuale, altri 3.8 di headroom oracolo.
-  Evitato un falso positivo: "i manager sbagliano a fare capitano il FWD" è
-  FALSO — i FWD capitani rendono +1.4 sopra i FWD non-capitani, il −7.4 è il
-  livello base del ruolo (trappola §11).
-- **Unica ipotesi azionabile emersa**: giocatori con **storico < 10 partite**
-  sottostimati di +4.9 (2.1σ, n=71 unici) → possibile shrinkage prior troppo
-  forte su chi ha pochi dati. Da riverificare con più GW prima di toccare.
-- **qtn-d8cd72ac pesa 58% del pool** (953/1645): non è un campione bilanciato.
-- **eoghankelly unico edge/se ≥2 (+2.4)** ma n=29: ricontrollare quando cresce.
-
-### Continuare l'accumulo
-GW più vecchie = più storico, meno scarti. Slug: GW92 `football-15-20-jul-2026`
-(07-20), GW91 `football-10-13-jul-2026`(07-13), GW90 `football-5-8-jul-2026`
-(07-08), GW89 `football-1-4-jul-2026`(07-04)…
-```
-gh workflow run analisi_manager.yml -f gw="football-15-20-jul-2026:2026-07-20,..."
-```
-(manager vuoto = i 13 di default, satonio escluso). Poi pull, rigenera, leggi
-INDICE/AGGREGATO. Aggiungere un manager: slug in whitelist (`analizza_gw.py`) +
-`DEFAULT_MANAGER` (`pipeline_manager.py`), poi workflow `-f manager=<slug>` sulle
-GW già fatte.
+### Verdetto smart-money (CHIUSO come domanda, 8 GW, 2045 pick, satonio escluso)
+Bias pool +0.14 (MAE 14.8). Nessun manager a 2σ; eoghankelly da +2.4σ(n29) a
++1.9σ(n54) = regressione al rumore. I pick dei manager NON battono l'atteso.
+Dettaglio debolezze modello in `dati/analisi_debolezze_capitano.md`: capitano
+riconfermato chiuso; unica ipotesi viva = giocatori con **storico <10 partite
+sottostimati +4.9** (n71, da riverificare). Accumulare altre GW rende poco
+(le 4 GW vecchie: solo +400 oss); l'accumulo NON è la priorità — i pattern lo sono.
 
 ### Secondarie
 - **Russia da popolare** (05/08): `formazione_russia` ha pipeline completa ma
