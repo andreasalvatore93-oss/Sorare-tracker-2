@@ -1,0 +1,370 @@
+HANDOFF — verifica canale avversario (Compiti A/B/C, nessuna modifica a produzione)
+Data: 2026-08-04
+Segue: HANDOFF_ritaratura_fattori_2026-08-04.txt
+Branch: ritaratura-fattori
+
+
+====================================================================
+1. STATO DEL REPO
+====================================================================
+
+Branch: ritaratura-fattori.
+
+Compito A ha temporaneamente editato OPPONENT_SENSITIVITY e il cap in
+formazione_mls/predict/test_{def,gk,mid,mls_fwd_all}.py per la prova
+sperimentale; TUTTI i valori sono stati ripristinati con `git checkout --`
+sui 4 file prima di continuare (verificato: nessun diff residuo). Durante
+la pulizia della cache .pyc ho cancellato per errore 7 file .pyc tracciati
+in git dentro __pycache__/ con un `rm -rf` troppo largo; ripristinati
+anch'essi con `git checkout -- __pycache__/`. Nessuna delle due cose e'
+finita in un commit.
+
+NESSUN commit ancora fatto in questa sessione (arriva con questo handoff).
+NESSUNA modifica permanente a formazione_mls/predict/*. Nessuna propagazione.
+
+File modificati preesistenti (non miei, invariati): RIASSUNTO_2026-08-04.md,
+docs/BOT_CERBERO_PROGETTO.md, docs/RIASSUNTO_CERBERO.md.
+
+Script scratch usati (non nel repo, in scratchpad locale, elencati per
+riproducibilita' in sezione 3): prova_inerzia.py, compito_b_esperimento.py,
+compito_bc_ampiezze.py.
+
+
+====================================================================
+2. PERCHE' ESISTEVA QUESTO LAVORO
+====================================================================
+
+La sessione precedente si era fermata prima di ritarare OPPONENT_SENSITIVITY
+avendo letto nel codice che fattore_forza_avversario non entra mai in
+score_atteso. Questo brief chiedeva di provarlo sperimentalmente (non solo
+per lettura), di risolvere la contraddizione apparente con lo screening B.4
+(che aveva trovato segnale vero sul ranking avversario), e di mappare
+quantitativamente il canale avversario che invece E' vivo in produzione
+(opponent_lambda_mult, opponent_is_strong).
+
+
+====================================================================
+3. COSA HO COSTRUITO O TOCCATO
+====================================================================
+
+Nessuna modifica permanente. Tre script scratch (usano SOLO funzioni
+esistenti: backtest_arene_previsioni.calcola/contesto/delta_ranking,
+taratura_confronto_parametri.raccogli/valuta, opponent_strength.*):
+
+  prova_inerzia.py         Compito A: misura MAE/corr/lift/sd_prev su
+                            campione fisso (primi 400 slug alfabetici della
+                            cache, 7.555 punti) coi valori di produzione.
+  compito_b_esperimento.py Compito B: stessa misura con
+                            calcola(usa_avversario=True/False), con e senza
+                            ranking_k, per isolare l'effetto del canale vivo
+                            sul guadagno del ranking.
+  compito_bc_ampiezze.py   Compito B4 + Compito C: distribuzione di
+                            delta_ranking, fattore_forza_avversario,
+                            opponent_lambda_multiplier, opponent_is_strong
+                            sullo stesso campione.
+
+Campione: stesso per tutti e tre (raccogli() e' deterministico: slug
+ordinati alfabeticamente, primi 400, seme fisso 3 dentro lift_selezione).
+Comando per riprodurre: vedi contenuto script sopra, path assoluti al repo,
+nessuna query API (solo cache locale).
+
+
+====================================================================
+4. OUTPUT NUMERICO INTEGRALE
+====================================================================
+
+4.A COMPITO A — prova meccanica di inerzia (7.555 punti, 400 giocatori)
+
+  Configurazione                              fwd MAE    mid MAE    def MAE    gk MAE
+  originale (sens=29.0, cap 0.5-1.5)          14.703335  12.819577  14.634206  15.440752
+  sens=1.0  (cap 0.5-1.5)                     14.703335  12.819577  14.634206  15.440752
+  sens=1e9  (cap 0.5-1.5)                     14.703335  12.819577  14.634206  15.440752
+  sens=29.0 (cap 0.1-10.0, allargato)         14.703335  12.819577  14.634206  15.440752
+
+  Corr e sd_prev IDENTICHE a tutte le cifre riportate (6 decimali) in tutte
+  e quattro le righe, per tutti e 4 i ruoli. Lift identico dove definito
+  (fwd/mid/def; gk=None in tutte e 4 le righe, campione troppo piccolo per
+  giornata).
+
+  ESITO: CONFERMATO. Il fattore e' inerte, meccanicamente, non solo per
+  lettura del codice. Nessun'altra spiegazione necessaria.
+
+4.B COMPITO B1 — il commit e la misura del 26/07
+
+  Commit: c7a4b831a9 "Rimuove fattore_forza_avversario da score_atteso in
+  tutti i ruoli MLS e K League" (26/07/2026 19:18).
+  Script: formazione_mls/diagnostics/validate_team_defense_strength.py
+  (commit 00c736428a, ancora nel repo, letto per intero).
+
+  Guadagni MAE rimuovendo il fattore (fonte: messaggio di commit + docstring
+  dello script + docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md sez. 12):
+    GK   -4.02% (per lo script) / -4.21% riportato altrove per Stadio D GK
+    DEF  -6.65%
+    MID  -9.20%
+    FWD  -9.26%
+
+  Campione: cache di CALIBRAZIONE (formazione_mls/output/mls_<ruolo>_
+  calibration/.cache), non le cache complete usate oggi. Dimensioni
+  riportate altrove nello stesso RIASSUNTO (sez. 12, GK): "15 giocatori/129
+  punti test contro 72-178/311-616 degli altri ruoli" — quindi il test del
+  26/07 girava su centinaia di punti per ruolo, non su migliaia.
+
+  Metrica: MAE aggregato con `predetto = media * fattore_ct * fattore_fa *
+  fattore_trend` — la formula VECCHIA, senza Stadio D, senza shrinkage
+  outlier/prior dinamico, senza opponent_lambda_mult (nessuno di questi
+  esisteva ancora il 26/07 mattina).
+
+4.C COMPITO B2 — stessa variabile, ma con una contaminazione nota
+
+  Il ranking usato dal fattore morto e quello usato da delta_ranking/
+  screening B.4 sono LA STESSA variabile: `domesticLeagueRanking` dal blocco
+  anyGame della partita storica (stesso campo, stessa fonte).
+
+  PERO': commit successivo (29/07, docs/RIASSUNTO_EVOLUZIONE_MODELLO_
+  PREDITTIVO.md sez. 33.A, "Scoperta: domesticLeagueRanking e' un dato
+  CONTAMINATO, non storico") ha dimostrato che questo campo NON e' sempre
+  ancorato alla data della partita: la STESSA partita storica, letta da
+  cache di giocatori diversi (fetchate in momenti diversi), restituisce
+  ranking diversi in 282/13671 coppie (squadra, data-partita) su tutte le
+  leghe (22 squadre coinvolte) -- circa il 2% delle coppie CONFRONTABILI
+  (richiede che la stessa partita sia in almeno 2 cache diverse: e' quindi
+  un limite INFERIORE della contaminazione reale, non l'ampiezza vera).
+
+  La verifica di B.4 punto 5.1 ("il ranking cambia partita per partita
+  dentro la stessa squadra, quindi non e' uno snapshot corrente costante")
+  e' un test PIU' DEBOLE di quello di 33.A: dimostra che il valore non e'
+  fisso nel tempo, ma non dimostra che sia ancorato alla data GIUSTA -- un
+  campo "corrente al momento del fetch" varierebbe comunque nel tempo se le
+  cache sono state costruite in momenti diversi, superando lo stesso test.
+
+  CONCLUSIONE B2: non e' leakage nel senso classico (dato dal futuro
+  rispetto alla singola predizione), ma e' un dato con rumore di
+  ancoraggio temporale CONFERMATO, non ipotetico. Il rumore colpisce ALLO
+  STESSO MODO sia il fattore morto (26/07) sia il termine additivo di B.4
+  (04/08): nessuna delle due misure e' piu' "pulita" dell'altra su questo
+  fronte. Non spiega la contraddizione, ma toglie affidabilita' a
+  ENTRAMBE in modo uguale.
+
+4.D COMPITO B3 — le due misure NON ottimizzano la stessa cosa
+
+  26/07 (dead):  MAE aggregato, formula vecchia (pre-Stadio D, pre-prior
+                 dinamico, pre-opponent_lambda_mult), campione piccolo
+                 (centinaia di punti/ruolo).
+  04/08 (B.4):   residuo dentro-giocatore, formula di OGGI (con Stadio D
+                 e opponent_lambda_mult nella struttura del codice) MA
+                 misurata con backtest_arene_previsioni.calcola(), che
+                 chiama _calcola_base(usa_avversario=False) DI DEFAULT.
+                 Nessuno script di misura (screening_segnali.py,
+                 segnale_dentro_giocatore.py, taratura_confronto_
+                 parametri.py, taratura_halflife_trend.py) passa mai
+                 usa_avversario=True. Quindi lo screening B.4 e' girato
+                 con opponent_lambda_mult SEMPRE 1.0 (neutro) e lo Stadio D
+                 avversario di DEF/MID sul FALLBACK a domesticLeagueRanking
+                 binario (non sul dato reale opponent_is_strong), per
+                 costruzione del banco, non per un bug nuovo.
+
+  Verifica sperimentale diretta (compito_b_esperimento.py, stesso campione
+  di Compito A, usa_avversario True vs False, con e senza ranking_k al
+  valore validato in B.4):
+
+  RUOLO  SENZA/CON canale live   MAE (no rank)  corr (no rank)  lift (no rank)  |  MAE (+rank)  corr (+rank)  lift (+rank)  |  delta corr rank  delta lift rank
+  FWD    spento (=B.4)           14.7033        0.2293          23.57           |  14.5984      0.2403        28.99         |  +0.0111          +5.41
+  FWD    acceso (canale reale)   14.6972        0.2309          23.39           |  14.5947      0.2403        27.56         |  +0.0095          +4.17
+  MID    spento (=B.4)           12.8196        0.2091          21.49           |  12.7973      0.2126        19.77         |  +0.0035          -1.72
+  MID    acceso (canale reale)   12.8607        0.2032          17.65           |  12.8359      0.2072        17.84         |  +0.0040          +0.19
+  DEF    spento (=B.4)           14.6342        0.1958          18.02           |  14.6436      0.2025        21.05         |  +0.0067          +3.03
+  DEF    acceso (canale reale)   14.6439        0.1825          10.16           |  14.6010      0.2048        15.90         |  +0.0223          +5.73
+  GK     spento (=B.4)           15.4408        0.0451          --              |  15.3334      0.0720        --            |  +0.0270          --
+  GK     acceso (canale reale)   15.4313        0.0474          --              |  15.3497      0.0725        --            |  +0.0251          --
+
+  LETTURA. Accendere il canale vivo NON riduce il guadagno del ranking:
+  resta piatto (MID, GK), sale (DEF, quasi triplica: +0.0067 -> +0.0223) o
+  scende leggermente (FWD, -15% relativo). Se il ranking stesse solo
+  "supplendo" al canale spento, il suo guadagno sarebbe dovuto crollare
+  quando il canale vero si accende: non succede. Il ranking porta
+  informazione che il canale lambda/Stadio-D-reale NON cattura, almeno su
+  questo campione.
+
+  ATTENZIONE-CAVEAT scoperta lavorando: `contesto()` in
+  backtest_arene_previsioni.py imposta SEMPRE `'lega': None` (riga 232),
+  mai 'mls'. opponent_strength con league=None usa la serie GLOBALE pooled
+  su tutte le leghe (fallback deliberato, commentato nel modulo), NON la
+  serie MLS-specifica che build_prediction passa in produzione reale
+  (li' e' `opponent_strength.opponent_lambda_multiplier('mls', ...)`,
+  hardcoded). Quindi "canale acceso" in questo esperimento e in
+  qualunque uso futuro di calcola(usa_avversario=True) NON e' identico al
+  canale reale di produzione -- e' una versione piu' rumorosa (dati di 27
+  leghe mischiati). Non ho corretto questo (violerebbe "non riscrivere
+  formule"), lo segnalo come bug/limite noto.
+
+4.E COMPITO B4 — ordini di grandezza, moltiplicativo morto vs additivo B.4
+
+  (compito_bc_ampiezze.py, stesso campione, score_medio = MAE-baseline di
+  Compito A per ruolo)
+
+  RUOLO  delta_ranking |media|  punti spostati da fattore MORTO (media/p75/max)  punti spostati da termine ADDITIVO B.4 k-validato (media/p75/max)
+  FWD    4.88 posizioni          2.473 / 3.633 / 7.350  (k=OPPONENT_SENS=29)     1.464 / 2.150 / 4.400  (k=0.3)
+  MID    4.77 posizioni          2.107 / 3.059 / 6.366                          0.238 / 0.346 / 0.720  (k=0.05)
+  DEF    4.84 posizioni          2.442 / 3.561 / 7.164                          1.452 / 2.118 / 4.260  (k=0.3)
+  GK     4.53 posizioni          2.409 / 3.531 / 6.541                          2.263 / 3.316 / 6.143  (k=0.5)
+
+  LETTURA. Le due ampiezze sono dello STESSO ORDINE DI GRANDEZZA (entrambe
+  1-3 punti su una scala di punteggio 13-16), NON di ordini diversi come
+  ipotizzato nel brief. Il moltiplicativo morto sposta un po' di piu' in
+  media su FWD/MID/DEF (coerente col fatto che a k fissi piu' alti di
+  OPPONENT_SENSITIVITY equivalenti il moltiplicativo e' meno conservativo
+  del k additivo scelto in B.4), quasi identico su GK. Il confronto fra le
+  due misure NON e' quindi viziato dalla scala: sono comparabili, e la
+  differenza -6.65%/-9.20%/-9.26% MAE vs +corr residuo dipende da 4.D
+  (basi diverse), non da 4.E (scala diversa).
+
+
+====================================================================
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+====================================================================
+
+5.1 RISPOSTA DIRETTA A "IL SEGNALE RANKING AVVERSARIO ESISTE O NO"
+
+Esiste, e non e' spiegato dal canale vivo esistente: l'esperimento 4.D
+mostra che accendere opponent_lambda_mult/Stadio-D-reale non assorbe il
+guadagno di correlazione del ranking (anzi lo aumenta su DEF). Era stato
+bocciato il 26/07 su una formula molto piu' semplice di quella di oggi, con
+un campione piu' piccolo, e -- si e' scoperto tre giorni dopo (29/07) -- su
+un dato (domesticLeagueRanking) confermato rumoroso nell'ancoraggio
+temporale. Nessuna delle due cose PROVA che il segnale sia falso: la
+bocciatura del 26/07 era su un modello diverso e un dato via via scoperto
+piu' sporco di quanto si pensasse allora.
+
+5.2 IL CANALE VIVO E' DEBOLE PER 3 RUOLI SU 4, NON PER SBAGLIO DI MISURA
+
+opponent_lambda_multiplier ha ampiezza p25->p75 di 0.10-0.83 punti su
+FWD/MID/DEF (tabella C2 sotto) contro i 2.1-2.5 punti del canale morto: non
+e' un artefatto di misura, e' la sensibilita' configurata (SENSITIVITY_BY_
+ROLE 0.4/0.7/0.8) applicata a un moltiplicatore quasi sempre vicino a 1.0
+(mediana=1.000 esatta in tutti e 4 i ruoli). Il ~45-51% dei punti (tabella
+C2) cade sul fallback neutro 1.0 per dati insufficienti (MIN_PARTITE_
+AVVERSARIO=3 non raggiunto, o squadra mai vista). E' davvero "una manopola
+che gira a vuoto" per FWD/MID/DEF. Solo GK ha ampiezza viva paragonabile al
+canale morto (2.46 punti p25->p75).
+
+5.3 DUE ALTRI CANALI SONO MORTI PER LO STESSO MOTIVO (SENSIBILITA'=0), NON
+CERCATI DAL BRIEF MA TROVATI LEGGENDO opponent_strength.py
+
+FWD_OFFENSE_SENSITIVITY = 0.0 (era 3.0, spento 03/08: rimisurato "dentro la
+formula" con gli aggiustamenti avversario ACCESI, monotono peggio a
+qualunque sensibilita' -- stesso schema esatto di questo brief: "il -0.38%
+che lo giustificava veniva da un banco che teneva SPENTI gli aggiustamenti
+avversario"). GK_PEN_AREA_SENSITIVITY = 0.0 (era un moltiplicatore su
+lambda_pos con segno SBAGLIATO scoperto e riscritto in additivo 03/08,
+segnale non confermato nella forma giusta). Nessuno dei due tocca FWD/GK
+oltre a quanto gia' descritto.
+
+5.4 IL SOSPETTO DELL'UTENTE ("IL CANALE VIVO E' QUELLO DEBOLE E QUELLO
+MORTO E' QUELLO BUONO") E' CONFERMATO IN AMPIEZZA PER FWD/MID/DEF, NON PER
+QUALITA' PROVATA
+
+L'ampiezza c'e' (5.2), ma "buono" per il morto non e' dimostrato: il suo
+dato sorgente (domesticLeagueRanking) e' quello confermato rumoroso (4.C),
+mentre il canale vivo usa gol reali (fonte pulita, verificata 29/07) --
+solo che gli e' stata data poca sensibilita'.
+
+5.5 BUG TROVATO, NON RIPARATO (fuori mandato): ctx['lega'] SEMPRE None
+
+Vedi 4.D. backtest_arene_previsioni.contesto() non passa mai la lega vera a
+opponent_strength: qualunque misura futura fatta con usa_avversario=True su
+questo banco (compresa questa sessione) usa la serie GLOBALE pooled invece
+di quella MLS, quindi non replica esattamente cosa succede in produzione
+reale (dove build_prediction passa 'mls' esplicito). Chi ritarera'
+SENSITIVITY_BY_ROLE deve prima sistemare questo, altrimenti tara un canale
+diverso da quello che poi gira davvero.
+
+
+====================================================================
+6. TABELLE COMPITO C — mappa del canale avversario vivo
+====================================================================
+
+6.1 C1 — costanti tarabili (opponent_strength.py)
+
+  Nome                      Valore oggi                     Dove entra                                   Ruoli
+  SENSITIVITY_BY_ROLE       gk=0.7 def=0.8 mid=0.7 fwd=0.4   opponent_lambda_multiplier -> lambda_pos_dec  tutti e 4
+  SIGN_BY_ROLE              gk=-1 def=1 mid=1 fwd=1          segno dello z-score nel moltiplicatore        tutti e 4
+  N_GAMES_DEFAULT           10                               finestra partite avversario                  tutti e 4
+  MIN_PARTITE_AVVERSARIO    3                                soglia minima dati per non ricadere a 1.0     tutti e 4
+  GLOBAL_MEAN_CONCEDED      1.29                             normalizzazione z-score e soglia opponent_is_strong  tutti e 4
+  GLOBAL_STD_CONCEDED       1.17                             normalizzazione z-score                       tutti e 4
+  (soglia opponent_is_strong implicita: avg_val > GLOBAL_MEAN_CONCEDED)     Stadio D condizionato          def, mid, fwd(solo passing)
+  FWD_OFFENSE_SENSITIVITY   0.0 (MORTO, vedi 5.3)            fwd_offense_granular_delta                    fwd
+  GK_PEN_AREA_SENSITIVITY   0.0 (MORTO, vedi 5.3)            gk_def_pen_area_granular_delta                gk
+
+6.2 C2 — ampiezza reale di opponent_lambda_multiplier (stesso campione, 400 giocatori)
+
+  RUOLO  min    p25    mediana  p75    max    punti p25->p75  % fallback neutro (mult==1.0 esatto)  copertura dato
+  FWD    0.627  0.995  1.000    1.003  1.585  0.131 pt         46.5%                                 1888/2111 (89%)
+  MID    0.348  0.946  1.000    1.006  2.203  0.767 pt         45.2%                                 2197/2436 (90%)
+  DEF    0.255  1.000  1.000    1.007  2.374  0.100 pt         50.7%                                 2181/2362 (92%)
+  GK     0.000  0.955  1.000    1.114  1.635  2.457 pt         33.5%                                 615/646 (95%)
+
+6.3 C3 — opponent_is_strong: frazione forte/debole per ruolo (GK non lo usa in score_atteso)
+
+  RUOLO  forte           debole          copertura dato (su cui esiste il flag)
+  FWD    724/1364 (53.1%) 640/1364 (46.9%) 1364/2111 (65%)
+  MID    839/1624 (51.7%) 785/1624 (48.3%) 1624/2436 (67%)
+  DEF    737/1456 (50.6%) 719/1456 (49.4%) 1456/2362 (62%)
+  GK     187/409  (45.7%) 222/409  (54.3%) 409/646 (63%)   -- calcolato per completezza, GK non lo applica a score_atteso
+
+  LETTURA C3: nessuna soglia degenere (tutte vicine al 50/50), quindi
+  opponent_is_strong NON e' "spenta di fatto" per squilibrio dei bucket. Il
+  limite reale e' la COPERTURA: 33-38% dei punti non ha abbastanza storico
+  avversario e ricade sul fallback neutro (nessun condizionamento).
+
+
+====================================================================
+7. RACCOMANDAZIONE
+====================================================================
+
+BERSAGLIO GIUSTO DA RITARARE: SENSITIVITY_BY_ROLE in opponent_strength.py
+(oggi 0.4/0.7/0.8 per fwd/mid/def), NON riesumare OPPONENT_SENSITIVITY/
+fattore_forza_avversario.
+
+PERCHE':
+1. E' vivo (entra davvero in score_atteso, provato in 4.A che il vecchio
+   non lo fa).
+2. La sua fonte dati (gol reali) e' quella confermata pulita (33.A/33.B del
+   29/07), a differenza di domesticLeagueRanking (contaminato, 4.C).
+3. La sua ampiezza oggi e' sotto quella del segnale che il ranking sembra
+   ancora catturare nel residuo (4.D, 6.2): FWD/MID/DEF hanno margine reale
+   per alzare la sensibilita' prima di saturare il cap o il buon senso.
+4. Il ranking non sparisce quando il canale vivo si accende (4.D): non e'
+   detto che alzare SENSITIVITY_BY_ROLE assorba tutto il guadagno che il
+   ranking cattura, ma e' l'unico esperimento pulito che si puo' fare senza
+   riesumare un dato gia' bocciato due volte.
+
+PRIMA DI FARLO: sistemare 5.5 (ctx['lega'] hardcoded a None in
+backtest_arene_previsioni.contesto()) -- altrimenti qualunque griglia su
+SENSITIVITY_BY_ROLE misura il canale sulla serie globale pooled, non su
+quella MLS che gira davvero in produzione, e il risultato non e'
+trasferibile.
+
+NON FARE: riportare fattore_forza_avversario/OPPONENT_SENSITIVITY in
+score_atteso. E' stato bocciato due volte (26/07 su formula vecchia, dato
+poi trovato contaminato) e nessuna misura di questa sessione lo riabilita;
+riesumarlo aggiungerebbe un canale duplicato con lo Stadio D che gia' usa
+lo stesso ranking come fallback quando gli slug avversario non sono
+disponibili.
+
+Decisione non presa qui: gira all'utente/orchestratore.
+
+
+====================================================================
+FILE DI RIFERIMENTO
+====================================================================
+
+BRIEF_2026-08-04_verifica_canale_avversario.txt (Downloads, non nel repo)
+docs/handoff/HANDOFF_ritaratura_fattori_2026-08-04.txt         sessione precedente
+docs/handoff/HANDOFF_screening_segnali_B4_2026-08-04.txt       origine screening ranking
+docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md sez. 12         rimozione 26/07 (commit c7a4b831a9)
+docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md sez. 33.A/33.B/33.D   contaminazione ranking + opponent_strength.py (29/07)
+formazione_mls/diagnostics/validate_team_defense_strength.py    script del 26/07 (letto per intero)
+opponent_strength.py                                            canale vivo, letto per intero
+backtest_arene_previsioni.py                                    calcola/contesto/delta_ranking/_avversario (bug 5.5 a riga 232)
+taratura_confronto_parametri.py                                 raccogli/valuta (nessun usa_avversario=True mai passato)
