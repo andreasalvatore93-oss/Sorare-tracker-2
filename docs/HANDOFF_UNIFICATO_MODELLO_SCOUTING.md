@@ -306,11 +306,10 @@ Piste secondarie aperte, non urgenti:
   Limited, LALIGA...): mancano, senza non si può chiudere il lato capitano/
   allocazione per quelle competizioni con premi veri invece di un surrogato
   rank-based.
-- **Norvegia**: mai tracciata, richiede pipeline da zero, rimandata su
-  richiesta utente.
-- **APIKEY Sorare**: richiesta, mai arrivata. È il tetto che decide i tempi
-  di scouting/backtest/ricostruzione manager (senza: ~60 query/min,
-  complessità 500; con: 30.000 e profondità 13).
+- **APIKEY Sorare**: richiesta, ancora in attesa (04/08) — è il tetto che
+  decide i tempi di scouting/backtest/ricostruzione manager (senza: ~60
+  query/min, complessità 500; con: 30.000 e profondità 13). L'utente informa
+  quando arriva, non ricontrollare da soli.
 
 ---
 
