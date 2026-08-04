@@ -215,6 +215,111 @@ def avvertenza_odds(pronte):
     return {'n': len(v), 'quota_estremi': estremi, 'coerenza_con_titolarita': coerenza}
 
 
+# --------------------------------------------------------------------------
+# regressione congiunta: quanto ciascuna variabile aggiunge ALLE ALTRE
+# --------------------------------------------------------------------------
+CAMPI_CONGIUNTA = ('rank_avversario', 'casa', 'favorito')
+
+
+def _righe_congiunta(pronte, campi):
+    """Le righe usate dalla regressione, nell'ORDINE in cui le mette
+    `sdg.centra_per_giocatore`: stesso raggruppamento per slug, stessa soglia.
+
+    Serve solo a sapere a quale giornata appartiene ogni riga della matrice
+    (per il bootstrap a grappoli). Nessuna formula qui dentro: le colonne le
+    costruisce comunque `centra_per_giocatore`, e l'allineamento si verifica
+    confrontando le lunghezze."""
+    per_slug = collections.defaultdict(list)
+    for r in pronte:
+        if all(r.get(c) is not None for c in campi):
+            per_slug[r['slug']].append(r)
+    return [g for gruppo in per_slug.values() if len(gruppo) >= MIN_OSSERVAZIONI
+            for g in gruppo]
+
+
+def _r2(colonne, y, indici=None):
+    """R2 del modello lineare sulle colonne date (quadrato della correlazione
+    fra stimato e osservato, la stessa misura che stampa `sdg.congiunta`)."""
+    if indici is not None:
+        colonne = [[c[i] for i in indici] for c in colonne]
+        y = [y[i] for i in indici]
+    beta = sdg._ols(colonne, y)
+    if beta is None:
+        return None, None
+    stimato = [sum(b * col[t] for b, col in zip(beta, colonne)) for t in range(len(y))]
+    c = sdg._corr(stimato, y)
+    return (c ** 2 if c is not None else None), beta
+
+
+def congiunta_estesa(pronte, campi=CAMPI_CONGIUNTA, ripetizioni=200, seme=0):
+    """Coefficienti, IC 95% a grappoli sulle giornate e R2 incrementale."""
+    print('\n' + '=' * 92)
+    print('REGRESSIONE CONGIUNTA — quanto ciascuna variabile aggiunge ALLE ALTRE')
+    print('=' * 92)
+    # la stampa base (coefficienti + effetto di 1 sd + correlazione complessiva)
+    # e' gia' quella di `segnale_dentro_giocatore`, si riusa tale e quale
+    sdg.congiunta(pronte, campi=campi)
+
+    # si passa a `centra_per_giocatore` il sottoinsieme con TUTTI i campi
+    # presenti: cosi' ogni colonna esce sulle stesse righe e nello stesso
+    # ordine (altrimenti ogni campo filtrerebbe per conto suo)
+    righe = _righe_congiunta(pronte, campi)
+    colonne = [sdg.centra_per_giocatore(righe, c)[0] for c in campi]
+    y = sdg.centra_per_giocatore(righe, campi[0])[1]
+    if not righe or any(len(c) != len(righe) for c in colonne) or len(y) != len(righe):
+        print('  allineamento fallito fra righe e colonne: niente IC ne R2 incrementale')
+        return None
+    n = len(righe)
+    r2_pieno, beta = _r2(colonne, y)
+    if r2_pieno is None:
+        print('  sistema singolare')
+        return None
+
+    # bootstrap A GRAPPOLI: si ricampionano le GIORNATE, non le righe. Le
+    # partite dello stesso giorno condividono meteo, turno, avversari: trattarle
+    # come indipendenti stringerebbe gli IC di un fattore che non c'e'.
+    import random
+    per_giornata = collections.defaultdict(list)
+    for i, r in enumerate(righe):
+        per_giornata[str(r.get('data'))[:10]].append(i)
+    grappoli = list(per_giornata.values())
+    rng = random.Random(seme)
+    campioni = [[] for _ in campi]
+    for _ in range(ripetizioni):
+        idx = []
+        for _ in range(len(grappoli)):
+            idx.extend(grappoli[rng.randrange(len(grappoli))])
+        b = sdg._ols([[c[i] for i in idx] for c in colonne], [y[i] for i in idx])
+        if b is None:
+            continue
+        for j, v in enumerate(b):
+            campioni[j].append(v)
+
+    print(f'\n  {len(righe)} partite, {len(grappoli)} giornate, bootstrap a grappoli '
+          f'x{ripetizioni}')
+    print(f"  {'variabile':<20} {'coeff':>8} {'IC 95%':>20} {'1 sd':>8} {'R2 aggiunto':>12}")
+    print('  ' + '-' * 74)
+    esiti = []
+    for j, campo in enumerate(campi):
+        resto = [c for k, c in enumerate(colonne) if k != j]
+        r2_senza, _ = _r2(resto, y) if resto else (0.0, None)
+        incremento = r2_pieno - (r2_senza or 0.0)
+        sd = statistics.pstdev(colonne[j])
+        v = sorted(campioni[j])
+        lo = v[int(0.025 * len(v))] if len(v) >= 50 else None
+        hi = v[int(0.975 * len(v)) - 1] if len(v) >= 50 else None
+        ic = f'[{lo:+.3f}, {hi:+.3f}]' if lo is not None else ''
+        print(f"  {campo:<20} {beta[j]:+8.3f} {ic:>20} {beta[j] * sd:+7.2f}p "
+              f"{incremento:>11.4%}")
+        esiti.append({'campo': campo, 'coefficiente': beta[j], 'ic_basso': lo,
+                      'ic_alto': hi, 'effetto_1sd': beta[j] * sd,
+                      'r2_incrementale': incremento})
+    print(f"\n  R2 del modello completo: {r2_pieno:.4%} del residuo dentro-giocatore "
+          f"(corr {r2_pieno ** 0.5:+.3f})")
+    return {'n': n, 'n_giornate': len(grappoli), 'r2_totale': r2_pieno,
+            'ripetizioni': ripetizioni, 'variabili': esiti}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--coppie', default=COPPIE)
@@ -279,14 +384,18 @@ def main():
               f"(0% o 100%) {odds['quota_estremi']:.1%}")
         if odds['coerenza_con_titolarita'] is not None:
             print(f"  coincidenza con la titolarita' effettiva: {odds['coerenza_con_titolarita']:.1%}")
-        print('  il game log si scarica DOPO la partita: se Sorare aggiorna le odds')
-        print("  all'uscita delle formazioni ufficiali, il valore e' pre-kickoff ma NON")
-        print('  disponibile alla deadline. Da verificare su una giornata futura prima')
-        print('  di usarlo come segnale.')
+        print('  LEAKAGE DIMOSTRATO (04/08, verifica_odds_predeadline.py): su 230 coppie')
+        print('  (giocatore, partita) con odds prese PRIMA della deadline, solo il 6,1%')
+        print('  coincide col valore del game log, il 77,8% dei valori post e piu alto e')
+        print('  il 100% e 0% o 100% contro il 7,7% dei pre. Il campo viene riscritto dopo')
+        print('  le formazioni ufficiali: questa riga della tabella NON e utilizzabile.')
+
+    cong = congiunta_estesa(pronte)
 
     uscita = args.json if os.path.isabs(args.json) else os.path.join(ROOT, args.json)
     with open(uscita, 'w', encoding='utf-8') as fh:
-        json.dump({'n_coppie': len(coppie), 'n_partite': len(pronte),
+        json.dump({'congiunta': cong,
+                   'n_coppie': len(coppie), 'n_partite': len(pronte),
                    'n_giocatori': giocatori, 'min_osservazioni': MIN_OSSERVAZIONI,
                    'sd_residuo': sd, 'dati_mancanti': dict(mancanti),
                    'starter_odds_diagnostica': odds,
