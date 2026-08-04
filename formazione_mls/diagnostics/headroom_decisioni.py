@@ -227,10 +227,16 @@ def decisione_carte(abbinate, premi_tab, righe_tutte):
         attuale.append(valuta(carte))
 
     mediana_pool = statistics.median(pool_size) if pool_size else 0
-    stampa('2. CARTE (quali 5 schierare, a parita\' di pool, tipo arena e cap)',
+    stampa('2. CARTE — NUMERO NON VALIDO, vedi avvertenza sotto',
            pavimento, caso, attuale, oracolo,
            note=(f"(pool mediano {mediana_pool:.0f} carte dello STESSO tipo di arena; "
                  f"{saltate} arene senza scelta reale o non valutabili)"))
+    print("    !! ATTENZIONE: ogni arena sceglie dal pool INDIPENDENTEMENTE dalle")
+    print("       altre, quindi le stesse 5 carte migliori finiscono in tutte le")
+    print("       ~10 arene dello stesso giorno — cosa che nella realta' non si")
+    print("       puo' fare (le carte non si clonano). L'oracolo qui e' gonfiato")
+    print("       da questo, non usare questo numero. La misura VALIDA, con il")
+    print("       mazzo fisso e la sola riallocazione, e' in selezione_carte.py.")
 
 
 def decisione_capitano(abbinate, premi_tab):

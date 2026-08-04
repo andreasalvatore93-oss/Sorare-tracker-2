@@ -296,9 +296,18 @@ nessuna modellazione). Script: `formazione_mls/diagnostics/headroom_decisioni.py
   3. CAPITANO          -10.2      9.9     14.6      30.0         +15.5
 ```
 
-**IL RISULTATO**: la scelta delle CARTE ha ~36 volte il margine del
-capitano, la decisione d'INGRESSO ~9 volte. Il capitano non era un filone
-sfortunato: era il piu' piccolo dei tre, e ci abbiamo speso due sessioni.
+**ATTENZIONE — LA RIGA "CARTE" DI QUESTA TABELLA E' SBAGLIATA.** Corretta
+poche ore dopo (vedi sezione successiva): li' ogni arena sceglieva dal pool
+INDIPENDENTEMENTE dalle altre, quindi le stesse 5 carte migliori finivano in
+tutte le ~10 arene dello stesso giorno — nella realta' le carte non si
+clonano. Il valore valido non e' +565.6 ma **+101.7** (misura con mazzo
+fisso, `selezione_carte.py`). Lo script stampa ora un avviso su quella riga.
+Le righe INGRESSO e CAPITANO restano valide (non spostano carte fra arene).
+
+**IL RISULTATO (con la correzione)**: INGRESSO ~+146 e CARTE ~+102 hanno
+entrambe circa 7-9 volte il margine del capitano (+15.5). Il capitano non
+era un filone sfortunato: era il piu' piccolo dei tre, e ci abbiamo speso
+due sessioni.
 
 **Cautele, da non dimenticare quando si usera' questo numero**:
 - L'oracolo e' chiaroveggente e gonfiato dalla fortuna (massimo su tante
@@ -313,6 +322,57 @@ sfortunato: era il piu' piccolo dei tre, e ci abbiamo speso due sessioni.
   combinazioni non era casuale ma ordinato per punteggio; il pool mescolava
   carte fra tipi di arena diversi, permettendo un fuoriclasse da uncapped
   dentro una Beginner). I numeri sopra sono quelli dopo la correzione.
+
+## SELEZIONE DELLE CARTE (04/08 notte) — e la scoperta dei punti conservati
+
+Aperto su scelta dell'utente. Script: `formazione_mls/diagnostics/selezione_carte.py`.
+Prima domanda posta di proposito NON su un'euristica ma su **serve il
+modello?**, con un controllo brutale: scegliere le carte solo per L10 (il
+dato che Sorare stessa mostra, zero modello).
+
+**Due errori miei, trovati e corretti — vanno ricordati perche' sono la
+trappola di questo filone**:
+1. *Le carte non si clonano.* Primo tentativo: ogni arena sceglieva dal pool
+   del giorno indipendentemente → il modello metteva le stesse 5 carte
+   migliori in tutte le ~10 arene, l'utente doveva spalmarle. Dava
+   **+132 essenze/arena di finto vantaggio**. E' la "riallocazione libera
+   del pool" gia' bocciata dall'utente. Corretto: mazzo fisso, ogni carta
+   usabile al massimo quante volte l'utente l'ha usata quel giorno.
+2. *Assegnazione greedy che si incastra*: servire le arene in sequenza dallo
+   stesso mazzo faceva fallire l'86% dei casi. Sostituita da una
+   riallocazione che parte dall'assegnazione VERA dell'utente (sempre
+   fattibile) e scambia carte dello stesso ruolo fra arene.
+
+**LA SCOPERTA (il pezzo concettuale che serviva)**: col mazzo fisso la somma
+dei punti e' **CONSERVATA** — spostare carte fra arene non crea un solo
+punto. Se ne e' accorto il primo oracolo, che massimizzando i PUNTI usciva
+peggio dell'utente (-13.2): stava ottimizzando una quantita' costante.
+Quindi **la leva della selezione non e' "prendere carte piu' forti" ma
+"distribuire i punti contro le soglie delle arene"**: concentrare quanto
+basta a vincere le arene vincibili, non sprecare punti dove si vincerebbe
+comunque o non si vincerebbe mai. E' lo stesso tema (premio non lineare)
+che era rimasto il piu' grande mai testato.
+
+**Risultati** (443 arene, essenze vere, mazzo fisso):
+```
+  CASO (riallocazione a caso)         3.4
+  SOLO L10 (nessun modello)           5.0
+  MODELLO (max atteso)               22.0
+  UTENTE (schierate davvero)         14.6
+  ORACOLO sui PREMI                 116.3
+```
+Il modello sta sopra tutte le politiche realistiche (+7.4 sull'utente,
++17.0 sul solo-L10, +18.6 sul caso) ma **nessun IC esclude lo zero**: con
+443 arene e premi a scatti non si dimostra. Il margine residuo verso
+l'oracolo e' **+101.7/arena**, ~7x il capitano — ma l'oracolo qui e' una
+ricerca locale fatta direttamente sull'esito realizzato, quindi molto
+gonfiata dalla fortuna: e' un tetto larghissimo, non un obiettivo.
+
+**PROSSIMO PASSO NATURALE**: una politica che ottimizzi il PREMIO ATTESO
+invece dei punti attesi (serve stimare P(rank) dal punteggio atteso, e la
+curva punteggio→rank per tipo di arena esiste gia' in
+`captain_per_competizione.CurvaRank`). E' la prima volta in tutta la
+sessione che si trova una leva con la forma giusta.
 
 ## FORMAZIONE COSTRUITA PER IL CAPITANO — CHIUSA, nulla
 
