@@ -246,9 +246,18 @@ def centra_per_giocatore(righe, campo):
     return x, y
 
 
-def guadagno_quintili(x, y):
-    """Differenza di punteggio reale fra il quinto piu' alto e il piu' basso."""
-    coppie = sorted(zip(x, y))
+def guadagno_quintili(x, y, seme=0):
+    """Differenza di punteggio reale fra il quinto piu' alto e il piu' basso.
+
+    Si mescola prima e si ordina SOLO per x: molti segnali hanno pochi valori
+    distinti (casa/trasferta vale 0 o 1, il ranking e' un intero), e ordinando
+    le coppie (x, y) i pari merito finivano ordinati per y — il quinto alto
+    prendeva i punteggi migliori dello stesso valore di segnale e il guadagno
+    usciva gonfiato. Con questo, un segnale nullo da' 0."""
+    import random
+    coppie = list(zip(x, y))
+    random.Random(seme).shuffle(coppie)
+    coppie.sort(key=lambda t: t[0])
     n = len(coppie)
     if n < 50:
         return None
