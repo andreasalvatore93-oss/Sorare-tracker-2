@@ -90,3 +90,30 @@ Struttura fissa:
 Regole di stile: testo semplice, niente markdown pesante, numeri sempre con la
 loro n. Non nascondo i risultati negativi ne' gli errori miei. Alla fine dico
 all'utente il percorso del file.
+
+## Prima di misurare l'effetto di un componente, dimostro che l'interruttore funziona
+
+Due volte in due giorni abbiamo misurato una cosa diversa da quella che
+credevamo: una costante inerte (fattore_forza_avversario, calcolata e mai
+usata) e un flag che spegneva piu' di quello che diceva (avversario_stadio_d
+spegne Stadio D INTERO, avversario piu' casa/trasferta).
+
+Quindi, sempre, prima di qualunque griglia o confronto:
+
+1. TEST A/A SULL'INTERRUTTORE. Muovo il parametro a due valori assurdi
+   (es. 1.0 e 1e9) e verifico che i numeri SI MUOVANO. Se non si muovono, il
+   parametro e' inerte e la griglia misurerebbe zero. Questo test costa un
+   minuto e va fatto prima di spendere ore.
+2. VERIFICO COSA SPEGNE DAVVERO IL FLAG. Leggo il corpo della funzione fino
+   al punto di uscita: un `return` anticipato salta tutto quello che viene
+   dopo, non solo il pezzo che mi interessa. Se il blocco contiene piu'
+   condizionamenti sommati, spegnere il blocco non e' spegnere il mio.
+3. SPENGO CON UN FLAG ESPLICITO, MAI CON L'ASSENZA DI UN DATO. Non passare un
+   argomento spesso non disattiva: fa scattare un fallback. "Spento" deve
+   essere una scelta scritta nel codice, non un `None`.
+4. NON DEDUCO PER SOTTRAZIONE. Se voglio l'effetto di A dentro un risultato
+   che contiene A e B, misuro A direttamente. Ricavarlo sottraendo tabelle e'
+   il modo in cui si producono i "guadagni gratis" che non esistono.
+5. Se una premessa viene da un commento, una docstring o un handoff, la tratto
+   come da verificare, non come vera. E se la smentisco, CORREGGO LA FONTE nel
+   repo nello stesso commit, altrimenti la prossima sessione ci ricasca.
