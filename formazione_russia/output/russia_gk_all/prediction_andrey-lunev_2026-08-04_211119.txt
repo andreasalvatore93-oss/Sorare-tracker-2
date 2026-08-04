@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-04T21:11:19.264143Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) andrey-lunev: 56 pt attesi (33-74)
+   SQUADRA: dinamo-moskva-moskva | AVVERSARIO: makhachkala
+======================================================================
+
+######################################################################
+# GIOCATORE: andrey-lunev
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: andrey-lunev (squadra: dinamo-moskva-moskva)
+Generato: 2026-08-04T21:11:19.263598Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 29
+Escluse (DID_NOT_PLAY): 17
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: russian-premier-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | SOC vs DIN | russian-premier-league | score=34.8 | peso=0.281
+  2025-09-13 | DIN vs SPM | russian-premier-league | score=36.6 | peso=0.315
+  2025-09-21 | ORE vs DIN | russian-premier-league | score=31.4 | peso=0.354
+  2025-09-26 | KRY vs DIN | russian-premier-league | score=22.4 | peso=0.397
+  2025-10-04 | DIN vs LOK | russian-premier-league | score=21.8 | peso=0.445
+  2025-11-23 | DIN vs MAK | russian-premier-league | score=66.3 | peso=0.500
+  2025-11-30 | AKH vs DIN | russian-premier-league | score=43.7 | peso=0.561
+  2025-12-06 | SPM vs DIN | russian-premier-league | score=35.8 | peso=0.630
+  2026-03-01 | DIN vs KRY | russian-premier-league | score=72.2 | peso=0.707
+  2026-05-11 | DIN vs KRA | russian-premier-league | score=70.8 | peso=0.794
+  2026-05-17 | BAL vs DIN | russian-premier-league | score=50.9 | peso=0.891
+  2026-07-25 | DIN vs KRY | russian-premier-league | score=86.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 53.80
+  di cui Punteggio decisivo (level_score) medio: 43.03 | Punteggio complessivo (granulari) medio: 10.77 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 41.01 (delta -2.02 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.42, delta avversario +0.46 | Possesso condizionato per venue: delta -0.02 | Goalkeeping condizionato per venue: delta +2.85 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 21.14
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.4 - 72.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.73 (differenza: +4.41)
+Media score in casa: 58.95 | Media score fuori casa: 36.50
+Fattore casa/trasferta applicato: 1.052 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.0
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 1.343 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.862
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.995
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.005
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.000
+Tasso storico clean sheet (porta inviolata nei primi 60'): 25.0% (bonus atteso incorporato nella media pesata: ~6.2pt)
+Fattore trend (media ultime 5: 64.9 vs media 5 PRECEDENTI: 38.7): 1.000
+P(gioca): 41.38% (fonte: tasso di presenza storico (12/29))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T11:30
+Casa: FC Dynamo Moscow | Trasferta: FK Makhachkala
+Competizione: russian-premier-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.9 (range 33.5 - 74.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.31
+Punteggio REALE ottenuto in quella partita: 86.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +37.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      32.8    43.7    +10.9    19.1        SI
+   7        7      25.4    35.8    +10.4    17.4        SI
+   8        8      44.2    72.2    +28.0    15.8        NO
+   9        9      42.0    70.8    +28.8    20.7        NO
+  10       10      35.8    50.9    +15.1    22.2        SI
+  11       11      61.8    86.0    +24.2    20.5        NO
+
+MAE (errore assoluto medio): 19.57
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
