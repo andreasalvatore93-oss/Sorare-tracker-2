@@ -317,7 +317,12 @@ riprende il filone backtest.
 del modello in denaro: **l'unica leva rimasta è la PRECISIONE della
 previsione**, non le regole di decisione (tutte misurate e chiuse, §5).
 
-## 7. Da dove ripartire — il filone aperto
+## 7. Da dove ripartire — il modello e il layer decisionale sono al soffitto
+
+Sintesi onesta dopo il 04/08: **sia la previsione (il punto) sia il layer
+decisionale (allocazione, capitano, varianza) sono al loro tetto dati il
+repo.** Le leve interne sono tutte misurate e chiuse (§5). Quello che resta è a
+MONTE (dati nuovi, disponibilità) o a valle di portafoglio, non nella formula.
 
 **La scomposizione dell'errore è FATTA (04/08, vedi §5 "Piattezza = verità").**
 Esito: il punto-previsione è al **soffitto informativo** delle feature nel
@@ -326,20 +331,27 @@ repo — residuo a R²=0.008, range non calibrato, punto già sovra-disperso per
 dimostrato vicolo cieco. `taratura_confronto_parametri.py` e la regola **MAE +
 correlazione + lift insieme** restano il metro se si tocca un parametro.
 
-**L'unica leva orthogonale ancora aperta — da decidere con l'utente:**
-quando le medie-formazione sono ~pari (caso reale: run #118, 12 arene tutte
-strette fra 265 e 293 pt, tutte appena sopra il pareggio 265), la scelta non
-si gioca più sulla MEDIA (satura) ma su **varianza e correlazione del totale
-formazione**. Dato nuovo 04/08: i residui di compagni di **stessa squadra**
-sono correlati +0.178 (stessa partita +0.122) → stackare la stessa squadra
-alza la varianza del totale (boom/flop insieme). Il §5 "premio atteso = punti
-attesi" chiudeva il caso "sacrificare media per varianza"; **NON** il caso "a
-media pari, cercare varianza dove il premio è convesso (arena top-3 di 10) o
-ridurla dove serve regolarità (leaderboard)" — lì è un guadagno GRATIS, non
-si perde media. Va MISURATO sulle arene reali (`arene_storico.json` +
-`arene_formazioni.json`) prima di agire: probabilmente piccolo (σ totale 49.4
-è grande), ma è l'ultima cosa non testata. Non riaprire `pick_captain()`/
-regole di allocazione: quelle restano chiuse (§5).
+**Anche la leva "varianza a media pari" è CHIUSA — misurata due volte su dati
+reali, bocciata** (verificato 04/08; avevo erroneamente scritto qui che era
+"aperta/da misurare" — sbagliato, vedi commit sotto). Quando le medie-
+formazione sono ~pari (run #118: 12 arene tutte fra 265 e 293) si potrebbe
+pensare che la scelta si sposti su varianza/correlazione del totale (dato reale:
+compagni stessa-squadra correlati +0.178, stessa-partita +0.122). Testato:
+- **Varianza per-giocatore nella selezione** (`ef6667b3e5`,
+  `misura_varianza_prevedibile.py`): dispersione passata→futura corr +0.217
+  (debole); usarla nella scelta dei 5 NON migliora — peso 0.25 → −0.33 pt,
+  peso 0.5 neutro, peso 1.0 peggiora la media (299.1 vs 300.3) e alza solo la
+  coda estrema (P>361: 13.1% vs 10.3%). Nessun cambio.
+- **Varianza da correlazione same-team** (`FORZA_NORM`, `9793831290`,
+  `ab_fattore_varianza_storico.py`) su **48 giornate reali** col punteggio
+  realizzato: 44/48 formazioni identiche, media −0.74 pt/giornata, IC95%
+  [−3.29, +1.81] (zero dentro). Bocciato, resta spento. "Il meccanismo quasi
+  non morde mai su questi pool." (Una misura Monte Carlo su UNA giornata
+  l'aveva dato vincente — `41fa0e1931` — ma non ha retto sul multi-giornata:
+  è il solito limite dello snapshot singolo.)
+Motivo di fondo, coerente col §5: σ del totale ~49.4 è troppo grande perché la
+convessità del premio (a gradini per rank) morda. `pick_captain()` e regole di
+allocazione restano chiuse (§5).
 
 **Dove sta invece il segnale predicibile vero**: NON nel separare meglio i
 titolari, ma a MONTE, nella DISPONIBILITÀ (starter_odds = 0.163, il segnale
