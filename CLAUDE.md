@@ -62,6 +62,8 @@ L'utente paga a token e non vuole leggere prosa lunga in chat.
   file di `docs/handoff/`, non nel messaggio di chat.
 - Non ripeto in chat quello che ho gia' scritto nel file.
 - Se devo fare una domanda, la faccio secca e con le opzioni gia' elencate.
+- Limite duro: massimo 5 righe per messaggio di chat. Analisi, tabelle e
+  numeri non compaiono mai in chat, solo in docs/handoff/.
 
 ## Handoff di fine sessione (automatico)
 

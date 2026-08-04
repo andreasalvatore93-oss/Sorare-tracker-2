@@ -229,7 +229,14 @@ def contesto(cache, slug, ruolo, fine_giornata, cutoff_giornata=None):
     return {'modulo': modulo, 'ruolo': ruolo, 's': s, 'casa': casa,
             'opp_rank': opp_rank, 'presenza': presenza, 'cutoff': cutoff,
             'squadra': squadra, 'opp_slug': opp_slug,
-            'lega': None}
+            # FIX (04/08, bug 5.5 verifica_canale_avversario): era sempre
+            # None, che fa cadere opponent_strength sulla serie GLOBALE
+            # pooled invece che su quella MLS -- build_prediction passa
+            # sempre 'mls' letterale (vedi test_{def,gk,mid,mls_fwd_all}.py,
+            # opponent_lambda_multiplier). Questo modulo importa solo i 4
+            # file predict/ di MLS (_MODULO sopra), quindi la lega vera per
+            # QUALUNQUE chiamata qui dentro e' sempre 'mls'.
+            'lega': 'mls'}
 
 
 def _avversario(ctx):

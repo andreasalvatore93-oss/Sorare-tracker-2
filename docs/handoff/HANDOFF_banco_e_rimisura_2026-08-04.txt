@@ -1,0 +1,260 @@
+HANDOFF — banco riparato + rimisura ranking (Parti 0/1/2/3 fatte, Parte 4 NON fatta)
+Data: 2026-08-04
+Segue: HANDOFF_verifica_canale_avversario_2026-08-04.txt
+Branch: ritaratura-fattori
+
+
+====================================================================
+1. STATO DEL REPO
+====================================================================
+
+Branch: ritaratura-fattori. Commit di questa sessione (in ordine):
+  1) CLAUDE.md: aggiunta riga "limite duro 5 righe in chat" in coda al
+     blocco "Come rispondere all'utente" (il blocco esisteva gia').
+  2) Igiene repo: `git rm -r --cached __pycache__/`, 7 file .pyc scollegati
+     da git (.gitignore aveva gia' le regole __pycache__/ e *.pyc, mancava
+     lo scollegamento dei file gia' tracciati da prima). Nessun dato di
+     calibrazione toccato.
+  3) Fix permanente e intenzionale a backtest_arene_previsioni.contesto():
+     'lega' era sempre None, ora 'mls' letterale (vedi sezione 4).
+
+NON pushato: gli ultimi push su questo branch si sono bloccati (timeout,
+vedi handoff precedente) — da riprovare a fine sessione o dall'utente.
+
+Nessuna modifica a formazione_mls/predict/*. Nessuna propagazione. Parte 4
+(split casa/trasferta) NON iniziata per tempo, come esplicitamente concesso
+dal brief ("se il tempo stringe, fermati dopo la Parte 3").
+
+File modificati preesistenti (non miei, invariati): RIASSUNTO_2026-08-04.md,
+docs/BOT_CERBERO_PROGETTO.md, docs/RIASSUNTO_CERBERO.md.
+
+
+====================================================================
+2. PERCHE' ESISTEVA QUESTO LAVORO
+====================================================================
+
+La sessione precedente aveva trovato che lo screening B.4 (i k validati per
+ranking_k) girava con usa_avversario=False, cioe' col canale reale spento,
+e che contesto() passava sempre lega=None a opponent_strength invece di
+'mls'. Questo brief chiedeva di riparare quel bug (e' il banco di misura,
+non produzione: correggibile), poi rimisurare tutti i k di ranking sul
+banco giusto, prima di decidere qualunque cosa sul ranking o su
+SENSITIVITY_BY_ROLE.
+
+
+====================================================================
+3. COSA HO COSTRUITO O TOCCATO
+====================================================================
+
+PARTE 0: CLAUDE.md, riga aggiunta (vedi sezione 1).
+
+PARTE 1: `git rm -r --cached __pycache__/` (7 file), commit separato.
+
+PARTE 2: backtest_arene_previsioni.py, funzione contesto() (riga ~232):
+  'lega': None  ->  'lega': 'mls'
+  Motivazione nel commento aggiunto al codice: questo modulo importa solo
+  i 4 file predict/ di MLS (_MODULO), quindi 'mls' e' l'unica lega
+  possibile per qualunque chiamata a contesto() in questo file. Nessun
+  cambio di firma: solo il valore nel dict di ritorno.
+
+PARTE 3: due script scratch (non nel repo, funzioni esistenti, nessuna
+formula riscritta):
+  parte3_griglia.py       griglia ranking_k (0,0.05,0.1,0.15,0.2,0.3,0.5)
+                           per fwd/mid/def su 400 slug fissi (stesso
+                           campione delle sessioni precedenti), usa_
+                           avversario=True, lega='mls' (dopo il fix).
+  parte3_gk_split.py       GK sull'intera cache (6.118 punti, stesso n di
+                           B.4) con split temporale prima/dopo mediana.
+
+
+====================================================================
+4. OUTPUT NUMERICO INTEGRALE
+====================================================================
+
+4.A VERIFICA DI IMPATTO DEL FIX lega=None -> 'mls' (punto 2.3 del brief)
+
+  Stesso esperimento 4.D dell'handoff precedente (usa_avversario True/False,
+  senza ranking), confronto pooled(None) vs mls:
+
+  RUOLO  corr pooled(None)  corr mls    differenza
+  FWD    0.2309             0.2310      +0.0001
+  MID    0.2032              0.2033      +0.0001
+  DEF    0.1825              0.1819      -0.0006
+  GK     0.0474              0.0472      -0.0002
+
+  ESITO: il bug era reale (contesto() non passava mai la lega giusta,
+  produzione si') ma il suo EFFETTO su questo campione e' trascurabile
+  (quarta cifra decimale). La correzione resta corretta da tenere: non
+  costa nulla e allinea il banco alla produzione, ma non e' la causa dei
+  numeri di B.4 -- quelli erano gia' spiegati per intero da usa_
+  avversario=False (vedi handoff precedente, punto 4.D).
+
+4.B GRIGLIA RANKING_K SUL BANCO RIPARATO (avversario ACCESO, lega=mls)
+
+  FWD (n=2111, 400 slug)
+  k        MAE       corr    dcorr    lift%   dlift   esito
+  0     14.6967    0.2310      --     23.39     --    <- base
+  0.05  14.6753    0.2354  +0.0044    24.47   +1.08    PASSA
+  0.1   14.6551    0.2387  +0.0077    25.99   +2.59    PASSA
+  0.15  14.6372    0.2407  +0.0097    27.04   +3.65    PASSA
+  0.2   14.6214    0.2416  +0.0106    28.87   +5.47    PASSA  <- vincente
+  0.3   14.5941    0.2404  +0.0094    27.56   +4.17    PASSA
+  0.5   14.5658    0.2299  -0.0011    25.11   +1.72    no
+
+  MID (n=2436, 400 slug)
+  k        MAE       corr    dcorr    lift%   dlift   esito
+  0     12.8611    0.2033      --     18.02     --    <- base
+  0.05  12.8362    0.2073  +0.0040    17.12   -0.91    no
+  0.1   12.8143    0.2108  +0.0075    17.59   -0.43    no
+  0.15  12.7933    0.2136  +0.0103    19.44   +1.41    PASSA
+  0.2   12.7753    0.2158  +0.0125    21.52   +3.49    PASSA
+  0.3   12.7568    0.2185  +0.0152    21.95   +3.92    PASSA  <- vincente
+  0.5   12.7671    0.2177  +0.0144    21.86   +3.84    PASSA
+
+  DEF (n=2362, 400 slug)
+  k        MAE       corr    dcorr    lift%   dlift   esito
+  0     14.6479    0.1819      --     11.80     --    <- base
+  0.05  14.6338    0.1877  +0.0058    13.31   +1.51    PASSA
+  0.1   14.6223    0.1927  +0.0107    15.27   +3.47    PASSA
+  0.15  14.6137    0.1968  +0.0149    16.26   +4.46    PASSA
+  0.2   14.6072    0.2001  +0.0181    15.96   +4.17    PASSA
+  0.3   14.6035    0.2043  +0.0223    16.32   +4.53    PASSA
+  0.5   14.6204    0.2051  +0.0232    15.72   +3.92    PASSA  <- vincente (max corr)
+
+  GK (n=6118, CACHE INTERA -- il campione da 400 slug non ha giornate
+  sufficienti per un lift definito, vedi nota sotto)
+  k        MAE       corr    lift%
+  0     16.0902    0.0746     9.49    <- base
+  0.05  16.0723    0.0810     7.67
+  0.1   16.0572    0.0867     6.82
+  0.15  16.0446    0.0919     7.98
+  0.2   16.0342    0.0965     7.90
+  0.3   16.0215    0.1040    10.58    PASSA (dMAE-0.069 dcorr+0.029 dlift+1.09)
+  0.5   16.0219    0.1138    10.34    PASSA (dMAE-0.068 dcorr+0.039 dlift+0.85)
+
+  Split temporale GK (mediana=2026-02-21, prima n=3008, dopo n=3110):
+  meta'       k=0 corr   k=0.3 corr (d)      k=0.5 corr (d)
+  PRIMA       0.0734     0.1016 (+0.0282)    0.1097 (+0.0363)
+  DOPO        0.0755     0.1062 (+0.0307)    0.1176 (+0.0421)
+  Segno stabile e ampiezza comparabile in entrambe le meta': non e' rumore
+  che si inverte, regge lo split.
+
+4.C CONFRONTO k VINCENTE NUOVO vs VECCHIO B.4 (tutti misurati col canale
+    ORA acceso vs B.4 SPENTO; DEF/MID/GK a n pieno o quasi, FWD n=2111)
+
+  RUOLO  k vecchio B.4 (spento)  corr B.4   k nuovo (acceso, mls)  corr nuovo   k si sposta?
+  FWD    0.3                    +0.0136    0.2                    +0.0106      si', PIU' BASSO
+  MID    0.05                   +0.0021    0.3                    +0.0152      si', 6x PIU' ALTO
+  DEF    0.3                    +0.0122    0.5                    +0.0232      si', PIU' ALTO
+  GK     0.5                    +0.0428    0.5                    +0.0392      NO, stesso k
+
+  (i corr B.4 sono su 75.474/6.118 punti campione intero, quelli nuovi su
+  400 slug/2111-2436-2362 punti per fwd/mid/def, 6.118 per gk -- non sono
+  numeri sullo stesso identico n, il confronto e' sul K vincente e
+  sull'ordine di grandezza, non sulla terza cifra decimale)
+
+
+====================================================================
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+====================================================================
+
+5.1 IL BANCO ERA PIU' ROTTO DI QUANTO SEMBRASSE, MA NON PER LA LEGA
+
+Il fix lega=None->'mls' (Parte 2) e' corretto e va tenuto, ma quantitativamente
+irrilevante (4.A, quarta cifra decimale). Il vero fattore che sposta i
+numeri e' usa_avversario=False vs True, gia' isolato nell'handoff
+precedente. Le due cose erano confuse nel brief ("riparare il banco" le
+trattava insieme): ora sono scorporate con dati propri.
+
+5.2 MID E DEF SI SPOSTANO ESATTAMENTE COME PREVISTO DAL BRIEF (5.4:
+priorita' a MID/DEF)
+
+MID passava a malapena in B.4 (k=0.05, corr+0.0021, quasi rumore) e col
+canale acceso passa deciso a k=0.3 (corr+0.0152, 6-7x piu' grande) con lift
+finalmente positivo a tutti i k utili. DEF quasi raddoppia (corr+0.0122 ->
++0.0232). Il banco rotto in B.4 SOTTOSTIMAVA MID e DEF, non li gonfiava:
+il numero vero e' piu' alto, non piu' basso.
+
+5.3 GK REGGE, CONFERMATO SU CAMPIONE PIENO E SU SPLIT TEMPORALE
+
+Il sospetto del brief (5.5, "verifica su sottocampioni") e' stato testato:
+segno stabile, ampiezza comparabile (+0.028/+0.036 prima meta',
++0.031/+0.042 dopo) in entrambe le meta' cronologiche. Il guadagno
+(+0.0392 a k=0.5, campione pieno 6.118 punti) e' vicino a quello di B.4
+(+0.0428), leggermente piu' basso come atteso dal brief. Resta il ruolo con
+la correlazione assoluta piu' bassa (0.11 anche col ranking), quindi il
+piu' fragile in termini assoluti anche se il segnale relativo regge.
+
+5.4 NESSUN NUMERO E' USCITO "MOLTO SOPRA" L'ATTESA (vincolo 3, brief)
+
+L'aspettativa dichiarata era +0.01/+0.02 di correlazione, con sospetto di
+contaminazione se molto sopra. DEF (+0.0232) e GK (+0.0392) escono un po'
+sopra quella fascia ma non in modo eclatante, e per GK e' comunque PIU'
+BASSO del numero gia' misurato in B.4 (quindi non e' un artefatto nuovo del
+fix). Nessuna azione di pulizia del ranking tentata in questa sessione
+(vietato dal vincolo).
+
+5.5 CAVEAT CHE RESTA APERTO: CONTAMINAZIONE domesticLeagueRanking
+
+Non toccata, come richiesto. Tutti i numeri di questa sezione condividono
+lo stesso limite gia' descritto nell'handoff precedente (sez. 4.C):
+domesticLeagueRanking ha una contaminazione CONFERMATA (29/07, ~2% di
+coppie rilevabili discordi, probabile limite inferiore). Vale per il k
+vecchio di B.4 e per quello nuovo qui allo stesso modo.
+
+5.6 FWD E' L'UNICO RUOLO CHE VA IN DIREZIONE OPPOSTA (k piu' basso, non
+piu' alto)
+
+k vincente scende da 0.3 (B.4) a 0.2 (qui): a k=0.3 col canale acceso il
+corr scende leggermente rispetto a k=0.2 (0.2404 vs 0.2416) pur restando
+un PASSA. Non e' un'anomalia grave (differenza di terza cifra), ma e'
+l'unico ruolo dove il canale FWD lambda_mult (SENSITIVITY 0.4, il piu'
+basso dei 4) sembra sovrapporsi col ranking abbastanza da spostare il
+punto ottimo verso il basso invece che verso l'alto come gli altri tre.
+
+5.7 PARTE 4 NON FATTA
+
+Split casa/trasferta (SPLIT_SHRINK_K) non misurato in questa sessione per
+tempo, come esplicitamente concesso dal brief. Resta da fare, e andrebbe
+fatta con ranking_k GIA' alla nuova taratura (4.C) e canale avversario
+acceso, come richiesto dal brief stesso (punto 4.4) -- non con i vecchi k
+di B.4.
+
+
+====================================================================
+6. DECISIONE APERTA — raccomandazione secca
+====================================================================
+
+COSA MANDARE IN PRODUZIONE PER PRIMO, E CON QUALI VALORI: niente, ancora.
+
+Prima di mandare qualunque ranking_k in produzione manca la Parte 4 (split
+casa/trasferta, che si sovrappone col ranking per costruzione — misurarli
+separati darebbe numeri non sommabili, vedi 5.7) e manca una decisione
+sulla contaminazione del ranking (5.5) che non e' stata quantificata al di
+la' del 2% minimo del 29/07.
+
+Se si dovesse scegliere UNA cosa sola da portare avanti per prima appena la
+Parte 4 sara' pronta: DEF a ranking_k=0.3 (non 0.5). E' il punto dove corr
+(+0.0223) e lift (+4.53, il piu' alto della riga) migliorano INSIEME in
+modo piu' equilibrato di k=0.5 (corr leggermente piu' alta +0.0232 ma lift
+piu' basso, +3.92) — stesso principio gia' in CLAUDE.md (le tre misure
+insieme, non una sola che traina le altre). DEF e' anche il ruolo dove il
+banco riparato ha corretto di piu' verso l'alto la stima di B.4 (5.2), il
+segnale piu' consistente misurato finora su questo canale.
+
+Non e' una decisione: e' il candidato piu' pronto per quando la Parte 4
+sara' chiusa e la contaminazione del ranking sara' stata affrontata (o
+accettata come rischio noto). La decisione resta all'utente/orchestratore.
+
+
+====================================================================
+7. FILE DI RIFERIMENTO
+====================================================================
+
+BRIEF_2026-08-04_banco_e_rimisura.txt (Downloads, non nel repo)
+docs/handoff/HANDOFF_verifica_canale_avversario_2026-08-04.txt   bug lega, tabella 4.D originale
+docs/handoff/HANDOFF_ritaratura_fattori_2026-08-04.txt
+docs/handoff/HANDOFF_screening_segnali_B4_2026-08-04.txt         k originali di B.4
+backtest_arene_previsioni.py                                     contesto() fix riga ~232
+CLAUDE.md                                                         riga limite 5 righe aggiunta
+.gitignore                                                        gia' corretto, solo untrack mancava
