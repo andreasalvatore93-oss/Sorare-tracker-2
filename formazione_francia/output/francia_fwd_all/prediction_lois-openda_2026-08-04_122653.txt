@@ -1,0 +1,98 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T12:26:53.666654Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) lois-openda: 46 pt attesi (36-75)
+   ORDINAMENTO: 42.97
+   SQUADRA: olympique-lyonnais-lyon | AVVERSARIO: sparta-praha-praha
+======================================================================
+
+######################################################################
+# GIOCATORE: lois-openda
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: lois-openda (squadra: olympique-lyonnais-lyon)
+Generato: 2026-08-04T12:26:53.666158Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 56
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 29
+Competizione partita target: uefa-champions-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-04 | ? vs ? | wc-qualification-europe | score=37.1 | peso=0.315
+  2025-09-16 | JUV vs BVB | uefa-champions-league | score=41.3 | peso=0.354
+  2025-09-27 | JUV vs ATA | serie-a-it | score=42.2 | peso=0.397
+  2025-10-29 | JUV vs UDI | serie-a-it | score=37.8 | peso=0.445
+  2025-11-01 | CRE vs JUV | serie-a-it | score=46.7 | peso=0.500
+  2025-11-25 | BOD vs JUV | uefa-champions-league | score=74.8 | peso=0.561
+  2025-12-20 | JUV vs ROM | serie-a-it | score=72.4 | peso=0.630
+  2025-12-27 | PIS vs JUV | serie-a-it | score=42.1 | peso=0.707
+  2026-01-28 | ASM vs JUV | uefa-champions-league | score=30.5 | peso=0.794
+  2026-02-21 | JUV vs COM | serie-a-it | score=33.5 | peso=0.891
+  2026-04-01 | ? vs ? | friendlies | score=34.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 43.86
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=11): 49.56 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 39.52 | Punteggio complessivo (granulari) medio: 4.35 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 2.82 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.64
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.5 - 72.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.77 (differenza: +2.87)
+Media score in casa: 45.44 | Media score fuori casa: 48.52
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.0
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 0.838 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 42.6 vs media 5 PRECEDENTI: 48.6): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-04T18:00
+Casa: AC Sparta Praha | Trasferta: Olympique Lyonnais
+Competizione: uefa-champions-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.3 (range 35.9 - 74.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 43.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.52
+Punteggio REALE ottenuto in quella partita: 34.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -10.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      40.7    72.4    +31.7    16.3        NO
+   7        7      78.4    42.1    -36.3    18.2        NO
+   8        8      48.7    30.5    -18.2    17.2        NO
+   9        9      40.5    33.5     -7.0    18.1        SI
+  10       10      45.5    34.6    -10.9    17.6        SI
+
+MAE (errore assoluto medio): 20.85
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 40.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
