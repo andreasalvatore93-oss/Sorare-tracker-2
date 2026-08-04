@@ -22,6 +22,11 @@ on:
         options:
           - stadio_d
           - ranking_pulito
+          - soglie_arene
+      fixture:
+        description: "giornata per soglie_arene (es. football-8-12-may-2026)"
+        required: false
+        default: football-8-12-may-2026
       ruolo:
         description: "ruolo (solo per stadio_d): def, mid, fwd, gk"
         required: false
@@ -54,6 +59,26 @@ jobs:
         env:
           PYTHONUNBUFFERED: "1"
         run: python ranking_pulito.py
+      # TEST A/A sull'interruttore prima di spendere una griglia (regola
+      # CLAUDE.md): MIN_QUALITY_SCORE a due estremi assurdi. Se il backtest
+      # non si muove, la soglia e' inerte e la griglia misurerebbe zero.
+      - name: Soglie arene — baseline (modello nuovo, soglie vecchie)
+        if: inputs.misura == 'soglie_arene'
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: python backtest_arene_produzione.py --fixture ${{ inputs.fixture }}
+      - name: Soglie arene — A/A MIN_QUALITY_SCORE = 0
+        if: inputs.misura == 'soglie_arene'
+        env:
+          PYTHONUNBUFFERED: "1"
+          MIN_QUALITY_SCORE: "0"
+        run: python backtest_arene_produzione.py --fixture ${{ inputs.fixture }}
+      - name: Soglie arene — A/A MIN_QUALITY_SCORE = 999
+        if: inputs.misura == 'soglie_arene'
+        env:
+          PYTHONUNBUFFERED: "1"
+          MIN_QUALITY_SCORE: "999"
+        run: python backtest_arene_produzione.py --fixture ${{ inputs.fixture }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
