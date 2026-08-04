@@ -40,6 +40,10 @@ on:
         description: 'Numero di All Stars Under 23 da 7, priorita 4. 0 = nessuna.'
         required: false
         default: '0'
+      arena_leghe_abilitate:
+        description: 'Arene dedicate per lega (es. mls,kleague o "tutte"). Vuoto = disattivate (default): solo Arena All Stars.'
+        required: false
+        default: ''
       list_unused_candidates:
         description: 'Stampa nel log i candidati eleggibili mai schierati (debug, 0/1)'
         required: false
@@ -441,6 +445,7 @@ jobs:
           IN_SEASON: ${{ github.event.inputs.in_season }}
           ALLSTARS: ${{ github.event.inputs.allstars }}
           ALLSTARS_U23: ${{ github.event.inputs.allstars_u23 }}
+          ARENA_LEAGUES_ENABLED: ${{ github.event.inputs.arena_leghe_abilitate }}
           LIST_UNUSED_CANDIDATES: ${{ github.event.inputs.list_unused_candidates }}
           PYTHONUNBUFFERED: "1"
         run: python generatore_formazioni/build_formazione_globale.py

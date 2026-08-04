@@ -142,10 +142,27 @@ OUTPUT_DIR = os.path.join(_HERE, 'output')
 # l'utente gioca le Arene. NB: 'olanda' = Eredivisie, 'francia' = Ligue 1.
 # Le In Season restano su MLS + K League (DEDICATED_LEAGUES sopra), non
 # richieste per gli altri campionati.
-ARENA_LEAGUES = tuple(lg for lg in (
+# Arene dedicate per lega DISATTIVATE DI DEFAULT (04/08, richiesta esplicita
+# utente): il bot le generava come piu' efficienti in base al punteggio
+# atteso, ma senza sapere se in quella giornata sono davvero schierabili
+# (es. In Season non attivo quella GW). L'utente le sostituisce comunque a
+# mano con Arena All Stars 260, quindi il tentativo era solo overhead.
+#
+# Riattivabili di volta in volta con ARENA_LEAGUES_ENABLED (comma-separated,
+# es. 'mls,kleague' o 'tutte' per tutte le leghe sotto): quando valorizzata,
+# il bot torna a provare a generarle rispettando comunque il vincolo di
+# efficienza esistente (PRIORITY_ORDER + confronto atteso/pareggio piu'
+# sotto decidono se schierarle davvero). Default vuoto = tuple vuota, tutto
+# il codice a valle (FORMATION_SHAPES/PRIORITY_ORDER/ecc, tutti derivati da
+# questa costante) si disattiva da solo, nessun'altra modifica necessaria.
+_ARENA_LEAGUES_ALL = (
     'mls', 'kleague', 'belgio', 'olanda', 'turchia', 'portogallo', 'spagna',
     'germania', 'francia', 'croazia', 'scozia',
-) if lg in _DISCOVERED)
+)
+_arena_leagues_enabled = {s.strip() for s in os.environ.get('ARENA_LEAGUES_ENABLED', '').split(',') if s.strip()}
+if _arena_leagues_enabled == {'tutte'}:
+    _arena_leagues_enabled = set(_ARENA_LEAGUES_ALL)
+ARENA_LEAGUES = tuple(lg for lg in _ARENA_LEAGUES_ALL if lg in _arena_leagues_enabled and lg in _DISCOVERED)
 
 ARENA_LEAGUE_LABELS = {
     'mls': 'MLS', 'kleague': 'K League', 'belgio': 'Belgio', 'olanda': 'Eredivisie',
