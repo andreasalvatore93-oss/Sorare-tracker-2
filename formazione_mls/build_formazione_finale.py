@@ -540,14 +540,48 @@ def _match_key(row):
 # e comunque n=967) e soprattutto FWD-FWD: la sua correlazione (-0.037) e'
 # identica al proprio controllo (-0.038), cioe' non c'e' NESSUN effetto da
 # scontro diretto, solo la distribuzione dei punteggi di ruolo.
+#
+# RIPORTATA IN SCALA il 04/08 (formazione_mls/diagnostics/misura_sinergie_
+# coppie.py, 75.474 coppie previsione/realizzato walk-forward col modello di
+# oggi). Era l'ULTIMA tabella rimasta sulla vecchia convenzione "correlazione
+# dei PUNTEGGI x20": la gemella positiva (SAME_TEAM_SYNERGY_BONUS_BY_PAIR) era
+# gia' passata il 02/08 alle correlazioni dei RESIDUI convertite in punti di
+# punteggio atteso, questa no. Le due tabelle vivevano quindi su scale diverse
+# di un fattore 5-10, e il generatore sacrificava fino a SEI punti certi per
+# evitare una coppia avversaria che ne costa UNO -- lo stesso errore gia'
+# corretto sul bonus GK+DEF (era 5, misurato 1.2), rimasto sull'altra meta'.
+#
+# Segno e ordine delle coppie sono CONFERMATI (nessuna coppia aggiunta o tolta,
+# nessuna cambia verso). Cambia solo la scala. La conversione e' la stessa del
+# lato positivo: quanto quella coppia toglie alla dispersione di una formazione
+# da 5, per quanto vale un punto di dispersione a FORZA_RIFERIMENTO=280:
+#   sd * (sqrt(5) - sqrt(5 + 2*rho)) * 0.53,  con sd = 17.45
+#
+#  coppia    n coppie    rho     IC 95%            controllo   punti@280
+#  GK-FWD      10237   -0.227   [-0.243,-0.210]     +0.001       1.0   (era 6)
+#  DEF-FWD     47429   -0.144   [-0.153,-0.134]     -0.000       0.6   (era 4)
+#  GK-MID      12746   -0.121   [-0.138,-0.106]     +0.003       0.5   (era 3)
+#  DEF-MID     58527   -0.090   [-0.098,-0.081]     +0.006       0.4   (era 3)
+#  MID-MID     27119   -0.063   [-0.076,-0.050]     -0.003       0.25  (era 2)
+#  MID-FWD     43625   -0.058   [-0.067,-0.048]     -0.001       0.25  (era 2)
+#  DEF-DEF     31437   -0.046   [-0.057,-0.035]     +0.001       0.2   (era 2)
+#  GK-DEF      13931   -0.011   IC include lo zero               -     (assente)
+#  FWD-FWD     17415   -0.016   pari al proprio controllo        -     (assente)
+#  GK-GK        1472   +0.034   IC include lo zero               -     (assente)
+#
+# Il "controllo" e' la stessa coppia di ruoli su partite DIVERSE: esce ~0
+# ovunque, quindi queste correlazioni sono davvero effetto dello scontro
+# diretto e non della forma delle distribuzioni di ruolo.
 CROSS_TEAM_PENALTY_BY_PAIR = {
-    frozenset(('FWD', 'GK')): 6,    # -0.312 * 20 ~= 6.2 (31/07, nuova - la piu' forte)
-    frozenset(('DEF', 'FWD')): 4,   # -0.225 * 20 ~= 4.5 (31/07, conferma di 4)
-    frozenset(('DEF', 'MID')): 3,   # -0.154 * 20 ~= 3.1 (31/07, conferma di 3)
-    frozenset(('GK', 'MID')): 3,    # -0.145 * 20 ~= 2.9 (31/07, nuova)
-    frozenset(('MID', 'MID')): 2,   # -0.103 * 20 ~= 2.1 (31/07, conferma di 2)
-    frozenset(('DEF', 'DEF')): 2,   # -0.101 * 20 ~= 2.0 (31/07, nuova)
-    frozenset(('FWD', 'MID')): 2,   # -0.079 * 20 ~= 1.6 (31/07, nuova)
+    frozenset(('FWD', 'GK')): 1.0,   # rho -0.227, la piu' forte: l'attaccante
+                                     # segna coi gol, il portiere avversario
+                                     # con la porta inviolata
+    frozenset(('DEF', 'FWD')): 0.6,   # rho -0.144
+    frozenset(('GK', 'MID')): 0.5,    # rho -0.121
+    frozenset(('DEF', 'MID')): 0.4,   # rho -0.090
+    frozenset(('MID', 'MID')): 0.25,  # rho -0.063
+    frozenset(('FWD', 'MID')): 0.25,  # rho -0.058
+    frozenset(('DEF', 'DEF')): 0.2,   # rho -0.046
 }
 
 
@@ -615,7 +649,17 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
     # In mediana danneggia, ma il bersaglio e' sempre la coda alta per scelta
     # esplicita dell'utente: un premio basso mancato costa poco, quello alto
     # costa tutto.
-    if role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
+    #
+    # GATE 'not variance_mode' (04/08, doppio conteggio reale): questo blocco e
+    # la tabella same-team piu' sotto sono LA STESSA MISURA -- GK_DEF_PAIR_BONUS
+    # vale 1.2 e SAME_TEAM_SYNERGY_BONUS_BY_PAIR[GK,DEF] vale 1.2, entrambi
+    # ricavati dallo stesso rho +0.29 il 02/08. In variance_mode (Arena/All
+    # Stars) sparavano ENTRAMBI: un DEF della squadra del portiere prendeva
+    # +2.40 invece di +1.16, e il secondo +2.60 invece di +1.87. Verificato
+    # chiamando synergy_sort_key direttamente. Fuori da variance_mode (In
+    # Season) la tabella non e' applicata, quindi questo blocco resta l'unica
+    # fonte del bonus e il comportamento li' NON cambia.
+    if (not variance_mode) and role == 'DEF' and gk_team_slug and team_slug == gk_team_slug:
         gia_presi = (chosen_roles_by_team or {}).get(gk_team_slug, {}).get('DEF', 0)
         # scalato sulla forza: la varianza serve sotto il pareggio, non sopra
         adjusted += fattore_varianza(forza_attesa) * (
@@ -639,8 +683,16 @@ def synergy_sort_key(role, row, gk_team_slug, gk_opponent_slug, team_counts=None
     # Ora ha un gate PROPRIO, attivo di default: e' un vincolo di realta'
     # (due carte che si annullano a vicenda), non una preferenza tattica come
     # le sinergie positive.
+    # SCALATA SULLA FORZA dal 04/08, come i bonus positivi: era l'unico
+    # meccanismo di correlazione a NON passare da fattore_varianza. Un punto di
+    # dispersione vale 0.78 su una formazione da 265 e 0.31 su una da 295, e
+    # questo vale identico che la dispersione la si guadagni (compagni) o la si
+    # perda (avversari) -- e' la stessa valuta. Senza lo scaling, la penalita'
+    # restava piena proprio sulle formazioni forti, dove togliere varianza
+    # e' un beneficio e non un costo.
     if apply_cross_team_penalty:
-        adjusted -= _cross_team_penalty(role, row, chosen_roles_by_team)
+        adjusted -= fattore_varianza(forza_attesa) * _cross_team_penalty(
+            role, row, chosen_roles_by_team)
     # apply_positive_synergy nel gate (30/07): prima non serviva perche' In
     # Season aveva variance_mode sempre False -- ora che la sinergia same-team
     # e' abilitata anche li', deve rispettare lo stesso "greedy puro dalla
