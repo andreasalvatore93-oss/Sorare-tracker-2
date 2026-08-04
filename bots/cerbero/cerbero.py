@@ -56,7 +56,15 @@ _oss_lock = threading.Lock()
 _OSS_HEADER = ['ts_utc', 'league_slug', 'player_slug', 'card_slug', 'prezzo_min_eur',
                'media_recente_eur', 'sconto_temporale_pct', 'trend', 'rendimento_atteso_pct',
                'guadagno_atteso_eur', 'gate_passa',
-               'prezzo_secondo_eur', 'margine_trasversale_pct', 'scarto_thin_market']
+               'prezzo_secondo_eur', 'margine_trasversale_pct', 'scarto_thin_market',
+               'tipo_riga']
+# tipo_riga (15a colonna, b2 04/08): 'completa' = osservazione con asse temporale
+# (fetch transazioni pagato) + trasversale; 'trasversale_only' = scarto per margine <
+# soglia MakeOffer, registrato PRIMA del fetch transazioni -> ha SOLO l'asse trasversale
+# (prezzo_secondo/margine gia' calcolati), i campi temporali sono vuoti. Rimuove il bias
+# di selezione sulla soglia trasversale (limite #1 del progetto) a costo query ZERO.
+# Le righe vecchie a 11/14 campi non hanno la colonna: csv.DictReader la completa a None
+# e il risolutore le tratta come 'completa' (e' cio' che sono). Nessuna migrazione.
 
 
 _intestazione_verificata = False
@@ -102,7 +110,8 @@ def _aggiorna_intestazione_osservazioni():
 
 def _log_osservazione(league_slug, player_slug, card_slug, prezzo, media_recente,
                        sconto, trend, rend_atteso, gain_atteso, passa,
-                       prezzo_secondo=None, margine_pct=None, thin_market=False):
+                       prezzo_secondo=None, margine_pct=None, thin_market=False,
+                       tipo_riga='completa'):
     try:
         with _oss_lock:
             _aggiorna_intestazione_osservazioni()
@@ -123,6 +132,7 @@ def _log_osservazione(league_slug, player_slug, card_slug, prezzo, media_recente
                     round(prezzo_secondo, 4) if prezzo_secondo is not None else '',
                     round(margine_pct, 2) if margine_pct is not None else '',
                     '1' if thin_market else '0',
+                    tipo_riga or 'completa',
                 ])
     except Exception:
         pass  # il logging osservazioni non deve mai far fallire una valutazione
@@ -3591,6 +3601,19 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
                         'league_slug': league_slug,
                         'excluded_league': excluded_league,
                     }
+        # [CERBERO b2 04/08] RIGA TRASVERSALE-ONLY. Qui il margine (prezzo_secondo,
+        # margine_trasversale_pct) e' gia' calcolato dalla scansione prezzi -- fetch che
+        # ogni candidato arrivato fin qui ha gia' pagato, NON aggiunto da b2. Il fetch
+        # transazioni (asse temporale) NON e' ancora avvenuto e NON avverra' (return sotto):
+        # zero query extra. Registriamo comunque l'asse trasversale, altrimenti i margini
+        # bassi -- la maggioranza -- non entrano MAI nel CSV e la soglia trasversale resta
+        # invalidabile (bias di selezione, limite #1). Campi temporali vuoti, gate_passa=0.
+        # Nessun impatto decisionale: la riga si scrive DOPO ogni logica di bid periodico e
+        # subito prima del return che gia' c'era.
+        _log_osservazione(league_slug, player_slug, card_slug, true_min_price,
+                          None, None, None, None, None, False,
+                          prezzo_secondo=second_min_price, margine_pct=margin_percent * 100.0,
+                          thin_market=False, tipo_riga='trasversale_only')
         return False  # margine insufficiente per qualunque ramo -- niente query liquidita' sprecata
 
     # Controllo liquidita' (thin_market cache + query di rete) spostato QUI: solo ora
@@ -3676,7 +3699,7 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
                        _gate.get('sconto_temporale'), _trend_temp, _gate.get('rendimento_atteso_pct'),
                        _gate.get('guadagno_atteso_eur'), _gate['passa'],
                        prezzo_secondo=second_min_price, margine_pct=margin_percent * 100.0,
-                       thin_market=_thin_market)
+                       thin_market=_thin_market, tipo_riga='completa')
 
     # MODALITA' AGGRESSIVA: filtro transazioni minime (thin market) disattivato quando attiva.
     if _thin_market:
