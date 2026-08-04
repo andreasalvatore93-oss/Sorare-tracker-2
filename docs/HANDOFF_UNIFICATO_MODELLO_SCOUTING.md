@@ -361,6 +361,29 @@ manager, non c'è edge da inseguire. NON chiuso del tutto: accumulare fino a
 - Russia: cache passata da 3 a 20 gamelog (05/08), ancora INERTE (<100), non
   ancora popolata a sufficienza — richiede altre run/GW per crescere.
 
+### Analisi pooled 4 GW — `analisi_manager/dati/analisi_debolezze_capitano.md`
+Fatta il 05/08 mentre girava l'accumulo. Sintesi (dettaglio nel file):
+- **De-duplicando, nessun effetto supera 2.1σ.** Il modello non ha una
+  debolezza sistematica catturabile con le feature disponibili (conferma §5).
+- **La debolezza vera è il salto giocatore→formazione**: corr(atteso, reale) a
+  livello giocatore +0.22, ma sommando 5 carte NON sale (+0.18) e
+  **corr(atteso_somma, rank in arena) = −0.02, cioè zero**. Non è la
+  classifica a essere rumorosa (corr(reale_somma, rank) = −0.83): siamo noi a
+  non anticiparla. Il segnale esiste solo negli esiti (quintile alto vs basso
+  = +19.4 pt reali su 5 carte), invisibile nella correlazione media.
+- **Capitano: riconfermato chiuso.** `pick_captain` pareggia con gli umani
+  (+0.19 pt/form., +0.7σ) e nessuna delle 6 policy alternative testate lo
+  batte ("più storico" lo peggiora a −2.6σ). Il capitano vale poco comunque:
+  3.8 pt fra scelta peggiore e casuale, altri 3.8 di headroom oracolo.
+  Evitato un falso positivo: "i manager sbagliano a fare capitano il FWD" è
+  FALSO — i FWD capitani rendono +1.4 sopra i FWD non-capitani, il −7.4 è il
+  livello base del ruolo (trappola §11).
+- **Unica ipotesi azionabile emersa**: giocatori con **storico < 10 partite**
+  sottostimati di +4.9 (2.1σ, n=71 unici) → possibile shrinkage prior troppo
+  forte su chi ha pochi dati. Da riverificare con più GW prima di toccare.
+- **qtn-d8cd72ac pesa 58% del pool** (953/1645): non è un campione bilanciato.
+- **eoghankelly unico edge/se ≥2 (+2.4)** ma n=29: ricontrollare quando cresce.
+
 ### Continuare l'accumulo
 GW più vecchie = più storico, meno scarti. Slug: GW92 `football-15-20-jul-2026`
 (07-20), GW91 `football-10-13-jul-2026`(07-13), GW90 `football-5-8-jul-2026`
@@ -426,7 +449,13 @@ GW già fatte.
     (`.game_log_cache`, `.cache`) su questo filesystem: conta 0 dove os.walk
     conta migliaia. Ha gonfiato i cache-miss GW1 da 47 a 78 (04/08). Per
     contare/cercare i file di cache usare SEMPRE `os.walk`, mai `glob('**')`.
-15. **Due cache distinte per giocatore**: `.game_log_cache/<slug>_gamelog.json`
+15. **Analisi manager: le osservazioni NON sono indipendenti** — lo stesso
+    giocatore-partita compare una volta per ogni manager che lo schiera (1645
+    righe = 892 unici sulle 4 GW). n gonfiata, se sottostimata, **σ
+    sovrastimate**. "Portogallo +19.8 pt a 6.4σ" era Pavlidis contato 8 volte:
+    de-duplicando sparisce. Prima di credere a un effetto, ri-misurarlo con
+    una riga per `(gw, slug)`. Vale per `report_*.md` e `AGGREGATO.md`.
+16. **Due cache distinte per giocatore**: `.game_log_cache/<slug>_gamelog.json`
     (il game log, scritto SEMPRE, anche per storico insufficiente — e' l'asset
     riusabile) e `.cache/<slug>_detail_cache.json` (dettaglio per-partita,
     riempito solo se la predizione va a buon fine). Il criterio di "dato gia'
