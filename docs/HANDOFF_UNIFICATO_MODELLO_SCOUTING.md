@@ -11,7 +11,7 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 04/08/2026, ore 21:45 (Roma, CEST)**.
+Ultimo aggiornamento: **sessione 04/08/2026, ore 23:00 (Roma, CEST)**.
 Sessione attuale = filone "smart money" (vedi §7). Regola di stile: questo
 file resta SNELLO (max ~4 pagine) e ogni aggiornamento riporta sessione,
 giorno e ora nel fuso di Roma.
@@ -322,66 +322,44 @@ previsione**, non le regole di decisione (tutte misurate e chiuse, §5).
 
 ## 7. Da dove ripartire — SESSIONE ATTIVA: "smart money"
 
-### Il deliverable (da qui si riparte)
-Domanda unica e falsificabile: **i giocatori che i bravi manager scelgono
-battono il nostro `atteso` sul realizzato?** (= esiste un segnale "smart money"
-che il modello NON ha?).
-- **SÌ** → feature nuova = predizioni migliori **e** edge per vincere (seguire
-  i pick sharp).
-- **NO** → il modello è il tetto anche contro gli umani → si chiude il filone.
-È l'UNICO deliverable che vale le ore. **Scartati** (decisione utente): il gate
-odds da solo (troppo aleatorio) e "più dati stesse feature" (il tetto è
-*feature* mancanti, non dati — §5).
+### Il deliverable
+Domanda falsificabile: **i pick dei bravi manager battono il nostro `atteso`?**
+SÌ → feature nuova + edge (seguire i pick sharp). NO → il modello è il tetto
+anche contro gli umani → si chiude. **Scartati** (utente): gate-odds da solo e
+"più dati stesse feature" (il tetto è *feature* mancanti, §5).
 
-### Come (metodo deciso con l'utente, con kill-switch)
-1. Manager = campione non-bias scelto a caso dall'utente. **Lista (12 slug):**
-   `eoghankelly`, `badamt`, `milkyfresht`, `lairdinho`, `bxl-spartak`,
-   `spillo678`, `braddersfc`, `bryanmid`, `shirimimi`, `matangel716`,
-   `fins49`, `ninoshooter`. NB: non sappiamo ancora quante arene passate
-   abbiano giocato — primo passo è lo **scoping** (estrazione formazioni arena
-   su GW chiuse, pubblica e veloce, ZERO predizione) per contare quante arene
-   e quanti giocatori unici, poi si decide il batch di predizione.
-2. Batch piccolo: **~10-15 manager × 3-4 GW CHIUSE** → qualche centinaio di
-   giocatori unici ≈ **una sessione**, non ore al buio.
-3. Estrai le formazioni arena (pubbliche, veloci) con
-   `ricostruisci_manager.py <slug> --giornate <gw> --solo-arene` (`SORARE_COOKIE`).
-4. I loro giocatori NON posseduti si predicono col loop **`TARGET_SLUG`** su
-   `formazione_mls/predict/test_<ruolo>.py` (~15-30s a cache-miss, poi
-   **cachato per sempre** = asset che rende gratis le analisi future). NIENTE
-   proxy di presenza storica (sporco, scartato): lo "stato" di una carta in una
-   GW passata è il **walk-forward as-of-then**, che va calcolato perché
-   `errore_storico` copre solo il pool utente (~5.7% dei loro giocatori).
-5. Misura il **residuo smart-money = realizzato − atteso** sui loro pick.
-   ≠0 → scala. ~0 → **STOP**.
+### Metodo (come lo facciamo)
+1. Campione non-bias di manager scelti a caso: i **12 slug** `eoghankelly,
+   badamt, milkyfresht, lairdinho, bxl-spartak, spillo678, braddersfc, bryanmid,
+   shirimimi, matangel716, fins49, ninoshooter` + **qtn**
+   (`qtn-d8cd72ac-...`, aggiunto). **satonio** è FUORI dal campione (whale):
+   usato una volta sola per gonfiare la cache, i suoi pick non entrano nei
+   residui.
+2. Solo **arene LIMITED** (limited/beginner/uncapped). Rare e `arena_altro`
+   (SR/unique) ESCLUSE: mint diverso, pochissimi le hanno, non affidabili.
+3. Per ogni GW chiusa: estrai le formazioni-arena (pubbliche), calcola
+   l'`atteso` in **walk-forward stretto as-of pre-GW** con le stesse funzioni di
+   produzione (`backtest_arene_previsioni.score_atteso`, `CacheLocale` legge i
+   gamelog da `formazione_*/output/*/.game_log_cache/`), misura il **residuo =
+   realizzato − atteso** (realizzato = `punteggio` grezzo d'arena, tolto
+   capitano +20%). Dati SEMPRE distinti per GW (slug fixture nel nome), così
+   aggiungere manager = ri-targettare le stesse GW.
+4. La cache game-log è l'asset: scritta una volta, il walk-forward di qualunque
+   GW è locale a costo zero. Le run pesanti (estrazione+cache) su GitHub.
 
-### Fatto in questa sessione (04/08 sera)
-- **Scoping GW1 dei 12 manager** (GW1 = `football-31-jul-4-aug-2026`, CHIUSA):
-  `ricostruisci_manager --solo-arene` su tutti e 12. **8 attivi**, 4 senza
-  arene in GW1 (badamt, braddersfc, bryanmid, matangel716). **64 arene**, **233
-  giocatori unici**.
-- **Copertura pipeline**: TUTTI i giocatori non ancora cachati sono in leghe
-  con pipeline gia' esistente (messico/argentina/scozia/danimarca/austria/
-  croazia/cina/svizzera/russia/peru/norvegia/kleague/cile/mls). **0 formazioni
-  escluse, nessuna pipeline da costruire per GW1** (la regola utente "escludi
-  le formazioni con giocatori senza pipeline" e' rimasta a vuoto qui).
-- **Batch cache-miss reale = 47** (non 78: c'era un bug di conteggio, vedi
-  §8.14). Criterio: gamelog assente.
-- **Nuovo strumento** `predici_manager_batch.py` + workflow
-  `predici_manager.yml`: instrada slug->lega/ruolo, lancia il predict con
-  `TARGET_SLUG`, riempie la **cache game-log INCREMENTALE** (l'asset e' la
-  cache, riusabile da tutto il modello: una volta scritta il walk-forward
-  as-of di qualunque GW e' locale a costo zero). Testato in locale
-  (greg-kiltie OK 29s). **Run GitHub dei 47 lanciata** (commit `fc1ed1dd37`,
-  run id 30944328784) — al ritorno leggere l'esito e i giocatori
-  strutturalmente non predicibili (storico <3 partite valide, come
-  jae-min-jeong: la cache si scrive comunque).
-- **Fix latente**: il forever-young GW2 era dato per committato ma era
-  gitignored (`dati_globali/*`); ora whitelisted `dati_globali/smart_money/` e
-  `manager_*.json`, cosi' i punteggi realizzati (dentro le carte, campo
-  `punteggio`) restano versionati per la misura residuo.
-- **forever-young (sessione precedente)**: 21 arene GW2 estratte, 41/42
-  predetti. Confronto NAIVE: pari selezione, lui piu' rischio-disponibilita'
-  (odds 0.74 vs 0.84). Realizzato in sospeso finche' GW2 non gioca.
+### Infrastruttura creata — cartella `analisi_manager/` (home del filone)
+| file | cosa fa |
+|---|---|
+| `METODOLOGIA.md` | tutti gli assi d'analisi (A selezione, B capitano, C composizione, D esito-arena, E volume, F skill-per-manager nel tempo, G coda positiva, H sinergie, I benchmark) + scelte fissate |
+| `analizza_gw.py` | analizza UNA GW: `--gw <slug> --fine <YYYY-MM-DD>`. Scrive `dati/righe_<gw>.json` + `formazioni_<gw>.json` + `report_<gw>.md` e aggiorna `INDICE.md` (verdetto per GW). Whitelist manager e `ARENE_AMMESSE` qui dentro |
+| `aggrega.py` | pool di tutte le GW + **persistenza per manager** + **edge controllato per ambiente-GW** (residuo − media della GW) → `AGGREGATO.md` |
+| `pipeline_manager.py` | TUTTO in una run (per GitHub): estrai → risolvi/cacha (gamelog mancante o stantio) → analizza ogni GW → aggrega. Scrive `dati/copertura_cache.json` (quanti pick saltati per lega senza pipeline) |
+| `dati/` | dataset+report per-GW che si ACCUMULANO |
+| `predici_manager_batch.py` (root) | instrada slug→lega/ruolo e riempie la cache game-log; flag `--force` per APPENDERE la GW nuova a gamelog stantii |
+
+Workflow GitHub: `analisi_manager.yml` (pipeline completa, input `manager`/`gw`),
+`predici_manager.yml` (solo cache di una lista). `ricostruisci_manager.py`
+estrae le arene (ora esclude rare+altro di default).
 
 ### VERDETTO su 4 GW (04/08 sera) — nessun segnale smart-money affidabile
 Misura walk-forward su **673 pick, 4 GW** (football-21-24/24-28/28-31-jul +
@@ -397,21 +375,38 @@ Strutture-modello (non smart-money) da tenere d'occhio: GK bias −5.7/FWD −4.
 Filone NON chiuso: si continua ad accumulare GW (fins49 è l'unico con edge+
 sostenuto, da confermare); se resta ~0 su 8-10 GW → STOP.
 
-### Casa del filone: `analisi_manager/` (vedi CLAUDE.md)
-Metodologia + `analizza_gw.py` (script unico, riusa `score_atteso` walk-forward)
-+ dataset/report PER-GW in `dati/` + `INDICE.md` che accumula i verdetti. Dati
-sempre distinti per GW (slug fixture nel nome). Strumenti a monte già pronti e
-su GitHub: `ricostruisci_manager` (estrae arene), `predici_manager.yml`
-(refresh/predict cache, flag `force` per appendere la GW nuova ai gamelog).
+### STATO LIVE (04/08 ~23:00 Roma) — cosa sta girando ADESSO
+Su GitHub è in corso la pipeline (`analisi_manager.yml`, run id **30949880136**)
+che estrae **satonio** (~184 arene/GW) + **qtn**, cacha i loro giocatori in leghe
+coperte (satonio ~400+, asset riusabile) e ri-analizza. **Al ritorno**:
+1. Controlla che la run sia finita (`gh run list --workflow=analisi_manager.yml`).
+2. `git pull`. La run avrà committato cache + report INCLUDENDO satonio (girava
+   con codice pre-esclusione). **RIGENERA escludendo satonio** (già fuori dalla
+   whitelist nel codice corrente):
+   ```
+   for p in football-31-jul-4-aug-2026:2026-08-04 football-28-31-jul-2026:2026-07-31 \
+            football-24-28-jul-2026:2026-07-28 football-21-24-jul-2026:2026-07-24; do
+     python analisi_manager/analizza_gw.py --gw ${p%%:*} --fine ${p##*:}; done
+   python analisi_manager/aggrega.py
+   ```
+   poi `pcm`. Controlla `dati/copertura_cache.json` per il buco (giocatori
+   satonio in leghe non tracciate, saltati — non è un problema, non li useremmo).
 
-### Prossimo passo concreto
-1. **Accumulare GW a ritroso** sugli stessi 12 manager (GW95/94/93 =
-  football-28-31-jul / 24-28-jul / 21-24-jul-2026): estrai arene, refresh
-  gamelog, `analizza_gw.py --gw <slug> --fine <data>`. Cercare segni STABILI.
-2. Se un manager mostra residuo positivo persistente su GW indipendenti (asse F)
-  → è lo sharp vero, pesare i suoi pick.
-3. **forever-young**: la GW2 (football-4-7-aug-2026) ora è iniziata; quando
-  chiude, misurare il realizzato (primo test smart-money su mazzo simile).
+### Come CONTINUARE (accumulare altre GW, tutti i manager insieme)
+Le GW più vecchie hanno più storico = meno scarti. Slug pronti: GW92
+`football-15-20-jul-2026`(fine 07-20), GW91 `football-10-13-jul-2026`(07-13),
+GW90 `football-5-8-jul-2026`(07-08), GW89 `football-1-4-jul-2026`(07-04)... (per
+altri: query `so5Fixtures`, vedi §10). Una GW alla volta o in blocco, via
+workflow GitHub:
+```
+gh workflow run analisi_manager.yml -f gw="football-15-20-jul-2026:2026-07-20,football-10-13-jul-2026:2026-07-13"
+```
+(manager vuoto = i 13 di default, satonio escluso). Poi `git pull`, rigenera
+come sopra se serve, e leggi `INDICE.md`/`AGGREGATO.md`. **Aggiungere un
+manager**: aggiungi lo slug alla whitelist in `analizza_gw.py` + `DEFAULT_MANAGER`
+in `pipeline_manager.py`, lancia il workflow con `-f manager=<slug>` sulle GW già
+fatte per allinearlo. Regola di stop: se dopo ~8-10 GW il residuo resta ~0 e
+nessun manager ha edge persistente (asse F) → chiudi il filone.
 
 ### Piste secondarie (non urgenti)
 - **Tabelle premi** delle competizioni a classifica grande (All Star, Limited,
