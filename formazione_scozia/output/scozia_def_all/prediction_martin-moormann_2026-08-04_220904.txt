@@ -1,0 +1,118 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T22:09:04.068947Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) martin-moormann: 50 pt attesi (32-73)
+   ORDINAMENTO: 50.07
+   SQUADRA: motherwell-motherwell | AVVERSARIO: hjk-helsinki
+======================================================================
+
+######################################################################
+# GIOCATORE: martin-moormann
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: martin-moormann (squadra: motherwell-motherwell)
+Generato: 2026-08-04T22:09:04.067721Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-09 | BWL vs HTB | austrian-bundesliga | score=73.6 | peso=0.645
+  2025-08-17 | WAC vs BWL | austrian-bundesliga | score=32.6 | peso=0.660
+  2025-09-27 | BWL vs ALT | austrian-bundesliga | score=43.5 | peso=0.675
+  2025-10-04 | FAK vs BWL | austrian-bundesliga | score=70.7 | peso=0.691
+  2025-10-19 | BWL vs STU | austrian-bundesliga | score=56.4 | peso=0.707
+  2025-10-25 | WSG vs BWL | austrian-bundesliga | score=4.1 | peso=0.724
+  2025-11-01 | BWL vs ASK | austrian-bundesliga | score=94.6 | peso=0.741
+  2025-11-08 | SVR vs BWL | austrian-bundesliga | score=27.3 | peso=0.758
+  2025-11-22 | BWL vs FAK | austrian-bundesliga | score=48.4 | peso=0.776
+  2025-11-29 | GAK vs BWL | austrian-bundesliga | score=87.5 | peso=0.794
+  2025-12-14 | BWL vs SCR | austrian-bundesliga | score=47.1 | peso=0.812
+  2026-02-08 | ALT vs BWL | austrian-bundesliga | score=59.3 | peso=0.831
+  2026-02-15 | BWL vs WAC | austrian-bundesliga | score=43.2 | peso=0.851
+  2026-02-22 | STU vs BWL | austrian-bundesliga | score=24.0 | peso=0.871
+  2026-03-08 | HTB vs BWL | austrian-bundesliga | score=40.9 | peso=0.891
+  2026-03-14 | ALT vs BWL | austrian-bundesliga | score=32.8 | peso=0.912
+  2026-05-09 | WSG vs BWL | austrian-bundesliga | score=41.9 | peso=0.933
+  2026-07-23 | MOT vs HB | uefa-europa-conference-league | score=60.0 | peso=0.955
+  2026-07-30 | HB vs MOT | uefa-europa-conference-league | score=35.0 | peso=0.977
+  2026-08-02 | HIB vs MOT | premiership-gb-sct | score=95.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 50.95
+  di cui Punteggio decisivo (level_score) medio: 40.11 | Punteggio complessivo (granulari) medio: 10.85 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +1.03, delta avversario +0.00 | Passaggio condizionato: delta venue -0.96, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue -0.28, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 23.46
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.6 - 73.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.17 (differenza: +4.29)
+Media score in casa: 60.00 | Media score fuori casa: 65.34
+Fattore casa/trasferta applicato: 1.005 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.0
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.999
+Fattore gol subiti (goals_conceded, con cap): 1.004
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.999
+Fattore trend (media ultime 5: 53.6 vs media 5 PRECEDENTI: 42.7): 1.000
+P(gioca): 58.82% (fonte: tasso di presenza storico (20/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-06T16:00
+Casa: Helsingin Jalkapalloklubi | Trasferta: Motherwell FC
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.1 (range 31.7 - 72.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 50.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.01
+Punteggio REALE ottenuto in quella partita: 95.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +47.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.3    94.6    +48.3    26.5        NO
+   7        7      53.7    27.3    -26.4    31.0        SI
+   8        8      50.2    48.4     -1.8    30.5        SI
+   9        9      49.9    87.5    +37.6    28.6        NO
+  10       10      54.1    47.1     -7.0    29.9        SI
+  11       11      53.4    59.3     +5.9    28.4        SI
+  12       12      53.9    43.2    -10.8    27.1        SI
+  13       13      53.0    24.0    -29.0    26.1        NO
+  14       14      50.6    40.9     -9.7    26.5        SI
+  15       15      49.8    32.8    -17.1    25.6        SI
+  16       16      48.6    41.9     -6.7    25.1        SI
+  17       17      48.1    60.0    +11.9    24.3        SI
+  18       18      48.9    35.0    -13.9    23.7        SI
+  19       19      47.7    95.7    +48.0    23.2        NO
+
+MAE (errore assoluto medio): 19.56
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 71.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

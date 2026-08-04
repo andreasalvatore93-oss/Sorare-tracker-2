@@ -1,0 +1,116 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T22:10:15.089064Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) matheus-isaias-dos-santos: 49 pt attesi (25-66)
+   ORDINAMENTO: 47.04
+   SQUADRA: chengdu-qianbao-chengdu | AVVERSARIO: yunnan-yukun-yuxi
+======================================================================
+
+######################################################################
+# GIOCATORE: matheus-isaias-dos-santos
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: matheus-isaias-dos-santos (squadra: chengdu-qianbao-chengdu)
+Generato: 2026-08-04T22:10:15.088484Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 32
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: chinese-super-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-09 | SHE vs SHE | chinese-super-league | score=43.9 | peso=0.660
+  2025-08-15 | SHE vs HEN | chinese-super-league | score=60.3 | peso=0.675
+  2025-08-24 | SHE vs TED | chinese-super-league | score=42.8 | peso=0.691
+  2025-09-12 | SHE vs YUY | chinese-super-league | score=64.7 | peso=0.707
+  2025-09-21 | GUO vs SHE | chinese-super-league | score=52.1 | peso=0.724
+  2025-09-26 | SHE vs WTT | chinese-super-league | score=35.1 | peso=0.741
+  2025-10-17 | QDJ vs SHE | chinese-super-league | score=49.3 | peso=0.758
+  2025-10-26 | SLT vs SHE | chinese-super-league | score=37.3 | peso=0.776
+  2025-10-31 | SHE vs ZGR | chinese-super-league | score=66.8 | peso=0.794
+  2025-11-22 | DXC vs SHE | chinese-super-league | score=78.4 | peso=0.812
+  2026-03-06 | QIA vs None | chinese-super-league | score=58.9 | peso=0.831
+  2026-03-15 | QIA vs QDJ | chinese-super-league | score=63.1 | peso=0.851
+  2026-03-21 | CHT vs QIA | chinese-super-league | score=16.6 | peso=0.871
+  2026-04-12 | GUO vs QIA | chinese-super-league | score=23.1 | peso=0.891
+  2026-04-17 | WTT vs QIA | chinese-super-league | score=45.2 | peso=0.912
+  2026-04-21 | QIA vs YUY | chinese-super-league | score=40.4 | peso=0.933
+  2026-04-25 | QIA vs ZGR | chinese-super-league | score=55.7 | peso=0.955
+  2026-05-01 | SHE vs QIA | chinese-super-league | score=26.3 | peso=0.977
+  2026-05-30 | QIA vs SLT | chinese-super-league | score=87.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 49.81
+  di cui Punteggio decisivo (level_score) medio: 36.61 | Punteggio complessivo (granulari) medio: 13.20 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.58, delta avversario +0.78 | Passaggio condizionato: delta venue -1.70, delta avversario -0.38 | Clean sheet/disimpegni condizionato: delta venue -0.29, delta avversario +0.98 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 18.63
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 26.3 - 66.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.80 (differenza: +3.83)
+Media score in casa: 61.17 | Media score fuori casa: 27.78
+Fattore casa/trasferta applicato: 0.997 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.3
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.851
+Fattore falli (casa/trasferta, da dati reali): 0.990
+Fattore duelli (casa/trasferta, da dati reali): 0.990
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 0.997
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.999
+Fattore trend (media ultime 5: 51.4 vs media 5 PRECEDENTI: 47.3): 1.000
+P(gioca): 59.38% (fonte: tasso di presenza storico (19/32))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T12:00
+Casa: Yunnan Yukun | Trasferta: Chengdu Rongcheng F.C
+Competizione: chinese-super-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.5 (range 25.0 - 65.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 47.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.21
+Punteggio REALE ottenuto in quella partita: 87.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +40.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.7    49.3     -0.5    11.4        SI
+   7        7      49.7    37.3    -12.4    10.5        NO
+   8        8      48.0    66.8    +18.8    10.8        NO
+   9        9      50.3    78.4    +28.2    12.2        NO
+  10       10      53.4    58.9     +5.5    15.1        SI
+  11       11      65.1    63.1     -2.0    14.4        SI
+  12       12      35.9    16.6    -19.3    14.0        NO
+  13       13      45.8    23.1    -22.7    17.9        NO
+  14       14      57.3    45.2    -12.1    19.2        SI
+  15       15      40.4    40.4     +0.0    18.5        SI
+  16       16      47.8    55.7     +7.9    17.9        SI
+  17       17      53.3    26.3    -27.0    17.4        NO
+  18       18      41.5    87.7    +46.3    17.9        NO
+
+MAE (errore assoluto medio): 15.60
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 46.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

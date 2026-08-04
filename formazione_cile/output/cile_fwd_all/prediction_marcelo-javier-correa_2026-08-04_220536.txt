@@ -1,0 +1,104 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T22:05:36.123121Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) marcelo-javier-correa: 57 pt attesi (30-78)
+   ORDINAMENTO: 65.82
+   SQUADRA: colo-colo-santiago-de-chile | AVVERSARIO: union-la-calera-la-calera
+======================================================================
+
+######################################################################
+# GIOCATORE: marcelo-javier-correa
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: marcelo-javier-correa (squadra: colo-colo-santiago-de-chile)
+Generato: 2026-08-04T22:05:36.122559Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 29
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: primera-division-cl (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | COL vs UCA | primera-division-cl | score=67.7 | peso=0.223
+  2025-08-22 | PAL vs COL | primera-division-cl | score=34.2 | peso=0.250
+  2025-08-31 | COL vs UCH | primera-division-cl | score=34.1 | peso=0.281
+  2025-11-01 | NUB vs COL | primera-division-cl | score=45.4 | peso=0.315
+  2025-11-08 | ESP vs COL | primera-division-cl | score=67.8 | peso=0.354
+  2025-11-23 | COL vs LAC | primera-division-cl | score=81.2 | peso=0.397
+  2025-11-28 | CBR vs COL | primera-division-cl | score=37.5 | peso=0.445
+  2025-12-07 | COL vs AUD | primera-division-cl | score=45.7 | peso=0.500
+  2026-02-07 | COL vs EVE | primera-division-cl | score=81.9 | peso=0.561
+  2026-03-01 | COL vs UCH | primera-division-cl | score=39.4 | peso=0.630
+  2026-05-03 | COL vs COQ | primera-division-cl | score=100.0 | peso=0.707
+  2026-05-17 | COL vs NUB | primera-division-cl | score=87.2 | peso=0.794
+  2026-05-30 | LAS vs COL | primera-division-cl | score=63.1 | peso=0.891
+  2026-06-13 | COL vs CBR | primera-division-cl | score=81.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 66.96
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=14): 60.12 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 56.67 | Punteggio complessivo (granulari) medio: 10.29 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.08 (delta -1.06) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 21.34
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.4 - 87.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.76 (differenza: +2.57)
+Media score in casa: 68.78 | Media score fuori casa: 49.60
+Fattore casa/trasferta applicato: 0.995 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.7
+Ranking prossimo avversario: 16
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 1.251
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.991
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.991
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 74.3 vs media 5 PRECEDENTI: 62.8): 1.000
+P(gioca): 48.28% (fonte: tasso di presenza storico (14/29))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T21:30
+Casa: CD Unión La Calera | Trasferta: CSD Colo-Colo
+Competizione: primera-division-cl
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 57.3 (range 29.7 - 77.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 65.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 64.62
+Punteggio REALE ottenuto in quella partita: 81.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +17.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      71.4    37.5    -33.9    21.2        NO
+   7        7      59.4    45.7    -13.7    21.0        SI
+   8        8      50.0    81.9    +31.9    19.3        NO
+   9        9      43.5    39.4     -4.1    21.8        SI
+  10       10      50.0   100.0    +50.0    21.3        NO
+  11       11      54.9    87.2    +32.3    27.3        NO
+  12       12      75.8    63.1    -12.7    27.4        SI
+  13       13      80.6    81.8     +1.2    25.4        SI
+
+MAE (errore assoluto medio): 22.46
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
