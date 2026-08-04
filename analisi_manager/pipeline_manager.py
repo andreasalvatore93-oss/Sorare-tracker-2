@@ -34,9 +34,11 @@ import discovery_fixture as df
 import backtest_arene_cache
 
 # I 12 slug + i due aggiunti; default se --manager non passato.
+# NB: satonio NON e' nei default: usato una volta sola per gonfiare la cache
+# (whale, escluso dal campione d'analisi). Se serve ri-cacharlo, passarlo a mano.
 DEFAULT_MANAGER = ['eoghankelly', 'badamt', 'milkyfresht', 'lairdinho', 'bxl-spartak',
                    'spillo678', 'braddersfc', 'bryanmid', 'shirimimi', 'matangel716',
-                   'fins49', 'ninoshooter', 'satonio',
+                   'fins49', 'ninoshooter',
                    'qtn-d8cd72ac-240c-493c-894c-a45f5b3d151d']
 # Le 4 GW gia' allineate; default.
 DEFAULT_GW = [('football-31-jul-4-aug-2026', '2026-08-04'),

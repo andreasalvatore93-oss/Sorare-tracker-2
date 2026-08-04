@@ -38,10 +38,13 @@ DEFAULT_FINE = datetime.datetime(2026, 8, 4, 23, 59)
 MANAGER_SMART = {'eoghankelly', 'badamt', 'milkyfresht', 'lairdinho', 'bxl-spartak',
                  'spillo678', 'braddersfc', 'bryanmid', 'shirimimi', 'matangel716',
                  'fins49', 'ninoshooter',
-                 # aggiunti 04/08 su richiesta utente: satonio (manager con piu'
-                 # carte al mondo, tantissime arene) e qtn (buon manager, molte
-                 # arene). Allineati dai GW gia' analizzati (1/95/94/93).
-                 'satonio', 'qtn-d8cd72ac-240c-493c-894c-a45f5b3d151d'}
+                 # qtn (buon manager, molte arene), aggiunto 04/08. Allineato ai
+                 # GW gia' analizzati (1/95/94/93).
+                 'qtn-d8cd72ac-240c-493c-894c-a45f5b3d151d'}
+# satonio (manager con piu' carte al mondo) NON e' nel campione d'analisi: e' un
+# whale, falserebbe il campione non-bias. E' stato usato UNA VOLTA solo per
+# gonfiare la cache game-log (400+ giocatori, asset riusabile dal modello); i
+# suoi pick restano fuori dai residui.
 DATI = os.path.join(ROOT, 'analisi_manager', 'dati')
 
 
