@@ -118,14 +118,18 @@ def costruisci_batch(managers, gws):
             club_dir.setdefault(i['club'], dir_slug[sl])
 
     batch = {}
+    scoperti = {}   # slug -> lega senza pipeline (o None se lega non risolta)
+    gia_freschi = 0
     Q = 'query C($s:String!){ anyPlayer(slug:$s){ activeClub{ domesticLeague{ slug } } } }'
     for sl, i in info.items():
         gl = cache.gamelog(sl)
         ultimo = max((_dt((n.get('anyGame') or {}).get('date')) for n in gl
                       if _dt((n.get('anyGame') or {}).get('date'))), default=None) if gl else None
         if ultimo is not None and ultimo >= soglia:
+            gia_freschi += 1
             continue  # gia' fresco
         dirn = dir_slug.get(sl) or club_dir.get(i.get('club'))
+        lg = None
         if not dirn:
             try:
                 d = base.graphql_query(Q, {'s': sl}, operation_name='C')
@@ -138,6 +142,25 @@ def costruisci_batch(managers, gws):
                 dirn = None
         if dirn:
             batch[sl] = {'ruolo': i['ruolo'], 'dir': dirn}
+        else:
+            scoperti[sl] = lg   # NON verra' cachato: lega senza pipeline
+    # report di copertura: quanti pick, quanti gia' freschi, quanti nel batch,
+    # quanti SALTATI perche' senza pipeline (e quali leghe) -- cosi' il buco
+    # silenzioso diventa visibile (richiesta utente 04/08).
+    from collections import Counter
+    per_lega = Counter(v or 'lega-non-risolta' for v in scoperti.values())
+    log(f"[copertura] pick unici {len(info)} | gia' freschi {gia_freschi} | "
+        f"batch {len(batch)} | SALTATI senza pipeline {len(scoperti)}")
+    if per_lega:
+        log("[copertura] leghe senza pipeline (giocatori NON cachati): " +
+            ', '.join(f'{lg}:{n}' for lg, n in per_lega.most_common()))
+    rep = os.path.join(ROOT, 'analisi_manager', 'dati', 'copertura_cache.json')
+    os.makedirs(os.path.dirname(rep), exist_ok=True)
+    json.dump({'pick_unici': len(info), 'gia_freschi': gia_freschi,
+               'batch': len(batch), 'saltati_senza_pipeline': len(scoperti),
+               'leghe_scoperte': dict(per_lega),
+               'slug_scoperti': scoperti}, open(rep, 'w', encoding='utf-8'),
+              ensure_ascii=False, indent=1)
     return batch
 
 
