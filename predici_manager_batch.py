@@ -69,6 +69,10 @@ def main():
                     help='committa ogni N giocatori nuovi (0 = mai)')
     ap.add_argument('--timeout', type=int, default=240,
                     help='timeout in secondi per singolo predict')
+    ap.add_argument('--force', action='store_true',
+                    help='ri-predici anche se il gamelog esiste gia (per '
+                         'APPENDERE nuove partite a cache stantie, es. la GW '
+                         'appena chiusa non ancora nel game log)')
     args = ap.parse_args()
 
     with open(os.path.join(REPO, args.input), encoding='utf-8') as f:
@@ -84,7 +88,7 @@ def main():
         dirn = info.get('dir')
         prefix = f"[{i}/{tot}] {slug} ({ruolo}, {dirn})"
 
-        if gia_cachato(slug):
+        if gia_cachato(slug) and not args.force:
             saltati += 1
             log(f"{prefix} -> gia' cachato, salto.")
             continue

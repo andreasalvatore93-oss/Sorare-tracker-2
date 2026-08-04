@@ -21,6 +21,10 @@ on:
         description: "Timeout in secondi per singolo predict"
         required: false
         default: "240"
+      force:
+        description: "'si' per ri-predire anche i gamelog gia' esistenti (APPENDE le partite nuove: serve per rinfrescare cache stantie a una GW appena chiusa)"
+        required: false
+        default: "no"
 
 permissions:
   contents: write
@@ -53,10 +57,13 @@ jobs:
         run: |
           git config user.name "sorare-tracker-bot"
           git config user.email "bot@users.noreply.github.com"
+          FORCE=""
+          if [ "${{ github.event.inputs.force }}" = "si" ]; then FORCE="--force"; fi
           python predici_manager_batch.py \
             --input "${{ github.event.inputs.input_file }}" \
             --commit-every "${{ github.event.inputs.commit_every }}" \
-            --timeout "${{ github.event.inputs.timeout_singolo }}"
+            --timeout "${{ github.event.inputs.timeout_singolo }}" \
+            $FORCE
 
       - name: Push cache
         if: always()
