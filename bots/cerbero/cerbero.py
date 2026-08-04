@@ -4089,7 +4089,8 @@ def run_listener(eth_rate):
     }
 
     stats = {"received": 0, "processed": 0, "matches_found": 0, "price_filtered": 0,
-              "_closed_target": False, "_closed_insufficient_funds": False}
+              "_closed_target": False, "_closed_insufficient_funds": False,
+              "_ultimo_evento": time.monotonic()}
     seen_offer_status = set()
     # OTTIMIZZAZIONE VELOCITA' -- CONCORRENZA (22/07): stats_lock protegge gli
     # incrementi/controlli su stats fatti dai thread worker (sotto), e le due
@@ -4181,6 +4182,9 @@ def run_listener(eth_rate):
         # console che lo spieghi.
         try:
             stats["received"] += 1
+            # Timbro dell'ultimo evento di MERCATO vero (i 'ping' di ActionCable sono
+            # gia' stati filtrati sopra): e' quello che guarda il watchdog qui sotto.
+            stats["_ultimo_evento"] = time.monotonic()
             offer = (payload.get('result', {}).get('data', {}) or {}).get('tokenOfferWasUpdated')
             if not offer:
                 return
@@ -4279,6 +4283,23 @@ def run_listener(eth_rate):
     # LISTEN_SECONDS o di AUTOBUY_TARGET_MATCHES. Ora si riconnette automaticamente
     # finche' resta tempo sulla deadline totale, fermandosi SOLO per: deadline
     # raggiunta, target di casi raggiunto, o stop per fondi insufficienti.
+    # FIX 04/08 -- SOTTOSCRIZIONE MORTA A SOCKET VIVO. Il fix di riconnessione qui
+    # sopra copre solo il caso in cui la connessione CADE. Nella run 30851298043 e'
+    # successo altro: ultimo evento di mercato alle 22:41:34, poi 94 minuti in cui il
+    # bot e' rimasto vivo ma sordo (nel log solo il battito del bid periodico ogni 3
+    # minuti), ZERO riconnessioni tentate, fino all'annullamento. Il socket era
+    # ancora aperto e i 'ping' di ActionCable continuavano ad arrivare, quindi
+    # ping_interval/ping_timeout non potevano accorgersene e on_close non scattava
+    # mai: a morire era la SOTTOSCRIZIONE lato Sorare, non il TCP. Risultato: ~44%
+    # di quella run buttato.
+    # Rimedio: un watchdog che guarda gli EVENTI, non il socket. Se per
+    # EVENT_SILENCE_TIMEOUT_SECONDS non arriva nessun evento di mercato, chiude lui
+    # il socket -- da li' in poi si riusa il ciclo di riconnessione gia' esistente,
+    # che risottoscrive. Soglia larga (10 min) apposta: a regime arrivano ~3
+    # eventi/secondo, quindi 10 minuti di zero assoluto non sono un mercato calmo,
+    # sono un canale morto; e nel caso peggiore una riconnessione inutile costa 5s.
+    EVENT_SILENCE_TIMEOUT_SECONDS = float(
+        os.environ.get('EVENT_SILENCE_TIMEOUT_SECONDS', '600'))
     RECONNECT_DELAY_SECONDS = float(os.environ.get('RECONNECT_DELAY_SECONDS', '5'))
     deadline = time.monotonic() + LISTEN_SECONDS
     tentativo = 0
@@ -4308,7 +4329,31 @@ def run_listener(eth_rate):
         timer.daemon = True
         timer.start()
 
+        # Watchdog del silenzio: vive quanto questa connessione, si spegne da solo
+        # quando run_forever ritorna (_ws_vivo).
+        stats["_ultimo_evento"] = time.monotonic()
+        _ws_finito = threading.Event()
+
+        def _watchdog_silenzio(ws_corrente):
+            # wait(30) torna False allo scadere dei 30s (continua) e True appena
+            # _ws_finito viene settato a fine connessione (esce).
+            while not _ws_finito.wait(30):
+                silenzio = time.monotonic() - stats["_ultimo_evento"]
+                if silenzio >= EVENT_SILENCE_TIMEOUT_SECONDS:
+                    log(f"[watchdog] nessun evento di mercato da {silenzio / 60:.1f} "
+                        f"minuti a socket aperto: sottoscrizione probabilmente morta, "
+                        f"forzo la chiusura per risottoscrivere.")
+                    try:
+                        ws_corrente.close()
+                    except Exception:
+                        pass
+                    return
+
+        _wd = threading.Thread(target=_watchdog_silenzio, args=(ws,), daemon=True)
+        _wd.start()
+
         ws.run_forever(ping_interval=60, ping_timeout=45)
+        _ws_finito.set()
         timer.cancel()
 
         if stats["_closed_target"] or stats["_closed_insufficient_funds"]:
