@@ -100,6 +100,30 @@ def main():
         out.append(f"| {man} | " + " | ".join(cells) +
                    f" | {len(allrows)} | {pb:+.1f} | {stabile} |")
 
+    # EDGE controllato per ambiente-GW: dentro ogni GW si toglie il residuo
+    # medio della GW (round alto/basso-scoring), poi si media per manager. Cosi'
+    # si isola la SKILL dal caso che quella giornata segni tanto o poco.
+    gw_mean = {gw: media([r['reale'] - r['atteso'] for r in rows])
+               for gw, rows in per_gw.items()}
+    out.append(f"\n## Skill controllata per ambiente-GW (edge = residuo - media della GW)\n")
+    out.append("Toglie l'effetto 'round alto/basso-scoring'. edge>0 e n grande = "
+               "il manager sceglie meglio del pool di quella GW.\n")
+    out.append("| manager | n | edge medio | se | edge/se |\n|---|--:|--:|--:|--:|")
+    man_edges = {}
+    for r in tutte:
+        man_edges.setdefault(r['manager'], []).append((r['reale'] - r['atteso']) - gw_mean[r['_gw']])
+    for man in sorted(man_edges, key=lambda m: -media(man_edges[m])):
+        e = man_edges[man]
+        if len(e) < 10:
+            continue
+        m = media(e)
+        se = (sum((v - m) ** 2 for v in e) / len(e)) ** 0.5 / math.sqrt(len(e))
+        out.append(f"| {man} | {len(e)} | {m:+.2f} | {se:.2f} | "
+                   f"{(m/se if se else 0):+.1f} |")
+    tot_edge = [v for e in man_edges.values() for v in e]
+    out.append(f"\n(controllo: edge medio complessivo {media(tot_edge):+.3f}, "
+               f"deve essere ~0 per costruzione.)")
+
     # consenso pooled: giocatori scelti da piu' manager nella stessa GW
     out.append(f"\n## Consenso (pool, per numero di manager nella stessa GW)\n")
     out.append("| n manager | n giocatori | bias |\n|---|--:|--:|")

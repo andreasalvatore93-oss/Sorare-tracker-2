@@ -383,16 +383,19 @@ odds da solo (troppo aleatorio) e "più dati stesse feature" (il tetto è
   predetti. Confronto NAIVE: pari selezione, lui piu' rischio-disponibilita'
   (odds 0.74 vs 0.84). Realizzato in sospeso finche' GW2 non gioca.
 
-### VERDETTO GW1 (04/08 sera) — nessun segnale smart-money in aggregato
-Misura walk-forward pulita su **290 pick** (8 manager attivi, cache rinfrescata
-force a GW1): **residuo medio −1.35, a giocatore unico −0.00**. Corr atteso/reale
-+0.23, compressione 4.2x. Il modello **cattura già** i loro pick, non li
-battono. Correlazioni residuo↔(atteso/L10/storico) tutte ~0 → il residuo è alea,
-conferma la piattezza §5 anche qui. Strutture da seguire su più GW: GK bias −5.7
-/ FWD −4.1 (il modello li **sovrastima** — problema modello), capitani con
-residuo +4.6 vs non-capitani −1.7 (i loro capitani sovraperformano), corr
-atteso-somma↔rank arena debole (~0/−0.26 a seconda del filtro). NON si chiude il
-filone: una GW sola, il valore è nell'ACCUMULO.
+### VERDETTO su 4 GW (04/08 sera) — nessun segnale smart-money affidabile
+Misura walk-forward su **673 pick, 4 GW** (football-21-24/24-28/28-31-jul +
+31-jul-4-aug-2026), 12 slug. Bias per GW: +2.4 / +1.5 / +10.5 / −1.35 (il +10.5
+di GW95 è **effetto-ambiente**: quel round segna alto, boom 33%, non skill).
+Pool +1.13. **Controllando l'ambiente-GW** (edge = residuo − media della GW),
+NESSUN manager batte il pool a ≥2 se: eoghankelly +7.5 ma n=27 rumoroso; fins49
++2.0 (n=109, il più dato, non significativo); milkyfresht −3.1 (n=126, sotto il
+pool). Persistenza di segno per manager: tutti "misto". Il modello **cattura già**
+i loro pick. Correlazioni residuo↔(atteso/L10/storico) ~0 → alea (conferma §5).
+Strutture-modello (non smart-money) da tenere d'occhio: GK bias −5.7/FWD −4.1
+(li **sovrastimiamo**); i loro capitani rendono +4.6 vs −1.7 non-capitani.
+Filone NON chiuso: si continua ad accumulare GW (fins49 è l'unico con edge+
+sostenuto, da confermare); se resta ~0 su 8-10 GW → STOP.
 
 ### Casa del filone: `analisi_manager/` (vedi CLAUDE.md)
 Metodologia + `analizza_gw.py` (script unico, riusa `score_atteso` walk-forward)
