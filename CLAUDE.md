@@ -224,3 +224,25 @@ Regole:
 - Le run pesanti (estrazione arene + refresh cache game-log + predizione) vanno
   su GitHub (`predici_manager.yml`), non in locale.
 - Il verdetto vale solo se il segno è STABILE su più GW (regola del delta).
+
+## Cache game-log condivisa: verificarla sempre
+
+La cache dei game-log vive in
+`formazione_<lega>/output/<lega>_<ruolo>_all/.game_log_cache/<slug>_gamelog.json`
+(la cartella `_all` = PRODUZIONE, non `_calibration`). E' player-level e
+rarity-independent, ed e' la STESSA cache che leggono il generatore di
+formazioni, lo scouting e le analisi manager: ogni giocatore cachato rende
+gratis e piu' veloce ogni predizione futura di quel giocatore, ovunque.
+
+Regole:
+- Ogni nuovo strumento/analisi che predice giocatori DEVE scrivere e leggere
+  QUESTA cache condivisa, mai una copia isolata. Prima di introdurne uno,
+  verificare che punti a `<lega>_<ruolo>_all/.game_log_cache` (e `.cache` per il
+  dettaglio), non a una cartella propria.
+- Verificare SEMPRE il numero di giocatori in cache prima/dopo un'estrazione
+  (contare i `*_gamelog.json` con `os.walk` sulle sole `formazione_*/`, NON con
+  `glob('**')` che non scende nelle cartelle nascoste, vedi trappola nel
+  riassunto). Serve a sapere quanto e' cresciuto l'asset e a scoprire cali
+  anomali.
+- La cache va riempita solo per giocatori in leghe con pipeline completa
+  (LEAGUE_DIR + i 4 script predict): non si cacha chi non si sa predire.
