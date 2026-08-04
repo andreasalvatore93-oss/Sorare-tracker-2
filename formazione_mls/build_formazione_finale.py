@@ -298,8 +298,18 @@ STACK_GUARD_PENALTY = 8_000  # come ANTI_SYNERGY_PENALTY: spinge in fondo, non e
 # chiamato, perche' quelle passano dal knapsack che ignora le sinergie.
 # FORZA_NORM=1 riporta la forza alla scala a 5 slot prima di leggere la curva,
 # e passa la forza anche allo slot EXTRA (l'unico dove la stima e' piu'
-# affidabile -- 4 titolari su 5 gia' scelti -- e l'unico escluso). Sotto
-# misura, spento di default: vedi diagnostics/ab_fattore_varianza.py.
+# affidabile -- 4 titolari su 5 gia' scelti -- e l'unico escluso).
+#
+# RESTA SPENTO: la diagnosi sopra e' solida, la cura non ha passato la prova.
+# Su UNA giornata, con Monte Carlo su punteggi reali, sembrava vincere su tutte
+# e sei le soglie (+0.28/+1.09 pp, diagnostics/ab_fattore_varianza.py). Su 48
+# giornate VERE con punteggi REALIZZATI (ab_fattore_varianza_storico.py) il
+# risultato non regge: 44 formazioni su 48 restano identiche, 3 migliorano e 1
+# peggiora, differenza media -0.74 pt con IC95% [-3.29, +1.81] -- lo zero e'
+# dentro. Sulle soglie basse -2.08 pp, sopra 440 nessuna differenza.
+# La lezione e' quella gia' pagata altre volte: una misura su una sola giornata
+# non basta, per quanto la teoria sia convincente. Non riaccenderlo senza un
+# campione che sposti davvero quell'intervallo.
 FORZA_RIFERIMENTO = 280.0
 _CAMBIO_DISPERSIONE = ((265.0, 0.78), (280.0, 0.53), (295.0, 0.31))
 FORZA_NORM = os.environ.get('FORZA_NORM', '0') == '1'
