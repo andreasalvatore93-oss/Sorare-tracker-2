@@ -1,0 +1,59 @@
+name: Taratura modello (misure riproducibili)
+
+# Banco di misura del modello su GitHub Actions, non in locale.
+#
+# PERCHE' ESISTE (04/08): due giornate di misure locali hanno prodotto numeri
+# non riproducibili fra sessioni diverse -- cache, variabili d'ambiente e file
+# di stato dell'ambiente locale cambiano il campione senza dirlo. Qui il
+# campione e' il checkout del repo e nient'altro: le cache dei game log sono
+# tracciate, quindi il runner vede esattamente gli stessi dati per tutti.
+#
+# Sola lettura: nessuna chiamata a Sorare, nessun commit. I risultati restano
+# nei log e nell'artifact.
+
+on:
+  workflow_dispatch:
+    inputs:
+      misura:
+        description: "quale misura lanciare"
+        required: true
+        type: choice
+        default: stadio_d
+        options:
+          - stadio_d
+          - ranking_pulito
+      ruolo:
+        description: "ruolo (solo per stadio_d): def, mid, fwd, gk"
+        required: false
+        default: def
+      ref:
+        description: "branch o commit da misurare"
+        required: false
+        default: main
+
+jobs:
+  misura:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Riproduzione dei tre arm dello Stadio D
+        if: inputs.misura == 'stadio_d'
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: python verifica_stadio_d_avversario.py --ruolo ${{ inputs.ruolo }}
+      - name: Ranking sul solo sottoinsieme pulito
+        if: inputs.misura == 'ranking_pulito'
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: python ranking_pulito.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: taratura-${{ inputs.misura }}-${{ inputs.ruolo }}
+          path: dati_globali/*.json
+          if-no-files-found: warn

@@ -1,0 +1,150 @@
+"""verifica_stadio_d_avversario — riproduce i tre arm del candidato DEF.
+
+PERCHE'. La decisione di spegnere la gamba AVVERSARIO dello Stadio D sui
+difensori si regge su tre terne di numeri prodotte da un'altra sessione
+(docs/handoff/HANDOFF_riverifica_indipendente_2026-08-04.txt, sezione 3.C).
+Prima di toccare la produzione quelle terne vanno ritrovate qui, sullo stesso
+campione, altrimenti si applica una decisione presa su un campione che non e'
+il nostro.
+
+I TRE ARM, e perche' servono tutti e tre:
+
+  1 PRODUZIONE            canale avversario acceso, com'e' oggi
+  4 STADIO_D_AVVERSARIO   solo la gamba avversario spenta, venue TENUTO
+                          = il candidato, il nuovo interruttore esplicito
+  3 use_stadio_d=False    Stadio D INTERO spento, venue compreso
+                          = l'errore di misura del 04/08, qui tenuto apposta
+
+L'arm 3 e' il controllo che l'interruttore nuovo faccia davvero solo la sua
+meta': se STADIO_D_AVVERSARIO spegnesse anche il venue, l'arm 4 uscirebbe
+uguale all'arm 3. Sono terne ben separate, quindi il controllo discrimina.
+
+Uso:  python verifica_stadio_d_avversario.py [--ruolo def] [--max N]
+"""
+import argparse
+import json
+import os
+import statistics
+import sys
+
+import backtest_arene_cache
+import backtest_arene_previsioni as prev
+from taratura_confronto_parametri import lift_selezione, raccogli
+from taratura_halflife_trend import RUOLI
+
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
+
+# I numeri da ritrovare, dalla riverifica indipendente (sezione 3.C, n=25.738).
+ATTESI = {
+    'produzione': (14.990365, 0.176337, 16.0641),
+    'stadio_d_avversario_spento': (14.970303, 0.182627, 17.2155),
+    'stadio_d_intero_spento': (14.989160, 0.176039, 16.8662),
+}
+TOLLERANZA = {'mae': 0.0005, 'corr': 0.00005, 'lift': 0.005}
+
+
+def misura(punti, **kwargs):
+    righe = []
+    for ruolo, slug, data, ctx, reale in punti:
+        try:
+            p = prev.calcola(ctx, **kwargs)
+        except Exception:
+            continue
+        righe.append((ruolo, slug, data, p, reale))
+    X = [r[3] for r in righe]
+    Y = [r[4] for r in righe]
+    mae = statistics.mean(abs(y - x) for x, y in zip(X, Y))
+    mx, my = statistics.mean(X), statistics.mean(Y)
+    sx, sy = statistics.pstdev(X), statistics.pstdev(Y)
+    corr = (sum((a - mx) * (b - my) for a, b in zip(X, Y)) / len(X) / (sx * sy)
+            if sx > 0 and sy > 0 else 0.0)
+    lift, n_gg = lift_selezione(righe)
+    return {'n': len(righe), 'mae': mae, 'corr': corr, 'lift': lift, 'giornate': n_gg}
+
+
+def _confronta(nome, r):
+    """Dice se la terna misurata ritrova quella pubblicata."""
+    mae_a, corr_a, lift_a = ATTESI[nome]
+    ok = (abs(r['mae'] - mae_a) <= TOLLERANZA['mae']
+          and abs(r['corr'] - corr_a) <= TOLLERANZA['corr']
+          and abs((r['lift'] or 0) - lift_a) <= TOLLERANZA['lift'])
+    return ok, (r['mae'] - mae_a, r['corr'] - corr_a, (r['lift'] or 0) - lift_a)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--ruolo', default='def')
+    ap.add_argument('--max', type=int, default=0)
+    ap.add_argument('--json', default='dati_globali/verifica_stadio_d_avversario.json')
+    args = ap.parse_args()
+
+    ruolo_lungo = RUOLI[args.ruolo]
+    cache = backtest_arene_cache.CacheLocale()
+    slugs = sorted(cache.slug_disponibili())
+    print('%d giocatori in cache, ruolo %s' % (len(slugs), args.ruolo), flush=True)
+    punti = raccogli(cache, slugs, {ruolo_lungo}, args.max or None)
+    print('%d punti di test\n' % len(punti), flush=True)
+
+    modulo = punti[0][3]['modulo']
+    if not hasattr(modulo, 'STADIO_D_AVVERSARIO'):
+        print('ERRORE: il modulo di produzione non espone STADIO_D_AVVERSARIO')
+        return 1
+
+    esiti = {}
+    originale = modulo.STADIO_D_AVVERSARIO
+    try:
+        modulo.STADIO_D_AVVERSARIO = True
+        esiti['produzione'] = misura(punti, usa_avversario=True)
+        esiti['stadio_d_intero_spento'] = misura(punti, usa_avversario=True,
+                                                 avversario_stadio_d=False)
+        modulo.STADIO_D_AVVERSARIO = False
+        esiti['stadio_d_avversario_spento'] = misura(punti, usa_avversario=True)
+    finally:
+        modulo.STADIO_D_AVVERSARIO = originale
+
+    base = esiti['produzione']
+    print('=' * 96)
+    print('%s -- %d punti, %d giornate' % (args.ruolo.upper(), base['n'], base['giornate']))
+    print('=' * 96)
+    print('%-34s %12s %11s %10s %11s %11s %9s' %
+          ('arm', 'MAE', 'corr', 'lift', 'dMAE', 'dcorr', 'dlift'))
+    tutto_ok = True
+    for nome in ('produzione', 'stadio_d_avversario_spento', 'stadio_d_intero_spento'):
+        r = esiti[nome]
+        ok, scarti = _confronta(nome, r)
+        tutto_ok = tutto_ok and ok
+        r['riprodotto'] = ok
+        r['scarto_vs_atteso'] = scarti
+        print('%-34s %12.6f %11.6f %10.4f %+11.6f %+11.6f %+9.4f  %s' %
+              (nome, r['mae'], r['corr'], r['lift'] or 0,
+               r['mae'] - base['mae'], r['corr'] - base['corr'],
+               (r['lift'] or 0) - (base['lift'] or 0),
+               'ritrovato' if ok else 'NON RITROVATO'))
+
+    print('\nnumeri attesi dalla riverifica indipendente (sezione 3.C):')
+    for nome, (m, c, l) in ATTESI.items():
+        print('  %-34s MAE %.6f  corr %.6f  lift %.4f' % (nome, m, c, l))
+
+    cand = esiti['stadio_d_avversario_spento']
+    intero = esiti['stadio_d_intero_spento']
+    separati = abs(cand['corr'] - intero['corr']) > 0.001
+    print('\nCONTROLLO INTERRUTTORE: il candidato e lo spegnimento intero sono %s'
+          % ('DIVERSI (il venue e\' rimasto acceso, come deve)' if separati
+             else 'UGUALI -> STADIO_D_AVVERSARIO sta spegnendo anche il venue'))
+    print('ESITO COMPLESSIVO: %s' % ('tutte e tre le terne ritrovate'
+                                     if tutto_ok else 'RIPRODUZIONE FALLITA'))
+
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), args.json),
+              'w', encoding='utf-8') as fh:
+        json.dump({'ruolo': args.ruolo, 'attesi': ATTESI, 'esiti': esiti,
+                   'riprodotto_tutto': tutto_ok, 'interruttore_separato': separati},
+                  fh, ensure_ascii=False, indent=1)
+    print('\nsalvato in %s' % args.json)
+    return 0 if (tutto_ok and separati) else 2
+
+
+if __name__ == '__main__':
+    sys.exit(main())
