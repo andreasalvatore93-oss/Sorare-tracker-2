@@ -246,3 +246,8 @@ Regole:
   anomali.
 - La cache va riempita solo per giocatori in leghe con pipeline completa
   (LEAGUE_DIR + i 4 script predict): non si cacha chi non si sa predire.
+- Se durante un'estrazione emerge una lega SENZA pipeline (giocatori saltati,
+  vedi `analisi_manager/dati/copertura_cache.json`), NON ignorarla in silenzio:
+  segnalarla all'utente con quanti giocatori/quali manager la toccano e
+  proporre di costruire la pipeline dedicata (`formazione_<lega>/` + voce in
+  LEAGUE_DIR), decidendo insieme se vale.
