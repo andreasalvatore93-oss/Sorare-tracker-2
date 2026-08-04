@@ -1,0 +1,123 @@
+name: Cerbero (apprendimento)
+
+# Lancia cerbero_learn.py da Actions (nessun modo comodo di farlo in locale su Windows
+# con i secret). SOLO manuale: nessun schedule. Non tocca soldi, non firma nulla (niente
+# Node/wallet). La modalita' 'storico' non fa query e gira anche con secret scaduti.
+on:
+  workflow_dispatch:
+    inputs:
+      modalita:
+        description: cosa lanciare
+        type: choice
+        required: true
+        default: osservazioni
+        options:
+          - osservazioni
+          - trasversale
+          - entrambi
+          - storico
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sorare-cerbero-learn
+  cancel-in-progress: false
+
+jobs:
+  learn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install requests websocket-client curl_cffi
+
+      - name: Esegui apprendimento
+        id: learn
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
+          SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
+          CERBERO_OSSERVAZIONI_PATH: "cerbero_osservazioni.csv"
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -o pipefail
+          MOD="${{ github.event.inputs.modalita }}"
+          TS=$(date -u +%Y%m%d_%H%M)
+          OUT="docs/handoff/LEARN_${MOD}_${TS}.txt"
+          mkdir -p docs/handoff
+          # esposti allo step di commit/artifact (anche se lo script poi fallisce)
+          echo "OUT=$OUT" >> "$GITHUB_OUTPUT"
+          echo "MOD=$MOD" >> "$GITHUB_OUTPUT"
+          {
+            echo "=== Cerbero apprendimento ==="
+            echo "modalita: $MOD"
+            echo "UTC:  $(date -u '+%Y-%m-%d %H:%M:%S %Z')"
+            echo "Roma: $(TZ='Europe/Rome' date '+%Y-%m-%d %H:%M:%S %Z')"
+            echo "============================"
+          } | tee "$OUT"
+
+          run_one () {
+            echo ">>> python $*" | tee -a "$OUT"
+            python "$@" 2>&1 | tee -a "$OUT"
+            return ${PIPESTATUS[0]}
+          }
+
+          rc=0
+          case "$MOD" in
+            osservazioni)
+              run_one bots/cerbero/cerbero_learn.py --osservazioni; rc=$? ;;
+            trasversale)
+              run_one bots/cerbero/cerbero_learn.py --trasversale;  rc=$? ;;
+            storico)
+              run_one bots/cerbero/cerbero_learn.py;                rc=$? ;;
+            entrambi)
+              run_one bots/cerbero/cerbero_learn.py --osservazioni; rc=$?
+              if [ "$rc" -eq 0 ]; then
+                run_one bots/cerbero/cerbero_learn.py --trasversale; rc=$?
+              fi ;;
+            *)
+              echo "modalita sconosciuta: $MOD" | tee -a "$OUT"; exit 2 ;;
+          esac
+
+          # Secret scaduti: se l'esecuzione e' fallita e l'output odora di 403/auth,
+          # spiegalo in chiaro. Nessun mascheramento: il job resta rosso (exit rc).
+          if [ "$rc" -ne 0 ] && grep -qiE "403|forbidden|unauthor|not authorized|authenticat|csrf" "$OUT"; then
+            echo "SECRET SORARE SCADUTI -- rinnova SORARE_COOKIE/CSRF/VERSION/BUILD/FINGERPRINT nei Settings del repo e rilancia." | tee -a "$OUT"
+          fi
+          exit "$rc"
+
+      - name: Carica output come artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cerbero-learn-${{ steps.learn.outputs.MOD }}
+          path: ${{ steps.learn.outputs.OUT }}
+          retention-days: 30
+
+      - name: Commit soglie apprese + output leggibile
+        # 'trasversale' NON scrive il JSON: per esso non si committa nulla (l'output resta
+        # come artifact). Le altre modalita' committano JSON (se cambiato) + il file LEARN.
+        if: ${{ always() && steps.learn.outputs.MOD != 'trasversale' }}
+        run: |
+          git config user.name "bot-cerbero"
+          git config user.email "bot-cerbero@users.noreply.github.com"
+          MOD="${{ steps.learn.outputs.MOD }}"
+          OUT="${{ steps.learn.outputs.OUT }}"
+          git add cerbero_soglie_apprese.json "$OUT" 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "Nessuna modifica da committare (soglie invariate, nessun output nuovo)."
+          else
+            git commit -m "cerbero: soglie apprese ($MOD) $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+            git pull --rebase --autostash origin main
+            git push
+          fi

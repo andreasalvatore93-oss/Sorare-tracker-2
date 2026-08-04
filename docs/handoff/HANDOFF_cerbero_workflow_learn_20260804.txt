@@ -1,0 +1,116 @@
+HANDOFF — CERBERO / WORKFLOW cerbero_learn — 2026-08-04
+=======================================================
+Perimetro toccato: SOLO .github/workflows/cerbero_learn.yml (nuovo) + questo handoff.
+NON toccato: bot_cerbero.yml, bots/cerbero/*.py, bot_definitivo.py, scanners/bot_profit.py,
+formazione_*/, generatore_formazioni/, dati_globali/, predict/.
+git pull a inizio sessione: rebase ok. DIVIETO rispettato: nessun schedule (solo
+workflow_dispatch), LIVE_MODE non toccato, nessuna modifica al codice Python.
+
+
+1) NOME WORKFLOW E INPUT
+------------------------
+ - Nome in Actions: "Cerbero (apprendimento)".
+ - File: .github/workflows/cerbero_learn.yml
+ - Trigger: SOLO workflow_dispatch (nessun cron).
+ - Input unico: `modalita` (tipo choice, obbligatorio, default 'osservazioni').
+
+
+2) LE QUATTRO OPZIONI
+---------------------
+ - osservazioni : python bots/cerbero/cerbero_learn.py --osservazioni
+     (impara le soglie di sconto per lega dalle osservazioni live; richiede secret + righe
+      gia' mature; scrive cerbero_soglie_apprese.json)
+ - trasversale  : python bots/cerbero/cerbero_learn.py --trasversale
+     (distribuzione rendimento 24h per fascia di margine trasversale; NON scrive il JSON)
+ - entrambi     : prima --osservazioni, poi --trasversale (trasversale parte solo se la
+     prima e' andata a buon fine)
+ - storico      : python bots/cerbero/cerbero_learn.py
+     (bootstrap offline dal dataset storico; ZERO query; funziona anche con secret scaduti)
+
+
+3) SECRET — COMBACIANO CON bot_cerbero.yml
+------------------------------------------
+Verificato meccanicamente: i 5 secret usati dal nuovo workflow sono tutti presenti in
+bot_cerbero.yml, stessi nomi:
+  SORARE_COOKIE, SORARE_CSRF, SORARE_VERSION, SORARE_BUILD, SORARE_DEVICE_FINGERPRINT.
+NON passati (non servono a cerbero_learn: nessuna firma/wallet, nessun Telegram):
+  SORARE_WALLET_PASSWORD, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID. Node non installato (inutile).
+Ambiente allineato a bot_cerbero.yml: Python 3.11, pip install requests websocket-client
+curl_cffi, runs-on ubuntu-latest, working dir = root repo, timeout-minutes 30.
+
+
+4) COSA VIENE COMMITTATO / OUTPUT LEGGIBILE
+-------------------------------------------
+ - Ogni run salva lo stdout completo in docs/handoff/LEARN_<modalita>_<YYYYMMDD_HHMM>.txt
+   (intestazione: modalita, ora UTC, ora Roma) e lo carica anche come ARTIFACT del run
+   (nome cerbero-learn-<modalita>, retention 30 giorni).
+ - Commit (solo se qualcosa e' cambiato, guardia `git diff --cached --quiet`):
+     * modalita osservazioni / storico / entrambi: committa cerbero_soglie_apprese.json
+       (se cambiato) + il file LEARN_*.txt. Messaggio:
+       "cerbero: soglie apprese (<modalita>) <timestamp UTC ISO>". Fa `git pull --rebase
+       --autostash` prima del push (non fallisce se un'altra run ha pushato nel frattempo).
+     * modalita trasversale: NON committa nulla (non scrive il JSON, come da brief);
+       l'output resta solo come artifact.
+ - Se il comando esce in errore il job FALLISCE (niente `|| true`): si vede rosso.
+
+
+5) GESTIONE 403 (secret scaduti) — T4
+-------------------------------------
+Se l'esecuzione fallisce e lo stdout contiene indizi di 403/auth (403, forbidden,
+unauthor, not authorized, authenticat, csrf), il job stampa in chiaro:
+  "SECRET SORARE SCADUTI -- rinnova SORARE_COOKIE/CSRF/VERSION/BUILD/FINGERPRINT nei
+   Settings del repo e rilancia."
+e poi ESCE col codice di errore originale (job rosso, nessun mascheramento).
+NB tecnico onesto: il risolutore --osservazioni cattura le eccezioni per-giocatore
+(cache a lista vuota), quindi un 403 potrebbe non far uscire lo script in errore ma
+solo risolvere 0 righe. In quel caso il job resta VERDE e nell'output si legge
+"risolte 0". Il messaggio 403 esplicito scatta quando lo script fallisce davvero
+(es. errore a monte). Per il ramo 'storico' non c'e' nessuna query, quindi nessun 403.
+
+
+6) VERIFICA LOCALE (T5)
+-----------------------
+ - YAML valido: yaml.safe_load OK (job: learn).
+ - Nomi secret combacianti con bot_cerbero.yml: OK (0 mancanti, elenco al punto 3).
+ - Ramo 'storico' simulato in locale (python bots/cerbero/cerbero_learn.py, --out temp per
+   non sporcare il JSON di produzione): scrive il JSON (fonte dataset_storico, leghe mlspa/
+   k-league-1/eredivisie/jupiler-pro-league tutte 5%) e lo stdout e' catturabile su file
+   (29 righe). -> il ramo che non dipende dalla rete funziona, quindi funzionera' in CI.
+ - Workflow NON lanciato su GitHub (serve ok utente, CLAUDE.md).
+
+
+7) ISTRUZIONI PER L'UTENTE (lanciare 'osservazioni' dal web, passo per passo)
+----------------------------------------------------------------------------
+Prerequisito: le osservazioni devono essere gia' mature (>= ~30h dalla loro raccolta).
+Come da handoff precedente, la prima lega (mlspa) matura dal 05/08 ~01:00 UTC: prima di
+allora 'osservazioni' risolvera' 0 righe (normale, nessun danno).
+
+ 1. Vai su GitHub, apri il repository Sorare-tracker-2.
+ 2. In alto clicca la scheda "Actions".
+ 3. Nella colonna sinistra ("All workflows") clicca "Cerbero (apprendimento)".
+ 4. A destra compare un banner "This workflow has a workflow_dispatch event trigger."
+    Clicca il bottone "Run workflow" (in alto a destra della lista run).
+ 5. Si apre un pannellino:
+      - "Use workflow from": lascia Branch: main.
+      - "cosa lanciare": apri il menu a tendina e scegli "osservazioni".
+ 6. Clicca il bottone verde "Run workflow".
+ 7. Dopo qualche secondo appare una nuova riga nella lista (pallino giallo = in corso).
+    Cliccala, poi clicca il job "learn" per vedere il log in tempo reale. In cima al log
+    dello step "Esegui apprendimento" trovi modalita, ora UTC e ora Roma.
+ 8. Al termine (pallino verde = ok):
+      - il RISULTATO leggibile e' nel file docs/handoff/LEARN_osservazioni_<data_ora>.txt
+        (committato nel repo) e anche negli "Artifacts" in fondo alla pagina del run
+        (scaricabile per 30 giorni).
+      - le soglie aggiornate finiscono in cerbero_soglie_apprese.json (committato in
+        automatico dal workflow): sara' il bot a rileggerle alla run successiva.
+ 9. Se il pallino e' rosso: apri il log, cerca la riga "SECRET SORARE SCADUTI ...". Se c'e',
+    rinnova i secret (Settings -> Secrets and variables -> Actions) e rilancia dal punto 4.
+
+
+8) COSA RESTA CHIUSO
+--------------------
+ - Nessuno schedule su questo workflow (per scelta del brief): resta manuale.
+ - Lancio effettivo su GitHub: NON fatto, attende ok utente. Da fare per 'osservazioni'/
+   'trasversale' dopo il 05/08 ~01:00 UTC (prima non c'e' nulla di maturo da imparare);
+   'storico' si puo' lanciare quando si vuole (offline).
+ - Nessuna modifica al codice Python ne' a bot_cerbero.yml.
