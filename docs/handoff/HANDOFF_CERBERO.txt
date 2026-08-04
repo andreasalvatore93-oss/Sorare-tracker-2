@@ -1,109 +1,99 @@
-HANDOFF CERBERO — UNICO FILE DI RIFERIMENTO (aggiornato 2026-08-04)
-====================================================================
-Questo file sostituisce e unifica: HANDOFF_cerbero_accelerazione_20260804.txt,
-HANDOFF_cerbero_b2_20260804.txt, HANDOFF_cerbero_workflow_learn_20260804.txt
-(rimossi). Da ora in poi e' l'UNICO handoff cerbero: si aggiorna in-place ad
-ogni sessione, non se ne creano di nuovi con data nel nome.
+HANDOFF CERBERO — UNICO FILE DI RIFERIMENTO (aggiornato 2026-08-04 17:30 Roma)
+================================================================================
+UNICO handoff cerbero: si aggiorna in-place ogni sessione, non se ne creano
+altri con data nel nome (regola in CLAUDE.md).
+
+>>> NOTA PER LA PROSSIMA SESSIONE: l'utente NON ha ancora chiaro il passo per
+    passo per lanciare l'apprendimento la prima volta (dove cliccare su
+    GitHub, cosa aspettarsi). GUIDARLO passo-passo quando chiede di
+    procedere, non dare per scontato che sappia usare il workflow. Istruzioni
+    dettagliate al punto 5.
 
 
-1) STATO CRON / REGIME DI ESECUZIONE
--------------------------------------
-Cron mai scattato (workflow troppo recente quando aggiunto), CAUSA nota e non
-un bug di config: on: valido, Actions abilitate, sintassi cron corretta. Da
-ricontrollare col passare del tempo, non riscrivendo il workflow.
-CONSEGUENZA: regime REALE e' MANUALE. Ogni run = pressione umana da ~5h.
-
-
-2) ORIZZONTE DI APPRENDIMENTO: 24h (ADOTTATO)
------------------------------------------------
-Confronto 12h/24h/48h su backtest offline (2591 candidati, stesso set):
- 12h: lift +16.03 (non adottato, run troppo rade per verificarlo)
- 24h: lift +13.00 (ADOTTATO: ratio vs 48h = 0.923 >= 0.70)
- 48h: lift +14.09 (era il default, ora superato)
-Riga usabile quando eta'>30h (dentro finestra fetch <144h).
-Modifiche: cerbero_learn.py FORWARD_LO_H/HI_H via env (default 18/30);
-backtest_e_test.py forward_h() generica + confronto_orizzonti().
-
-
-3) ASSE TRASVERSALE (margine) — bias di selezione CHIUSO (b2)
-----------------------------------------------------------------
-Prima: prezzo_secondo/margine si registravano SOLO sopra soglia MakeOffer ->
-impossibile misurare se i margini bassi predicono ritorni bassi.
-Fix (b2): scrittura CSV aggiunta nel ramo margine<soglia di evaluate_event
-(cerbero.py ~3603), PRIMA del return False. Zero query incrementali (il fetch
-prezzi e' gia' pagato da ogni candidato per calcolare il margine stesso).
-Nuova colonna tipo_riga ('completa' | 'trasversale_only'), retrocompatibile
-(righe vecchie a 11/14 campi = None = 'completa'). Soglie temporali verificate
-IDENTICHE prima/dopo (no-op sul risolutore esistente, provato su 686 righe).
-Nuovo comando: `cerbero_learn.py --trasversale` (distribuzione rendimento 24h
-per fascia di margine, NON scrive il JSON soglie).
-Volume atteso: ~6.900 righe/giorno in regime manuale (2 run da 5h), ben sotto
-la soglia di guardia 20.000/giorno.
-
-
-4) WORKFLOW GITHUB "Cerbero (apprendimento)"
------------------------------------------------
-File: .github/workflows/cerbero_learn.yml — SOLO workflow_dispatch, nessun
-cron. Input `modalita`: osservazioni | trasversale | entrambi | storico.
- - osservazioni: impara soglie da osservazioni live, scrive JSON (serve secret
-   Sorare freschi + righe mature).
- - trasversale: distribuzione rendimento per fascia margine, non scrive JSON.
- - entrambi: osservazioni poi trasversale (trasversale solo se la prima ok).
- - storico: bootstrap offline dal dataset storico, zero query, sempre disponibile.
-Output: docs/handoff/LEARN_<modalita>_<data_ora>.txt + artifact 30gg. Commit
-automatico del JSON soglie solo per osservazioni/storico/entrambi.
-Se 403/secret scaduti: messaggio esplicito in log "SECRET SORARE SCADUTI...".
-Come lanciarlo: GitHub -> Actions -> "Cerbero (apprendimento)" -> Run workflow
--> scegli modalita -> Run workflow (branch main).
-MAI lanciato su GitHub finora: attende l'ok utente.
-
-
-5) MATURAZIONE DATI (ricalcolata 04/08 15:30 UTC = 17:30 Roma, dopo stop run6)
--------------------------------------------------------------------------------
-cerbero_osservazioni.csv: 2.816 righe (1.033 completa + 1.783 trasversale_only).
-Orari in ora di Roma (CEST, UTC+2). 12 leghe GIA' QUALIFICATE (volume ok),
-maturano (eta'>30h) tutte nella notte 04/08->05/08:
-  mlspa                   01:03   premiership-gb-sct     01:28
-  primeira-liga-pt        01:12   premier-league-gb-eng  01:05
-  eredivisie              01:05   austrian-bundesliga    01:03
-  2-bundesliga            01:12   bundesliga-de           01:17
-  laliga-es               01:18   k-league-1               01:23
-  jupiler-pro-league      01:10   1-hnl                    01:33
-Sotto le 30 righe 'completa' (serve altra raccolta, non solo tempo):
-  serie-a-it(28), championship(27), russian-premier-league(24), j1-league(20),
-  ligue-1-fr(19), e code piu' corte a scendere.
-NOTA: questi orari si aggiornano ad ogni run che raccoglie altre righe
-(l'eta' si misura sulla riga piu' vecchia GIA' presente, quindi con piu' righe
-il volume-soglia si raggiunge prima). Il numero valido e' quello dell'ultimo
-ricalcolo in questo file, non versioni precedenti dell'handoff.
-Soglie bootstrap attuali (fonte dataset_storico, NON osservazioni live):
- mlspa 5% (n=1351) | k-league-1 5% (n=581) | eredivisie 5% (n=1529) |
- jupiler-pro-league 5% (n=1529). Altre leghe: default prudente 10%.
-
-
-6) COSA RESTA CHIUSO (non riaprire senza nuovi dati)
-------------------------------------------------------
- - Orizzonte 12h: chiuso come non verificabile in regime manuale (solo nota).
- - Orizzonte 48h: superato da 24h.
- - Asse trasversale: bug di scrittura escluso, colonne 100% popolate.
- - Cron come bug di sintassi/config: escluso.
- - Contaminazione soglie temporali da b2: esclusa (no-op provato).
-
-
-7) DECISIONI APERTE PER L'UTENTE
+1) REGIME: MANUALE, non automatico
 ------------------------------------
-A) b2 letto in senso "zero query INCREMENTALI" (non "zero fetch a monte in
-   assoluto"). Se non e' quello che intendevi, va rivisto.
-B) Se un giorno il cron partisse e si girasse ~24h/giorno continuo, b2
-   arriverebbe vicino alla soglia 20.000 righe/giorno: da decidere solo se si
-   passa a raccolta continua.
-C) Workflow "Cerbero (apprendimento)" pronto ma mai lanciato: da lanciare con
-   modalita 'osservazioni' dopo la maturazione mlspa (§5).
+Il cron di bot_cerbero.yml non e' mai scattato (causa nota: workflow
+aggiunto da poco, non e' un bug di config). Ogni run = lancio manuale da
+GitHub, dura ~5h. Non serve ricontrollare la sintassi del workflow.
 
 
-8) PROSSIMO STEP CONCRETO
------------------------------
-Da ~01:30 di Roma (05/08) le 12 leghe di §5 sono lanciabili. L'utente ha
-segnalato che probabilmente non sara' online a quell'ora: lanciare
-'osservazioni' quando torna disponibile (i dati restano validi, non scadono),
-poi confrontare soglie apprese vs bootstrap (§5).
+2) COSA E' STATO CAMBIATO E PERCHE'
+--------------------------------------
+- Orizzonte di apprendimento: passato da 48h a 24h (lift quasi identico,
+  0.92x, ma matura 30h prima -> in regime manuale conta molto). Riga
+  usabile quando ha eta'>30h.
+- Asse trasversale (margine): prima si registrava solo sopra soglia
+  MakeOffer, ora anche sotto (nuova colonna tipo_riga: 'completa' vs
+  'trasversale_only'). Chiude un bias di selezione, zero query in piu',
+  soglie temporali verificate identiche prima/dopo.
+- Nuovo workflow GitHub "Cerbero (apprendimento)" (vedi §4), mai lanciato.
+
+
+3) DOVE SIAMO COL DATASET (cerbero_osservazioni.csv)
+---------------------------------------------------------
+2.816 righe (1.033 complete, 1.783 trasversale_only). 12 leghe hanno gia'
+volume sufficiente e maturano tutte fra l'01:00 e l'01:35 di Roma della
+notte 04/08->05/08: mlspa, austrian-bundesliga, eredivisie,
+premier-league-gb-eng, primeira-liga-pt, 2-bundesliga, jupiler-pro-league,
+laliga-es, bundesliga-de, k-league-1, premiership-gb-sct, 1-hnl.
+Sotto soglia (serve piu' raccolta, non solo tempo): serie-a-it(28),
+championship(27), russian-premier-league(24), j1-league(20), ligue-1-fr(19)
+e code piu' corte.
+NOTA: questi orari si ricalcolano ogni volta che si raccolgono altre righe
+(l'eta' si misura sulla riga piu' vecchia). Se si fa un'altra run prima di
+lanciare l'apprendimento, ricalcolare invece di fidarsi di questi numeri.
+Soglie bootstrap attuali (da dataset storico, non da osservazioni live):
+mlspa/k-league-1/eredivisie/jupiler-pro-league = 5%. Le altre leghe usano
+il default prudente 10%.
+
+
+4) WORKFLOW "Cerbero (apprendimento)" — come si usa
+-------------------------------------------------------
+File: .github/workflows/cerbero_learn.yml. Solo lancio manuale (nessun
+cron). Un input a tendina, `modalita`, con 4 scelte:
+ - osservazioni: legge le righe mature del CSV, impara le soglie per lega e
+   RISCRIVE cerbero_soglie_apprese.json. Serve secret Sorare validi + righe
+   gia' mature (vedi §3).
+ - trasversale: stampa solo un report (rendimento per fascia di margine),
+   NON scrive nulla. Diagnostico.
+ - entrambi: prima osservazioni, poi trasversale (se la prima riesce).
+ - storico: bootstrap offline dal dataset storico, zero query, funziona
+   sempre anche a secret scaduti.
+Output: file docs/handoff/LEARN_<modalita>_<data_ora>.txt committato in
+automatico + artifact scaricabile (30gg). Se i secret sono scaduti, il log
+lo dice esplicitamente ("SECRET SORARE SCADUTI").
+
+PASSO PASSO per lanciarlo dal sito GitHub (usare quando l'utente e' pronto):
+ 1. github.com -> repo Sorare-tracker-2 -> scheda "Actions".
+ 2. Colonna sinistra -> "Cerbero (apprendimento)".
+ 3. Bottone "Run workflow" in alto a destra della lista run.
+ 4. Branch: main (default). Menu "cosa lanciare": scegliere "osservazioni".
+ 5. Bottone verde "Run workflow".
+ 6. Aspettare qualche secondo, ricomparira' una riga con pallino giallo (in
+    corso) -> giallo diventa verde (ok) o rosso (errore) in pochi minuti.
+ 7. Risultato: aprire docs/handoff/LEARN_osservazioni_*.txt nel repo, oppure
+    chiedere a Claude di leggerlo e riassumerlo.
+
+
+5) COSA RESTA CHIUSO (non riaprire senza nuovi dati)
+--------------------------------------------------------
+Orizzonte 12h (non verificabile in regime manuale) e 48h (superato da 24h);
+bug di scrittura sull'asse trasversale (escluso); cron come bug di sintassi
+(escluso); contaminazione soglie da b2 (esclusa, no-op provato).
+
+
+6) DECISIONI APERTE (nessuna azione richiesta se non riguardano)
+----------------------------------------------------------------------
+A) b2 letto come "zero query incrementali", non "zero fetch a monte in
+   assoluto". Da rivedere solo se l'interpretazione non e' quella voluta.
+B) Se un giorno il cron partisse in continuo 24h/giorno, il volume di
+   scrittura si avvicinerebbe alla soglia di guardia (20.000 righe/giorno).
+   Non rilevante nel regime manuale attuale.
+
+
+7) PROSSIMO STEP CONCRETO
+------------------------------
+Dall'01:30 di Roma le 12 leghe di §3 sono lanciabili con 'osservazioni'.
+L'utente potrebbe non essere online a quell'ora: i dati non scadono, si puo'
+lanciare quando torna disponibile. Guidarlo con §4 passo-passo, poi
+confrontare le soglie apprese col bootstrap (§3).
