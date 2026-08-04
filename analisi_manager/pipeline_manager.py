@@ -45,6 +45,9 @@ DEFAULT_GW = [('football-31-jul-4-aug-2026', '2026-08-04'),
               ('football-21-24-jul-2026', '2026-07-24')]
 
 RUOLO_MAP = {'Goalkeeper', 'Defender', 'Midfielder', 'Forward'}
+# Solo arene LIMITED (coerente con analizza_gw.ARENE_AMMESSE): non cachiamo
+# giocatori che compaiono solo in rare/altro (escluse).
+ARENE_AMMESSE = {'arena_limited', 'arena_limited_beginner', 'arena_limited_uncapped'}
 
 
 def log(m):
@@ -90,6 +93,8 @@ def costruisci_batch(managers, gws):
         d = json.load(open(p, encoding='utf-8'))
         for gw, _ in gws:
             for f in (d.get('giornate') or {}).get(gw) or []:
+                if f.get('tipo_arena') not in ARENE_AMMESSE:
+                    continue
                 for c in f.get('carte') or []:
                     sl = c.get('slug')
                     if sl and sl not in info and c.get('ruolo') in RUOLO_MAP:

@@ -40,17 +40,42 @@ def log(msg):
     print(msg, flush=True)
 
 
+def _set_gamelog_cachati():
+    """L'insieme degli slug con game-log gia' scritto. Costruito UNA volta
+    (scandendo solo formazione_*/, non tutto il repo). NB: os.walk, non
+    glob('**'): glob NON scende in modo affidabile nelle cartelle nascoste
+    (.game_log_cache/.cache) su questo filesystem (verificato)."""
+    out = set()
+    for d in os.listdir(REPO):
+        if not d.startswith('formazione_'):
+            continue
+        for _, _, files in os.walk(os.path.join(REPO, d)):
+            for f in files:
+                if f.endswith('_gamelog.json'):
+                    out.add(f[:-len('_gamelog.json')])
+    return out
+
+
+_CACHATI = None
+
+
 def gia_cachato(slug):
-    """True se esiste gia' il game-log cache per lo slug in QUALSIASI lega/ruolo.
-    Il game log e' player-level (non dipende dalla cartella) ed e' l'asset vero:
-    viene scritto anche per i giocatori con storico strutturalmente insufficiente,
-    quindi e' il criterio giusto di "dato gia' raccolto".
-    NB: os.walk, non glob('**'): glob NON scende in modo affidabile nelle cartelle
-    nascoste (.game_log_cache/.cache) su questo filesystem (verificato)."""
+    global _CACHATI
+    if _CACHATI is None:
+        _CACHATI = _set_gamelog_cachati()
+    return slug in _CACHATI
+
+
+def _gamelog_su_disco(slug):
+    """Check MIRATO e fresco per un solo slug dopo il predict (il set memoizzato
+    non vede il file appena scritto). Scandisce solo formazione_*/."""
     target = f'{slug}_gamelog.json'
-    for _, _, files in os.walk(REPO):
-        if target in files:
-            return True
+    for d in os.listdir(REPO):
+        if not d.startswith('formazione_'):
+            continue
+        for _, _, files in os.walk(os.path.join(REPO, d)):
+            if target in files:
+                return True
     return False
 
 
@@ -115,9 +140,9 @@ def main():
         try:
             r = subprocess.run([sys.executable, path], cwd=REPO, env=env,
                                capture_output=True, text=True, timeout=args.timeout)
-            ok = gia_cachato(slug)
+            ok = _gamelog_su_disco(slug)
         except subprocess.TimeoutExpired:
-            ok = gia_cachato(slug)
+            ok = _gamelog_su_disco(slug)
         dt = time.time() - t0
         if ok:
             fatti += 1

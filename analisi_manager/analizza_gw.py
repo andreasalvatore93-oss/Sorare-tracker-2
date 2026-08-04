@@ -26,6 +26,10 @@ import backtest_arene_previsioni as P
 
 CAPITANO_ARENA = 0.2
 SLOT_MEDIO = 51.8
+# Solo arene LIMITED (limited/beginner/uncapped). Rare e 'arena_altro'
+# (super rare/unique) ESCLUSE: mint diverso, pochissimi le hanno, non
+# affidabili/rappresentative (regola esplicita utente 04/08).
+ARENE_AMMESSE = {'arena_limited', 'arena_limited_beginner', 'arena_limited_uncapped'}
 DEFAULT_GW = 'football-31-jul-4-aug-2026'
 DEFAULT_FINE = datetime.datetime(2026, 8, 4, 23, 59)
 # I 12 slug del campione smart-money (scelti a caso dall'utente, non bias).
@@ -83,15 +87,21 @@ def fascia(v, tagli):
 
 # ---- lega per slug dal percorso della cache (offline) ------------------------
 def indice_lega():
+    # I gamelog stanno solo sotto formazione_*/output/*/.game_log_cache/: si
+    # scandiscono SOLO quelle cartelle, non tutto il repo (os.walk completo su
+    # migliaia di file di cache e' lentissimo, x4 GW va in timeout).
     pat = re.compile(r'formazione_([^\\/]+)[\\/]output')
     out = {}
-    for r, _, fs in os.walk(ROOT):
-        for f in fs:
-            if f.endswith('_gamelog.json'):
-                sl = f[:-len('_gamelog.json')]
-                m = pat.search(r)
-                if m and sl not in out:
-                    out[sl] = m.group(1)
+    for d in os.listdir(ROOT):
+        if not d.startswith('formazione_'):
+            continue
+        for r, _, fs in os.walk(os.path.join(ROOT, d)):
+            for f in fs:
+                if f.endswith('_gamelog.json'):
+                    sl = f[:-len('_gamelog.json')]
+                    m = pat.search(r)
+                    if m and sl not in out:
+                        out[sl] = m.group(1)
     return out
 
 
@@ -113,6 +123,8 @@ def estrai(gw, fine, cache, lega_di):
         if not forms:
             continue
         for f in forms:
+            if f.get('tipo_arena') not in ARENE_AMMESSE:
+                salta(f"arena esclusa ({f.get('tipo_arena')})"); continue
             carte_out = []
             for c in f.get('carte') or []:
                 slug, ruolo = c.get('slug'), c.get('ruolo')

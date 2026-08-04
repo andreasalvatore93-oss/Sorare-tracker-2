@@ -66,12 +66,12 @@ GRAPHQL_URL = 'https://api.sorare.com/federation/graphql'
 COOKIE = os.environ.get('SORARE_COOKIE', '')
 PAUSA = float(os.environ.get('MANAGER_PAUSA', '0.4'))
 
-# Le arene rare non interessano (regola esplicita dell'utente): non le gioca.
-# Restano limited, beginner e uncapped -- le beginner SI', anche se rendono
-# male (-16.5% di ROI su 182 suoi ingressi): sono comunque punteggi reali, e
-# servono a capire se sono strutturalmente perdenti o se erano le carte
-# sbagliate.
-TIPI_ARENA_ESCLUSI = ('arena_rare',)
+# Whitelist: SOLO le arene della famiglia LIMITED (limited, beginner,
+# uncapped -- tutte carte limited). Escluse arena_rare e 'arena_altro' (super
+# rare/unique): mint diverso, pochissimi le hanno, non affidabili (regola
+# esplicita utente 04/08). Le beginner restano: rendono male (-16.5% ROI su 182
+# ingressi utente) ma sono punteggi reali di carte limited.
+TIPI_ARENA_ESCLUSI = ('arena_rare', 'arena_altro')
 
 INDICE_QUERY = """
 query Partecipazioni($fixture: String!, $manager: String!, $after: String) {

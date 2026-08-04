@@ -1,6 +1,6 @@
 # Report analisi manager — GW football-21-24-jul-2026
 
-Generato: 2026-08-04 22:25 (locale). Metodologia: analisi_manager/METODOLOGIA.md
+Generato: 2026-08-04 22:52 (locale). Metodologia: analisi_manager/METODOLOGIA.md
 
 ## A. Selezione (residuo = realizzato - atteso)
 
