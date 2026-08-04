@@ -117,3 +117,24 @@ Quindi, sempre, prima di qualunque griglia o confronto:
 5. Se una premessa viene da un commento, una docstring o un handoff, la tratto
    come da verificare, non come vera. E se la smentisco, CORREGGO LA FONTE nel
    repo nello stesso commit, altrimenti la prossima sessione ci ricasca.
+
+## Cosa deve riprodursi: il delta, non il valore assoluto
+
+Confrontando due varianti del modello, il numero che decide e' la DIFFERENZA
+fra le due, misurata sullo stesso campione nello stesso run. I valori assoluti
+possono tremolare fra ambienti (ordine dei file, ordine delle somme in virgola
+mobile, soglie booleane che si ribaltano per un epsilon) senza che questo
+invalidi nulla.
+
+Un confronto e' valido se, in ogni ambiente in cui e' stato misurato:
+  - il campione ha la stessa n e le stesse unita';
+  - il SEGNO del delta e' lo stesso;
+  - il delta e' almeno 3 volte piu' grande del tremolio fra ambienti.
+Se queste tre cose valgono, si decide. Non si chiede un'altra misura.
+
+## Scouting e generatore devono restare coerenti
+
+Scouting e generatore formazioni devono restare coerenti: ogni modifica alla
+previsione, alla calibrazione o alle soglie va verificata su ENTRAMBI. Il
+generatore ottimizza il mazzo esistente, lo scouting decide come cresce: se
+divergono, si comprano carte che non si schierano.
