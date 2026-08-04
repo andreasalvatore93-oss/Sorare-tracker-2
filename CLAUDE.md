@@ -65,6 +65,14 @@ L'utente paga a token e non vuole leggere prosa lunga in chat.
 - Limite duro: massimo 5 righe per messaggio di chat. Analisi, tabelle e
   numeri non compaiono mai in chat, solo in docs/handoff/.
 
+## Handoff Cerbero: file unico
+
+Per il filone Cerbero l'handoff di riferimento è UNO SOLO:
+`docs/handoff/HANDOFF_CERBERO.txt`. Non creo altri file con data nel nome per
+questo tema: aggiorno quello esistente in-place ad ogni sessione che tocca
+Cerbero. Se in futuro il tema si esaurisce o si divide, si decide insieme
+prima di tornare alla convenzione data-nel-nome.
+
 ## Handoff di fine sessione (automatico)
 
 Quando una sessione di lavoro si chiude — cioe' quando ho committato, oppure
