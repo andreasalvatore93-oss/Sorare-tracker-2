@@ -1,0 +1,64 @@
+name: Predici Manager (smart money — cache batch)
+
+# Popola la cache del modello (detail_cache = game log passato) per una lista
+# di giocatori non posseduti, schierati da altri manager in una GW chiusa
+# (filone "smart money", HANDOFF_UNIFICATO §7). L'asset e' la cache: una volta
+# scritta, il walk-forward as-of di qualunque GW passata e' locale a costo zero.
+# Solo lancio manuale.
+
+on:
+  workflow_dispatch:
+    inputs:
+      input_file:
+        description: "JSON {slug:{ruolo,dir,lega}} da predire (relativo al repo)"
+        required: true
+        default: "dati_globali/smart_money/miss_gw1.json"
+      commit_every:
+        description: "Committa la cache ogni N giocatori nuovi"
+        required: false
+        default: "10"
+      timeout_singolo:
+        description: "Timeout in secondi per singolo predict"
+        required: false
+        default: "240"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: predici-manager
+  cancel-in-progress: false
+
+jobs:
+  predici:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      - name: Predici e cacha
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          git config user.name "sorare-tracker-bot"
+          git config user.email "bot@users.noreply.github.com"
+          python predici_manager_batch.py \
+            --input "${{ github.event.inputs.input_file }}" \
+            --commit-every "${{ github.event.inputs.commit_every }}" \
+            --timeout "${{ github.event.inputs.timeout_singolo }}"
+
+      - name: Push cache
+        if: always()
+        run: |
+          git push origin main || echo "niente da pushare"
