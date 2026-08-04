@@ -11,7 +11,10 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: 04/08/2026.
+Ultimo aggiornamento: **sessione 04/08/2026, ore 21:00 (Roma, CEST)**.
+Sessione attuale = filone "smart money" (vedi §7). Regola di stile: questo
+file resta SNELLO (max ~4 pagine) e ogni aggiornamento riporta sessione,
+giorno e ora nel fuso di Roma.
 
 ---
 
@@ -317,64 +320,54 @@ riprende il filone backtest.
 del modello in denaro: **l'unica leva rimasta è la PRECISIONE della
 previsione**, non le regole di decisione (tutte misurate e chiuse, §5).
 
-## 7. Da dove ripartire — il modello e il layer decisionale sono al soffitto
+## 7. Da dove ripartire — SESSIONE ATTIVA: "smart money"
 
-Sintesi onesta dopo il 04/08: **sia la previsione (il punto) sia il layer
-decisionale (allocazione, capitano, varianza) sono al loro tetto dati il
-repo.** Le leve interne sono tutte misurate e chiuse (§5). Quello che resta è a
-MONTE (dati nuovi, disponibilità) o a valle di portafoglio, non nella formula.
+### Il deliverable (da qui si riparte)
+Domanda unica e falsificabile: **i giocatori che i bravi manager scelgono
+battono il nostro `atteso` sul realizzato?** (= esiste un segnale "smart money"
+che il modello NON ha?).
+- **SÌ** → feature nuova = predizioni migliori **e** edge per vincere (seguire
+  i pick sharp).
+- **NO** → il modello è il tetto anche contro gli umani → si chiude il filone.
+È l'UNICO deliverable che vale le ore. **Scartati** (decisione utente): il gate
+odds da solo (troppo aleatorio) e "più dati stesse feature" (il tetto è
+*feature* mancanti, non dati — §5).
 
-**La scomposizione dell'errore è FATTA (04/08, vedi §5 "Piattezza = verità").**
-Esito: il punto-previsione è al **soffitto informativo** delle feature nel
-repo — residuo a R²=0.008, range non calibrato, punto già sovra-disperso per
-3 ruoli su 4. Non inseguire più differenziazione/precisione del punto: è
-dimostrato vicolo cieco. `taratura_confronto_parametri.py` e la regola **MAE +
-correlazione + lift insieme** restano il metro se si tocca un parametro.
+### Come (metodo deciso con l'utente, con kill-switch)
+1. Manager = **avversari d'arena dell'utente** (garantito giocano arene,
+   campione non-bias). **Lista già in mano.**
+2. Batch piccolo: **~10-15 manager × 3-4 GW CHIUSE** → qualche centinaio di
+   giocatori unici ≈ **una sessione**, non ore al buio.
+3. Estrai le formazioni arena (pubbliche, veloci) con
+   `ricostruisci_manager.py <slug> --giornate <gw> --solo-arene` (`SORARE_COOKIE`).
+4. I loro giocatori NON posseduti si predicono col loop **`TARGET_SLUG`** su
+   `formazione_mls/predict/test_<ruolo>.py` (~15-30s a cache-miss, poi
+   **cachato per sempre** = asset che rende gratis le analisi future). NIENTE
+   proxy di presenza storica (sporco, scartato): lo "stato" di una carta in una
+   GW passata è il **walk-forward as-of-then**, che va calcolato perché
+   `errore_storico` copre solo il pool utente (~5.7% dei loro giocatori).
+5. Misura il **residuo smart-money = realizzato − atteso** sui loro pick.
+   ≠0 → scala. ~0 → **STOP**.
 
-**Anche la leva "varianza a media pari" è CHIUSA — misurata due volte su dati
-reali, bocciata** (verificato 04/08; avevo erroneamente scritto qui che era
-"aperta/da misurare" — sbagliato, vedi commit sotto). Quando le medie-
-formazione sono ~pari (run #118: 12 arene tutte fra 265 e 293) si potrebbe
-pensare che la scelta si sposti su varianza/correlazione del totale (dato reale:
-compagni stessa-squadra correlati +0.178, stessa-partita +0.122). Testato:
-- **Varianza per-giocatore nella selezione** (`ef6667b3e5`,
-  `misura_varianza_prevedibile.py`): dispersione passata→futura corr +0.217
-  (debole); usarla nella scelta dei 5 NON migliora — peso 0.25 → −0.33 pt,
-  peso 0.5 neutro, peso 1.0 peggiora la media (299.1 vs 300.3) e alza solo la
-  coda estrema (P>361: 13.1% vs 10.3%). Nessun cambio.
-- **Varianza da correlazione same-team** (`FORZA_NORM`, `9793831290`,
-  `ab_fattore_varianza_storico.py`) su **48 giornate reali** col punteggio
-  realizzato: 44/48 formazioni identiche, media −0.74 pt/giornata, IC95%
-  [−3.29, +1.81] (zero dentro). Bocciato, resta spento. "Il meccanismo quasi
-  non morde mai su questi pool." (Una misura Monte Carlo su UNA giornata
-  l'aveva dato vincente — `41fa0e1931` — ma non ha retto sul multi-giornata:
-  è il solito limite dello snapshot singolo.)
-Motivo di fondo, coerente col §5: σ del totale ~49.4 è troppo grande perché la
-convessità del premio (a gradini per rank) morda. `pick_captain()` e regole di
-allocazione restano chiuse (§5).
+### Fatto in questa sessione (04/08)
+- **Diagnosi piattezza (§5)**: modello e layer decisionale al tetto; tutte le
+  leve interne chiuse (incl. varianza a media pari, bocciata su dati reali —
+  `ef6667b3e5`, `FORZA_NORM` `9793831290`; σ totale ~49.4 troppo grande perché
+  la convessità del premio morda).
+- **forever-young**: estratte le **21 arene GW2** (tutte *Beginner Limited*),
+  **predetti+cachati 41/42** suoi giocatori non posseduti
+  (`dati_globali/manager_foreveryoung_predizioni_gw2.json`). Confronto NAIVE:
+  stessa qualità di selezione dell'utente, ma lui prende **più
+  rischio-disponibilità** (odds 0.74 vs 0.84). Il confronto sul **realizzato**
+  è in sospeso finché la GW2 non si gioca (→ primo test smart-money reale).
 
-**Dove sta invece il segnale predicibile vero**: NON nel separare meglio i
-titolari, ma a MONTE, nella DISPONIBILITÀ (starter_odds = 0.163, il segnale
-più forte di tutti, già gestito come filtro) e nella scelta di QUALI
-competizioni giocare. Più segnale di così richiederebbe dati NON nel repo
-(minutaggio/lineup certi, xG tiro-a-tiro), non una formula migliore.
-
-Piste secondarie aperte, non urgenti:
-- **Manager avversari come banco di prova più grande**: `forever-young` già
-  scaricato per le arene; estendere ad altre competizioni e ad altri
-  manager (`ricostruisci_manager.py <slug> --dalle-mie-arene`, ~12
-  minuti/manager). Serve per tarare `PAREGGIO_ARENA` sulla dispersione VERA
-  delle formazioni scelte (51.0 osservato contro 43.3 delle sintetiche —
-  segnale che le soglie attuali sono un po' ottimiste, campione ancora
-  troppo piccolo per agire).
-- **Tabelle premi delle competizioni a classifica grande** (All Star,
-  Limited, LALIGA...): mancano, senza non si può chiudere il lato capitano/
-  allocazione per quelle competizioni con premi veri invece di un surrogato
-  rank-based.
-- **APIKEY Sorare**: richiesta, ancora in attesa (04/08) — è il tetto che
-  decide i tempi di scouting/backtest/ricostruzione manager (senza: ~60
-  query/min, complessità 500; con: 30.000 e profondità 13). L'utente informa
-  quando arriva, non ricontrollare da soli.
+### Piste secondarie (non urgenti)
+- **Tabelle premi** delle competizioni a classifica grande (All Star, Limited,
+  LALIGA): mancano; senza, il lato capitano/allocazione per quelle resta su un
+  surrogato rank-based.
+- **APIKEY Sorare**: richiesta, in attesa — è il tetto che decide i tempi di
+  scouting/manager (senza: ~60 query/min, compl. 500; con: 30.000). L'utente
+  avvisa quando arriva.
 
 ---
 

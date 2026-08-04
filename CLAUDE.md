@@ -102,6 +102,21 @@ Regole di stile: testo semplice, niente markdown pesante, numeri sempre con la
 loro n. Non nascondo i risultati negativi ne' gli errori miei. Alla fine dico
 all'utente il percorso del file.
 
+## Ogni riassunto/handoff: SNELLO e DATATO (vale sempre)
+
+Quando l'utente chiede un riassunto o un handoff, o quando lo aggiorno a fine
+sessione, valgono SEMPRE queste linee guida (non solo per il file unico §):
+
+1. **Resta snello.** Il file deve restare leggibile per intero a inizio
+   sessione (obiettivo ~4 pagine, mai molto oltre). Se aggiungo qualcosa,
+   TAGLIO/COMPRIMO il vecchio nello stesso momento: quando una sezione ha
+   esaurito la sua utilita' (filone chiuso, dato superato) la riscrivo in due
+   righe, non la lascio accanto alla versione nuova. Non accumulare in coda.
+2. **Sempre datato.** Ogni aggiornamento riporta in cima SESSIONE, GIORNO e
+   ORA nel fuso di **Roma** (CET/CEST), con l'UTC fra parentesi solo se serve.
+3. Il contenuto denso (tabelle, numeri, ragionamenti) sta nel file, non in
+   chat; in chat solo il percorso del file e le domande che bloccano.
+
 ## Prima di misurare l'effetto di un componente, dimostro che l'interruttore funziona
 
 Due volte in due giorni abbiamo misurato una cosa diversa da quella che
