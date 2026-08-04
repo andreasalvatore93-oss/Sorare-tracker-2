@@ -1,0 +1,92 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-04T20:04:48.773671Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) erick-samuel-correa-farias: 43 pt attesi (32-67)
+   SQUADRA: ulsan-ulsan | AVVERSARIO: pohang-steelers-pohang
+======================================================================
+
+######################################################################
+# GIOCATORE: erick-samuel-correa-farias
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: erick-samuel-correa-farias (squadra: ulsan-ulsan)
+Generato: 2026-08-04T20:04:48.772816Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 22
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-09 | ULS vs JEJ | k-league-1 | score=40.2 | peso=0.824
+  2025-08-24 | SEO vs ULS | k-league-1 | score=66.6 | peso=0.847
+  2025-08-30 | ULS vs JMO | k-league-1 | score=38.9 | peso=0.871
+  2025-09-13 | POH vs ULS | k-league-1 | score=28.5 | peso=0.895
+  2025-09-21 | ULS vs ANY | k-league-1 | score=36.9 | peso=0.920
+  2025-10-18 | ULS vs GWA | k-league-1 | score=32.1 | peso=0.946
+  2026-07-21 | ULS vs INC | k-league-1 | score=68.3 | peso=0.973
+  2026-08-02 | ULS vs ANY | k-league-1 | score=32.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 42.93
+  di cui Punteggio decisivo (level_score) medio: 41.25 | Punteggio complessivo (granulari) medio: 1.68 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 42.94 (delta +1.69)
+  Efficacia offensiva condizionata: delta venue +0.07, delta avversario -0.63 | Passaggio condizionato: delta venue +0.05, delta avversario +0.38 | Gol subiti condizionato: delta venue -0.57, delta avversario +0.42 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 14.63
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.1 - 66.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.53 (differenza: +3.10)
+Media score in casa: 41.52 | Media score fuori casa: 47.55
+Fattore casa/trasferta applicato: 1.003 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.9
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 0.946 (gol subiti reali dell'avversario, ultime 10)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 1.073
+Fattore falli (casa/trasferta, da dati reali): 0.995
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
+Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 22.86% (fonte: tasso di presenza storico (8/35))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T10:30
+Casa: Pohang Steelers FC | Trasferta: Ulsan Hyundai Horang-i
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.2 (range 32.4 - 66.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.56
+Punteggio REALE ottenuto in quella partita: 32.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -11.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      40.3    68.3    +28.0    13.4        NO
+   7        7      43.3    32.7    -10.6    16.6        SI
+
+MAE (errore assoluto medio): 19.29
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
