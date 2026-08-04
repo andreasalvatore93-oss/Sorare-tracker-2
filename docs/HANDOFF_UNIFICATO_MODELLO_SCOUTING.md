@@ -11,11 +11,12 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 05/08/2026, ore 02:10 (Roma, CEST)**.
-Sessione attuale: chiusa la domanda "smart money", si apre l'esplorazione dei
-**pattern delle arene** su 435 arene reali (vedi §7). Regola di stile: questo
-file resta SNELLO (max ~4 pagine) e ogni aggiornamento riporta sessione,
-giorno e ora nel fuso di Roma.
+Ultimo aggiornamento: **sessione 05/08/2026, ore 03:30 (Roma, CEST)**.
+Sessione attuale: esplorati 3 filoni sui **pattern delle 442 arene reali**
+(metrica di selezione / modellare il boom / covarianza-partita). Nessun
+breakthrough, 2 fatti nuovi utili — dettaglio in `analisi_manager/PATTERN_ARENE.md`,
+sintesi in §7. Regola di stile: questo file resta SNELLO (max ~4 pagine) e
+ogni aggiornamento riporta sessione, giorno e ora nel fuso di Roma.
 
 ---
 
@@ -311,6 +312,19 @@ riprende il filone backtest.
   è già quella giusta.**
 - **Arene dedicate per lega**: disattivate di default nel generatore (04/08,
   vedi §9) — non un filone di ricerca chiuso, una scelta operativa.
+- **Indice `P(≥1 boom)` come metrica di selezione arena**: CHIUSO 05/08 (442
+  arene, `PATTERN_ARENE.md`). Non batte `sum_atteso` né `max_atteso` (tutti
+  ~−0.05 centrati); il boom-index non aiuta a scegliere in quale arena entrare.
+- **Boom-classifier dedicato**: CHIUSO 05/08. L'evento boom (reale>=75) è
+  debolmente predicibile (OOF AUC 0.658) ma `atteso` fa quasi tutto
+  (+0.025 dal modello completo). `in_casa` NON predice il boom (AUC 0.466). La
+  cosa utile è l'eterogeneità per RUOLO: FWD 0.70, MID 0.64, DEF 0.61, GK 0.57
+  (≈caso) — l'edge boom vive negli attaccanti, sul GK è testa-o-croce.
+- **Covarianza boom fra compagni ("partire dalla partita")**: CHIUSO 05/08 per
+  la selezione-boom. Sul boom binario la covarianza fra compagni ≈0 (phi
+  +0.012): l'indipendenza del modello regge sulla coda. Sul punteggio continuo
+  c'è +0.13 (vs 0.03 controllo) ma non arriva al boom → un layer match non
+  migliora `P(≥1 boom)`.
 
 ## 6. Il numero da portarsi via
 
@@ -324,18 +338,16 @@ previsione**, non le regole di decisione (tutte misurate e chiuse, §5).
 ## 7. Da dove ripartire — DIREZIONE VOLUTA DALL'UTENTE: pattern delle arene
 
 ### >>> LEGGERE PRIMA DI TUTTO — indirizzo dell'utente (05/08, esplicito)
-L'utente vuole **esplorare i PATTERN DELLE ARENE**, non chiudere. Abbiamo un
-dataset grande e poco sfruttato (**435 arene reali con l'esito di OGNI carta**,
-`analisi_manager/dati/formazioni_*.json` + `righe_*.json`, 8 GW). La domanda
-smart-money ("i manager battono l'atteso?") è finita — risposta NO — ma quei
-dati servono a domande diverse e più utili. **Si può scavare, e va scavato.**
+L'utente vuole **esplorare i PATTERN DELLE ARENE**, non chiudere. Dataset:
+**442 arene reali con l'esito di OGNI carta** (`analisi_manager/dati/
+formazioni_*.json` + `righe_*.json`, 8 GW). La domanda smart-money ("i manager
+battono l'atteso?") è finita — NO — ma quei dati servono a domande diverse.
 
-Nota di autocritica per la prossima sessione: in questa sessione l'assistente
-ha spinto per CHIUDERE invece di scavare, ha risposto con bias/σ/correlazioni
-al posto di numeri concreti che l'utente potesse usare, ed è stato poco
-collaborativo. L'utente ha ragione: **i dati ci sono, l'impegno mancava.** La
-consegna è generare numeri OPERATIVI (economia, soglie, cosa serve per
-vincere), non ripetere che "il modello è al tetto".
+Sessione 05/08: scavati 3 filoni (metrica di selezione, modellare il boom,
+covarianza-partita) → `analisi_manager/PATTERN_ARENE.md` (script
+`pattern_arene.py`). Nessun breakthrough, ma 2 fatti nuovi tenuti (Uncapped
+−0.30; boom predicibile per ruolo FWD 0.70 / GK 0.57). Restano ancora da
+generare i numeri di ECONOMIA sotto (ROI per tipo arena col NOSTRO mazzo).
 
 ### Cosa ESPLORARE nelle 435 arene (agganci concreti già trovati)
 - **Economia per tipo arena** (10 manager, 8 GW): ROI totale −25%. Solo
@@ -350,10 +362,14 @@ vincere), non ripetere che "il modello è al tetto".
   massimizzare P(almeno una carta esplode), non alzare la media.
 - **Il modello ordina i boom**: quintile-alto di atteso 26% boom vs 11%
   quintile-basso; dentro la stessa formazione la carta #1-atteso fa boom 21%
-  vs 8% della #5. MA `corr(atteso_somma, rank arena) = −0.02` ≈ zero: **il
-  totale-atteso NON predice il piazzamento** (mentre `corr(reale_somma,rank)=
-  −0.83`). Domanda aperta: serve un indice "P(boom nella formazione)" al posto
-  del totale-atteso per decidere in quale arena entrare?
+  vs 8% della #5.
+- **[RISOLTO 05/08 — `analisi_manager/PATTERN_ARENE.md`]** L'indice
+  `P(≥1 boom)` NON batte il totale-atteso né `max_atteso` per predire il rank
+  (tutti ~−0.05 centrati per competizione): idea **bocciata**. E il famoso
+  `corr(atteso_somma,rank)=−0.02` era un artefatto di pooling: within-comp è
+  −0.05, e in **arene Uncapped −0.30** (il cap comprime i totali attesi e
+  nasconde il segnale; dove non morde, il totale predice il rank). Da
+  riverificare con più arene uncapped.
 
 ### Infrastruttura — cartella `analisi_manager/`
 - `analizza_gw.py` (`--gw <slug> --fine <data>` → `dati/righe_/formazioni_/
