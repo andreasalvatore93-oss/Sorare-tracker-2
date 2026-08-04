@@ -1,0 +1,114 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T21:25:47.016904Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) enzo-hernan-diaz: 46 pt attesi (27-63)
+   ORDINAMENTO: 42.56
+   SQUADRA: sao-paulo-sao-paulo-sao-paulo | AVVERSARIO: gremio-porto-alegre-rio-grande-do-sul
+======================================================================
+
+######################################################################
+# GIOCATORE: enzo-hernan-diaz
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: enzo-hernan-diaz (squadra: sao-paulo-sao-paulo-sao-paulo)
+Generato: 2026-08-04T21:25:47.016273Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 41
+Escluse (DID_NOT_PLAY): 17
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: campeonato-brasileiro-serie-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-09 | SPA vs VIT | campeonato-brasileiro-serie-a | score=56.9 | peso=0.675
+  2025-08-24 | SPA vs CAM | campeonato-brasileiro-serie-a | score=59.8 | peso=0.691
+  2025-09-29 | SPA vs CEA | campeonato-brasileiro-serie-a | score=45.2 | peso=0.707
+  2025-10-05 | SPA vs PAL | campeonato-brasileiro-serie-a | score=60.0 | peso=0.724
+  2025-10-19 | MIR vs SPA | campeonato-brasileiro-serie-a | score=28.9 | peso=0.741
+  2025-10-26 | SPA vs BAH | campeonato-brasileiro-serie-a | score=76.0 | peso=0.758
+  2025-11-02 | VAS vs SPA | campeonato-brasileiro-serie-a | score=26.3 | peso=0.776
+  2025-11-09 | SPA vs BRA | campeonato-brasileiro-serie-a | score=18.0 | peso=0.794
+  2026-01-29 | SPA vs FLA | campeonato-brasileiro-serie-a | score=62.2 | peso=0.812
+  2026-02-04 | SAN vs SPA | campeonato-brasileiro-serie-a | score=25.8 | peso=0.831
+  2026-02-12 | SPA vs GRE | campeonato-brasileiro-serie-a | score=61.9 | peso=0.851
+  2026-03-15 | BRA vs SPA | campeonato-brasileiro-serie-a | score=22.1 | peso=0.871
+  2026-03-18 | CAM vs SPA | campeonato-brasileiro-serie-a | score=42.2 | peso=0.891
+  2026-04-11 | VIT vs SPA | campeonato-brasileiro-serie-a | score=65.7 | peso=0.912
+  2026-04-18 | VAS vs SPA | campeonato-brasileiro-serie-a | score=31.8 | peso=0.933
+  2026-05-10 | COR vs SPA | campeonato-brasileiro-serie-a | score=26.4 | peso=0.955
+  2026-05-16 | FLU vs SPA | campeonato-brasileiro-serie-a | score=41.5 | peso=0.977
+  2026-05-31 | REM vs SPA | campeonato-brasileiro-serie-a | score=58.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 44.58
+  di cui Punteggio decisivo (level_score) medio: 36.51 | Punteggio complessivo (granulari) medio: 8.07 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.60, delta avversario +1.14 | Passaggio condizionato: delta venue -0.42, delta avversario -1.30 | Clean sheet/disimpegni condizionato: delta venue -0.75, delta avversario +1.30 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.40
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 25.8 - 62.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.48 (differenza: +1.91)
+Media score in casa: 55.01 | Media score fuori casa: 36.91
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.9
+Ranking prossimo avversario: 17
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 1.209
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.996
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.996
+Fattore trend (media ultime 5: 44.8 vs media 5 PRECEDENTI: 42.7): 1.000
+P(gioca): 43.90% (fonte: tasso di presenza storico (18/41))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T19:00
+Casa: Grêmio FB Porto Alegrense | Trasferta: São Paulo FC
+Competizione: campeonato-brasileiro-serie-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.7 (range 26.9 - 63.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 42.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.58
+Punteggio REALE ottenuto in quella partita: 58.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +14.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      68.8    26.3    -42.6    16.3        NO
+   7        7      42.0    18.0    -23.9    18.7        NO
+   8        8      32.9    62.2    +29.4    21.2        NO
+   9        9      55.9    25.8    -30.0    20.7        NO
+  10       10      57.4    61.9     +4.5    21.0        SI
+  11       11      38.3    22.1    -16.2    20.6        SI
+  12       12      42.7    42.2     -0.5    21.2        SI
+  13       13      47.1    65.7    +18.7    20.3        SI
+  14       14      56.7    31.8    -25.0    20.4        NO
+  15       15      40.8    26.4    -14.4    20.1        SI
+  16       16      32.4    41.5     +9.1    20.1        SI
+  17       17      54.7    58.5     +3.7    19.4        SI
+
+MAE (errore assoluto medio): 18.18
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 58.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
