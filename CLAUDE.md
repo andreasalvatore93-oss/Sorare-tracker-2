@@ -35,3 +35,29 @@ Riguardano SOLO come mi rapporto all'utente. Nessuna istruzione operativa sui to
 
 ## Regola parametri del modello
 - Un parametro si giudica su **MAE + correlazione previsto/realizzato + lift di selezione INSIEME** (`taratura_confronto_parametri.py`). Si applica solo se si muovono tutte e tre nello stesso verso. Il MAE da solo premia i modelli che non ordinano niente.
+
+## Handoff di fine sessione (automatico)
+
+Quando una sessione di lavoro si chiude — cioe' quando ho committato, oppure
+quando l'utente dice "ok basta", "chiudiamo", "fine", o annuncia che passa a
+un'altra sessione — scrivo sempre e senza che me lo chieda un file
+`docs/handoff/HANDOFF_<argomento>_<AAAA-MM-GG>.txt`.
+
+Struttura fissa:
+
+1. Stato del repo: branch, commit hash, cosa e' committato, cosa e' solo
+   locale, cosa e' pushato, cosa e' in produzione (e cosa no).
+2. Perche' esisteva questo lavoro: la domanda di partenza in 5 righe.
+3. Cosa ho costruito o toccato: file nuovi, file modificati, come si rilancia
+   (comando esatto, tempi, se serve rete).
+4. Output numerico integrale: tabelle con n, correlazioni, IC, non solo le
+   righe che mi piacciono. Anche i risultati nulli.
+5. Le cose da sapere prima di decidere: dubbi metodologici, sospetti di
+   leakage, bug trovati, buchi di copertura dati. Se una mia stima precedente
+   si e' rivelata sbagliata, lo scrivo qui a chiare lettere.
+6. Decisione aperta: le opzioni sul tavolo, non presa da me.
+7. File di riferimento: elenco secco.
+
+Regole di stile: testo semplice, niente markdown pesante, numeri sempre con la
+loro n. Non nascondo i risultati negativi ne' gli errori miei. Alla fine dico
+all'utente il percorso del file.
