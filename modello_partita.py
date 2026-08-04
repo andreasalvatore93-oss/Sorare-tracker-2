@@ -87,7 +87,10 @@ def costruisci_partite():
     per_lato = {}   # (id_partita, squadra) -> [max_subiti, max_minuti]
     contesto = {}   # id_partita -> anagrafica
     for pattern in _DETAIL_GLOB:
-        for path in glob.glob(pattern):
+        # sorted() per riproducibilita' fra ambienti: qui si accumulano massimi
+        # e si sommano gol, e l'ordine del filesystem cambia fra Windows e i
+        # runner (vedi opponent_strength._build_series_for_league, 04/08)
+        for path in sorted(glob.glob(pattern)):
             try:
                 with io.open(path, encoding='utf-8') as fh:
                     cache = json.load(fh)

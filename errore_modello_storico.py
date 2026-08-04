@@ -72,7 +72,7 @@ def lega_per_slug():
     """La lega di ogni giocatore: la cartella da cui viene la sua previsione."""
     import glob
     fuori = {}
-    for percorso in glob.glob(os.path.join(ROOT, 'formazione_*', 'output', '*', 'prediction_log*.json')):
+    for percorso in sorted(glob.glob(os.path.join(ROOT, 'formazione_*', 'output', '*', 'prediction_log*.json'))):
         lega = os.path.normpath(percorso).split(os.sep)[-4].replace('formazione_', '')
         try:
             with open(percorso, encoding='utf-8') as f:

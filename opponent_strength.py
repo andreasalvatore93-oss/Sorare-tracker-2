@@ -163,6 +163,15 @@ def _build_series_for_league(league):
         _CACHE[league] = result
         return result
 
+    # ORDINE DEI FILE (04/08): i glob qui sotto sono `sorted()` per una ragione
+    # precisa. glob.glob torna l'ordine del filesystem, che cambia fra Windows e
+    # il runner Linux; l'ordine cambia quello delle somme in virgola mobile,
+    # opponent_is_strong e' una soglia BOOLEANA e basta un epsilon per far
+    # ribaltare qualche partita da "avversario forte" a "debole". Risultato
+    # misurato: MAE del banco DEF che tremola di 0,003 e correlazione di 0,0008
+    # fra i due ambienti, a parita' di campione (25.738 righe, 263 giornate).
+    # Non toglierlo: e' l'unica cosa che rende confrontabili i numeri di due
+    # sessioni diverse.
     seen = set()
     conceded = defaultdict(list)
     scored = defaultdict(list)
@@ -175,7 +184,7 @@ def _build_series_for_league(league):
             f'formazione_{league}/output/{league}_mid_all/.cache',
         ]
     for cache_dir in patterns:
-        for fpath in glob.glob(os.path.join(cache_dir, '*_detail_cache.json')):
+        for fpath in sorted(glob.glob(os.path.join(cache_dir, '*_detail_cache.json'))):
             try:
                 with open(fpath, encoding='utf-8') as f:
                     cache = json.load(f)
@@ -355,7 +364,7 @@ def _build_def_poss_lost_series(league):
     per_team_date = defaultdict(list)
     cache_dir = ('formazione_*/output/*_def_all/.cache' if league is None
                  else f'formazione_{league}/output/{league}_def_all/.cache')
-    for fpath in glob.glob(os.path.join(cache_dir, '*_detail_cache.json')):
+    for fpath in sorted(glob.glob(os.path.join(cache_dir, '*_detail_cache.json'))):
         try:
             with open(fpath, encoding='utf-8') as f:
                 cache = json.load(f)
@@ -486,7 +495,7 @@ def _build_def_pen_area_series(league):
     per_team_date = defaultdict(list)
     cache_dir = ('formazione_*/output/*_def_all/.cache' if league is None
                  else f'formazione_{league}/output/{league}_def_all/.cache')
-    for fpath in glob.glob(os.path.join(cache_dir, '*_detail_cache.json')):
+    for fpath in sorted(glob.glob(os.path.join(cache_dir, '*_detail_cache.json'))):
         try:
             with open(fpath, encoding='utf-8') as f:
                 cache = json.load(f)

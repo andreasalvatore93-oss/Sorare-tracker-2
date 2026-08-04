@@ -81,7 +81,7 @@ def carica_previsioni():
     davvero schierato.
     """
     per_chiave = {}
-    for percorso in glob.glob(os.path.join(ROOT, 'formazione_*', 'output', '*', 'prediction_log*.json')):
+    for percorso in sorted(glob.glob(os.path.join(ROOT, 'formazione_*', 'output', '*', 'prediction_log*.json'))):
         lega = os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(percorso))))
         lega = lega.replace('formazione_', '')
         try:

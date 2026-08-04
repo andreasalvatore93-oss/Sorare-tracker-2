@@ -46,11 +46,13 @@ def _indice(glob_patterns, suffisso):
     """slug -> lista di file, dal piu' grande al piu' piccolo."""
     per_slug = {}
     for pattern in glob_patterns:
-        for path in glob.glob(pattern):
+        for path in sorted(glob.glob(pattern)):
             slug = os.path.basename(path)[:-len(suffisso)]
             per_slug.setdefault(slug, []).append(path)
     for slug in per_slug:
-        per_slug[slug].sort(key=os.path.getsize, reverse=True)
+        # a parita' di dimensione l'ordine decideva quale copia della cache
+        # vince nel merge: si spareggia sul percorso, che e' stabile ovunque
+        per_slug[slug].sort(key=lambda p: (-os.path.getsize(p), p))
     return per_slug
 
 
