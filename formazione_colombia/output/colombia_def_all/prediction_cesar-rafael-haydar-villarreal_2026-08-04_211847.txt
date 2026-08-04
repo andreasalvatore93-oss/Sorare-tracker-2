@@ -1,0 +1,114 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T21:18:47.732257Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) cesar-rafael-haydar-villarreal: 50 pt attesi (34-66)
+   ORDINAMENTO: 52.06
+   SQUADRA: atletico-nacional-medellin | AVVERSARIO: america-de-cali-santiago-de-cali
+======================================================================
+
+######################################################################
+# GIOCATORE: cesar-rafael-haydar-villarreal
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: cesar-rafael-haydar-villarreal (squadra: atletico-nacional-medellin)
+Generato: 2026-08-04T21:18:47.731693Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 47
+Escluse (DID_NOT_PLAY): 25
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: primera-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-08 | NAC vs PET | primera-a | score=58.4 | peso=0.675
+  2025-08-17 | NAC vs FOR | primera-a | score=49.0 | peso=0.691
+  2025-11-14 | JUN vs NAC | primera-a | score=72.1 | peso=0.707
+  2026-02-13 | NAC vs FOR | primera-a | score=45.9 | peso=0.724
+  2026-02-21 | NAC vs PET | primera-a | score=57.0 | peso=0.741
+  2026-02-26 | SFE vs NAC | primera-a | score=44.9 | peso=0.758
+  2026-03-02 | TOL vs NAC | primera-a | score=26.0 | peso=0.776
+  2026-03-07 | ADR vs NAC | primera-a | score=56.0 | peso=0.794
+  2026-03-11 | JUN vs NAC | primera-a | score=66.0 | peso=0.812
+  2026-03-18 | MIL vs NAC | primera-a | score=19.9 | peso=0.831
+  2026-03-22 | NAC vs EQU | primera-a | score=56.4 | peso=0.851
+  2026-03-29 | PAS vs NAC | primera-a | score=40.2 | peso=0.871
+  2026-04-02 | NAC vs CUC | primera-a | score=84.8 | peso=0.891
+  2026-04-25 | PER vs NAC | primera-a | score=58.6 | peso=0.912
+  2026-05-16 | TOL vs NAC | primera-a | score=58.4 | peso=0.933
+  2026-05-23 | NAC vs TOL | primera-a | score=79.4 | peso=0.955
+  2026-06-03 | JUN vs NAC | primera-a | score=55.4 | peso=0.977
+  2026-06-08 | NAC vs JUN | primera-a | score=69.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 56.02
+  di cui Punteggio decisivo (level_score) medio: 36.75 | Punteggio complessivo (granulari) medio: 19.27 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.98, delta avversario +0.20 | Passaggio condizionato: delta venue -1.11, delta avversario +0.02 | Clean sheet/disimpegni condizionato: delta venue -0.99, delta avversario +0.80 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 16.23
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.2 - 72.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.63 (differenza: +3.60)
+Media score in casa: 62.56 | Media score fuori casa: 49.76
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.1
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.773 (gol subiti reali dell'avversario, ultime 10)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.651
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.001
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
+Fattore gol subiti (goals_conceded, con cap): 0.994
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.995
+Fattore trend (media ultime 5: 64.4 vs media 5 PRECEDENTI: 53.8): 1.000
+P(gioca): 38.30% (fonte: tasso di presenza storico (18/47))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-10T01:15
+Casa: Sociedad Anónima Deportiva América SA | Trasferta: Club Atlético Nacional SA
+Competizione: primera-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.9 (range 34.2 - 66.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 52.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.05
+Punteggio REALE ottenuto in quella partita: 69.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +14.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      34.4    26.0     -8.3    10.3        SI
+   7        7      35.9    56.0    +20.1    14.7        NO
+   8        8      63.1    66.0     +2.8    13.9        SI
+   9        9      51.3    19.9    -31.4    14.1        NO
+  10       10      44.2    56.4    +12.3    17.5        SI
+  11       11      59.1    40.2    -18.8    16.7        NO
+  12       12      55.6    84.8    +29.2    16.2        NO
+  13       13      56.3    58.6     +2.3    19.1        SI
+  14       14      35.1    58.4    +23.3    18.4        NO
+  15       15      36.9    79.4    +42.5    17.8        NO
+  16       16      66.7    55.4    -11.2    18.7        SI
+  17       17      67.7    69.6     +1.9    18.0        SI
+
+MAE (errore assoluto medio): 17.01
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
