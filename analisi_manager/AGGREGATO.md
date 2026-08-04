@@ -49,7 +49,7 @@ Toglie l'effetto 'round alto/basso-scoring'. edge>0 e n grande = il manager sceg
 | milkyfresht | 130 | -2.32 | 1.49 | -1.6 |
 | ninoshooter | 24 | -4.21 | 4.09 | -1.0 |
 
-(controllo: edge medio complessivo -0.000, deve essere ~0 per costruzione.)
+(controllo: edge medio complessivo +0.000, deve essere ~0 per costruzione.)
 
 ## Consenso (pool, per numero di manager nella stessa GW)
 

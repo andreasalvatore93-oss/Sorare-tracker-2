@@ -346,20 +346,24 @@ grezzo, tolto capitano +20%). Dati **sempre distinti per GW** (slug nel nome).
 - Whitelist manager e `ARENE_AMMESSE` in `analizza_gw.py`; leghe in
   `discovery_fixture.LEAGUE_DIR`. Cache condivisa con generatore/scouting.
 
-### Verdetto (4 GW, 1645 pick, 9-10 manager attivi/GW, satonio escluso) — nessun segnale affidabile
-Bias pool = +0.41 (n 1645, MAE 14.9, corr +0.221). Skill controllata per
-ambiente-GW (edge = residuo − media GW): nessun manager a edge/se ≥2 con n
-solido — solo eoghankelly +2.4 ma n=29 (troppo piccolo per fidarsi). Tutti gli
-altri (qtn n=953, bxl-spartak, shirimimi, fins49, milkyfresht...) fra −1.6 e
-+1.3, nessuno persistente su tutte le GW (colonna "segno" = misto per i
-manager con n grande). Conferma §5: il modello cattura già i pick dei bravi
-manager, non c'è edge da inseguire. NON chiuso del tutto: accumulare fino a
-~8-10 GW; se resta ~0 → STOP definitivo.
+### Verdetto (8 GW, 2045 pick, satonio escluso) — nessun segnale, filone da chiudere
+Bias pool = **+0.14** (n 2045, MAE 14.8, corr +0.253). Skill controllata per
+ambiente-GW (edge = residuo − media GW): **nessun manager raggiunge 2σ**.
+Il candidato più promettente a 4 GW, eoghankelly, è passato da +2.4σ (n 29) a
+**+1.9σ (n 54)**: raddoppiando i dati l'effetto si è ridotto, cioè regressione
+verso il rumore — il comportamento atteso di un falso positivo. Nessuno ha
+segno stabile su tutte le GW (tutti "misto", incluso qtn con n=1231).
+Consenso: bias sale con l'accordo (1 man +0.0 → 2 +0.5 → 3 +1.1) ma resta
+piccolo e n crolla.
+**Conclusione: i pick dei manager NON battono il nostro atteso.** Il modello
+cattura già le loro scelte. Conferma §5 dal lato umano.
 
 ### Prossimi passi
-- Continuare l'accumulo (vedi sotto) fino a 8-10 GW per chiudere definitivamente.
-- Russia: cache passata da 3 a 20 gamelog (05/08), ancora INERTE (<100), non
-  ancora popolata a sufficienza — richiede altre run/GW per crescere.
+- **Il filone smart-money può essere CHIUSO** (obiettivo 8-10 GW raggiunto,
+  segnale ~0 e in calo). Decisione dell'utente, vedi §7bis.
+- Le 4 GW vecchie hanno reso solo +400 osservazioni (meno manager attivi/più
+  scarti): accumulare ancora costa molto e rende poco.
+- Russia: cache da 3 a 20 gamelog (05/08), ancora INERTE (<100).
 
 ### Analisi pooled 4 GW — `analisi_manager/dati/analisi_debolezze_capitano.md`
 Fatta il 05/08 mentre girava l'accumulo. Sintesi (dettaglio nel file):
