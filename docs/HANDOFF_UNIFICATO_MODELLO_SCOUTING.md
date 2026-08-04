@@ -334,8 +334,12 @@ odds da solo (troppo aleatorio) e "più dati stesse feature" (il tetto è
 *feature* mancanti, non dati — §5).
 
 ### Come (metodo deciso con l'utente, con kill-switch)
-1. Manager = **avversari d'arena dell'utente** (garantito giocano arene,
-   campione non-bias). **Lista già in mano.**
+1. Manager = campione non-bias scelto a caso dall'utente. **Lista (4 slug):
+   `eoghankelly`, `badamt`, `milkyfresht`, `lairdinho`.** NB: non sappiamo
+   ancora quante arene passate abbiano giocato — primo passo è lo scoping
+   (estrazione formazioni arena su GW chiuse, pubblica e veloce, ZERO
+   predizione) per contare quante arene e quanti giocatori unici, poi si
+   decide il batch di predizione.
 2. Batch piccolo: **~10-15 manager × 3-4 GW CHIUSE** → qualche centinaio di
    giocatori unici ≈ **una sessione**, non ore al buio.
 3. Estrai le formazioni arena (pubbliche, veloci) con
