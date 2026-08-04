@@ -204,6 +204,81 @@ def unit_test():
     return ok
 
 
+def unit_test_b2():
+    """b2: riga trasversale_only scritta senza asse temporale, esclusa dal risolutore,
+    e riga vecchia a 11 campi letta come 'completa'."""
+    print("=" * 78)
+    print("1-bis) UNIT TEST b2 (riga trasversale_only + risolutore)")
+    ok = True
+
+    def check(desc, cond):
+        nonlocal ok
+        ok = ok and cond
+        print(f"   [{'OK' if cond else 'FAIL'}] {desc}")
+
+    import tempfile
+    import cerbero_learn as L
+
+    # --- SCRITTURA: _log_osservazione trasversale_only ---
+    tmpdir = tempfile.mkdtemp()
+    csv_path = os.path.join(tmpdir, 'oss_test.csv')
+    os.environ['CERBERO_OSSERVAZIONI_PATH'] = csv_path
+    import importlib
+    if 'cerbero' in sys.modules:
+        C = sys.modules['cerbero']
+        C.CERBERO_OSSERVAZIONI_PATH = csv_path
+        C._intestazione_verificata = False
+    else:
+        import cerbero as C
+        C.CERBERO_OSSERVAZIONI_PATH = csv_path
+    # riga trasversale_only (asse temporale assente)
+    C._log_osservazione('mlspa', 'tal-player', 'tal-card', 3.0,
+                        None, None, None, None, None, False,
+                        prezzo_secondo=3.6, margine_pct=16.7,
+                        thin_market=False, tipo_riga='trasversale_only')
+    # riga completa
+    C._log_osservazione('mlspa', 'altro-player', 'altro-card', 4.0,
+                        4.8, 16.7, 'up', 8.0, 0.8, True,
+                        prezzo_secondo=4.8, margine_pct=16.7,
+                        thin_market=False, tipo_riga='completa')
+    with open(csv_path, encoding='utf-8') as f:
+        righe = list(csv.DictReader(f))
+    tr = next((r for r in righe if r['tipo_riga'] == 'trasversale_only'), None)
+    co = next((r for r in righe if r['tipo_riga'] == 'completa'), None)
+    check("trasversale_only scritta", tr is not None)
+    if tr:
+        check("trasversale_only: campi temporali vuoti",
+              tr['media_recente_eur'] == '' and tr['sconto_temporale_pct'] == ''
+              and tr['trend'] == '' and tr['rendimento_atteso_pct'] == ''
+              and tr['guadagno_atteso_eur'] == '')
+        check("trasversale_only: gate_passa=0", tr['gate_passa'] == '0')
+        check("trasversale_only: asse trasversale valorizzato",
+              tr['prezzo_secondo_eur'] == '3.6' and tr['margine_trasversale_pct'] == '16.7')
+    check("completa: asse temporale presente",
+          co is not None and co['sconto_temporale_pct'] == '16.7')
+
+    # --- RISOLUTORE: esclude trasversale_only, tratta 11-campi come completa ---
+    check("e_trasversale_only riconosce la riga trasversale", L.e_trasversale_only(tr) is True)
+    check("e_trasversale_only NON esclude la completa", L.e_trasversale_only(co) is False)
+    # riga a 11 campi (formato vecchio): DictReader la completa a None sui campi mancanti
+    header11 = ['ts_utc', 'league_slug', 'player_slug', 'card_slug', 'prezzo_min_eur',
+                'media_recente_eur', 'sconto_temporale_pct', 'trend', 'rendimento_atteso_pct',
+                'guadagno_atteso_eur', 'gate_passa']
+    old_path = os.path.join(tmpdir, 'oss_old11.csv')
+    with open(old_path, 'w', newline='', encoding='utf-8') as f:
+        w = csv.writer(f)
+        w.writerow(header11)
+        w.writerow(['2026-08-01T00:00:00+00:00', 'mlspa', 'p', 'c', '3.0',
+                    '3.5', '14.3', 'up', '5.0', '0.5', '1'])
+    with open(old_path, encoding='utf-8') as f:
+        old_row = next(csv.DictReader(f))
+    check("riga 11-campi: tipo_riga assente -> None", old_row.get('tipo_riga') is None)
+    check("riga 11-campi trattata come 'completa'", L.e_trasversale_only(old_row) is False)
+
+    print(f"   => {'TUTTI OK' if ok else 'CI SONO FAIL'}")
+    return ok
+
+
 def backtest_selettivita(cands):
     print("=" * 78)
     print(f"2) BACKTEST selettivita' del gate (lookback {M.LOOKBACK_DAYS:.0f}gg, fwd 48h+-12h, n={len(cands)})")
@@ -247,6 +322,7 @@ if __name__ == '__main__':
     bykey = carica()
     cands = costruisci_candidati(bykey)
     ok = unit_test()
+    ok = unit_test_b2() and ok
     passa = backtest_selettivita(cands)
     confronto_orizzonti(bykey)
     taratura_soglia_eur(cands)
