@@ -27,6 +27,15 @@ __pycache__/
 # file, cioe' il 54% dell'intero albero di lavoro da 1,2 GB: e' quello che i
 # ~86 job di ogni run copiavano nei loro 13,3s di checkout a testa.
 **/output/**/.debug/
+# Uscite dei backtest lanciati a mano dalla radice (rigenerabili con
+# backtest_arene*.py): nessuna e' mai stata committata, restavano solo a
+# sporcare git status
+/backtest_*.csv
+/backtest_*.html
+
+# Copia di sicurezza fatta a mano prima di un intervento sul difensore
+/.pilot_backup_def/
+
 .env.local
 !dati_globali/arene_storico.json
 !dati_globali/arene_formazioni.json
