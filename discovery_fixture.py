@@ -35,6 +35,18 @@ MIN_ODDS = float(os.environ.get('MIN_STARTER_ODDS', '0.80'))
 GAMEWEEK = os.environ.get('GAMEWEEK', '').strip()
 FIXTURE_SLUG = os.environ.get('FIXTURE_SLUG', '').strip()
 
+# Storico delle odds di titolarita' PRESE PRIMA DELLA DEADLINE (04/08).
+# PERCHE': il campo starterOddsBasisPoints dentro il game log viene RISCRITTO
+# dopo le formazioni ufficiali -- misurato su 230 coppie da
+# verifica_odds_predeadline.py: il 100% dei valori post-partita e' 0% o 100%
+# contro il 7,7% dei pre-deadline, e solo il 6,1% coincide. Lo storico
+# post-partita quindi non serve a niente per prevedere, mentre il valore vivo
+# che passa di qui ogni giornata e' il dato buono -- e finora veniva usato
+# come semplice filtro di soglia e poi buttato.
+ODDS_STORICO = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            'dati_globali', 'odds_titolarita_storico.json')
+_RUN_TS = None
+
 # Pausa fra una chiamata odds+L10 (combinata, vedi odds_e_l10_singola) e la
 # successiva. Cronistoria (28/07): a 0.2s (~5 richieste/s) il 429 scattava
 # quasi sempre (run 30336178358 e altri 4 precedenti, attese fino a 255s);
@@ -416,6 +428,78 @@ def log(msg):
     print(f"[discovery_fixture] {msg}", flush=True)
 
 
+def salva_odds_storico(fixture, risultati):
+    """Persiste le odds gia' in mano, senza nessuna query in piu'.
+
+    `risultati` e' {slug: (odds, data_partita, l10)} PRIMA del filtro
+    MIN_ODDS: si salva tutto, anche chi sta sotto soglia e chi non ha ancora
+    odds pubblicate. Tenere solo i sopra-soglia ricostruirebbe lo stesso
+    campione troncato che gia' abbiamo (starter odds >= 0.80), dove la
+    titolarita' attesa e' quasi costante e il segnale non si puo' misurare.
+
+    Struttura:  {fixture: {slug: [{'t': istante_scarico, 'odds': 0.9,
+                                   'partita': data_iso}, ...]}}
+    Idempotente: rilanciare la stessa giornata non aggiunge una riga se il
+    valore non e' cambiato dall'ultimo scarico (e riscrive quella con lo
+    stesso istante). A prova di errore: qualunque problema qui non deve
+    fermare la discovery, che e' il lavoro vero.
+
+    NB: il file si rilegge e si riscrive intero a ogni chiamata (una per
+    ruolo). Se in futuro due shard girassero in parallelo sulla STESSA
+    macchina potrebbero sovrascriversi a vicenda; oggi gli shard sono job
+    separati con filesystem separati, quindi non succede."""
+    global _RUN_TS
+    try:
+        if not fixture or not risultati:
+            return
+        if _RUN_TS is None:
+            _RUN_TS = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + 'Z'
+        dati = {}
+        if os.path.exists(ODDS_STORICO):
+            try:
+                with open(ODDS_STORICO, encoding='utf-8') as fh:
+                    dati = json.load(fh) or {}
+            except Exception as e:
+                # file corrotto: si riparte da zero ma la copia rotta si tiene
+                # da parte, non si butta uno storico che non si puo' rifare
+                try:
+                    os.replace(ODDS_STORICO, ODDS_STORICO + '.corrotto')
+                except Exception:
+                    pass
+                log(f"  storico odds illeggibile ({e!r}): messo da parte in "
+                    f"{os.path.basename(ODDS_STORICO)}.corrotto, riparto da capo")
+                dati = {}
+        if not isinstance(dati, dict):
+            dati = {}
+        per_fixture = dati.setdefault(fixture, {})
+        nuovi = aggiornati = 0
+        for slug, valore in risultati.items():
+            odds = valore[0] if isinstance(valore, (tuple, list)) and valore else None
+            data = valore[1] if isinstance(valore, (tuple, list)) and len(valore) > 1 else None
+            storia = per_fixture.setdefault(slug, [])
+            if not isinstance(storia, list):
+                storia = per_fixture[slug] = []
+            gia = next((r for r in storia if isinstance(r, dict) and r.get('t') == _RUN_TS), None)
+            if gia is not None:
+                gia['odds'], gia['partita'] = odds, data
+                aggiornati += 1
+                continue
+            ultimo = storia[-1] if storia else None
+            if ultimo is not None and ultimo.get('odds') == odds and ultimo.get('partita') == data:
+                continue
+            storia.append({'t': _RUN_TS, 'odds': odds, 'partita': data})
+            nuovi += 1
+        os.makedirs(os.path.dirname(ODDS_STORICO), exist_ok=True)
+        tmp = ODDS_STORICO + '.tmp'
+        with open(tmp, 'w', encoding='utf-8') as fh:
+            json.dump(dati, fh, ensure_ascii=False)
+        os.replace(tmp, ODDS_STORICO)
+        log(f"  storico odds: {nuovi} nuove righe, {aggiornati} riscritte, "
+            f"{len(per_fixture)} giocatori su {fixture}")
+    except Exception as e:
+        log(f"  ATTENZIONE: storico odds non salvato ({e!r}) -- la discovery prosegue")
+
+
 def _resolve_query_with_retry(query, variables, operation_name, extract):
     """Esegue una query CRITICA di bootstrap (gira UNA volta per job, non per
     giocatore) con un piccolo retry -- 29/07, bug reale: un job discovery su
@@ -710,6 +794,9 @@ def main():
         for sl in elenco:
             risultati[sl] = odds_e_l10_singola(sl, inizio, fine)
             time.sleep(ODDS_L10_SLEEP)
+        # le odds si salvano QUI, prima del filtro MIN_ODDS sotto: sono il
+        # valore vivo pre-deadline, l'unico non contaminato (vedi ODDS_STORICO)
+        salva_odds_storico(fx.get('slug'), risultati)
         for slug in elenco:
             lega = lega_di[slug]
             odds, data, l10 = risultati.get(slug, (None, None, None))
