@@ -37,6 +37,30 @@ carte) e **dove il modello sbaglia di più** (vedi §7).
 
 ---
 
+## 1bis. LA CATENA DI PRODUZIONE — base di tutto, mai saltare un anello
+
+```
+VALORI DI PRODUZIONE (= predizione, stesso nome)
+        |
+        v
+SOGLIE ARENA EFFICIENTI (pareggio/guadagno per punto)
+        |
+        v
+TOOL SCOUTING (consiglio acquisti per una GW, basato sull'efficienza)
+```
+
+Se cambia un valore di produzione/predizione (formula, calibrazione,
+parametro di un ruolo — qualunque cosa sposti `score_atteso`), le soglie di
+efficienza delle arene (`PAREGGIO_ARENA`, `GUADAGNO_PER_PUNTO` in
+`generatore_formazioni/build_formazione_globale.py`) NON si aggiornano da
+sole: sono tarate su quei punti attesi, e vanno riverificate. Lo scouting a
+sua volta consiglia gli acquisti proprio sull'efficienza (colonne
+`Ess/GW`/`€/EssGW`, §2.2) — un cambio a monte non riverificato falsa i
+consigli di acquisto a valle **in modo silenzioso**, senza nessun errore
+visibile. Nessuna modifica alla produzione è chiusa finché non si è
+ripercorsa la catena fino allo scouting incluso. Regola gemella anche in
+CLAUDE.md.
+
 ## 2. I tre strumenti
 
 ### 2.1 Generatore di formazioni (il "modello predittivo")

@@ -143,12 +143,33 @@ Un confronto e' valido se, in ogni ambiente in cui e' stato misurato:
   - il delta e' almeno 3 volte piu' grande del tremolio fra ambienti.
 Se queste tre cose valgono, si decide. Non si chiede un'altra misura.
 
-## Scouting e generatore devono restare coerenti
+## La catena di produzione — mai saltare un anello
 
-Scouting e generatore formazioni devono restare coerenti: ogni modifica alla
-previsione, alla calibrazione o alle soglie va verificata su ENTRAMBI. Il
-generatore ottimizza il mazzo esistente, lo scouting decide come cresce: se
-divergono, si comprano carte che non si schierano.
+Ogni modifica che tocca la produzione deve rispettare questo ordine, sempre:
+
+```
+VALORI DI PRODUZIONE (= predizione, stesso nome)
+        |
+        v
+SOGLIE ARENA EFFICIENTI (pareggio/guadagno per punto)
+        |
+        v
+TOOL SCOUTING (consiglio acquisti per una GW, basato sull'efficienza)
+```
+
+Se si muove un valore di produzione/predizione (formula, calibrazione,
+parametro di un ruolo, qualunque cosa cambi lo `score_atteso`), le soglie di
+efficienza delle arene (`PAREGGIO_ARENA`, `GUADAGNO_PER_PUNTO` e affini in
+`generatore_formazioni/build_formazione_globale.py`) vanno RIVERIFICATE — non
+si spostano da sole, ma il loro valore giusto dipende dai punti attesi su cui
+sono tarate. E siccome lo scouting consiglia gli acquisti proprio sulla base
+di quell'efficienza (`Ess/GW`/`€/EssGW`, vedi
+`docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md`), un cambio a monte non
+riverificato falsa anche i consigli di acquisto a valle, silenziosamente.
+
+Nessuna modifica alla produzione si considera chiusa finché non si è
+ripercorsa tutta la catena fino allo scouting incluso. Non basta verificare
+il primo anello e assumere che gli altri due reggano.
 
 ## Riassunto unico per modello predittivo e scouting
 
