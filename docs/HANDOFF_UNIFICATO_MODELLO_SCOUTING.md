@@ -409,6 +409,16 @@ fatte per allinearlo. Regola di stop: se dopo ~8-10 GW il residuo resta ~0 e
 nessun manager ha edge persistente (asse F) → chiudi il filone.
 
 ### Piste secondarie (non urgenti)
+- **Russia da popolare** (richiesta utente 05/08): `formazione_russia`
+  (`russian-premier-league`) ha pipeline completa (4 script + LEAGUE_DIR) ma
+  cache quasi VUOTA (~3 gamelog) → di fatto inerte. Non va costruita, va
+  POPOLATA: cachare i suoi giocatori (il run satonio ne prende alcuni). L'utente
+  la vuole attiva anche se non gioca ogni GW. NB: `liga-pro` (Ecuador) invece
+  NON interessa, lasciata fuori.
+  **Questo controllo va fatto su TUTTE le leghe già coperte**: contare i
+  `*_gamelog.json` per `formazione_<lega>/` e stanare le altre leghe INERTI
+  (pipeline presente ma cache quasi vuota, come la russia) — "coperta" non vuol
+  dire "popolata".
 - **Tabelle premi** delle competizioni a classifica grande (All Star, Limited,
   LALIGA): mancano; senza, il lato capitano/allocazione per quelle resta su un
   surrogato rank-based.
