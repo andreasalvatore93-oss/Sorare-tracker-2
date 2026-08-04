@@ -1,5 +1,80 @@
 # Sessione 4 agosto 2026 — fix leak, generatore vero nel backtest, bilancio pulito, capitano
 
+---
+
+# ⇢ RIPARTIRE DA QUI (05/08) — leggere solo questo blocco per riprendere
+
+## Dove siamo arrivati
+Due sessioni sul CAPITANO, poi il metro applicato a TUTTE le decisioni, e
+infine la dimostrazione che chiude l'intero ragionamento:
+
+> **Massimizzare il PREMIO atteso e' identico a massimizzare i PUNTI attesi.**
+> 5768 confronti, 0 contraddizioni (100% concordanza). L'incertezza su una
+> formazione e' ~50 punti su ~280: integrare una funzione premio a gradini
+> su quel rumore la rende MONOTONA. La non linearita' del premio — la leva
+> teorica dietro tutto cio' che abbiamo provato — **in pratica non esiste**.
+
+Conseguenza: **le REGOLE DI DECISIONE sono un vicolo cieco, dimostrato**.
+La regola attuale del bot (massimizza i punti attesi) e' gia' quella giusta.
+
+## Il numero da cui ripartire — il tasso di cambio
+```
+   10 punti attesi in piu' = +46.9 essenze attese per arena
+   ~4.7 essenze per ogni punto di previsione guadagnato
+```
+Converte accuratezza del modello in denaro. **L'unica leva rimasta e' la
+PRECISIONE DELLA PREVISIONE**, non le regole di decisione.
+
+## PROSSIMO PASSO deciso con l'utente
+Capire **dove il modello sbaglia di piu'** e attaccare quello: l'errore sul
+totale formazione e' sigma=49.4 punti, ogni punto recuperato vale ~4.7
+essenze/arena. Da fare: scomporre l'errore (per ruolo, per lega, per fascia
+di punteggio, per profondita' di storico) per trovare dove si concentra.
+NB `taratura_confronto_parametri.py` e la regola MAE+correlazione+lift
+restano il metro per validare qualunque modifica al modello.
+
+## NON RIAPRIRE (misurato e chiuso in questa sessione)
+- Capitano: 12 ipotesi, tutte inerti. La decisione vale ~1-2 pt su 280 e
+  cambia il premio in <2% delle arene. `pick_captain()` resta com'e'.
+- Capitano diverso per tipo di competizione (arene vs In-Season): nessuna
+  differenza.
+- Formazione concentrata per sfruttare il capitano: correlazione -0.006.
+- Allocazione/soglie: premio atteso == punti attesi (sopra).
+- Maledizione del vincitore: assente, chiude la famiglia "shrinkage".
+
+## Trappole trovate qui, da non ricascarci
+- **Le carte non si clonano**: se ogni arena sceglie dal pool del giorno in
+  modo indipendente, le stesse 5 carte finiscono in tutte le ~10 arene →
+  +132 essenze/arena di finto vantaggio. Mazzo fisso, sempre.
+- **Col mazzo fisso i punti sono CONSERVATI**: un oracolo che massimizza i
+  punti riallocando non ottimizza nulla (usciva peggio dell'utente).
+- **L'oracolo non e' un obiettivo**: e' chiaroveggente, il suo margine e'
+  quasi tutto fortuna. Vale il confronto relativo fra decisioni.
+- **Misurare il valore della decisione PRIMA di cercare euristiche**: il
+  capitano e' costato due sessioni per questo.
+
+## Script pronti (tutti senza query, cache su disco)
+- `formazione_mls/diagnostics/backtest_captain_policy.py` — 3130 formazioni
+  reali (mie + forever-young + crowss) + diagnostica di metodo (headroom,
+  maledizione del vincitore, compressione di scala b=1.53).
+- `formazione_mls/diagnostics/headroom_decisioni.py` — pavimento/caso/
+  attuale/oracolo per ingresso, carte, capitano (⚠ riga CARTE non valida,
+  avviso nello script).
+- `formazione_mls/diagnostics/selezione_carte.py` — riallocazione a mazzo
+  fisso, 443 arene, essenze vere.
+- `formazione_mls/diagnostics/allocazione_premio_atteso.py` — premio atteso
+  vs punti attesi + la diagnostica che chiude il filone.
+- `formazione_mls/diagnostics/captain_per_competizione.py` — arene vs
+  classifiche grandi, e `CurvaRank` (punteggio→piazzamento per famiglia).
+- Cache previsioni in `%TEMP%/captain_risultati_cache.json` (rigenerare con
+  `--ricalcola`, ~2 min).
+
+## Stato del codice
+**Nessuna modifica al modello o al bot in tutta la sessione.** Solo script
+diagnostici e questo documento. Tutto committato su main.
+
+---
+
 ## FILONE CAPITANO DEF/MID/FWD — CHIUSO, nessuna modifica al codice
 
 Tre ipotesi testate, tutte negative (la regola attuale, "capitana per atteso
