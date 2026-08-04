@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-04T22:21:32.944520Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) nicky-william-hogarth: 43 pt attesi (26-55)
+   SQUADRA: falkirk-falkirk | AVVERSARIO: motherwell-motherwell
+======================================================================
+
+######################################################################
+# GIOCATORE: nicky-william-hogarth
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: nicky-william-hogarth (squadra: falkirk-falkirk)
+Generato: 2026-08-04T22:21:32.943825Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 31
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: premiership-gb-sct (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-11 | FAL vs DUN | premiership-gb-sct | score=50.1 | peso=0.561
+  2026-04-25 | CEL vs FAL | premiership-gb-sct | score=42.0 | peso=0.630
+  2026-05-02 | FAL vs MOT | premiership-gb-sct | score=78.8 | peso=0.707
+  2026-05-09 | FAL vs HIB | premiership-gb-sct | score=26.4 | peso=0.794
+  2026-05-13 | HEA vs FAL | premiership-gb-sct | score=22.4 | peso=0.891
+  2026-05-16 | FAL vs RAN | premiership-gb-sct | score=20.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 37.49
+  di cui Punteggio decisivo (level_score) medio: 38.86 | Punteggio complessivo (granulari) medio: -1.37 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 40.25 (delta +1.39 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -0.56, delta avversario -0.64 | Possesso condizionato per venue: delta -0.26 | Goalkeeping condizionato per venue: delta -0.13 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 20.33
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 20.6 - 50.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.03 (differenza: +9.30)
+Media score in casa: 43.98 | Media score fuori casa: 32.20
+Fattore casa/trasferta applicato: 0.983 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.7
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 1.114 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.874
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.000
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.000
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.998
+Tasso storico clean sheet (porta inviolata nei primi 60'): 33.3% (bonus atteso incorporato nella media pesata: ~8.3pt)
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 15.79% (fonte: tasso di presenza storico (6/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T14:00
+Casa: Motherwell FC | Trasferta: Falkirk FC
+Competizione: premiership-gb-sct
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.7 (range 25.8 - 55.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 42.20
+Punteggio REALE ottenuto in quella partita: 20.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -21.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

@@ -1,0 +1,79 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T22:24:19.525810Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) ola-brynhildsen: 51 pt attesi (41-69)
+   ORDINAMENTO: 56.50
+   SQUADRA: bodo-glimt-bodo | AVVERSARIO: valerenga-oslo
+======================================================================
+
+######################################################################
+# GIOCATORE: ola-brynhildsen
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ola-brynhildsen (squadra: bodo-glimt-bodo)
+Generato: 2026-08-04T22:24:19.523372Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 26
+Escluse (DID_NOT_PLAY): 15
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: eliteserien (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-12 | BOD vs KRI | eliteserien | score=78.5 | peso=0.561
+  2026-07-12 | KFU vs BOD | eliteserien | score=40.2 | peso=0.630
+  2026-07-17 | BOD vs FFK | eliteserien | score=45.3 | peso=0.707
+  2026-07-22 | BOD vs HAM | eliteserien | score=53.9 | peso=0.794
+  2026-07-26 | SAN vs BOD | eliteserien | score=73.4 | peso=0.891
+  2026-07-31 | BOD vs LSK | eliteserien | score=45.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 55.66
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=6): 54.29 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 44.15 | Punteggio complessivo (granulari) medio: 11.51 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 5.88 (delta +0.16) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.05
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 45.3 - 73.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.64 (differenza: +2.42)
+Media score in casa: 55.80 | Media score fuori casa: 56.80
+Fattore casa/trasferta applicato: 1.002 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.5
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.948
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 23.08% (fonte: tasso di presenza storico (6/26))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T12:00
+Casa: Vålerenga Fotball | Trasferta: FK Bodø / Glimt
+Competizione: eliteserien
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.3 (range 40.9 - 69.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 56.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.50
+Punteggio REALE ottenuto in quella partita: 45.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -13.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
