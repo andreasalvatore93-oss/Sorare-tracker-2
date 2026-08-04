@@ -1,0 +1,264 @@
+HANDOFF — SCREENING SEGNALI SUL CANALE DENTRO-GIOCATORE
+Data: 2026-08-04
+Argomento: quali variabili pre-kickoff mordono il residuo dentro il giocatore
+
+
+====================================================================
+1. STATO DEL REPO
+====================================================================
+
+Branch: main. Ultimo commit: a7f7ff18ea.
+main e' AVANTI DI 6 COMMIT su origin/main: NIENTE E' STATO PUSHATO.
+
+Committati in questa sessione (4, tutti locali):
+  313b791172  screening_segnali.py + fix guadagno_quintili
+  7fdf049c3a  verifica_odds_predeadline.py + regola handoff in CLAUDE.md
+  99a0f89b2b  persistenza odds pre-deadline in discovery_fixture.py
+  a7f7ff18ea  regressione congiunta con IC a grappoli e R2 incrementale
+
+Gli altri 2 commit avanti (1a0e714036, 4a0da46897) vengono dalla sessione
+delta_favorito e da quella precedente, non da qui.
+
+Non committati (erano gia' sporchi all'inizio, non toccati da me):
+  RIASSUNTO_2026-08-04.md, docs/BOT_CERBERO_PROGETTO.md,
+  docs/RIASSUNTO_CERBERO.md, errore_modello_storico.py,
+  backtest_arene_previsioni.py, taratura_confronto_parametri.py
+
+IN PRODUZIONE: NIENTE di questa sessione. Nessuna propagazione, nessuna
+modifica a formazione_mls/predict/*, nessun parametro del modello cambiato.
+L'unica cosa che cambia comportamento a runtime e' la scrittura di un file di
+log in discovery_fixture.py (vedi punto 3), che non tocca ne' le previsioni
+ne' i filtri.
+
+
+====================================================================
+2. PERCHE' ESISTEVA QUESTO LAVORO
+====================================================================
+
+Il modello ordina bene i giocatori fra loro (corr +0.569 sulle medie) ma quella
+e' solo il 5,7% della varianza. Il 94% sta DENTRO lo stesso giocatore — quando
+rende sopra o sotto la propria media — e li' la correlazione e' -0.047: canale
+mai aperto. La domanda: esiste qualcosa di osservabile prima del calcio
+d'inizio che preveda quello scarto? Solo misura, nessuna integrazione.
+
+
+====================================================================
+3. COSA HO COSTRUITO O TOCCATO
+====================================================================
+
+NUOVI
+  screening_segnali.py
+    Lo screening sul campione grande: 75.474 coppie di taratura_coppie.json,
+    residuo centrato per giocatore su entrambi i lati
+      res = (reale - media_reale) - (previsto - media_prevista)
+    soglia 8 osservazioni per giocatore, 10 segnali, piu' la regressione
+    congiunta con IC a grappoli e R2 incrementale.
+      python screening_segnali.py          ~3 minuti, nessuna rete
+    Tutte le formule importate: correlazione/IC/quintili/centratura/gol attesi
+    da segnale_dentro_giocatore, Poisson da modello_partita, ranking da
+    test_def.team_ranking_from_game (solo letto, mai modificato).
+
+  verifica_odds_predeadline.py
+    Confronta le starter odds prese PRIMA della deadline con quelle del game
+    log post-partita, sulle stesse coppie (giocatore, partita).
+      python verifica_odds_predeadline.py  ~1 minuto, nessuna rete
+
+MODIFICATI
+  segnale_dentro_giocatore.py — fix a guadagno_quintili (vedi punto 5.2).
+  discovery_fixture.py — nuova salva_odds_storico(), chiamata subito dopo la
+    raccolta odds+L10 e PRIMA del filtro MIN_ODDS. Scrive
+    dati_globali/odds_titolarita_storico.json con chiave (fixture, slug,
+    istante di scarico). Nessuna query API in piu': salva cio' che gia'
+    passava di li'. Idempotente (niente riga nuova se il valore non cambia),
+    a prova di errore (file corrotto messo da parte in .corrotto, la discovery
+    prosegue). Salva TUTTI i giocatori visti, anche sotto MIN_STARTER_ODDS e
+    anche quelli senza odds ancora pubblicate. Testato in locale su cinque
+    casi (primo salvataggio, stesso istante, valore invariato, valore
+    cambiato, file corrotto, percorso inesistente) — MAI su un run vero di
+    discovery, che richiede rete.
+  CLAUDE.md — aggiunta la regola dell'handoff automatico di fine sessione.
+
+USCITE DATI (in .gitignore, non committate)
+  dati_globali/screening_segnali.json
+  dati_globali/verifica_odds_predeadline.json
+
+
+====================================================================
+4. OUTPUT NUMERICO INTEGRALE
+====================================================================
+
+4.A  SCREENING (73.786 partite di 3.121 giocatori, sd del residuo 17,1 punti)
+     dati non trovati: lambda 9.695 righe, odds 338 righe
+
+  segnale                                     n    corr             IC 95%   guadagno
+  ----------------------------------------------------------------------------------
+  starter odds del giocatore (0-1)        73408  +0.163   [+0.157, +0.169]    +7.0 pt   <-- LEAKAGE, vedi 5.1
+  ranking avversario grezzo               65597  +0.074   [+0.066, +0.082]    +3.9 pt
+  ranking avversario meno il mio          65506  +0.073   [+0.067, +0.081]    +3.9 pt
+  lambda squadra meno lambda avversario   56930  +0.057   [+0.049, +0.065]    +2.7 pt
+  casa (1) o trasferta (0), grezzo        68493  +0.056   [+0.048, +0.063]    +2.1 pt
+  gol attesi dell avversario              56930  -0.048   [-0.055, -0.040]    -2.3 pt
+  gol attesi della mia squadra            56930  +0.042   [+0.033, +0.050]    +2.2 pt
+  gol attesi totali della partita         56930  -0.010   [-0.017, -0.001]    -0.4 pt
+  giorni dall ultima partita              72302  +0.009   [+0.002, +0.017]    +0.5 pt
+  ranking della mia squadra               67005  +0.001   [-0.007, +0.007]    -0.3 pt
+
+  Le n non sono confrontabili alla lettera: ogni segnale e' misurato sul
+  proprio sottoinsieme disponibile.
+  Segno: ranking alto = squadra messa peggio in classifica. Quindi
+  rank_avversario positivo = contro avversari peggio piazzati si rende sopra
+  la propria media. Direzione coerente.
+
+4.B  REGRESSIONE CONGIUNTA (56.383 partite, 363 giornate, bootstrap a
+     grappoli sulle GIORNATE x200)
+
+  variabile               coeff               IC 95%     1 sd  R2 aggiunto
+  --------------------------------------------------------------------------
+  rank_avversario        +0.236     [+0.203, +0.275]   +1.18p     0.3880%
+  casa                   +1.868     [+1.423, +2.265]   +0.93p     0.2080%
+  favorito               +0.112     [-0.300, +0.565]   +0.07p     0.0011%
+
+  R2 del modello completo: 0.8187% del residuo dentro-giocatore (corr +0.090)
+
+  Le starter odds NON sono fra i regressori: escluse perche' sporche (5.1).
+  "R2 aggiunto" = quanto perde il modello completo togliendo quella variabile,
+  cioe' il contributo di quella variabile aggiunta per ultima.
+
+4.C  STARTER ODDS: PRE-DEADLINE CONTRO POST-PARTITA (230 coppie)
+
+  distribuzione delle 5.584 odds pre-deadline raccolte (estremi 0%/100%: 7,7%)
+    0.00:411  0.10:228  0.20:210  0.30:178  0.40:204  0.60:247  0.70:752
+    0.80:1684  0.90:1651  1.00:19
+
+  confronto sulle 230 coppie in cui la partita e' gia' stata giocata:
+    identiche                          14    6.1%
+    entro 5 punti percentuali          14    6.1%
+    entro 10 punti percentuali        102   44.3%
+    post PIU ALTE della pre           179   77.8%
+    post PIU BASSE della pre           37   16.1%
+    valori estremi (0% o 100%)   pre 6.1%   post 100.0%
+
+  transizioni piu' frequenti
+    0.90 -> 1.00   82   35.7%
+    0.80 -> 1.00   50   21.7%
+    0.70 -> 1.00   22    9.6%
+    0.00 -> 0.00   14    6.1%
+    0.60 -> 1.00   11    4.8%
+    0.70 -> 0.00    8    3.5%
+    0.90 -> 0.00    8    3.5%
+
+  coincidenza con la titolarita' effettiva (179 righe con il flag):
+    post-partita 100.0%   pre-deadline 92.2%
+
+
+====================================================================
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+====================================================================
+
+5.1  STARTER ODDS DEL GAME LOG = LEAKAGE, DIMOSTRATO
+Era il segnale piu' forte della tabella (+0.163). Non e' utilizzabile.
+Il campo starterOddsBasisPoints dentro il game log viene RISCRITTO dopo le
+formazioni ufficiali: il 100% dei valori post-partita e' 0% o 100% contro il
+7,7% dei pre-deadline, e solo il 6,1% delle coppie coincide.
+Le formazioni ufficiali escono DOPO la deadline, quindi quel valore non esiste
+quando si schiera.
+NON e' servito aspettare una giornata futura: le odds pre-deadline erano gia'
+su disco in due posti — player_card_counts.json dei discovery (dal 31/07) e i
+report prediction_*.txt, dove P(gioca) viene da anyFutureGames, che il
+predittore NON cacha (test_def.py riga 648). 5.374 righe utili dai report,
+210 dai discovery, di cui 230 con la partita gia' giocata e quindi
+confrontabili.
+LIMITE: le 230 coppie sono tutte del 25/07-04/08 e sbilanciate verso odds alte
+(il campione di discovery e' condizionato a MIN_ODDS 0.80). La direzione e'
+unanime, la stima delle percentuali no.
+
+5.2  BUG TROVATO E CORRETTO IN guadagno_quintili (segnale_dentro_giocatore.py)
+Faceva sorted(zip(x, y)): i pari merito finivano ordinati per y, quindi il
+quinto alto raccoglieva i punteggi migliori DELLO STESSO valore di segnale.
+Sui segnali con pochi valori distinti il guadagno usciva gonfiato: il ranking
+della PROPRIA squadra, correlazione +0.001, dava +38,6 pt. Ora da' -0,3 pt.
+CONSEGUENZA: le colonne "guadagno" stampate da segnale_dentro_giocatore.py
+prima del 04/08 sono sovrastimate sui segnali con pochi valori distinti (casa,
+ranking). Le correlazioni e gli IC restano validi. Tutti i numeri di questo
+handoff sono post-fix.
+
+5.3  UNA MIA STIMA PRECEDENTE SI E' RIVELATA SBAGLIATA
+Nel primo giro avevo riportato che il fattore campo, in regressione congiunta,
+spariva (coefficiente -0.50, "conta l'avversario, non lo stadio"). Sul pool
+grande NON sparisce: +1.868 con IC [+1.423, +2.265], e vale 0,21% di R2 in
+piu' da solo. La differenza e' con chi sta in coppia: contro il lambda del
+Poisson il fattore campo veniva assorbito (il lambda contiene gia' il fattore
+campo), contro il ranking grezzo no — il ranking non sa dove si gioca.
+
+5.4  IL LAMBDA DEL POISSON NON AGGIUNGE NIENTE
+Da solo correla +0.057. In congiunta con ranking e casa: coefficiente +0.112,
+IC [-0.300, +0.565] che attraversa lo zero, R2 aggiunto 0.0011%. E' interamente
+spiegato dalle altre due. E' il motivo per cui delta_favorito, che e' costruito
+sul lambda, non va portato in produzione cosi' com'e': e' l'idea giusta con la
+variabile peggiore delle due.
+
+5.5  IL TETTO E' BASSO COMUNQUE
+Il modello congiunto spiega lo 0,82% del residuo dentro-giocatore (corr
++0.090). Su una sd di 17,1 punti, 1 sd di ranking avversario vale +1,18 punti.
+Non e' niente rispetto al 94% di varianza da spiegare, ma e' piu' di zero, che
+e' quello che il modello fa oggi su questo canale.
+
+5.6  BUCHI DI COPERTURA
+- lambda mancante su 9.695 righe: partite_gol.json parte dal 2024-03-07 mentre
+  le coppie partono dal 2023-02-25, e i checkpoint vogliono almeno 400
+  osservazioni precedenti.
+- ranking mancante su ~8.000 righe (domesticLeagueRanking assente in alcune
+  competizioni, tipicamente le coppe).
+- "giorni di riposo" e "minuti L5" escono a zero, ma sono misurati su un
+  campione condizionato: la produzione guarda solo chi ha starter odds >= 0.80,
+  dove la titolarita' attesa e' quasi costante. E' restrizione di range, non
+  prova di assenza di segnale. Lo storico odds appena avviato (punto 3) serve
+  esattamente a rimuovere quel condizionamento fra qualche giornata.
+
+5.7  COSA NON E' STATO FATTO
+Il punto B.4 del brief (sostituire il lambda col ranking dentro
+delta_favorito) NON e' stato eseguito: e' esplicitamente subordinato al via
+dell'utente dopo la lettura di questo handoff.
+La persistenza delle odds non e' mai girata su un run vero di discovery.
+
+
+====================================================================
+6. DECISIONE APERTA
+====================================================================
+
+a) Dare il via a B.4: ranking grezzo al posto del lambda dentro
+   delta_favorito, spento di default, confronto delle due varianti sulla
+   stessa griglia di k e sullo stesso campione, giudizio con
+   taratura_confronto_parametri.py --favorito (MAE + correlazione + lift
+   INSIEME). Il candidato piu' promettente misurato oggi.
+
+b) Aspettare 2-3 giornate di storico odds pre-deadline e rifare lo screening
+   senza il condizionamento a 0.80, per sapere se riposo/minuti/titolarita'
+   sono davvero morti o solo invisibili. Costa solo tempo di calendario, zero
+   lavoro.
+
+c) Pushare o no i 6 commit locali su origin/main.
+
+Nessuna di queste e' stata presa.
+
+
+====================================================================
+7. FILE DI RIFERIMENTO
+====================================================================
+
+screening_segnali.py                      screening + regressione congiunta
+verifica_odds_predeadline.py              prova del leakage delle odds
+segnale_dentro_giocatore.py               corr/IC/quintili/congiunta/gol attesi
+tetto_prevedibilita.py                    scomposizione fra/dentro giocatore
+modello_partita.py                        Poisson attacco-difesa-campo
+backtest_arene_previsioni.py              delta_favorito, favorito_k
+taratura_confronto_parametri.py           giudizio dei parametri, --favorito
+discovery_fixture.py                      salva_odds_storico (nuovo)
+formazione_mls/predict/test_def.py        team_ranking_from_game (solo letto)
+dati_globali/taratura_coppie.json         75.474 coppie, ingresso
+dati_globali/partite_gol.json             6.408 partite con gol
+dati_globali/screening_segnali.json       uscita dello screening
+dati_globali/verifica_odds_predeadline.json  uscita della verifica odds
+dati_globali/odds_titolarita_storico.json    storico odds pre-deadline (si
+                                             riempie dal prossimo run di
+                                             discovery, oggi non esiste)
