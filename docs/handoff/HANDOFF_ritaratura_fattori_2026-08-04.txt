@@ -1,0 +1,187 @@
+HANDOFF — ritaratura fattori esistenti (formazione_mls/predict/), SESSIONE INTERROTTA
+Data: 2026-08-04
+Prerequisito: BRIEF_2026-08-04_ritaratura_fattori.txt, docs/handoff/HANDOFF_screening_segnali_B4_2026-08-04.txt
+
+
+====================================================================
+1. STATO DEL REPO
+====================================================================
+
+Branch: ritaratura-fattori (creato da main, commit c3369f3546, dopo
+git pull che ha portato main a 18719ddc55).
+
+NESSUN commit fatto in questa sessione. NESSUN file di
+formazione_mls/predict/ toccato: solo letto.
+
+File modificati e non committati (preesistenti, non miei, invariati
+dall'inizio sessione): RIASSUNTO_2026-08-04.md, docs/BOT_CERBERO_PROGETTO.md,
+docs/RIASSUNTO_CERBERO.md.
+
+IN PRODUZIONE: niente cambiato. Nessuna propagazione lanciata (vietata dal
+brief per questa sessione).
+
+
+====================================================================
+2. PERCHE' ESISTEVA QUESTO LAVORO
+====================================================================
+
+Il BRIEF chiedeva di entrare in formazione_mls/predict/* e ritarare due
+costanti che l'handoff B.4 diceva compresse: OPPONENT_SENSITIVITY (cap
+0.5-1.5, fattore forza avversario moltiplicativo su GK/DEF/MID) e
+SPLIT_SHRINK_K (cap 0.7-1.3, fattore casa/trasferta). Ordine: Compito 1
+(parametrizzare + verificare invarianza) poi Compito 2 (griglia avversario)
+poi Compito 4 (FWD) poi Compito 3 (griglia split).
+
+Mi sono fermato dentro il Compito 1, PRIMA di scrivere una riga di codice,
+perche' leggendo le funzioni di produzione vere ho trovato che la premessa
+del punto 5.2 dell'handoff B.4 e' sbagliata per tre ruoli su quattro (vedi
+sezione 5).
+
+
+====================================================================
+3. COSA HO COSTRUITO O TOCCATO
+====================================================================
+
+Niente. Solo lettura di:
+  formazione_mls/predict/test_def.py   (build_prediction, compute_score_atteso_def,
+                                         rigorous_backtest, compute_split_factor)
+  formazione_mls/predict/test_gk.py    (compute_score_atteso_gk, venue_factor_gk)
+  formazione_mls/predict/test_mid.py   (compute_score_atteso_mid)
+  formazione_mls/predict/test_mls_fwd_all.py (compute_score_atteso_fwd)
+  taratura_confronto_parametri.py, backtest_arene_previsioni.py (per capire
+    come la griglia chiama la formula vera: backtest_arene_previsioni.calcola()
+    importa e chiama DIRETTAMENTE compute_score_atteso_{def,gk,mid,fwd} dai
+    file predict/ -- non e' una formula duplicata, e' la vera).
+
+
+====================================================================
+4. OUTPUT NUMERICO INTEGRALE
+====================================================================
+
+Nessuno: nessun backtest e' stato lanciato in questa sessione. Quello che
+segue e' lettura di codice, non misura.
+
+
+====================================================================
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+====================================================================
+
+5.1 FATTORE_FORZA_AVVERSARIO / OPPONENT_SENSITIVITY E' CODICE MORTO IN
+PRODUZIONE, SU TUTTI E QUATTRO I RUOLI.
+
+Il punto 5.2 dell'handoff B.4 diceva: "GK, DEF e MID applicano GIA' un
+fattore moltiplicativo costruito sulla stessa identica idea:
+fattore_forza_avversario = 1 + (rank_avversario - media_rank_storica) /
+OPPONENT_SENSITIVITY, limitato a 0.5-1.5. Il FWD no, non ce l'ha."
+
+Verificato leggendo compute_score_atteso_def/gk/mid/fwd (le funzioni
+CONDIVISE, usate sia da build_prediction sia dal backtest di calibrazione,
+quindi le uniche che contano per "cosa succede davvero"):
+
+  DEF (test_def.py): fattore_forza_avversario e' calcolato dentro
+    build_prediction (righe ~2051-2056) ma NON entra in score_atteso.
+    C'e' un commento esplicito e datato (26/07): "fattore_forza_avversario
+    (ranking di campionato) PEGGIORA il MAE reale -- rimuoverlo del tutto
+    batte sia il ranking attuale sia gol subiti storici dall'avversario
+    (-6.65% rimuovendolo vs -2.84% col miglior sostituto)". Resta nel
+    result dict SOLO a scopo diagnostico/visualizzazione.
+
+  GK (test_gk.py): compute_score_atteso_gk dichiara esplicitamente nel
+    docstring "Nessun opponent_rankings/Stadio D: entrambi rimossi da
+    score_atteso GK". OPPONENT_SENSITIVITY non e' nemmeno un parametro
+    della funzione.
+
+  MID (test_mid.py): compute_score_atteso_mid non ha ne' OPPONENT_SENSITIVITY
+    ne' fattore_forza_avversario fra i parametri o nel corpo. Il calcolo
+    fattore_forza_avversario che c'e' nel file (righe ~1911-1916) e', come
+    per DEF, dentro build_prediction, per il dict diagnostico.
+
+  FWD (test_mls_fwd_all.py): HA GIA' lo stesso calcolo diagnostico
+    (fattore_forza_avversario, OPPONENT_SENSITIVITY=29.0, righe ~1920-1925)
+    -- quindi l'affermazione B.4 "il FWD non ce l'ha" e' sbagliata. Non
+    entra nemmeno li' in score_atteso (compute_score_atteso_fwd dice
+    esplicitamente "Non serve opponent_rankings: per FWD non entra in
+    nessun pezzo dello score").
+
+Quindi: la costante che il brief chiedeva di ritarare col Compito 2
+(OPPONENT_SENSITIVITY e il suo cap) non ha NESSUN effetto sull'output di
+produzione, in nessuno dei quattro ruoli. Una griglia su di essa avrebbe
+prodotto numeri identici a qualunque k, perche' backtest_arene_previsioni.py
+chiama compute_score_atteso_*, non build_prediction: la griglia avrebbe
+misurato zero movimento e basta.
+
+5.2 IL VERO CANALE "AVVERSARIO" IN PRODUZIONE E' UN ALTRO.
+
+In tutti e quattro i ruoli, quello che davvero sposta score_atteso e':
+  - opponent_lambda_mult (opponent_strength.py: opponent_lambda_multiplier)
+    -- moltiplica lambda_pos_dec, basato sui gol REALI fatti/subiti
+    dall'avversario nelle ultime 10 partite, ancorato alla data storica.
+  - Stadio D (DEF/MID, e granulare "Passaggio" su FWD): condizionamento
+    binario forte/debole (opponent_strength.opponent_is_strong) su
+    goals_conceded/passing/clean_sheet (DEF), offensive/passing/goals_conceded
+    (MID), passing (FWD).
+  - Sul FWD specificamente: fwd_offense_granular_delta (opponent_strength.py),
+    applicato via offensive_values in compute_score_atteso_fwd se passato.
+
+Questo significa che se un domani si vuole ritarare "quanto pesa
+l'avversario", le costanti giuste da guardare sono dentro
+opponent_strength.py (la sensibilita' di opponent_lambda_multiplier, le
+soglie di opponent_is_strong), non OPPONENT_SENSITIVITY in predict/*.py.
+Non ho misurato quelle costanti: e' fuori scope di questa sessione, e
+comunque nessuna misura e' stata fatta.
+
+5.3 QUELLO CHE INVECE E' ANCORA VIVO E VERO (non contraddetto)
+
+SPLIT_SHRINK_K, dentro compute_split_factor (DEF/MID/FWD, tutte e tre le
+occorrenze sono variabili locali identiche a 20.0) e SPLIT_SHRINK_K_GK
+(costante di modulo in test_gk.py, usata da venue_factor_gk), ALIMENTANO
+davvero fattore_casa_trasferta, che entra in score_atteso in tutti e
+quattro i ruoli (compute_split_factor per DEF/MID/FWD, venue_factor_gk per
+GK). Il Compito 1 (parte split) e il Compito 3 (griglia split) del brief
+restano validi e non sono stati toccati da questo problema.
+
+Non sono riuscito a verificarlo per FWD col dettaglio riga-per-riga come
+per DEF/MID (compute_split_factor e' condivisa, quindi il ragionamento vale
+comunque), ne' ho controllato interazione con GK_TEAM_CS_WEIGHT (5.3 del
+brief) perche' mi sono fermato prima.
+
+
+====================================================================
+6. DECISIONE APERTA
+====================================================================
+
+Girata all'utente in chat con AskUserQuestion (tre opzioni: solo split,
+tutto comunque per misura, o ritarare invece opponent_lambda_mult/
+opponent_is_strong). Risposta dell'utente: "devo chiedere all'orchestratore,
+prepara handoff" -- nessuna scelta presa, sessione sospesa qui in attesa di
+indicazioni.
+
+Opzioni ancora sul tavolo per quando si riprende:
+  a) Fare comunque Compito 1 (split) + Compito 3 (griglia split), saltando
+     Compito 2 e la parte moltiplicativa "stesso meccanismo degli altri
+     ruoli" del Compito 4 (che non avrebbe senso: gli altri ruoli non hanno
+     quel meccanismo attivo).
+  b) Ritarare invece le costanti vive sull'avversario, dentro
+     opponent_strength.py (opponent_lambda_multiplier, soglie
+     opponent_is_strong) -- e' il bersaglio giusto se l'obiettivo resta
+     "smettere di sommare un termine sopra, entrare dentro la costante".
+  c) Girare comunque la griglia OPPONENT_SENSITIVITY per misura/conferma
+     numerica che e' inerte (costo: tempo, risultato atteso: zero
+     movimento, nessun MAE/corr/lift che cambia a nessun k).
+
+
+====================================================================
+7. FILE DI RIFERIMENTO
+====================================================================
+
+BRIEF_2026-08-04_ritaratura_fattori.txt (Desktop/trasloco, non nel repo)
+docs/handoff/HANDOFF_screening_segnali_B4_2026-08-04.txt   punto 5.2 da correggere
+formazione_mls/predict/test_def.py       build_prediction ~2051-2056 (diagnostico),
+                                          compute_score_atteso_def ~1326-1455 (vera)
+formazione_mls/predict/test_gk.py        compute_score_atteso_gk ~1432-1524,
+                                          venue_factor_gk ~1031, SPLIT_SHRINK_K_GK ~1028
+formazione_mls/predict/test_mid.py       compute_score_atteso_mid ~1240-1329
+formazione_mls/predict/test_mls_fwd_all.py compute_score_atteso_fwd ~1253-...
+backtest_arene_previsioni.py             calcola() chiama compute_score_atteso_* vero
+taratura_confronto_parametri.py          infrastruttura griglia esistente (--ranking/--casa)
+opponent_strength.py                     canale avversario VERO (non misurato qui)
