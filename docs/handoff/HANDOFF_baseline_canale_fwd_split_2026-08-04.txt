@@ -1,0 +1,217 @@
+HANDOFF — il canale danneggia DEF (confermato e scomposto) + FWD chiuso (Parte 3 split NON fatta)
+Data: 2026-08-04
+Segue: HANDOFF_griglia_estesa_e_split_2026-08-04.txt
+Branch: ritaratura-fattori
+
+
+====================================================================
+1. STATO DEL REPO
+====================================================================
+
+Branch: ritaratura-fattori. Push del turno precedente confermato (ea04a377a3).
+
+Modifica permanente in questa sessione, backtest_arene_previsioni.py:
+  calcola()/_calcola_base(): aggiunti due parametri opzionali
+  `avversario_lambda=True, avversario_stadio_d=True`. Servono SOLO al ramo
+  Defender, per scomporre le due leve del canale avversario quando
+  usa_avversario=True. Default True su entrambi = comportamento IDENTICO a
+  prima (verificato: MAE/corr a 6 decimali invariati fra chiamata vecchia e
+  nuova con default espliciti). Non e' un cambio di formula: i due switch
+  (opponent_lambda_mult=1.0 e use_stadio_d=False) esistevano gia' dentro
+  compute_score_atteso_def, qui solo esposti dal banco di misura.
+
+Nessuna modifica a formazione_mls/predict/*. Nessuna propagazione. Parte 3
+(split casa/trasferta) NON fatta per tempo -- la Parte 1 era la priorita'
+dichiarata dal brief ed era la piu' impegnativa, la Parte 2 (FWD) e' stata
+chiusa comunque perche' corta.
+
+File modificati preesistenti (non miei, invariati): RIASSUNTO_2026-08-04.md,
+docs/BOT_CERBERO_PROGETTO.md, docs/RIASSUNTO_CERBERO.md.
+
+
+====================================================================
+2. PERCHE' ESISTEVA QUESTO LAVORO
+====================================================================
+
+Dai numeri della sessione precedente (4.B), la baseline di DEF (ranking_k=0)
+sembrava peggiorare quando il canale avversario reale si accende: -0.0147
+di correlazione, ricostruito per differenza. Il brief chiedeva la misura
+diretta (non ricostruita), la scomposizione fra le due leve del canale
+(opponent_lambda_mult e Stadio D), e la chiusura del buco su FWD (mai
+verificato a campione pieno, segnalato nella sessione precedente).
+
+
+====================================================================
+3. COSA HO COSTRUITO O TOCCATO
+====================================================================
+
+Modifica permanente: backtest_arene_previsioni.py, calcola()/_calcola_base(),
+vedi sezione 1.
+
+Script scratch (funzioni esistenti, nessuna formula riscritta):
+  parte1_baseline_diretta.py     MAE/corr/lift diretti, ranking_k=0, campione
+                                  pieno, 4 ruoli x 2 condizioni (8 righe)
+  parte1_def_scomposizione.py    DEF: spento / solo-lambda / solo-Stadio-D /
+                                  acceso, campione pieno + verifica invarianza
+  parte1_mix.py                  DEF spento + altri 3 ruoli accesi, campione
+                                  pieno
+  parte1_coincidenza.py          verifica a piena precisione (6 decimali)
+                                  della coincidenza segnalata nel brief (1.4)
+  parte2_fwd_pieno.py            griglia ranking_k completa su FWD, campione
+                                  pieno, spento e acceso
+
+
+====================================================================
+4. OUTPUT NUMERICO INTEGRALE
+====================================================================
+
+4.A PARTE 1.1 — baseline diretta, campione pieno, ranking_k=0
+
+  RUOLO  CANALE   n       MAE       corr    lift%   n_giornate
+  FWD    SPENTO   19140   14.7380   0.2565  28.15   244
+  FWD    ACCESO   19140   14.7347   0.2586  28.72   244   <- tutte e 3 MEGLIO
+  MID    SPENTO   24478   13.2398   0.2478  24.85   264
+  MID    ACCESO   24478   13.2492   0.2484  24.54   264   <- misto (MAE/lift peggio, corr appena meglio)
+  DEF    SPENTO   25738   14.9423   0.1905  16.91   263
+  DEF    ACCESO   25738   14.9904   0.1763  16.06   263   <- tutte e 3 PEGGIO
+  GK     SPENTO    6118   16.1019   0.0707   9.18   100
+  GK     ACCESO    6118   16.0902   0.0746   9.49   100   <- tutte e 3 MEGLIO
+
+  DEF e' l'UNICO ruolo dove il canale peggiora MAE, corr E lift
+  contemporaneamente, misurato direttamente (non ricostruito). Confermato.
+
+4.B PARTE 1.2 — scomposizione lambda vs Stadio D su DEF (campione pieno)
+
+  CONFIGURAZIONE                  MAE       corr    lift%
+  SPENTO (nessuna leva)          14.9423   0.1905   16.91   <- migliore su tutte e 3
+  SOLO lambda (Stadio D off)     14.9892   0.1760   16.87
+  SOLO Stadio D (lambda off)     14.9943   0.1737   15.44   <- peggiore su tutte e 3
+  ACCESO (entrambe)              14.9904   0.1763   16.06
+
+  Nessuna delle due leve e' innocente da sola: ENTRAMBE peggiorano DEF
+  rispetto allo spento. Stadio D (opponent_is_strong, condiziona gol_subiti/
+  passaggio/clean_sheet su avversario forte/debole) e' la piu' dannosa da
+  sola. Combinandole non si sommano linearmente: il risultato "entrambe" sta
+  fra le due singole, non sotto la peggiore.
+
+4.C PARTE 1.3 — DEF spento, altri 3 accesi (mix, campione pieno)
+
+  RUOLO  CANALE   MAE       corr    lift%
+  FWD    ACCESO   14.7347   0.2586  28.72
+  MID    ACCESO   13.2492   0.2484  24.54
+  DEF    SPENTO   14.9423   0.1905  16.91
+  GK     ACCESO   16.0902   0.0746   9.49
+
+  Nota metodologica: questo banco non ha accoppiamento fra ruoli (ogni ruolo
+  e' calcolato indipendentemente), quindi il "mix" coincide esattamente coi
+  numeri per-ruolo gia' misurati in 4.A. "Spegnere il canale su DEF" PASSA
+  il metro (MAE/corr/lift tutte e 3 migliori dello spento) per costruzione,
+  visto in 4.A: non e' un risultato nuovo, e' la conferma che non c'e' un
+  costo di interazione nascosto fra ruoli nello spegnere DEF da solo.
+
+4.D PARTE 1.4 — la coincidenza a 4 decimali
+
+  SPENTO k=0.3:  MAE=14.895783  corr=0.202769  (n=25.738)
+  ACCESO k=0.5:  MAE=14.889754  corr=0.203219  (n=25.738)
+
+  A piena precisione (6 decimali) i due numeri sono DIVERSI (0.202769 vs
+  0.203219, +0.00045). Coincidevano solo a 4 decimali per arrotondamento
+  (0.2028 e 0.2032 non sono uguali; l'handoff precedente aveva scritto
+  erroneamente "0.2032" per entrambi, un arrotondamento di troppo). Non e'
+  un bug ne' un riuso di cella: e' un caso di vicinanza numerica, ora
+  chiarito. ACCESO k=0.5 e' leggermente MEGLIO su entrambe le misure (MAE
+  piu' basso, corr piu' alta), non identico.
+
+4.E PARTE 2 — FWD, griglia completa a campione pieno (19.140 punti)
+
+  SPENTO: k vincente 0.3, corr 0.2565->0.2701 (dcorr+0.0136) -- IDENTICO
+          al numero originale di B.4 (corr 0.270, stesso k, stesso segno):
+          buona verifica di coerenza del banco.
+  ACCESO: k vincente 0.3, corr 0.2586->0.2702 (dcorr+0.0115)
+
+  Il k=0.2 "provvisorio" della sessione precedente (misurato solo su 400
+  slug) NON REGGE: a campione pieno il vincente e' 0.3 in ENTRAMBE le
+  condizioni, stesso k dello spento originale di B.4. FWD e' quindi il
+  ruolo piu' stabile di tutti dopo GK: il canale sposta poco (dcorr 0.0136
+  -> 0.0115, -15% relativo) e non sposta affatto il k ottimo.
+
+
+====================================================================
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+====================================================================
+
+5.1 IL CANALE FA DANNO SU DEF, CONFERMATO E SCOMPOSTO
+
+Risposta diretta alla domanda del brief: SI'. Misurato direttamente (non
+ricostruito), su campione pieno (25.738 punti), tutte e tre le misure
+peggiorano insieme quando il canale si accende su DEF. Scomposto: non e'
+colpa di una sola leva, entrambe (lambda e Stadio D) peggiorano da sole,
+Stadio D di piu'. E' un guadagno disponibile SENZA toccare il ranking:
+spegnere il canale su DEF passerebbe il metro delle tre misure insieme
+(4.C), a parita' di tutto il resto.
+
+5.2 QUESTO CAMBIA IL QUADRO DELLA SESSIONE PRECEDENTE SU DEF
+
+La sessione precedente (5.1 del suo handoff) aveva concluso che DEF
+"arriva alla stessa correlazione finale sia da spento che da acceso,
+solo con k diverso" -- vero nella sostanza (differenza di sole 4
+millesimi, 4.D), ma quella lettura dava per scontato che il canale acceso
+fosse comunque neutro o quasi. Qui si vede che il canale acceso PARTE
+da un punto peggiore (0.1905->0.1763, -0.0142) e il ranking più alto
+(k=0.5 invece di 0.3) serve proprio a COMPENSARE quel peggioramento, non
+ad aggiungere qualcosa in piu'. Il messaggio e' piu' netto adesso: su DEF
+il canale e' un costo che il ranking maschera, non una fonte di segnale.
+
+5.3 GLI ALTRI TRE RUOLI NON HANNO LO STESSO PROBLEMA
+
+FWD e GK migliorano su tutte e tre le misure col canale acceso (4.A). MID
+e' misto ma nella direzione giusta sulla correlazione (che e' la misura
+piu' vicina a "il modello ordina meglio"), anche se MAE e lift cedono un
+poco. Nessun altro ruolo giustifica lo spegnimento.
+
+5.4 FWD CHIUSO: k=0.3, non 0.2
+
+Corregge il "provvisorio" della sessione precedente. Confermato a
+campione pieno in entrambe le condizioni, stesso k dello spento originale
+di B.4 -- il ruolo piu' stabile misurato finora insieme a GK.
+
+5.5 CAVEAT INVARIATO
+
+Contaminazione domesticLeagueRanking non toccata (vale per tutti i k
+misurati qui). Split casa/trasferta (Parte 3 del brief) non fatto:
+resta da fare con DEF ancora da decidere (canale acceso o spento) prima
+di girare la sua griglia -- il brief stesso lo aveva anticipato al punto
+3.5.
+
+
+====================================================================
+6. DECISIONE APERTA — risposta secca
+====================================================================
+
+"Il canale vivo fa danno su DEF, si' o no": SI', confermato con misura
+diretta su campione pieno e scomposto in entrambe le leve (entrambe
+colpevoli, Stadio D di piu').
+
+Cosa raccomando: valutare lo spegnimento di ENTRAMBE le leve del canale
+avversario su DEF in produzione (opponent_lambda_mult forzato a 1.0 e
+Stadio D disattivato per quel ruolo soltanto) -- NON l'ho fatto, solo
+misurato, come richiesto. E' un guadagno indipendente dal ranking e dallo
+split: MAE -0.05, corr +0.014, lift +0.9 rispetto a oggi (canale acceso,
+produzione attuale), a costo zero (nessun nuovo dato, nessuna nuova query).
+Se si decide di procedere, andrebbe fatto con lo stesso rigore gia' usato
+per le altre modifiche (parametro opzionale, default invariato, verifica
+di non-regressione) e SEPARATAMENTE dalla Parte 3 (split), che sul DEF va
+girata solo dopo aver deciso questo (vincolo 3.5 del brief, ancora aperto).
+
+Decisione non presa qui: gira all'utente/orchestratore.
+
+
+====================================================================
+7. FILE DI RIFERIMENTO
+====================================================================
+
+BRIEF_2026-08-04_baseline_canale_fwd_split.txt (Downloads, non nel repo)
+docs/handoff/HANDOFF_griglia_estesa_e_split_2026-08-04.txt   numero 5.1 da correggere in parte (5.2 qui)
+backtest_arene_previsioni.py    calcola()/_calcola_base() -- nuovi parametri avversario_lambda/avversario_stadio_d
+opponent_strength.py            opponent_lambda_multiplier, opponent_is_strong (le due leve misurate)
+formazione_mls/predict/test_def.py   compute_score_atteso_def (opponent_lambda_mult, use_stadio_d gia' esistenti, solo esposti dal banco)

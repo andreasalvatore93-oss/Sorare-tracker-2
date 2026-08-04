@@ -449,7 +449,8 @@ def delta_casa(ctx):
 
 
 def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None,
-            usa_avversario=False, favorito_k=None, ranking_k=None, casa_k=None):
+            usa_avversario=False, favorito_k=None, ranking_k=None, casa_k=None,
+            avversario_lambda=True, avversario_stadio_d=True):
     """La previsione di produzione dagli ingressi di `contesto`.
 
     half_life/trend_intensity servono SOLO alla taratura: lasciati a None si
@@ -458,8 +459,17 @@ def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None,
     correzione di contesto partita: 0 o None la lascia spenta.
     `ranking_k` (punti per posizione di classifica) accende la stessa
     correzione presa dal ranking grezzo invece che dal Poisson -- sono
-    alternative, si tarano una alla volta."""
-    base = _calcola_base(ctx, half_life, trend_intensity, shrink_k, usa_avversario)
+    alternative, si tarano una alla volta.
+
+    `avversario_lambda`/`avversario_stadio_d` (04/08, BRIEF baseline_canale_
+    fwd_split, Parte 1.2): scompongono il canale avversario di DEF nelle sue
+    due leve quando usa_avversario=True, per capire quale delle due pesa sul
+    peggioramento misurato in Parte 1.1. False forza quella leva a neutro
+    (opponent_lambda_mult=1.0 / use_stadio_d=False) mentre l'altra resta
+    attiva. Default True = comportamento INVARIATO (entrambe attive come
+    prima). Solo DEF li usa per ora (unico ruolo richiesto dal brief)."""
+    base = _calcola_base(ctx, half_life, trend_intensity, shrink_k, usa_avversario,
+                         avversario_lambda, avversario_stadio_d)
     if isinstance(favorito_k, dict):
         # il portiere ha gia' questo segnale per un'altra strada (il blend
         # P(porta inviolata) di squadra, GK_TEAM_CS_WEIGHT, stesso
@@ -485,7 +495,7 @@ def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None,
 
 
 def _calcola_base(ctx, half_life=None, trend_intensity=None, shrink_k=None,
-                  usa_avversario=False):
+                  usa_avversario=False, avversario_lambda=True, avversario_stadio_d=True):
     """La previsione invariata, senza correzione di contesto partita."""
     modulo, s, ruolo = ctx['modulo'], ctx['s'], ctx['ruolo']
     casa, opp_rank, presenza = ctx['casa'], ctx['opp_rank'], ctx['presenza']
@@ -523,6 +533,10 @@ def _calcola_base(ctx, half_life=None, trend_intensity=None, shrink_k=None,
                           'next_game_date': av['quando'], 'league': av['lega'],
                           'opponent_team_slugs_hist': av['hist_slug'],
                           'game_dates_hist': av['hist_date']})
+            if not avversario_lambda:
+                extra['opponent_lambda_mult'] = 1.0
+            if not avversario_stadio_d:
+                extra['use_stadio_d'] = False
         return modulo.compute_score_atteso_def(
             s['scores'], s['is_home'], s['opp_rank'], s['residual'], s['granulari'],
             s['pos_dec'], s['neg_dec'], s['goals_conceded'], s['passing'], s['clean_sheet'],
