@@ -102,19 +102,29 @@ def giornate_giocate(calendario, squadra, comp, quando):
 
 
 def main():
-    percorso = os.path.join(ROOT, 'dati_globali', 'taratura_coppie.json')
-    if not os.path.exists(percorso):
-        print('manca %s' % percorso)
-        return 1
-    with open(percorso, encoding='utf-8') as fh:
-        coppie = json.load(fh)
-
     print('=' * 92)
     print('RANKING MISURATO SOLO DOVE E DEFINITO')
     print('=' * 92)
     cache = backtest_arene_cache.CacheLocale()
+    percorso = os.path.join(ROOT, 'dati_globali', 'taratura_coppie.json')
+    if os.path.exists(percorso):
+        with open(percorso, encoding='utf-8') as fh:
+            coppie = json.load(fh)
+        print('%d coppie da taratura_coppie.json' % len(coppie))
+    else:
+        # su un runner pulito il file non c'e' (dati_globali/ e' in .gitignore):
+        # si ricostruisce con LO STESSO codice che lo produce, non con una
+        # raccolta scritta qui. Costa una mezz'ora di CPU, nessuna rete.
+        print('taratura_coppie.json assente: lo ricostruisco con '
+              'taratura_giocatore.raccogli (nessuna rete, ~30 minuti)', flush=True)
+        import taratura_giocatore
+        coppie = taratura_giocatore.raccogli(cache, sorted(cache.slug_disponibili()))
+        os.makedirs(os.path.dirname(percorso), exist_ok=True)
+        with open(percorso, 'w', encoding='utf-8') as fh:
+            json.dump(coppie, fh, ensure_ascii=False)
+        print('%d coppie ricostruite e salvate' % len(coppie))
     print('costruisco residui e segnali (riuso screening_segnali.prepara)...', flush=True)
-    pronte, _mancanti = ss.prepara(coppie, cache)
+    pronte, _mancanti = ss.prepara(coppie, cache, con_lambda=False)
     print('anagrafica competizioni...', flush=True)
     dimensione, lega_di, calendario = anagrafica_competizioni(cache)
 

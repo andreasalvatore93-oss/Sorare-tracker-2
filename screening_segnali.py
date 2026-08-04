@@ -114,7 +114,7 @@ def _riposo(date, quando):
     return float(giorni) if 0 <= giorni <= 40 else None
 
 
-def prepara(coppie, cache):
+def prepara(coppie, cache, con_lambda=True):
     """Aggiunge a ogni riga il residuo e i segnali candidati.
 
     Il residuo finisce nella chiave 'res_reale' perche' e' quella che
@@ -172,7 +172,10 @@ def prepara(coppie, cache):
                     g['_started'] = stat.get('gameStarted')
                 else:
                     mancanti['odds'] += 1
-            if g.get('opp_slug'):
+            # i gol attesi costano i checkpoint settimanali del Poisson e il
+            # dataset partite_gol.json: chi vuole solo i segnali di ranking
+            # passa con_lambda=False e non paga niente di tutto questo
+            if con_lambda and g.get('opp_slug'):
                 lam_mio, lam_avv = sdg.gol_attesi(g.get('squadra'), g['opp_slug'],
                                                   quando, bool(g.get('in_casa')))
                 if lam_mio is not None:
