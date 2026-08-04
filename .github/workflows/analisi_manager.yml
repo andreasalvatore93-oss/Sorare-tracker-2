@@ -1,0 +1,68 @@
+name: Analisi Manager (smart money — pipeline unica)
+
+# Estrae arene + cacha game-log + analizza + aggrega, per una lista di manager
+# e di GW chiuse. Idempotente/cache-incrementale. Vedi analisi_manager/METODOLOGIA.md.
+on:
+  workflow_dispatch:
+    inputs:
+      manager:
+        description: "Slug manager separati da virgola (vuoto = tutti i 14 di default). Per estrarre/cachare solo i nuovi, metti solo i loro slug: l'analisi include comunque tutti."
+        required: false
+        default: ""
+      gw:
+        description: "GW da analizzare, formato gw:fine separati da virgola (vuoto = le 4 GW allineate di default)"
+        required: false
+        default: ""
+      commit_every:
+        description: "Committa la cache ogni N pick nuovi"
+        required: false
+        default: "25"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: analisi-manager
+  cancel-in-progress: false
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      - name: Pipeline
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          git config user.name "sorare-tracker-bot"
+          git config user.email "bot@users.noreply.github.com"
+          ARGS=""
+          if [ -n "${{ github.event.inputs.manager }}" ]; then ARGS="$ARGS --manager ${{ github.event.inputs.manager }}"; fi
+          if [ -n "${{ github.event.inputs.gw }}" ]; then ARGS="$ARGS --gw ${{ github.event.inputs.gw }}"; fi
+          python analisi_manager/pipeline_manager.py $ARGS --commit-every "${{ github.event.inputs.commit_every }}"
+
+      - name: Commit analisi + push robusto
+        if: always()
+        run: |
+          git add -A
+          git commit -m "analisi_manager: pipeline run (dati + report + aggregato)" || echo "niente da committare"
+          for i in 1 2 3 4 5; do
+            git push origin main && exit 0
+            echo "push #$i rifiutato, rebase e ritento..."
+            git pull --rebase origin main || git rebase --abort
+            sleep 5
+          done
+          echo "ATTENZIONE: push FALLITO dopo 5 tentativi"
