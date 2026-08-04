@@ -1,0 +1,101 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-04T19:52:22.417440Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) viljani-sinisalo: 43 pt attesi (34-69)
+   SQUADRA: celtic-glasgow | AVVERSARIO: kilmarnock-kilmarnock
+======================================================================
+
+######################################################################
+# GIOCATORE: viljani-sinisalo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: viljani-sinisalo (squadra: celtic-glasgow)
+Generato: 2026-08-04T19:52:22.416693Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 25
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: premiership-gb-sct (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-27 | LIV vs CEL | premiership-gb-sct | score=37.2 | peso=0.250
+  2026-03-01 | RAN vs CEL | premiership-gb-sct | score=36.3 | peso=0.281
+  2026-03-04 | ABE vs CEL | premiership-gb-sct | score=32.5 | peso=0.315
+  2026-03-14 | CEL vs MOT | premiership-gb-sct | score=40.1 | peso=0.354
+  2026-03-22 | DUU vs CEL | premiership-gb-sct | score=44.4 | peso=0.397
+  2026-04-05 | DUN vs CEL | premiership-gb-sct | score=37.6 | peso=0.445
+  2026-04-11 | CEL vs STM | premiership-gb-sct | score=69.5 | peso=0.500
+  2026-04-25 | CEL vs FAL | premiership-gb-sct | score=34.9 | peso=0.561
+  2026-05-03 | HIB vs CEL | premiership-gb-sct | score=38.0 | peso=0.630
+  2026-05-10 | CEL vs RAN | premiership-gb-sct | score=38.2 | peso=0.707
+  2026-05-13 | MOT vs CEL | premiership-gb-sct | score=18.0 | peso=0.794
+  2026-05-16 | CEL vs HEA | premiership-gb-sct | score=41.7 | peso=0.891
+  2026-08-03 | CEL vs DUN | premiership-gb-sct | score=72.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 43.16
+  di cui Punteggio decisivo (level_score) medio: 38.04 | Punteggio complessivo (granulari) medio: 5.13 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 39.49 (delta +1.46 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -1.52, delta avversario +0.56 | Possesso condizionato per venue: delta +0.11 | Goalkeeping condizionato per venue: delta -0.06 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 16.16
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.9 - 69.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.49 (differenza: +6.67)
+Media score in casa: 49.48 | Media score fuori casa: 34.86
+Fattore casa/trasferta applicato: 0.938 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.0
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 0.815 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 1.034
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.001
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.000
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.992
+Tasso storico clean sheet (porta inviolata nei primi 60'): 15.4% (bonus atteso incorporato nella media pesata: ~3.8pt)
+Fattore trend (media ultime 5: 43.5 vs media 5 PRECEDENTI: 45.6): 1.000
+P(gioca): 34.21% (fonte: tasso di presenza storico (13/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T12:30
+Casa: Kilmarnock FC | Trasferta: Celtic FC
+Competizione: premiership-gb-sct
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.6 (range 34.3 - 68.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 38.37
+Punteggio REALE ottenuto in quella partita: 72.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +34.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      32.5    69.5    +37.0     4.3        NO
+   7        7      64.7    34.9    -29.8    14.8        NO
+   8        8      42.3    38.0     -4.3    14.0        SI
+   9        9      47.6    38.2     -9.4    12.9        SI
+  10       10      33.9    18.0    -15.9    12.0        NO
+  11       11      46.6    41.7     -4.9    14.6        SI
+  12       12      49.6    72.5    +22.9    13.6        NO
+
+MAE (errore assoluto medio): 17.74
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 42.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
