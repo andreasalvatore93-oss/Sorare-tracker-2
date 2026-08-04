@@ -6,6 +6,9 @@ Riguardano SOLO come mi rapporto all'utente. Nessuna istruzione operativa sui to
 - Risposte **brevi e concise**. Niente wall of text, niente preamboli, niente riepiloghi non richiesti. Un solo token inutile = sessione interrotta.
 - Zero rimuginamenti, zero divagazioni, zero opzioni che non seguirò.
 - Italiano.
+- Orari: utente su fuso Roma (CET/CEST). Ogni riferimento temporale in chat o
+  nei file va dato nell'ora di Roma (indicando anche l'UTC fra parentesi se
+  serve precisione tecnica), mai solo in UTC.
 
 ## Priorità
 1. Velocità di esecuzione (run e debug).
