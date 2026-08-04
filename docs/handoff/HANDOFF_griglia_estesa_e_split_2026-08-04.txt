@@ -1,0 +1,229 @@
+HANDOFF — griglia estesa + isolamento campione/canale (Parti 1/2/3 fatte, Parte 4 NON fatta)
+Data: 2026-08-04
+Segue: HANDOFF_banco_e_rimisura_2026-08-04.txt
+Branch: ritaratura-fattori
+
+
+====================================================================
+1. STATO DEL REPO
+====================================================================
+
+Branch: ritaratura-fattori. Push del turno precedente CONFERMATO su remoto
+prima di iniziare (`git fetch` + confronto hash: origin/ritaratura-fattori
+= 6e2b152243, identico a HEAD locale di allora). Nessun problema di push
+in questa sessione, nessun timeout incontrato.
+
+Nessuna modifica a formazione_mls/predict/*. Nessuna propagazione. Parte 4
+(split casa/trasferta) NON iniziata per tempo, come esplicitamente concesso
+dal brief.
+
+File modificati preesistenti (non miei, invariati): RIASSUNTO_2026-08-04.md,
+docs/BOT_CERBERO_PROGETTO.md, docs/RIASSUNTO_CERBERO.md.
+
+
+====================================================================
+2. PERCHE' ESISTEVA QUESTO LAVORO
+====================================================================
+
+La sessione precedente aveva trovato k vincenti per DEF (0.5) e GK (0.5)
+sul BORDO della griglia testata (0-0.5), e aveva confrontato quei numeri
+con B.4 su campioni di dimensione diversa (400 slug vs popolazione intera)
+senza isolare se lo spostamento del k fosse dovuto al canale avversario
+riacceso o solo alla dimensione campionaria. Questo brief chiedeva di
+chiudere entrambe le cose prima di qualunque raccomandazione.
+
+
+====================================================================
+3. COSA HO COSTRUITO O TOCCATO
+====================================================================
+
+Nessuna modifica permanente al codice in questa sessione (solo script
+scratch, funzioni esistenti, nessuna formula riscritta):
+
+  parte2_griglia_estesa.py        DEF/MID, griglia estesa a 0.7-3.0, 400 slug
+  parte2_gk_esteso.py             GK, griglia estesa a 0.7-3.0, cache intera
+  parte3_spento_stesso_campione.py  tutti e 4 i ruoli, stessa griglia (base+
+                                   estesa), STESSO campione 400 slug,
+                                   usa_avversario=False
+  parte3_full_def_mid_gkspento.py  DEF/MID acceso e GK spento sulla cache
+                                   INTERA (25.738/24.478/6.118 punti, stessi
+                                   n della popolazione usata da B.4), per il
+                                   confronto definitivo a parita' di campione
+
+
+====================================================================
+4. OUTPUT NUMERICO INTEGRALE
+====================================================================
+
+4.A PARTE 2 — la griglia trova un massimo vero, nessun ruolo scappa oltre k=1
+
+  MID (400 slug, esteso 0.7-3.0): corr sale fino a k=0.3 (0.2185), poi
+  scende MONOTONA a 0.5/0.7/1/1.5/2/3. Nessun bordo: k=0.3 e' un massimo
+  interno gia' alla prima estensione.
+
+  DEF (400 slug, esteso 0.7-3.0): corr massima a k=0.5 (0.2051), poi scende
+  a 0.7 (0.1999) e oltre. MAE e lift peggiorano gia' rispetto a k=0.3 da
+  k=0.5 in poi. Massimo interno trovato, nessuna fuga.
+
+  GK (cache intera, esteso 0.7-3.0): corr continua a salire lentamente fino
+  a k=1.5 (0.1222) ma MAE peggiora gia' da k=0.7 e lift da k=0.5. Contro
+  la baseline (k=0), l'ultima riga che passa TUTTE E TRE le misure insieme
+  e' k=0.7 (corr 0.1188, MAE ancora migliore della baseline, lift ancora
+  migliore). k=1.0 fallisce sul MAE. Nessuna fuga oltre k=1: fermato,
+  nessun segnale d'allarme da riportare (il brief chiedeva di segnalarlo
+  se fosse successo).
+
+4.B PARTE 3 — l'esperimento decisivo, fatto BENE solo a campione pieno
+
+  Prima prova (400 slug, spento vs acceso, stesso campione):
+    MID: k vincente 0.3 in ENTRAMBE le condizioni (dcorr spento +0.0119,
+         acceso +0.0152) -- stesso k, suggerirebbe "e' il campione"
+    DEF: k vincente 0.2 spento vs 0.5 acceso -- k diverso, suggerisce
+         "e' il canale"
+    GK:  su 400 slug il lift non e' MAI definito (troppe poche giornate
+         qualificate), quindi la regola PASSA non puo' mai attivarsi ne'
+         spento ne' acceso: il confronto a 400 slug e' INCONCLUDENTE per GK
+
+  Il caso MID e' un falso segnale: confrontando poi lo SPENTO-400-slug
+  (k=0.3, dcorr+0.0119) con lo SPENTO-CACHE-INTERA (= B.4 originale, k=0.05,
+  dcorr+0.0021) risulta che GIA' lo spento cambia k a seconda della
+  dimensione campionaria. Quindi il test "stesso k su 400 slug in entrambe
+  le condizioni" non prova affatto "e' il campione": prova solo che 400
+  slug sono troppo pochi per essere stabili in generale, indipendentemente
+  dal canale. Il confronto onesto va fatto SOLO a campione pieno.
+
+  CONFRONTO DEFINITIVO, campione pieno (stessa popolazione usata da B.4):
+
+  RUOLO  spento (=B.4 originale)         acceso (mls, campione pieno)        k si sposta?  corr assoluta finale
+  DEF    k=0.3  dcorr+0.0122  corr=0.2032   n=25.738   k=0.5  dcorr+0.0269  corr=0.2032   n=25.738   SI (0.3->0.5)   IDENTICA (0.2032=0.2032)
+  MID    k=0.05 dcorr+0.0021  corr=0.2505*  n=24.478   k=0.3  dcorr+0.0084  corr=0.2568   n=24.478   SI (0.05->0.3)  acceso PIU' ALTA
+  GK     k=0.5  dcorr+0.0428  corr=0.1135   n=6.118    k=0.7  dcorr+0.0442  corr=0.1188   n=6.118    poco (0.5->0.7) acceso leggermente PIU' ALTA
+
+  (*MID spento: 0.2484+0.0021=0.2505, dalla riga k=0.05 del banco B.4
+  originale gia' pubblicato nell'handoff screening_segnali_B4)
+
+  LETTURA 3.3 per ruolo (non e' una risposta unica, e' per ruolo):
+    DEF: il k SI SPOSTA anche a campione pieno identico -> LA CAUSA E' IL
+         CANALE (confermato), ma la correlazione ASSOLUTA finale raggiunta
+         e' IDENTICA nei due percorsi (0.2032). Il canale acceso peggiora
+         la base (0.1763 vs 0.191 spento) e il ranking a k piu' alto la
+         recupera esattamente allo stesso punto, non oltre. La 5.2
+         dell'handoff precedente ("il banco rotto sottostimava DEF")
+         era una LETTURA ECCESSIVA basata solo sul campione da 400 slug:
+         a campione pieno DEF non guadagna di piu' col canale acceso,
+         arriva solo allo stesso posto con un k diverso.
+    MID: il k SI SPOSTA anche a campione pieno -> LA CAUSA E' IL CANALE
+         (confermato, non il campione come il test a 400 slug suggeriva
+         erroneamente). Qui il guadagno e' REALMENTE piu' alto con canale
+         acceso (corr 0.2568 vs 0.2505, +0.0063 assoluti in piu'): la 5.2
+         precedente era corretta per MID, anche se il numero esatto (6x)
+         non era affidabile sul campione piccolo.
+    GK:  spostamento minimo di k (0.5->0.7), guadagno quasi identico
+         (+0.0428 vs +0.0442): il canale non cambia sostanzialmente la
+         storia per GK.
+
+4.C RIEPILOGO k RACCOMANDATI (campione pieno, canale acceso, lega=mls)
+
+  RUOLO  k       corr assoluta   dcorr vs baseline-acceso   note
+  FWD    0.2     (non rimisurato a campione pieno, solo 400 slug: corr
+                  0.2416, dcorr+0.0106 -- vedi 5.4)
+  MID    0.3     0.2568          +0.0084                    confermato campione pieno
+  DEF    0.5     0.2032          +0.0269                    confermato campione pieno, ma vedi 4.B (pari a B.4 spento in assoluto)
+  GK     0.7     0.1188          +0.0442                    confermato campione pieno, quasi = B.4
+
+
+====================================================================
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+====================================================================
+
+5.1 LA CONCLUSIONE PRECEDENTE SU DEF ERA TROPPO FORTE
+
+L'handoff precedente (5.2) diceva "il banco rotto sottostimava MID e DEF
+[...] il numero vero e' piu' alto, non piu' basso" per entrambi. A
+campione pieno questo resta vero per MID ma NON per DEF: DEF arriva
+esattamente alla stessa correlazione assoluta (0.2032) sia partendo da
+spento+ranking(k=0.3) sia da acceso+ranking(k=0.5). Il canale cambia il
+PERCORSO (parte da piu' in basso, serve piu' ranking per recuperare) ma
+non il RISULTATO finale su questo campione. Correggo qui l'affermazione
+precedente: era basata solo sul campione da 400 slug, che per DEF dava un
+quadro esagerato.
+
+5.2 MID E' IL RUOLO DOVE IL CANALE DAVVERO AGGIUNGE, NON SOLO SPOSTA
+
+Confermato a campione pieno: 0.2568 (acceso) contro 0.2505 (spento), un
+guadagno assoluto reale di +0.0063 di correlazione che non c'era prima.
+E' il caso piu' solido di questa sessione per giustificare "il banco rotto
+nascondeva segnale vero".
+
+5.3 GK CONTINUA A REGGERE, CAMBIA POCO
+
+Gia' verificato su split temporale nella sessione precedente (segno
+stabile). Qui si aggiunge: il canale acceso non stravolge il numero
+(+0.0442 vs +0.0428 spento), solo lo shift-a k leggermente piu' alto
+(0.5->0.7). E' il ruolo piu' stabile fra i tre misurati a fondo.
+
+5.4 FWD NON E' STATO RIMISURATO A CAMPIONE PIENO CON IL CANALE ACCESO
+
+Il brief diceva "FWD ha gia' un massimo interno, non serve estenderlo" per
+la Parte 2 (griglia), ma questo NON copre la Parte 3 (campione vs canale):
+quella verifica per FWD resta fatta solo su 400 slug (handoff precedente),
+non su campione pieno. Non l'ho rifatta perche' il brief non la nominava
+esplicitamente fra le priorita' (3.4 nomina solo "almeno DEF e MID") e il
+tempo era limitato. Resta un buco: il k=0.2 raccomandato per FWD ha lo
+stesso livello di verifica di quello poi corretto per DEF (5.1) -- va
+trattato con la stessa cautela finche' non si rifa' a campione pieno.
+
+5.5 CAVEAT INVARIATO: CONTAMINAZIONE domesticLeagueRanking
+
+Non toccata. Vale ancora per tutti i numeri di questa sezione (handoff
+precedente, sez. 4.C/5.5).
+
+5.6 PARTE 4 NON FATTA
+
+Split casa/trasferta non misurato, come nella sessione precedente. Andra'
+fatta con i k di 4.C (DEF 0.5, MID 0.3, GK 0.7 -- non i vecchi k di B.4) e
+canale acceso, lega corretta.
+
+
+====================================================================
+6. DECISIONE APERTA — raccomandazione secca
+====================================================================
+
+Risposta a "il k si sposta per il canale o per il campione": PER IL
+CANALE, su tutti e tre i ruoli verificati a campione pieno (DEF, MID, GK).
+Il test iniziale a 400 slug che sembrava indicare "campione" per MID era
+un artefatto della stessa instabilita' campionaria, non una risposta
+valida -- 400 slug sono troppo pochi per fidarsi del k vincente su
+qualunque ruolo, indipendentemente dal canale.
+
+k raccomandato per ruolo (canale acceso, lega=mls, quando si arrivera' in
+produzione -- QUESTA SESSIONE NON PORTA NULLA IN PRODUZIONE):
+  MID  k=0.3   -- il caso piu' solido: guadagno assoluto reale (+0.0063
+                  oltre lo spento), confermato a campione pieno (24.478 pt).
+  GK   k=0.7   -- confermato a campione pieno (6.118 pt) e su split
+                  temporale (sessione precedente): guadagno stabile
+                  (+0.044), leggermente piu' alto di B.4 (+0.043) allo
+                  stesso ordine di grandezza.
+  DEF  k=0.5   -- confermato a campione pieno che il k si sposta per il
+                  canale, MA il risultato finale (corr 0.2032) e'
+                  IDENTICO a quello gia' raggiungibile con lo spento+
+                  ranking(k=0.3) di B.4: nessun guadagno assoluto NUOVO,
+                  solo un percorso diverso per arrivare allo stesso posto.
+  FWD  k=0.2 (provvisorio) -- NON verificato a campione pieno (5.4), stesso
+                  livello di cautela che DEF aveva prima di questa verifica.
+
+Prima di produzione mancano: Parte 4 (split, si sovrappone col ranking),
+la verifica FWD a campione pieno (5.4), e una decisione su come trattare
+la contaminazione nota del ranking (5.5) -- nessuna delle tre e' stata
+affrontata qui.
+
+
+====================================================================
+7. FILE DI RIFERIMENTO
+====================================================================
+
+BRIEF_2026-08-04_griglia_estesa_e_split.txt (Downloads, non nel repo)
+docs/handoff/HANDOFF_banco_e_rimisura_2026-08-04.txt        numeri precedenti da correggere (5.1)
+docs/handoff/HANDOFF_verifica_canale_avversario_2026-08-04.txt
+docs/handoff/HANDOFF_screening_segnali_B4_2026-08-04.txt    k originali B.4, numeri di riferimento
+backtest_arene_previsioni.py                                 calcola/contesto (invariato in questa sessione)
