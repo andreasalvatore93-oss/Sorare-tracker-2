@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-04T16:04:09.503942Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) carlos-miguel-harvey-cesneros: 48 pt attesi (32-68)
+   SQUADRA: minnesota-united-minneapolis-saint-paul-minnesota | AVVERSARIO: juarez-ciudad-juarez-chihuahua
+======================================================================
+
+######################################################################
+# GIOCATORE: carlos-miguel-harvey-cesneros
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: carlos-miguel-harvey-cesneros (squadra: minnesota-united-minneapolis-saint-paul-minnesota)
+Generato: 2026-08-04T16:04:09.483521Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 44
+Escluse (DID_NOT_PLAY): 19
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | MIN vs RAP | mlspa | score=50.5 | peso=0.717
+  2025-08-17 | MIN vs SEA | mlspa | score=68.2 | peso=0.737
+  2025-09-09 | ? vs ? | wc-qualification-concacaf | score=72.9 | peso=0.758
+  2025-11-14 | ? vs ? | wc-qualification-concacaf | score=44.0 | peso=0.779
+  2025-11-19 | ? vs ? | wc-qualification-concacaf | score=75.5 | peso=0.801
+  2025-11-25 | SD vs MIN | mlspa | score=40.1 | peso=0.824
+  2026-03-27 | ? vs ? | friendlies | score=52.9 | peso=0.847
+  2026-03-31 | ? vs ? | friendlies | score=41.8 | peso=0.871
+  2026-05-31 | ? vs ? | friendlies | score=63.2 | peso=0.895
+  2026-06-06 | ? vs ? | friendlies | score=35.0 | peso=0.920
+  2026-06-17 | ? vs ? | global-cup | score=31.9 | peso=0.946
+  2026-06-23 | ? vs ? | global-cup | score=31.0 | peso=0.973
+  2026-06-27 | ? vs ? | global-cup | score=35.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 48.35
+  di cui Punteggio decisivo (level_score) medio: 40.40 | Punteggio complessivo (granulari) medio: 7.95 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 42.48 (delta +2.08)
+  Efficacia offensiva condizionata: delta venue +0.81, delta avversario +0.22 | Passaggio condizionato: delta venue +0.46, delta avversario +0.09 | Gol subiti condizionato: delta venue -0.04, delta avversario +0.31 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.17
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.9 - 68.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.37 (differenza: +1.80)
+Media score in casa: 59.35 | Media score fuori casa: 40.10
+Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.0
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 1.245 (gol subiti reali dell'avversario, ultime 10)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.862
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.006
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore trend (media ultime 5: 39.0 vs media 5 PRECEDENTI: 50.7): 1.000
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-05T00:30
+Casa: Minnesota United | Trasferta: FC Juárez
+Competizione: leagues-cup-mls
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.3 (range 31.8 - 68.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.65
+Punteggio REALE ottenuto in quella partita: 35.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      58.4    52.9     -5.5    15.8        SI
+   7        7      57.5    41.8    -15.7    14.6        NO
+   8        8      55.4    63.2     +7.8    14.8        SI
+   9        9      56.3    35.0    -21.3    14.2        NO
+  10       10      53.9    31.9    -22.0    15.3        NO
+  11       11      51.6    31.0    -20.6    16.3        NO
+  12       12      49.6    35.3    -14.3    16.8        SI
+
+MAE (errore assoluto medio): 15.35
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 42.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
