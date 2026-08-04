@@ -1,0 +1,98 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T22:14:42.186935Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) mislav-orsic: 51 pt attesi (35-77)
+   ORDINAMENTO: 51.65
+   SQUADRA: dinamo-zagreb-zagreb | AVVERSARIO: rijeka-rijeka
+======================================================================
+
+######################################################################
+# GIOCATORE: mislav-orsic
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mislav-orsic (squadra: dinamo-zagreb-zagreb)
+Generato: 2026-08-04T22:14:42.186016Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 18
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: 1-hnl (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-05 | DYN vs PFC | uefa-champions-league | score=35.0 | peso=0.315
+  2025-08-12 | PFC vs DYN | uefa-champions-league | score=70.0 | peso=0.354
+  2025-08-26 | PFC vs CZV | uefa-champions-league | score=37.0 | peso=0.397
+  2025-09-30 | PFC vs BAY | uefa-champions-league | score=64.6 | peso=0.445
+  2025-10-21 | KAI vs PFC | uefa-champions-league | score=45.1 | peso=0.500
+  2025-11-05 | PFC vs VIL | uefa-champions-league | score=39.5 | peso=0.561
+  2025-11-26 | PFC vs ASM | uefa-champions-league | score=87.2 | peso=0.630
+  2025-12-10 | JUV vs PFC | uefa-champions-league | score=46.7 | peso=0.707
+  2026-01-21 | CHE vs PFC | uefa-champions-league | score=41.9 | peso=0.794
+  2026-01-28 | PFC vs SLA | uefa-champions-league | score=81.5 | peso=0.891
+  2026-07-21 | FCT vs DIN | uefa-champions-league | score=46.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 55.29
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=11): 54.40 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 45.68 | Punteggio complessivo (granulari) medio: 9.61 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 5.51 (delta -0.17) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.80
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.5 - 81.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.08 (differenza: +2.72)
+Media score in casa: 63.30 | Media score fuori casa: 42.17
+Fattore casa/trasferta applicato: 0.994 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.4
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.764 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.952
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.006
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 60.8 vs media 5 PRECEDENTI: 51.2): 1.000
+P(gioca): 61.11% (fonte: tasso di presenza storico (11/18))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T00:00
+Casa: HNK Rijeka | Trasferta: GNK Dinamo Zagreb
+Competizione: 1-hnl
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.3 (range 35.5 - 77.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 51.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.81
+Punteggio REALE ottenuto in quella partita: 46.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -10.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      56.4    87.2    +30.8    15.0        NO
+   7        7      60.2    46.7    -13.5    22.4        SI
+   8        8      64.8    41.9    -22.9    20.6        NO
+   9        9      52.3    81.5    +29.2    19.5        NO
+  10       10      56.8    46.8    -10.0    21.8        SI
+
+MAE (errore assoluto medio): 21.28
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 40.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
