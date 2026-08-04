@@ -249,6 +249,38 @@ riprende il filone backtest.
   il danno è FUORI dallo slot (fascia capitano, quale competizione, soglie
   d'ingresso), dove numeri di ruoli diversi si confrontano. Non risolto,
   misurato e documentato.
+- **Piattezza del punto = VERITÀ del dato, non difetto del modello** (diagnosi
+  04/08, tutta su dati locali `dati_globali/errore_storico.json` 2690 partite
+  + walk-forward 87k oss, nessun rerun). Nata dall'osservazione utente "le
+  formazioni sembrano tutte identiche, gli attesi sono tutti 47-52 / 50-60".
+  Cinque misure, tutte concordi:
+  1. Spearman(atteso,reale) per ruolo 0.17 (GK 0.084, il peggiore) — BATTE
+     l'L10 grezzo (0.13), quindi il modello ordina davvero, ma la varianza
+     predicibile del voto è ~3% (il resto è rumore di singola partita).
+  2. Lift di selezione REALE grande: quintile-alto vs basso di atteso →
+     +11.5 pt reali (FWD +11, GK +6.5), boom(>75) 22.9% vs 9.9%, flop(<25)
+     0.9% vs 7.1%. **L'edge del modello è enorme negli ESITI, ma invisibile
+     nel numero** (std previsto ~4 contro std reale ~19). Il numero medio
+     appiattisce un ordinamento che invece funziona.
+  3. Screening segnali (`screening_segnali.json`, 73k partite, sessione
+     mattina 04/08): il residuo (reale−atteso) è predicibile a R²=0.008. Unico
+     segnale forte = starter_odds (corr 0.163) ma è già usato come filtro a
+     monte. Casa +1.9pt, rank avversario, favorito: tutti già dentro o nulli.
+     **Non c'è segnale-media libero da aggiungere con le feature disponibili.**
+  4. Calibrazione OLS reale=a+b·atteso: b<1 per DEF/MID/GK (0.72/0.71/0.58),
+     b=1.15 solo FWD. Cioè per 3 ruoli su 4 il punto è già leggermente
+     SOVRA-disperso: **espandere i numeri per "differenziare" li allontana dal
+     realizzato, peggiora. NON farlo.**
+  5. Range/dispersione per-giocatore NON calibrato (walk-forward 87k): pred_std
+     va da 7 a 22, ma |errore| reale resta 15-17 piatto e boom% non si muove
+     (GK addirittura invertito). **Il range mostrato nel report è decorativo,
+     non usarlo come segnale di volatilità/boom.**
+  Conclusione operativa: fra i probabili titolari (= ciò che il generatore
+  schiera, `p_gioca` rimosso da score_atteso il 28/07) i giocatori SONO quasi
+  equivalenti in attesa, ed è la verità del calcio. L'unico differenziatore
+  affidabile è la MEDIA atteso, che ordina anche i boom. Non esiste un modo
+  onesto di farli sembrare più diversi migliorando la formula. **Chiuso:
+  inseguire "più differenziazione del punto" è un vicolo cieco dimostrato.**
 - **Bonus additivi vs moltiplicativi**: chiuso, la formula additiva è
   verificata al centesimo (§3).
 - **Quote bookmaker come segnale**: CHIUSO su decisione utente 02/08 —
@@ -287,12 +319,33 @@ previsione**, non le regole di decisione (tutte misurate e chiuse, §5).
 
 ## 7. Da dove ripartire — il filone aperto
 
-**Scomporre l'errore di previsione** (per ruolo, per lega, per fascia di
-punteggio, per profondità di storico) per trovare dove si concentra e
-attaccare quello — deciso con l'utente il 04/08 come prossimo passo.
-`taratura_confronto_parametri.py` e la regola **MAE + correlazione + lift di
-selezione insieme** (mai uno solo, vedi CLAUDE.md) restano il metro per
-validare qualunque modifica.
+**La scomposizione dell'errore è FATTA (04/08, vedi §5 "Piattezza = verità").**
+Esito: il punto-previsione è al **soffitto informativo** delle feature nel
+repo — residuo a R²=0.008, range non calibrato, punto già sovra-disperso per
+3 ruoli su 4. Non inseguire più differenziazione/precisione del punto: è
+dimostrato vicolo cieco. `taratura_confronto_parametri.py` e la regola **MAE +
+correlazione + lift insieme** restano il metro se si tocca un parametro.
+
+**L'unica leva orthogonale ancora aperta — da decidere con l'utente:**
+quando le medie-formazione sono ~pari (caso reale: run #118, 12 arene tutte
+strette fra 265 e 293 pt, tutte appena sopra il pareggio 265), la scelta non
+si gioca più sulla MEDIA (satura) ma su **varianza e correlazione del totale
+formazione**. Dato nuovo 04/08: i residui di compagni di **stessa squadra**
+sono correlati +0.178 (stessa partita +0.122) → stackare la stessa squadra
+alza la varianza del totale (boom/flop insieme). Il §5 "premio atteso = punti
+attesi" chiudeva il caso "sacrificare media per varianza"; **NON** il caso "a
+media pari, cercare varianza dove il premio è convesso (arena top-3 di 10) o
+ridurla dove serve regolarità (leaderboard)" — lì è un guadagno GRATIS, non
+si perde media. Va MISURATO sulle arene reali (`arene_storico.json` +
+`arene_formazioni.json`) prima di agire: probabilmente piccolo (σ totale 49.4
+è grande), ma è l'ultima cosa non testata. Non riaprire `pick_captain()`/
+regole di allocazione: quelle restano chiuse (§5).
+
+**Dove sta invece il segnale predicibile vero**: NON nel separare meglio i
+titolari, ma a MONTE, nella DISPONIBILITÀ (starter_odds = 0.163, il segnale
+più forte di tutti, già gestito come filtro) e nella scelta di QUALI
+competizioni giocare. Più segnale di così richiederebbe dati NON nel repo
+(minutaggio/lineup certi, xG tiro-a-tiro), non una formula migliore.
 
 Piste secondarie aperte, non urgenti:
 - **Manager avversari come banco di prova più grande**: `forever-young` già
