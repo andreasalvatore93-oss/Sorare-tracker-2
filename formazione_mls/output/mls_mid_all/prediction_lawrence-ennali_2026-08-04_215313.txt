@@ -1,0 +1,120 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-04T21:53:13.256432Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) lawrence-ennali: 51 pt attesi (37-70)
+   SQUADRA: houston-dynamo-houston-texas | AVVERSARIO: new-england-foxborough-massachusetts
+======================================================================
+
+######################################################################
+# GIOCATORE: lawrence-ennali
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: lawrence-ennali (squadra: houston-dynamo-houston-texas)
+Generato: 2026-08-04T21:53:13.253181Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 27
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-31 | STL vs HOU | mlspa | score=37.2 | peso=0.559
+  2025-09-07 | HOU vs LA | mlspa | score=51.8 | peso=0.574
+  2025-09-14 | RAP vs HOU | mlspa | score=68.5 | peso=0.590
+  2025-09-21 | HOU vs POR | mlspa | score=75.7 | peso=0.607
+  2025-09-28 | NSH vs HOU | mlspa | score=70.1 | peso=0.624
+  2025-10-05 | HOU vs SD | mlspa | score=67.1 | peso=0.642
+  2025-10-19 | SKC vs HOU | mlspa | score=29.3 | peso=0.660
+  2026-02-22 | HOU vs CHI | mlspa | score=51.0 | peso=0.678
+  2026-03-01 | HOU vs LAFC | mlspa | score=43.0 | peso=0.697
+  2026-03-15 | HOU vs POR | mlspa | score=44.5 | peso=0.717
+  2026-03-22 | DAL vs HOU | mlspa | score=73.2 | peso=0.737
+  2026-04-05 | HOU vs SEA | mlspa | score=41.2 | peso=0.758
+  2026-04-12 | RAP vs HOU | mlspa | score=66.2 | peso=0.779
+  2026-04-18 | ORL vs HOU | mlspa | score=42.8 | peso=0.801
+  2026-04-26 | ATX vs HOU | mlspa | score=34.9 | peso=0.824
+  2026-05-03 | HOU vs RAP | mlspa | score=71.5 | peso=0.847
+  2026-05-11 | LAFC vs HOU | mlspa | score=83.6 | peso=0.871
+  2026-05-17 | HOU vs VAN | mlspa | score=42.5 | peso=0.895
+  2026-05-24 | LA vs HOU | mlspa | score=38.3 | peso=0.920
+  2026-07-23 | HOU vs DC | mlspa | score=42.2 | peso=0.946
+  2026-07-26 | HOU vs ATX | mlspa | score=43.3 | peso=0.973
+  2026-08-02 | SKC vs HOU | mlspa | score=51.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 52.66
+  di cui Punteggio decisivo (level_score) medio: 44.05 | Punteggio complessivo (granulari) medio: 8.61 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 45.94 (delta +1.89)
+  Efficacia offensiva condizionata: delta venue -0.05, delta avversario -0.11 | Passaggio condizionato: delta venue -0.34, delta avversario -0.18 | Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.28
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.3 - 71.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.34 (differenza: +1.95)
+Media score in casa: 52.16 | Media score fuori casa: 54.13
+Fattore casa/trasferta applicato: 1.004 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.9
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.886 (gol subiti reali dell'avversario, ultime 10)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.798
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.994
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore trend (media ultime 5: 43.6 vs media 5 PRECEDENTI: 60.2): 1.000
+P(gioca): 81.48% (fonte: tasso di presenza storico (22/27))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T20:30
+Casa: New England Revolution | Trasferta: Houston Dynamo FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.1 (range 36.7 - 69.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.74
+Punteggio REALE ottenuto in quella partita: 51.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -1.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      75.0    29.3    -45.7    14.2        NO
+   7        7      46.8    51.0     +4.2    18.5        SI
+   8        8      43.5    43.0     -0.5    17.3        SI
+   9        9      55.1    44.5    -10.6    16.9        SI
+  10       10      49.0    73.2    +24.2    16.3        NO
+  11       11      58.2    41.2    -17.0    16.8        NO
+  12       12      59.2    66.2     +7.0    16.6        SI
+  13       13      58.1    42.8    -15.3    16.3        SI
+  14       14      64.0    34.9    -29.1    16.1        NO
+  15       15      57.6    71.5    +13.9    16.5        SI
+  16       16      40.6    83.6    +43.0    16.7        NO
+  17       17      42.3    42.5     +0.2    18.2        SI
+  18       18      62.0    38.3    -23.7    18.0        NO
+  19       19      56.4    42.2    -14.2    18.0        SI
+  20       20      64.8    43.3    -21.5    17.7        NO
+  21       21      63.6    51.3    -12.3    17.3        SI
+
+MAE (errore assoluto medio): 17.65
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 56.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
