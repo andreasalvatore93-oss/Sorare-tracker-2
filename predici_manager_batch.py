@@ -80,11 +80,33 @@ def _gamelog_su_disco(slug):
 
 
 def commit(msg):
+    """Commit E PUSH incrementale: cosi' se la run viene interrotta la cache
+    gia' fatta e' gia' su origin e un re-run (idempotente) riprende da li'.
+    Push robusto (pull --rebase + retry) per convivere con push concorrenti
+    (Cerbero bot, altre sessioni). Se il push fallisce non e' fatale: lo step
+    finale del workflow ritenta comunque."""
     subprocess.run(['git', 'add', '-A'], cwd=REPO, check=False)
     r = subprocess.run(['git', 'commit', '-m', msg], cwd=REPO,
                        capture_output=True, text=True)
-    if r.returncode == 0:
-        log(f"  [git] commit: {msg}")
+    if r.returncode != 0:
+        return
+    log(f"  [git] commit: {msg}")
+    # push solo se siamo in CI (sul runner) o comunque se c'e' un remote:
+    for _ in range(4):
+        p = subprocess.run(['git', 'push', 'origin', 'HEAD'], cwd=REPO,
+                           capture_output=True, text=True)
+        if p.returncode == 0:
+            log("  [git] push ok")
+            return
+        subprocess.run(['git', 'pull', '--rebase', 'origin',
+                        _branch()], cwd=REPO, capture_output=True, text=True)
+    log("  [git] push incrementale non riuscito (ritentera' lo step finale)")
+
+
+def _branch():
+    r = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=REPO,
+                       capture_output=True, text=True)
+    return (r.stdout or 'main').strip() or 'main'
 
 
 def main():
