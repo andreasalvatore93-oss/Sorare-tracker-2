@@ -281,6 +281,50 @@ premi per fascia di rank delle competizioni a classifica (quali posizioni
 prendono cosa). Non le abbiamo: senza, il lato "classifiche grandi" resta
 misurato con un surrogato invece che in premi veri.
 
+## HEADROOM DI TUTTE LE DECISIONI (04/08 notte) — DOVE SONO I SOLDI
+
+Scelto dall'utente dopo il capitano. Stesso metro (pavimento/caso/attuale/
+oracolo) applicato a TUTTE le decisioni invece che solo al capitano, nella
+stessa moneta: **essenze per arena**, su 443 arene reali dell'utente col
+campo vero da 10 punteggi e i premi veri (`E.piazzamento`/`E.premio`,
+nessuna modellazione). Script: `formazione_mls/diagnostics/headroom_decisioni.py`.
+
+```
+                    PAVIMENTO    CASO   ATTUALE  ORACOLO   MARGINE RESIDUO
+  1. INGRESSO         -150.8      7.3     19.4     165.3        +145.9
+  2. CARTE            -217.4     -3.5     14.8     580.5        +565.6
+  3. CAPITANO          -10.2      9.9     14.6      30.0         +15.5
+```
+
+**IL RISULTATO**: la scelta delle CARTE ha ~36 volte il margine del
+capitano, la decisione d'INGRESSO ~9 volte. Il capitano non era un filone
+sfortunato: era il piu' piccolo dei tre, e ci abbiamo speso due sessioni.
+
+**Cautele, da non dimenticare quando si usera' questo numero**:
+- L'oracolo e' chiaroveggente e gonfiato dalla fortuna (massimo su tante
+  alternative rumorose), tanto piu' quanto piu' e' grande il pool: per le
+  CARTE si sceglie fra ~49 carte, quindi +565 e' un limite superiore molto
+  largo, non un obiettivo. Vale il confronto RELATIVO fra decisioni, non il
+  valore assoluto.
+- Tutti gli IC su "guadagnato sul caso" includono lo zero (n=443, premi a
+  scatti): in essenze non possiamo dimostrare che le regole attuali battano
+  il caso. Non e' una bocciatura, e' poca potenza statistica.
+- Due bug trovati e corretti nel primo tentativo su CARTE (il campione di
+  combinazioni non era casuale ma ordinato per punteggio; il pool mescolava
+  carte fra tipi di arena diversi, permettendo un fuoriclasse da uncapped
+  dentro una Beginner). I numeri sopra sono quelli dopo la correzione.
+
+## FORMAZIONE COSTRUITA PER IL CAPITANO — CHIUSA, nulla
+
+Seconda scelta dell'utente. Ipotesi: siccome il capitano moltiplica UNA
+carta, a parita' di budget (il cap L10) conviene concentrarlo su un
+fuoriclasse + 4 riempitivi invece di 5 carte equivalenti? Misurato solo
+sulle arene CON cap (senza tetto non c'e' compromesso) e solo sulle
+formazioni che usano >=90% del budget, correlazione fra concentrazione
+(L10 della carta piu' forte / somma L10) e punteggio reale, mediata per
+arena: **-0.006, IC95% [-0.029,+0.018], 51% di arene positive**. Zero
+perfetto. Concentrare o spalmare e' indifferente.
+
 ### Cosa resta DAVVERO non testato (in ordine di valore atteso)
 1. **L'obiettivo è sbagliato**: misuriamo punti, ma il premio dell'arena è
    una funzione a gradini del RANK. Con un payoff a soglia la varianza ha

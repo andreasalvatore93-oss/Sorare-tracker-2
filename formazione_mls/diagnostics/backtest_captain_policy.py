@@ -209,10 +209,9 @@ def calcola_previsioni(cache, fine, formazioni):
             continue
 
         candidati = []
+        carte_tutte = []
         ok = True
         for g in f['giocatori']:
-            if g['ruolo'] == 'Goalkeeper':
-                continue
             r = _reale(g)
             if r is None:
                 ok = False
@@ -221,6 +220,15 @@ def calcola_previsioni(cache, fine, formazioni):
             if pred is None:
                 ok = False
                 break
+            # tutte e 5 le carte, portiere compreso: servono a
+            # headroom_decisioni.py per la scelta delle carte (l10 = il
+            # valore che consuma il cap dell'arena) e per la decisione
+            # d'ingresso (atteso totale della formazione).
+            carte_tutte.append({'slug': g['slug'], 'ruolo': g['ruolo'],
+                                'nome': g['nome'], 'atteso': pred['atteso'],
+                                'reale': r, 'l10': pred.get('l10')})
+            if g['ruolo'] == 'Goalkeeper':
+                continue
             ctx = P.contesto(cache, g['slug'], g['ruolo'], fd, cutoff)
             opp_rank = ctx.get('opp_rank') if ctx else None
             gol_tot = None
@@ -251,7 +259,8 @@ def calcola_previsioni(cache, fine, formazioni):
             base += r
             somma_grezza += g['punteggio']
 
-        risultati.append({'candidati': candidati, 'fonte': f['fonte'],
+        risultati.append({'candidati': candidati, 'carte_tutte': carte_tutte,
+                          'fonte': f['fonte'], 'fixture': fixture,
                           'competizione': f.get('competizione'),
                           'slug_arena': f.get('slug_arena'),
                           'rank_reale': f.get('rank_reale'),
