@@ -50,6 +50,13 @@ GRUPPO_A_SLUG = {
 }
 
 
+def e_trasversale_only(row):
+    """True se la riga osservazione e' 'trasversale_only' (b2): niente asse temporale,
+    da escludere dall'apprendimento soglie. Le righe senza il campo (formato vecchio 11/14
+    campi) sono 'completa' -- e' cio' che sono."""
+    return (row.get('tipo_riga') or 'completa').strip().lower() == 'trasversale_only'
+
+
 def _pos(v):
     return 100.0 * sum(1 for x in v if x > 0) / len(v) if v else 0.0
 
@@ -122,6 +129,13 @@ def candidati_da_osservazioni(path, forward_lo_h=FORWARD_LO_H, forward_hi_h=FORW
     with open(path, encoding='utf-8') as f:
         osservazioni = list(csv.DictReader(f))
     for r in osservazioni:
+        # b2 04/08: le righe 'trasversale_only' non hanno asse temporale (sconto vuoto) ->
+        # escluse dall'apprendimento delle soglie di sconto. Le righe vecchie senza il campo
+        # (None) sono 'completa' -- e' cio' che sono. Filtro esplicito: e' comunque un no-op
+        # rispetto al comportamento precedente (una riga senza sconto fallirebbe il float qui
+        # sotto e verrebbe saltata lo stesso), ma rende l'intento leggibile e a prova di futuro.
+        if e_trasversale_only(r):
+            continue
         try:
             ts = datetime.datetime.fromisoformat(r['ts_utc'])
             prezzo = float(r['prezzo_min_eur']); sconto = float(r['sconto_temporale_pct'])
@@ -204,12 +218,101 @@ def scrivi_json(learned, fonte, path):
     return doc
 
 
+def risolutore_trasversale(path, forward_lo_h=FORWARD_LO_H, forward_hi_h=FORWARD_HI_H, max_age_days=6.0):
+    """PREDISPOSIZIONE (b2 04/08), NON scrive soglie e NON tocca il JSON. Legge le righe
+    con margine_trasversale_pct valorizzato (sia 'completa' che 'trasversale_only'), recupera
+    il prezzo reale a 24h (finestra 18-30h, stessi env del risolutore temporale) e stampa la
+    distribuzione del rendimento per fascia di MARGINE trasversale. Serve tra qualche giorno,
+    quando i dati esisteranno; oggi gira quasi a vuoto ed e' normale."""
+    import cerbero as C
+    eth = C.get_eth_rate()
+    now = datetime.datetime.now(datetime.timezone.utc)
+    anno_corrente = now.year
+    BUCKETS = [(-1e9, 5, '<5'), (5, 8, '5-8'), (8, 11, '8-11'), (11, 14, '11-14'),
+               (14, 17, '14-17'), (17, 20, '17-20'), (20, 25, '20-25'),
+               (25, 35, '25-35'), (35, 1e9, '>35')]
+    per_bucket = collections.defaultdict(list)
+    cache_nodi = {}
+    risolte = saltate_fresche = saltate_vecchie = senza_margine = 0
+    with open(path, encoding='utf-8') as f:
+        osservazioni = list(csv.DictReader(f))
+    for r in osservazioni:
+        mtxt = (r.get('margine_trasversale_pct') or '').strip()
+        if not mtxt:
+            senza_margine += 1; continue
+        try:
+            ts = datetime.datetime.fromisoformat(r['ts_utc'])
+            prezzo = float(r['prezzo_min_eur']); margine = float(mtxt)
+        except (ValueError, KeyError, TypeError):
+            senza_margine += 1; continue
+        eta_h = (now - ts).total_seconds() / 3600.0
+        if eta_h < forward_hi_h:
+            saltate_fresche += 1; continue
+        if eta_h > max_age_days * 24:
+            saltate_vecchie += 1; continue
+        slug = r['player_slug']; league = r['league_slug']; card = r.get('card_slug', '')
+        if slug not in cache_nodi:
+            try:
+                cache_nodi[slug] = C._fetch_paginated_transaction_nodes(slug)
+            except Exception:
+                cache_nodi[slug] = []
+        nodi = cache_nodi[slug]
+        excluded = C.is_asia_americas_excluded_league(league)
+        is_season = (f"-{anno_corrente}-" in (card or '')) if excluded else None
+        lo = ts + datetime.timedelta(hours=forward_lo_h); hi = ts + datetime.timedelta(hours=forward_hi_h)
+        prezzi_fwd = []
+        for n in nodi:
+            if not (n.get('deal') or {}).get('type'):
+                continue
+            if excluded and is_season is not None:
+                if bool((n.get('card') or {}).get('inSeasonEligible')) != is_season:
+                    continue
+            try:
+                dt = datetime.datetime.fromisoformat((n.get('date') or '').replace('Z', '+00:00'))
+            except (ValueError, AttributeError):
+                continue
+            if not (lo < dt <= hi):
+                continue
+            p = C.eur_price_from_amounts(n.get('amounts'), eth)
+            if p is not None:
+                prezzi_fwd.append(p)
+        if not prezzi_fwd:
+            continue
+        fwd = statistics.median(prezzi_fwd)
+        ret = (fwd - prezzo) / prezzo * 100.0
+        for lo_b, hi_b, nome in BUCKETS:
+            if lo_b <= margine < hi_b:
+                per_bucket[nome].append(ret); break
+        risolte += 1
+    print("=" * 70)
+    print(f"[risolutore TRASVERSALE] osservazioni {len(osservazioni)} | risolte {risolte} | "
+          f"fresche {saltate_fresche} | vecchie {saltate_vecchie} | senza margine {senza_margine}")
+    if risolte < 30:
+        print(f"campione insufficiente, N={risolte}. Nessuna conclusione, nessuna soglia.")
+        return
+    print(f"{'fascia margine':16s} {'n':>5s} {'ret_med%':>9s} {'%pos':>6s}")
+    for _, _, nome in BUCKETS:
+        v = per_bucket.get(nome, [])
+        if v:
+            print(f"{nome:16s} {len(v):5d} {statistics.median(v):+9.1f} {_pos(v):5.0f}%")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--osservazioni', action='store_true',
                     help='impara dai log live cerbero_osservazioni.csv (richiede credenziali per il prezzo forward). Default: dataset storico.')
+    ap.add_argument('--trasversale', action='store_true',
+                    help='PREDISPOSIZIONE b2: distribuzione rendimento 24h per fascia di margine trasversale (non scrive soglie). Richiede credenziali.')
     ap.add_argument('--out', default='cerbero_soglie_apprese.json')
     args = ap.parse_args()
+
+    if args.trasversale:
+        oss_path = os.environ.get('CERBERO_OSSERVAZIONI_PATH', 'cerbero_osservazioni.csv')
+        if not os.path.exists(oss_path):
+            print(f"Nessun file osservazioni ({oss_path}). Lancia prima la diagnostica.")
+            return
+        risolutore_trasversale(oss_path)
+        return
 
     if args.osservazioni:
         oss_path = os.environ.get('CERBERO_OSSERVAZIONI_PATH', 'cerbero_osservazioni.csv')
