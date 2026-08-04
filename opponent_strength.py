@@ -279,18 +279,26 @@ def _peso_campione(n, n_games):
     return min(1.0, n / float(n_games))
 
 
-def opponent_lambda_multiplier(league, role, opponent_team_slug, cutoff_dt, n_games=N_GAMES_DEFAULT):
+def opponent_lambda_multiplier(league, role, opponent_team_slug, cutoff_dt,
+                               n_games=N_GAMES_DEFAULT, sensitivity=None):
     """Ritorna il moltiplicatore da applicare a lambda_pos (ruoli con
     sign=+1) o lambda_neg... in realta' SEMPRE a lambda_pos (per costruzione
     del test, vedi SIGN_BY_ROLE: anche per GK il segno negativo si applica a
     lambda_pos, rendendolo piu' basso quando l'avversario segna tanto) --
     1.0 se il dato non e' disponibile (fallback sicuro, nessun aggiustamento).
-    role: 'gk'|'def'|'mid'|'fwd' (minuscolo)."""
+    role: 'gk'|'def'|'mid'|'fwd' (minuscolo).
+
+    `sensitivity` (04/08, BRIEF taratura_sensitivity): sovrascrive
+    SENSITIVITY_BY_ROLE[role] per la taratura, senza editare il file a ogni
+    giro. None (default) = comportamento INVARIATO, legge dal dizionario.
+    sens<=0 ritorna 1.0 SUBITO (nessun'altra strada, nessun fallback: e' un
+    vero spegnimento, non come il caso Stadio D/DEF del 04/08 -- verificato
+    in HANDOFF_taratura_sensitivity_2026-08-04)."""
     if not opponent_team_slug or cutoff_dt is None:
         return 1.0
     role = role.lower()
     sign = SIGN_BY_ROLE.get(role, 1)
-    sens = SENSITIVITY_BY_ROLE.get(role, 0.0)
+    sens = sensitivity if sensitivity is not None else SENSITIVITY_BY_ROLE.get(role, 0.0)
     if sens <= 0:
         return 1.0
 

@@ -1,0 +1,222 @@
+HANDOFF — SENSITIVITY_BY_ROLE gia' ottimale, nessuna modifica applicata
+Data: 2026-08-04
+Segue: HANDOFF_risolutivo_produzione_2026-08-04.txt
+Branch: ritaratura-fattori (NON mergiato su main, NIENTE propagato)
+
+
+====================================================================
+1. STATO DEL REPO
+====================================================================
+
+Branch: ritaratura-fattori. Modifiche COMMITTATE su questo branch (parametri
+opzionali, comportamento default invariato e verificato):
+  opponent_strength.py: opponent_lambda_multiplier(..., sensitivity=None)
+  backtest_arene_previsioni.py: calcola/_calcola_base(..., sensitivity_by_role=None)
+
+NON mergiato su main. NON propagato. NESSUN valore di produzione cambiato:
+la griglia non ha trovato nessun candidato che batta i valori odierni
+(sezione 4). Per istruzione esplicita del brief ("SE NON PASSA IL METRO SU
+NESSUN RUOLO: non applicare niente... e' un esito valido"), mi fermo qui e
+torno al brief allineamento_operativo.
+
+File modificati preesistenti (non miei, invariati): RIASSUNTO_2026-08-04.md,
+docs/BOT_CERBERO_PROGETTO.md, docs/RIASSUNTO_CERBERO.md.
+
+
+====================================================================
+2. PERCHE' ESISTEVA QUESTO LAVORO
+====================================================================
+
+opponent_lambda_multiplier e' l'unico canale avversario vivo su un dato non
+contaminato (gol reali), ma la sua sensibilita' (SENSITIVITY_BY_ROLE) non
+era mai stata rimisurata col banco riparato (lega=mls, canale acceso). Il
+brief chiedeva di parametrizzarla e tararla per ruolo su campione pieno.
+
+
+====================================================================
+3. COSA HO COSTRUITO O TOCCATO
+====================================================================
+
+Parametrizzazione (permanente, verificata invariante):
+  opponent_strength.opponent_lambda_multiplier: nuovo argomento opzionale
+    `sensitivity=None` -- override di SENSITIVITY_BY_ROLE[role] senza
+    editare il file. sens<=0 ritorna 1.0 SUBITO (return anticipato, nessun
+    fallback: vero spegnimento, verificato in 4.A).
+  backtest_arene_previsioni.calcola/_calcola_base: nuovo argomento opzionale
+    `sensitivity_by_role=None` (dict per ruolo), passato a tutti e 4 i rami
+    (GK/DEF/MID/FWD -- prima solo GK/MID calcolavano esplicitamente il
+    moltiplicatore nel banco, DEF/FWD lo lasciavano auto-calcolare dentro
+    compute_score_atteso_*; ora tutti e 4 lo calcolano esplicitamente nel
+    banco, stesso risultato quando sensitivity_by_role=None).
+
+Script scratch: sens_verifica_zero.py, sens_griglia.py (griglia +
+confronto contro valore odierno).
+
+
+====================================================================
+4. OUTPUT NUMERICO INTEGRALE
+====================================================================
+
+4.A VERIFICA: sensitivity=0 e' un vero spegnimento (non un fallback)
+
+  Test diretto sulla funzione (20 chiamate, coppie squadra/data reali):
+  sensitivity=0 -> multiplier=1.0 in TUTTI i casi (return anticipato nel
+  codice, prima di qualunque calcolo su serie storiche).
+
+  Confronto su campione pieno, sensitivity=0 (acceso) vs usa_avversario=False
+  (spento), per ruolo:
+    FWD: MAE 14.737966 vs 14.737966 -- IDENTICI (6 decimali)
+    GK:  MAE 16.101907 vs 16.101907 -- IDENTICI (6 decimali)
+    MID: MAE 13.254232 vs 13.239817 -- DIVERSI
+
+  MID (e per lo stesso motivo DEF, non ripetuto qui) hanno lo STESSO bug di
+  misura di oggi (vedi docs/BUG_MISURA_STADIO_D_FALLBACK_RANKING.md): quando
+  usa_avversario=False non passa opponent_team_slugs/game_dates, e Stadio D
+  di MID ricade sul fallback domesticLeagueRanking invece di essere davvero
+  spento. Questo NON contamina la griglia sottostante: dentro la griglia
+  (tutta a usa_avversario=True) Stadio D resta SEMPRE sul dato pulito, varia
+  solo sensitivity -- l'isolamento dell'effetto lambda e' pulito. Confermato
+  che sensitivity=0 spegne davvero lambda (FWD/GK, dove non c'e' Stadio D a
+  confondere, coincidono esattamente).
+
+4.B GRIGLIA COMPLETA, campione pieno (75.474 punti, 4 ruoli)
+
+  FWD (n=19.140, oggi=0.4)
+  sens    MAE      corr    lift%
+  0     14.7380   0.2565   28.15
+  0.2   14.7362   0.2580   28.18
+  0.4   14.7347   0.2586   28.72   <- OGGI, massimo interno
+  0.7   14.7324   0.2580   27.58   (corr e lift gia' in calo)
+  0.8   14.7317   0.2574   27.25
+  1.2   14.7290   0.2534   26.61
+  1.6   14.7297   0.2474   26.03
+  2.0   14.7360   0.2407   25.95
+  3.0   14.7744   0.2255   23.32
+
+  MID (n=24.478, oggi=0.7)
+  sens    MAE      corr    lift%
+  0     13.2542   0.2448   25.21
+  0.2   13.2514   0.2463   24.68
+  0.4   13.2499   0.2475   24.61
+  0.7   13.2492   0.2484   24.54   <- OGGI
+  0.8   13.2494   0.2485   24.51   (corr ancora migliore, MAE/lift no)
+  1.2   13.2521   0.2481   23.93
+  1.6   13.2593   0.2464   24.32
+  2.0   13.2719   0.2441   23.24
+  3.0   13.3222   0.2379   22.14
+
+  DEF (n=25.738, oggi=0.8)
+  sens    MAE      corr    lift%
+  0     14.9943   0.1737   15.44
+  0.2   14.9928   0.1745   15.56
+  0.4   14.9917   0.1753   16.08
+  0.7   14.9906   0.1761   15.98
+  0.8   14.9904   0.1763   16.06   <- OGGI
+  1.2   14.9900   0.1769   15.83
+  1.6   14.9908   0.1771   16.18   (corr massima assoluta, ma non su tutte e 3)
+  2.0   14.9934   0.1770   16.15
+  3.0   15.0072   0.1753   16.25
+
+  GK (n=6.118, oggi=0.7)
+  sens    MAE      corr    lift%
+  0     16.1019   0.0707    9.18
+  0.2   16.0980   0.0721    9.09
+  0.4   16.0942   0.0733    8.52
+  0.7   16.0902   0.0746    9.49   <- OGGI, unico punto con lift sopra baseline
+  0.8   16.0896   0.0748    8.75
+  1.2   16.0896   0.0751    8.45
+  1.6   16.0951   0.0748    8.17
+  2.0   16.1019   0.0746    7.80
+  3.0   16.1269   0.0734    7.51
+
+4.C IL CONFRONTO CHE CONTA: ogni valore candidato CONTRO IL VALORE ODIERNO
+    (non contro sens=0 -- sens=0 risponde "il canale aiuta rispetto a
+    niente", non "conviene cambiare la costante")
+
+  FWD -- oggi(0.4): nessun candidato migliora MAE+corr+lift insieme.
+    Il piu' vicino (0.7): MAE-0.0023 corr-0.0006 lift-1.13 -- MAE migliora,
+    corr e lift peggiorano. NO.
+  MID -- oggi(0.7): nessun candidato migliora tutte e tre. Il piu' vicino
+    (0.8): MAE+0.0002 corr+0.0001 lift-0.03 -- praticamente un pareggio,
+    lift cede. NO.
+  DEF -- oggi(0.8): nessun candidato migliora tutte e tre. Il piu' vicino
+    (1.6, che ha la corr assoluta piu' alta di tutta la griglia): MAE+0.0004
+    corr+0.0008 lift+0.11 -- MAE peggiora (di un soffio, ma peggiora). NO.
+  GK -- oggi(0.7): nessun candidato migliora tutte e tre. NO.
+
+  NESSUN ruolo passa il metro contro il valore odierno. Le costanti attuali
+  (gk=0.7, def=0.8, mid=0.7, fwd=0.4), nonostante il brief le definisse "mai
+  tarate", risultano gia' vicine all'ottimo locale su questo campione --
+  coerente coi commenti storici in opponent_strength.py (29/07-30/07,
+  retest walk-forward che le avevano gia' fissate a questi valori).
+
+
+====================================================================
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+====================================================================
+
+5.1 LA PREMESSA DEL BRIEF ERA PARZIALMENTE SBAGLIATA, MA NON SUL FATTO CHE
+IL CANALE E' DEBOLE
+
+Vero (confermato ancora): il moltiplicatore e' quasi sempre vicino a 1.0,
+canale debole in ampiezza su FWD/MID/DEF. Impreciso: "mai tarato" -- i
+commenti in opponent_strength.py mostrano retest del 29-30/07 che avevano
+gia' scelto questi valori con un metodo diverso (walk-forward su
+validate_opponent_conceded_level*.py, non questo banco). Questa sessione
+e' comunque la prima verifica indipendente col banco corretto (lega=mls,
+usa_avversario=True) e CONFERMA quei valori, non li smentisce.
+
+5.2 sens=0 E' UN VERO SPEGNIMENTO (a differenza del caso DEF/Stadio D di
+oggi) -- MA SOLO PER IL LAMBDA
+
+Il return anticipato dentro opponent_lambda_multiplier (sens<=0: return 1.0)
+non ha altre strade, verificato (4.A). Il bug di fallback che ha bloccato la
+sessione precedente riguardava Stadio D (una funzione diversa, use_stadio_d),
+non questo. I due meccanismi sono scritti diversamente nello stesso file e
+vanno controllati separatamente -- non si puo' assumere che risolvere un
+bug di fallback ne risolva un altro simile altrove.
+
+5.3 N_GAMES_DEFAULT NON MISURATO
+
+Punto 2.6 del brief (secondario, "solo se resta tempo"): saltato per
+priorita' di tempo (deadline di schieramento). Nessun ruolo ha mostrato un
+guadagno abbastanza grande da giustificarlo come "il ruolo con guadagno
+maggiore" comunque, visto che nessuno passa il metro contro oggi.
+
+5.4 CAVEAT INVARIATI
+
+Ranking congelato, split casa/trasferta non misurato, contaminazione
+domesticLeagueRanking nota. Nessuno toccato qui.
+
+
+====================================================================
+6. DECISIONE APERTA
+====================================================================
+
+(1) Soglie arene: non toccate in questa sessione (era in corso l'audit
+    scouting nel brief allineamento_operativo quando questo brief ha
+    interrotto; nessuna soglia applicata prima dell'interruzione).
+(2) I tre strumenti: non testati in questa sessione (Parte 4 del brief
+    allineamento_operativo, non ancora raggiunta).
+(3) Divergenza scouting/generatore piu' grave: non ancora determinata,
+    audit in corso quando interrotto (scouting_gw.py -> best_five.py ->
+    chiama build_consiglio_<ruolo>.py, lo stesso script del modello, e usa
+    generatore_formazioni/build_formazione_globale.py:calibra_riga per le
+    rette -- sembra condividere la fonte, ma non ho finito di verificare
+    override/soglie/liste nere).
+
+NESSUNA modifica a SENSITIVITY_BY_ROLE applicata: esito nullo, valido,
+come da istruzione esplicita del brief. Si torna al brief
+allineamento_operativo per completare l'audit scouting e le soglie arene,
+uniche cose rilevanti per schierare oggi.
+
+
+====================================================================
+7. FILE DI RIFERIMENTO
+====================================================================
+
+BRIEF_2026-08-04_taratura_sensitivity.txt (Downloads, non nel repo)
+BRIEF_2026-08-04_allineamento_operativo.txt (Downloads, sessione da riprendere)
+opponent_strength.py                  sensitivity= (nuovo, invariante)
+backtest_arene_previsioni.py          sensitivity_by_role= (nuovo, invariante)
+docs/BUG_MISURA_STADIO_D_FALLBACK_RANKING.md   stesso pattern di bug, MID condivide
