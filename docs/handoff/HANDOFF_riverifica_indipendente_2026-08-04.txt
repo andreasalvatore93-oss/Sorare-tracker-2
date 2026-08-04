@@ -1,0 +1,475 @@
+================================================================================
+RIVERIFICA INDIPENDENTE DEL BLOCCO "CANALE AVVERSARIO / RANKING"
+Sessione del 2026-08-04, terzo account. Branch: ritaratura-fattori
+================================================================================
+
+Richiesta: non fidarsi del resoconto dell'altro account, rimisurare tutto sul
+repo con numeri propri, e dire esplicitamente dove quell'orchestratore ha
+sbagliato.
+
+Questo file risponde ai punti 5.1 (riverifica di 2.1 / 2.3 / 2.5c / 2.5d) e
+5.2 (quantificazione del punto 2.4).
+
+
+================================================================================
+0. VERDETTO IN CIMA
+================================================================================
+
+  2.1  fattore_forza_avversario inerte          CONFERMATO (prova diretta)
+  2.2a il banco misurava col canale spento      CONFERMATO (prova diretta)
+  2.3  "spento" non voleva dire spento          CONFERMATO (numeri riprodotti)
+  2.5d SENSITIVITY_BY_ROLE gia' ottimale        CONFERMATO (griglia mia)
+
+  2.5c "spegnere il canale avversario su DEF non passa il metro"
+       >>> SBAGLIATO. E' l'errore piu' grave della giornata dell'altro
+       account, ed e' dello stesso tipo di quello che aveva appena scoperto
+       negli altri: ha misurato una cosa diversa da quella che credeva.
+       Spegnendo il pezzo GIUSTO, il candidato PASSA il metro su tutte e tre
+       le misure. Vedi sezione 3.
+
+  2.4  quantificazione mai fatta -> ora c'e': e' il 24% delle righe di
+       misura, non il 2-3%. L'ipotesi pessimista dell'utente e' quella
+       giusta e il congelamento del ranking regge ai numeri. Sezione 5.
+
+  Attenzione pero': al bootstrap appaiato sulle giornate (sezione 4) del
+  candidato DEF regge solo la CORRELAZIONE (IC 95% tutto sopra zero); MAE e
+  lift hanno intervalli che comprendono lo zero. E sui MID lo stesso
+  intervento non fa niente. Non e' "guadagno gratis", e' un miglioramento
+  piccolo di ordinamento sui soli difensori.
+
+Niente e' stato applicato alla produzione. Le modifiche a `predict/` restano
+zero. La decisione e' dell'utente.
+
+
+================================================================================
+1. COME HO MISURATO (per poter rifare tutto)
+================================================================================
+
+Campione unico, costruito una volta e riusato per ogni confronto, con lo
+STESSO codice di raccolta di taratura_confronto_parametri.py (stesso
+`prev.contesto`, stesso MIN_STORICO, stesso filtro scoreStatus=FINAL):
+
+  4.004 giocatori in cache -> 75.474 righe giocatore-partita
+  Defender 25.738 | Midfielder 24.478 | Forward 19.140 | Goalkeeper 6.118
+  Raccolta: 55 secondi, nessuna chiamata di rete.
+
+Script (in scratchpad, non committati perche' sono strumenti di verifica usa
+e getta; il contenuto e' riportato integralmente nelle sezioni sotto in modo
+che siano ricostruibili):
+  raccogli_punti.py     costruisce e serializza il campione
+  verifica.py A|B|C     i tre test
+  verifica_d.py         bootstrap appaiato sulle giornate
+  quantifica_ranking.py il punto 2.4
+
+Metro: MAE + correlazione + lift di selezione, INSIEME (regola CLAUDE.md).
+
+
+================================================================================
+2. PUNTO 2.1 -- fattore_forza_avversario e' inerte: CONFERMATO
+================================================================================
+
+2.A Prova di codice.
+
+In tutti e quattro i file (formazione_mls/predict/test_gk.py, test_def.py,
+test_mid.py, test_mls_fwd_all.py) la variabile compare in esattamente quattro
+posti: due righe di calcolo, una voce del result dict, una riga di stampa.
+
+  test_gk.py            2130, 2135 (calcolo) | 2386 (dict) | 2480 (stampa)
+  test_def.py           2051, 2056           | 2325        | 2419
+  test_mid.py           1911, 1916           | 2161        | 2253
+  test_mls_fwd_all.py   1920, 1925           | 2144        | 2240
+
+Non compare MAI in un'espressione che alimenti score_atteso. Su GK e DEF c'e'
+anche il commento che ne documenta la rimozione (26/07, backtest
+validate_team_defense_strength.py).
+
+E' quindi FALSO anche il dettaglio del resoconto secondo cui "il FWD lo ha,
+contro quanto diceva B.4": ce l'hanno tutti e quattro, e in tutti e quattro
+e' inerte allo stesso modo.
+
+2.B Prova numerica, campione pieno.
+
+Muovendo OPPONENT_SENSITIVITY del modulo di produzione e rimisurando tutto:
+
+  ruolo  OPPONENT_SENSITIVITY        n       MAE        corr        lift
+  def    1.0                     25738  14.990365   0.176337   16.0641
+  def    29.0 (produzione)       25738  14.990365   0.176337   16.0641
+  def    1e9                     25738  14.990365   0.176337   16.0641
+  fwd    1.0                     19140  14.734729   0.258619   28.7164
+  fwd    29.0                    19140  14.734729   0.258619   28.7164
+  fwd    1e9                     19140  14.734729   0.258619   28.7164
+  gk     1.0                      6118  16.090237   0.074633    9.4942
+  gk     29.0                     6118  16.090237   0.074633    9.4942
+  gk     1e9                      6118  16.090237   0.074633    9.4942
+  mid    1.0                     24478  13.249211   0.248418   24.5425
+  mid    29.0                    24478  13.249211   0.248418   24.5425
+  mid    1e9                     24478  13.249211   0.248418   24.5425
+
+Identici a sei decimali. Differenza esatta 0.000000 su tutte e tre le misure,
+in tutti e quattro i ruoli.
+
+CONSEGUENZA: il punto 5.2 dell'handoff B.4 e' falso, e con lui il Compito 2
+del BRIEF ritaratura_fattori, che avrebbe tarato una costante che non tocca
+niente. L'altro account su questo aveva ragione.
+
+AZIONE FATTA: la docstring di `delta_ranking` in backtest_arene_previsioni.py
+ripeteva alla lettera la stessa affermazione falsa ("GK/DEF/MID applicano gia'
+un fattore MOLTIPLICATIVO sulla stessa idea"). E' la fonte da cui B.4 l'ha
+presa. L'ho corretta con la misura sopra: era l'unico punto del repo che
+continuava a propagare l'errore.
+
+
+================================================================================
+3. PUNTI 2.3 e 2.5(c) -- qui l'altro orchestratore ha sbagliato
+================================================================================
+
+3.A Il bug 2.3 e' vero, e i suoi numeri si riproducono.
+
+compute_score_atteso_def (test_def.py:1426-1442): se
+opponent_team_slugs_hist/next_opponent_team_slug non sono passati, lo Stadio D
+NON si spegne, ricade su domesticLeagueRanking. Il banco
+(backtest_arene_previsioni.py:516) con usa_avversario=False non li passa.
+Confermato anche su MID (test_mid.py:1315-1328, stessa struttura).
+
+Rimisurato da me sul campione DEF (n=25.738):
+
+  banco "SPENTO" storico     MAE 14.942279  corr 0.190537  lift 16.9078
+
+Sono, alla quarta cifra, esattamente i numeri che il documento
+docs/BUG_MISURA_STADIO_D_FALLBACK_RANKING.md attribuisce a quella riga
+(14.9423 / 0.1905 / 16.91). Il bug e' reale e la sua descrizione e' esatta.
+
+3.B Ma lo "spegnimento vero" che ha misurato NON e' lo spegnimento del canale
+    avversario.
+
+Il flag che ha usato e' avversario_stadio_d=False, che dentro la funzione
+diventa use_stadio_d=False, e quel booleano fa `return score_atteso` PRIMA
+dell'intero blocco (test_def.py:1419-1420). Quel blocco contiene DUE
+condizionamenti sommati insieme (test_def.py:1444-1454):
+
+    _delta_venue_avversario(x) = (cond_venue - fallback) + (cond_avv - fallback)
+
+cioe' il condizionamento casa/trasferta E quello avversario. Spegnendo
+use_stadio_d si spegne anche il pezzo casa/trasferta, che con l'avversario non
+c'entra niente e che il brief non voleva toccare. Ha quindi misurato
+"spegniamo Stadio D intero" e l'ha chiamato "spegniamo il canale avversario".
+
+Il modo corretto di spegnere SOLO la gamba avversario e' azzerare le flag
+avversario: media_condizionata con bucket vuoto/target None restituisce il
+fallback (test_def.py:851-856), quindi cond_avv - fallback = 0 e il pezzo
+venue resta intatto.
+
+3.C Le sei righe, tutte sullo stesso campione DEF (n=25.738).
+    La riga 1 e' la produzione di oggi; i delta sono contro di lei.
+
+  arm                                          MAE        corr      lift    dMAE      dcorr     dlift
+  1 PRODUZIONE (canale acceso)             14.990365   0.176337  16.0641      --        --        --
+  2 banco "SPENTO" storico (=fallback rank) 14.942279  0.190537  16.9078  -0.048086  +0.014200  +0.844
+  3 avversario_stadio_d=False (Stadio D
+    INTERO spento) <- quello che ha misurato 14.989160  0.176039  16.8662  -0.001205  -0.000299  +0.802
+  4 SOLO Stadio D-avversario spento,
+    venue tenuto                            14.970303   0.182627  17.2155  -0.020061  +0.006289  +1.151
+  5 canale avversario spento tutto
+    (lambda + Stadio D avversario)          14.975202   0.179884  17.2722  -0.015163  +0.003546  +1.208
+  6 solo lambda avversario spento           14.994329   0.173707  15.4355  +0.003965  -0.002630  -0.629
+
+Da leggere cosi':
+
+  - riga 4: MAE scende, correlazione sale, lift sale. TUTTE E TRE INSIEME.
+    Passa il metro di CLAUDE.md. E' il candidato serio della giornata.
+  - riga 5: passa anche lei, ma peggio della 4 su MAE e correlazione. Cioe':
+    il condizionamento Stadio D sull'avversario fa danno, il moltiplicatore
+    lambda no.
+  - riga 6: spegnere il lambda da solo peggiora tutte e tre. Il lambda e'
+    l'unico pezzo del canale avversario che sta lavorando bene. Da tenere.
+  - riga 3 (la sua misura): quasi piatta su MAE e correlazione perche' il
+    danno del pezzo avversario e il beneficio del pezzo venue si annullano.
+    Ecco perche' gli e' uscita "mista e non passa il metro".
+  - riga 2: e' la piu' bassa di MAE, ma e' il fallback sul ranking contaminato
+    (attributo CORRENTE della squadra = informazione dal futuro). Non e' un
+    risultato, e' la misura di quanto vale il leakage. Va ignorata, come gia'
+    deciso.
+
+NOTA ONESTA SU UN NUMERO CHE NON TORNA: il resoconto attribuisce allo
+spegnimento "vero" MAE +0.0033, corr -0.0034, lift +0.89. Nessuno dei miei sei
+arm da' quella terna. Il piu' vicino per struttura e' il mio arm 3
+(-0.0012 / -0.0003 / +0.80), il piu' vicino per segno e' l'arm 6
+(+0.0040 / -0.0026 / -0.63). Non so ricostruire il suo campione (probabile
+differenza di raccolta o di GK_TEAM_CS_WEIGHT da env). Lo scrivo perche' se
+quella terna venisse da un campione diverso dal mio, allora anche la mia
+tabella andrebbe riprodotta da lui prima di decidere. Il segno della mia
+conclusione pero' non dipende da quella riga: dipende dal confronto 4 vs 1,
+che e' interno alla mia tabella e usa un solo campione.
+
+3.D Ordine di grandezza, per non venderlo per piu' di quello che e'.
+
+Il guadagno della riga 4 e' -0.13% di MAE, +3.6% relativo di correlazione,
++1.15 punti di lift (da 16.06 a 17.22, cioe' +7.2% relativo). E' piccolo su
+MAE, non trascurabile su lift -- ed e' il lift la misura che conta per
+schierare. Il bootstrap appaiato sulle giornate e' in sezione 4.
+
+
+================================================================================
+4. ROBUSTEZZA DEL CANDIDATO (bootstrap appaiato sulle giornate)
+================================================================================
+
+400 ricampionamenti, unita' ricampionata = la GIORNATA (non la riga: le righe
+della stessa giornata non sono indipendenti). Arm confrontato: produzione vs
+"solo Stadio D-avversario spento, venue tenuto" (arm 4 della sezione 3).
+
+DEF, n=25.738, 263 giornate
+
+  PRODUZIONE                 MAE 14.990365   corr 0.176337   lift 16.0641
+  Stadio D-avversario SPENTO MAE 14.970303   corr 0.182627   lift 17.2155
+  differenza                 MAE  -0.020061  corr +0.006289  lift  +1.1514
+  IC 95%                     MAE [-0.04145, +0.00138]
+                             corr [+0.00186, +0.01055]
+                             lift [-1.445, +3.057]
+
+MID, n=24.478, 264 giornate
+
+  PRODUZIONE                 MAE 13.249211   corr 0.248418   lift 24.5425
+  Stadio D-avversario SPENTO MAE 13.259807   corr 0.248437   lift 24.7644
+  differenza                 MAE  +0.010596  corr +0.000018  lift  +0.2219
+  IC 95%                     MAE [-0.00218, +0.02464]
+                             corr [-0.00196, +0.00201]
+                             lift [-1.555, +1.004]
+
+COME VA LETTO, senza abbellirlo:
+
+  - Sui DIFENSORI l'unico effetto SOLIDO e' sulla correlazione: l'intervallo
+    di confidenza sta tutto sopra lo zero (+0,0019 / +0,0106). Cioe' il
+    condizionamento Stadio D sull'avversario, oggi, peggiora l'ordinamento
+    dei difensori, e questo non e' rumore.
+  - Il guadagno di MAE (-0,020) sfiora lo zero all'estremo alto
+    dell'intervallo: e' probabile ma non dimostrato.
+  - Il guadagno di lift (+1,15) ha un intervallo larghissimo che comprende
+    lo zero: su 263 giornate il lift e' una misura troppo rumorosa per
+    stabilire un effetto di questa taglia. NON va venduto come "+1,15 di
+    lift acquisito".
+  - Sui CENTROCAMPISTI lo stesso intervento non fa niente: tutte e tre le
+    differenze sono dentro il rumore, e il MAE va anzi nella direzione
+    sbagliata. L'intervento e' DEF-specifico, non va propagato a MID.
+
+Quindi la formulazione onesta e': il candidato passa il metro dei tre segni
+sul campione pieno, ma solo la correlazione regge al bootstrap. E' un
+miglioramento piccolo e reale di ORDINAMENTO sui difensori, non un guadagno
+generale.
+
+
+================================================================================
+5. PUNTO 2.4 / RICHIESTA 5.2 -- quanto pesano i casi in cui il ranking non vale
+================================================================================
+
+Fatto, su tutte e 75.474 le righe di misura. Risposta secca: e' il 24%, non
+il 2-3%. L'ipotesi pessimista dell'utente ("se sono il 20-25% i guadagni
+misurati sul ranking sono in buona parte rumore") e' quella giusta.
+
+5.A Il ranking manca del tutto sulla partita bersaglio
+
+  opp_rank assente                                          7.990   10,59%
+  meno di 5 ranking storici validi                          3.882    5,14%
+  -> delta_ranking NON calcolabile (unione)                  9.751   12,92%
+
+  Cioe': su una riga su otto la correzione sul ranking, additiva o
+  moltiplicativa che sia, non puo' proprio applicarsi. Quelle righe non
+  "peggiorano": semplicemente non ricevono niente, e diluiscono qualunque
+  guadagno medio misurato.
+
+5.B Competizioni fra squadre di campionati diversi
+
+  lega casa != lega trasferta                               7.596   10,06%
+  lega di almeno una squadra ignota in cache                4.820    6,39%
+
+  Le competizioni che generano il grosso di questo:
+     uefa-champions-league   2.664  3,53%   (128 squadre distinte in cache)
+     uefa-europa-league      2.158  2,86%   (130)
+     global-cup              1.934  2,56%   (squadre non identificabili)
+     friendlies              1.555  2,06%   (squadre non identificabili)
+
+  In queste righe i due domesticLeagueRanking vengono da classifiche diverse
+  e non sono confrontabili: "terzo" della Bundesliga contro "terzo" della
+  Jupiler Pro League. Il modello li sottrae comunque.
+
+5.C Campionati di dimensione diversa
+
+  dimensione delle due leghe diversa di piu' di 2 squadre   4.890    6,48%
+
+  (dimensione stimata come numero di squadre distinte viste in cache per
+  quella competizione: k-league-1 15, austrian-bundesliga 14, contro
+  segunda-division-es 37 e football-league-championship 35. Decimo su 14 e
+  decimo su 37 sono due cose diverse.)
+
+5.D Inizio stagione
+
+  Indice ricostruito contando le partite che la squadra del giocatore aveva
+  gia' giocato in QUELLA competizione nella stessa stagione (stacco fra due
+  partite superiore a 60 giorni = nuova stagione).
+
+  prime  3 giornate                                         3.455    4,58%
+  prime  5 giornate                                         5.999    7,95%
+  prime  8 giornate                                        11.293   14,96%
+  prime 10 giornate                                        15.235   20,19%
+  indice non ricostruibile                                  6.067    8,04%
+
+5.E UNIONE -- la risposta alla domanda
+
+  Righe in cui almeno uno dei difetti sopra si applica:
+
+    senza contare l'inizio stagione                        15.108   20,02%
+    inizio stagione = prime 3 giornate                     16.917   22,41%
+    inizio stagione = prime 5 giornate                     17.998   23,85%
+    inizio stagione = prime 8 giornate                     21.099   27,96%
+
+  Per ruolo (soglia 5 giornate):
+    Defender      5.945 / 25.738   23,10%
+    Forward       4.979 / 19.140   26,01%
+    Goalkeeper    1.229 /  6.118   20,09%
+    Midfielder    5.845 / 24.478   23,88%
+
+5.F Cosa vuol dire
+
+  Una riga di misura su quattro sta in una condizione in cui
+  domesticLeagueRanking o non esiste, o non e' confrontabile con quello
+  dell'avversario, o non e' ancora informativo. Il segnale +0,074 grezzo /
+  +0,236 in regressione congiunta misurato in B.4 e' stato calcolato
+  mescolando quel 24% con il resto.
+
+  Non vuol dire che il segnale sia falso: vuol dire che non e' mai stato
+  misurato dove e' pulito. Il congelamento del ranking deciso ieri e'
+  quindi PRUDENTE E GIUSTO nella forma in cui il ranking veniva usato
+  (differenza grezza fra ranking di leghe diverse), e l'argomento
+  strutturale dell'utente regge ai numeri.
+
+  Il test che nessuno ha ancora fatto, e che ora e' a portata di mano:
+  rifare la misura del ranking SOLO sul 76% pulito (stessa competizione,
+  stessa lega per entrambe le squadre, dimensione lega uguale, almeno 5
+  giornate giocate). Se li' il segnale sale nettamente, il ranking non e'
+  da buttare: e' da normalizzare (percentile dentro la propria lega invece
+  di posizione assoluta) e da usare solo dove e' definito. Se resta uguale
+  o cala, il congelamento diventa definitivo. E' una misura da mezz'ora sul
+  campione gia' costruito.
+
+
+================================================================================
+6. GIUDIZIO SULL'ALTRO ORCHESTRATORE (richiesta 5.3)
+================================================================================
+
+Dove aveva ragione, e non e' poco:
+
+  - 2.1 e' vero e ben trovato. Ha smontato una premessa che era nel repo da
+    giorni, dentro un commento autorevole, e che avrebbe fatto sprecare un
+    intero Compito.
+  - 2.3 e' vero, importante, e documentato bene: il documento
+    BUG_MISURA_STADIO_D_FALLBACK_RANKING.md contiene numeri che si riproducono
+    e una regola generale ("un flag esplicito, non l'assenza di un dato") che
+    e' giusta e va tenuta.
+  - 2.2b e' vero ed e' stato corretto.
+  - 2.5d e' vero: la mia griglia lo conferma su tutti e quattro i ruoli.
+  - Bloccare il piano additivo sul ranking era la scelta giusta.
+
+Dove ha sbagliato:
+
+  E1 (nuovo, il piu' grave). Ha commesso di nuovo l'errore che aveva appena
+     scoperto. Ha usato `avversario_stadio_d=False` come se fosse
+     l'interruttore del canale avversario. Non lo e': spegne lo Stadio D
+     intero, avversario PIU' casa/trasferta. Ha quindi misurato un'altra cosa
+     e ha chiuso come "bocciato" un candidato che, spento il pezzo giusto,
+     passa il metro su tutte e tre le misure. Se avesse applicato al proprio
+     flag lo stesso sospetto che aveva applicato al `None`, l'avrebbe visto:
+     e' letteralmente due righe sotto quelle che stava leggendo.
+     Cosa andava fatto: non fidarsi del parametro del banco, ma chiamare
+     compute_score_atteso_def direttamente azzerando SOLO opponent_forte_flags
+     /next_forte, e verificare che il delta venue restasse identico.
+
+  E2. Ha chiuso il tema DEF con un commit ("Scarta lo spegnimento DEF") e ha
+      registrato la decisione come presa, quando la misura su cui si basava non
+      era quella che diceva di essere. Un candidato scartato per una misura
+      sbagliata e' peggio di uno non misurato, perche' non lo si riapre piu'.
+
+  E3 (dichiarato da lui). Il "guadagno gratis" sui difensori ricavato per
+     sottrazione dalle tabelle invece che misurato. Confermo che e' un errore
+     di metodo, ed e' lo stesso di E1: dedurre invece di misurare.
+
+  E4 (dichiarato da lui). Il giro di sessione speso a far verificare
+     OPPONENT_SENSITIVITY. Su questo sono meno severo: la verifica ERA
+     necessaria, il commento del repo diceva il falso, e senza quella verifica
+     si sarebbe tarata una costante morta. L'errore vero non e' averla chiesta,
+     e' non averla fatta subito lui stesso in dieci minuti di lettura del
+     codice, come si e' poi rivelato sufficiente.
+
+  E5 (dichiarato da lui). Troppa prosa in chat. Non ho modo di verificarlo.
+
+  E6. Ha lasciato nel repo la fonte dell'errore. Dopo aver dimostrato che
+      fattore_forza_avversario e' inerte, non ha corretto la docstring di
+      `delta_ranking` che afferma il contrario. Chiunque riaprisse quel file
+      ripartirebbe dalla stessa premessa falsa. L'ho corretta io.
+
+  E7. La Parte 4 del resoconto elenca come "in sospeso" l'audit
+      scouting/generatore e i test end-to-end, ma il commit 44a9d1884f sul
+      branch dice che sono stati fatti (nessuna divergenza, 7 giocatori in
+      comune con punteggio identico). Il resoconto passato all'utente era gia'
+      superato dal repo. Resta davvero aperta solo la ricalibrazione delle
+      soglie arene.
+
+
+================================================================================
+7. DECISIONE APERTA (non la prendo io)
+================================================================================
+
+Sul tavolo, per i DIFENSORI:
+
+  (a) NON toccare niente. La produzione resta com'e'. Costo: si rinuncia a
+      +1.15 di lift misurato su 25.738 righe.
+
+  (b) Spegnere SOLO il condizionamento Stadio D sull'avversario nei DIFENSORI,
+      tenendo il condizionamento casa/trasferta e tenendo il moltiplicatore
+      lambda (arm 4). E' l'unica variante che migliora tutte e tre le misure.
+      Si tocca formazione_mls/predict/test_def.py e si propaga con
+      propaga_modello.py sulle 52 leghe.
+
+  (c) Come (b) ma spegnendo anche il lambda (arm 5). Sconsigliato: l'arm 6
+      dimostra che il lambda da solo aiuta.
+
+  (d) MID: gia' misurato, NON toccare. Stesso intervento, effetto nullo su
+      tutte e tre le misure. Non propagare oltre i difensori.
+
+Il mio parere, se serve: (b), ma sapendo esattamente cosa si compra. Si
+compra un miglioramento di ORDINAMENTO sui difensori (correlazione
++0,0063, IC 95% [+0,0019, +0,0106], quindi reale), non un guadagno di MAE
+ne' di lift dimostrati. Se la soglia dell'utente e' "lo applico solo se
+vedo il lift salire in modo solido", allora (a) e si chiude il tema.
+
+PROSSIMO PASSO CHE VALE PIU' DI QUESTO: la misura del ranking sul solo 76%
+di righe pulite (sezione 5.F). E' l'unica cosa che puo' riaprire il segnale
+piu' grosso trovato in tutta la vicenda, e nessuno l'ha mai fatta.
+
+
+================================================================================
+8. STATO A FINE SESSIONE
+================================================================================
+
+Branch: ritaratura-fattori. Modifica fatta da me al repo: SOLO la docstring
+di delta_ranking in backtest_arene_previsioni.py (correzione di
+un'affermazione falsa, nessun effetto sul calcolo). Nessuna modifica a
+formazione_*/predict/. Nessuna propagazione. Produzione invariata
+(c174f1cf1d, propagato 2026-08-03).
+
+Tutti i run sono chiusi: sezioni 4 e 5 sono complete, nessun numero mancante.
+
+Non fatto per fine tempo: ricalibrazione delle soglie arene (unica voce
+davvero ancora aperta della Parte 4 del resoconto), e la misura del ranking
+sul 76% pulito descritta in 5.F.
+
+
+================================================================================
+9. FILE DI RIFERIMENTO
+================================================================================
+
+  formazione_mls/predict/test_def.py           righe 1326-1455, 2051-2056
+  formazione_mls/predict/test_mid.py           righe 1240-1340, 1911-1916
+  backtest_arene_previsioni.py                 righe 192-254, 393-430, 451-580
+  docs/BUG_MISURA_STADIO_D_FALLBACK_RANKING.md
+  docs/handoff/HANDOFF_screening_segnali_B4_2026-08-04.txt   (punto 5.2 FALSO)
+  docs/handoff/HANDOFF_risolutivo_produzione_2026-08-04.txt
+  docs/handoff/HANDOFF_allineamento_operativo_2026-08-04.txt (audit gia' fatto)

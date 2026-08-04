@@ -409,12 +409,20 @@ def delta_ranking(ctx):
     partite precedenti al cutoff, e il ranking e' quello del blocco anyGame di
     allora, non quello di oggi.
 
-    ATTENZIONE, doppio conteggio possibile: GK/DEF/MID applicano gia' un
-    fattore MOLTIPLICATIVO sulla stessa idea (fattore_forza_avversario, delta
-    di ranking rispetto alla media storica diviso OPPONENT_SENSITIVITY=29,
-    limitato a 0.5-1.5). Il FWD no. Il residuo dentro-giocatore correla ancora
-    +0.074 col ranking DOPO quel fattore, quindi o e' sotto-tarato o non basta,
-    ma un k additivo si somma a quello che c'e' gia'."""
+    NIENTE doppio conteggio con fattore_forza_avversario (verificato 04/08,
+    seconda verifica indipendente): quella variabile e' calcolata dentro
+    build_prediction di tutti e quattro i ruoli ma NON entra in score_atteso --
+    finisce solo nel dict diagnostico. Misurato: muovendo OPPONENT_SENSITIVITY
+    fra 1.0, 29.0 e 1e9 su tutto il campione (n=75.474) MAE, correlazione e
+    lift restano identici a sei decimali in tutti e quattro i ruoli. La
+    versione precedente di questo commento diceva il contrario ed e' stata la
+    premessa falsa del punto 5.2 di B.4.
+
+    Il doppio conteggio REALE da tenere d'occhio e' un altro: DEF e MID
+    condizionano gia' i granulari su "avversario forte/debole" dentro lo
+    Stadio D (media_condizionata), e quando lo slug squadra non e' passato quel
+    condizionamento ricade proprio su domesticLeagueRanking -- vedi
+    docs/BUG_MISURA_STADIO_D_FALLBACK_RANKING.md."""
     ora = ctx.get('opp_rank')
     if ora is None:
         return None
