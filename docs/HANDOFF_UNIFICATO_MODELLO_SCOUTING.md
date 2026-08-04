@@ -11,7 +11,7 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 04/08/2026, ore 21:00 (Roma, CEST)**.
+Ultimo aggiornamento: **sessione 04/08/2026, ore 21:45 (Roma, CEST)**.
 Sessione attuale = filone "smart money" (vedi §7). Regola di stile: questo
 file resta SNELLO (max ~4 pagine) e ogni aggiornamento riporta sessione,
 giorno e ora nel fuso di Roma.
@@ -354,17 +354,40 @@ odds da solo (troppo aleatorio) e "più dati stesse feature" (il tetto è
 5. Misura il **residuo smart-money = realizzato − atteso** sui loro pick.
    ≠0 → scala. ~0 → **STOP**.
 
-### Fatto in questa sessione (04/08)
-- **Diagnosi piattezza (§5)**: modello e layer decisionale al tetto; tutte le
-  leve interne chiuse (incl. varianza a media pari, bocciata su dati reali —
-  `ef6667b3e5`, `FORZA_NORM` `9793831290`; σ totale ~49.4 troppo grande perché
-  la convessità del premio morda).
-- **forever-young**: estratte le **21 arene GW2** (tutte *Beginner Limited*),
-  **predetti+cachati 41/42** suoi giocatori non posseduti
-  (`dati_globali/manager_foreveryoung_predizioni_gw2.json`). Confronto NAIVE:
-  stessa qualità di selezione dell'utente, ma lui prende **più
-  rischio-disponibilità** (odds 0.74 vs 0.84). Il confronto sul **realizzato**
-  è in sospeso finché la GW2 non si gioca (→ primo test smart-money reale).
+### Fatto in questa sessione (04/08 sera)
+- **Scoping GW1 dei 12 manager** (GW1 = `football-31-jul-4-aug-2026`, CHIUSA):
+  `ricostruisci_manager --solo-arene` su tutti e 12. **8 attivi**, 4 senza
+  arene in GW1 (badamt, braddersfc, bryanmid, matangel716). **64 arene**, **233
+  giocatori unici**.
+- **Copertura pipeline**: TUTTI i giocatori non ancora cachati sono in leghe
+  con pipeline gia' esistente (messico/argentina/scozia/danimarca/austria/
+  croazia/cina/svizzera/russia/peru/norvegia/kleague/cile/mls). **0 formazioni
+  escluse, nessuna pipeline da costruire per GW1** (la regola utente "escludi
+  le formazioni con giocatori senza pipeline" e' rimasta a vuoto qui).
+- **Batch cache-miss reale = 47** (non 78: c'era un bug di conteggio, vedi
+  §8.14). Criterio: gamelog assente.
+- **Nuovo strumento** `predici_manager_batch.py` + workflow
+  `predici_manager.yml`: instrada slug->lega/ruolo, lancia il predict con
+  `TARGET_SLUG`, riempie la **cache game-log INCREMENTALE** (l'asset e' la
+  cache, riusabile da tutto il modello: una volta scritta il walk-forward
+  as-of di qualunque GW e' locale a costo zero). Testato in locale
+  (greg-kiltie OK 29s). **Run GitHub dei 47 lanciata** (commit `fc1ed1dd37`,
+  run id 30944328784) — al ritorno leggere l'esito e i giocatori
+  strutturalmente non predicibili (storico <3 partite valide, come
+  jae-min-jeong: la cache si scrive comunque).
+- **Fix latente**: il forever-young GW2 era dato per committato ma era
+  gitignored (`dati_globali/*`); ora whitelisted `dati_globali/smart_money/` e
+  `manager_*.json`, cosi' i punteggi realizzati (dentro le carte, campo
+  `punteggio`) restano versionati per la misura residuo.
+- **forever-young (sessione precedente)**: 21 arene GW2 estratte, 41/42
+  predetti. Confronto NAIVE: pari selezione, lui piu' rischio-disponibilita'
+  (odds 0.74 vs 0.84). Realizzato in sospeso finche' GW2 non gioca.
+
+### Prossimo passo concreto (al ritorno)
+1. Verificare esito run 47 (quanti cachati, quanti strutturalmente esclusi).
+2. **Misura residuo smart-money GW1**: walk-forward as-of pre-GW1 sui pick dei
+  manager (atteso) vs `punteggio` realizzato nelle loro carte. E' un calcolo
+  LOCALE a costo zero sulla cache appena riempita. ≠0 → scala; ~0 → STOP.
 
 ### Piste secondarie (non urgenti)
 - **Tabelle premi** delle competizioni a classifica grande (All Star, Limited,
@@ -414,6 +437,15 @@ odds da solo (troppo aleatorio) e "più dati stesse feature" (il tetto è
 13. **Permessi workflow**: senza `permissions: contents: write` un job può
     restare appeso ore in un retry-loop di push infinito senza segnalare
     nulla.
+14. **`glob.glob('**/...', recursive=True)` NON scende nelle cartelle nascoste**
+    (`.game_log_cache`, `.cache`) su questo filesystem: conta 0 dove os.walk
+    conta migliaia. Ha gonfiato i cache-miss GW1 da 47 a 78 (04/08). Per
+    contare/cercare i file di cache usare SEMPRE `os.walk`, mai `glob('**')`.
+15. **Due cache distinte per giocatore**: `.game_log_cache/<slug>_gamelog.json`
+    (il game log, scritto SEMPRE, anche per storico insufficiente — e' l'asset
+    riusabile) e `.cache/<slug>_detail_cache.json` (dettaglio per-partita,
+    riempito solo se la predizione va a buon fine). Il criterio di "dato gia'
+    raccolto" e' il gamelog, non il detail_cache.
 
 ---
 
