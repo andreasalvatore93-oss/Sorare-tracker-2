@@ -11,7 +11,7 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 05/08/2026, ore 00:20 (Roma, CEST)**.
+Ultimo aggiornamento: **sessione 05/08/2026, ore 01:00 (Roma, CEST)**.
 Sessione attuale = filone "smart money" (vedi §7). Regola di stile: questo
 file resta SNELLO (max ~4 pagine) e ogni aggiornamento riporta sessione,
 giorno e ora nel fuso di Roma.
@@ -346,30 +346,20 @@ grezzo, tolto capitano +20%). Dati **sempre distinti per GW** (slug nel nome).
 - Whitelist manager e `ARENE_AMMESSE` in `analizza_gw.py`; leghe in
   `discovery_fixture.LEAGUE_DIR`. Cache condivisa con generatore/scouting.
 
-### Verdetto (4 GW, 673 pick, 12 slug) — nessun segnale affidabile
-Bias per GW +2.4/+1.5/+10.5/−1.35 (il +10.5 è effetto-ambiente: round alto).
-Controllando l'ambiente-GW, NESSUN manager batte il pool a ≥2σ (fins49 +2.0
-n=109 il migliore, non significativo; milkyfresht −3.1). Residuo↔feature ~0 =
-alea (conferma §5). Il modello cattura già i loro pick. Nota-modello (non
-smart-money): GK/FWD sovrastimati (bias −5.7/−4.1). NON chiuso: accumulare fino
-a ~8-10 GW; se resta ~0 e nessun edge persistente (asse F) → STOP.
+### Verdetto (4 GW, 1645 pick, 9-10 manager attivi/GW, satonio escluso) — nessun segnale affidabile
+Bias pool = +0.41 (n 1645, MAE 14.9, corr +0.221). Skill controllata per
+ambiente-GW (edge = residuo − media GW): nessun manager a edge/se ≥2 con n
+solido — solo eoghankelly +2.4 ma n=29 (troppo piccolo per fidarsi). Tutti gli
+altri (qtn n=953, bxl-spartak, shirimimi, fins49, milkyfresht...) fra −1.6 e
++1.3, nessuno persistente su tutte le GW (colonna "segno" = misto per i
+manager con n grande). Conferma §5: il modello cattura già i pick dei bravi
+manager, non c'è edge da inseguire. NON chiuso del tutto: accumulare fino a
+~8-10 GW; se resta ~0 → STOP definitivo.
 
-### >>> APPENA LA RUN `30949880136` FINISCE — istruzioni per la PROSSIMA sessione
-1. `gh run list --workflow=analisi_manager.yml --limit 1` → dev'essere
-   `completed/success`. `git pull`.
-2. La run ha analizzato INCLUDENDO satonio (codice pre-esclusione). **Rigenera
-   escludendolo** (satonio è già fuori dalla whitelist nel codice attuale):
-   ```
-   for p in football-31-jul-4-aug-2026:2026-08-04 football-28-31-jul-2026:2026-07-31 \
-            football-24-28-jul-2026:2026-07-28 football-21-24-jul-2026:2026-07-24; do
-     python analisi_manager/analizza_gw.py --gw ${p%%:*} --fine ${p##*:}; done
-   python analisi_manager/aggrega.py
-   ```
-3. Leggi il **verdetto a 13 manager** in `INDICE.md`/`AGGREGATO.md`.
-4. `python analisi_manager/censimento_cache.py` → verifica che russia & le altre
-   piccole si siano popolate; guarda `dati/copertura_cache.json` (leghe scoperte
-   saltate, non un problema).
-5. `pcm`.
+### Prossimi passi
+- Continuare l'accumulo (vedi sotto) fino a 8-10 GW per chiudere definitivamente.
+- Russia: cache passata da 3 a 20 gamelog (05/08), ancora INERTE (<100), non
+  ancora popolata a sufficienza — richiede altre run/GW per crescere.
 
 ### Continuare l'accumulo
 GW più vecchie = più storico, meno scarti. Slug: GW92 `football-15-20-jul-2026`
