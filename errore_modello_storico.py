@@ -183,6 +183,10 @@ def main():
                     'atteso': r['atteso'], 'reale': reale, 'errore': reale - r['atteso'],
                     'l10': r.get('l10'), 'partite_storiche': r.get('partite_storiche'),
                     'in_casa': r.get('in_casa'),
+                    # contesto della partita: serve a chi studia lo scarto
+                    # DENTRO lo stesso giocatore (vedi tetto_prevedibilita.py)
+                    'squadra': r.get('squadra'), 'opp_slug': r.get('opp_slug'),
+                    'data_partita': r['data_partita'].isoformat() if r.get('data_partita') else None,
                 })
 
     if not righe:
