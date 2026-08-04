@@ -1,0 +1,106 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T21:29:36.556970Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) friday-ubi-etim: 51 pt attesi (36-65)
+   ORDINAMENTO: 51.32
+   SQUADRA: midtjylland-herning | AVVERSARIO: bohemians-dublin
+======================================================================
+
+######################################################################
+# GIOCATORE: friday-ubi-etim
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: friday-ubi-etim (squadra: midtjylland-herning)
+Generato: 2026-08-04T21:29:36.556333Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 44
+Escluse (DID_NOT_PLAY): 25
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-09 | VB vs FRE | superliga-dk | score=65.0 | peso=0.198
+  2026-02-15 | FRE vs AGF | superliga-dk | score=41.3 | peso=0.223
+  2026-02-22 | RFC vs FRE | superliga-dk | score=49.6 | peso=0.250
+  2026-03-01 | FRE vs SIF | superliga-dk | score=35.7 | peso=0.281
+  2026-03-13 | FRE vs RFC | superliga-dk | score=48.9 | peso=0.315
+  2026-03-22 | FCK vs FRE | superliga-dk | score=70.0 | peso=0.354
+  2026-04-06 | OB vs FRE | superliga-dk | score=43.3 | peso=0.397
+  2026-04-13 | FRE vs VB | superliga-dk | score=60.0 | peso=0.445
+  2026-04-19 | SIF vs FRE | superliga-dk | score=36.1 | peso=0.500
+  2026-04-23 | RFC vs FRE | superliga-dk | score=36.2 | peso=0.561
+  2026-04-26 | FRE vs OB | superliga-dk | score=41.7 | peso=0.630
+  2026-05-03 | FRE vs FCK | superliga-dk | score=96.6 | peso=0.707
+  2026-05-10 | VB vs FRE | superliga-dk | score=25.1 | peso=0.794
+  2026-05-17 | FRE vs SIF | superliga-dk | score=44.9 | peso=0.891
+  2026-08-02 | FCM vs ACH | superliga-dk | score=61.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 50.80
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=15): 52.27 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 45.37 | Punteggio complessivo (granulari) medio: 5.44 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.55 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.12
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.1 - 65.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.96 (differenza: +8.15)
+Media score in casa: 52.73 | Media score fuori casa: 46.47
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.6
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 54.0 vs media 5 PRECEDENTI: 49.1): 1.000
+P(gioca): 40.00% (fonte: starterOddsBasisPoints (4000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-06T18:45
+Casa: Bohemian FC | Trasferta: FC Midtjylland
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.5 (range 35.8 - 64.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 51.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.11
+Punteggio REALE ottenuto in quella partita: 61.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +12.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.0    43.3     -4.7    14.4        SI
+   7        7      56.8    60.0     +3.2    13.5        SI
+   8        8      57.0    36.1    -20.9    12.9        NO
+   9        9      51.7    36.2    -15.5    13.7        NO
+  10       10      42.3    41.7     -0.6    13.7        SI
+  11       11      33.9    96.6    +62.7    12.9        NO
+  12       12      60.9    25.1    -35.8    23.5        NO
+  13       13      54.6    44.9     -9.7    24.6        SI
+  14       14      49.1    61.9    +12.8    23.0        SI
+
+MAE (errore assoluto medio): 18.43
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 55.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

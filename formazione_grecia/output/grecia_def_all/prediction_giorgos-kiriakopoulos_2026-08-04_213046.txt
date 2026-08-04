@@ -1,0 +1,108 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T21:30:46.219130Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) giorgos-kiriakopoulos: 47 pt attesi (31-66)
+   ORDINAMENTO: 43.97
+   SQUADRA: panathinaikos-athina-athens | AVVERSARIO: cska-1948-sofia-sofia
+======================================================================
+
+######################################################################
+# GIOCATORE: giorgos-kiriakopoulos
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: giorgos-kiriakopoulos (squadra: panathinaikos-athina-athens)
+Generato: 2026-08-04T21:30:46.218561Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-14 | SHK vs PAO | uefa-europa-league | score=68.0 | peso=0.724
+  2025-08-21 | PAO vs SAM | uefa-europa-league | score=60.0 | peso=0.741
+  2025-08-28 | SAM vs PAO | uefa-europa-league | score=49.3 | peso=0.758
+  2025-10-02 | PAO vs GAE | uefa-europa-league | score=50.2 | peso=0.776
+  2025-10-23 | FEY vs PAO | uefa-europa-league | score=9.9 | peso=0.794
+  2025-11-06 | MFF vs PAO | uefa-europa-league | score=50.7 | peso=0.812
+  2026-01-22 | FTC vs PAO | uefa-europa-league | score=34.9 | peso=0.831
+  2026-01-29 | PAO vs ROM | uefa-europa-league | score=45.9 | peso=0.851
+  2026-02-19 | PAO vs PLZ | uefa-europa-league | score=62.4 | peso=0.871
+  2026-02-26 | PLZ vs PAO | uefa-europa-league | score=39.4 | peso=0.891
+  2026-03-12 | PAO vs BET | uefa-europa-league | score=50.4 | peso=0.912
+  2026-03-19 | BET vs PAO | uefa-europa-league | score=14.1 | peso=0.933
+  2026-06-07 | ? vs ? | friendlies | score=28.0 | peso=0.955
+  2026-07-23 | PAK vs PAO | uefa-europa-conference-league | score=33.7 | peso=0.977
+  2026-07-30 | PAO vs PAK | uefa-europa-conference-league | score=70.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 44.09
+  di cui Punteggio decisivo (level_score) medio: 36.90 | Punteggio complessivo (granulari) medio: 7.19 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 | Passaggio condizionato: delta venue +0.00, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.48
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 28.0 - 62.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.43 (differenza: +3.05)
+Media score in casa: 33.66 | Media score fuori casa: 70.42
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): N/D
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.000
+Fattore trend (media ultime 5: 39.6 vs media 5 PRECEDENTI: 46.7): 1.000
+P(gioca): 68.18% (fonte: tasso di presenza storico (15/22))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-05T18:30
+Casa: Panathinaikos FC | Trasferta: FK CSKA 1948 Sofia
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.4 (range 31.3 - 65.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 44.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 41.87
+Punteggio REALE ottenuto in quella partita: 70.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +28.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      47.5    34.9    -12.6    20.2        SI
+   7        7      45.6    45.9     +0.3    19.3        SI
+   8        8      45.6    62.4    +16.7    17.9        SI
+   9        9      47.7    39.4     -8.3    17.9        SI
+  10       10      46.8    50.4     +3.6    17.1        SI
+  11       11      47.1    14.1    -33.0    16.2        NO
+  12       12      44.0    28.0    -16.0    18.7        SI
+  13       13      42.6    33.7     -8.9    18.6        SI
+  14       14      41.9    70.4    +28.6    18.0        NO
+
+MAE (errore assoluto medio): 14.22
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

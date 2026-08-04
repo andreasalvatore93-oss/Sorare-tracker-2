@@ -1,0 +1,122 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T21:31:19.102181Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) gonzalo-daniel-escobar: 49 pt attesi (30-65)
+   ORDINAMENTO: 46.86
+   SQUADRA: santos-santos-sao-paulo | AVVERSARIO: athletico-paranaense-curitiba-parana
+======================================================================
+
+######################################################################
+# GIOCATORE: gonzalo-daniel-escobar
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: gonzalo-daniel-escobar (squadra: santos-santos-sao-paulo)
+Generato: 2026-08-04T21:31:19.098457Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 43
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: campeonato-brasileiro-serie-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-24 | BAH vs SAN | campeonato-brasileiro-serie-a | score=50.5 | peso=0.616
+  2025-08-31 | SAN vs FLU | campeonato-brasileiro-serie-a | score=72.6 | peso=0.630
+  2025-09-14 | CAM vs SAN | campeonato-brasileiro-serie-a | score=43.2 | peso=0.645
+  2025-09-21 | SAN vs SPA | campeonato-brasileiro-serie-a | score=86.2 | peso=0.660
+  2025-10-02 | SAN vs GRE | campeonato-brasileiro-serie-a | score=36.0 | peso=0.675
+  2025-10-05 | CEA vs SAN | campeonato-brasileiro-serie-a | score=23.0 | peso=0.691
+  2025-10-16 | SAN vs COR | campeonato-brasileiro-serie-a | score=37.7 | peso=0.707
+  2025-11-01 | SAN vs FOR | campeonato-brasileiro-serie-a | score=28.2 | peso=0.724
+  2025-11-25 | INT vs SAN | campeonato-brasileiro-serie-a | score=29.8 | peso=0.741
+  2026-02-04 | SAN vs SPA | campeonato-brasileiro-serie-a | score=34.2 | peso=0.758
+  2026-03-22 | CRU vs SAN | campeonato-brasileiro-serie-a | score=56.8 | peso=0.776
+  2026-04-02 | SAN vs REM | campeonato-brasileiro-serie-a | score=100.0 | peso=0.794
+  2026-04-05 | FLA vs SAN | campeonato-brasileiro-serie-a | score=25.9 | peso=0.812
+  2026-04-11 | SAN vs CAM | campeonato-brasileiro-serie-a | score=55.8 | peso=0.831
+  2026-04-25 | BAH vs SAN | campeonato-brasileiro-serie-a | score=52.6 | peso=0.851
+  2026-05-02 | PAL vs SAN | campeonato-brasileiro-serie-a | score=45.5 | peso=0.871
+  2026-05-10 | SAN vs BRA | campeonato-brasileiro-serie-a | score=49.7 | peso=0.891
+  2026-05-17 | SAN vs CBA | campeonato-brasileiro-serie-a | score=3.5 | peso=0.912
+  2026-05-23 | GRE vs SAN | campeonato-brasileiro-serie-a | score=26.2 | peso=0.933
+  2026-05-30 | SAN vs VIT | campeonato-brasileiro-serie-a | score=32.6 | peso=0.955
+  2026-07-16 | BOT vs SAN | campeonato-brasileiro-serie-a | score=60.7 | peso=0.977
+  2026-07-25 | SAN vs CHA | campeonato-brasileiro-serie-a | score=45.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 44.68
+  di cui Punteggio decisivo (level_score) medio: 34.30 | Punteggio complessivo (granulari) medio: 10.38 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +1.08, delta avversario +0.00 | Passaggio condizionato: delta venue +0.26, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.83, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 21.10
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 26.2 - 60.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.52 (differenza: +5.58)
+Media score in casa: 48.47 | Media score fuori casa: 41.42
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.9
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.729
+Fattore falli (casa/trasferta, da dati reali): 0.990
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.007
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.005
+Fattore trend (media ultime 5: 34.2 vs media 5 PRECEDENTI: 46.1): 1.000
+P(gioca): 51.16% (fonte: tasso di presenza storico (22/43))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T21:30
+Casa: Santos FC Sao Paulo | Trasferta: Club Athletico Paranaense
+Competizione: campeonato-brasileiro-serie-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.8 (range 30.3 - 64.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 46.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.65
+Punteggio REALE ottenuto in quella partita: 45.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +0.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.4    37.7    -11.7    23.9        SI
+   7        7      63.2    28.2    -35.0    22.6        NO
+   8        8      52.9    29.8    -23.1    22.5        NO
+   9        9      45.3    34.2    -11.1    21.9        SI
+  10       10      35.2    56.8    +21.6    21.0        NO
+  11       11      57.0   100.0    +43.0    20.4        NO
+  12       12      31.7    25.9     -5.8    26.3        SI
+  13       13      46.6    55.8     +9.2    26.2        SI
+  14       14      37.0    52.6    +15.7    25.2        SI
+  15       15      31.4    45.5    +14.1    24.3        SI
+  16       16      42.5    49.7     +7.3    23.4        SI
+  17       17      51.5     3.5    -48.0    22.5        NO
+  18       18      55.7    26.2    -29.5    25.1        NO
+  19       19      49.1    32.6    -16.5    24.8        SI
+  20       20      39.2    60.7    +21.5    24.2        SI
+  21       21      60.0    45.2    -14.9    23.9        SI
+
+MAE (errore assoluto medio): 20.50
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
