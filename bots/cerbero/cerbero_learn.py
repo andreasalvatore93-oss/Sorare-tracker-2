@@ -31,6 +31,16 @@ MIN_POS = float(os.environ.get('CERBERO_LEARN_MIN_POS', '55.0'))   # % positivi 
 MIN_N = int(os.environ.get('CERBERO_LEARN_MIN_N', '30'))           # campioni minimi per fidarsi
 DEFAULT_PRUDENTE = float(os.environ.get('CERBERO_TEMP_DISC_MIN', '10.0'))
 
+# Orizzonte forward per il risolutore. Default 18/30h = "24h" (era 36/60 = "48h").
+# Il backtest 04/08 su dataset storico (stesso set di 2591 candidati con esito a tutti
+# e 3 gli orizzonti) misura lift 24h=+13.0 vs 48h=+14.1 -> ratio 0.92 (>=0.70): a 24h il
+# gate seleziona i vincenti quasi come a 48h, ma le osservazioni MATURANO 12h prima.
+# In regime manuale (nessun cron: ogni run e' una pressione umana) questo dimezza di
+# fatto l'attesa prima che una lega diventi apprendibile. 12h passava anch'esso la soglia
+# (ratio 1.14) ma NON e' adottato: le run manuali non sono abbastanza fitte per verificarlo.
+FORWARD_LO_H = float(os.environ.get('CERBERO_LEARN_FORWARD_LO_H', '18'))
+FORWARD_HI_H = float(os.environ.get('CERBERO_LEARN_FORWARD_HI_H', '30'))
+
 # La lega nel dataset e' un GRUPPO (eredivisie_belgio unisce due slug). Mappa gruppo ->
 # slug reali usati dal bot (league_slug), cosi' il JSON e' consumabile dal gate.
 GRUPPO_A_SLUG = {
@@ -89,10 +99,10 @@ def candidati_da_dataset():
     return per
 
 
-def candidati_da_osservazioni(path, forward_lo_h=36.0, forward_hi_h=60.0, max_age_days=6.0):
+def candidati_da_osservazioni(path, forward_lo_h=FORWARD_LO_H, forward_hi_h=FORWARD_HI_H, max_age_days=6.0):
     """RISOLUTORE FORWARD: per ogni osservazione (carta vista a un prezzo, con un dato
     sconto, in una data lega, a una certa ora) misura il prezzo REALE della stessa
-    carta nelle ore successive (finestra forward_lo_h..forward_hi_h, tipicamente 48h)
+    carta nelle ore successive (finestra forward_lo_h..forward_hi_h, default 18-30h = "24h")
     interrogando le transazioni tra manager (aste escluse) -> rendimento realizzato.
     Ritorna dict league_slug -> lista (sconto%, rendimento48h%). Servono credenziali
     Sorare (query). Le osservazioni troppo FRESCHE (finestra forward non ancora chiusa)

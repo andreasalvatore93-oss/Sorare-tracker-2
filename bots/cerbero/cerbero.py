@@ -3654,14 +3654,20 @@ def evaluate_event(player_slug, player_name, price_eur, card_slug, eth_rate, lea
         _tx_nodes, is_in_season, league_slug, eth_rate)
     _t_liquidita = time.monotonic()
 
-    # [CERBERO] APPRENDIMENTO: gate + registrazione osservazione PRIMA di qualunque
-    # scarto (04/08). Prima il log stava dopo il filtro thin market, che fa
-    # `return False`: quelle carte avevano gia' pagato la query delle transazioni e
-    # avevano gia' media recente e sconto calcolati qui sopra, ma venivano cestinate
-    # senza registrarle. Sono dati gratis per l'apprendimento (colonna
-    # scarto_thin_market: il risolutore puo' tenerle o escluderle a seconda che
-    # "mercato sottile" risulti predittivo o no). Il gate serve solo a calcolare i
-    # valori registrati, la decisione vera resta piu' sotto, invariata.
+    # [CERBERO] APPRENDIMENTO: gate + registrazione osservazione appena i dati esistono
+    # (04/08). PRECISAZIONE (04/08, verificata leggendo la funzione ramo per ramo):
+    # l'osservazione NON e' "prima di OGNI scarto". L'asse temporale (media recente,
+    # sconto, trend, gate) richiede il fetch transazioni, che sopra e' deliberatamente
+    # rimandato per velocita' e paga SOLO i candidati gia' sopra la soglia MakeOffer.
+    # Quindi gli scarti a monte -- blacklist giocatore/lega/venditore, forma bassa,
+    # cooldown, fuori fascia prezzo, poche carte listate, e soprattutto MARGINE <
+    # soglia MakeOffer (la maggioranza degli eventi) -- NON producono una riga: non
+    # hanno (ancora) i dati dell'asse temporale. Il log e' comunque anticipato al punto
+    # PIU' PRESTO possibile dato questo vincolo: prima del filtro thin market e della
+    # decisione del gate, che invece SI registrano (colonna scarto_thin_market: il
+    # risolutore puo' tenerli o escluderli). Conseguenza nota: l'asse TRASVERSALE
+    # (prezzo_secondo/margine, gia' noti alla riga ~3554, prima del fetch) resta
+    # CENSURATO sui margini bassi -- vedi handoff 04/08, decisione per l'utente.
     _trend_temp = classifica_trend(_media_rec1d_temp, _media_old_temp)
     _gate = gate_temporale(true_min_price, _media_full_temp, _trend_temp, league_slug=league_slug)
     _thin_market = (not AGGRESSIVE_MODE and count_7d is not None

@@ -61,11 +61,22 @@ def media_finestra(seq, i, days, sub_lo=None, sub_hi=None):
     return statistics.mean(vals) if vals else None, len(vals)
 
 
-def forward_48h(seq, i):
+# Orizzonti forward misurabili sul dataset storico. "24h" (18-30) e' l'orizzonte di
+# APPRENDIMENTO adottato il 04/08 (vedi confronto_orizzonti + cerbero_learn.FORWARD_*).
+ORIZZONTI = {'12h': (6, 18), '24h': (18, 30), '48h': (36, 60)}
+
+
+def forward_h(seq, i, lo_h, hi_h):
+    """Prezzo mediano della carta nella finestra [t+lo_h, t+hi_h]. None se vuota."""
     t = seq[i]['dt']
-    lo, hi = t + datetime.timedelta(hours=36), t + datetime.timedelta(hours=60)
+    lo, hi = t + datetime.timedelta(hours=lo_h), t + datetime.timedelta(hours=hi_h)
     vals = [seq[j]['p'] for j in range(i + 1, len(seq)) if lo < seq[j]['dt'] <= hi]
     return statistics.median(vals) if vals else None
+
+
+def forward_48h(seq, i):
+    """Compat: orizzonte storico 48h (36-60h)."""
+    return forward_h(seq, i, 36, 60)
 
 
 def costruisci_candidati(bykey, min_prior=3):
@@ -88,6 +99,70 @@ def costruisci_candidati(bykey, min_prior=3):
             cands.append({'p': p, 'media': media, 'trend': trend,
                           'ret_reale': (fwd - p) / p * 100.0, 'gain_reale': fwd - p})
     return cands
+
+
+def costruisci_candidati_multiorizzonte(bykey, min_prior=3):
+    """Come costruisci_candidati ma tiene SOLO i candidati che hanno un esito reale a
+    TUTTI e 3 gli orizzonti (12/24/48h) -> stesso identico set, misure confrontabili."""
+    W = M.LOOKBACK_DAYS
+    cands = []
+    for seq in bykey.values():
+        for i in range(len(seq)):
+            media, n = media_finestra(seq, i, W)
+            if media is None or n < min_prior:
+                continue
+            fwd = {}
+            ok = True
+            for name, (lo, hi) in ORIZZONTI.items():
+                v = forward_h(seq, i, lo, hi)
+                if v is None:
+                    ok = False
+                    break
+                fwd[name] = v
+            if not ok:
+                continue
+            m_rec, _ = media_finestra(seq, i, W, sub_lo=1.0)
+            m_old, _ = media_finestra(seq, i, W, sub_hi=1.0)
+            trend = M.classifica_trend(m_rec, m_old)
+            p = seq[i]['p']
+            cands.append({'p': p, 'media': media, 'trend': trend,
+                          'ret': {k: (fwd[k] - p) / p * 100.0 for k in ORIZZONTI}})
+    return cands
+
+
+def confronto_orizzonti(bykey):
+    """LIFT del gate a 12/24/48h sullo STESSO set di candidati. Sceglie l'orizzonte di
+    apprendimento: 24h e' adottato se lift_24h >= 0.70*lift_48h (regola brief 04/08)."""
+    print("=" * 78)
+    print("2-bis) CONFRONTO ORIZZONTI (lift del gate a 12/24/48h, stesso set)")
+    cands = costruisci_candidati_multiorizzonte(bykey)
+    # [R5] prova dell'interruttore: cambiare la finestra cambia davvero l'esito.
+    for seq in bykey.values():
+        for i in range(len(seq)):
+            m, nn = media_finestra(seq, i, M.LOOKBACK_DAYS)
+            if m and nn >= 3:
+                a, b = forward_h(seq, i, 6, 18), forward_h(seq, i, 36, 60)
+                if a is not None and b is not None and abs(a - b) > 1e-9:
+                    print(f"   [R5 interruttore OK] stesso candidato: fwd(12h)={a:.3f} != fwd(48h)={b:.3f}")
+                    break
+        else:
+            continue
+        break
+    passa = [c for c in cands if M.gate_temporale(c['p'], c['media'], c['trend'])['passa']]
+    scarta = [c for c in cands if not M.gate_temporale(c['p'], c['media'], c['trend'])['passa']]
+    print(f"   set: n={len(cands)}  passa={len(passa)}  scarta={len(scarta)}")
+    lift = {}
+    for k in ORIZZONTI:
+        mp = statistics.median(c['ret'][k] for c in passa)
+        ms = statistics.median(c['ret'][k] for c in scarta)
+        lift[k] = mp - ms
+        print(f"   {k:4s}: passa_med={mp:+6.2f}% (pos {pct_pos([c['ret'][k] for c in passa]):3.0f}%)  "
+              f"scarta_med={ms:+6.2f}%  LIFT={lift[k]:+6.2f}")
+    if lift['48h']:
+        r24 = lift['24h'] / lift['48h']
+        print(f"   -> ratio 24h/48h = {r24:.3f}  =>  "
+              f"{'ADOTTA 24h' if r24 >= 0.70 else 'NON adottare, resta 48h'}")
+    return lift
 
 
 def pct_pos(v):
@@ -173,6 +248,7 @@ if __name__ == '__main__':
     cands = costruisci_candidati(bykey)
     ok = unit_test()
     passa = backtest_selettivita(cands)
+    confronto_orizzonti(bykey)
     taratura_soglia_eur(cands)
     print("=" * 78)
     print(f"Motore: lookback={M.LOOKBACK_DAYS:.0f}gg, temp_disc_min={M.TEMP_DISC_MIN:.0f}%, "

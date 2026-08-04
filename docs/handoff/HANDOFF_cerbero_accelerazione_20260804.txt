@@ -1,0 +1,209 @@
+HANDOFF — CERBERO / ACCELERAZIONE APPRENDIMENTO — 2026-08-04
+============================================================
+Perimetro toccato: bots/cerbero/ + docs (BOT_CERBERO_PROGETTO, RIASSUNTO_CERBERO).
+NON toccato: formazione_*/, generatore_formazioni/, dati_globali/, predict/,
+bot_definitivo.py, scanners/bot_profit.py. LIVE_MODE non attivato (resta 'no').
+git pull a inizio sessione: "Already up to date".
+
+Nota R1 (CLAUDE.md vince): il brief chiedeva "ZERO PROSA IN CHAT / unico output il file".
+CLAUDE.md impone comunque risposte brevissime in chat (ADHD) e chiede conferma prima di
+run GitHub / azioni non-git. Ho tenuto la chat al minimo e non ho pushato senza dirlo.
+
+
+1) ESITO T0 (diagnosi cron)
+---------------------------
+CRON MAI SCATTATO, ma NON è un bug di configurazione recuperabile riscrivendo il workflow.
+ - gh run list --event=schedule  -> ZERO run schedulate (tutte le run sono workflow_dispatch).
+ - File .github/workflows/bot_cerbero.yml presente sul branch di default (main): sì.
+ - Blocco on: valido, non duplicato; schedule + workflow_dispatch entrambi presenti; cron
+   "0 */6 * * *" sintatticamente corretto.
+ - Actions abilitate (permissions.enabled=true, allowed_actions=all).
+ - CAUSA: il `cron:` è stato aggiunto al file solo il 04/08 alle 00:08 UTC (commit
+   b946e08239). Uno scheduled workflow appena introdotto non viene attivato subito da
+   GitHub e i trigger schedulati partono con ritardo/skip. Solo lo slot 06:00 UTC del
+   04/08 era teoricamente trascorso.
+ - DECISIONE T0 applicata: non è (b)/(c)/(e) -> nessuna correzione al workflow. Non è
+   nemmeno (d) (Actions attive, repo non dormiente). Non ho riscritto il workflow né
+   introdotto scheduler alternativi. Ricontrollare fra 24h: se ancora zero run schedule,
+   allora è (d)/altro.
+ - CONSEGUENZA OPERATIVA: il regime reale è MANUALE. Ogni run = una pressione umana da
+   ~5h, non 20h/giorno. Tutta la pianificazione sotto è su questa base.
+ - Fonti corrette nello stesso lavoro (CLAUDE.md): BOT_CERBERO_PROGETTO.md §8-bis punto 1
+   e RIASSUNTO_CERBERO.md (dicevano "ora riparte da solo": FALSO).
+
+
+2) TABELLA SOGLIE (T1 — bootstrap dataset_storico, rigenerata ora)
+-----------------------------------------------------------------
+python bots/cerbero/cerbero_learn.py  (fonte dataset_storico, lookback 1gg)
+JSON riscritto, updated_utc 2026-08-04T12:03:54Z, fonte dataset_storico. OK.
+
+lega                 | temp_disc_min | qualificata | n
+---------------------|---------------|-------------|------
+mlspa                | 5%            | sì          | 1351
+k-league-1           | 5%            | sì          | 581
+eredivisie           | 5%            | sì          | 1529
+jupiler-pro-league   | 5%            | sì          | 1529
+
+Nessuna lega qualificata con n<30 (nessun bug). eredivisie e jupiler-pro-league
+condividono n perché il dataset le raggruppa (eredivisie_belgio) e il JSON le espande a
+due slug reali.
+
+
+3) INVENTARIO OSSERVAZIONI (T2) — stato reale
+---------------------------------------------
+cerbero_osservazioni.csv: 686 righe dati.
+ - 11 campi (pre-04/08): 336 | 14 campi (post-04/08): 350 | altre: 0.
+ - riga più vecchia: 2026-08-03T17:03:47Z | più recente: 2026-08-04T10:14:54Z.
+ - ore di ASCOLTO effettive (somma finestre run, da gh run list): ~14.9h
+   (run: 17:02Z 3h00 + 20:40Z 3h36 [annullata] + 00:20Z 5h00 + 06:54Z 3h20).
+ - RESA: ~46 righe/ora di ascolto complessive; mlspa ~8/h, premiership ~7/h.
+ - gate_passa=true: 34 totali, 0 mature.
+
+MATURITÀ ALL'ORIZZONTE ADOTTATO (24h -> riga usabile quando età>30h, dentro finestra
+fetch <144h). NESSUNA riga è ancora matura (la più vecchia ha ~19h). Quindi OGGI nessuna
+lega è apprendibile con --osservazioni, a prescindere dal volume.
+
+VOLUME già sufficiente (≥30 righe) in 7 leghe: mlspa(123), premiership-gb-sct(102),
+premier-league-gb-eng(59), primeira-liga-pt(50), austrian-bundesliga(42),
+eredivisie(40), 2-bundesliga(36). Per queste NON servono altre run: serve solo che le
+righe già raccolte INVECCHINO oltre 30h.
+
+>>> NUMERO CHIAVE (T2): RUN MANUALI DA 5H ANCORA NECESSARIE per la prima lega
+    apprendibile = ZERO. Il vincolo non è più il volume ma la maturazione temporale.
+    Prima lega apprendibile: mlspa, dalle ~2026-08-05 01:00 UTC (~13h da ora): a
+    quell'ora 30 righe mlspa superano i 30h. Poi premiership ~03:14Z, premier-league
+    ~03:43Z, primeira-liga ~07:14Z, austrian-bundesliga ~13:34Z, 2-bundesliga ~15:15Z,
+    eredivisie ~15:21Z (tutte il 05/08).
+    AZIONE: dopo le ~01:00Z del 05/08, lanciare `python bots/cerbero/cerbero_learn.py
+    --osservazioni` (serve cookie Sorare fresco). Prima è inutile: 0 righe risolvibili.
+
+Leghe sotto le 30 righe (k-league-1 28, jupiler 28, bundesliga-de 27, laliga 23, ...):
+lì sì serve più raccolta = più run manuali. Alle rese attuali, es. k-league-1 (~1.9/h)
+per arrivare da 28 a 30 basta 1 run; laliga(23, ~1.5/h) ~1 run; le code lunghe (serie-a
+19, championship 18, ...) 1-3 run ciascuna. Ma la priorità è la coda alta già pronta.
+
+
+4) T3 — ORIZZONTE DI APPRENDIMENTO (la leva vera)
+-------------------------------------------------
+Misurato su backtest_e_test.py (dataset storico, offline). STESSO set di 2591 candidati
+con esito reale a TUTTI e 3 gli orizzonti (confrontabili). Gate invariato.
+[R5] interruttore verificato: stesso candidato fwd(12h)=17.995 ≠ fwd(48h)=19.040.
+
+orizzonte | passa_med | %pos | scarta_med | LIFT
+----------|-----------|------|------------|------
+12h (6-18)|  +16.48%  | 82%  |   +0.45%   | +16.03
+24h (18-30)| +13.16%  | 71%  |   +0.16%   | +13.00
+48h (36-60)| +14.30%  | 65%  |   +0.21%   | +14.09
+
+ratio 24h/48h = 0.923  (>= 0.70)  -> REGOLA SCATTATA: ADOTTA 24h.
+ratio 12h/48h = 1.137  (>= 0.70)  -> 12h passerebbe, MA NON adottato (brief): le run
+manuali non sono abbastanza fitte per verificarlo. Solo nota informativa.
+
+ADOTTATO. Modifiche (vedi §6):
+ - cerbero_learn.py: FORWARD_LO_H/HI_H da env CERBERO_LEARN_FORWARD_LO_H/_HI_H,
+   default 18/30 (era 36/60 hardcoded nella firma di candidati_da_osservazioni).
+ - backtest_e_test.py: forward_48h generalizzata in forward_h(seq,i,lo_h,hi_h) +
+   nuova sezione "2-bis) CONFRONTO ORIZZONTI" che stampa i tre lift e la decisione.
+Perché conta in regime manuale: a 24h una lega matura ~30h prima che a 48h (per mlspa:
+apprendibile il 05/08 ~01:00Z invece che ~il 06/08). Con run rare, dimezzare l'attesa di
+maturazione vale più di qualsiasi altra cosa.
+
+
+5) T4 — ASSE TRASVERSALE (colonne 04/08)
+----------------------------------------
+Sulle 350 righe a 14 campi:
+ - prezzo_secondo_eur valorizzato: 350/350 (100%).
+ - margine_trasversale_pct valorizzato: 350/350 (100%).
+ - distribuzione margine: min 6.5 | p25 11.4 | mediana 14.9 | p75 20.0 | max 79.2.
+NESSUN campo vuoto -> nessun ramo che registra senza popolare -> NESSUN BUG. Nessuna
+analisi predittiva (campione non ancora maturo, come da regola). Solo conteggio.
+
+
+6) CORREZIONI COMMITTATE / DA COMMITTARE (T5 + fonti)
+-----------------------------------------------------
+CODICE (logica del bot: NESSUNA modifica funzionale; solo T3 + un commento):
+ - bots/cerbero/cerbero_learn.py: aggiunte FORWARD_LO_H/HI_H (env, default 18/30);
+   candidati_da_osservazioni ora usa quei default; docstring aggiornata a "24h".
+ - bots/cerbero/backtest_e_test.py: forward_h generica + forward_48h come wrapper compat;
+   costruisci_candidati_multiorizzonte + confronto_orizzonti (stampa i 3 lift + [R5]).
+ - bots/cerbero/cerbero.py: SOLO commento corretto in evaluate_event (la premessa
+   "registrazione PRIMA di qualunque scarto" era inesatta — vedi sotto). Zero logica.
+
+VERIFICHE T5 (nessun fix di codice necessario):
+ a) LISTEN_SECONDS 18000 (5h) vs timeout-minutes 340 (5h40): margine 40 min > 15 min.
+    Copre setup (checkout+py+node+npm install+pip) e commit finale. OK, non toccato.
+ b) SCARTI SILENZIOSI (dato perso): la premessa "una riga per candidato visto, PRIMA di
+    OGNI scarto" è FALSA. Letto evaluate_event ramo per ramo (cerbero.py ~3417-3700):
+    l'osservazione si scrive a ~3669, DOPO il fetch transazioni, che è pagato SOLO dai
+    candidati con margine >= soglia MakeOffer. Tutti gli scarti a monte NON producono
+    riga: blacklist giocatore/lega/venditore, forma bassa, cooldown, fuori fascia prezzo,
+    poche carte listate, e soprattutto MARGINE < soglia MakeOffer (la maggioranza degli
+    eventi). Motivo tecnico: l'asse temporale (media/sconto/trend) richiede quel fetch,
+    deliberatamente rimandato per velocità. NON ho riscritto l'hot path (sarebbe o una
+    regressione di performance — fetch per tutti — o una feature nuova: righe
+    trasversali-only con risolutore dedicato). Ho corretto la FONTE (regola CLAUDE.md):
+    commento in cerbero.py + §8-bis di BOT_CERBERO_PROGETTO.md + RIASSUNTO_CERBERO.md.
+    -> Vedi DECISIONE PER L'UTENTE punto B.
+ c) WATCHDOG (cerbero.py ~4337): al silenzio chiama ws.close(); run_forever ritorna e il
+    while True RICONNETTE (break solo per deadline/target/fondi). RICONNETTE, non termina.
+    Corretto per il regime manuale. OK, non toccato.
+
+DOC (fonti corrette nello stesso lavoro):
+ - docs/BOT_CERBERO_PROGETTO.md §8-bis: cron mai scattato + precisazione "non prima di
+   ogni scarto" + censura asse trasversale.
+ - docs/RIASSUNTO_CERBERO.md: idem (cron, log osservazione, "va lanciata a mano").
+
+STATO GIT: tutto MODIFICATO IN LOCALE, NON committato, NON pushato (attendo l'ok
+dell'utente per il push su main / eventuale run GitHub, come da CLAUDE.md). File toccati:
+ M bots/cerbero/cerbero.py
+ M bots/cerbero/cerbero_learn.py
+ M bots/cerbero/backtest_e_test.py
+ M cerbero_soglie_apprese.json   (rigenerato da T1, identico ai valori precedenti)
+ M docs/BOT_CERBERO_PROGETTO.md
+ M docs/RIASSUNTO_CERBERO.md
+Test: backtest_e_test.py -> unit test TUTTI OK, lift 48h +12.4, confronto orizzonti come
+sopra. AST/import di tutti e 3 i moduli OK.
+NB fuori scope: RIASSUNTO_2026-08-04.md risulta M da prima della sessione (non mio).
+CONTEXT.md / CONTEXT_CERBERO.md creati in una sessione precedente NON sono presenti sul
+disco ora (erano non committati); fuori perimetro di questo brief, non li ho ricreati.
+
+
+7) COSA RESTA CHIUSO (non riaprire)
+-----------------------------------
+ - Orizzonte 12h: passa la soglia lift (ratio 1.14) ma CHIUSO come orizzonte operativo:
+   non verificabile in regime manuale (run non abbastanza fitte). Resta solo in tabella.
+ - Orizzonte 48h: superato come default di apprendimento; 24h dà lift equivalente
+   (0.92x) e matura 30h prima. Il default resta 24h salvo dati nuovi che ribaltino il
+   segno del delta (regola CLAUDE.md: conta il delta, non il valore assoluto).
+ - Asse trasversale: colonne popolate al 100%, nessun bug di scrittura. Non riaprire la
+   "verifica riempimento".
+ - Cron come bug di config: escluso (on: valido, su main, Actions on). Ricontrollare solo
+   il passare del tempo (§1), non la sintassi.
+
+
+8) DECISIONE PER L'UTENTE (solo lista e numeri, nessun interruttore toccato)
+----------------------------------------------------------------------------
+A) GO-LIVE RISTRETTO — leghe con soglia QUALIFICATA e campione sufficiente OGGI:
+   Fonte soglie = dataset storico (bootstrap), non ancora osservazioni live mature.
+     mlspa               temp_disc_min 5%   n=1351
+     k-league-1          temp_disc_min 5%   n= 581
+     eredivisie          temp_disc_min 5%   n=1529
+     jupiler-pro-league  temp_disc_min 5%   n=1529
+   Nessuna altra lega ha oggi una soglia appresa (le altre userebbero il default
+   prudente 10%). Le soglie da osservazioni live arriveranno dal 05/08 (§3), a partire
+   da mlspa: allora si potrà confermare/sostituire questi bootstrap con dati veri.
+
+B) CENSURA ASSE TRASVERSALE (T5b) — scelta da fare:
+   Oggi l'asse trasversale (prezzo_secondo/margine) si registra SOLO per i candidati con
+   margine >= soglia MakeOffer. I margini bassi (la maggioranza) non entrano mai nel CSV,
+   quindi non si potrà mai misurare se predicono ritorni bassi/negativi (bias di
+   selezione sulla validazione del limite #1 del progetto). Opzioni:
+     b1) Lasciare così (l'asse trasversale si valida solo sopra soglia).
+     b2) Registrare una riga trasversale-only ANCHE per lo scarto margine<soglia
+         (dati già calcolati alla riga ~3554, zero query in più) e insegnare al
+         risolutore a gestirla senza asse temporale.
+     b3) Fetch transazioni per tutti (NO: regressione di velocità, sconsigliato).
+   Non implementato: è una scelta di scope, non un bug. Serve l'ok per procedere (b2).
+
+C) SCHEDULARE cerbero_learn: ancora NON schedulato per scelta. Prima va lanciato a mano
+   una volta dopo il 05/08 01:00Z e visto che le soglie da --osservazioni abbiano senso.

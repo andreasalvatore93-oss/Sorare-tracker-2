@@ -104,9 +104,14 @@ il 03/08 l'export è fallito con HTTP 403 perché scaduti (poi rinfrescati).
 ## 7. Limiti noti e prossimi passi
 
 1. **L'asse trasversale (spread live 1°/2°) NON è stato backtestato**: non vive nelle
-   transazioni ma nelle offerte live. Serve una raccolta dedicata di snapshot delle offerte
-   nel tempo per validarlo/tararlo. Oggi si fida delle curve di Definitivo (già validate
+   transazioni ma nelle offerte live. Oggi si fida delle curve di Definitivo (già validate
    sulle preferenze utente, ma su "compra/offri", non su "poi rivende in guadagno").
+   **AGGIORNAMENTO 04/08 — la raccolta è partita**: `cerbero_osservazioni.csv` registra ora
+   `prezzo_secondo_eur` e `margine_trasversale_pct` ad ogni osservazione (il bot li calcolava
+   già per decidere, costava zero salvarli). Non serve più una raccolta dedicata di snapshot:
+   fra 48h dalle prime righe il risolutore forward può misurare se lo spread predice il
+   prezzo futuro, esattamente come fa con lo sconto temporale. **Il limite resta aperto
+   finché quella misura non esiste** — è solo diventato misurabile.
 2. **Dati solo sulle leghe di Profit** (MLS/Korea/Eredivisie/Belgio), non su tutto il
    mercato che il motore reattivo tocca. Le soglie temporali vanno riconfermate quando si
    accende su altre leghe (basta toglierle dalla blacklist `campionato`, costo query ~0).
@@ -137,6 +142,44 @@ Più il bot gira, più leghe impara.
 
 **Lookback = 1gg** (non 2): il backtest mostra che 1gg vince ovunque e su MLS **cambia
 il segno** (a 2gg MLS era negativo, a 1gg positivo — il mercato MLS si muove veloce).
+
+## 8-bis. Raccolta dati: cosa la frenava (04/08)
+
+Il collo di bottiglia non era il modello, era **quanti dati entravano**. Tre cause
+misurate sulle prime run, tutte rimosse:
+
+1. **Nessun cron.** Ogni run partiva solo a mano. Servono ≥30 osservazioni per lega
+   perché il risolutore qualifichi una soglia; dopo le prime run ce n'erano ~15 sparse
+   su 23 leghe. È stato aggiunto a `bot_cerbero.yml` `schedule: 0 */6 * * *` (5h di
+   ascolto a run, sempre `LIVE_MODE=no`: da schedule non arrivano input, valgono i
+   default). **CORREZIONE 04/08 (verificata con `gh run list --event=schedule`): il cron
+   NON è mai scattato — zero run schedulate.** Il blocco `on:` è valido, il file è sul
+   branch di default `main`, le Actions sono abilitate: la causa è che il `cron:` è stato
+   aggiunto solo il 04/08 alle 00:08 UTC (commit b946e08239) e uno scheduled workflow
+   appena introdotto ha bisogno di più tempo/attività prima che GitHub lo attivi (e i
+   trigger schedulati partono comunque con ritardo). **Regime reale: manuale** — ogni run
+   è una pressione umana, non 20h/giorno. Tutta la pianificazione va fatta su questa base.
+2. **Dati già pagati e buttati.** Il log osservazione stava dopo il filtro thin market,
+   che fa `return False`: quelle carte avevano già pagato la query transazioni e avevano
+   media e sconto calcolati. Ora si registrano **prima dello scarto thin market e della
+   decisione del gate**, con la colonna `scarto_thin_market` per includerle/escluderle in
+   apprendimento. **PRECISAZIONE 04/08:** *non* è "prima di ogni scarto". L'asse temporale
+   (media/sconto/trend) richiede il fetch transazioni, pagato solo dai candidati già sopra
+   la soglia MakeOffer; gli scarti a monte (blacklist, prezzo, e soprattutto **margine <
+   soglia MakeOffer**, la maggioranza) non producono riga perché non hanno ancora quei
+   dati. Ne segue che l'asse **trasversale** (prezzo_secondo/margine, noti *prima* del
+   fetch) resta **censurato sui margini bassi**: vedi handoff 04/08.
+3. **Sottoscrizione morta a socket vivo** (la più costosa). Run 30851298043: ultimo
+   evento di mercato alle 22:41:34, poi 94 minuti di bot vivo e sordo (nel log solo il
+   battito del bid periodico ogni 3 min), **zero riconnessioni tentate**, ~44% della run
+   perso. Il ciclo di riconnessione del 25/07 copre il caso in cui la connessione *cade*;
+   qui il socket era aperto e i `ping` di ActionCable continuavano ad arrivare, quindi
+   `ping_interval`/`ping_timeout` erano soddisfatti e `on_close` non scattava mai.
+   Rimedio: watchdog sugli **eventi**, non sul socket — `EVENT_SILENCE_TIMEOUT_SECONDS`
+   (default 600) di zero eventi di mercato → chiude e il ciclo esistente risottoscrive.
+   Soglia larga apposta: a regime arrivano ~3 eventi/secondo.
+
+Nessuno dei tre tocca il gate: backtest invariato (lift +12,4).
 
 ## 9. File
 
