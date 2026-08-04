@@ -58,14 +58,24 @@ Come lanciarlo: GitHub -> Actions -> "Cerbero (apprendimento)" -> Run workflow
 MAI lanciato su GitHub finora: attende l'ok utente.
 
 
-5) MATURAZIONE DATI (calcolata il 04/08, verificare data corrente)
------------------------------------------------------------------
-cerbero_osservazioni.csv (snapshot 04/08): 686 righe. Prima lega apprendibile
-via osservazioni live: mlspa, dalle ~2026-08-05 01:00 UTC. A seguire:
-premiership ~03:14Z, premier-league ~03:43Z, primeira-liga ~07:14Z,
-austrian-bundesliga ~13:34Z, 2-bundesliga ~15:15Z, eredivisie ~15:21Z (tutte
-05/08). Sotto le 30 righe (servono altre run manuali): k-league-1, jupiler,
-bundesliga-de, laliga, serie-a, championship, ...
+5) MATURAZIONE DATI (ricalcolata 04/08 15:30 UTC = 17:30 Roma, dopo stop run6)
+-------------------------------------------------------------------------------
+cerbero_osservazioni.csv: 2.816 righe (1.033 completa + 1.783 trasversale_only).
+Orari in ora di Roma (CEST, UTC+2). 12 leghe GIA' QUALIFICATE (volume ok),
+maturano (eta'>30h) tutte nella notte 04/08->05/08:
+  mlspa                   01:03   premiership-gb-sct     01:28
+  primeira-liga-pt        01:12   premier-league-gb-eng  01:05
+  eredivisie              01:05   austrian-bundesliga    01:03
+  2-bundesliga            01:12   bundesliga-de           01:17
+  laliga-es               01:18   k-league-1               01:23
+  jupiler-pro-league      01:10   1-hnl                    01:33
+Sotto le 30 righe 'completa' (serve altra raccolta, non solo tempo):
+  serie-a-it(28), championship(27), russian-premier-league(24), j1-league(20),
+  ligue-1-fr(19), e code piu' corte a scendere.
+NOTA: questi orari si aggiornano ad ogni run che raccoglie altre righe
+(l'eta' si misura sulla riga piu' vecchia GIA' presente, quindi con piu' righe
+il volume-soglia si raggiunge prima). Il numero valido e' quello dell'ultimo
+ricalcolo in questo file, non versioni precedenti dell'handoff.
 Soglie bootstrap attuali (fonte dataset_storico, NON osservazioni live):
  mlspa 5% (n=1351) | k-league-1 5% (n=581) | eredivisie 5% (n=1529) |
  jupiler-pro-league 5% (n=1529). Altre leghe: default prudente 10%.
@@ -93,5 +103,7 @@ C) Workflow "Cerbero (apprendimento)" pronto ma mai lanciato: da lanciare con
 
 8) PROSSIMO STEP CONCRETO
 -----------------------------
-Dopo la maturazione mlspa: lanciare workflow "Cerbero (apprendimento)" ->
-modalita 'osservazioni', poi confrontare soglie apprese vs bootstrap (§5).
+Da ~01:30 di Roma (05/08) le 12 leghe di §5 sono lanciabili. L'utente ha
+segnalato che probabilmente non sara' online a quell'ora: lanciare
+'osservazioni' quando torna disponibile (i dati restano validi, non scadono),
+poi confrontare soglie apprese vs bootstrap (§5).
