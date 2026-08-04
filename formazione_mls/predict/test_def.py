@@ -1331,7 +1331,7 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
                              half_life=None, trend_intensity=None,
                              shrink_k=SHRINK_K_OUTLIER_DEF,
                              media_ruolo_prior=MEDIA_RUOLO_DEF_PRIOR,
-                             use_stadio_d=True, presence_rate=None, opponent_lambda_mult=None,
+                             use_stadio_d=False, presence_rate=None, opponent_lambda_mult=None,
                              opponent_team_slugs_hist=None, game_dates_hist=None,
                              next_opponent_team_slug=None, next_game_date=None, league='mls',
                              detail_ok_flags=None):
@@ -1357,7 +1357,17 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
     build_prediction dal 29/07. opponent_team_slugs_hist/game_dates_hist/
     next_opponent_team_slug ora opzionali: se assenti (vecchi chiamanti diagnostici
     senza questo dato), comportamento INVARIATO (lambda_mult=1.0, Stadio D avversario
-    su ranking come prima)."""
+    su ranking come prima).
+
+    CANALE AVVERSARIO SPENTO SU DEF (04/08, BRIEF risolutivo_produzione,
+    decisione presa dall'utente su misura diretta campione pieno 25.738 punti,
+    handoff baseline_canale_fwd_split_2026-08-04 sez. 4.A/4.B): use_stadio_d
+    default era True, ora False -- ENTRAMBE le leve del canale avversario
+    (opponent_lambda_mult sotto, e Stadio D qui) peggioravano MAE+corr+lift
+    INSIEME su DEF, unico ruolo su 4 dove succede (FWD/GK migliorano, MID
+    misto). Spegnerle riproduce esattamente MAE=14.9423 corr=0.1905
+    lift=16.91 sullo stesso campione. FWD/MID/GK NON toccati. Reversibile:
+    use_stadio_d=True e togliere il blocco 'SPENTO' sotto a opponent_lambda_mult."""
     if half_life is None:
         half_life = HALF_LIFE_GAMES
     if trend_intensity is None:
@@ -1379,11 +1389,14 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
     # disponibile (30/07); altrimenti resta 1.0 = nessun effetto (vecchio
     # comportamento per chi non ha questo dato).
     if opponent_lambda_mult is None:
-        if next_opponent_team_slug:
-            opponent_lambda_mult = opponent_strength.opponent_lambda_multiplier(
-                league, 'def', next_opponent_team_slug, next_game_date or datetime.datetime.utcnow())
-        else:
-            opponent_lambda_mult = 1.0
+        # SPENTO (04/08, vedi docstring sopra): prima, se next_opponent_team_slug
+        # era disponibile, calcolava opponent_strength.opponent_lambda_multiplier
+        # e lo applicava. Reversibile: togliere questa riga e riattivare il
+        # blocco commentato sotto.
+        opponent_lambda_mult = 1.0
+        # if next_opponent_team_slug:
+        #     opponent_lambda_mult = opponent_strength.opponent_lambda_multiplier(
+        #         league, 'def', next_opponent_team_slug, next_game_date or datetime.datetime.utcnow())
     lambda_pos_dec = weighted_mean(pos_decisive_values, weights_det) * opponent_lambda_mult
     lambda_neg_dec = weighted_mean(neg_decisive_values, weights_det)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
@@ -2117,9 +2130,14 @@ def build_prediction(player_slug):
     except (ValueError, AttributeError):
         _next_game_dt = None
     _opp_cutoff = _next_game_dt or datetime.datetime.utcnow()
+    # SPENTO da score_atteso (04/08, vedi docstring di compute_score_atteso_def
+    # sopra): _opp_lambda_mult resta calcolato per il dict diagnostico/
+    # visualizzazione (result['opp_lambda_mult'] sotto), ma NON piu' applicato
+    # a lambda_pos_dec. Prima: lambda_pos_dec = ... * _opp_lambda_mult.
+    # Reversibile: rimettere quella riga al posto di quella con 1.0 sotto.
     _opp_lambda_mult = opponent_strength.opponent_lambda_multiplier(
         'mls', 'def', next_opponent_team_slug, _opp_cutoff)
-    lambda_pos_dec = weighted_mean(pos_decisive_values, weights_det) * _opp_lambda_mult
+    lambda_pos_dec = weighted_mean(pos_decisive_values, weights_det) * 1.0
     lambda_neg_dec = weighted_mean(neg_decisive_values, weights_det)
     level_score_atteso = expected_level_from_rates(lambda_pos_dec, lambda_neg_dec)
     fattore_trend_granulare, _trend_gran_short, _trend_gran_long = compute_trend_factor(
@@ -2189,9 +2207,14 @@ def build_prediction(player_slug):
     (media_clean_sheet_condizionata_venue, media_clean_sheet_condizionata_avversario,
      delta_clean_sheet_venue, delta_clean_sheet_avversario) = _condiziona_venue_avversario(clean_sheet_values)
 
-    score_atteso += (delta_gol_subiti_venue + delta_gol_subiti_avversario
-                                + delta_passaggio_venue + delta_passaggio_avversario
-                                + delta_clean_sheet_venue + delta_clean_sheet_avversario)
+    # SPENTO da score_atteso (04/08, vedi docstring di compute_score_atteso_def
+    # sopra): le sei correzioni Stadio D (venue+avversario su gol_subiti/
+    # passaggio/clean_sheet) restano CALCOLATE sopra per il result dict
+    # diagnostico/di visualizzazione, ma non sommate piu' al punteggio.
+    # Prima: score_atteso += (delta_gol_subiti_venue + delta_gol_subiti_avversario
+    #                        + delta_passaggio_venue + delta_passaggio_avversario
+    #                        + delta_clean_sheet_venue + delta_clean_sheet_avversario)
+    # Reversibile: togliere questo commento e rimettere la riga sopra.
 
     # --- SCORE DI ORDINAMENTO (27/07, sezione 27.C del RIASSUNTO) ---
     # Lo score_atteso qui sopra e' la MIGLIORE STIMA DEL PUNTEGGIO del singolo

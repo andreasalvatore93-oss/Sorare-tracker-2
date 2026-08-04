@@ -1,0 +1,231 @@
+HANDOFF — FERMATO IN PARTE 1: la baseline SPENTO misurata non era quella che pensavamo
+Data: 2026-08-04
+Segue: HANDOFF_baseline_canale_fwd_split_2026-08-04.txt
+Branch: ritaratura-fattori (NON mergiato su main, NIENTE propagato)
+
+
+====================================================================
+1. STATO DEL REPO
+====================================================================
+
+Branch: ritaratura-fattori. formazione_mls/predict/test_def.py e' modificato
+ma NON COMMITTATO e NON MERGIATO su main. NESSUNA propagazione lanciata
+(propaga_modello.py e' girato SOLO in --check, nessuna scrittura).
+
+Parte 0 completata e certificata (vedi sezione 4). Parte 1 ESEGUITA FINO AL
+PUNTO DI STOP OBBLIGATORIO (1.4): la verifica di non-regressione ha trovato
+che DEF NON riproduce i numeri promessi. Come da istruzione esplicita del
+brief ("FERMATI e dimmelo"), mi sono fermato qui. Parti 2/3/4 NON fatte.
+
+Il codice modificato resta sul branch per essere ispezionato, ma e'
+esplicitamente NON PRONTO: non mergiare, non propagare finche' non si
+decide come procedere (sezione 6).
+
+File modificati preesistenti (non miei, invariati): RIASSUNTO_2026-08-04.md,
+docs/BOT_CERBERO_PROGETTO.md, docs/RIASSUNTO_CERBERO.md.
+
+
+====================================================================
+2. PERCHE' ESISTEVA QUESTO LAVORO
+====================================================================
+
+Le sessioni precedenti avevano misurato che su DEF, con ranking_k=0,
+spegnere il canale avversario (opponent_lambda_mult + Stadio D) migliorava
+MAE+corr+lift insieme rispetto a tenerlo acceso (produzione attuale). Il
+brief ordinava di implementare quello spegnimento in produzione, propagare
+a tutte le leghe, e rieseguire soglie arene e audit scouting a valle.
+
+
+====================================================================
+3. COSA HO COSTRUITO O TOCCATO
+====================================================================
+
+Modifica (non committata) in formazione_mls/predict/test_def.py:
+  compute_score_atteso_def(): use_stadio_d default True->False; risoluzione
+    di opponent_lambda_mult cambiata da "auto-calcola se next_opponent_
+    team_slug disponibile" a "sempre 1.0" (blocco vecchio commentato sotto,
+    reversibile con una riga).
+  build_prediction(): stesso pattern sul blocco inline duplicato -- lambda
+    forzato a 1.0 (mantenuto il calcolo diagnostico per il result dict), le
+    sei correzioni Stadio D (venue+avversario su gol_subiti/passaggio/
+    clean_sheet) restano calcolate ma non piu' sommate a score_atteso.
+
+Script di verifica (scratch, non nel repo):
+  parte1_baseline_diretta.py (riusato)   4 ruoli x 2 condizioni, campione pieno
+  verifica_discrepanza.py (nuovo)        isola la causa della discrepanza
+
+
+====================================================================
+4. OUTPUT NUMERICO INTEGRALE
+====================================================================
+
+4.A PARTE 0 — certificazione produzione (fatta PRIMA di ogni modifica)
+
+  Ultimo commit che tocca formazione_mls/predict/*: c174f1cf1d
+    (2026-08-03 19:51:53, "GK: blend P(porta inviolata) della squadra")
+  Ultima propagazione: 4272e98aabf (2026-08-03 20:04:44,
+    "Modello unico su tutte le leghe: propaga_modello.py")
+  Verifica hash: 208/208 file predict/ (52 leghe x 4 ruoli) IDENTICI al
+    contenuto canonico-adattato (confronto byte-per-byte, non solo
+    --check). 0 divergenze.
+
+  RIGA SECCA: in produzione oggi c'e' il commit c174f1cf1d, propagato il
+  2026-08-03, 52 leghe allineate, 0 divergenti.
+
+4.B PARTE 1.1/1.4 — verifica di non-regressione (campione pieno, 75.474 punti)
+
+  PRIMA della modifica (= produzione attuale oggi):
+  RUOLO  CANALE   MAE       corr    lift%
+  FWD    SPENTO   14.7380   0.2565  28.15
+  FWD    ACCESO   14.7347   0.2586  28.72
+  MID    SPENTO   13.2398   0.2478  24.85
+  MID    ACCESO   13.2492   0.2484  24.54
+  DEF    SPENTO   14.9423   0.1905  16.91   <- il numero da riprodurre
+  DEF    ACCESO   14.9904   0.1763  16.06   <- produzione attuale
+  GK     SPENTO   16.1019   0.0707   9.18
+  GK     ACCESO   16.0902   0.0746   9.49
+
+  DOPO la modifica a test_def.py:
+  RUOLO  CANALE   MAE       corr    lift%
+  FWD    SPENTO   14.7380   0.2565  28.15   IDENTICO a 4 decimali (non toccato)
+  FWD    ACCESO   14.7347   0.2586  28.72   IDENTICO a 4 decimali (non toccato)
+  MID    SPENTO   13.2398   0.2478  24.85   IDENTICO a 4 decimali (non toccato)
+  MID    ACCESO   13.2492   0.2484  24.54   IDENTICO a 4 decimali (non toccato)
+  DEF    SPENTO   14.9937   0.1729  16.95   <- NON RIPRODUCE 14.9423/0.1905/16.91
+  DEF    ACCESO   14.9937   0.1729  16.95   <- (identico a SPENTO, atteso: il canale ora e' morto)
+  GK     SPENTO   16.1019   0.0707   9.18   IDENTICO a 4 decimali (non toccato)
+  GK     ACCESO   16.0902   0.0746   9.49   IDENTICO a 4 decimali (non toccato)
+
+  FWD/MID/GK: verificati IDENTICI (nessun impatto collaterale, come atteso
+  visto che i loro file non sono stati toccati). DEF: NON riproduce i
+  numeri attesi. STOP come da istruzione del brief.
+
+4.C LA CAUSA (isolata e confermata sperimentalmente)
+
+  La "riga SPENTO" misurata in tutte le sessioni precedenti (a partire da
+  HANDOFF_baseline_canale_fwd_split_2026-08-04) usava sempre
+  usa_avversario=False nel banco di misura. Quando usa_avversario=False, il
+  banco NON passa opponent_team_slugs_hist/next_opponent_team_slug a
+  compute_score_atteso_def. Nel codice ORIGINALE (prima della mia
+  modifica), use_stadio_d default era True, e la condizione era:
+
+    if opponent_team_slugs_hist is not None and next_opponent_team_slug:
+        ... dato pulito (opponent_is_strong, gol reali) ...
+    else:
+        ... FALLBACK su domesticLeagueRanking (la variabile CONGELATA
+            perche' contaminata, vedi sez. 33.A del 29/07) ...
+
+  Quindi "SPENTO" non significava "nessuna correzione Stadio D": significava
+  "Stadio D calcolato sul fallback a domesticLeagueRanking invece che sul
+  dato pulito". Verificato chiamando compute_score_atteso_def col codice
+  NUOVO ma forzando use_stadio_d=True e nessun opponent_team_slugs_hist
+  (replica esatta della vecchia misura SPENTO): MAE=14.9423 corr=0.1905
+  lift=16.91 -- IDENTICO a 4 decimali al numero originale. Confermato,
+  non e' un'ipotesi.
+
+  La mia modifica implementa invece lo spegnimento VERO (nessuna
+  correzione Stadio D, ne' dal dato pulito ne' dal fallback ranking), che
+  e' quello che "spegnere il canale" dovrebbe voler dire in produzione (la
+  produzione ha sempre il dato pulito disponibile, non ha senso farla
+  ricadere apposta sul ranking contaminato). Ma e' un esperimento MAI
+  misurato prima: nessuna sessione precedente lo ha mai testato, ha sempre
+  misurato involontariamente "lambda off + Stadio D su ranking fallback".
+
+4.D IL CONFRONTO ONESTO (quello mai fatto finora)
+
+  ACCESO (produzione attuale):        MAE=14.9904  corr=0.1763  lift=16.06
+  SPENTO DAVVERO (la mia modifica):   MAE=14.9937  corr=0.1729  lift=16.95
+
+  MAE: peggiora leggermente (+0.0033)
+  corr: peggiora leggermente (-0.0034)
+  lift: migliora (+0.89)
+
+  NON passa il metro delle tre misure insieme. E' un risultato misto, non
+  il miglioramento pulito su tutte e tre che il brief dava per deciso.
+
+
+====================================================================
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+====================================================================
+
+5.1 IL PROBLEMA NON E' NELLA MODIFICA, E' NELLA MISURA CHE L'HA GIUSTIFICATA
+
+Tre sessioni di seguito (banco_e_rimisura, griglia_estesa_e_split,
+baseline_canale_fwd_split) hanno tutte usato usa_avversario=False come
+sinonimo di "canale spento", senza accorgersi che nel ramo Defender questo
+non disattiva Stadio D: lo fa ricadere su un fallback diverso (ranking),
+non su "niente". La differenza è invisibile a meno di leggere
+compute_score_atteso_def riga per riga con questo sospetto specifico in
+mente -- cosa che il brief di oggi ha chiesto di fare per la prima volta
+(1.4, verifica di riproduzione esatta) ed e' esattamente cosi' che e'
+emerso.
+
+5.2 QUESTO NON VUOL DIRE CHE "SPEGNERE" SIA SBAGLIATO, VUOL DIRE CHE NON
+E' STATO MAI MISURATO CORRETTAMENTE
+
+Il confronto onesto (4.D) e' marginale, non negativo: lift migliora
+parecchio (+0.89), MAE e corr peggiorano di pochissimo (millesimi). Con
+un metro meno rigido (es. 2 su 3 migliorano, o si pesa il lift di piu'
+perche' e' la misura piu' vicina a "schierare bene") potrebbe ancora
+passare. Ma la regola del repo (CLAUDE.md, "si applica solo se si muovono
+tutte e tre nello stesso verso") dice di no, e non sta a me derogarla.
+
+5.3 C'E' UNA TERZA OPZIONE MAI VALUTATA: SOLO LAMBDA OFF, STADIO D SU
+FALLBACK RANKING
+
+E' letteralmente quello che il "SPENTO" misurato finora rappresentava
+davvero (14.9423/0.1905/16.91, il migliore delle tre configurazioni). Ma
+significherebbe far girare la produzione sul domesticLeagueRanking
+contaminato invece che sui gol reali -- il motivo stesso per cui il
+ranking e' stato CONGELATO in questo stesso brief. Sarebbe incoerente
+raccomandarlo. Lo segnalo solo per completezza, NON e' un'opzione che
+propongo.
+
+5.4 PARTI 2/3/4 NON FATTE
+
+Nessuna propagazione, nessun audit soglie arene, nessun audit scouting/
+generatore. Tutte a valle di una decisione produzione che non e' stata
+presa per il motivo sopra.
+
+5.5 CAVEAT INVARIATI
+
+Contaminazione domesticLeagueRanking, split casa/trasferta non misurato:
+entrambi ancora validi e non toccati.
+
+
+====================================================================
+6. DECISIONE APERTA
+====================================================================
+
+- In produzione oggi c'e' il commit c174f1cf1d, propagato il 2026-08-03,
+  52 leghe allineate, 0 divergenti (NESSUN cambiamento di questa sessione
+  e' entrato in produzione).
+- Il DEF non e' migliorato: la modifica preparata su questo branch (canale
+  DAVVERO spento) da' un risultato MISTO (lift +0.89, MAE -0.0033, corr
+  -0.0034), non il miglioramento netto su tutte e tre le misure che era
+  stato dato per certo. Nessuna soglia arene e' stata toccata.
+- Scouting/generatore: audit non iniziato (Parte 4 non raggiunta).
+
+Opzioni sul tavolo, nessuna presa:
+  a) Accettare il risultato misto di 4.D cosi' com'e' (lift conta di
+     piu' per lo scopo pratico) e procedere con Parti 2-4 su QUESTA base,
+     rimisurando prima le soglie arene per sicurezza visto che il segnale
+     e' piu' debole del previsto.
+  b) Non toccare DEF in produzione: il vantaggio netto non è li' dove si
+     pensava. Chiudere questo filone, tenere la scoperta agli atti.
+  c) Rimisurare da capo con un metro diverso (es. lift come priorita', o
+     pesato) prima di decidere -- richiede di ridefinire la regola, non
+     posso farlo da solo.
+
+Il codice modificato resta sul branch, non committato, per essere
+ispezionato prima di scegliere.
+
+
+====================================================================
+7. FILE DI RIFERIMENTO
+====================================================================
+
+BRIEF_2026-08-04_risolutivo_produzione.txt (Downloads, non nel repo)
+docs/handoff/HANDOFF_baseline_canale_fwd_split_2026-08-04.txt   la misura SPENTO da correggere (5.1)
+formazione_mls/predict/test_def.py   compute_score_atteso_def + build_prediction, modifica non committata
+propaga_modello.py                    --check confermato pulito, nessuna scrittura eseguita
