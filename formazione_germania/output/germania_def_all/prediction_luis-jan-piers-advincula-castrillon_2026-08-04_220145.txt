@@ -1,0 +1,114 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T22:01:45.972067Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) luis-jan-piers-advincula-castrillon: 44 pt attesi (24-56)
+   ORDINAMENTO: 39.12
+   SQUADRA: alianza-lima-lima | AVVERSARIO: sport-boys-callao
+======================================================================
+
+######################################################################
+# GIOCATORE: luis-jan-piers-advincula-castrillon
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: luis-jan-piers-advincula-castrillon (squadra: alianza-lima-lima)
+Generato: 2026-08-04T22:01:45.971537Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 20
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: primera-division-pe (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-30 | HYO vs ALI | primera-division-pe | score=35.0 | peso=0.675
+  2026-02-08 | ALI vs COM | primera-division-pe | score=32.2 | peso=0.691
+  2026-02-15 | ALA vs ALI | primera-division-pe | score=53.2 | peso=0.707
+  2026-02-21 | ALI vs BOY | primera-division-pe | score=28.4 | peso=0.724
+  2026-03-10 | ALI vs MEL | primera-division-pe | score=12.1 | peso=0.741
+  2026-03-14 | DGA vs ALI | primera-division-pe | score=53.0 | peso=0.758
+  2026-03-21 | ALI vs JPC | primera-division-pe | score=60.0 | peso=0.776
+  2026-04-05 | UNI vs ALI | primera-division-pe | score=20.9 | peso=0.794
+  2026-04-14 | None vs ALI | primera-division-pe | score=43.9 | peso=0.812
+  2026-04-19 | ALI vs GAR | primera-division-pe | score=51.8 | peso=0.831
+  2026-04-26 | GRA vs ALI | primera-division-pe | score=48.2 | peso=0.851
+  2026-05-03 | ALI vs UCM | primera-division-pe | score=22.2 | peso=0.871
+  2026-05-16 | CIE vs ALI | primera-division-pe | score=38.3 | peso=0.891
+  2026-05-24 | ALI vs ROS | primera-division-pe | score=52.1 | peso=0.912
+  2026-05-31 | FCC vs ALI | primera-division-pe | score=41.7 | peso=0.933
+  2026-07-20 | ALI vs HYO | primera-division-pe | score=47.0 | peso=0.955
+  2026-07-26 | COM vs ALI | primera-division-pe | score=39.3 | peso=0.977
+  2026-08-02 | ALI vs ALA | primera-division-pe | score=62.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 41.73
+  di cui Punteggio decisivo (level_score) medio: 35.31 | Punteggio complessivo (granulari) medio: 6.42 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.04, delta avversario +0.00 | Passaggio condizionato: delta venue -2.65, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.14, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 13.44
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 22.2 - 53.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.07 (differenza: +2.37)
+Media score in casa: 40.90 | Media score fuori casa: 41.51
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.8
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.870
+Fattore falli (casa/trasferta, da dati reali): 1.007
+Fattore duelli (casa/trasferta, da dati reali): 1.005
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.987
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.006
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.001
+Fattore trend (media ultime 5: 48.6 vs media 5 PRECEDENTI: 40.7): 1.000
+P(gioca): 90.00% (fonte: tasso di presenza storico (18/20))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T01:00
+Casa: Sport Boys Association | Trasferta: Club Alianza Lima
+Competizione: primera-division-pe
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.0 (range 24.5 - 55.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 39.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 40.23
+Punteggio REALE ottenuto in quella partita: 62.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +22.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.6    60.0    +14.4    16.0        SI
+   7        7      31.9    20.9    -11.0    17.6        SI
+   8        8      48.5    43.9     -4.6    17.8        SI
+   9        9      28.5    51.8    +23.3    16.8        NO
+  10       10      43.1    48.2     +5.1    16.6        SI
+  11       11      44.8    22.2    -22.7    16.0        NO
+  12       12      29.6    38.3     +8.7    16.3        SI
+  13       13      36.4    52.1    +15.7    15.6        NO
+  14       14      46.4    41.7     -4.7    15.5        SI
+  15       15      48.3    47.0     -1.4    14.9        SI
+  16       16      39.2    39.3     +0.1    14.4        SI
+  17       17      37.5    62.5    +25.0    13.9        NO
+
+MAE (errore assoluto medio): 11.38
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

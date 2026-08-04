@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-04T22:02:41.559441Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) lukas-kacavenda: 44 pt attesi (1-67)
+   SQUADRA: dinamo-zagreb-zagreb | AVVERSARIO: rijeka-rijeka
+======================================================================
+
+######################################################################
+# GIOCATORE: lukas-kacavenda
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: lukas-kacavenda (squadra: dinamo-zagreb-zagreb)
+Generato: 2026-08-04T22:02:41.558486Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 19
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: 1-hnl (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-30 | ASK vs SVR | austrian-bundesliga | score=0.0 | peso=0.895
+  2025-09-21 | ASK vs BWL | austrian-bundesliga | score=41.3 | peso=0.920
+  2026-03-22 | SCR vs ASK | austrian-bundesliga | score=54.7 | peso=0.946
+  2026-07-28 | DIN vs FCT | uefa-champions-league | score=66.3 | peso=0.973
+  2026-07-31 | DIN vs SLA | 1-hnl | score=48.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 42.91
+  di cui Punteggio decisivo (level_score) medio: 36.36 | Punteggio complessivo (granulari) medio: 6.56 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 36.36 (delta +0.00)
+  Efficacia offensiva condizionata: delta venue +0.00, delta avversario +0.41 | Passaggio condizionato: delta venue +0.00, delta avversario +0.22 | Gol subiti condizionato: delta venue +0.00, delta avversario +0.39 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 22.28
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 0.0 - 66.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 5.42 (differenza: +16.86)
+Media score in casa: 57.60 | Media score fuori casa: 42.91
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.0
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.587 (gol subiti reali dell'avversario, ultime 10)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.828
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 14.29% (fonte: tasso di presenza storico (5/35))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T00:00
+Casa: HNK Rijeka | Trasferta: GNK Dinamo Zagreb
+Competizione: 1-hnl
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.6 (range 0.7 - 67.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 41.31
+Punteggio REALE ottenuto in quella partita: 48.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +7.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

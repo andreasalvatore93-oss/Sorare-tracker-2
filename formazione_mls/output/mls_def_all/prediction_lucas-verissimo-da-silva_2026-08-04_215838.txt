@@ -1,0 +1,114 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T21:58:38.371596Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) lucas-verissimo-da-silva: 48 pt attesi (30-65)
+   ORDINAMENTO: 43.94
+   SQUADRA: santos-santos-sao-paulo | AVVERSARIO: athletico-paranaense-curitiba-parana
+======================================================================
+
+######################################################################
+# GIOCATORE: lucas-verissimo-da-silva
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: lucas-verissimo-da-silva (squadra: santos-santos-sao-paulo)
+Generato: 2026-08-04T21:58:38.367977Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 25
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: campeonato-brasileiro-serie-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-22 | CRU vs SAN | campeonato-brasileiro-serie-a | score=54.5 | peso=0.675
+  2026-04-02 | SAN vs REM | campeonato-brasileiro-serie-a | score=76.1 | peso=0.691
+  2026-04-05 | FLA vs SAN | campeonato-brasileiro-serie-a | score=36.9 | peso=0.707
+  2026-04-08 | CUE vs SAN | conmebol-sudamericana | score=30.9 | peso=0.724
+  2026-04-11 | SAN vs CAM | campeonato-brasileiro-serie-a | score=71.0 | peso=0.741
+  2026-04-19 | SAN vs FLU | campeonato-brasileiro-serie-a | score=12.3 | peso=0.758
+  2026-04-25 | BAH vs SAN | campeonato-brasileiro-serie-a | score=47.7 | peso=0.776
+  2026-04-28 | SLO vs SAN | conmebol-sudamericana | score=25.8 | peso=0.794
+  2026-05-02 | PAL vs SAN | campeonato-brasileiro-serie-a | score=52.1 | peso=0.812
+  2026-05-06 | DPR vs SAN | conmebol-sudamericana | score=57.2 | peso=0.831
+  2026-05-10 | SAN vs BRA | campeonato-brasileiro-serie-a | score=54.4 | peso=0.851
+  2026-05-17 | SAN vs CBA | campeonato-brasileiro-serie-a | score=8.8 | peso=0.871
+  2026-05-20 | SAN vs SLO | conmebol-sudamericana | score=60.0 | peso=0.891
+  2026-05-23 | GRE vs SAN | campeonato-brasileiro-serie-a | score=34.6 | peso=0.912
+  2026-05-30 | SAN vs VIT | campeonato-brasileiro-serie-a | score=33.3 | peso=0.933
+  2026-07-16 | BOT vs SAN | campeonato-brasileiro-serie-a | score=34.2 | peso=0.955
+  2026-07-22 | UCV vs SAN | conmebol-sudamericana | score=61.0 | peso=0.977
+  2026-07-25 | SAN vs CHA | campeonato-brasileiro-serie-a | score=35.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 43.26
+  di cui Punteggio decisivo (level_score) medio: 35.33 | Punteggio complessivo (granulari) medio: 7.93 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.03, delta avversario +0.00 | Passaggio condizionato: delta venue +0.18, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.51, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.87
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 25.8 - 61.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.93 (differenza: +2.94)
+Media score in casa: 43.87 | Media score fuori casa: 43.49
+Fattore casa/trasferta applicato: 1.001 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.6
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.774
+Fattore falli (casa/trasferta, da dati reali): 0.994
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.001
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.002
+Fattore trend (media ultime 5: 39.8 vs media 5 PRECEDENTI: 46.4): 1.000
+P(gioca): 72.00% (fonte: tasso di presenza storico (18/25))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-09T21:30
+Casa: Santos FC Sao Paulo | Trasferta: Club Athletico Paranaense
+Competizione: campeonato-brasileiro-serie-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.5 (range 30.0 - 65.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 43.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.84
+Punteggio REALE ottenuto in quella partita: 35.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      40.5    47.7     +7.2    25.0        SI
+   7        7      50.9    25.8    -25.1    23.0        NO
+   8        8      32.2    52.1    +19.9    22.8        SI
+   9        9      44.0    57.2    +13.3    21.6        SI
+  10       10      44.8    54.4     +9.6    20.8        SI
+  11       11      54.1     8.8    -45.3    19.9        NO
+  12       12      48.7    60.0    +11.3    22.6        SI
+  13       13      58.7    34.6    -24.2    22.2        NO
+  14       14      51.0    33.3    -17.7    21.5        SI
+  15       15      41.7    34.2     -7.5    20.9        SI
+  16       16      42.4    61.0    +18.7    20.2        SI
+  17       17      60.8    35.1    -25.7    20.2        NO
+
+MAE (errore assoluto medio): 18.79
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
