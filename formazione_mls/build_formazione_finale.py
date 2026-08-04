@@ -286,8 +286,24 @@ STACK_GUARD_PENALTY = 8_000  # come ANTI_SYNERGY_PENALTY: spinge in fondo, non e
 # I bonus qui sotto sono tarati a 280. Questo fattore li scala in base a quanto
 # forte sta venendo la formazione: pieno e mezzo se e' debole, un terzo se e'
 # gia' forte. Con forza ignota resta 1.0, cioe' il comportamento tarato.
+#
+# ATTENZIONE ALLA SCALA (04/08). La curva qui sotto e' misurata su una
+# formazione ARENA da 5 slot, fascia 255-300. '_forza_stimata' invece proietta
+# sul numero di slot VERO del tipo, e All Stars ne ha 7: li' esce 363-410,
+# sempre oltre il fondo della curva, quindi il fattore vale 0.585 SEMPRE (un
+# solo valore su 3180 chiamate misurate) -- non e' "scalato sulla forza", e'
+# uno sconto fisso del 41% che non risponde a niente. Sulle In Season (5 slot
+# ma ~250 punti) succede l'opposto: fattore 1.43-1.47, bonus gonfiati del 45%
+# proprio dove la varianza conta meno. E sulle arene con cap L10 non viene mai
+# chiamato, perche' quelle passano dal knapsack che ignora le sinergie.
+# FORZA_NORM=1 riporta la forza alla scala a 5 slot prima di leggere la curva,
+# e passa la forza anche allo slot EXTRA (l'unico dove la stima e' piu'
+# affidabile -- 4 titolari su 5 gia' scelti -- e l'unico escluso). Sotto
+# misura, spento di default: vedi diagnostics/ab_fattore_varianza.py.
 FORZA_RIFERIMENTO = 280.0
 _CAMBIO_DISPERSIONE = ((265.0, 0.78), (280.0, 0.53), (295.0, 0.31))
+FORZA_NORM = os.environ.get('FORZA_NORM', '0') == '1'
+SLOT_RIFERIMENTO = 5   # su quanti slot e' misurata _CAMBIO_DISPERSIONE
 
 
 def fattore_varianza(forza_attesa):
@@ -1259,7 +1275,11 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
             if len(scelti) < 2:
                 return None
             n_slot = len(shape['role_slots']) + 1
-            return sum(r['atteso'] for r in scelti) * n_slot / len(scelti)
+            forza = sum(r['atteso'] for r in scelti) * n_slot / len(scelti)
+            if FORZA_NORM:
+                # riportata alla scala su cui _CAMBIO_DISPERSIONE e' misurata
+                forza *= SLOT_RIFERIMENTO / n_slot
+            return forza
 
 
         def pick(pool_rows, role_slot_l10_check, reserve=0.0, slot_label=None,
@@ -1411,10 +1431,15 @@ def build_one_lineup(shape, role_data, card_pool, l10_cap=None, apply_stack_guar
                         and row.get('team_slug') == gk_opponent_slug):
                     continue
                 combined.append((role, row))
+        # forza_attesa allo slot EXTRA (04/08, sotto FORZA_NORM): e' l'unico
+        # slot che non la passava, e paradossalmente quello dove la stima e'
+        # piu' affidabile -- qui i titolari sono TUTTI gia' scelti, non due.
+        _forza_extra = _forza_stimata() if FORZA_NORM else None
         combined.sort(key=lambda rc: synergy_sort_key(rc[0], rc[1], gk_team_slug, gk_opponent_slug,
                                                         team_counts, apply_stack_guard, variance_mode,
                                                         apply_positive_synergy, used_matches,
-                                                        chosen_roles_by_team, synergy_bonus_dict), reverse=True)
+                                                        chosen_roles_by_team, synergy_bonus_dict,
+                                                        forza_attesa=_forza_extra), reverse=True)
 
         extra_rows = [row for _role, row in combined]
         extra_role_by_slug = {row['slug']: role for role, row in combined}
