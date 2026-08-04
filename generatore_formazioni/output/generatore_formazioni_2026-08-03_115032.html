@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Generatore Formazioni</title>
+<style>
+  :root {
+    --bg: #0a0d12; --surface: #131a23; --surface-2: #1c2530; --stripe: #232d3a;
+    --text: #edf1f6; --muted: #8a93a6; --muted-2: #5f6879; --gold: #f4c542;
+    --border: rgba(255,255,255,0.08);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f3f4f7; --surface: #ffffff; --surface-2: #eef0f4; --stripe: #e3e6ec;
+      --text: #1a2029; --muted: #5b6474; --muted-2: #8a93a6; --border: rgba(20,25,35,0.08);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    padding: 40px 32px 64px; max-width: 1180px; margin: 0 auto;
+  }
+  h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 6px; }
+  .subhead { color: var(--muted); font-size: 0.85rem; margin: 0 0 32px; }
+  .lineup-row { display: flex; gap: 20px; align-items: flex-start; margin-bottom: 40px; }
+  .lineup-row .lineup-block { flex: 1 1 auto; min-width: 0; margin-bottom: 0; }
+  .alt-panel {
+    flex: 0 0 200px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; align-self: stretch;
+  }
+  .alt-panel-title {
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); margin-bottom: 10px; line-height: 1.4;
+  }
+  .alt-list { display: flex; flex-direction: column; gap: 10px; }
+  .alt-chip { display: flex; align-items: center; gap: 8px; cursor: grab; border-radius: 8px; padding: 2px; }
+  .alt-chip[draggable="true"]:active { cursor: grabbing; }
+  .pcard[draggable="true"] { cursor: grab; }
+  .pcard[draggable="true"]:active { cursor: grabbing; }
+  .pcard.drop-target, .alt-chip.drop-target {
+    outline: 2px dashed var(--gold); outline-offset: 2px;
+  }
+  .alt-circle {
+    flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; background: var(--surface-2);
+    border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+    font-size: 0.62rem; font-weight: 700; color: var(--muted);
+  }
+  .alt-name { font-size: 0.72rem; font-weight: 600; line-height: 1.2; }
+  .alt-score { font-size: 0.64rem; color: var(--muted); }
+  .lineup-block { margin-bottom: 40px; }
+  .lineup-meta { margin-bottom: 12px; }
+  .lineup-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .lineup-title span { color: var(--text); }
+  .card-strip { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+  .pcard {
+    position: relative; flex: 0 0 104px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .pcard-stripe { height: 4px; width: 100%; }
+  .pcard-body { padding: 8px 6px 8px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+  .pcard-role {
+    position: absolute; top: 6px; left: 6px; font-size: 0.52rem; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--role-color);
+    background: color-mix(in srgb, var(--role-color) 16%, transparent);
+    padding: 1px 5px; border-radius: 4px;
+  }
+  .pcard-captain {
+    position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--gold); color: #241c00; font-size: 0.58rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface);
+  }
+  .pcard-avatar {
+    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.72rem; color: var(--role-color);
+    background: color-mix(in srgb, var(--role-color) 18%, var(--surface-2));
+    border: 2px solid color-mix(in srgb, var(--role-color) 55%, transparent); margin-top: 8px;
+  }
+  .pcard-name { font-size: 0.62rem; font-weight: 650; line-height: 1.2; min-height: 1.6em; display: flex; align-items: center; }
+  .pcard-score { font-size: 1.15rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--role-color); }
+  .pcard-range { font-size: 0.55rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pcard-l10 { font-size: 0.5rem; color: var(--muted-2); font-variant-numeric: tabular-nums; }
+  .pcard-match { font-size: 0.62rem; color: var(--text); opacity: 0.85; line-height: 1.3; text-align: center; }
+  .pcard-tags { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; min-height: 14px; }
+  .tag { font-size: 0.5rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; }
+  .tag-classic { background: rgba(240,168,59,0.16); color: #f0a83b; }
+  .tag-copies { background: var(--stripe); color: var(--muted); }
+  .tag-xpbonus { background: rgba(76,175,80,0.16); color: #4caf50; }
+  .lineup-total {
+    margin-top: 12px; display: inline-flex; align-items: center; gap: 14px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; flex-wrap: wrap;
+    max-width: 100%;
+  }
+  .lineup-total .figure { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .lineup-total .figure.with-captain { color: var(--gold); }
+  .lineup-total .label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); display: block; margin-bottom: 2px; }
+  .lineup-total .divider { width: 1px; height: 30px; background: var(--border); }
+  .lineup-total .captain-note { font-size: 0.74rem; color: var(--muted); }
+  .lineup-total .captain-note b { color: var(--gold); font-weight: 700; }
+  .error-block { font-size: 0.82rem; color: var(--muted); padding: 12px 0; }
+  footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.7rem; color: var(--muted-2); line-height: 1.6; }
+</style>
+</head>
+<body>
+<h1>Generatore Formazioni</h1>
+<p class="subhead">Generato 03/08/2026 11:50Z — totale=5 (In Season MLS=0, In Season K League=0, Arena MLS (cap 260)=0, Arena K League (cap 260)=0, Arena Belgio (cap 260)=0, Arena Eredivisie (cap 260)=0, Arena Turchia (cap 260)=0, Arena Portogallo (cap 260)=0, Arena Spagna (cap 260)=0, Arena Germania (cap 260)=0, Arena Ligue 1 (cap 260)=0, Arena Croazia (cap 260)=0, Arena Scozia (cap 260)=0, Arena All Stars (cap 260)=5, Arena All Stars (cap 220)=0, Arena All Stars (uncapped)=0, All Stars Under 23=0, All Stars=0)<br>Candidati non schierati in nessuna formazione: 187 (GK: 29, DEF: 51, MID: 53, FWD: 54)</p>
+<div class="lineup-block verdetto-arene"><style>.verdetto-arene table{border-collapse:collapse;width:100%;font-size:.85rem}.verdetto-arene td{padding:3px 8px;border-bottom:1px solid #2a2a2a}.verdetto-arene tr.ok td{color:#7bd88f}.verdetto-arene tr.no td{color:#8a8a8a}</style><h2>Conviene pagare l'ingresso? — 1 su 1 arene</h2><p>Soglie misurate su 673 arene reali: sotto quella riga l'ingresso costa piu' di quanto renda, e le carte valgono di piu' in una competizione senza costo (All Stars da 7, Under 23).</p><table><tr><td><b>arena</b></td><td style="text-align:right"><b>atteso</b></td><td style="text-align:right"><b>pareggio</b></td><td style="text-align:right"><b>margine</b></td><td><b>verdetto</b></td></tr><tr class="ok"><td>Arena All Stars (cap 260)</td><td style="text-align:right">312</td><td style="text-align:right">265.0</td><td style="text-align:right">+46.9</td><td><b>SCHIERA</b></td></tr></table></div>
+<div style="position:relative;padding-right:400px"><div data-sezione="arene_allstars"><div style="border:2px solid #7bd88f;border-radius:10px;padding:10px 12px 4px 12px;margin:0 0 18px 0"><div style="font-size:.85rem;color:#7bd88f;margin-bottom:8px"><b>SCHIERA -- guadagno atteso +412 essenze su 300 di ingresso</b></div><div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">Arena All Stars (cap 260) <span>#1</span></div></div><div class="card-strip"><div class="pcard" draggable="true" style="--role-color:#8b7cf6" data-slug="brian-schwake" data-role="GK" data-score="49.8" data-xp-frac="0.0" data-name="Brian Schwake" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;BS&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Brian Schwake&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;49.8&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;45.0–54.8 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Nashville Sc vs Leon Leon De&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><div class="pcard-avatar">BS</div><div class="pcard-name">Brian Schwake</div><div class="pcard-score">49.8</div><div class="pcard-range">45.0–54.8 pt</div><div class="pcard-match">Nashville Sc vs Leon Leon De</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#3aa1e8" data-slug="jeisson-andres-palacios-murillo" data-role="DEF" data-score="58.8" data-xp-frac="0.0" data-name="Jeisson Andres Palacios Murillo" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;JA&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Jeisson Andres Palacios Murillo&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;58.8&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;44.7–72.9 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Nashville Sc vs Leon Leon De&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF</span><div class="pcard-body"><div class="pcard-avatar">JA</div><div class="pcard-name">Jeisson Andres Palacios Murillo</div><div class="pcard-score">58.8</div><div class="pcard-range">44.7–72.9 pt</div><div class="pcard-match">Nashville Sc vs Leon Leon De</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#2fbf8f" data-slug="lucas-ariel-ocampos" data-role="MID" data-score="57.5" data-xp-frac="0.0" data-name="Lucas Ariel Ocampos" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;LA&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Lucas Ariel Ocampos&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;57.5&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;42.0–70.1 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Monterrey Monterrey vs Orlando City Lake&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID</span><div class="pcard-body"><div class="pcard-avatar">LA</div><div class="pcard-name">Lucas Ariel Ocampos</div><div class="pcard-score">57.5</div><div class="pcard-range">42.0–70.1 pt</div><div class="pcard-match">Monterrey Monterrey vs Orlando City Lake</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#ef5b5b" data-slug="lionel-andres-messi-cuccittini" data-role="FWD" data-score="72.3" data-xp-frac="0.0" data-name="Lionel Andres Messi Cuccittini" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;LA&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Lionel Andres Messi Cuccittini&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;72.3&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;56.5–84.1 pt&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Inter Miami vs Atletico San Luis&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><span class="pcard-captain">C</span><div class="pcard-body"><div class="pcard-avatar">LA</div><div class="pcard-name">Lionel Andres Messi Cuccittini</div><div class="pcard-score">72.3</div><div class="pcard-range">56.5–84.1 pt</div><div class="pcard-match">Inter Miami vs Atletico San Luis</div><div class="pcard-tags"></div></div></div><div class="pcard" draggable="true" style="--role-color:#2fbf8f" data-slug="frederico-rodrigues-santos" data-role="MID" data-score="59.0" data-xp-frac="0.0" data-name="Fred" data-body="&lt;div class=&quot;pcard-avatar&quot;&gt;FR&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Fred&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;59.0&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;44.9–76.0 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 60&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Fenerbahce Istanbul vs Sturm Graz Graz&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">EXTRA · MID</span><div class="pcard-body"><div class="pcard-avatar">FR</div><div class="pcard-name">Fred</div><div class="pcard-score">59.0</div><div class="pcard-range">44.9–76.0 pt</div><div class="pcard-l10">L10: 60</div><div class="pcard-match">Fenerbahce Istanbul vs Sturm Graz Graz</div><div class="pcard-tags"></div></div></div></div><div class="lineup-total" data-captain-pct="0.2"><div><span class="label">Totale</span><span class="figure">297.4 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">311.4 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Lionel Andres Messi Cuccittini</b> <span class="cap-bonus">(+14 pt, +20%)</span></div><div class="captain-note">L10: 60.0 / 260.0 (entro budget)</div></div></div></div></div><div style="position:absolute;top:0;right:0;width:380px;max-height:480px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:0 4px 16px rgba(0,0,0,0.25)"><div class="alt-panel-title">Top 40 esclusi<br>per punteggio atteso</div><div style="font-size:0.78rem"><table style="border-collapse:collapse;width:100%;table-layout:fixed"><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">1.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">61.3 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">philip-zinckernagel</td><td style="padding:2px 6px 2px 0;color:var(--muted)">FWD</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Chicago Fire Bridgeview vs Necaxa Aguascalientes">Chicago Fire Bridgeview vs Necaxa Aguascalientes</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">2.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">61.3 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">anders-dreyer</td><td style="padding:2px 6px 2px 0;color:var(--muted)">FWD</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="San Diego San vs America Ciudad De">San Diego San vs America Ciudad De</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">3.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">58.0 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">kai-wagner</td><td style="padding:2px 6px 2px 0;color:var(--muted)">DEF</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Philadelphia Union Chester vs Cruz Azul Ciudad">Philadelphia Union Chester vs Cruz Azul Ciudad</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">4.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">57.5 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">manu-duah</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="San Diego San vs America Ciudad De">San Diego San vs America Ciudad De</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">5.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">56.3 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">dominik-robin-schmid</td><td style="padding:2px 6px 2px 0;color:var(--muted)">DEF</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Salzburg Wals Siezenheim vs Paphos Paphos">Salzburg Wals Siezenheim vs Paphos Paphos</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">6.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">56.0 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Talisca</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Fenerbahce Istanbul vs Sturm Graz Graz">Fenerbahce Istanbul vs Sturm Graz Graz</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">7.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">56.0 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">ismail-yuksek</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Fenerbahce Istanbul vs Sturm Graz Graz">Fenerbahce Istanbul vs Sturm Graz Graz</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">8.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">55.7 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">milan-iloski</td><td style="padding:2px 6px 2px 0;color:var(--muted)">FWD</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Philadelphia Union Chester vs Cruz Azul Ciudad">Philadelphia Union Chester vs Cruz Azul Ciudad</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">9.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">55.3 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">kristian-fredrik-malt-arnstad-2003-09-07</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Agf Arhus vs Sabah Baki Baku">Agf Arhus vs Sabah Baki Baku</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">10.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">55.3 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">soumaila-diabate</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Salzburg Wals Siezenheim vs Paphos Paphos">Salzburg Wals Siezenheim vs Paphos Paphos</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">11.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">55.0 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">maximilian-arfsten</td><td style="padding:2px 6px 2px 0;color:var(--muted)">FWD</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Columbus Crew Columbus vs Atlas Guadalajara">Columbus Crew Columbus vs Atlas Guadalajara</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">12.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">54.6 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Jeison Quiñónes</td><td style="padding:2px 6px 2px 0;color:var(--muted)">DEF</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Yokohama F Marinos vs Kashima Antlers Kashima">Yokohama F Marinos vs Kashima Antlers Kashima</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">13.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">54.6 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">maxwell-woledzi</td><td style="padding:2px 6px 2px 0;color:var(--muted)">DEF</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Nashville Sc vs Leon Leon De">Nashville Sc vs Leon Leon De</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">14.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">54.5 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Jeremy Márquez</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Cruz Azul Ciudad vs Philadelphia Union Chester">Cruz Azul Ciudad vs Philadelphia Union Chester</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">15.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">54.2 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">gaoussou-diakite</td><td style="padding:2px 6px 2px 0;color:var(--muted)">FWD</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Salzburg Wals Siezenheim vs Paphos Paphos">Salzburg Wals Siezenheim vs Paphos Paphos</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">16.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">54.2 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">ahoueke-denkey</td><td style="padding:2px 6px 2px 0;color:var(--muted)">FWD</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Cincinnati Cincinnati Ohio vs Pachuca Pachuca De">Cincinnati Cincinnati Ohio vs Pachuca Pachuca De</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">17.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">53.8 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Milan Škriniar</td><td style="padding:2px 6px 2px 0;color:var(--muted)">DEF</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Fenerbahce Istanbul vs Sturm Graz Graz">Fenerbahce Istanbul vs Sturm Graz Graz</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">18.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">53.8 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">mathieu-choiniere</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Los Angeles Fc vs Guadalajara Zapopan Guadalajara">Los Angeles Fc vs Guadalajara Zapopan Guadalajara</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">19.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">53.8 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">jeppe-tverskov</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="San Diego San vs America Ciudad De">San Diego San vs America Ciudad De</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">20.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">53.4 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">joao-pedro-geraldino-dos-santos-galvao</td><td style="padding:2px 6px 2px 0;color:var(--muted)">FWD</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Atletico San Luis vs Inter Miami">Atletico San Luis vs Inter Miami</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">21.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">53.4 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">german-berterame</td><td style="padding:2px 6px 2px 0;color:var(--muted)">FWD</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Inter Miami vs Atletico San Luis">Inter Miami vs Atletico San Luis</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">22.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">53.4 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">antoine-griezmann</td><td style="padding:2px 6px 2px 0;color:var(--muted)">FWD</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Orlando City Lake vs Monterrey Monterrey">Orlando City Lake vs Monterrey Monterrey</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">23.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">53.4 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">denis-bouanga</td><td style="padding:2px 6px 2px 0;color:var(--muted)">FWD</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Los Angeles Fc vs Guadalajara Zapopan Guadalajara">Los Angeles Fc vs Guadalajara Zapopan Guadalajara</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">24.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">53.4 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">zavier-gozo</td><td style="padding:2px 6px 2px 0;color:var(--muted)">FWD</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Real Salt Lake vs Tigres Uanl San">Real Salt Lake vs Tigres Uanl San</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">25.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">53.4 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">heung-min-son</td><td style="padding:2px 6px 2px 0;color:var(--muted)">FWD</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Los Angeles Fc vs Guadalajara Zapopan Guadalajara">Los Angeles Fc vs Guadalajara Zapopan Guadalajara</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">26.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">53.0 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">emran-soglo</td><td style="padding:2px 6px 2px 0;color:var(--muted)">DEF</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Sturm Graz Graz vs Fenerbahce Istanbul">Sturm Graz Graz vs Fenerbahce Istanbul</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">27.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">53.0 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">kamal-miller</td><td style="padding:2px 6px 2px 0;color:var(--muted)">DEF</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Portland Timbers Portland vs Puebla Puebla">Portland Timbers Portland vs Puebla Puebla</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">28.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">53.0 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">ryan-hollingshead</td><td style="padding:2px 6px 2px 0;color:var(--muted)">DEF</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Los Angeles Fc vs Guadalajara Zapopan Guadalajara">Los Angeles Fc vs Guadalajara Zapopan Guadalajara</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">29.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">53.0 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">jeevan-singh-badwal</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Vancouver Whitecaps Vancouver vs Atlante Benito Juarez">Vancouver Whitecaps Vancouver vs Atlante Benito Juarez</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">30.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">53.0 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">marky-delgado</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Los Angeles Fc vs Guadalajara Zapopan Guadalajara">Los Angeles Fc vs Guadalajara Zapopan Guadalajara</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">31.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">52.3 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">pedro-jeampierre-vite-uca</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Pumas Unam Delegacion vs Charlotte Fc Charlotte">Pumas Unam Delegacion vs Charlotte Fc Charlotte</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">32.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">52.3 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">otar-kiteishvili</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Sturm Graz Graz vs Fenerbahce Istanbul">Sturm Graz Graz vs Fenerbahce Istanbul</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">33.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">52.3 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">hany-mukhtar</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Nashville Sc vs Leon Leon De">Nashville Sc vs Leon Leon De</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">34.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">52.2 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">gonzalo-ruben-piovi</td><td style="padding:2px 6px 2px 0;color:var(--muted)">DEF</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Cruz Azul Ciudad vs Philadelphia Union Chester">Cruz Azul Ciudad vs Philadelphia Union Chester</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">35.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">52.2 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">frans-kratzig</td><td style="padding:2px 6px 2px 0;color:var(--muted)">DEF</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Salzburg Wals Siezenheim vs Paphos Paphos">Salzburg Wals Siezenheim vs Paphos Paphos</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">36.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">52.2 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">andy-aryel-najar-rodriguez</td><td style="padding:2px 6px 2px 0;color:var(--muted)">DEF</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Nashville Sc vs Leon Leon De">Nashville Sc vs Leon Leon De</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">37.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">51.8 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">leonardo-de-sousa-pereira</td><td style="padding:2px 6px 2px 0;color:var(--muted)">FWD</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Kashima Antlers Kashima vs Yokohama F Marinos">Kashima Antlers Kashima vs Yokohama F Marinos</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">38.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">51.8 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">oussama-idrissi</td><td style="padding:2px 6px 2px 0;color:var(--muted)">FWD</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Pachuca Pachuca De vs Cincinnati Cincinnati Ohio">Pachuca Pachuca De vs Cincinnati Cincinnati Ohio</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">39.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">51.6 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">jun-amano</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Yokohama F Marinos vs Kashima Antlers Kashima">Yokohama F Marinos vs Kashima Antlers Kashima</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">40.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">51.6 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">corentin-tolisso</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Olympique Lyonnais Lyon vs Sparta Praha Praha">Olympique Lyonnais Lyon vs Sparta Praha Praha</td></tr></table></div></div></div>
+<p class="error-block">Formazione Arena All Stars (cap 260) #2: NON GENERATA — Nessun candidato disponibile per completare la formazione entro il cap L10 (copie esaurite o pool insufficiente).</p>
+<footer>Fusione 36 campionati. Max 1 carta CLASSIC solo per In Season. Filtro qualita' L5/L10/L40 disattivato (28/07): ridondante con lo starter-odds.</footer>
+<script>
+// Drag&drop (28/07, richiesta esplicita utente): scambia un giocatore fra
+// una pcard schierata e un'alternativa (o un'altra pcard), stesso ruolo.
+// Puro swap di HTML/attributi gia' pronti lato server (data-body) -- NESSUN
+// ricalcolo di formula, NESSUNA persistenza (un refresh della pagina
+// riporta tutto allo stato generato). Limite noto: le note L10/cap/anti-stack
+// sotto ogni formazione restano quelle calcolate al momento della run, non
+// si aggiornano con lo scambio (solo totale e bonus capitano lo fanno).
+(function () {
+  var dragEl = null;
+
+  function isDraggable(el) {
+    return el && (el.classList.contains('pcard') || el.classList.contains('alt-chip'))
+      && el.getAttribute('draggable') === 'true';
+  }
+
+  document.addEventListener('dragstart', function (e) {
+    var el = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!el) return;
+    dragEl = el;
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', 'x'); } catch (err) {}
+  });
+
+  document.addEventListener('dragover', function (e) {
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!dragEl || !target || target === dragEl || target.dataset.role !== dragEl.dataset.role) return;
+    e.preventDefault();
+  });
+
+  document.addEventListener('dragenter', function (e) {
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (dragEl && target && target !== dragEl && target.dataset.role === dragEl.dataset.role) {
+      target.classList.add('drop-target');
+    }
+  });
+
+  document.addEventListener('dragleave', function (e) {
+    var target = e.target.closest('.pcard, .alt-chip');
+    if (target) target.classList.remove('drop-target');
+  });
+
+  document.addEventListener('dragend', function () {
+    document.querySelectorAll('.drop-target').forEach(function (el) { el.classList.remove('drop-target'); });
+    dragEl = null;
+  });
+
+  document.addEventListener('drop', function (e) {
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!dragEl || !target || target === dragEl || target.dataset.role !== dragEl.dataset.role) return;
+    e.preventDefault();
+    target.classList.remove('drop-target');
+    swapPlayers(dragEl, target);
+    dragEl = null;
+  });
+
+  function initials(name) {
+    return (name || '').split(' ').filter(Boolean).slice(0, 2)
+      .map(function (w) { return w[0].toUpperCase(); }).join('') || '??';
+  }
+
+  function refresh(el) {
+    if (el.classList.contains('pcard')) {
+      var body = el.querySelector('.pcard-body');
+      if (body) body.innerHTML = el.dataset.body;
+    } else {
+      var circle = el.querySelector('.alt-circle');
+      var name = el.querySelector('.alt-name');
+      var score = el.querySelector('.alt-score');
+      if (circle) circle.textContent = initials(el.dataset.name);
+      if (name) name.textContent = el.dataset.name;
+      if (score) score.textContent = el.dataset.score + ' pt · ' + el.dataset.role;
+    }
+  }
+
+  function swapPlayers(a, b) {
+    ['slug', 'score', 'name', 'body', 'xpFrac'].forEach(function (k) {
+      var tmp = a.dataset[k];
+      a.dataset[k] = b.dataset[k];
+      b.dataset[k] = tmp;
+    });
+    refresh(a);
+    refresh(b);
+    [a, b].forEach(function (el) {
+      var block = el.closest('.lineup-block');
+      if (block) recomputeTotal(block);
+    });
+  }
+
+  function recomputeTotal(block) {
+    var total = 0;
+    block.querySelectorAll('.pcard').forEach(function (c) { total += parseFloat(c.dataset.score) || 0; });
+    var totalEl = block.querySelector('.lineup-total');
+    if (!totalEl) return;
+    var figure = totalEl.querySelector('.figure:not(.with-captain)');
+    if (figure) figure.textContent = Math.round(total) + ' pt';
+    var capBadge = block.querySelector('.pcard-captain');
+    var capPct = parseFloat(totalEl.dataset.captainPct || '0.5');
+    var bonus = 0, capName = '';
+    if (capBadge) {
+      var capCard = capBadge.closest('.pcard');
+      // FIX 28/07 sera: data-score include GIA' il bonus xp/collezione/
+      // stagione (se applicabile) -- calcolare il +50% capitano su quel
+      // valore gonfiato lo applica in cascata invece che addizionato
+      // (stesso bug fixato lato Python in render_lineup_html). Si riporta
+      // al valore raw dividendo per (1+xpFrac) prima di applicare capPct.
+      var capScore = parseFloat(capCard.dataset.score) || 0;
+      var xpFrac = parseFloat(capCard.dataset.xpFrac) || 0;
+      var capRaw = xpFrac ? capScore / (1 + xpFrac) : capScore;
+      bonus = Math.round(capRaw * capPct);
+      capName = capCard.dataset.name || '';
+    }
+    var withCap = totalEl.querySelector('.figure.with-captain');
+    if (withCap) withCap.textContent = Math.round(total + bonus) + ' pt';
+    var capNameEl = totalEl.querySelector('.cap-name');
+    if (capNameEl && capName) capNameEl.textContent = capName;
+    var capBonusEl = totalEl.querySelector('.cap-bonus');
+    if (capBonusEl) capBonusEl.textContent = '(+' + bonus + ' pt, +' + Math.round(capPct * 100) + '%)';
+  }
+})();
+</script>
+<script>
+(function () {
+  // Click sul nome del giocatore = nome negli appunti, da incollare nella
+  // ricerca di Sorare (01/08, richiesta utente: i nomi coreani sono difficili
+  // da riscrivere a mano).
+  function copia(testo, el) {
+    var ok = function () {
+      var vecchio = el.textContent;
+      el.textContent = 'copiato!';
+      setTimeout(function () { el.textContent = vecchio; }, 800);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(testo).then(ok, function () {});
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = testo; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); ok(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  }
+  document.addEventListener('click', function (ev) {
+    var el = ev.target.closest('.pcard-name');
+    if (!el) return;
+    ev.preventDefault(); ev.stopPropagation();
+    var card = el.closest('[data-name]') || el.closest('[data-slug]');
+    var testo = (card && (card.dataset.name || card.dataset.slug)) || el.textContent;
+    copia(testo.trim(), el);
+  }, true);
+  var st = document.createElement('style');
+  st.textContent = '.pcard-name{cursor:copy} .pcard-name:hover{text-decoration:underline dotted}';
+  document.head.appendChild(st);
+})();
+</script>
+
+<style>
+  .schierata-flag {
+    display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+    user-select: none; margin-left: 14px; vertical-align: middle;
+    font-size: 0.92rem; font-weight: 700; letter-spacing: 0.02em;
+    color: var(--text); opacity: 0.8;
+    transition: opacity 0.15s ease;
+  }
+  .schierata-flag:hover { opacity: 1; }
+  .schierata-box {
+    width: 22px; height: 22px; border-radius: 6px; flex: 0 0 auto;
+    border: 2px solid var(--gold); background: transparent;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1rem; line-height: 1; color: transparent; font-weight: 800;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .schierata-flag[data-on="1"] { opacity: 1; }
+  .schierata-flag[data-on="1"] .schierata-box {
+    background: #2fbf6a; border-color: #2fbf6a; color: #06240f;
+    box-shadow: 0 0 0 4px rgba(47, 191, 106, 0.28);
+  }
+  .lineup-block[data-schierata="1"] { outline: 2px solid #2fbf6a; outline-offset: 3px; }
+</style>
+<script>
+(function () {
+  var CHIAVE = 'sorare_schierate::' + (location.pathname.split('/').pop() || 'report');
+  var stato = {};
+  try { stato = JSON.parse(localStorage.getItem(CHIAVE) || '{}'); } catch (e) { stato = {}; }
+
+  function salva() {
+    try { localStorage.setItem(CHIAVE, JSON.stringify(stato)); } catch (e) {}
+  }
+
+  document.querySelectorAll('.lineup-block').forEach(function (block, i) {
+    var titolo = block.querySelector('.lineup-title');
+    if (!titolo) return;
+    var id = (titolo.textContent || '').trim().replace(/\s+/g, ' ') || ('formazione-' + i);
+
+    var flag = document.createElement('span');
+    flag.className = 'schierata-flag';
+    flag.title = 'Segna questa formazione come gia schierata su Sorare';
+    var box = document.createElement('span');
+    box.className = 'schierata-box';
+    box.textContent = '✓';
+    var testo = document.createElement('span');
+    testo.textContent = 'Formazione gia schierata';
+    flag.appendChild(box);
+    flag.appendChild(testo);
+
+    function applica() {
+      var on = stato[id] ? '1' : '0';
+      flag.setAttribute('data-on', on);
+      block.setAttribute('data-schierata', on);
+    }
+    flag.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      stato[id] = !stato[id];
+      if (!stato[id]) { delete stato[id]; }
+      salva();
+      applica();
+    });
+    applica();
+    titolo.appendChild(flag);
+  });
+})();
+</script>
+
+<style>
+  .bf-topbar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    margin: 0 0 20px 0; padding-top: 6px;
+  }
+  .bf-tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+  .bf-tabs::-webkit-scrollbar { display: none; }
+  .bf-tab {
+    appearance: none; border: none; background: none; color: var(--muted);
+    font-size: 0.84rem; font-weight: 600; padding: 10px 16px 12px; cursor: pointer;
+    border-bottom: 2px solid transparent; white-space: nowrap; font-family: inherit;
+    transition: color 0.15s ease;
+  }
+  .bf-tab:hover { color: var(--text); }
+  .bf-tab[aria-current="true"] { color: var(--text); border-bottom-color: var(--gold); }
+  .bf-tab .bf-count { color: var(--muted-2); font-weight: 700; margin-left: 5px; }
+</style>
+<script>
+(function () {
+  var SEZIONI = [["in_season", "In Season"], ["arene_dedicate", "Arene dedicate"], ["arene_allstars", "Arene All Stars"], ["allstars", "All Stars"], ["under23", "Under 23"], ["opzionali", "Opzionali"]];
+  var blocchi = Array.prototype.slice.call(document.querySelectorAll('[data-sezione]'));
+  if (!blocchi.length) return;
+
+  var gruppi = {};
+  blocchi.forEach(function (b) {
+    var s = b.getAttribute('data-sezione');
+    (gruppi[s] = gruppi[s] || []).push(b);
+  });
+
+  var bar = document.createElement('div');
+  bar.className = 'bf-topbar';
+  var nav = document.createElement('nav');
+  nav.className = 'bf-tabs';
+  bar.appendChild(nav);
+
+  // Il separatore delle OPZIONALI e' un blocco a se' (non ha data-sezione):
+  // va mostrato solo quando quelle formazioni sono visibili.
+  var divisore = null;
+  document.querySelectorAll('div').forEach(function (d) {
+    if (!divisore && d.textContent.indexOf('Formazioni OPZIONALI (extra') === 0) { divisore = d; }
+  });
+
+  function mostra(vista, btn) {
+    Array.prototype.slice.call(nav.children).forEach(function (b) { b.removeAttribute('aria-current'); });
+    if (btn) btn.setAttribute('aria-current', 'true');
+    blocchi.forEach(function (b) {
+      var s = b.getAttribute('data-sezione');
+      b.style.display = (vista === 'tutto' || vista === s) ? '' : 'none';
+    });
+    if (divisore) {
+      divisore.style.display = (vista === 'tutto' || vista === 'opzionali') ? '' : 'none';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function tab(id, label, n) {
+    var b = document.createElement('button');
+    b.className = 'bf-tab';
+    b.type = 'button';
+    b.textContent = label;
+    if (n) {
+      var sp = document.createElement('span');
+      sp.className = 'bf-count';
+      sp.textContent = n;
+      b.appendChild(sp);
+    }
+    b.addEventListener('click', function () { mostra(id, b); });
+    nav.appendChild(b);
+    return b;
+  }
+
+  var primo = tab('tutto', 'Tutte', blocchi.length);
+  SEZIONI.forEach(function (s) {
+    if ((gruppi[s[0]] || []).length) { tab(s[0], s[1], gruppi[s[0]].length); }
+  });
+
+  var ancora = document.querySelector('p.subhead') || document.querySelector('h1');
+  if (ancora && ancora.parentNode) {
+    ancora.parentNode.insertBefore(bar, ancora.nextSibling);
+  } else {
+    document.body.insertBefore(bar, document.body.firstChild);
+  }
+  mostra('tutto', primo);
+})();
+</script>
+</body>
+</html>
