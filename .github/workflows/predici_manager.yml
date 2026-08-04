@@ -61,4 +61,13 @@ jobs:
       - name: Push cache
         if: always()
         run: |
-          git push origin main || echo "niente da pushare"
+          # Push robusto ai push concorrenti (Cerbero bot, altre sessioni): se
+          # il remote e' avanzato, rebasa i commit di cache locali e ritenta,
+          # altrimenti la cache appena raccolta andrebbe persa in silenzio.
+          for i in 1 2 3 4 5; do
+            git push origin main && exit 0
+            echo "push #$i rifiutato, rebase e ritento..."
+            git pull --rebase origin main || git rebase --abort
+            sleep 5
+          done
+          echo "ATTENZIONE: push cache FALLITO dopo 5 tentativi"
