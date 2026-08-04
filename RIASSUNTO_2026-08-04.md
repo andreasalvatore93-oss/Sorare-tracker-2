@@ -369,10 +369,49 @@ ricerca locale fatta direttamente sull'esito realizzato, quindi molto
 gonfiata dalla fortuna: e' un tetto larghissimo, non un obiettivo.
 
 **PROSSIMO PASSO NATURALE**: una politica che ottimizzi il PREMIO ATTESO
-invece dei punti attesi (serve stimare P(rank) dal punteggio atteso, e la
-curva punteggio→rank per tipo di arena esiste gia' in
-`captain_per_competizione.CurvaRank`). E' la prima volta in tutta la
-sessione che si trova una leva con la forma giusta.
+invece dei punti attesi. FATTO subito dopo — vedi sezione seguente, che
+chiude l'intero ragionamento della sessione.
+
+## PREMIO ATTESO vs PUNTI ATTESI — SONO LA STESSA COSA (la chiusura)
+
+`formazione_mls/diagnostics/allocazione_premio_atteso.py`. Implementata per
+davvero la politica che massimizza il PREMIO ATTESO in essenze invece dei
+punti: campo avversari stimato dalle arene dello stesso tipo concluse PRIMA
+di quella giornata (walk-forward stretto), P(rank) binomiale dato F(s)
+empirico, integrazione su s ~ Normale(atteso, sigma).
+
+**Non batte i punti attesi**: -5.4/arena, IC95% [-42.6,+29.6] (399 arene).
+E la diagnostica dice PERCHE', in modo definitivo:
+
+```
+  sigma sul totale formazione: 49.4 punti (su formazioni da ~280)
+  coppie in cui piu' punti attesi = piu' premio atteso: 5768/5768 (100.0%)
+  coppie in cui i due obiettivi si contraddicono:          0/5768  (0.0%)
+```
+
+**Con quel rumore, il premio atteso e' una funzione STRETTAMENTE MONOTONA
+dei punti attesi.** Integrare la funzione premio (a gradini) su un'incertezza
+di ~50 punti la liscia fino a renderla monotona: la non linearita' del
+premio — che era la leva teorica dietro TUTTO quello che abbiamo provato in
+questa sessione — in pratica non esiste.
+
+**Questo chiude in blocco, con una dimostrazione e non con una serie di
+tentativi falliti**: capitano volatile quando sei sotto soglia, allocazione
+consapevole delle soglie, qualunque strategia "a gradini". Se massimizzare
+il premio atteso equivale a massimizzare i punti attesi, allora la regola
+attuale del bot (massimizza i punti) **e' gia' quella giusta**, e non c'e'
+nessuna raffinatezza di decisione che possa aggiungere qualcosa.
+
+**IL NUMERO DA PORTARSI VIA — il tasso di cambio**:
+```
+  10 punti attesi in piu' = +46.9 essenze attese per arena
+```
+Cioe' **~4.7 essenze per ogni punto** di previsione guadagnato. E' la
+conversione fra accuratezza del modello e denaro, e dice dove investire:
+non nelle REGOLE DI DECISIONE (capitano, allocazione, soglie — tutte
+misurate e tutte inerti) ma nella **PRECISIONE DELLA PREVISIONE**. Un punto
+di MAE in meno sul totale formazione vale piu' di tutte le euristiche
+provate in due sessioni messe insieme.
 
 ## FORMAZIONE COSTRUITA PER IL CAPITANO — CHIUSA, nulla
 
