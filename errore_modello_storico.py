@@ -127,6 +127,10 @@ def main():
     ap.add_argument('--giornate', type=int, default=None,
                     help='usa solo le N giornate piu' + "'" + ' recenti (default: tutte)')
     ap.add_argument('--json', default=None)
+    ap.add_argument('--favorito-k', type=float, default=None,
+                    help='accende la correzione di contesto partita (punti per gol '
+                         'di differenziale atteso). Serve a validarla FUORI dal pool '
+                         'di calibrazione su cui e stata tarata.')
     args = ap.parse_args()
 
     with open(os.path.join(ROOT, 'dati_globali', 'arene_formazioni.json'), encoding='utf-8') as f:
@@ -145,6 +149,11 @@ def main():
     print('=' * 82)
     print(f'ERRORE DEL MODELLO, GIOCATORE PER GIOCATORE — {len(giornate)} giornate di arene')
     print('=' * 82)
+
+    # il portiere resta escluso: ha gia' il segnale per la via del clean sheet
+    fav_k = None if args.favorito_k is None else {
+        'Defender': args.favorito_k, 'Midfielder': args.favorito_k,
+        'Forward': args.favorito_k, 'Goalkeeper': 0.0}
 
     memo = {}
     righe = []
@@ -172,7 +181,8 @@ def main():
                     continue
                 k = (g['slug'], g['ruolo'], giornata)
                 if k not in memo:
-                    memo[k] = P.score_atteso(cache, g['slug'], g['ruolo'], fd)
+                    memo[k] = P.score_atteso(cache, g['slug'], g['ruolo'], fd,
+                                             favorito_k=fav_k)
                 r = memo[k]
                 if r is None or r.get('atteso') is None:
                     saltate['storico insufficiente'] += 1

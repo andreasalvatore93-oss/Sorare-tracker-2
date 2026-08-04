@@ -297,13 +297,115 @@ def _pcs_squadra(ctx):
     return _m.exp(-lam)
 
 
+def _forze_partita():
+    """Checkpoint settimanali di ForzaSquadre, condivisi da tutti gli usi.
+
+    Estratto da `_pcs_squadra` (04/08) quando il differenziale di gol attesi
+    e' diventato un secondo cliente: la stima costa minuti, va fatta una volta
+    sola per processo."""
+    import bisect as _b
+    global _FORZE_CS
+    if _FORZE_CS is None:
+        import modello_partita as mp
+        oss = mp.osservazioni(mp.partite_da_cache())
+        oss.sort(key=lambda o: o['data'])
+        darr = [o['data'] for o in oss]
+        cps, fz = [], []
+        if oss:
+            d = oss[0]['data']
+            while d <= oss[-1]['data'] + datetime.timedelta(days=7):
+                lo = _b.bisect_left(darr, d)
+                if lo >= 400:
+                    cps.append(d)
+                    fz.append(mp.stima(oss[:lo], riferimento=d,
+                                       regolarizzazione=0.30, emivita=120.0))
+                d += datetime.timedelta(days=7)
+        _FORZE_CS = (cps, fz)
+    return _FORZE_CS
+
+
+def _forza_a(quando):
+    """Le forze stimate col solo passato rispetto a `quando`."""
+    import bisect as _b
+    cps, fz = _forze_partita()
+    if not cps or not quando:
+        return None
+    try:
+        co = datetime.datetime.strptime(str(quando)[:10], '%Y-%m-%d')
+    except ValueError:
+        return None
+    i = _b.bisect_right(cps, co) - 1
+    return fz[i] if i >= 0 else None
+
+
+def _favorito(squadra, avversario, quando, in_casa):
+    """Gol attesi della squadra meno gol attesi dell'avversario.
+
+    E' la misura di quanto quella partita e' facile: `segnale_dentro_giocatore`
+    l'ha trovata l'unico predittore dello scarto di un giocatore dalla propria
+    media (corr +0.133, IC a grappoli [+0.088,+0.179], +8.8 pt fra il quinto
+    piu' favorevole e il meno favorevole). Il fattore campo non serve a parte:
+    in regressione congiunta e' interamente assorbito da qui."""
+    f = _forza_a(quando)
+    if f is None or not squadra or not avversario:
+        return None
+    if not (f.conosciuta(squadra) and f.conosciuta(avversario)):
+        return None
+    return (f.lambda_atteso(squadra, avversario, in_casa=in_casa)
+            - f.lambda_atteso(avversario, squadra, in_casa=not in_casa))
+
+
+def delta_favorito(ctx):
+    """Quanto QUESTA partita e' piu' facile della media di quelle che il
+    giocatore ha gia' giocato — ed e' l'unica forma utilizzabile.
+
+    Il valore assoluto non va sommato: chi gioca in una squadra forte ha gia'
+    uno storico di punteggi alti, quindi il modello lo sa gia' e sommarglielo
+    di nuovo sarebbe un doppio conteggio. Quello che il modello NON sa e' che
+    domenica quel giocatore incontra un avversario piu' debole del suo solito:
+    e' la differenza rispetto alla propria media storica."""
+    squadra, opp, cutoff, casa = (ctx.get('squadra'), ctx.get('opp_slug'),
+                                  ctx.get('cutoff'), ctx.get('casa'))
+    ora = _favorito(squadra, opp, cutoff, bool(casa))
+    if ora is None:
+        return None
+    s = ctx['s']
+    storici = []
+    for opp_h, data_h, casa_h in zip(s.get('opp_slug') or [], s.get('date') or [],
+                                     s.get('is_home') or []):
+        # ogni partita storica pesata con le forze note ALLORA: usare quelle di
+        # oggi sarebbe informazione dal futuro dentro la media di riferimento
+        v = _favorito(squadra, opp_h, data_h, bool(casa_h))
+        if v is not None:
+            storici.append(v)
+    if len(storici) < 5:
+        return None
+    return ora - (sum(storici) / len(storici))
+
+
 def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None,
-            usa_avversario=False):
+            usa_avversario=False, favorito_k=None):
     """La previsione di produzione dagli ingressi di `contesto`.
 
     half_life/trend_intensity servono SOLO alla taratura: lasciati a None si
     usano le costanti di produzione del modulo, cioe' il comportamento
-    invariato."""
+    invariato. `favorito_k` (punti per gol di differenziale) accende la
+    correzione di contesto partita: 0 o None la lascia spenta."""
+    base = _calcola_base(ctx, half_life, trend_intensity, shrink_k, usa_avversario)
+    if isinstance(favorito_k, dict):
+        # il portiere ha gia' questo segnale per un'altra strada (il blend
+        # P(porta inviolata) di squadra, GK_TEAM_CS_WEIGHT, stesso
+        # modello_partita): sommarglielo di nuovo peggiora tutto, misurato.
+        favorito_k = favorito_k.get(ctx['ruolo'], 0.0)
+    if not favorito_k:
+        return base
+    delta = delta_favorito(ctx)
+    return base if delta is None else base + favorito_k * delta
+
+
+def _calcola_base(ctx, half_life=None, trend_intensity=None, shrink_k=None,
+                  usa_avversario=False):
+    """La previsione invariata, senza correzione di contesto partita."""
     modulo, s, ruolo = ctx['modulo'], ctx['s'], ctx['ruolo']
     casa, opp_rank, presenza = ctx['casa'], ctx['opp_rank'], ctx['presenza']
     extra = {}
@@ -402,7 +504,8 @@ def calcola_con_maschera(ctx, half_life=None, trend_intensity=None):
         offensive_values=s['offensive'], **extra)
 
 
-def score_atteso(cache, slug, ruolo, fine_giornata, cutoff_giornata=None):
+def score_atteso(cache, slug, ruolo, fine_giornata, cutoff_giornata=None,
+                 favorito_k=None):
     """Il punteggio atteso di produzione per quella giornata, o None.
 
     Ritorna un dizionario con previsione, L10 al momento della scelta e la
@@ -412,7 +515,7 @@ def score_atteso(cache, slug, ruolo, fine_giornata, cutoff_giornata=None):
     if ctx is None:
         return None
     s, casa, cutoff, squadra = ctx['s'], ctx['casa'], ctx['cutoff'], ctx['squadra']
-    atteso = calcola(ctx)
+    atteso = calcola(ctx, favorito_k=favorito_k)
 
     # L10 al momento della scelta: la stessa misura che Sorare usa per il cap
     # delle arene (media degli ultimi 10 punteggi validi prima della giornata).

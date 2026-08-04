@@ -89,11 +89,12 @@ def lift_selezione(righe, quanti=5, prove=200, seme=3):
     return (statistics.mean(quote) * 100 if quote else None), len(quote)
 
 
-def valuta(punti, hl, ti):
+def valuta(punti, hl, ti, favorito_k=None):
     righe = []
     for ruolo, slug, data, ctx, reale in punti:
         try:
-            p = prev.calcola(ctx, half_life=hl, trend_intensity=ti)
+            p = prev.calcola(ctx, half_life=hl, trend_intensity=ti,
+                             favorito_k=favorito_k)
         except Exception:
             continue
         righe.append((ruolo, slug, data, p, reale))
@@ -109,10 +110,54 @@ def valuta(punti, hl, ti):
             'bias': my - mx, 'lift': lift, 'giornate': n_gg, 'n': len(righe)}
 
 
+def griglia_favorito(breve, punti, prod, spec):
+    """La correzione di contesto partita, giudicata sullo stesso metro.
+
+    Tiene half_life/trend di produzione e muove solo k: cosi' l'unica cosa che
+    cambia fra le righe e' la correzione, e il confronto e' pulito. La riga
+    k=0 e' il modello di oggi."""
+    ks = [float(x) for x in spec.split(',') if x.strip()]
+    if 0.0 not in ks:
+        ks.insert(0, 0.0)
+    hl, ti = prod
+    print('=' * 96)
+    print('%s -- %d punti | CONTESTO PARTITA (k punti per gol di differenziale atteso)' %
+          (breve.upper(), len(punti)))
+    print('half_life=%s trend=%s tenuti a produzione' % (hl, ti))
+    print('=' * 96)
+    print('%-16s %8s %8s %9s %8s %8s %7s' %
+          ('k', 'MAE', 'corr', 'sd prev', 'sd real', 'bias', 'lift%'))
+    risultati = []
+    for k in ks:
+        r = valuta(punti, hl, ti, favorito_k=k)
+        r['favorito_k'] = k
+        r['produzione'] = (k == 0.0)
+        risultati.append(r)
+        print('%-16s %8.3f %8.3f %9.2f %8.2f %+8.2f %7s%s' %
+              ('%g' % k, r['mae'], r['corr'], r['sd_prev'], r['sd_reale'], r['bias'],
+               ('%.1f' % r['lift']) if r['lift'] is not None else '--',
+               '   <- oggi (spento)' if r['produzione'] else ''))
+    base = risultati[0]
+    print('\nregola CLAUDE.md: si applica solo se MAE, correlazione e lift migliorano INSIEME')
+    for r in risultati[1:]:
+        segni = (r['mae'] < base['mae'], r['corr'] > base['corr'],
+                 (r['lift'] or 0) > (base['lift'] or 0))
+        esito = 'PASSA' if all(segni) else 'no'
+        print('  k=%-6g MAE %+6.3f  corr %+6.4f  lift %+5.1f   %s' %
+              (r['favorito_k'], r['mae'] - base['mae'], r['corr'] - base['corr'],
+               (r['lift'] or 0) - (base['lift'] or 0), esito))
+    print()
+    return risultati
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--ruoli', default='fwd,mid')
     ap.add_argument('--candidati', default='')
+    ap.add_argument('--favorito', default='',
+                    help='griglia di k per la correzione di contesto partita, '
+                         'es. 0,1,2,4 (punti per gol di differenziale atteso). '
+                         'Tiene half_life/trend di produzione e muove solo k.')
     ap.add_argument('--max', type=int, default=0)
     ap.add_argument('--json', default='dati_globali/taratura_confronto_parametri.json')
     args = ap.parse_args()
@@ -132,6 +177,9 @@ def main():
             continue
         modulo = sotto[0][3]['modulo']
         prod = (modulo.HALF_LIFE_GAMES, getattr(modulo, 'TREND_INTENSITY', 0.0))
+        if args.favorito:
+            esiti[b] = griglia_favorito(b, sotto, prod, args.favorito)
+            continue
         if args.candidati:
             cand = [tuple(float(x) for x in c.split(':')) for c in args.candidati.split(',')]
         else:
