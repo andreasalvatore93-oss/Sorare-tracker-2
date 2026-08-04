@@ -1,0 +1,136 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T19:47:01.430504Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) justo-giani: 54 pt attesi (33-78)
+   ORDINAMENTO: 53.77
+   SQUADRA: universidad-catolica-santiago-de-chile | AVVERSARIO: cobresal-el-salvador-comuna-diego-de-almagro
+======================================================================
+
+######################################################################
+# GIOCATORE: justo-giani
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: justo-giani (squadra: universidad-catolica-santiago-de-chile)
+Generato: 2026-08-04T19:47:01.429891Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 32
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: primera-division-cl (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-14 | SAR vs ALD | superliga-argentina-de-futbol | score=46.5 | peso=0.035
+  2025-09-27 | ALD vs ARG | superliga-argentina-de-futbol | score=44.3 | peso=0.039
+  2025-10-04 | UNI vs ALD | superliga-argentina-de-futbol | score=79.3 | peso=0.044
+  2025-10-12 | ALD vs HUR | superliga-argentina-de-futbol | score=35.0 | peso=0.050
+  2025-10-17 | RAC vs ALD | superliga-argentina-de-futbol | score=40.3 | peso=0.056
+  2025-11-01 | ALD vs IND | superliga-argentina-de-futbol | score=97.4 | peso=0.062
+  2025-11-09 | BAN vs ALD | superliga-argentina-de-futbol | score=49.5 | peso=0.070
+  2025-11-15 | ALD vs SAM | superliga-argentina-de-futbol | score=84.2 | peso=0.079
+  2026-02-01 | LAS vs UCA | primera-division-cl | score=76.9 | peso=0.088
+  2026-02-08 | UCA vs CON | primera-division-cl | score=73.5 | peso=0.099
+  2026-02-14 | CBR vs UCA | primera-division-cl | score=39.8 | peso=0.111
+  2026-02-21 | UCA vs COQ | primera-division-cl | score=79.0 | peso=0.125
+  2026-03-01 | NUB vs UCA | primera-division-cl | score=30.4 | peso=0.140
+  2026-03-07 | OHI vs UCA | primera-division-cl | score=39.8 | peso=0.157
+  2026-03-14 | UCA vs EVE | primera-division-cl | score=82.5 | peso=0.177
+  2026-04-02 | UCA vs PAL | primera-division-cl | score=83.8 | peso=0.198
+  2026-04-08 | UCA vs BOC | conmebol-libertadores | score=38.7 | peso=0.223
+  2026-04-11 | AUD vs UCA | primera-division-cl | score=80.8 | peso=0.250
+  2026-04-15 | CRU vs UCA | conmebol-libertadores | score=64.2 | peso=0.281
+  2026-04-21 | UCA vs LAC | primera-division-cl | score=37.2 | peso=0.315
+  2026-04-25 | UCH vs UCA | primera-division-cl | score=35.6 | peso=0.354
+  2026-04-30 | BAR vs UCA | conmebol-libertadores | score=63.8 | peso=0.397
+  2026-05-07 | UCA vs CRU | conmebol-libertadores | score=28.0 | peso=0.445
+  2026-05-17 | LIM vs UCA | primera-division-cl | score=31.0 | peso=0.500
+  2026-05-22 | UCA vs BAR | conmebol-libertadores | score=33.1 | peso=0.561
+  2026-05-24 | UCA vs COL | primera-division-cl | score=43.5 | peso=0.630
+  2026-05-31 | HUA vs UCA | primera-division-cl | score=77.2 | peso=0.707
+  2026-06-14 | UCA vs UCO | primera-division-cl | score=75.5 | peso=0.794
+  2026-07-26 | UCA vs LAS | primera-division-cl | score=50.3 | peso=0.891
+  2026-08-02 | CON vs UCA | primera-division-cl | score=46.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 53.35
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 53.48 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 45.76 | Punteggio complessivo (granulari) medio: 7.59 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.67 (delta -0.05) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 18.57
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.1 - 77.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.78 (differenza: +0.79)
+Media score in casa: 56.83 | Media score fuori casa: 53.30
+Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.9
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 1.212
+Fattore falli (casa/trasferta, da dati reali): 0.995
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore trend (media ultime 5: 58.7 vs media 5 PRECEDENTI: 38.3): 1.000
+P(gioca): 93.75% (fonte: tasso di presenza storico (30/32))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T00:30
+Casa: CD Universidad Católica | Trasferta: CD Cobresal
+Competizione: primera-division-cl
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.7 (range 33.4 - 77.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 53.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.18
+Punteggio REALE ottenuto in quella partita: 46.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -7.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      59.2    49.5     -9.7    28.2        SI
+   7        7      57.3    84.2    +26.9    25.7        NO
+   8        8      62.1    76.9    +14.8    26.1        SI
+   9        9      60.2    73.5    +13.3    24.6        SI
+  10       10      73.3    39.8    -33.5    22.9        NO
+  11       11      47.0    79.0    +32.0    23.7        NO
+  12       12      50.4    30.4    -20.0    23.0        SI
+  13       13      56.8    39.8    -17.0    25.3        SI
+  14       14      53.9    82.5    +28.6    24.8        NO
+  15       15      49.6    83.8    +34.2    25.1        NO
+  16       16      75.9    38.7    -37.2    25.1        NO
+  17       17      64.2    80.8    +16.6    25.3        SI
+  18       18      55.8    64.2     +8.4    24.9        SI
+  19       19      78.1    37.2    -40.9    23.4        NO
+  20       20      42.6    35.6     -7.0    23.9        SI
+  21       21      47.2    63.8    +16.6    24.2        SI
+  22       22      54.1    28.0    -26.1    22.9        NO
+  23       23      55.1    31.0    -24.1    24.2        SI
+  24       24      44.5    33.1    -11.4    24.3        SI
+  25       25      36.1    43.5     +7.4    23.8        SI
+  26       26      45.5    77.2    +31.7    22.5        NO
+  27       27      61.8    75.5    +13.7    23.6        SI
+  28       28      62.6    50.3    -12.3    23.8        SI
+  29       29      57.3    46.8    -10.5    22.5        SI
+
+MAE (errore assoluto medio): 20.58
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
