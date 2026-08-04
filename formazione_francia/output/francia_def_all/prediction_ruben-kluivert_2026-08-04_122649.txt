@@ -1,0 +1,104 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T12:26:49.151352Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) ruben-kluivert: 49 pt attesi (28-69)
+   ORDINAMENTO: 51.28
+   SQUADRA: olympique-lyonnais-lyon | AVVERSARIO: sparta-praha-praha
+======================================================================
+
+######################################################################
+# GIOCATORE: ruben-kluivert
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ruben-kluivert (squadra: olympique-lyonnais-lyon)
+Generato: 2026-08-04T12:26:49.130261Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 44
+Escluse (DID_NOT_PLAY): 22
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: uefa-champions-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-25 | UTR vs OL | uefa-europa-league | score=43.9 | peso=0.758
+  2025-10-02 | OL vs RBS | uefa-europa-league | score=100.0 | peso=0.776
+  2025-10-18 | NIC vs OL | ligue-1-fr | score=75.2 | peso=0.794
+  2025-11-06 | BET vs OL | uefa-europa-league | score=62.8 | peso=0.812
+  2025-11-09 | OL vs PSG | ligue-1-fr | score=34.0 | peso=0.831
+  2026-01-03 | ASM vs OL | ligue-1-fr | score=46.5 | peso=0.851
+  2026-01-18 | OL vs BRE | ligue-1-fr | score=44.1 | peso=0.871
+  2026-01-22 | YBB vs OL | uefa-europa-league | score=75.3 | peso=0.891
+  2026-01-25 | MET vs OL | ligue-1-fr | score=34.6 | peso=0.912
+  2026-01-29 | OL vs PKT | uefa-europa-league | score=41.0 | peso=0.933
+  2026-02-01 | OL vs LIL | ligue-1-fr | score=100.0 | peso=0.955
+  2026-02-22 | STR vs OL | ligue-1-fr | score=21.8 | peso=0.977
+  2026-04-19 | PSG vs OL | ligue-1-fr | score=41.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 54.87
+  di cui Punteggio decisivo (level_score) medio: 40.56 | Punteggio complessivo (granulari) medio: 14.31 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.17, delta avversario +0.00 | Passaggio condizionato: delta venue -0.69, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue -0.14, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 24.25
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.6 - 75.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 20.50 (differenza: +3.76)
+Media score in casa: 63.80 | Media score fuori casa: 50.25
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.8
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 0.676 (gol subiti reali dell'avversario, ultime 10)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.994
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.999
+Fattore trend (media ultime 5: 47.8 vs media 5 PRECEDENTI: 52.7): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-04T18:00
+Casa: AC Sparta Praha | Trasferta: Olympique Lyonnais
+Competizione: uefa-champions-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.7 (range 28.4 - 69.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 51.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.12
+Punteggio REALE ottenuto in quella partita: 41.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      71.8    44.1    -27.7    24.3        NO
+   7        7      45.1    75.3    +30.2    23.2        NO
+   8        8      84.1    34.6    -49.5    22.6        NO
+   9        9      56.8    41.0    -15.8    23.1        SI
+  10       10      45.8   100.0    +54.2    22.4        NO
+  11       11      60.9    21.8    -39.0    26.0        NO
+  12       12      43.3    41.9     -1.4    27.6        SI
+
+MAE (errore assoluto medio): 31.13
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 28.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
