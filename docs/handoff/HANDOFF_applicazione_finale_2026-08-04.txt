@@ -1,0 +1,310 @@
+HANDOFF — APPLICAZIONE FINALE: IL CANDIDATO DEF E' IN PRODUZIONE
+Data: 2026-08-04 (notte)
+
+
+IN TRE RIGHE
+  IN PRODUZIONE: spenta la gamba avversario dello Stadio D sui DIFENSORI
+  (STADIO_D_AVVERSARIO=False, propagato su 52 leghe), glob ordinati ovunque
+  per riproducibilita', cap L10 delle arene acceso di default nello scouting.
+  SOGLIE ARENE: invariate, e non per pigrizia -- l'unica soglia manovrabile
+  (MIN_QUALITY_SCORE) e' risultata INERTE al test A/A, i cap 260/220 sono il
+  vincolo vero di Sorare e non si tarano.
+  APERTO: il test end-to-end dello scouting era ancora in corso alla chiusura.
+
+
+====================================================================
+1. STATO DEL REPO
+====================================================================
+
+Branch: main, tutto pushato su origin/main.
+
+Commit di questa sessione, in ordine:
+  6adde5577f  CLAUDE.md: la regola del delta + coerenza scouting/generatore
+  da2f90e7ce  glob ordinati (riproducibilita' fra ambienti)
+  fb15528d86  PRODUZIONE: STADIO_D_AVVERSARIO=False sui DEF + propagazione
+  e28a074b06  workflow: misura soglie_arene con test A/A
+  a997cda286  scouting: cap L10 acceso di default
+  bf63254f91  cancellate le predizioni della giornata 4-7 ago
+  (piu' i commit automatici della pipeline di rigenerazione)
+
+Restano modificati e non committati, di altre sessioni, mai toccati:
+RIASSUNTO_2026-08-04.md, docs/BOT_CERBERO_PROGETTO.md,
+docs/RIASSUNTO_CERBERO.md, bots/cerbero/*, cerbero_soglie_apprese.json.
+
+IN PRODUZIONE ORA: il modello dei difensori e' cambiato ed e' propagato; le
+predizioni della giornata 4-7 agosto sono state rigenerate con quel modello.
+
+
+====================================================================
+2. PERCHE' ESISTEVA QUESTO LAVORO
+====================================================================
+
+Il candidato DEF era stato misurato tre volte e si era fermato al cancello
+"riproduci le terne alla quarta cifra". Il brief di stasera ha rimosso quel
+cancello (i valori assoluti tremolano fra ambienti, i delta no), ha ordinato
+di togliere il tremolio alla radice e poi di applicare, ricalibrare le soglie,
+rigenerare le predizioni e chiudere la divergenza scouting/generatore.
+
+
+====================================================================
+3. COSA HO COSTRUITO O TOCCATO
+====================================================================
+
+FASE 1 — glob ordinati
+  opponent_strength.py: 3 glob sulle cache dei dettagli, con un commento che
+    spiega perche' non vanno tolti.
+  modello_partita.costruisci_partite, backtest_arene_cache._indice (qui anche
+    lo spareggio sul percorso a parita' di dimensione), errore_modello_storico,
+    confronta_previsioni_giornata.
+
+FASE 2 — produzione
+  formazione_mls/predict/test_def.py: STADIO_D_AVVERSARIO = False, con il
+    commento che riporta misura, n, IC e cosa NON si compra.
+  python propaga_modello.py -> 208 file su 52 leghe.
+
+FASE 3 — soglie arene
+  .github/workflows/taratura_modello.yml: nuovo input misura=soglie_arene, che
+    gira backtest_arene_produzione.py tre volte (baseline + i due estremi di
+    MIN_QUALITY_SCORE). Nessun misuratore nuovo scritto.
+
+FASE 4 — pulizia e rigenerazione
+  Cancellati 1.915 file, rigenerati su Actions con la pipeline vera.
+
+FASE 5 — scouting
+  best_five.py: RISPETTA_CAP_L10 default '0' -> '1'.
+
+Comandi per rifare tutto (nessuno richiede rete tranne la rigenerazione):
+  python verifica_stadio_d_avversario.py --ruolo def          ~2 min
+  python propaga_modello.py --check                            istantaneo
+  gh workflow run taratura_modello.yml -f misura=soglie_arene -f fixture=...
+  gh workflow run formazione_giornata.yml -f fixture_slug=football-4-7-aug-2026
+
+
+====================================================================
+4. OUTPUT NUMERICO INTEGRALE
+====================================================================
+
+4.A  FASE 1 — IL TREMOLIO E' SPARITO
+
+  Prima dell'ordinamento dei glob (stesso campione, 25.738 righe, 263 giornate):
+    ambiente     MAE          corr        lift
+    Actions      14.987396    0.177110    16.0386
+    locale       14.987675    0.177556    15.9351
+    scarto        0.000279    0.000446     0.1035
+
+  Dopo l'ordinamento:
+    Actions      14.987675    0.177556    15.9351
+    locale       14.987675    0.177556    15.9351
+    scarto        0.000000    0.000000     0.0000
+
+  Due run locali consecutive, cache /tmp azzerata fra le due: identiche a 9
+  decimali su tutti e tre gli arm. Controllo [SICUREZZA] della FASE 1 passato.
+
+4.B  FASE 2 — I TRE ARM SUL CAMPIONE PIENO (DEF, n=25.738, 263 giornate)
+
+  arm                                MAE          corr        lift       dMAE       dcorr      dlift
+  produzione (prima)             14.987675     0.177556    15.9351         --          --         --
+  candidato (applicato)          14.971738     0.182517    17.2017   -0.015937   +0.004960    +1.2666
+  Stadio D INTERO spento         14.990652     0.175895    16.9429   +0.002977   -0.001662    +1.0078
+
+  Riferimento storico (riverifica indipendente) e scarto del mio run:
+    produzione              MAE 14.990365 (-0.002690)  corr 0.176337 (+0.001219)  lift 16.0641 (-0.1290)
+    candidato               MAE 14.970303 (+0.001435)  corr 0.182627 (-0.000110)  lift 17.2155 (-0.0138)
+    Stadio D intero spento  MAE 14.989160 (+0.001492)  corr 0.176039 (-0.000144)  lift 16.8662 (+0.0767)
+
+  Il candidato e lo spegnimento intero restano ben separati (corr 0.1825 contro
+  0.1759): l'interruttore spegne solo la sua meta', il condizionamento
+  casa/trasferta resta acceso.
+
+  Propagazione: 208/208 file identici al canonico adattato per lega
+  (controllo fatto ricostruendo propaga_modello.adatta, non un confronto byte
+  a byte col canonico -- quello fallirebbe per costruzione, ogni lega ha i suoi
+  path). STADIO_D_AVVERSARIO = False presente in 53 file (52 leghe + canonico).
+
+4.C  FASE 3 — SOGLIE ARENE, fixture football-8-12-may-2026
+
+  Baseline (modello NUOVO, soglie VECCHIE), 11 arene valutate:
+    utente  media 282.26 punti per arena
+    modello media 287.41 punti per arena
+    differenza +5.15
+    ARENA_ALLSTARS_260   n=6   differenza media +33.60
+    ARENA_ALLSTARS_220   n=4   differenza media -39.29
+    ARENA_BEGINNER       n=1   differenza media +12.24
+
+  TEST A/A su MIN_QUALITY_SCORE (0 contro 999, tre esecuzioni nello stesso run):
+    esecuzione 1 (produzione)  differenza media +5.15  medie 282.26 / 287.41
+    esecuzione 2 (MQS=0)       differenza media +5.15  medie 282.26 / 287.41
+    esecuzione 3 (MQS=999)     differenza media +5.15  medie 282.26 / 287.41
+  Identiche. LA SOGLIA E' INERTE: quality_filter.py non e' importato da nessuno
+  dei tre file vivi (build_formazione_globale, best_five, scouting_gw), quindi
+  MIN_QUALITY_SCORE e i gate L5/L10/L40 sono codice morto. Griglia non spesa.
+
+  Rimangono i cap L10 260/220, che pero' NON sono parametri nostri: sono il
+  vincolo che Sorare impone alle arene. Non c'e' niente da tarare.
+  Applicata la regola di decisione: nessuna cella soddisfa i requisiti perche'
+  non esistono celle -> LE SOGLIE RESTANO COME SONO.
+
+4.D  FASE 4 — PULIZIA E RIGENERAZIONE
+
+  Selezione fatta sul CONTENUTO dei file (data della partita target dentro il
+  file), non sul nome ne' sulla data di modifica:
+    prediction_*.txt con partita nella giornata 4-7 ago  1.375  CANCELLATI
+    prediction_*.txt di altre giornate                   6.538  intatti
+    prediction_*.txt senza data leggibile                2.060  intatti
+    consiglio_*.txt con partite della giornata             540  CANCELLATI
+    consiglio_*.txt di altre giornate                    3.524  intatti
+  Totale cancellato: 1.915 file, tutti tracciati in git (quindi ripristinabili
+  con un solo comando) e copiati anche in uno snapshot temporaneo prima della
+  cancellazione, per poter fare il confronto 4.4.
+
+  NON TOCCATI, verificato: prezzi e listini, dati partita e gol, odds e
+  dati_globali/odds_titolarita_storico.json, anagrafiche, cache dei dettagli
+  (5.367 file) e dei game log (5.891). Nessun file il cui riscarico costi
+  chiamate API.
+
+  Rigenerazione: workflow formazione_giornata.yml su fixture
+  football-4-7-aug-2026, esito success su tutti i job (20 job di discovery, 39+
+  di predict, merge e generatore). 101 prediction e 38 consiglio rigenerati per
+  la giornata -- meno dei 1.375 cancellati perche' quelli erano l'accumulo di
+  piu' run della stessa giornata (piu' file per giocatore, piu' shard), mentre
+  la rigenerazione produce un file per giocatore sopravvissuto al filtro.
+
+  CONTROLLO [SICUREZZA] 4.4, a parita' di PARTITA TARGET (stesso giocatore,
+  stesso avversario, stessa data -- il primo confronto che avevo fatto era
+  sporco: teneva il file piu' recente per giocatore anche quando la partita
+  era un'altra, per esempio un preliminare europeo del 30/07):
+
+    ruolo      n   cambiati   max |delta|
+    gk        13          0        0.000
+    def       28          4        1.000
+    mid       37          4        3.000
+    fwd       23          0        0.000
+
+  DEF si e' mosso: la modifica e' arrivata in produzione.
+  GK e FWD identici a zero decimali.
+  MID si e' mosso su 4 giocatori su 37. E' il residuo della FASE 1, e la causa
+  e' verificata nel codice, non dedotta: `opponent_is_strong` -- l'unica
+  funzione con una soglia BOOLEANA, quella che si ribalta per un epsilon --
+  compare 6 volte in test_def.py e 2 in test_mid.py, e ZERO volte in test_gk.py
+  e test_mls_fwd_all.py. Sono esattamente i due ruoli che si sono mossi.
+  Il commit di propagazione ha toccato 53 file, tutti test_def.py: nessuna riga
+  di codice di MID/GK/FWD e' cambiata.
+
+
+====================================================================
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+====================================================================
+
+5.1  COSA SI E' COMPRATO DAVVERO SUI DIFENSORI
+Un miglioramento di ORDINAMENTO: correlazione +0.0050 su questo campione
+(+0.0063 nella riverifica), con IC 95% bootstrap sulle giornate [+0.00186,
++0.01055], quindi sopra zero. MAE -0.016 e lift +1.27 hanno intervalli che
+comprendono lo zero: non sono dimostrati. Non vanno venduti.
+
+5.2  IL TREMOLIO ERA REALE E ORA E' DOCUMENTATO NEL CODICE
+Non era un dettaglio: due sessioni avevano prodotto numeri diversi sullo stesso
+campione e nessuno sapeva perche'. La causa e' che glob.glob torna l'ordine del
+filesystem, l'ordine cambia le somme in virgola mobile, e opponent_is_strong e'
+una soglia booleana. Ora i glob sono ordinati e i due ambienti coincidono a sei
+decimali. Il commento in opponent_strength._build_series_for_league spiega
+perche' quel sorted() non va tolto.
+
+5.3  LE SOGLIE ARENE NON SI POSSONO TARARE, E ORA SI SA PERCHE'
+Non e' che la griglia non abbia trovato un vincitore: e' che non c'erano
+manopole. MIN_QUALITY_SCORE e i gate sono codice morto (provato con l'A/A: 0 e
+999 danno numeri identici alla seconda cifra), e i cap 260/220 sono il vincolo
+di Sorare. Se si vuole davvero tarare qualcosa in quest'area, i candidati veri
+sono PAREGGIO_ARENA_260 (265.0) e GUADAGNO_PER_PUNTO, che decidono QUANTE arene
+il bot gioca: quelli non sono stati toccati e non erano nel brief.
+
+5.4  IL BASELINE DELLE ARENE E' POSITIVO MA SBILANCIATO
+Sulla giornata 8-12 maggio il modello batte l'utente di +5.15 punti per arena,
+ma la media nasconde due comportamenti opposti: +33.60 sulle All Stars cap 260
+(n=6) e -39.29 sulle cap 220 (n=4). Con n cosi' piccoli non ci si costruisce
+sopra niente, ma il segno opposto fra i due cap e' la cosa da guardare per
+prima se si riapre il tema.
+
+5.5  IL COSTO NUOVO DELLO SCOUTING
+Con RISPETTA_CAP_L10 acceso serve l'L10 REALE di ogni candidato, cioe' una
+query in piu' per giocatore. Era il motivo per cui il flag era spento. Se le
+run di Best Five diventano troppo lente o prendono 429, e' li' che bisogna
+guardare -- non e' un bug, e' il prezzo della coerenza col generatore.
+Nessuna carta sparisce dall'output: il flag decide quali FORMAZIONI sono
+costruibili, mentre l'elenco dei candidati dello scouting arriva dai
+consiglio_*.txt e non passa da quel codice.
+
+5.6  DUE SUPERFICI DI RISCHIO REGISTRATE E NON TOCCATE
+  - CALIB_A_* / CALIB_B_* (build_formazione_globale.py:376-380) sono letti da
+    variabile d'ambiente all'import: scouting e generatore in due job con env
+    diverse divergerebbero in silenzio.
+  - GK_TEAM_CS_WEIGHT e' riletto da env in backtest_arene_previsioni.py:260,
+    seconda fonte dello stesso numero che vive in test_gk.py:126.
+Sono superfici di rischio, non bug. Da decidere se centralizzarle.
+
+5.7  QUELLO CHE NON HO CHIUSO
+Il test end-to-end dello scouting (FASE 6.1) era ancora in corso su Actions alla
+chiusura della sessione: run 30908807625. Il job `candidati` e i primi predict
+sono andati a buon fine, nessun errore. Va guardato l'esito finale e va fatto
+il confronto dei giocatori in comune fra report di scouting e generatore.
+Il generatore invece ha gia' girato dentro la pipeline di rigenerazione, con
+esito success (output committato: generatore_formazioni_run117).
+
+5.8  UN ERRORE MIO, CORRETTO STRADA FACENDO
+Il primo confronto vecchie/nuove predizioni teneva, per ogni giocatore, il file
+piu' recente -- anche quando quel file si riferiva a un'altra partita (un
+preliminare europeo giocato il 30/07 contro un avversario diverso, con
+range_mult 1.4 invece di 1.1, cioe' di un'altra era del modello). Dava gli
+stessi conteggi ma per la ragione sbagliata. Rifatto vincolando la partita
+target: i numeri della sezione 4.D sono quelli del confronto pulito.
+
+
+====================================================================
+6. DECISIONE APERTA
+====================================================================
+
+a) Chiudere il test end-to-end dello scouting (5.7) e verificare i giocatori
+   in comune. E' l'unica cosa del brief rimasta a meta'.
+
+b) PAREGGIO_ARENA_260 e GUADAGNO_PER_PUNTO: sono le vere manopole della
+   politica d'ingresso nelle arene, e non sono mai state tarate. Se il tema
+   soglie va riaperto, si riapre da li' (5.3).
+
+c) Le due superfici di rischio di 5.6: centralizzare o lasciare.
+
+d) Il segno opposto fra cap 260 e cap 220 nel backtest arene (5.4): capire se
+   e' rumore da n=4 o un difetto sistematico sotto cap stretto.
+
+Nessuna di queste e' stata presa.
+
+
+====================================================================
+7. FILE DI RIFERIMENTO
+====================================================================
+
+formazione_mls/predict/test_def.py          STADIO_D_AVVERSARIO (~riga 119) e
+                                            il blocco Stadio D (~1440-1480)
+opponent_strength.py                        i glob ordinati e il perche'
+propaga_modello.py                          --check per la verifica 208/208
+verifica_stadio_d_avversario.py             i tre arm, cancello sul delta
+backtest_arene_produzione.py                il metro delle soglie arene
+best_five.py                                RISPETTA_CAP_L10 (~riga 164)
+generatore_formazioni/quality_filter.py     codice morto, provato con A/A
+.github/workflows/taratura_modello.yml      stadio_d | ranking_pulito | soglie_arene
+docs/handoff/HANDOFF_riverifica_indipendente_2026-08-04.txt
+docs/handoff/HANDOFF_end_to_end_produzione_2026-08-04.txt
+docs/BUG_MISURA_STADIO_D_FALLBACK_RANKING.md
+
+
+====================================================================
+8. PROMEMORIA
+====================================================================
+
+Quando ci saranno almeno 3 giornate in
+dati_globali/odds_titolarita_storico.json, rifare lo screening dei segnali
+SENZA il condizionamento a starter odds >= 0.80. Oggi "giorni di riposo",
+"minuti L5" e la titolarita' attesa escono a zero, ma sono misurati solo su chi
+era gia' previsto titolare: e' restrizione di range, non prova di assenza. Con
+il ranking chiuso definitivamente (+0.077 sul sottoinsieme pulito, sotto la
+soglia +0.09), e' il segnale piu' grosso rimasto.
+
+Il file si riempie da solo a ogni run di discovery e non e' stato toccato.
