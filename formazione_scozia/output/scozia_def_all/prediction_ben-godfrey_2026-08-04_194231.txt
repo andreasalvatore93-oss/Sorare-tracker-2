@@ -1,0 +1,110 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-04T19:42:31.786652Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) ben-godfrey: 48 pt attesi (27-70)
+   ORDINAMENTO: 47.68
+   SQUADRA: rangers-glasgow | AVVERSARIO: jagiellonia-bialystok-bialystok
+======================================================================
+
+######################################################################
+# GIOCATORE: ben-godfrey
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ben-godfrey (squadra: rangers-glasgow)
+Generato: 2026-08-04T19:42:31.785614Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 43
+Escluse (DID_NOT_PLAY): 26
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: uefa-europa-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | SHU vs MIL | football-league-championship | score=42.5 | peso=0.707
+  2025-08-30 | MID vs SHU | football-league-championship | score=36.3 | peso=0.724
+  2025-09-12 | IPS vs SHU | football-league-championship | score=14.3 | peso=0.741
+  2025-09-20 | SHU vs CHA | football-league-championship | score=71.9 | peso=0.758
+  2026-02-08 | BIF vs RFC | superliga-dk | score=71.5 | peso=0.776
+  2026-02-15 | VFF vs BIF | superliga-dk | score=42.0 | peso=0.794
+  2026-02-23 | BIF vs SJE | superliga-dk | score=70.4 | peso=0.812
+  2026-03-01 | FCM vs BIF | superliga-dk | score=49.5 | peso=0.831
+  2026-03-15 | BIF vs VFF | superliga-dk | score=54.5 | peso=0.851
+  2026-03-22 | AGF vs BIF | superliga-dk | score=27.0 | peso=0.871
+  2026-04-07 | FCN vs BIF | superliga-dk | score=35.1 | peso=0.891
+  2026-04-12 | BIF vs FCM | superliga-dk | score=21.1 | peso=0.912
+  2026-04-17 | BIF vs SJE | superliga-dk | score=66.1 | peso=0.933
+  2026-04-22 | VFF vs BIF | superliga-dk | score=59.7 | peso=0.955
+  2026-05-21 | BIF vs FCK | superliga-dk | score=38.6 | peso=0.977
+  2026-07-31 | DUU vs RAN | premiership-gb-sct | score=64.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 48.04
+  di cui Punteggio decisivo (level_score) medio: 37.22 | Punteggio complessivo (granulari) medio: 10.81 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 | Passaggio condizionato: delta venue +0.00, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.81
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 27.0 - 70.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.81 (differenza: +1.99)
+Media score in casa: 53.72 | Media score fuori casa: 42.67
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.9
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 0.941 (gol subiti reali dell'avversario, ultime 10)
+Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 1.000
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.000
+Fattore trend (media ultime 5: 50.3 vs media 5 PRECEDENTI: 46.9): 1.000
+P(gioca): 37.21% (fonte: tasso di presenza storico (16/43))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-06T16:00
+Casa: SSA Jagiellonia Białystok | Trasferta: Rangers FC
+Competizione: uefa-europa-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.0 (range 26.9 - 70.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 47.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.72
+Punteggio REALE ottenuto in quella partita: 64.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +17.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      54.6    70.4    +15.8    22.3        SI
+   7        7      38.0    49.5    +11.5    22.6        SI
+   8        8      46.8    54.5     +7.7    21.0        SI
+   9        9      50.7    27.0    -23.7    19.7        NO
+  10       10      42.7    35.1     -7.6    20.3        SI
+  11       11      40.6    21.1    -19.4    19.8        SI
+  12       12      54.6    66.1    +11.5    20.5        SI
+  13       13      43.0    59.7    +16.7    20.7        SI
+  14       14      39.2    38.6     -0.6    20.3        SI
+  15       15      46.7    64.5    +17.8    19.6        SI
+
+MAE (errore assoluto medio): 13.24
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 90.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
