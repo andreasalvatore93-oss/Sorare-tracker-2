@@ -61,7 +61,7 @@ visibile. Nessuna modifica alla produzione è chiusa finché non si è
 ripercorsa la catena fino allo scouting incluso. Regola gemella anche in
 CLAUDE.md.
 
-## 2. I tre strumenti
+## 2. Gli strumenti (due attivi, uno superato)
 
 ### 2.1 Generatore di formazioni (il "modello predittivo")
 
@@ -136,23 +136,26 @@ fattore comune). Workflow `scouting_gw.yml`, input `gameweek`/`per_ruolo`/
 `odds_min`/`predict`/`screma`.
 
 Riusa la cache del generatore (stessa cartella `<lega>_<ruolo>_all`) e il
-meccanismo di riuso previsione di Best Five: un giocatore con previsione già
-scritta per la finestra della fixture corrente non rigenera nemmeno il job.
+meccanismo di riuso previsione ereditato da Best Five (§2.3): un giocatore
+con previsione già scritta per la finestra della fixture corrente non
+rigenera nemmeno il job.
 
-### 2.3 Best Five / Contender (`best_five.py`)
+### 2.3 Best Five / Contender (`best_five.py`) — SUPERATO, non più in uso
 
-Per UNA lega (o N leghe unite per la competizione "Contender"), genera la
-formazione ottimale scegliendo tra **tutte** le carte della lega, non solo
-quelle possedute — usa **la stessa** `build_formazione_globale.py` della
-produzione (bug storico: prima chiamava una funzione gemella mai eseguita in
-produzione, corretto 31/07). Leghe con `discovery_global` pronta:
-`LEGHE_SUPPORTATE` in `best_five.py` (mls, kleague, germania, austria,
-croazia, germania2, scozia, portogallo, danimarca, argentina + le altre
-propagate via `CONSIGLIO_DISCOVERY_FILE`, verificare prima di fidarsi).
-Genera anche varianti "Cheapest"/"Ottimizzata valore" per budget limitato.
-**Non lanciare mai una run standalone e una Contender sulla stessa lega in
-parallelo**: scrivono sugli stessi file e si scontrano (vedi memoria
-`feedback_no_run_concorrenti_stessa_lega`).
+Tool precedente allo scouting attuale: per UNA lega (o N leghe unite per la
+competizione "Contender"), generava la formazione ottimale scegliendo tra
+tutte le carte della lega, non solo quelle possedute. **Ultima run reale
+01/08/2026**; da quella data l'utente usa solo lo scouting acquisti (§2.2),
+che ne è l'evoluzione — stesso bisogno (valutare carte non possedute),
+soluzione migliore (`searchPlayers` invece di roster+scrematura per club).
+
+`best_five.py` **non è stato cancellato**: `scouting_gw.py` lo importa
+ancora come libreria per alcune funzioni (riuso previsione, render carte,
+knapsack cheapest/valore, tooltip soglie arena — vedi i riferimenti
+`_import(..., 'best_five.py')` nel codice). I workflow standalone
+(`best_five.yml`, `best_five_contender.yml`) restano nel repo ma **non
+vanno più lanciati**: se serve di nuovo un confronto per-lega su tutto il
+pool, valutare prima se lo scouting lo copre già.
 
 ---
 
@@ -305,8 +308,6 @@ Piste secondarie aperte, non urgenti:
   rank-based.
 - **Norvegia**: mai tracciata, richiede pipeline da zero, rimandata su
   richiesta utente.
-- **CONSIGLIO_DISCOVERY_FILE**: patch che allinea Best Five alla produzione,
-  applicata solo a 10 leghe, restano ~20 minori da verificare/propagare.
 - **APIKEY Sorare**: richiesta, mai arrivata. È il tetto che decide i tempi
   di scouting/backtest/ricostruzione manager (senza: ~60 query/min,
   complessità 500; con: 30.000 e profondità 13).
@@ -374,9 +375,9 @@ Commit `ee4c2deec2`.
 |---|---|
 | `generatore_formazioni/build_formazione_globale.py` | il generatore vero, multi-lega, tutti i tipi di formazione |
 | `formazione_mls/predict/test_<ruolo>.py` | la formula di previsione per ruolo (pattern riusato su tutte le leghe) |
-| `formazione_mls/build_formazione_finale.py` | logica di fusione/capitano/anti-stack, riusata da Best Five |
-| `scouting_gw.py` | scouting acquisti, query `searchPlayers` |
-| `best_five.py` | Best Five / Contender |
+| `formazione_mls/build_formazione_finale.py` | logica di fusione/capitano/anti-stack |
+| `scouting_gw.py` | scouting acquisti, query `searchPlayers` (tool attivo) |
+| `best_five.py` | Best Five/Contender, SUPERATO (§2.3) — usato solo come libreria da `scouting_gw.py` |
 | `propaga_modello.py` | unica via per propagare un cambio di modello a tutte le leghe |
 | `taratura_confronto_parametri.py` | il metro ufficiale (MAE+correlazione+lift insieme) per ogni confronto di parametri |
 | `ricostruisci_manager.py` | scarica arene/formazioni reali di un manager Sorare (pubblico) |
