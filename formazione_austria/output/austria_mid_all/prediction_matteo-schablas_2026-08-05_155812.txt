@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-05T15:58:12.359096Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) matteo-schablas: 52 pt attesi (48-62)
+   SQUADRA: austria-wien-wien | AVVERSARIO: beitar-jerusalem-jerusalem
+======================================================================
+
+######################################################################
+# GIOCATORE: matteo-schablas
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: matteo-schablas (squadra: austria-wien-wien)
+Generato: 2026-08-05T15:58:12.357949Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 36
+Escluse (DID_NOT_PLAY): 24
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-15 | FAK vs STU | austrian-bundesliga | score=60.6 | peso=0.946
+  2026-07-23 | LIE vs FAK | uefa-europa-conference-league | score=74.5 | peso=0.973
+  2026-07-30 | FAK vs LIE | uefa-europa-conference-league | score=60.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 65.33
+  di cui Punteggio decisivo (level_score) medio: 43.10 | Punteggio complessivo (granulari) medio: 22.23 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 41.75 (delta -1.35)
+  Efficacia offensiva condizionata: delta venue -0.11, delta avversario +0.00 | Passaggio condizionato: delta venue -0.29, delta avversario +0.00 | Gol subiti condizionato: delta venue +1.31, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 6.46
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 60.6 - 74.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 60.76 | Media score fuori casa: 74.46
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.0
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.002
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 20.00% (fonte: starterOddsBasisPoints (2000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-06T17:30
+Casa: Beitar Jerusalem FC | Trasferta: FK Austria Wien
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.4 (range 47.7 - 61.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 67.63
+Punteggio REALE ottenuto in quella partita: 60.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

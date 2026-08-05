@@ -1,0 +1,135 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-05T16:00:03.677604Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) djeidi-gassama: 53 pt attesi (37-74)
+   ORDINAMENTO: 53.42
+   SQUADRA: rangers-glasgow | AVVERSARIO: jagiellonia-bialystok-bialystok
+======================================================================
+
+######################################################################
+# GIOCATORE: djeidi-gassama
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: djeidi-gassama (squadra: rangers-glasgow)
+Generato: 2026-08-05T16:00:03.676528Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 51
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 18
+Competizione partita target: uefa-europa-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-19 | RAN vs CLU | uefa-champions-league | score=53.5 | peso=0.035
+  2025-08-24 | STM vs RAN | premiership-gb-sct | score=65.8 | peso=0.039
+  2025-08-31 | RAN vs CEL | premiership-gb-sct | score=31.0 | peso=0.044
+  2025-09-13 | RAN vs HEA | premiership-gb-sct | score=50.5 | peso=0.050
+  2025-09-25 | RAN vs GNK | uefa-europa-league | score=41.4 | peso=0.056
+  2025-09-28 | LIV vs RAN | premiership-gb-sct | score=49.9 | peso=0.062
+  2025-10-02 | STU vs RAN | uefa-europa-league | score=75.2 | peso=0.070
+  2025-10-05 | FAL vs RAN | premiership-gb-sct | score=37.3 | peso=0.079
+  2025-10-18 | RAN vs DUU | premiership-gb-sct | score=78.9 | peso=0.088
+  2025-10-23 | BRA vs RAN | uefa-europa-league | score=42.4 | peso=0.099
+  2025-10-26 | RAN vs KIL | premiership-gb-sct | score=39.1 | peso=0.111
+  2025-11-06 | RAN vs ROM | uefa-europa-league | score=43.8 | peso=0.125
+  2025-11-09 | DUN vs RAN | premiership-gb-sct | score=75.0 | peso=0.140
+  2025-11-22 | RAN vs LIV | premiership-gb-sct | score=44.9 | peso=0.157
+  2025-11-27 | RAN vs BRA | uefa-europa-league | score=57.1 | peso=0.177
+  2025-12-03 | DUU vs RAN | premiership-gb-sct | score=38.2 | peso=0.198
+  2025-12-06 | KIL vs RAN | premiership-gb-sct | score=51.7 | peso=0.223
+  2025-12-27 | RAN vs MOT | premiership-gb-sct | score=55.4 | peso=0.250
+  2025-12-30 | RAN vs STM | premiership-gb-sct | score=55.3 | peso=0.281
+  2026-01-03 | CEL vs RAN | premiership-gb-sct | score=75.7 | peso=0.315
+  2026-01-06 | RAN vs ABE | premiership-gb-sct | score=33.2 | peso=0.354
+  2026-01-11 | ABE vs RAN | premiership-gb-sct | score=76.2 | peso=0.397
+  2026-01-22 | RAN vs RAZ | uefa-europa-league | score=42.5 | peso=0.445
+  2026-02-04 | RAN vs KIL | premiership-gb-sct | score=73.9 | peso=0.500
+  2026-02-11 | MOT vs RAN | premiership-gb-sct | score=37.9 | peso=0.561
+  2026-02-22 | LIV vs RAN | premiership-gb-sct | score=42.2 | peso=0.630
+  2026-03-27 | ? vs ? | friendlies | score=36.0 | peso=0.707
+  2026-04-12 | FAL vs RAN | premiership-gb-sct | score=74.0 | peso=0.794
+  2026-04-26 | RAN vs MOT | premiership-gb-sct | score=38.8 | peso=0.891
+  2026-05-16 | FAL vs RAN | premiership-gb-sct | score=67.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 53.51
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 53.59 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 44.30 | Punteggio complessivo (granulari) medio: 9.21 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.95 (delta +0.61) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 15.93
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.9 - 74.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.76 (differenza: +0.17)
+Media score in casa: 49.29 | Media score fuori casa: 57.80
+Fattore casa/trasferta applicato: 1.009 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 4.3
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 0.970 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.007
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore trend (media ultime 5: 51.7 vs media 5 PRECEDENTI: 52.7): 1.000
+P(gioca): 58.82% (fonte: tasso di presenza storico (30/51))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-06T16:00
+Casa: SSA Jagiellonia Białystok | Trasferta: Rangers FC
+Competizione: uefa-europa-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.1 (range 37.5 - 73.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 53.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.71
+Punteggio REALE ottenuto in quella partita: 67.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +16.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      44.4    75.2    +30.8    11.6        NO
+   7        7      59.7    37.3    -22.4    16.2        NO
+   8        8      55.3    78.9    +23.6    16.3        NO
+   9        9      63.9    42.4    -21.5    19.3        NO
+  10       10      51.9    39.1    -12.8    18.5        SI
+  11       11      48.0    43.8     -4.2    18.0        SI
+  12       12      46.9    75.0    +28.1    16.9        NO
+  13       13      56.1    44.9    -11.2    18.6        SI
+  14       14      51.0    57.1     +6.1    17.6        SI
+  15       15      59.2    38.2    -21.0    16.5        NO
+  16       16      51.2    51.7     +0.5    16.4        SI
+  17       17      49.7    55.4     +5.7    15.3        SI
+  18       18      52.2    55.3     +3.1    14.4        SI
+  19       19      46.6    75.7    +29.1    13.6        NO
+  20       20      52.1    33.2    -18.9    15.5        NO
+  21       21      51.1    76.2    +25.1    16.7        NO
+  22       22      54.3    42.5    -11.8    18.0        SI
+  23       23      52.5    73.9    +21.4    17.5        NO
+  24       24      57.0    37.9    -19.1    18.1        NO
+  25       25      58.4    42.2    -16.2    18.3        SI
+  26       26      52.6    36.0    -16.6    17.7        SI
+  27       27      54.9    74.0    +19.1    17.8        NO
+  28       28      52.3    38.8    -13.5    18.7        SI
+  29       29      56.1    67.7    +11.6    18.4        SI
+
+MAE (errore assoluto medio): 16.38
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

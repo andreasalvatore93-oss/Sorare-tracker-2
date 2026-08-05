@@ -1,0 +1,111 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-05T15:58:03.663264Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) dimitri-lavalee: 49 pt attesi (32-61)
+   ORDINAMENTO: 48.95
+   SQUADRA: standard-liege-liege-luik | AVVERSARIO: cercle-brugge-brugge
+======================================================================
+
+######################################################################
+# GIOCATORE: dimitri-lavalee
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: dimitri-lavalee (squadra: standard-liege-liege-luik)
+Generato: 2026-08-05T15:58:03.662558Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 41
+Escluse (DID_NOT_PLAY): 22
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-10 | STU vs SCR | austrian-bundesliga | score=48.7 | peso=0.691
+  2025-08-16 | SVR vs STU | austrian-bundesliga | score=61.4 | peso=0.707
+  2025-08-20 | BOD vs STU | uefa-champions-league | score=60.0 | peso=0.724
+  2025-08-26 | STU vs BOD | uefa-champions-league | score=46.0 | peso=0.741
+  2025-08-30 | GAK vs STU | austrian-bundesliga | score=64.7 | peso=0.758
+  2025-09-14 | STU vs FAK | austrian-bundesliga | score=56.8 | peso=0.776
+  2025-09-20 | RBS vs STU | austrian-bundesliga | score=68.4 | peso=0.794
+  2025-09-24 | FCM vs STU | uefa-europa-league | score=36.6 | peso=0.812
+  2025-09-28 | STU vs HTB | austrian-bundesliga | score=57.9 | peso=0.831
+  2025-10-02 | STU vs RAN | uefa-europa-league | score=40.3 | peso=0.851
+  2025-10-05 | ALT vs STU | austrian-bundesliga | score=57.9 | peso=0.871
+  2025-10-19 | BWL vs STU | austrian-bundesliga | score=31.8 | peso=0.891
+  2025-10-23 | CEL vs STU | uefa-europa-league | score=31.4 | peso=0.912
+  2025-11-02 | SCR vs STU | austrian-bundesliga | score=8.6 | peso=0.933
+  2025-11-09 | STU vs RBS | austrian-bundesliga | score=60.2 | peso=0.955
+  2025-11-23 | STU vs ASK | austrian-bundesliga | score=45.5 | peso=0.977
+  2025-11-30 | HTB vs STU | austrian-bundesliga | score=61.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 48.71
+  di cui Punteggio decisivo (level_score) medio: 34.96 | Punteggio complessivo (granulari) medio: 13.75 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 | Passaggio condizionato: delta venue +0.00, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.49
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.8 - 61.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.19 (differenza: +4.30)
+Media score in casa: 48.71 | Media score fuori casa: 48.71
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): N/D
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 1.212 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.000
+Fattore trend (media ultime 5: 41.8 vs media 5 PRECEDENTI: 44.9): 1.000
+P(gioca): 41.46% (fonte: tasso di presenza storico (17/41))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-08T16:15
+Casa: Standard de Liège | Trasferta: Cercle Brugge KSV
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.8 (range 31.9 - 61.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.75
+Punteggio REALE ottenuto in quella partita: 61.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +13.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 11 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      56.3    68.4    +12.0     7.4        NO
+   7        7      58.2    36.6    -21.6     8.3        NO
+   8        8      55.3    57.9     +2.7    11.2        SI
+   9        9      55.6    40.3    -15.3    10.6        NO
+  10       10      53.9    57.9     +4.1    11.3        SI
+  11       11      54.3    31.8    -22.5    10.8        NO
+  12       12      52.2    31.4    -20.8    12.5        NO
+  13       13      50.3     8.6    -41.8    13.6        NO
+  14       14      46.9    60.2    +13.3    18.2        SI
+  15       15      47.9    45.5     -2.4    17.9        SI
+  16       16      47.8    61.3    +13.5    17.2        SI
+
+MAE (errore assoluto medio): 15.44
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 45.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
