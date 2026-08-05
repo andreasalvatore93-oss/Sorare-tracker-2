@@ -2210,7 +2210,7 @@ FILL_QUOTA_MAX = float(os.environ.get('BEST_FIVE_FILL_QUOTA_MAX', '1.6'))
 # Un posto solo per questo numero (03/08): stava scritto qui a mano e anche in
 # build_formazione_globale.py, ed e' esattamente il tipo di doppione che in
 # questo progetto ha gia' prodotto bug veri. Ora si legge da li'.
-PAREGGIO_ARENA_260 = 265.0
+PAREGGIO_ARENA_260 = 259.5  # sync con build_formazione_globale (sigma 50.6, 05/08)
 TARGET_PUNTEGGIO = float(os.environ.get('BEST_FIVE_TARGET_PUNTEGGIO', '300'))
 
 # La previsione va CALIBRATA prima di confrontarla con l'L10 (il modello
