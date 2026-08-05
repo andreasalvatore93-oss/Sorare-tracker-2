@@ -1,0 +1,653 @@
+SESSIONE 06/08/2026 ~01:35 Roma (CET) -- POLICY D (ogni ruolo al suo ottimo) ed E (D centrata)
+
+Ipotesi: B/C spostano la composizione verso DEF senza guadagno di punti
+perche' correggono un solo ruolo con un "righello" diverso dagli altri.
+Test: D = tutti i ruoli corretti (DEF mult 0.2, MID mult 0.2, FWD mult 0.1,
+GK add 3 -- gli ottimi puntuali gia' misurati, anche dove non passavano il
+criterio severo: qui si verifica la coerenza fra ruoli, non si adotta un
+parametro isolato). E = D ma ricentrata: atteso_cal_E = atteso_cal_D -
+media_ruolo_D_in_questa_GW + media_ruolo_A_in_questa_GW, cosi' la media per
+ruolo resta quella di A e cambia solo l'ordinamento interno al ruolo.
+Stesso campione gia' raccolto (227 arene crowss + 651 forever-young).
+
+CONTROLLO DI SANITA' SU E -- esito misto, dichiarato non interpretato:
+  campione            TOTALE          Beginner        cap 220         cap 260         uncapped
+  crowss (227)        pulito (<=0.02) 2/4 si spostano  si spostano     si spostano     si spostano
+  forever-young (651) pulitissimo     1/4 si sposta     1/4 si sposta   ok (<=0.05)     pulito
+Sul TOTALE la normalizzazione fa quello che promette su entrambi i
+campioni (composizione ~= A). Sulle SPEZZATURE per tipo, spesso NO: la
+media per-ruolo di E si sposta di 0.03-0.15 rispetto ad A anche dopo il
+centraggio. Causa plausibile (non verificata oltre): il centraggio e'
+fatto sulla media del pool CANDIDATO quella GW, ma il knapsack sceglie una
+sotto-selezione non uniforme -- ricentrare la media del pool intero non
+garantisce che la media dei SELEZIONATI resti invariata. Da riportare
+come limite del metodo E, non da correggere qui.
+
+RISULTATO PUNTI -- crowss (227 arene, TOTALE n=357):
+  policy        punti    delta vs A          esito
+  B DEF k0.2    +0.32    IC95[-1.21,+1.87]   attraversa zero
+  C DEF+FWD     +1.95    IC95[+0.31,+3.92]   ESCLUDE ZERO (unico)
+  D ogni ruolo  +1.26    IC95[-0.98,+3.56]   attraversa zero
+  E D centrata  +1.12    IC95[-0.75,+3.23]   attraversa zero
+Per tipo (crowss): su Beginner (n=173) SIA D (+3.65 IC95[+1.07,+6.91]) SIA
+E (+3.89 IC95[+1.03,+7.18]) ESCLUDONO ZERO POSITIVAMENTE -- unico segnale
+pulito su piu' varianti insieme in questa sessione. Su cap 220 (n=26,
+piccolo) tutte le policy hanno punto centrale NEGATIVO (B -8.41, E -10.83)
+ma IC ampio, nessuna esclude zero. cap 260 e uncapped: tutto attraversa
+zero.
+
+RISULTATO PUNTI -- forever-young (651 arene, TOTALE n=651):
+  policy        punti    delta vs A          esito
+  B DEF k0.2    +2.25    IC95[-0.52,+5.31]   attraversa zero (di poco)
+  C DEF+FWD     +1.10    IC95[-1.68,+4.02]   attraversa zero
+  D ogni ruolo  +0.59    IC95[-2.09,+3.55]   attraversa zero
+  E D centrata  +0.66    IC95[-2.09,+3.83]   attraversa zero
+Per tipo (forever-young): Beginner (n=234) tutto attraversa zero (a
+differenza di crowss, dove D/E la escludevano -- I DUE CAMPIONI NON
+CONCORDANO su Beginner). cap 220 (n=118): tutte le policy negative, D
+quasi significativa [-12.96,+0.75]. cap 260 (n=263): tutto attraversa
+zero. UNCAPPED (n=36): E e' FORTEMENTE NEGATIVA E SIGNIFICATIVA (-18.25,
+IC95[-35.30,-1.19], esclude zero) -- unico caso in cui una policy fa
+PEGGIO in modo statisticamente distinguibile. D e' vicina (-12.49,
+IC95[-31.02,+7.19], non esclude ma quasi).
+
+VERDETTO D/E: nessun accordo pulito fra i due campioni indipendenti.
+- Il segnale piu' solido di questa sessione (D ED E insieme, positivi,
+  IC che esclude zero) e' su Beginner del campione crowss soltanto --
+  NON confermato sullo stesso spezzone del campione forever-young.
+- L'unico risultato negativo SIGNIFICATIVO e' E su uncapped di
+  forever-young: la centratura per-ruolo puo' danneggiare, non solo
+  non aiutare, quando il pool e' molto piu' libero (uncapped, nessun
+  vincolo L10).
+- Il controllo di sanita' mostra che E non centra sempre perfettamente
+  la composizione fuori dal TOTALE: le spezzature per tipo vanno lette
+  con questo limite in mente.
+
+DECISIONE APERTA: nessuna delle 5 policy (A-E) ha un vantaggio di punti
+consistente e concorde fra i due campioni indipendenti su nessuno
+spezzone tranne Beginner-crowss (non replicato). Non ci sono basi per
+adottare D o E in produzione allo stato attuale dei dati.
+
+-----------------------------------------------------------------------------
+SESSIONE 06/08/2026 ~01:05 Roma (CET) -- BACKTEST DI COMPOSIZIONE AMPLIATO (mazzo manager reale)
+
+Ampliamento del backtest di composizione: mazzo ricostruito di un manager
+REALE diverso dall'utente (`forever-young`), non le 227 arene di crowss.
+Selezione: fra i 17 file `dati_globali/manager_*.json`, SOLO forever-young
+ha dati sufficienti (72 giornate, 3.373 osservazioni); gli altri 15 (esclusi
+crowss = l'utente stesso, gia' nel campione delle 227 arene) hanno 4-12
+giornate e 12-580 righe totali -- pool troppo piccoli (vicini a 1-3 carte a
+giornata), test muto, ESCLUSI e non usati.
+
+METODO: mazzo ricostruito = unione delle carte schierate (qualunque
+competizione, non solo arene) in una finestra +/-30 giorni attorno alla
+data della GW target, con 'copie' = numero di ID-carta distinti visti in
+quella finestra per lo stesso slug. Walk-forward invariato (stessa
+`prev.contesto`/`prev.calcola` di produzione). Stesse 3 policy (A
+produzione, B DEF k=0.2, C DEF k=0.2 + FWD k=0.1), stesso capitano su
+tutte. Beginner tenuta separata (non esclusa) come richiesto, riportata
+insieme a cap 220/260/uncapped.
+
+BUG TROVATO E CORRETTO IN CORSO D'OPERA (prima di riportare): il primo giro
+usava un L10 PLACEHOLDER fittizio (50.0) per ogni carta invece del vero L10
+storico -- risultato: filtrava fuori TUTTE le arene con cap (Beginner/220/
+260), lasciando solo le 36 uncapped (dove l10_cap=None, quindi il
+placeholder non conta). Corretto usando il vero L10 (media ultimi 10
+punteggi da `ctx['s']['scores']`, stesso dato che il ctx walk-forward gia'
+calcola) con sentinella alta (non incluso in cap) quando non calcolabile.
+Il numero riportato sotto e' DOPO la correzione.
+
+LIMITE DICHIARATO (non nascosto): il mazzo ricostruito contiene SOLO carte
+che il manager ha EFFETTIVAMENTE schierato in qualche momento nella
+finestra -- e' un pool gia' filtrato dalle sue scelte passate, non il vero
+mazzo posseduto (che potrebbe includere carte mai schierate). Questo puo'
+favorire leggermente la policy A, che assomiglia di piu' a cio' che il
+manager ha fatto davvero.
+
+NESSUN RANK/PREMIO: per gli altri manager non abbiamo la distribuzione
+completa della leaderboard (solo il proprio esito, non gli altri
+partecipanti), quindi non e' calcolabile che rank avrebbe fatto una
+formazione ipotetica diversa. Ci si appoggia al risultato gia' dimostrato
+nel repo (regole di decisione: 5.768/5.768 confronti concordi fra punti
+attesi e premio atteso) per cui i punti sono una misura legittima e non un
+ripiego. Il rank resta disponibile SOLO sulle 227 arene di crowss (sopra).
+
+COPERTURA: pool ricostruito medio per GW = 419,9 carte (min 74, max 680,
+su 35 GW con pool >=5). Di queste, scartate 2.904 per atteso non
+calcolabile (giocatore non risolvibile in cache) e 9.434 per reale non
+trovato (ne' schierato quella GW ne' rintracciabile nel game log locale
++/-3gg) -- una quota importante del pool ricostruito resta inutilizzabile,
+il pool EFFETTIVO per giornata e' piu' piccolo di quanto il numero grezzo
+suggerisca. Arene totali valutate: 653 (35 giornate).
+
+RISULTATO (653 arene, 35 giornate):
+
+TOTALE (Beginner+220+260+uncapped, n=653):
+  Composizione:  GK    DEF    MID    FWD
+  A produzione  1.00  1.46   1.52   1.02
+  B DEF k0.2    1.00  1.58   1.40   1.02
+  C DEF+FWD     1.00  1.59   1.40   1.01
+  Punti: A=295.30  B=297.42  C=296.32
+  Delta vs A: B +2.12 IC95[-0.62,+5.16]   C +1.02 IC95[-1.77,+3.93]
+  Sovrapposizione con A: B 1.40/5, C 1.19/5 (molto piu' bassa che sulle 227
+  arene di crowss, 2.11/5 -- il pool ricostruito e' molto piu' grande e da'
+  al knapsack molta piu' liberta' di divergere)
+
+Per tipo di arena:
+  Beginner (n=234, 26 gg): A=282.97  B +1.40 IC95[-5.29,+8.86]  C +0.54 IC95[-6.13,+7.48]
+  cap 220  (n=120, 24 gg): A=276.28  B -2.30 IC95[-8.60,+3.96]  C -4.42 IC95[-13.32,+3.52]
+  cap 260  (n=263, 30 gg): A=301.20  B +5.53 IC95[-2.74,+12.33] C +4.53 IC95[-3.36,+11.93]
+  uncapped (n=36,  20 gg): A=395.76  B -3.35 IC95[-11.88,+4.35] C -3.34 IC95[-13.77,+5.80]
+
+VERDETTO: NESSUNO SPEZZONE mostra un guadagno di punti statisticamente
+distinguibile dal rumore -- tutti gli IC95 attraversano lo zero, in
+TOTALE e in ogni spezzatura per tipo. Il punto centrale piu' promettente e'
+cap 260 (+5.53, il tipo dove il segnale DEF era piu' solido nella misura
+per-ruolo), ma l'IC resta ampio [-2.74,+12.33]. Su Beginner (dove il ROI
+storico e' negativo) il segnale non aiuta in modo dimostrabile: +1.40,
+IC ampio e attraversa zero. cap 220 e uncapped mostrano addirittura un
+punto centrale NEGATIVO (seppur non significativo).
+
+Conferma quanto gia' visto sulle 227 arene di crowss: lo sbilanciamento di
+composizione verso DEF e' reale e riproducibile su un mazzo diverso, ma
+NON si traduce in un guadagno di punti dimostrato su nessuno spezzone,
+con un campione piu' grande (653 vs 227 arene) e proveniente da un manager
+indipendente.
+
+DECISIONE APERTA: nessuna adozione giustificata nemmeno con questo secondo
+campione, piu' grande e indipendente. Se si vuole insistere, servirebbe
+uno storico di arene reali ancora piu' ampio (piu' manager con dati
+sufficienti, che oggi non esistono in repo) o accettare il limite di
+potenza statistica come risposta definitiva.
+
+-----------------------------------------------------------------------------
+SESSIONE 06/08/2026 ~00:35 Roma (CET) -- BACKTEST DI COMPOSIZIONE (P11), effetto cross-ruolo
+
+Le misure precedenti (screening_segnali, taratura_confronto_odds) guardano
+il segnale DENTRO un ruolo, isolato. Non catturano cosa succede quando i
+ruoli si contendono lo stesso slot libero nel knapsack (5 carte, non 4
+fisse per ruolo): se favorito_odds alza sistematicamente il DEF, potrebbe
+spingere fuori un FWD/MID che invece avrebbe reso di piu' quella giornata.
+Serve l'impianto P11 (mazzo REALE dell'utente, arene reali, walk-forward,
+carte non clonate).
+
+SETUP: riusate le utility di `analisi_manager/p11_confronta.py` (import,
+NESSUNA modifica al file) via uno script separato. `p11_pool.json`
+rigenerato da `p11_prepara.py` (non era committato): 71 giornate reali,
+227 arene valutabili dopo filtro cap 260/220 (Beginner e division escluse
+come da produzione). Capitano: stessa regola per tutte e 3 le policy
+(pick_captain su atteso calibrato), cosi' l'unica variabile e' la selezione.
+
+Aggiustamento: atteso_raw_adj = atteso_raw * (1 + k*delta_favorito_odds),
+applicato PRIMA della calibrazione, ricalcolando delta_favorito_odds carta
+per carta con lo stesso meccanismo (invariato) di backtest_arene_previsioni.
+Nessuna modifica a file di produzione.
+
+  A = atteso_raw invariato (produzione)
+  B = k=0.2 sui soli DEF
+  C = k=0.2 sui DEF + k=0.1 sui FWD
+
+FINESTRA QUOTE: tutte le 227 arene valutabili ricadono gia' nella finestra
+18/11/2025+ (l'archivio arene reali dell'utente e' recente) -- nessuna
+perdita di campione dal filtro temporale, a differenza di quanto temuto.
+
+RISULTATO (227 arene, 27 giornate cluster):
+
+Composizione media per ruolo (su 5 slot):
+  policy         GK    DEF    MID    FWD
+  A produzione  1.00  1.44   1.45   1.11
+  B DEF k0.2    1.00  1.51   1.43   1.06
+  C DEF+FWD     1.00  1.53   1.38   1.09
+Lo sbilanciamento c'e' ed e' nella direzione attesa: piu' DEF entrano in
+formazione (1.44->1.51->1.53), principalmente a scapito del MID (1.45->
+1.43->1.38), non del FWD. In C il FWD torna quasi al livello di A (1.09
+contro 1.11) perche' ora e' anche lui favorito nell'obiettivo.
+
+Punti e rank medi:
+  policy         punti medi   rank medio
+  A produzione    273.10        4.608
+  B DEF k0.2      273.90        4.581
+  C DEF+FWD       272.94        4.648
+
+Delta vs A, bootstrap appaiato su GIORNATE (IC95, B=2.000):
+  B (DEF k0.2)   punti +0.80  IC95 [-1.90, +3.55]   -- attraversa zero
+  B (DEF k0.2)   rank  -0.026 IC95 [-0.234, +0.171] -- attraversa zero
+  C (DEF+FWD)    punti -0.16  IC95 [-2.37, +2.22]   -- attraversa zero
+  C (DEF+FWD)    rank  +0.040 IC95 [-0.172, +0.245] -- attraversa zero
+
+Sovrapposizione con A (carte su 5 in comune -- il test E' informativo,
+le policy DIVERGONO parecchio, non e' un 5/5 muto):
+  B vs A: media 2.11/5 (distribuzione: 0/5=37, 1/5=52, 2/5=66, 3/5=27,
+          4/5=11, 5/5=34 arene)
+  C vs A: media 1.72/5 (0/5=50, 1/5=73, 2/5=48, 3/5=24, 4/5=11, 5/5=21)
+
+VERDETTO: lo sbilanciamento verso DEF e' reale e misurabile (composizione
+cambia, sovrapposizione bassa: il knapsack sceglie carte diverse in ~2/3
+delle arene). MA il cambio di composizione NON si traduce in un guadagno
+di punti o di rank distinguibile dal rumore: entrambi gli IC95 (punti e
+rank) attraversano ampiamente lo zero per B e per C. Su n=227 arene/27
+giornate il segnale per-ruolo (solido su n=14.230 righe-giocatore nella
+misura precedente) non e' abbastanza forte da spostare l'ESITO della
+COMPETIZIONE per la selezione fra ruoli in un campione di questa scala.
+Non e' una prova che l'effetto sia nullo (il campione P11 e' ~60x piu'
+piccolo di quello usato per il segnale isolato, quindi il potere statistico
+qui e' molto minore) -- e' una prova che, ALLO STATO ATTUALE dei dati reali
+disponibili (71 giornate), l'adozione non ha un beneficio DIMOSTRATO a
+livello di formazione completa, nonostante il segnale isolato regga.
+
+DECISIONE APERTA: nessuna adozione giustificata dal backtest di
+composizione con questo campione. Se si vuole un verdetto piu' netto,
+serve piu' storico di arene reali (il campione P11 e' vincolato al mazzo
+REALE dell'utente, non si puo' ampliare con altri giocatori/leghe senza
+smettere di essere "il mazzo vero").
+
+-----------------------------------------------------------------------------
+SESSIONE 06/08/2026 ~00:10 Roma (CET) -- RUN DEFINITIVO, campione PIENO, criterio SEVERO
+
+Richiesta: rimuovere il tappo (creduto un bug di memoria in raccogli_finestra),
+campione pieno (tutti gli slug, non un sottocampione), bootstrap>=200, e
+criterio SEVERO: una variante passa SOLO se tutti e tre gli IC95 (dMAE,
+dcorr, dlift) escludono lo zero nella direzione giusta -- non i soli punti
+centrali. I "PASSA" del giro precedente su GK/MID/FWD (dove il lift aveva
+IC che attraversava lo zero) sono quindi da considerare SUPERATI/RIVISTI
+sotto, non validi secondo questo criterio.
+
+CORREZIONE PREMESSA (prima di agire, verificato): raccogli_finestra() non
+esiste in backtest_arene_previsioni.py -- e' una funzione scritta in questa
+sessione dentro lo script di misura (fuori repo). E il "tappo" non era un
+bug di accumulo in memoria: era un processo ORFANO (`find / -iname
+p3_analisi.py`, attivo da 9+ ore da una sessione precedente) che stava
+saturando il disco. Prova diretta: raccolta ESAUSTIVA su tutti i 1.515 slug
+DEF (nessun cap), dopo aver ucciso il processo orfano, completata in 73s,
+picco memoria 571MB, nessuno stallo. Nessun refactor a streaming/JSONL e'
+stato necessario ne' fatto.
+
+OTTIMIZZAZIONE VERA (quella che serviva davvero): il bootstrap ricalcolava
+prev.calcola() ad ogni ripetizione, ma la previsione per riga NON dipende
+da quali altre righe sono ricampionate. Corretto: si calcola la previsione
+UNA volta sola per riga per variante, poi il bootstrap ricampiona solo gli
+array numerici gia' calcolati (nessuna chiamata a calcola() dentro il loop
+di bootstrap). Tempo totale run: 1.669,7s (~27,8 min) per 4 ruoli, campione
+pieno, 9 varianti a testa, 200 ripetizioni bootstrap a testa.
+
+CAMPIONE PIENO (nessun cap, tutti gli slug col ruolo, finestra 18/11/2025+,
+eliteserien esclusa automaticamente):
+  DEF: 1.515 slug -> 25.312 punti nella finestra -> 14.230 con odds
+  GK:    370 slug ->  5.932 punti nella finestra ->  3.923 con odds
+  MID: 1.310 slug -> 23.783 punti nella finestra -> 13.101 con odds
+  FWD: 1.116 slug -> 19.636 punti nella finestra ->  9.758 con odds
+
+DEF -- n=14.230, 148 giornate, produzione MAE=14.8882 corr=+0.1853 lift=18.10%
+  forma    k     MAE      dMAE (IC95)                    corr    dcorr (IC95)              lift%   dlift (IC95)              esito
+  add       3   14.7988  -0.089 [-0.103,-0.077]          +0.2138  +0.029 [+0.025,+0.033]    20.24   +2.14 [-0.10,+4.78]        no (lift sfiora 0)
+  add       6   14.7358  -0.152 [-0.180,-0.129]          +0.2324  +0.047 [+0.040,+0.055]    23.08   +4.97 [+0.37,+6.33]        PASSA
+  add      12   14.6894  -0.199 [-0.254,-0.152]          +0.2463  +0.061 [+0.050,+0.074]    24.85   +6.74 [+1.23,+9.86]        PASSA
+  add      20   14.7935  -0.095 [-0.175,-0.014]          +0.2429  +0.058 [+0.043,+0.074]    25.41   +7.31 [+1.05,+9.63]        PASSA
+  mult   0.05   14.8101  -0.078 [-0.089,-0.067]          +0.2105  +0.025 [+0.022,+0.029]    19.35   +1.24 [-0.54,+4.14]        no (lift sfiora 0)
+  mult    0.1   14.7514  -0.137 [-0.159,-0.116]          +0.2285  +0.043 [+0.037,+0.050]    23.12   +5.01 [+0.52,+6.16]        PASSA
+  mult    0.2   14.6909  -0.197 [-0.244,-0.158]          +0.2454  +0.060 [+0.050,+0.071]    25.32   +7.22 [+1.10,+8.95]        PASSA  <- MASSIMO
+  mult    0.3   14.7049  -0.183 [-0.254,-0.122]          +0.2473  +0.062 [+0.049,+0.076]    24.78   +6.68 [+1.32,+10.79]       PASSA
+  mult    0.4   14.8007  -0.087 [-0.171,-0.007]          +0.2433  +0.058 [+0.043,+0.075]    24.96   +6.86 [+1.01,+10.05]       PASSA
+DEF regge bene il criterio severo: 7 varianti su 8 passano (solo i k piu'
+piccoli, add=3 e mult=0.05, falliscono per il lift). Migliore: mult k=0.2.
+Spostamento score_atteso: media=2.27pt p95=5.48pt max=13.53pt -- vs soglia
++/-15pt: 15%/37%/90%. Il massimo (90% della soglia) NON e' piu' trascurabile:
+se adottato andrebbe riverificata la catena soglie arena prima di qualunque
+uso a valle (§1bis).
+
+GK -- n=3.923, 74 giornate, produzione MAE=15.9134 corr=+0.0761 lift=13.96%
+  forma    k     MAE      dMAE (IC95)                    corr    dcorr (IC95)              lift%   dlift (IC95)              esito
+  add       3   15.8892  -0.024 [-0.046,+0.001]          +0.0889  +0.013 [+0.008,+0.018]    15.99   +2.03 [-1.52,+6.21]        no
+  add       6   15.8918  -0.022 [-0.067,+0.028]          +0.0975  +0.021 [+0.012,+0.031]    13.89   -0.07 [-3.39,+6.34]        no
+  add      12   15.9688  +0.055 [-0.034,+0.165]          +0.1061  +0.030 [+0.014,+0.047]    18.70   +4.74 [-2.64,+9.99]        no
+  add      20   16.2264  +0.313 [+0.167,+0.495]          +0.1096  +0.033 [+0.013,+0.056]    15.37   +1.41 [-4.87,+9.53]        no
+  mult   0.05   15.8926  -0.021 [-0.038,-0.001]          +0.0868  +0.011 [+0.007,+0.015]    16.36   +2.40 [-1.60,+5.80]        no
+  mult    0.1   15.8892  -0.024 [-0.061,+0.016]          +0.0945  +0.018 [+0.011,+0.026]    14.24   +0.27 [-3.49,+5.87]        no
+  mult    0.2   15.9328  +0.019 [-0.055,+0.108]          +0.1033  +0.027 [+0.014,+0.041]    17.58   +3.62 [-2.51,+9.98]        no
+  mult    0.3   16.0363  +0.123 [+0.014,+0.257]          +0.1071  +0.031 [+0.014,+0.049]    19.01   +5.05 [-2.96,+11.40]       no
+  mult    0.4   16.2102  +0.297 [+0.147,+0.475]          +0.1085  +0.032 [+0.012,+0.053]    15.61   +1.65 [-4.88,+10.07]       no
+NESSUNA VARIANTE PASSA per GK. Sempre il lift ad attraversare lo zero, anche
+quando MAE e corr passerebbero da soli (es. mult 0.05: MAE e corr ok, lift
+[-1.60,+5.80]). Col criterio allentato del giro precedente sembrava emergere
+un segnale debole ma reale (add k=3): col criterio severo NON regge. Verdetto
+per GK: nessuna adozione giustificata dai dati.
+
+MID -- n=13.101, 146 giornate, produzione MAE=13.1921 corr=+0.2531 lift=25.50%
+  forma    k     MAE      dMAE (IC95)                    corr    dcorr (IC95)              lift%   dlift (IC95)              esito
+  add       3   13.1134  -0.079 [-0.097,-0.062]          +0.2690  +0.016 [+0.013,+0.019]    27.13   +1.63 [-0.83,+4.43]        no
+  add       6   13.0613  -0.131 [-0.169,-0.097]          +0.2784  +0.025 [+0.020,+0.031]    27.21   +1.70 [-0.47,+5.03]        no
+  add      12   13.0576  -0.135 [-0.204,-0.074]          +0.2814  +0.028 [+0.019,+0.038]    28.42   +2.91 [-0.15,+6.11]        no (per un pelo)
+  add      20   13.2811  +0.089 [-0.008,+0.186]          +0.2688  +0.016 [+0.003,+0.030]    29.68   +4.18 [-0.96,+7.34]        no
+  mult   0.05   13.1215  -0.071 [-0.088,-0.055]          +0.2676  +0.015 [+0.012,+0.017]    26.87   +1.37 [-1.05,+3.97]        no
+  mult    0.1   13.0701  -0.122 [-0.155,-0.092]          +0.2771  +0.024 [+0.019,+0.030]    27.15   +1.64 [-0.49,+5.37]        no
+  mult    0.2   13.0336  -0.159 [-0.224,-0.104]          +0.2835  +0.030 [+0.022,+0.040]    27.83   +2.32 [-0.45,+6.54]        no
+  mult    0.3   13.1018  -0.090 [-0.179,-0.011]          +0.2788  +0.026 [+0.015,+0.038]    29.23   +3.73 [-0.22,+7.66]        no (per un pelo)
+  mult    0.4   13.2752  +0.083 [-0.016,+0.187]          +0.2692  +0.016 [+0.004,+0.031]    28.31   +2.81 [-1.31,+6.57]        no
+NESSUNA VARIANTE PASSA per MID. Il pattern e' quasi identico a GK: MAE e
+corr passerebbero quasi ovunque da soli, ma il lift ha SEMPRE un IC che
+sfiora o attraversa lo zero (i piu' vicini: add k=12 a -0.15, mult k=0.3 a
+-0.22 -- entrambi appena sotto zero). Il segnale sposta l'ordinamento ma
+non abbastanza da garantire un lift di selezione affidabile su n=13.101.
+
+FWD -- n=9.758, 131 giornate, produzione MAE=14.9118 corr=+0.2687 lift=30.34%
+  forma    k     MAE      dMAE (IC95)                    corr    dcorr (IC95)              lift%   dlift (IC95)              esito
+  add       3   14.8257  -0.086 [-0.107,-0.068]          +0.2889  +0.020 [+0.016,+0.025]    32.69   +2.35 [-0.48,+6.00]        no
+  add       6   14.7532  -0.159 [-0.198,-0.124]          +0.2961  +0.027 [+0.019,+0.037]    32.14   +1.80 [-0.27,+6.31]        no
+  add      12   14.6556  -0.256 [-0.335,-0.185]          +0.2849  +0.016 [+0.001,+0.033]    31.53   +1.19 [-2.22,+6.50]        no
+  add      20   14.6785  -0.233 [-0.364,-0.114]          +0.2555  -0.013 [-0.033,+0.010]    30.51   +0.17 [-5.27,+5.44]        no (corr sfiora 0)
+  mult   0.05   14.8364  -0.075 [-0.094,-0.059]          +0.2873  +0.019 [+0.015,+0.023]    32.26   +1.92 [-0.60,+5.44]        no
+  mult    0.1   14.7710  -0.141 [-0.176,-0.109]          +0.2959  +0.027 [+0.020,+0.036]    32.08   +1.74 [+0.02,+6.56]        PASSA (per un pelo, IC lift [+0.02,...])
+  mult    0.2   14.6736  -0.238 [-0.305,-0.173]          +0.2908  +0.022 [+0.008,+0.037]    31.55   +1.20 [-1.81,+7.20]        no
+  mult    0.3   14.6317  -0.280 [-0.381,-0.190]          +0.2728  +0.004 [-0.014,+0.024]    30.43   +0.09 [-4.43,+5.85]        no
+  mult    0.4   14.6833  -0.229 [-0.363,-0.107]          +0.2537  -0.015 [-0.036,+0.008]    30.04   -0.30 [-5.41,+5.03]        no (corr peggiora)
+UNA sola variante passa per FWD: mult k=0.1, e per un margine minimo (lift
+IC basso = +0.021, quasi zero). Non un risultato solido: e' l'unico punto
+su 9 testati, isolato (0.05 e 0.2 intorno non passano), con IC al limite.
+Spostamento score_atteso (mult k=0.1): media=1.18pt p95=2.88pt max=6.06pt
+-- vs soglia: 8%/19%/40%.
+
+VERDETTO DEFINITIVO (criterio severo, campione pieno):
+  ruolo   varianti che passano su 9 testate   migliore                  robustezza
+  DEF     7/9 (tutte tranne le piu' piccole)  mult k=0.2                SOLIDA
+  MID     0/9                                 --                        NESSUNA
+  FWD     1/9 (al limite dell'IC)             mult k=0.1                DEBOLE/dubbia
+  GK      0/9                                 --                        NESSUNA
+Il segnale favorito_odds regge in modo solido SOLO per DEF. Per MID e GK
+non regge affatto sotto il criterio severo (il MAE e la corr spesso
+passerebbero da soli, ma il lift di selezione no: il segnale ordina un
+po' meglio ma non abbastanza da garantire un guadagno di selezione
+affidabile). Per FWD c'e' un singolo punto al limite, da trattare come
+inconclusivo, non come conferma.
+
+DECISIONE APERTA: se si adotta, l'unica adozione giustificata dai dati e'
+DEF con moltiplicativa k=0.2 (non k=0.3 del giro precedente, rivisto in
+basso col criterio severo e campione pieno). MID/GK non hanno base per
+adozione. FWD e' un'area grigia. Prima di qualunque adozione in produzione,
+riverificare la catena soglie arena -> scouting (§1bis): lo spostamento di
+DEF a k=0.2 arriva fino al 90% della soglia arena nella coda (max=13.53pt
+su +/-15pt), non piu' un margine ampio come nei giri precedenti.
+
+-----------------------------------------------------------------------------
+SESSIONE 05/08/2026 ~23:35 Roma (CET) -- ESTESO A GK/MID/FWD, l'ottimo NON e' unico
+
+Stesso setup esatto di DEF (cap 6.000 righe grezze, seme 0, bootstrap 35 rip.,
+finestra 18/11/2025+, eliteserien esclusa). Griglia ristretta come richiesto:
+additiva 3/6/12/25, moltiplicativa 0.1/0.2/0.3/0.5. Solo griglia, NIENTE
+overlap in questo giro (non richiesto per i 3 ruoli).
+
+NOTA TECNICA (per chi rilancia): raccolta ottimizzata pre-calcolando il
+ruolo di ogni slug UNA volta sola prima di iterare per ruolo, invece di
+scandire tutti i 4.311 slug tre volte scartando quelli fuori ruolo --
+dimezza il lavoro sprecato. Durante la sessione e' anche emerso e rimosso
+un processo ORFANO (`find / -iname p3_analisi.py`, attivo da 9+ ore da
+sessione precedente) che stava rallentando il disco: se in futuro un
+backtest sembra "bloccato" senza motivo, controllare `ps aux` per processi
+estranei prima di sospettare il codice.
+
+GK (Goalkeeper) -- n=3.923, 74 giornate, produzione MAE=15.9134 corr=+0.0761
+lift=14.20%
+  forma    k     MAE      dMAE (IC95)                    corr    dcorr (IC95)              lift%   dlift (IC95)              esito
+  add      3    15.8892  -0.024 [-0.046,-0.008]          +0.0889  +0.013 [+0.007,+0.016]    16.21   +2.01 [-3.16,+4.38]       PASSA
+  add      6    15.8918  -0.022 [-0.066,+0.011]          +0.0975  +0.021 [+0.012,+0.027]    14.07   -0.13 [-4.81,+5.35]       no (lift peggiora)
+  add     12    15.9688  +0.055 [-0.031,+0.121]          +0.1061  +0.030 [+0.014,+0.041]    18.88   +4.68 [-3.02,+11.54]     no (MAE peggiora)
+  add     25    16.4790  +0.566 [+0.334,+0.676]          +0.1100  +0.034 [+0.008,+0.051]    13.97   -0.23 [-9.44,+8.98]      no
+  mult   0.1    15.8892  -0.024 [-0.062,+0.001]          +0.0945  +0.018 [+0.010,+0.024]    14.43   +0.23 [-4.07,+5.79]       PASSA (IC MAE sfiora 0)
+  mult   0.2    15.9328  +0.019 [-0.050,+0.071]          +0.1033  +0.027 [+0.014,+0.037]    17.81   +3.61 [-3.64,+9.11]      no
+  mult   0.3    16.0363  +0.123 [+0.006,+0.199]          +0.1071  +0.031 [+0.013,+0.044]    19.20   +5.00 [-3.50,+10.34]     no
+  mult   0.5    16.4511  +0.538 [+0.307,+0.648]          +0.1089  +0.033 [+0.008,+0.049]    14.53   +0.34 [-9.32,+8.56]      no
+Migliore GK: additiva k=3 (unico solido). Segnale debole in assoluto (corr
+produzione gia' bassa, 0.076): atteso, il portiere ha gia' un canale simile
+(blend P(clean sheet) squadra, vedi memoria GK_TEAM_CS_WEIGHT) che assorbe
+parte del segnale. Spostamento score_atteso (k=3 add): media=0.66pt
+p95=1.60pt max=3.37pt -- vs soglia +/-15pt: 4%/11%/22%. Trascurabile.
+
+MID (Midfielder) -- n=3.403, 62 giornate, produzione MAE=13.3168 corr=+0.2374
+lift=22.13%
+  forma    k     MAE      dMAE (IC95)                    corr    dcorr (IC95)              lift%   dlift (IC95)              esito
+  add      3    13.2428  -0.074 [-0.110,-0.054]          +0.2546  +0.017 [+0.012,+0.023]    25.28   +3.15 [-1.48,+4.33]       PASSA
+  add      6    13.1914  -0.126 [-0.195,-0.088]          +0.2651  +0.028 [+0.016,+0.038]    25.64   +3.51 [-4.93,+6.62]       PASSA
+  add     12    13.1924  -0.124 [-0.251,-0.053]          +0.2700  +0.033 [+0.012,+0.049]    25.13   +3.00 [-6.28,+7.01]       PASSA
+  add     25    13.6568  +0.340 [+0.086,+0.501]          +0.2510  +0.014 [-0.020,+0.040]    21.76   -0.36 [-10.46,+8.70]      no (crolla, come DEF)
+  mult   0.1    13.2017  -0.115 [-0.173,-0.081]          +0.2634  +0.026 [+0.016,+0.035]    26.28   +4.15 [-3.82,+5.97]       PASSA  <- MASSIMO
+  mult   0.2    13.1643  -0.153 [-0.257,-0.088]          +0.2714  +0.034 [+0.016,+0.050]    24.56   +2.44 [-6.77,+6.28]       PASSA
+  mult   0.3    13.2355  -0.081 [-0.236,+0.010]          +0.2684  +0.031 [+0.006,+0.052]    23.84   +1.72 [-8.22,+7.43]       PASSA (IC MAE sfiora 0)
+  mult   0.5    13.6517  +0.335 [+0.084,+0.497]          +0.2517  +0.014 [-0.020,+0.042]    21.20   -0.93 [-10.46,+8.75]      no
+Migliore MID: moltiplicativa k=0.1 (non k=0.3 come DEF!). Spostamento
+score_atteso: media=1.16pt p95=2.75pt max=5.97pt -- vs soglia: 8%/18%/40%.
+
+FWD (Forward) -- n=2.839, 57 giornate, produzione MAE=14.8992 corr=+0.2782
+lift=30.85%
+  forma    k     MAE      dMAE (IC95)                    corr    dcorr (IC95)              lift%   dlift (IC95)              esito
+  add      3    14.8115  -0.088 [-0.127,-0.051]          +0.2965  +0.018 [+0.010,+0.025]    32.38   +1.53 [-4.22,+5.38]       PASSA
+  add      6    14.7348  -0.164 [-0.239,-0.093]          +0.3006  +0.022 [+0.007,+0.036]    34.75   +3.90 [-4.73,+8.05]       PASSA  <- MASSIMO
+  add     12    14.6472  -0.252 [-0.385,-0.121]          +0.2840  +0.006 [-0.019,+0.029]    34.29   +3.44 [-6.58,+11.32]      PASSA (dcorr IC attraversa 0)
+  add     25    14.8370  -0.062 [-0.324,+0.193]          +0.2348  -0.043 [-0.078,-0.009]    25.82   -5.02 [-15.02,+4.32]      no -- CORR PEGGIORA (unico caso)
+  mult   0.1    14.7538  -0.145 [-0.213,-0.082]          +0.3016  +0.023 [+0.010,+0.036]    35.64   +4.80 [-3.52,+7.63]       PASSA
+  mult   0.2    14.6619  -0.237 [-0.362,-0.118]          +0.2918  +0.014 [-0.010,+0.036]    34.21   +3.37 [-6.33,+10.93]      PASSA (dcorr IC attraversa 0)
+  mult   0.3    14.6282  -0.271 [-0.445,-0.100]          +0.2712  -0.007 [-0.037,+0.022]    29.46   -1.38 [-11.81,+8.51]      no -- CORR PEGGIORA
+  mult   0.5    14.8510  -0.048 [-0.336,+0.219]          +0.2341  -0.044 [-0.080,-0.007]    25.30   -5.55 [-17.66,+3.91]      no -- CORR PEGGIORA
+Migliore FWD: additiva k=6 (miglior mix corr+lift) o mult k=0.1 (usato per
+lo spostamento). IMPORTANTE: per FWD la correlazione PEGGIORA gia' da
+k=25 additivo / k=0.3 moltiplicativo -- un crollo piu' precoce e piu'
+netto di DEF/MID, dove a quei k la correlazione restava ancora positiva.
+Spostamento score_atteso (mult k=0.1): media=1.18pt p95=2.93pt max=5.99pt
+-- vs soglia: 8%/20%/40%.
+
+VERDETTO CROSS-RUOLO: NESSUN k UNICO FUNZIONA UGUALE OVUNQUE.
+  ruolo   forma migliore     k       dcorr    dlift    dMAE
+  DEF     moltiplicativa    0.3     +0.068   +7.91%   -0.302
+  MID     moltiplicativa    0.1     +0.026   +4.15%   -0.115
+  FWD     additiva/mult   6 / 0.1   +0.022   +3.90%   -0.164
+  GK      additiva          3       +0.013   +2.01%   -0.024
+Il k ottimale di DEF (0.3 mult) sarebbe GIA' OLTRE il punto di rottura per
+FWD (0.3 mult per FWD ha dcorr negativo) e vicino al bordo per MID. Se si
+decide di adottare, servirebbe un k PER RUOLO, non un valore condiviso.
+GK ha il segnale piu' debole (atteso, canale gia' parzialmente coperto).
+
+-----------------------------------------------------------------------------
+SESSIONE 05/08/2026 ~23:10 Roma (CET) -- GRIGLIA ESTESA, il massimo E' interno
+
+Stesso identico campione del run precedente (n=3.433, seme fisso, cap 6.000
+righe/1.012 slug, bootstrap 35 rip.). Estesa la griglia oltre il bordo
+k=0.3/k=25 come richiesto: additiva fino a 100, moltiplicativa fino a 2.0.
+
+RISULTATO: il massimo NON e' piu' sul bordo, CROLLA chiaramente oltre.
+
+GRIGLIA MOLTIPLICATIVA COMPLETA (n=3.433):
+  k     MAE      dMAE (IC95)                    corr    dcorr (IC95)              lift%   dlift (IC95)              esito
+  0.1  14.8308  -0.166 [-0.238,-0.102]          +0.2467  +0.046 [+0.033,+0.060]   27.51   +3.96 [+1.15,+11.94]      PASSA
+  0.3  14.6948  -0.302 [-0.483,-0.116]          +0.2686  +0.068 [+0.040,+0.095]   31.45   +7.91 [+0.76,+13.69]      PASSA  <- MASSIMO
+  0.5  14.9210  -0.076 [-0.347,+0.214]          +0.2592  +0.058 [+0.025,+0.091]   28.23   +4.68 [-0.43,+12.77]      PASSA (IC MAE attraversa 0, debole)
+  0.8  15.9761  +0.979 [+0.570,+1.384]          +0.2429  +0.042 [+0.006,+0.078]   24.54   +1.00 [-4.10,+11.31]     MISTO (MAE crolla)
+  1.2  18.3210  +3.324 [+2.775,+3.862]          +0.2289  +0.028 [-0.009,+0.066]   23.79   +0.24 [-4.74,+12.14]     MISTO
+  2.0  24.8237  +9.827 [+9.229,+10.626]         +0.2147  +0.014 [-0.024,+0.055]   22.16   -1.39 [-7.02,+10.23]     MISTO (corr IC attraversa 0)
+
+GRIGLIA ADDITIVA COMPLETA (n=3.433):
+  k     MAE      dMAE (IC95)                    corr    dcorr (IC95)              lift%   dlift (IC95)              esito
+  6    14.8103  -0.187 [-0.266,-0.107]          +0.2506  +0.050 [+0.034,+0.066]   27.89   +4.35 [+1.25,+11.87]      PASSA  <- MASSIMO (fra i testati)
+  25   14.8971  -0.100 [-0.368,+0.202]          +0.2583  +0.058 [+0.022,+0.089]   27.54   +3.99 [-1.94,+14.38]     PASSA (IC MAE gia' sfiora 0)
+  40   15.8882  +0.891 [+0.456,+1.325]          +0.2424  +0.042 [+0.003,+0.077]   24.77   +1.23 [-3.64,+10.91]     MISTO
+  60   18.1450  +3.148 [+2.572,+3.699]          +0.2283  +0.028 [-0.013,+0.064]   24.12   +0.58 [-3.08,+11.60]     MISTO
+  100  24.4472  +9.450 [+8.802,+10.226]         +0.2140  +0.013 [-0.028,+0.052]   21.16   -2.39 [-7.91,+9.55]      MISTO
+
+VERDETTO: il picco moltiplicativo e' INTERNO, chiaramente fra 0.1 e 0.5, con
+k=0.3 il migliore misurato. Oltre 0.3 il MAE peggiora sempre piu' in fretta
+(quasi lineare: +1 a k=0.8, +3.3 a k=1.2, +9.8 a k=2.0) mentre corr resta
+piatta o cala leggermente: il modello comincia a "urlare" nella direzione
+giusta ma sbaglia sempre di piu' il valore assoluto. k=0.5 gia' non passa
+piu' in modo pulito (IC MAE attraversa lo zero). Stessa forma per
+l'additiva, picco vicino a k=6-15 (fra 6 e 25 non ancora scandito fine,
+ma il crollo oltre 25 e' netto e nello stesso range proporzionale).
+
+Non serve estendere oltre 2.0/100: il pattern di collasso e' inequivocabile
+e monotono in entrambe le forme, non c'e' motivo di sospettare un secondo
+massimo piu' in alto.
+
+NOTA PER LA PROSSIMA GRIGLIA (se richiesta): il bordo BASSO non e' ancora
+scandito fine per l'additiva (salto diretto 6->25, non si sa se il vero
+massimo additivo e' <6, =6, o fra 6 e 25) ne' per la moltiplicativa sotto
+0.1. Se si vuole l'ottimo esatto (non solo "e' interno, non sul bordo")
+serve una griglia piu' fitta 2-4-6-10-15-20 (additiva) e 0.15-0.2-0.25-0.35-0.4
+(moltiplicativa), stesso campione.
+
+-----------------------------------------------------------------------------
+RUN PRECEDENTE (n=3.433, griglia stretta 0.1-0.3 / 6-25) -- SUPERATO SOTTO
+
+RIFATTO su richiesta esplicita ("campione troppo piccolo"): cap alzato a
+6.000 righe grezze (~1.012 slug DEF su 4.311, sempre campione casuale non
+esaustivo, stesso limite di scalabilita' di prima) e bootstrap a 35
+ripetizioni (sopra soglia 30, ora gli IC95 ESISTONO).
+
+RISULTATO NUOVO (n=3.433, 58 giornate) -- cambia il verdetto:
+TUTTE le varianti testate ora PASSANO il metro a tre gambe, incluse quelle
+additive che nel giro piccolo (n=1.385) erano MISTE. Nessun segnale misto
+in questo run. Tabella nuova sotto; quella vecchia (n=1.385, sotto) resta
+come confronto ma e' SUPERATA dal campione piu' grande.
+
+STEP 2 -- GRIGLIA (n=3.433, produzione = riga k=0)
+  forma        k     MAE      dMAE (IC95)                          corr    dcorr (IC95)                    lift%   dlift (IC95)                  esito
+  (prod)       0    14.9968   --                                   +0.2008  --                              23.54   --                            --
+  additiva     6    14.8103  -0.187 [-0.266,-0.107]                +0.2506  +0.050 [+0.034,+0.066]           27.89   +4.35 [+1.25,+11.87]           PASSA
+  additiva    25    14.8971  -0.100 [-0.368,+0.202]                +0.2583  +0.058 [+0.022,+0.089]           27.54   +3.99 [-1.94,+14.38]           PASSA
+  mult        0.1   14.8308  -0.166 [-0.238,-0.102]                +0.2467  +0.046 [+0.033,+0.060]           27.51   +3.96 [+1.15,+11.94]           PASSA
+  mult        0.3   14.6948  -0.302 [-0.483,-0.116]                +0.2686  +0.068 [+0.040,+0.095]           31.45   +7.91 [+0.76,+13.69]           PASSA
+
+Nota: IC95 di k=25 additivo e lift di k=25 attraversano un range ampio (IC
+MAE arriva a sfiorare positivo, IC lift include valori negativi) -- e' la
+variante meno solida delle 4, anche se il punto centrale passa.
+
+STEP 3 -- OVERLAP (favorito_odds_k=6, n=3.433): a==c e b==d confermato
+ANCHE su questo campione (stesso limite: casa strutturale non spegnibile
+dall'esterno). Tutti e 4 gli scenari overlap ORA passano (prima 2 erano
+misti): dMAE ~-0.187/-0.187, dcorr ~+0.050, dlift ~+4.35.
+
+SPOSTAMENTO score_atteso, variante migliore corr/lift (mult k=0.3), n=3.433:
+  media=3.44pt   p95=8.27pt   max=15.99pt
+  vs soglia arena +/-15pt: media=23%, p95=55%, max=107% (supera di poco il max)
+Molto piu' contenuto che nel giro piccolo (li' p95 era 88%, max 158%): con
+n maggiore lo spostamento medio si stabilizza su una frazione minore della
+soglia arena, solo la coda estrema (max, un singolo caso) la sfiora.
+
+VECCHIO RUN (n=1.385, sessione precedente, SUPERATO ma lasciato per confronto)
+-----------------------------------------------------------------------------
+
+STATO REPO
+- backtest_arene_previsioni.py MODIFICATO (non produzione, e' il modulo di
+  misura/backtest): aggiunte delta_favorito_odds(ctx), favorito_odds_k
+  (additivo) e favorito_odds_mult_k (moltiplicativo) a calcola(). Default
+  None/0.0 = spento, comportamento INVARIATO se non passati. NON committato.
+- dati_globali/odds_1x2_index.json NUOVO: indice quote 1X2 per (team,team,data),
+  7.184 partite, 05/11/2025-oggi, eliteserien e null gia' esclusi. NON committato.
+- Nessun'altra modifica a file di produzione (formazione_mls/predict/*.py
+  intatti). Nessun commit, nessuna run GitHub.
+
+PERCHE'
+Misurato in sessione precedente: favorito_odds = p_win_own - p_win_opp da
+winOddsBasisPoints (persistente da 18/11/2025) batte nettamente favorito
+interno (corr +0.114 vs +0.056) e in regressione congiunta assorbe quasi
+tutto rank_avversario/casa. Richiesto: innestarlo in score_atteso SOLO in
+fase di misura, forma additiva E moltiplicativa, testato per overlap con
+opponent_lambda_mult/casa, metro ufficiale (MAE+corr+lift insieme).
+
+CAMPIONE (PILOTA, non esaustivo -- vedi limite sotto)
+Solo ruolo DEF. n=1.385 righe (giocatore,partita), 34 giornate, campione
+CASUALE di 465 slug su 4.311 disponibili (cap per velocita', vedi sotto).
+Finestra: 18/11/2025+ (unica coperta dalle quote). Eliteserien esclusa
+automaticamente (mai nell'indice). Dedup (slug,data): 0 rimossi (nessun
+doppione, atteso: qui 1 riga = 1 (giocatore,game), non arena/manager).
+
+LIMITE METODOLOGICO IMPORTANTE
+La raccolta ESAUSTIVA (tutti i 4.311 slug DEF, l'intera finestra) rallentava
+progressivamente fino allo stallo -- non per un singolo slug patologico
+(verificato uno per uno, tutti <0.02s), ma per accumulo in memoria di
+decine di migliaia di contesti walk-forward. Per avere un numero in tempi
+umani ho campionato 465 slug a caso (seme fisso, riproducibile) invece dei
+4.311 totali. n=1.385 e' quindi un SOTTOCAMPIONE, non il totale disponibile
+(che sarebbe ~5-6x piu' grande). Il problema di scalabilita' di
+raccogli_finestra() resta APERTO, non risolto: chi rilancia su scala piena
+deve prima risolverlo (es. streaming invece di accumulo in lista).
+
+Per la stessa ragione di velocita', il bootstrap e' stato tagliato a 15
+ripetizioni (sotto la soglia di 30 per cui il codice calcola un IC): gli
+IC95 richiesti NON sono disponibili in questo passaggio, solo le stime
+puntuali. Se servono IC veri va rilanciato con ripetizioni>=200 e un
+campione piu' grande, su piu' tempo (probabilmente ore, vista la lentezza
+del modulo di backtest per singola valutazione).
+
+STEP 1 -- test A/A (interruttore)
+k=0 -> score invariato (49.8, 49.97, 52.78, 50.51, 53.02)
+k=1e9 additivo -> esplode (-243999950, +336666716, ...): SI MUOVE, non inerte
+k=1e9 moltiplicativo -> esplode ancora di piu': SI MUOVE, non inerte
+Interruttore confermato funzionante in entrambe le forme.
+
+STEP 2 -- GRIGLIA (n=1.385, produzione = riga k=0)
+  forma        k     MAE      dMAE     corr    dcorr    lift%   dlift   esito
+  (prod)       0    15.1991   0.0000  +0.1969  0.0000   29.63    0.00   --
+  additiva     6    15.0590  -0.1401  +0.2390  +0.0422   28.76   -0.87  MISTO (no)
+  additiva    25    15.2779  +0.0788  +0.2374  +0.0405   34.28   +4.66  MISTO (no)
+  mult        0.1   15.0710  -0.1282  +0.2364  +0.0395   28.03   -1.60  MISTO (no)
+  mult        0.3   15.0145  -0.1846  +0.2512  +0.0543   30.22   +0.60  PASSA (tutte e 3 meglio)
+
+IC95 non disponibili (vedi limite sopra, 15 ripetizioni < soglia 30).
+
+Unica variante che passa il metro a tre gambe: MOLTIPLICATIVA k=0.3.
+Nessuna additiva passa nella griglia testata (6 e 25).
+
+STEP 3 -- OVERLAP (favorito_odds_k=6 additivo, scelto come primo della
+griglia perche' nessuno "PASSA" nella griglia additiva)
+  scenario                                          MAE      dMAE    corr    dcorr   lift%   dlift  esito
+  e) baseline produzione                          15.1991  +0.0000 +0.1969 +0.0000  29.63   +0.00   --
+  a) odds SOLO (casa/opp_lambda spenti)           15.0590  -0.1401 +0.2390 +0.0422  28.76   -0.87   MISTO
+  b) odds + casa (opp_lambda spento)              15.0598  -0.1393 +0.2389 +0.0420  27.51   -2.11   MISTO
+  c) odds al posto di opp_lambda, casa acceso     15.0590  -0.1401 +0.2390 +0.0422  28.76   -0.87   MISTO
+  d) tutti e tre accesi                           15.0598  -0.1393 +0.2389 +0.0420  27.51   -2.11   MISTO
+
+NOTA su (a) e (c): risultano IDENTICI. Limite dello strumento, non errore di
+misura: la produzione non espone modo di spegnere dall'esterno lo split
+casa/trasferta STRUTTURALE (fattore_casa_trasferta) -- solo il termine
+RESIDUO casa_k (gia' spento di default) puo' essere acceso/spento da qui
+(vedi docstring delta_casa in backtest_arene_previsioni.py, nota gia'
+presente prima di questa sessione). "Casa spento" nello scenario (a)/(c)
+significa quindi "solo il residuo spento", non "nessun effetto casa/trasferta
+nella previsione" -- lo split di base resta sempre attivo in entrambi.
+(b) e (d) aggiungono casa_k=0.05 (valore fisso arbitrario, NON tarato con
+una griglia dedicata: fuori scope di questo giro).
+
+SEGNALI MISTI -- tutte le varianti tranne UNA (moltiplicativa k=0.3)
+mostrano corr in miglioramento ma MAE o lift in peggioramento:
+- additiva k=6, mult k=0.1, e tutti i 4 scenari di overlap: corr +0.04,
+  MAE migliora ma LIFT peggiora (-0.87 a -2.11 punti percentuali).
+- additiva k=25: corr +0.04 e lift +4.66 (entrambi meglio) ma MAE peggiora
+  (+0.079).
+Nessuno di questi passa il criterio a tre gambe. Il pattern e' consistente:
+il segnale sposta l'ORDINAMENTO (corr sempre positiva, spesso lift) ma
+non necessariamente il valore assoluto (MAE), soprattutto a k alti.
+
+SPOSTAMENTO score_atteso -- variante migliore su corr/lift (additiva k=25,
+quella scartata per MAE +0.079, scelta qui SOLO perche' e' quella con
+corr+lift piu' alti insieme, nessuna raccomandazione di adozione):
+  n=1.385   |delta| media=5.50pt   p95=13.18pt   max=23.77pt
+  soglia arena nota +/-15pt: media=37% della soglia, p95=88%, max=158%
+Il p95 e' vicino alla soglia e il massimo la supera: uno spostamento del
+genere, se adottato, NON sarebbe sotto il rumore delle soglie arena --
+andrebbe rivista la catena (soglie efficienza) prima di qualunque uso a
+valle, come da regola catena di produzione.
+
+DECISIONE APERTA (nessuna presa qui)
+- Solo la forma MOLTIPLICATIVA a k=0.3 passa il metro a tre gambe sul
+  campione pilota; va confermata su campione pieno (non il sottocampione
+  di 465/4.311 slug) prima di qualunque considerazione di adozione.
+- Il problema di scalabilita' di raccogli_finestra() (rallentamento da
+  accumulo in memoria) va risolto prima di poter fare quella conferma in
+  tempi ragionevoli.
+- IC95 mancanti: servirebbe un rilancio con piu' ripetizioni bootstrap e
+  piu' tempo a disposizione.
+- (a)==(c) per limite dello strumento: se si vuole davvero isolare l'effetto
+  senza lo split casa/trasferta strutturale servirebbe toccare
+  compute_split_factor dentro formazione_mls/predict/*, finora escluso.
+
+FILE DI RIFERIMENTO
+- backtest_arene_previsioni.py (modificato, non committato)
+- dati_globali/odds_1x2_index.json (nuovo, non committato)
+- script di misura (fuori repo, in scratchpad sessione): taratura_confronto_odds.py
+- esito grezzo: scratchpad/esito_taratura_odds.json

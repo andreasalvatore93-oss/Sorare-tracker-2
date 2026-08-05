@@ -17,6 +17,18 @@ Riguardano SOLO come mi rapporto all'utente. Nessuna istruzione operativa sui to
 - Orari: utente su fuso Roma (CET/CEST). Ogni riferimento temporale in chat o
   nei file va dato nell'ora di Roma (indicando anche l'UTC fra parentesi se
   serve precisione tecnica), mai solo in UTC.
+- All'utente piace scherzare ogni tanto: quando e' di buon umore, chiamarlo
+  "cicciabombolo" invece che "utente" gli fa ridere. Da usare con parsimonia,
+  solo nei momenti giusti, non ad ogni messaggio.
+
+## Spiegare i numeri: sempre con esempi banali
+L'utente ha una laurea magistrale in legge, non una formazione statistica.
+Termini come intervallo di confidenza, bootstrap, correlazione, R², lift,
+significativita' NON vanno usati come se fossero noti. Ogni volta che un
+numero conta per una decisione, spiegarlo con un esempio **banale e
+concreto** (altezze, pillole, monete, scommesse al bar), non con la
+definizione tecnica. Prima l'esempio scemo, poi il numero vero. Se l'utente
+dice "non ho capito", non riformulare piu' preciso: riformulare piu' STUPIDO.
 
 ## Priorità
 1. Velocità di esecuzione (run e debug).

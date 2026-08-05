@@ -74,8 +74,16 @@ CLAUDE.md.
 
 Per ~30 campionati tracciati, dato l'elenco delle carte possedute
 dall'utente, produce le formazioni ottimali per competizione (In Season,
-Arena, All Stars, Under 23) con capitano, rispettando i vincoli Sorare (max 1
-Classic, min 4 In Season nelle In Season; cap L10 nelle arene con cap).
+Arena, All Stars, Under 23) con capitano, rispettando i vincoli Sorare.
+**ATTENZIONE: i vincoli NON sono gli stessi in tutte le competizioni** (verificato
+06/08 in `FORMATION_SHAPES`, `build_formazione_globale.py:184-203`, dopo che la
+vecchia formulazione ambigua di questa riga aveva gia' indotto in errore un brief):
+- **In Season** (`MLS_IN_SEASON`, `KLEAGUE_IN_SEASON`): `max_classic = 1`, min 4 In Season.
+- **Arene** (`ARENA_ALLSTARS_260/220/UNCAPPED`, `ALLSTARS`, `ALLSTARS_U23`, arene
+  per-lega): `max_classic = None`, **nessun tetto sulle Classic**. L'unico vincolo e'
+  il cap L10 dove previsto; uncapped/elite non hanno nemmeno quello.
+Mai applicare i vincoli In Season a un backtest sulle arene: restringerebbe il pool
+con una regola inesistente e falserebbe entrambi i lati del confronto.
 
 **Pipeline di produzione** (workflow GitHub `formazione_giornata.yml`,
 riscritta 27-28/07 sulla GIORNATA invece che sui singoli campionati):
@@ -227,7 +235,7 @@ Season/All Star/Under 23, **+20% in arena**.
 | `dati_globali/arene_storico.json` | 673 arene reali dell'utente (giu 2025–lug 2026): tutti e 10 i punteggi, premi, piazzamento |
 | `dati_globali/arene_formazioni.json` | 593 formazioni schierate: giocatore/carta/ruolo/capitano/punteggio |
 | `dati_globali/manager_forever-young.json` | arene REALI di un altro manager (mazzo simile, non scelto per il risultato), 71 giornate, 3326 righe con carte |
-| `dati_globali/manager_crowss.json` | arene di un manager Korea-centrico, 1332 formazioni usate nel filone capitano |
+| `dati_globali/manager_crowss.json` | **ATTENZIONE: e' l'UTENTE STESSO** (nickname Sorare `Crowss`), NON un manager esterno. 72 giornate, 1332 formazioni usate nel filone capitano. La vecchia descrizione ("un manager Korea-centrico") era doppiamente sbagliata: non e' un terzo e non e' Korea-centrico. Da NON includere in nessun confronto "i pick dei manager vs il nostro atteso" (filone smart-money, §7): confrontarsi con se stessi falsa il verdetto. Verificare se il filone capitano e le analisi smart-money lo hanno incluso per errore. |
 | `dati_globali/backtest_arene_cache/` | storico giocatori necessario per rigiocare le formazioni col modello |
 
 ROI reale storico dell'utente: **+13.3%** (121.250 spese, 137.400 vinte),
@@ -374,8 +382,33 @@ riprende il filone backtest.
   inseguire "più differenziazione del punto" è un vicolo cieco dimostrato.**
 - **Bonus additivi vs moltiplicativi**: chiuso, la formula additiva è
   verificata al centesimo (§3).
-- **Quote bookmaker come segnale**: CHIUSO su decisione utente 02/08 —
-  infattibile/non copre tutti i campionati. Non riproporre.
+- **Quote bookmaker come segnale**: la chiusura del 02/08 ("infattibile, non
+  copre tutti i campionati") era SBAGLIATA e va considerata SUPERATA. Il
+  filone e' stato riaperto e portato fino al backtest di formazione la notte
+  del 05-06/08. In sintesi: le 1X2 sono dentro Sorare
+  (`Game.homeStats/awayStats.winOddsBasisPoints`), bulk per fixture,
+  copertura piena (unico buco eliteserien), persistenti da ~18/11/2025,
+  nessun leakage (favorito vince 65.3% su n=118). `favorito_odds` batte
+  nettamente il "favorito" interno e ne **assorbe** il segnale insieme a
+  `rank_avversario` e `casa`. Sul **DEF** il metro a tre gambe passa con
+  margine (mult k=0.2: dMAE −0.197, dcorr +0.060, dlift +7.22, tutti gli
+  IC95 lontani da zero, 7 varianti su 9); su GK/MID/FWD **non** passa
+  (sempre il lift). **In formazione il guadagno NON e' dimostrato** su 880
+  arene e due mazzi indipendenti: i ruoli competono per lo slot libero e
+  l'effetto sparisce nel rumore (σ≈50 pt/arena; servirebbero ~2.500 arene).
+  NON adottato, nulla committato sul modello. Prossima strada consigliata:
+  misurarlo sullo **scouting**, dove si confrontano carte dentro lo stesso
+  ruolo e non c'e' competizione fra ruoli. Dettaglio integrale, tabelle,
+  falsi allarmi e decisione aperta:
+  `docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt`.
+- **Lettera "Potenziale della GW" (grade A→F)**: individuata
+  (`So5Score.projection.grade` + `reliabilityBasisPoints`, solo nel contesto
+  compose-team, NON in `searchPlayers` — il sort `projected_grade.<fixture>`
+  e' ignorato in silenzio, testato, non riprovare). E' per giocatore-partita,
+  non e' P(gioca) ne' L10 ne' un grado per ruolo. **Nessuno storico: sparisce
+  al fischio d'inizio**, quindi non backtestabile — va registrata in avanti.
+  Nessuna domanda di ricerca ancora definita: definirla PRIMA di accendere
+  qualunque registratore.
 - **Capitano DEF/MID/FWD**: 8 ipotesi testate su 3130 formazioni reali
   (bias di ruolo, volatilità, forma grezza L5/L10/L40, margine-soglia,
   stabilità per lega, favorita/sfavorita, combinazioni, profondità storico,

@@ -1,0 +1,322 @@
+HANDOFF -- QUOTE 1X2 COME SEGNALE ESTERNO (favorito_odds)
+Sessione 05/08/2026 sera -> 06/08/2026 notte, Roma (CEST). Orchestrazione
+Opus, esecuzione Sonnet. Ultimo aggiornamento ~02:00 Roma.
+
+Filone NUOVO, aperto e portato fino al backtest di formazione in una sola
+sessione. NON adottato in produzione. Nessun commit sul modello.
+
+
+1. STATO DEL REPO
+-----------------
+Branch: main. Nessun commit fatto in questa sessione sul modello.
+
+MODIFICATI, NON COMMITTATI (moduli di misura, non produzione):
+- backtest_arene_previsioni.py -- aggiunte delta_favorito_odds(ctx),
+  parametri favorito_odds_k (additivo) e favorito_odds_mult_k
+  (moltiplicativo) in calcola(). Default None/0.0 = SPENTO, comportamento
+  invariato se non passati.
+
+NUOVI, NON COMMITTATI:
+- dati_globali/odds_1x2_index.json -- indice quote 1X2 per (team,team,data),
+  7.184 partite, 05/11/2025 -> oggi, eliteserien e null gia' esclusi.
+- script di misura in scratchpad (taratura_confronto_odds.py e script P11
+  derivati): FUORI REPO, si perdono a fine sessione se non recuperati.
+
+COMMITTATI in questa sessione (solo documentazione):
+- CLAUDE.md: nuova regola "Spiegare i numeri: sempre con esempi banali".
+- docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md: due correzioni di fonte
+  (vedi punto 5).
+
+PRODUZIONE INTATTA: formazione_*/predict/*.py, build_formazione_globale.py,
+scouting_gw.py non toccati. Nessuna run GitHub lanciata.
+
+
+2. PERCHE' ESISTEVA QUESTO LAVORO
+---------------------------------
+Il modello e' al tetto di formula: non si migliora piu' score_atteso con i
+dati interni (screening 04/08: il residuo e' predicibile a R2=0.008, nessun
+segnale-media libero fra le feature disponibili). Restava da guardare cio'
+che il bot NON PUO' sapere: informazione prospettica sulla partita, non
+ricavabile dal game log.
+Le quote bookmaker erano state chiuse il 02/08 come "infattibili, non
+coprono tutti i campionati". L'utente ha chiesto di azzerare e riesplorare:
+non erano mai state provate davvero. Decisione corretta -- l'obiezione sulla
+copertura si e' rivelata infondata (vedi punto 3).
+
+
+3. COSA E' STATO ACCERTATO (fatti, non ipotesi)
+-----------------------------------------------
+A) DUE INFORMAZIONI ESTERNE ESISTONO E SONO GIA' RAGGIUNGIBILI
+
+   1X2 (probabilita' vittoria casa/pareggio/trasferta)
+   - Campo: Game.homeStats/awayStats.winOddsBasisPoints, tipo
+     FootballTeamGameStats. Pareggio = 10000 - home - away.
+   - Bulk: So5Fixture(slug) { anyGames { homeStats/awayStats } } -- UNA
+     query per fixture, nessuna query per partita.
+   - Visibili a schermo GIORNI PRIMA della GW, su ogni carta.
+   - PERSISTONO sulle partite concluse (verificato fino a un mese indietro,
+     poi binary search: popolate solo da ~18/11/2025 in poi, nulle su tutto
+     il 2022-2025/10).
+   - Copertura per lega (GW 31/7-4/8, 129 partite, 120 popolate): K League
+     6/6, MLS 14/15, Croazia/Austria/Cina/Cile/Peru/Danimarca/Svizzera/
+     Argentina 100%. UNICO BUCO: eliteserien (Norvegia) 0/8, sempre null.
+
+   LETTERA "Potenziale della GW" (A -> F)
+   - Campo: So5Score.projection.grade + .reliabilityBasisPoints, tipo
+     PlayerGameScoreProjection.
+   - Vive solo dentro il contesto "componi formazione"
+     (ComposeTeamBenchCard.eligiblePlayerGameScores[].anyGame). NON
+     raggiungibile da searchPlayers.
+   - E' per GIOCATORE-PARTITA: cambia con l'avversario, differisce fra
+     compagni della stessa squadra nella stessa partita, identica su carte
+     diverse dello stesso giocatore.
+   - NON e' P(gioca) (Gunok 100% -> C; Hodl 100% -> D), NON e' L10 (Messi
+     82 -> B; Woledzi 59 -> A), NON e' un grado per ruolo (difensori
+     prendono A). Correlata alle starter odds ma non determinata da esse.
+   - Sorare espone un SortingType "PROJECTED_GRADE" con
+     searchPlayersSorts ["projected_grade.<fixture-slug>"], ma il sort
+     NON funziona via searchPlayers: TESTATO, viene ignorato in silenzio
+     (con ASC ricade sull'ordine alfabetico). Non riprovare.
+   - NESSUNO STORICO: la lettera sparisce al fischio d'inizio. Non
+     backtestabile. Unica via: registrarla in avanti.
+   - Fonte: SorareInside (terza parte). Compilazione UMANA, un volontario
+     per squadra -> qualita' potenzialmente eterogenea per lega/squadra.
+     Qualunque misura futura va fatta PER LEGA, mai in pool.
+
+B) NESSUN LEAKAGE SULLE 1X2
+   Su 118 partite decise (29 pareggi esclusi su 147 utilizzabili), la
+   squadra col winOdds piu' alto ha vinto 77/118 = 65.3%. Range atteso per
+   quote genuine pre-partita; >85% avrebbe tradito riscrittura a risultato
+   noto. Calibrazione monotona senza inversioni:
+     fascia quota favorito   n    freq reale vittoria
+     0-50%                   85      36.5%
+     50-60%                  25      72.0%
+     60-70%                  20      65.0%
+     70-80%                  15      86.7%
+     80-101%                  2     100.0%
+
+C) NON DUPLICA NIENTE DI GIA' BOCCIATO
+   Il "favorito" bocciato dallo screening 04/08 era INTERNO
+   (lambda_squadra - lambda_avversario da gol attesi storici,
+   screening_segnali.py:185), non una probabilita' di mercato.
+   rank_avversario = domesticLeagueRanking (classifica). opponent_lambda_mult
+   = z-score dei gol subiti storici (opponent_strength.py:291-321). Tutti
+   interni.
+   Testa a testa sullo stesso campione (n=46.856):
+     favorito_odds  corr +0.114 [+0.106,+0.122]
+     favorito int.  corr +0.056 [+0.047,+0.064]     IC non sovrapposti
+   Nella stessa regressione favorito_odds domina (+8.96 [+7.97,+9.97],
+   R2 incr 1.07%) e il favorito interno diventa negativo.
+   Sopra rank_avversario+casa+favorito: R2 incr +0.58%, e ASSORBE
+   rank_avversario (0.396% -> 0.026%) e casa (0.164% -> 0.008%).
+   => e' un segnale MIGLIORE che soppianta due proxy, non uno in piu'.
+
+
+4. OUTPUT NUMERICO INTEGRALE
+-----------------------------
+FORMA TESTATA:
+  additiva:        score_atteso + k * favorito_odds
+  moltiplicativa:  score_atteso * (1 + k * favorito_odds)
+  favorito_odds = p_win_own - p_win_opp
+Test A/A sull'interruttore: k=0 -> score invariato; k=1e9 -> esplode in
+entrambe le forme. NON inerte, verificato prima di ogni misura.
+
+4.1 GRIGLIA PER RUOLO -- campione PIENO, bootstrap 200, criterio SEVERO
+    (passa solo se TUTTI E TRE gli IC95 escludono lo zero nel verso giusto)
+
+Campione (finestra 18/11/2025+, eliteserien esclusa):
+  DEF 1.515 slug -> 14.230 righe | GK 370 -> 3.923
+  MID 1.310      -> 13.101       | FWD 1.116 -> 9.758
+
+DEF (produzione MAE=14.8882 corr=+0.1853 lift=18.10%)
+  forma  k     dMAE (IC95)              dcorr (IC95)            dlift (IC95)          esito
+  add    3   -0.089 [-0.103,-0.077]   +0.029 [+0.025,+0.033]  +2.14 [-0.10,+4.78]   no
+  add    6   -0.152 [-0.180,-0.129]   +0.047 [+0.040,+0.055]  +4.97 [+0.37,+6.33]   PASSA
+  add   12   -0.199 [-0.254,-0.152]   +0.061 [+0.050,+0.074]  +6.74 [+1.23,+9.86]   PASSA
+  add   20   -0.095 [-0.175,-0.014]   +0.058 [+0.043,+0.074]  +7.31 [+1.05,+9.63]   PASSA
+  mult 0.05  -0.078 [-0.089,-0.067]   +0.025 [+0.022,+0.029]  +1.24 [-0.54,+4.14]   no
+  mult 0.1   -0.137 [-0.159,-0.116]   +0.043 [+0.037,+0.050]  +5.01 [+0.52,+6.16]   PASSA
+  mult 0.2   -0.197 [-0.244,-0.158]   +0.060 [+0.050,+0.071]  +7.22 [+1.10,+8.95]   PASSA <- MASSIMO
+  mult 0.3   -0.183 [-0.254,-0.122]   +0.062 [+0.049,+0.076]  +6.68 [+1.32,+10.79]  PASSA
+  mult 0.4   -0.087 [-0.171,-0.007]   +0.058 [+0.043,+0.075]  +6.86 [+1.01,+10.05]  PASSA
+  7 varianti su 9 passano. Zona stabile, non un picco isolato.
+  Spostamento score_atteso (mult 0.2): media 2.27pt, p95 5.48pt, max 13.53pt
+  -> 15% / 37% / 90% della soglia arena (+/-15pt). NON trascurabile.
+
+GK  -- 0 varianti su 9. Sempre il lift ad attraversare lo zero, anche dove
+  MAE e corr passerebbero. Atteso: il blend con P(clean sheet) di squadra
+  (GK_TEAM_CS_WEIGHT) porta gia' dentro parte della forza dell'avversario.
+MID -- 0 varianti su 9. MAE e corr passano quasi ovunque, il lift MAI
+  (i piu' vicini: add k=12 a -0.15, mult k=0.3 a -0.22).
+FWD -- 1 variante su 9 (mult 0.1), IC al limite. Per FWD la correlazione
+  PEGGIORA gia' da add k=25 / mult k=0.3: crollo piu' precoce degli altri.
+
+  Riepilogo ottimi puntuali: DEF mult 0.2 (dcorr +0.060, dlift +7.22)
+  MID mult 0.2 (+0.030, +2.32) | FWD mult 0.1 (+0.023, +4.80)
+  GK add 3 (+0.013, +2.03)
+
+  GRIGLIA ESTESA (campione ridotto n=3.433, per trovare il bordo): il
+  massimo e' INTERNO, non sul bordo. Oltre 0.3 mult il MAE crolla in modo
+  monotono (+0.98 a k=0.8, +3.32 a k=1.2, +9.83 a k=2.0) mentre corr resta
+  piatta. Stessa forma per l'additiva oltre 25. Nessun secondo massimo.
+
+4.2 BACKTEST DI FORMAZIONE (impianto P11: mazzo fisso, arene reali,
+    walk-forward as-of, carte non clonate, stessa regola capitano)
+
+  Policy: A=produzione | B=DEF mult0.2 | C=DEF mult0.2 + FWD mult0.1
+          D=ogni ruolo al suo ottimo | E=D ricentrata per ruolo/GW
+
+  CAMPIONE crowss (227 arene, 71 giornate, cap 260/220, Beginner e division
+  escluse dal filtro di produzione). Tutte gia' dentro la finestra quote.
+    composizione media   GK    DEF   MID   FWD
+      A                 1.00  1.44  1.45  1.11
+      B                 1.00  1.51  1.43  1.06
+      C                 1.00  1.53  1.38  1.09
+    punti A = 273.10, rank A = 4.608
+      B punti +0.80 [-1.90,+3.55]   rank -0.026 [-0.234,+0.171]
+      C punti -0.16 [-2.37,+2.22]   rank +0.040 [-0.172,+0.245]
+    sovrapposizione con A: B 2.11/5, C 1.72/5 -> le policy DIVERGONO
+    davvero, il test non e' muto per costruzione.
+
+  CAMPIONE forever-young (653 arene, 35 giornate, mazzo ricostruito
+  dall'unione delle carte schierate in finestra +/-30gg; 15 manager esclusi
+  per dati insufficienti; niente rank, manca la distribuzione leaderboard)
+    tipo       n     A punti   dB              dC
+    TOTALE    653    295.30   +2.12 [-0.62,+5.16]  +1.02 [-1.77,+3.93]
+    Beginner  234    282.97   +1.40 [-5.29,+8.86]  +0.54 [-6.13,+7.48]
+    cap 220   120    276.28   -2.30 [-8.60,+3.96]  -4.42 [-13.32,+3.52]
+    cap 260   263    301.20   +5.53 [-2.74,+12.33] +4.53 [-3.36,+11.93]
+    uncapped   36    395.76   -3.35 [-11.88,+4.35] -3.34 [-13.77,+5.80]
+
+  POLICY D/E (secondo giro, entrambi i campioni)
+    crowss (TOTALE n=357):  B +0.32 [-1.21,+1.87] | C +1.95 [+0.31,+3.92]
+                            D +1.26 [-0.98,+3.56] | E +1.12 [-0.75,+3.23]
+      Beginner-crowss (n=173): D +3.65 [+1.07,+6.91] e E +3.89 [+1.03,+7.18]
+      ESCLUDONO ZERO -- ma NON replicato su forever-young.
+    forever-young (n=651):  B +2.25 [-0.52,+5.31] | C +1.10 [-1.68,+4.02]
+                            D +0.59 [-2.09,+3.55] | E +0.66 [-2.09,+3.83]
+      uncapped-fy (n=36): E -18.25 [-35.30,-1.19] SIGNIFICATIVAMENTE
+      PEGGIORE. D vicina (-12.49 [-31.02,+7.19]).
+
+  CONTROLLO DI SANITA' SU E: sul TOTALE la ricentratura funziona
+  (composizione ~= A su entrambi i campioni), sulle SPEZZATURE per tipo
+  spesso NO (media per-ruolo si sposta di 0.03-0.15). Causa plausibile non
+  verificata: si ricentra la media del POOL candidato, ma il knapsack
+  seleziona una sotto-parte non uniforme. Limite del metodo E.
+
+
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+---------------------------------------
+- IL SEGNALE PER-RUOLO E' REALE E GROSSO. Sul DEF dcorr +0.060 con IC
+  [+0.050,+0.071]. Per confronto, il blend GK e' stato cambiato in
+  produzione su un dcorr di +0.0033: qui e' ~18x. Non e' un caso limite.
+
+- IL GUADAGNO IN FORMAZIONE NON E' DIMOSTRATO. Su 880 arene complessive
+  (227 + 653) e due mazzi indipendenti, nessuna policy ha un vantaggio
+  concorde. I punti centrali del TOTALE sono positivi in entrambi i
+  campioni (+0.80 e +2.12) ma gli IC attraversano lo zero.
+
+- PROBLEMA DI TEST MULTIPLI, da non ignorare. Fra 5 policy x 5 spezzature
+  x 2 campioni si sono fatti ~50 confronti al 95%: 2-3 "significativi" per
+  puro caso sono ATTESI. I tre trovati (C su crowss, D/E su Beginner-crowss,
+  E negativa su uncapped-fy) sono tutti isolati e nessuno replicato
+  sull'altro campione. Per la regola del delta del repo (segno concorde fra
+  ambienti) NON valgono. Non trattarli come scoperte.
+
+- PERCHE' il segnale non arriva ai punti: in formazione i ruoli COMPETONO
+  per lo slot libero (5 carte, non 4 fisse). Correggendo solo i DEF, questi
+  scavalcano gli altri usando un righello diverso (composizione 1.44 ->
+  1.53, a scapito del MID 1.45 -> 1.38). D ed E nascono per correggere
+  questo e non hanno risolto. In piu' il rumore per-arena e' enorme
+  (sigma ~50 pt): cercare +2 pt dentro +/-50 richiede DELL'ORDINE DI 2.500
+  ARENE per un IC di +/-2. Con 880 non si vede, e "non si vede" non
+  significa "non c'e'".
+
+- LIMITE DEL MAZZO RICOSTRUITO: contiene solo carte che il manager ha
+  effettivamente schierato -> pool gia' filtrato dalle sue scelte, il che
+  puo' favorire la policy A. Dichiarato, non risolto.
+
+- OVERLAP CON "CASA" MAI MISURATO. Gli scenari (a) odds-solo e (c)
+  odds-al-posto-di-opponent risultano IDENTICI perche' lo strumento sa
+  spegnere solo il termine RESIDUO casa_k, non lo split casa/trasferta
+  STRUTTURALE (compute_split_factor in formazione_*/predict/*). Siccome
+  nella regressione favorito_odds assorbe quasi tutto "casa", il doppio
+  conteggio resta una domanda APERTA.
+
+- CATENA 1bis: lo spostamento massimo di score_atteso (mult 0.2 su DEF) e'
+  il 90% della soglia arena. Se si adotta, PAREGGIO_ARENA /
+  GUADAGNO_PER_PUNTO e a cascata lo scouting vanno riverificati. Non e'
+  una formalita'.
+
+- FALSI ALLARMI DI QUESTA SESSIONE, da non ripetere:
+  * "raccogli_finestra ha un bug di memoria" -> FALSO. Era un processo
+    ORFANO (`find / -iname p3_analisi.py`) attivo da 9+ ore che saturava
+    il disco. Ucciso quello, la raccolta esaustiva su 1.515 slug DEF gira
+    in 73s con 571MB di picco. Nessun refactor a streaming fatto ne'
+    necessario. Se un backtest sembra bloccato, controllare `ps aux`
+    PRIMA di sospettare il codice.
+  * "il knapsack applica max 1 Classic alle arene" -> FALSO, era una
+    premessa sbagliata di un brief. FORMATION_SHAPES ha max_classic=None
+    per tutte le arene. Fonte corretta nel riassunto unificato.
+  * ottimizzazione vera che serviva: il bootstrap ricalcolava calcola() a
+    ogni ripetizione. La previsione per riga non dipende dal ricampionamento
+    -> calcolarla una volta per variante e ricampionare solo gli array.
+    Run completo 4 ruoli, campione pieno, 200 ripetizioni: ~28 minuti.
+
+- CORREZIONI DI FONTE fatte in questa sessione (committate):
+  * manager_crowss.json e' L'UTENTE STESSO, non un manager terzo, e non e'
+    Korea-centrico. Era descritto male nel riassunto unificato: chiunque
+    lo abbia incluso in un confronto "pick dei manager vs nostro atteso"
+    ha confrontato l'utente con se stesso. DA VERIFICARE se ha inquinato
+    il filone capitano (1332 formazioni) e lo smart-money.
+  * vincoli per competizione ora espliciti nel riassunto unificato
+    (In Season: max_classic=1, min 4 In Season | Arene: nessun tetto
+    Classic, solo cap L10 dove previsto).
+
+
+6. DECISIONE APERTA
+-------------------
+Nessuna presa. Le opzioni sul tavolo:
+
+(1) SCOUTING invece che formazione. Nello scouting si confrontano carte
+    DENTRO lo stesso ruolo: nessuna competizione fra ruoli, nessuno slot
+    da contendersi. Li' il lift +7.22% sui DEF si traduce direttamente in
+    "quale difensore comprare", ed e' anche la decisione che pesa di piu'
+    (una carta la tieni mesi, una formazione un giorno). MAI MISURATO.
+    Costo basso, e' la strada che l'orchestratore consiglia per prima.
+
+(2) PIU' CAMPIONE sulla formazione. Servono ~2.500 arene per un IC di
+    +/-2 punti. Fattibile: 30k manager disponibili, forever-young da solo
+    ne ha date 653. Lavoro di puro volume (adatto a Haiku). Lungo, e non
+    garantisce che l'effetto esista.
+
+(3) CHIUDERE l'uso in formazione e tenere il risultato per-ruolo come
+    conoscenza acquisita.
+
+(4) LA LETTERA (grade A-F). Non backtestabile, va registrata in avanti,
+    una GW alla volta. Ogni GW che passa e' campione perso per sempre.
+    L'utente ha giustamente rifiutato di accendere un registratore finche'
+    non c'e' una domanda precisa a cui risponda: la domanda va definita
+    PRIMA.
+
+(5) FILONE COLLATERALE emerso e non aperto: i gradini In Season
+    (340/360/400/420/460) sono soglie ASSOLUTE, mentre le arene premiano
+    un RANK fra 10. Il risultato "massimizzare premio atteso = massimizzare
+    punti attesi" e' stato dimostrato SULLE ARENE. Sui gradini fissi la
+    non-linearita' e' reale e non e' mai stata rimisurata. Potrebbe
+    giustificare una funzione obiettivo diversa per le In Season ad alto
+    target.
+
+
+7. FILE DI RIFERIMENTO
+----------------------
+- backtest_arene_previsioni.py (modificato, NON committato)
+- dati_globali/odds_1x2_index.json (nuovo, NON committato)
+- analisi_manager/p11_confronta.py, p11_prepara.py (letti, non modificati)
+- screening_segnali.py, dati_globali/screening_segnali.json
+- opponent_strength.py:291-321 (opponent_lambda_mult attuale)
+- generatore_formazioni/build_formazione_globale.py:184-203 (FORMATION_SHAPES)
+- taratura_confronto_parametri.py (il metro ufficiale)
+- docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md (aggiornato)
+- script di misura in scratchpad: taratura_confronto_odds.py e derivati P11
+  -- FUORI REPO, da recuperare se si vuole riprodurre senza riscriverli.
