@@ -11,12 +11,12 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 05/08/2026, ore 03:30 (Roma, CEST)**.
-Sessione attuale: esplorati 3 filoni sui **pattern delle 442 arene reali**
-(metrica di selezione / modellare il boom / covarianza-partita). Nessun
-breakthrough, 2 fatti nuovi utili — dettaglio in `analisi_manager/PATTERN_ARENE.md`,
-sintesi in §7. Regola di stile: questo file resta SNELLO (max ~4 pagine) e
-ogni aggiornamento riporta sessione, giorno e ora nel fuso di Roma.
+Ultimo aggiornamento: **sessione 05/08/2026, ore 04:30 (Roma, CEST)**.
+Sessione attuale: (1) 3 filoni pattern arene → `PATTERN_ARENE.md`; (2)
+VALIDAZIONE DELLE SOGLIE di produzione su 2 popolazioni → **le soglie vanno
+riviste** (σ sottostimata, GUADAGNO_PER_PUNTO sovrastimato), dettaglio +
+cronistoria in `analisi_manager/VALIDAZIONE_SOGLIE.md`, sintesi in §7. Regola
+di stile: questo file resta SNELLO (max ~4 pagine), sessione/giorno/ora Roma.
 
 ---
 
@@ -344,16 +344,27 @@ formazioni_*.json` + `righe_*.json`, 8 GW). La domanda smart-money ("i manager
 battono l'atteso?") è finita — NO — ma quei dati servono a domande diverse.
 
 Sessione 05/08: scavati 3 filoni (metrica di selezione, modellare il boom,
-covarianza-partita) → `analisi_manager/PATTERN_ARENE.md` (script
-`pattern_arene.py`). Nessun breakthrough, ma 2 fatti nuovi tenuti (Uncapped
-−0.30; boom predicibile per ruolo FWD 0.70 / GK 0.57). Restano ancora da
-generare i numeri di ECONOMIA sotto (ROI per tipo arena col NOSTRO mazzo).
+covarianza-partita) → `analisi_manager/PATTERN_ARENE.md`. Poi, su richiesta
+utente, VALIDAZIONE DELLE SOGLIE di produzione → `analisi_manager/
+VALIDAZIONE_SOGLIE.md` (include la cronistoria di come sono nate le soglie).
+
+### >>> RISULTATO CHIAVE 05/08 — le soglie vanno riviste
+Validato su 2 popolazioni (306 arene utente `backtest_arene_dettaglio.json` +
+442 manager). Due input model-dipendenti sbagliati nello stesso verso:
+- **σ sottostimata**: produzione 42.70, reale ~51 (utente) / ~62 (manager).
+- **GUADAGNO_PER_PUNTO sovrastimato**: 8.8 vs reale ~5.4 (utente) / 3.77
+  (manager), cap 260.
+Confermato invece: cap 260 = miniera (+37.6%); arena division (−73%) e Beginner
+(−38%, ess/punto 0.65) da evitare (disattivazione 04/08 giusta); l'atteso
+ORDINA il realizzato (quintili 252→283) → scouting valido; ma DENTRO una cap
+l'atteso non discrimina (corr +0.02, restrizione di range) → il valore è a
+livello di TIPO-arena/soglia, non per-formazione.
+Caveat: dati utente in scala 2 ago → σ/ordinamento validi, valori ASSOLUTI
+direzionali. **DECISIONE APERTA**: rigenerare `backtest_arene.py` col modello
+attuale (locale, cache 133 gamelog, ~306 arene) per fissare i NUMERI nuovi di
+σ e GUADAGNO_PER_PUNTO, poi riverificare lo scouting (catena §1bis).
 
 ### Cosa ESPLORARE nelle 435 arene (agganci concreti già trovati)
-- **Economia per tipo arena** (10 manager, 8 GW): ROI totale −25%. Solo
-  **Cap 220 in attivo (+11.7%)**; Cap 260 −26%, Uncapped −24.5%, Elite −33%
-  (e costa 800/ingresso), Beginner −20.5%. → capire QUALE arena conviene
-  giocare col nostro mazzo, non col loro.
 - **Cosa serve per vincere** (punteggio formazione, cap. incluso): media 261,
   podio ≈294, vittoria ≈352. Scalino 3°→4° solo 12 pt: podio su margini
   stretti. Una carta ≥75 ("boom") capita nel 13.9% dei pick.
