@@ -11,12 +11,11 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 05/08/2026, ore 04:30 (Roma, CEST)**.
-Sessione attuale: (1) 3 filoni pattern arene → `PATTERN_ARENE.md`; (2)
-VALIDAZIONE DELLE SOGLIE di produzione su 2 popolazioni → **le soglie vanno
-riviste** (σ sottostimata, GUADAGNO_PER_PUNTO sovrastimato), dettaglio +
-cronistoria in `analisi_manager/VALIDAZIONE_SOGLIE.md`, sintesi in §7. Regola
-di stile: questo file resta SNELLO (max ~4 pagine), sessione/giorno/ora Roma.
+Ultimo aggiornamento: **sessione 05/08/2026, ore ~23:00 (Roma, CEST)**.
+Sessione: pattern arene (§7) + validazione soglie cap 260, APPLICATA A MAIN
+(σ 42.70→50.6, pareggio 265→259.5, guadagno 8.8→7.9). Dettaglio in
+`analisi_manager/VALIDAZIONE_SOGLIE.md`. Regola di stile: file SNELLO
+(max ~4 pagine), sessione/giorno/ora Roma.
 
 ---
 
@@ -335,45 +334,26 @@ riprende il filone backtest.
 del modello in denaro: **l'unica leva rimasta è la PRECISIONE della
 previsione**, non le regole di decisione (tutte misurate e chiuse, §5).
 
-## 7. Da dove ripartire — DIREZIONE VOLUTA DALL'UTENTE: pattern delle arene
+## 7. Pattern delle arene + soglie — stato attuale
 
-### >>> LEGGERE PRIMA DI TUTTO — indirizzo dell'utente (05/08, esplicito)
-L'utente vuole **esplorare i PATTERN DELLE ARENE**, non chiudere. Dataset:
-**442 arene reali con l'esito di OGNI carta** (`analisi_manager/dati/
-formazioni_*.json` + `righe_*.json`, 8 GW). La domanda smart-money ("i manager
-battono l'atteso?") è finita — NO — ma quei dati servono a domande diverse.
+Dataset: **442 arene reali con l'esito di OGNI carta** (`analisi_manager/dati/
+formazioni_*.json`+`righe_*.json`, 8 GW) + 306/323 arene reali dell'utente
+(`dati_globali/backtest_arene_dettaglio*.json`).
 
-Sessione 05/08: scavati 3 filoni (metrica di selezione, modellare il boom,
-covarianza-partita) → `analisi_manager/PATTERN_ARENE.md`. Poi, su richiesta
-utente, VALIDAZIONE DELLE SOGLIE di produzione → `analisi_manager/
-VALIDAZIONE_SOGLIE.md` (include la cronistoria di come sono nate le soglie).
+**Sessione 05/08 — 3 filoni pattern arene** (metrica di selezione, modellare
+il boom, covarianza-partita): nessun breakthrough, dettaglio in
+`analisi_manager/PATTERN_ARENE.md`.
 
-### >>> RISULTATO CHIAVE 05/08 — una correzione alle soglie (cap 260)
-Validato su 3 dataset (306 arene utente 2 ago + 442 manager + backtest
-rigenerato col modello attuale, n=323). **Unica correzione solida: la σ della
-cap 260** è ~51 (arena concentrata: cap L10 → stessa lega, carte correlate,
-Filone 3), non 42.70. Uncapped/cap220 sono ~43 = ok. `consiglio_arena.py` con
-SIGMA=42.70 ristampa esattamente le soglie attuali (catena intatta); con σ=51:
-**cap 260 pareggio 265→259, guadagno/punto 8.8→7.9**. Effetto: entri in cap 260
-(la miniera, +37.6% ROI) da 259 invece di 265 — modesto, +EV.
-RETTIFICA: avevo detto "GUADAGNO 8.8→5.4"; era attenuazione (dentro cap l'atteso
-non discrimina, corr +0.04), il numero vero via catena è 7.9.
-Confermato: cap 260 miniera; arena division (−73%) e Beginner (−38%) da
-evitare; l'atteso ORDINA il realizzato (scouting valido) ma NON discrimina
-dentro una cap → valore a livello di TIPO-arena/soglia, non per-formazione.
-**VERDETTO FINALE (05/08, autonomo) — pronta su branch, NON su main.**
-Diligenza completata: (a) cache backtest COMPLETA (solo 6 giocatori mancanti,
-nessuna run serve — il gap 323/426 è formazioni senza storico/capitano, non
-cache); (b) σ per lega dentro cap 260: NON uniforme (MLS 47, kleague 58,
-argentina 78 n9) e cresce col n. di leghe distinte, non con la concentrazione
-→ RITRATTA la spiegazione "concentrazione/Filone 3", è eterogeneità fra leghe.
-Numeri finali (σ=50.6, tua pop. attuale): cap 260 **pareggio 265→259.5,
-guadagno 8.83→7.9**. Conviction MEDIA: σ oggettivamente sbagliata ma posta
-modesta (cap 260 tipico ~270, ben sopra entrambe le soglie); il limite vero
-(atteso non discrimina dentro la cap) non si risolve con la σ. Modifica
-preparata su branch **`soglia-cap260-sigma`** (build_formazione_globale +
-best_five; scouting/ottimizza/backtest_produzione si propagano da soli via
-getattr). Per applicare: merge del branch. Dettaglio in `VALIDAZIONE_SOGLIE.md`.
+**Sessione 05/08 — validazione soglie, APPLICATA A MAIN (05/08 sera).** σ
+della cap 260 era sottostimata (42.70 vs reale ~50-54, validato su 3 dataset
+indipendenti); altri tipi (uncapped/cap220/beginner) già corretti. Merge fatto:
+`PAREGGIO_ARENA['ARENA_ALLSTARS_260']` 265.0→259.5, `GUADAGNO_PER_PUNTO[...]`
+8.8→7.9 (propagato a scouting/ottimizza/backtest via getattr, nessun'altra
+modifica). Conviction media: correzione solida ma la posta è piccola (il cap
+260 tipico dell'utente è ~270, ben sopra entrambe le soglie). Confermato:
+cap 260 = miniera, arena division/Beginner da evitare, l'atteso ordina il
+realizzato ma non discrimina dentro una cap. Cronistoria completa e numeri
+integrali in `analisi_manager/VALIDAZIONE_SOGLIE.md`.
 
 ### Cosa ESPLORARE nelle 435 arene (agganci concreti già trovati)
 - **Cosa serve per vincere** (punteggio formazione, cap. incluso): media 261,
