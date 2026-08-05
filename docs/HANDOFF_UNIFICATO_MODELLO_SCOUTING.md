@@ -11,12 +11,13 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 05/08/2026, ore ~15:00 (Roma, CEST)**.
-Sessione: passaggio 2 P9/P9-bis/P9-ter, blend GK `c` 17.5→22 (§5/§9), NON
-pushato. Sessione precedente: pattern arene (§7) + validazione soglie cap 260,
-APPLICATA A MAIN (σ 42.70→50.6, pareggio 265→259.5, guadagno 8.8→7.9).
-Dettaglio in `analisi_manager/VALIDAZIONE_SOGLIE.md`. Regola di stile: file
-SNELLO (max ~4 pagine), sessione/giorno/ora Roma.
+Ultimo aggiornamento: **sessione 05/08/2026, sera (Roma, CEST)**.
+Sessione: passaggio 2 P8 — composizione all-around per categoria misurata e
+**CHIUSA senza modifiche** (§5); i 16 commit del passaggio 2 (P1-P9-ter, blend
+GK `c` 17.5→22) sono **PUSHATI su `main`**. Sessione precedente: pattern arene
+(§7) + validazione soglie cap 260 (σ 42.70→50.6, pareggio 265→259.5, guadagno
+8.8→7.9), dettaglio in `analisi_manager/VALIDAZIONE_SOGLIE.md`. Regola di
+stile: file SNELLO (max ~4 pagine), sessione/giorno/ora Roma.
 
 ---
 
@@ -101,10 +102,14 @@ score_atteso = P(gioca) x media_pesata_esponenziale(N partite)
                [+ condizionamento avversario: opponent_lambda_mult, Stadio D]
 range_confidenza = +/- dev_std_pesata x RANGE_MULTIPLIER
 ```
-GK ha in più il blend con P(clean sheet) di squadra (§7). I "fattori
-granulari" per categoria di statistica Sorare (falli, duelli, passaggio...)
-sono stati provati e **rimossi ovunque**: non battono la media pesata
-semplice, vedi §8.
+GK ha in più il blend con P(clean sheet) di squadra (§7). Gli **all-around**
+entrano come UN SOLO scalare per partita, `score - level_score`
+(`test_def.py:1951`), mediato con pesi `0.5**(età_in_partite/half_life)`
+mascherati a zero sulle partite senza dettaglio (`:1398-1405`) e sommato a
+`level_score_atteso` (`:1433`): **nessuna categoria Sorare entra
+separatamente**. I "fattori granulari" per categoria (falli, duelli,
+passaggio...) sono stati provati e **rimossi ovunque**, e la scomposizione per
+categoria è stata rimisurata e bocciata anche in forma diretta: vedi §5.
 
 **Parametri di produzione attuali (MLS, propagati a tutte le leghe via
 `propaga_modello.py` — mai a mano sulle singole leghe, vedi CLAUDE.md)**:
@@ -237,8 +242,33 @@ riprende il filone backtest.
 
 ## 5. Lo stato dell'arte — cosa è CHIUSO (non riproporre)
 
-- **Fattori granulari per categoria statistica**: rimossi ovunque, non
-  battono la media pesata semplice.
+- **Scomposizione degli all-around per categoria: CHIUSA due volte, ora anche
+  con misura diretta (05/08, P8)**. I "fattori granulari" per categoria erano
+  già stati rimossi ovunque perché non battevano la media pesata semplice; P8 ha
+  chiesto la domanda più pulita — *a parità di totale all-around, la
+  ripartizione per categoria predice meglio il futuro?* — e la risposta è NO.
+  Dati: 39.594 partite FINAL ≥60′, 2.164 giocatori, 26 leghe, dalle
+  `.cache/*_detail_cache.json` già in casa (le categorie Sorare GENERAL/
+  DEFENDING/POSSESSION/PASSING/ATTACKING/GOALKEEPING ci sono tutte: nessuna
+  ri-estrazione servita). Walk-forward mensile, bootstrap appaiato su 36-41
+  giornate. Composizione ricalibrata contro totale ricalibrato: DEF dMAE −0.045
+  [−0.075;−0.020] e dcorr +0.0131 [+0.006;+0.022] ma **dlift −0.03 [−1.42;
+  +1.31]**; MID dMAE −0.018, dcorr +0.005, **dlift −0.81**; FWD e GK nulli su
+  tutte e tre. Forma additiva compatibile con la produzione (half-life diversa
+  per categoria, interruttore verificato: a tutte 30 coincide con la produzione):
+  **nulla su MAE e correlazione su tutti e 4 i ruoli**, e sul lift due risultati
+  significativi di segno OPPOSTO fra ruoli (FWD +0.69, MID −0.76) = rumore.
+  Metro a tre gambe non soddisfatto da nessuna forma: **nessuna modifica
+  applicata**. Diagnosi del perché: dentro un ruolo le categorie che pesano
+  hanno persistenze quasi identiche (MID: tutte fra +0.41 e +0.46), e dove c'è
+  spread la categoria più persistente è anche la meno variabile (DEF: ATTACKING
+  r +0.47 ma sd 2.2 contro POSSESSION sd 7.2). Sul GK, GOALKEEPING porta tutta
+  la varianza (sd 9.0) ed è la meno persistente (+0.13) — coerente col fatto che
+  ciò che decide è il clean sheet di SQUADRA. **Corregge l'indicazione lasciata
+  da P3**: la compressione che P3 aveva trovato riguarda il DECISIVO
+  (`level_score`, scala a gradini) e NON si trasferisce agli all-around, che
+  sono già una somma di punti continui. Dettaglio:
+  `docs/handoff/REPORT_PASSAGGIO_2_OPUS_P8_2026-08-05.txt`.
 - **Trend recente** (`TREND_INTENSITY`): 0.0 su tutti i ruoli/leghe, monotono
   verso il peggio in ogni test.
 - **`fattore_forza_avversario`**: RIMOSSO dal codice il 05/08 (passaggio 2,
@@ -268,22 +298,18 @@ riprende il filone backtest.
   MAE come vincolo di guardia, non sulle tre gambe insieme. Prima deroga del
   progetto al metro standard.
   Le tre "correzioni ovvie" (`POINTS`→25, baseline per-portiere, `p_cal`
-  affine `0.130+0.460p`) restano **BOCCIATE**: tutte e tre migliorano il MAE
-  e peggiorano la correlazione (IC95 esclude lo zero), lift indistinguibile.
-  `p_cal` è algebricamente identico ad abbassare il peso
-  (`pcal(p)-pcal(q)=0.4599*(p-q)`, l'intercetta si cancella) — stessa
-  operazione bocciata con un altro nome. Il doppio conteggio del clean sheet
-  (già dentro `level_score`, di nuovo nel blend) esiste come meccanica ma
-  **non è dannoso**: il riferimento globale 0.28 batte quello per-portiere
-  sulla correlazione a OGNI `c`, perché `level_score` comprime il segnale al
-  punto che il livello assoluto aggiunge ancora informazione vera (indicazione
-  per P8: la compressione sta in `level_score`, non nel blend). Score_atteso
-  GK misurato a c=26 vs c=17.5 (P9-bis): media +0.16 pt, p95 +1.99, max +4.48
-  su una soglia arena tipica di 259.5 (<1% in media) — c=22 applicato è più
-  vicino a 17.5 di quanto lo sia 26, quindi lo spostamento reale è minore di
-  questi numeri, comunque sotto l'incertezza già nota sulla soglia (±15 pt).
-  **Verifica di catena fatta ad ampiezza analitica, non con un refit vero**:
-  vedi pendenza sotto. Dettagli:
+  affine `0.130+0.460p`) restano **BOCCIATE**: tutte migliorano il MAE e
+  peggiorano la correlazione (IC95 esclude lo zero); `p_cal` è algebricamente
+  identico ad abbassare il peso — stessa operazione bocciata con un altro nome.
+  Il doppio conteggio del clean sheet (già dentro `level_score`, di nuovo nel
+  blend) esiste come meccanica ma **non è dannoso**: il riferimento globale 0.28
+  batte quello per-portiere a OGNI `c`, perché `level_score` comprime il segnale
+  al punto che il livello assoluto aggiunge ancora informazione vera. Quella
+  compressione riguarda **solo il decisivo**: P8 ha verificato che non si
+  estende agli all-around (voce sopra). Score_atteso GK a c=26 vs c=17.5:
+  media +0.16 pt, p95 +1.99, max +4.48 su soglia arena 259.5 — c=22 sposta meno
+  di così, sotto l'incertezza nota sulla soglia (±15 pt). **Verifica di catena
+  analitica, non un refit vero**: vedi pendenza sotto. Dettagli:
   `docs/handoff/REPORT_PASSAGGIO_2_OPUS_P3_2026-08-05.txt`,
   `REPORT_PASSAGGIO_2_SONNET_P9_2026-08-05.txt`,
   `REPORT_PASSAGGIO_2_SONNET_P9BIS_2026-08-05.txt`.
@@ -530,7 +556,9 @@ sottostimati +4.9** (n71, da riverificare). Accumulare altre GW rende poco
 
 ## 9. Ultima modifica di produzione (05/08/2026)
 
-**Passaggio 2 (audit + fix), 13 commit su `main` — NON ancora pushati.** P1-P7
+**Passaggio 2 (audit + fix), 16 commit — PUSHATI su `main` il 05/08 sera**
+(`e2fe378376`; il commit bot `4d8c2b7024` di Cerbero è stato integrato con un
+merge, nessuna riscrittura di storia). P1-P7
 (Sonnet): rimosso `fattore_forza_avversario` morto, scouting portato sulla
 scala calibrata, fix aritmetica L10 nel cap del knapsack, tie-break odds vero,
 blend CS del portiere da ~124 chiamate a `stima()` a 1 (e mai più muto),
@@ -546,6 +574,10 @@ riproducibile (1.487 righe invece di 6.973), P9-bis ha rigenerato il campione
 vero e applicato c=26, P9-ter lo ha corretto a c=22 (margine più largo, stesso
 guadagno direzionale). Propagato a tutte le leghe (`propaga_modello.py`, solo
 `test_gk.py`, verificato `--check`). Commit `cc7bdfdae2` e precedenti.
+**P8 (Opus)**: nessuna modifica di produzione, filone chiuso sui dati (§5).
+Difetto minore aperto: `formazione_mls/predict/test_gk.py:1632` cita ancora
+`GK_TEAM_CS_WEIGHT=0.5`, stantio dopo P9-bis — correggere e propagare al
+prossimo commit che tocca il file.
 
 ---
 
