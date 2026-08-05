@@ -1,0 +1,352 @@
+REPORT PASSAGGIO 2 — BLOCCO P8 (OPUS)
+Sessione: mercoledi' 5 agosto 2026, ore 2026-08-05 (Roma, CEST)
+Destinatario: orchestratore
+Esito sintetico: NESSUNA MODIFICA APPLICATA. Filone P8 CHIUSO sui dati.
+
+
+================================================================================
+1. PUSH
+================================================================================
+
+RIUSCITO: SI.
+
+Stato trovato: working tree pulito, 15 commit locali non pushati (non 10 come
+diceva il brief — il conteggio del brief era anteriore ai commit di P9-bis/
+P9-ter e ai due di documentazione). origin/main aveva 1 commit non locale,
+4d8c2b7024 "Cerbero: lista nera + osservazioni mercato (apprendimento)", scritto
+dal bot: tocca solo cerbero_osservazioni.csv e sorare_lista_nera_cerbero.txt,
+nessuna sovrapposizione con i file del passaggio 2.
+
+Divergenza risolta con `git pull --no-rebase` (merge, nessuna riscrittura di
+storia, nessun force). Merge senza conflitti. Push:
+  4d8c2b7024..e2fe378376  main -> main
+
+Verifica P9-ter: formazione_mls/predict/test_gk.py:190
+  GK_TEAM_CS_WEIGHT = float(os.environ.get('GK_TEAM_CS_WEIGHT', str(22.0 / 35.0)))
+confermato.
+
+DIFETTO MINORE TROVATO (non corretto in questa sessione, per non mescolare
+commit): formazione_mls/predict/test_gk.py:1632 contiene ancora il commento
+"in produzione il blend e' ACCESO (GK_TEAM_CS_WEIGHT=0.5 arriva davvero...)".
+Il valore 0.5 e' stantio da P9-bis. Da correggere nel prossimo commit che tocca
+il file, con propagazione.
+
+
+================================================================================
+2. PASSO 1 — FORMA ESATTA DELL'AGGREGAZIONE ATTUALE
+================================================================================
+
+Gli all-around NON sono aggregati per categoria. Sono un unico scalare per
+partita, definito per differenza, e mediato con pesi esponenziali.
+
+Catena verificata riga per riga (esempio su DEF; MID/FWD/GK identici nella
+struttura):
+
+  formazione_mls/predict/test_def.py:1951
+      granulari_values.append(game_score - level_score_v)
+      -> il valore all-around di UNA partita = punteggio totale meno la riga
+         level_score. Nessuna categoria entra qui.
+
+  formazione_mls/predict/test_def.py:1398
+      weights = exponential_weights(n, half_life)      # half_life = 30 partite
+  formazione_mls/predict/test_def.py:1403
+      weights_det = mask_weights(weights, detail_ok_flags)
+      -> le partite senza detailedScore pesano 0 (fix 03/08), non 0.0 di valore
+
+  formazione_mls/predict/test_def.py:1405 / :1984
+      media_granulari_pesata = weighted_mean(granulari_values, weights_det)
+
+  formazione_mls/predict/test_def.py:1433
+      grezzo_nuovo = level_score_atteso + media_granulari_pesata
+                                        * fattore_trend_granulare
+
+  formazione_mls/predict/test_def.py:1434-1437
+      shrinkage verso media_ruolo_prior con SHRINK_K
+
+Parametri: HALF_LIFE_GAMES = 30.0 (test_def.py:122), pesi 0.5**(eta_in_partite/
+half_life), normalizzati; MIN_HISTORY = 6; MIN_MINUTES_PLAYED = 60
+(test_def.py:163); MAX_HISTORY_DAYS = 365 (test_def.py:1692).
+fattore_trend_granulare e' 1.0 in produzione (trend spento il 03/08).
+
+RISPOSTA SECCA ALLE DOMANDE DEL BRIEF:
+ - media pesata o somma? MEDIA PESATA ESPONENZIALE sulle partite, poi SOMMATA
+   a level_score_atteso.
+ - quali pesi? 0.5**(indice_di_anzianita'/30), mascherati a zero sulle partite
+   prive di dettaglio.
+ - quali categorie entrano e quali no? NESSUNA distinzione: entra il residuo
+   score-level_score, che contiene tutte le categorie insieme.
+
+NOTA — i gruppi granulari esistono ma servono ad altro. In test_def.py:914-941
+esistono FOULS_STATS / DUELS_STATS / OFFENSIVE_STATS / PASSING_STATS / ecc.,
+raggruppati per categoria Sorare. NON entrano nello score_atteso: alimentano i
+fattori casa/trasferta di Stadio D, e per DEF sono esplicitamente rimossi dallo
+score_atteso (test_def.py:2113-2115). Quindi la premessa del brief ("il modello
+tratta gli all-around come un totale unico") e' CONFERMATA dal codice.
+
+
+================================================================================
+3. PASSO 2 — DISPONIBILITA' DELLE CATEGORIE IN CACHE
+================================================================================
+
+SI, integralmente. Nessuna ri-estrazione necessaria.
+
+Il detail_cache (formazione_<lega>/output/<lega>_<ruolo>_all/.cache/
+<slug>_detail_cache.json) conserva l'intero playerGameScore, con detailedScore
+riga per riga: {category, stat, statValue, totalScore}. Le categorie presenti
+sono ESATTAMENTE quelle della UI Sorare.
+
+Copertura misurata (script: scratchpad p8_build.py, conteggio con glob su
+formazione_*/output/*_all/.cache):
+
+  file di cache giocatore ........ 2.165
+  partite lette .................. 39.598
+  scartate perche' non FINAL ..... 0
+  scartate perche' <60 minuti .... 4
+  RIGHE UTILI .................... 39.594
+  giocatori distinti ............. 2.164
+  leghe ..........................    26
+  range date ..................... 2023-10-25 -> 2026-08-04
+
+  per ruolo: def 14.134 | mid 11.895 | fwd 8.985 | gk 4.580
+
+Categorie viste e loro presenza sulle 39.594 righe:
+  GENERAL 39.594 | POSSESSION 39.594 | PASSING 39.594 | ATTACKING 39.594
+  GOALKEEPING 39.594 | DEFENDING 35.014 (assente sui 4.580 GK, trattata come 0)
+  piu' POSITIVE_DECISIVE_STAT / NEGATIVE_DECISIVE_STAT (= il decisivo, escluse)
+  e UNKNOWN (= la sola riga level_score, esclusa).
+
+CONTROLLO DI IDENTITA' score = level_score + somma(categorie):
+  torna al centesimo su 38.268 righe su 39.594 (96,65%).
+  Non torna su 1.326 righe (3,35%), scomposte cosi':
+    430 righe con score = 100,0  -> cap superiore. Sottostima media del
+        granulare, se calcolato per differenza: 7,74 punti.
+     57 righe con score = 0,0    -> cap inferiore.
+    839 righe con score = level_score esatto e somma categorie NEGATIVA
+        (mediana -3,3; massimo -30,96). Livelli coinvolti: 60 in 771 casi,
+        70 in 64, 80 in 4.
+  Sulle 839: NON e' un floor sistematico. Nel dataset ci sono 6.564 righe con
+  somma categorie negativa, e solo 872 di esse hanno score = level_score. La
+  causa resta ignota: non la ipotizzo.
+
+CONSEGUENZA DA TENERE PRESENTE — la produzione calcola gli all-around per
+DIFFERENZA (score - level_score); su quel 3,35% di righe la differenza non
+coincide con la somma delle categorie. Nelle misure sotto ho usato la SOMMA
+DELLE CATEGORIE come bersaglio, perche' e' l'oggetto di cui P8 chiede la
+scomposizione. Il confronto fra modelli e' pulito (stesso bersaglio per tutti),
+ma il livello assoluto delle MAE qui sotto non e' direttamente confrontabile
+con le MAE di produzione.
+
+
+================================================================================
+4. PASSO 3 — LA COMPOSIZIONE PORTA SEGNALE?
+================================================================================
+
+Disegno. Walk-forward puro: finestra espansiva MENSILE, i coefficienti di ogni
+modello stimati SOLO su righe con data target strettamente precedente al mese
+valutato (minimo 400 righe di train). Feature calcolate solo dalle partite
+precedenti del giocatore, storico minimo 6 partite, stessi pesi esponenziali
+della produzione (half-life 30 partite). Righe uniche per (giocatore, partita)
+per costruzione (chiave = game score id): nessun doppione da de-duplicare.
+Bootstrap appaiato sulle GIORNATE (settimana ISO della partita bersaglio),
+1.000 ricampionamenti, IC95 percentile. Lift = media del bersaglio sui 5 con
+predizione piu' alta meno la media di tutti, per settimana e per ruolo, sulle
+settimane con almeno 10 candidati.
+
+Modelli confrontati (bersaglio: all-around della partita successiva):
+  M0 = media esponenziale del TOTALE all-around  (la produzione di oggi)
+  M1 = a + b * M0                                (solo ricalibrazione affine)
+  M2 = a + somma_c b_c * EWMA_c                  (la composizione: 6 categorie)
+M2 include M1 come caso particolare (tutti i b_c uguali), quindi un guadagno di
+M2 su M1 e' segnale di composizione e nient'altro.
+
+Controllo di sanita' eseguito: max |somma delle EWMA di categoria - EWMA del
+totale| = 7,1e-15. Le feature si sommano al totale, come deve essere.
+
+--- LIVELLI ASSOLUTI ---
+
+  RUOLO def  (n = 8.974 righe di test, 41 giornate, 656 giocatori)
+    M0  MAE 12,1448   corr +0,2164   lift +7,244  (40 giornate)
+    M1  MAE 11,9515   corr +0,2141   lift +7,244
+    M2  MAE 11,9072   corr +0,2269   lift +7,219
+
+  RUOLO mid  (n = 7.590, 41 giornate, 555 giocatori)
+    M0  MAE  8,7438   corr +0,3076   lift +7,900
+    M1  MAE  8,6472   corr +0,3059   lift +7,900
+    M2  MAE  8,6296   corr +0,3106   lift +7,114
+
+  RUOLO fwd  (n = 5.114, 36 giornate, 443 giocatori)
+    M0  MAE  6,5233   corr +0,4304   lift +7,917
+    M1  MAE  6,4461   corr +0,4309   lift +7,917
+    M2  MAE  6,4544   corr +0,4275   lift +8,000
+
+  RUOLO gk   (n = 2.742, 36 giornate, 192 giocatori)
+    M0  MAE  8,1787   corr +0,0110   lift -0,186  (33 giornate)
+    M1  MAE  7,8990   corr -0,0081   lift -0,569
+    M2  MAE  7,9187   corr -0,0039   lift +0,137
+
+--- DELTA CON IC95 (bootstrap appaiato sulle giornate) ---
+
+M2 - M1  = il test vero di P8: composizione contro totale, entrambi ricalibrati
+  def   dMAE -0,0449 [-0,0747; -0,0196]  dcorr +0,0131 [+0,0056; +0,0218]  dlift -0,029 [-1,424; +1,311]
+  mid   dMAE -0,0177 [-0,0304; -0,0036]  dcorr +0,0047 [+0,0013; +0,0086]  dlift -0,810 [-1,993; +0,227]
+  fwd   dMAE +0,0083 [-0,0127; +0,0307]  dcorr -0,0034 [-0,0114; +0,0036]  dlift +0,080 [-0,659; +0,801]
+  gk    dMAE +0,0194 [-0,0039; +0,0425]  dcorr +0,0049 [-0,0261; +0,0353]  dlift +0,715 [-0,494; +2,037]
+
+M2 - M0  = composizione contro la produzione di oggi
+  def   dMAE -0,2397 [-0,3188; -0,1696]  dcorr +0,0109 [+0,0033; +0,0197]  dlift -0,029 [-1,424; +1,311]
+  mid   dMAE -0,1154 [-0,1591; -0,0786]  dcorr +0,0031 [-0,0006; +0,0072]  dlift -0,810 [-1,993; +0,227]
+  fwd   dMAE -0,0691 [-0,1125; -0,0248]  dcorr -0,0028 [-0,0108; +0,0043]  dlift +0,080 [-0,659; +0,801]
+  gk    dMAE -0,2631 [-0,3857; -0,1522]  dcorr -0,0137 [-0,0538; +0,0245]  dlift +0,324 [-0,999; +1,716]
+
+M1 - M0  = la SOLA ricalibrazione affine, senza alcuna composizione
+  def   dMAE -0,1949 [-0,2713; -0,1281]  dcorr -0,0023 [-0,0051; -0,0000]  dlift +0,000 (identico per costruzione)
+  mid   dMAE -0,0978 [-0,1438; -0,0572]  dcorr -0,0016 [-0,0033; -0,0001]  dlift +0,000
+  fwd   dMAE -0,0774 [-0,1117; -0,0469]  dcorr +0,0005 [-0,0002; +0,0013]  dlift +0,000
+  gk    dMAE -0,2825 [-0,3972; -0,1813]  dcorr -0,0185 [-0,0399; +0,0028]  dlift -0,392 [-0,876; +0,028]
+
+LETTURA. La riga M1-M0 e' quella che smonta l'apparente guadagno di M2 sulla
+produzione: la maggior parte del calo di MAE di M2-M0 e' gia' prodotta dalla
+sola trasformazione affine, che non contiene NESSUNA informazione di
+composizione e che peggiora (def, mid, gk) o non muove (fwd) la correlazione.
+Chi guardasse solo M2-M0 concluderebbe "la composizione porta -0,24 di MAE sui
+difensori": e' falso, ne porta -0,045.
+
+Il contributo netto della composizione (M2-M1) e' significativo su MAE e
+correlazione su DEF e MID, nullo su FWD, nullo su GK. Ordini di grandezza:
+DEF -0,37% di MAE, MID -0,20% di MAE. Sul lift di selezione, che e' la gamba
+che conta per le arene, non si muove nulla: DEF -0,03 con IC largo 2,7 punti,
+MID -0,81 con IC che attraversa lo zero, FWD e GK indistinguibili da zero.
+
+
+================================================================================
+5. PASSO 4 — SECONDA FORMA, PIU' FEDELE ALLA PRODUZIONE
+================================================================================
+
+M2 non e' comunque un intervento applicabile: e' una ricalibrazione affine del
+granulare, che si sovrapporrebbe allo shrinkage e a CALIB_PER_RUOLO a valle. La
+forma applicabile senza toccare l'architettura e' ADDITIVA: una half-life
+diversa per categoria, sommando le sei medie esponenziali.
+
+  M3 = somma_c EWMA_c(half_life_c),  half_life_c scelte per coordinate descent
+       SUL SOLO TRAIN, griglia {5, 10, 20, 30, 60, 120} partite.
+
+INTERRUTTORE VERIFICATO (regola "prima di misurare, dimostro che l'interruttore
+funziona"): con tutte le half_life_c = 30 M3 coincide esattamente con M0 per
+costruzione. Le half-life scelte sul train si sono effettivamente allontanate
+da 30 (ultimo blocco: def {GENE 120, DEFE 30, POSS 20, PASS 30, ATTA 120,
+GOAL 120}; mid {10, 120, 120, 20, 120, 5}; fwd {120, 5, 120, 120, 30, 30};
+gk {30, 30, 5, 120, 120, 20}) e i numeri si sono mossi. Il parametro non e'
+inerte: e' semplicemente senza effetto utile.
+
+  RUOLO def   M0 MAE 12,1448 corr +0,2164 lift +7,244 | M3 MAE 12,1471 corr +0,2167 lift +7,349
+    dMAE +0,0022 [-0,0059; +0,0102]  dcorr +0,0003 [-0,0010; +0,0016]  dlift +0,105 [-0,217; +0,465]
+  RUOLO mid   M0 MAE  8,7438 corr +0,3076 lift +7,900 | M3 MAE  8,7452 corr +0,3074 lift +7,130
+    dMAE +0,0015 [-0,0042; +0,0077]  dcorr -0,0002 [-0,0014; +0,0009]  dlift -0,760 [-1,390; -0,267]
+  RUOLO fwd   M0 MAE  6,5233 corr +0,4304 lift +7,917 | M3 MAE  6,5267 corr +0,4297 lift +8,601
+    dMAE +0,0036 [-0,0059; +0,0148]  dcorr -0,0007 [-0,0024; +0,0008]  dlift +0,685 [+0,212; +1,226]
+  RUOLO gk    M0 MAE  8,1787 corr +0,0110 lift -0,186 | M3 MAE  8,1827 corr +0,0111 lift -0,349
+    dMAE +0,0038 [-0,0106; +0,0201]  dcorr +0,0001 [-0,0046; +0,0052]  dlift -0,152 [-0,727; +0,441]
+
+Su MAE e correlazione M3 e' nullo su tutti e quattro i ruoli. Sul lift produce
+due risultati significativi DI SEGNO OPPOSTO fra ruoli (fwd +0,685 con IC che
+non tocca lo zero, mid -0,760 idem) e due nulli: e' il profilo tipico del
+rumore selezionato dalla griglia, non di un effetto.
+
+PERSISTENZA PER CATEGORIA (correlazione fra EWMA della categoria e valore
+futuro della stessa categoria; sd = deviazione standard del valore per partita).
+E' la diagnosi di perche' la composizione non serve: dentro un ruolo, le
+categorie che pesano davvero hanno persistenze simili fra loro.
+
+  def n=9.716  GENE r +0,173 sd 5,40 | DEFE r +0,187 sd 7,05 | POSS r +0,394 sd 7,21
+               PASS r +0,345 sd 6,20 | ATTA r +0,473 sd 2,20 | GOAL r  0,000 sd 0,02
+  mid n=8.194  GENE r +0,408 sd 3,50 | DEFE r +0,407 sd 4,95 | POSS r +0,464 sd 5,37
+               PASS r +0,424 sd 5,85 | ATTA r +0,468 sd 3,26 | GOAL n/d  sd 0,00
+  fwd n=5.986  GENE r +0,427 sd 2,27 | DEFE r +0,598 sd 1,73 | POSS r +0,277 sd 4,01
+               PASS r +0,478 sd 4,34 | ATTA r +0,392 sd 4,14 | GOAL n/d  sd 0,00
+  gk  n=3.255  GENE r +0,146 sd 6,10 | DEFE n/d  sd 0,00 | POSS r +0,402 sd 1,78
+               PASS r +0,331 sd 1,82 | ATTA r  0,000 sd 0,13 | GOAL r +0,132 sd 9,00
+
+Sul centrocampista le cinque persistenze utili stanno tutte fra +0,41 e +0,46:
+non c'e' nulla da differenziare. Sul difensore c'e' piu' spread (+0,17 / +0,47)
+ma la categoria piu' persistente, ATTACKING, e' anche la meno variabile
+(sd 2,20 contro 7,21 di POSSESSION): pesarla di piu' sposta pochissimo il
+punteggio. Sul portiere, la categoria che porta tutta la varianza, GOALKEEPING
+(sd 9,00), e' anche la meno persistente (+0,132) — coerente con quanto sapevamo
+gia': cio' che decide il portiere e' il clean sheet, che e' un evento di
+squadra, non una qualita' del portiere ricavabile dal suo storico.
+
+DECISIONE: NESSUNA MODIFICA APPLICATA. Il metro ufficiale richiede MAE,
+correlazione e lift nello stesso verso; nessuna delle due forme lo soddisfa su
+nessun ruolo. La catena §1bis (predizione -> soglie arena -> scouting) NON e'
+stata percorsa perche' non c'e' nulla che sia stato mosso a monte: nessun file
+di produzione e' stato toccato, nessuna propagazione eseguita.
+
+
+================================================================================
+6. PERIMETRO REALE DI P8
+================================================================================
+
+Il perimetro ricostruito dal brief e' risultato coerente con il codice: gli
+all-around SONO aggregati come totale unico, e la scomposizione per categoria
+ERA misurabile. Non ho trovato in repo alcuna traccia di una definizione
+diversa di P8. Su un punto pero' l'indizio ereditato da P3 va corretto.
+
+P3 §3c aveva concluso: "la compressione dentro pos_decisive_values/level_score
+e' il posto dove guardare: e' li' che il segnale si perde". Il brief di P8 ha
+esteso quell'indizio agli all-around ("se la stessa compressione agisce sugli
+all-around aggregati..."). L'estensione NON regge: gli all-around aggregati non
+comprimono niente di recuperabile. La compressione di P3 riguardava il
+DECISIVO, dove la mappa netto->livello e' una scala a gradini che butta via
+informazione continua; gli all-around sono gia' una somma di punti continui, e
+scomporli non aggiunge nulla che il totale non contenga gia'. L'indizio di P3
+resta valido per cio' su cui e' stato misurato — il decisivo — e non si
+trasferisce.
+
+
+================================================================================
+7. DOMANDE APERTE E CASI CONCRETI DA CONTROLLARE SU SORARE
+================================================================================
+
+Una sola, e non blocca nulla.
+
+Le 839 partite in cui il punteggio finale coincide esattamente con il punteggio
+decisivo mentre la somma delle categorie all-around e' negativa (mediana -3,3;
+peggiore -30,96; nell'87% dei casi con decisivo = 60). Non e' una regola
+generale: nel dataset ci sono 6.564 partite con all-around negativi e solo 872
+mostrano questa coincidenza. Non ho una spiegazione e non ne invento una.
+
+CASO CONCRETO DA CONTROLLARE (popup giocatore su Sorare, formato che ha gia'
+sciolto due questioni):
+  giocatore  gaston-luciano-avila
+  partita    ebaf30a8-3684-429a-9b5d-f0d4609cb9d7
+  cache      formazione_*/output/*_def_all/.cache/gaston-luciano-avila_detail_cache.json
+  atteso da API: punteggio 60,0 | decisivo 60,0 | somma categorie -0,68
+  da verificare sul popup: il punteggio complessivo mostrato e' 60 o 59,3? e la
+  barra all-around mostra -0,68 o 0?
+Se il popup mostra 59,3 la nostra lettura di `score` e' incompleta; se mostra 60
+con all-around -0,68, allora Sorare applica un floor al punteggio in condizioni
+che non abbiamo ancora isolato. In nessuno dei due casi cambia qualcosa per il
+modello (la produzione predice `score`, e su `score` e' tarata), ma cambia cosa
+possiamo dire di quel 2,1% di partite.
+
+
+================================================================================
+8. FILE
+================================================================================
+
+Prodotti (scratchpad di sessione, NON versionati — riproducibili in ~4 minuti
+in locale, nessuna rete necessaria, nessuna query Sorare):
+  p8_build.py   estrazione dataset dalle detail_cache -> p8_rows.json
+  _p8_lib.py    OLS, correlazione, lift, bootstrap appaiato (pure Python)
+  p8_test.py    M0/M1/M2 walk-forward + bootstrap
+  p8_test2.py   M3 half-life per categoria + persistenza per categoria
+  path: %LOCALAPPDATA%\Temp\claude\C--Users-Andrea-Documents-GitHub-Sorare-
+        tracker-2\2e707409-9a6f-4bb5-a3ff-60c0dd5d5042\scratchpad\
+  NB: l'ambiente locale NON ha numpy. Tutto e' scritto in Python puro.
+
+Letti / verificati:
+  formazione_mls/predict/test_def.py   (1951, 1398-1405, 1433, 122, 163, 914-941, 2113)
+  formazione_mls/predict/test_gk.py    (190, 1632)
+  formazione_*/output/*_all/.cache/*_detail_cache.json  (2.165 file, 26 leghe)
+
+Modificati in produzione: NESSUNO.
