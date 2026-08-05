@@ -1,0 +1,123 @@
+=== Cerbero apprendimento ===
+modalita: osservazioni
+UTC:  2026-08-05 06:32:42 UTC
+Roma: 2026-08-05 08:32:42 CEST
+============================
+>>> python bots/cerbero/cerbero_learn.py --osservazioni
+[risolutore] osservazioni: 5248 | risolte 184 | saltate troppo fresche 707 | troppo vecchie 0
+======================================================================
+SOGLIE APPRESE (lookback 1gg) scritte in cerbero_soglie_apprese.json
+  mlspa                soglia=5%  (n=1351, qualificata)
+       sconto>=5%: n= 462 ret_med=8.3 pos=61.0%
+       sconto>=8%: n= 381 ret_med=9.8 pos=63.0%
+       sconto>=10%: n= 329 ret_med=8.9 pos=64.0%
+       sconto>=12%: n= 303 ret_med=10.1 pos=63.0%
+       sconto>=15%: n= 253 ret_med=10.7 pos=66.0%
+       sconto>=20%: n= 183 ret_med=10.3 pos=61.0%
+  k-league-1           soglia=5%  (n=581, qualificata)
+       sconto>=5%: n= 160 ret_med=8.3 pos=62.0%
+       sconto>=8%: n= 123 ret_med=11.3 pos=64.0%
+       sconto>=10%: n= 108 ret_med=11.6 pos=65.0%
+       sconto>=12%: n=  90 ret_med=14.1 pos=67.0%
+       sconto>=15%: n=  64 ret_med=22.9 pos=72.0%
+       sconto>=20%: n=  40 ret_med=32.8 pos=85.0%
+  eredivisie           soglia=5%  (n=1529, qualificata)
+       sconto>=5%: n= 448 ret_med=14.3 pos=77.0%
+       sconto>=8%: n= 346 ret_med=17.7 pos=79.0%
+       sconto>=10%: n= 297 ret_med=19.0 pos=82.0%
+       sconto>=12%: n= 259 ret_med=23.5 pos=83.0%
+       sconto>=15%: n= 215 ret_med=26.4 pos=84.0%
+       sconto>=20%: n= 150 ret_med=29.4 pos=87.0%
+  jupiler-pro-league   soglia=5%  (n=1529, qualificata)
+       sconto>=5%: n= 448 ret_med=14.3 pos=77.0%
+       sconto>=8%: n= 346 ret_med=17.7 pos=79.0%
+       sconto>=10%: n= 297 ret_med=19.0 pos=82.0%
+       sconto>=12%: n= 259 ret_med=23.5 pos=83.0%
+       sconto>=15%: n= 215 ret_med=26.4 pos=84.0%
+       sconto>=20%: n= 150 ret_med=29.4 pos=87.0%
+  austrian-bundesliga  soglia=10%  (n=5, NON qualificata -> default prudente)
+       sconto>=5%: n=   1 ret_med=11.4 pos=100.0%
+       sconto>=8%: n=   1 ret_med=11.4 pos=100.0%
+       sconto>=10%: n=   1 ret_med=11.4 pos=100.0%
+       sconto>=12%: n=   1 ret_med=11.4 pos=100.0%
+  premier-league-gb-eng soglia=10%  (n=18, NON qualificata -> default prudente)
+       sconto>=5%: n=  14 ret_med=22.3 pos=71.0%
+       sconto>=8%: n=  14 ret_med=22.3 pos=71.0%
+       sconto>=10%: n=   3 ret_med=11.4 pos=67.0%
+       sconto>=12%: n=   3 ret_med=11.4 pos=67.0%
+       sconto>=15%: n=   2 ret_med=44.6 pos=50.0%
+       sconto>=20%: n=   2 ret_med=44.6 pos=50.0%
+  primeira-liga-pt     soglia=10%  (n=10, NON qualificata -> default prudente)
+       sconto>=5%: n=   7 ret_med=-0.1 pos=43.0%
+       sconto>=8%: n=   6 ret_med=4.1 pos=50.0%
+       sconto>=10%: n=   6 ret_med=4.1 pos=50.0%
+       sconto>=12%: n=   5 ret_med=-0.1 pos=40.0%
+       sconto>=15%: n=   4 ret_med=-13.3 pos=50.0%
+       sconto>=20%: n=   4 ret_med=-13.3 pos=50.0%
+  2-bundesliga         soglia=10%  (n=19, NON qualificata -> default prudente)
+       sconto>=5%: n=   1 ret_med=-8.2 pos=0.0%
+       sconto>=8%: n=   1 ret_med=-8.2 pos=0.0%
+       sconto>=10%: n=   1 ret_med=-8.2 pos=0.0%
+       sconto>=12%: n=   1 ret_med=-8.2 pos=0.0%
+       sconto>=15%: n=   1 ret_med=-8.2 pos=0.0%
+  spor-toto-super-lig  soglia=10%  (n=5, NON qualificata -> default prudente)
+       sconto>=5%: n=   1 ret_med=0.5 pos=100.0%
+  bundesliga-de        soglia=10%  (n=7, NON qualificata -> default prudente)
+       sconto>=5%: n=   6 ret_med=28.3 pos=100.0%
+       sconto>=8%: n=   3 ret_med=49.0 pos=100.0%
+       sconto>=10%: n=   3 ret_med=49.0 pos=100.0%
+       sconto>=12%: n=   3 ret_med=49.0 pos=100.0%
+       sconto>=15%: n=   3 ret_med=49.0 pos=100.0%
+       sconto>=20%: n=   3 ret_med=49.0 pos=100.0%
+  laliga-es            soglia=10%  (n=7, NON qualificata -> default prudente)
+       sconto>=5%: n=   4 ret_med=12.7 pos=75.0%
+       sconto>=8%: n=   4 ret_med=12.7 pos=75.0%
+       sconto>=10%: n=   4 ret_med=12.7 pos=75.0%
+       sconto>=12%: n=   4 ret_med=12.7 pos=75.0%
+       sconto>=15%: n=   4 ret_med=12.7 pos=75.0%
+       sconto>=20%: n=   1 ret_med=-7.9 pos=0.0%
+  1-hnl                soglia=10%  (n=2, NON qualificata -> default prudente)
+  premiership-gb-sct   soglia=10%  (n=21, NON qualificata -> default prudente)
+       sconto>=5%: n=   4 ret_med=-36.5 pos=25.0%
+       sconto>=8%: n=   4 ret_med=-36.5 pos=25.0%
+       sconto>=10%: n=   4 ret_med=-36.5 pos=25.0%
+       sconto>=12%: n=   4 ret_med=-36.5 pos=25.0%
+       sconto>=15%: n=   4 ret_med=-36.5 pos=25.0%
+       sconto>=20%: n=   3 ret_med=-44.6 pos=0.0%
+  football-league-championship soglia=10%  (n=2, NON qualificata -> default prudente)
+       sconto>=5%: n=   2 ret_med=43.4 pos=50.0%
+       sconto>=8%: n=   2 ret_med=43.4 pos=50.0%
+       sconto>=10%: n=   1 ret_med=89.5 pos=100.0%
+       sconto>=12%: n=   1 ret_med=89.5 pos=100.0%
+       sconto>=15%: n=   1 ret_med=89.5 pos=100.0%
+       sconto>=20%: n=   1 ret_med=89.5 pos=100.0%
+  j1-league            soglia=10%  (n=5, NON qualificata -> default prudente)
+  ligue-1-fr           soglia=10%  (n=1, NON qualificata -> default prudente)
+  superliga-dk         soglia=10%  (n=1, NON qualificata -> default prudente)
+       sconto>=5%: n=   1 ret_med=45.7 pos=100.0%
+       sconto>=8%: n=   1 ret_med=45.7 pos=100.0%
+       sconto>=10%: n=   1 ret_med=45.7 pos=100.0%
+       sconto>=12%: n=   1 ret_med=45.7 pos=100.0%
+       sconto>=15%: n=   1 ret_med=45.7 pos=100.0%
+       sconto>=20%: n=   1 ret_med=45.7 pos=100.0%
+  primera-a            soglia=10%  (n=1, NON qualificata -> default prudente)
+======================================================================
+per_lega (slug reali usati dal bot):
+  mlspa                  -> temp_disc_min 5% (n=1351)
+  k-league-1             -> temp_disc_min 5% (n=581)
+  eredivisie             -> temp_disc_min 5% (n=1529)
+  jupiler-pro-league     -> temp_disc_min 5% (n=1529)
+  austrian-bundesliga    -> temp_disc_min 10% (n=5)
+  premier-league-gb-eng  -> temp_disc_min 10% (n=18)
+  primeira-liga-pt       -> temp_disc_min 10% (n=10)
+  2-bundesliga           -> temp_disc_min 10% (n=19)
+  spor-toto-super-lig    -> temp_disc_min 10% (n=5)
+  bundesliga-de          -> temp_disc_min 10% (n=7)
+  laliga-es              -> temp_disc_min 10% (n=7)
+  1-hnl                  -> temp_disc_min 10% (n=2)
+  premiership-gb-sct     -> temp_disc_min 10% (n=21)
+  football-league-championship -> temp_disc_min 10% (n=2)
+  j1-league              -> temp_disc_min 10% (n=5)
+  ligue-1-fr             -> temp_disc_min 10% (n=1)
+  superliga-dk           -> temp_disc_min 10% (n=1)
+  primera-a              -> temp_disc_min 10% (n=1)
