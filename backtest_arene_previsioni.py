@@ -254,10 +254,16 @@ def _avversario(ctx):
             'hist_date': s.get('date')}
 
 
-# Blend porta inviolata squadra per i GK (03/08). Default 0.5 = come produzione
-# (test_gk.GK_TEAM_CS_WEIGHT), cosi' calibrazione/backtest misurano il modello
-# VERO. Si mette 0 via env per l'A/B spento-vs-acceso.
-_GK_CS_WEIGHT = float(os.environ.get('GK_TEAM_CS_WEIGHT', '0.5') or 0)
+# Blend porta inviolata squadra per i GK (03/08). Il peso si LEGGE da
+# test_gk.GK_TEAM_CS_WEIGHT, non si duplica qui: cosi' calibrazione e backtest
+# misurano per forza il modello VERO. Il numero era duplicato a 0.5 con un
+# commento che lo dichiarava "come produzione": falso da P9-ter (05/08), che
+# l'ha portato a 22/35 -- chiunque lanciasse una misura senza esportare la
+# variabile d'ambiente girava su un modello che non esiste piu' (trovato in
+# P11). Il fallback 22/35 vale solo se l'attributo sparisse da test_gk.
+# test_gk legge a sua volta la stessa variabile d'ambiente, quindi
+# GK_TEAM_CS_WEIGHT=0 continua a spegnere il blend per l'A/B acceso-spento.
+_GK_CS_WEIGHT = float(getattr(test_gk, 'GK_TEAM_CS_WEIGHT', 22.0 / 35.0) or 0)
 _FORZE_CS = None   # (checkpoint settimanali, forze) del modello_partita, pigro
 
 
