@@ -1629,9 +1629,12 @@ def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
     # GK_TEAM_CS_POINTS non e' "quanto vale una porta inviolata": e' il
     # coefficiente di scala dello scostamento dalla media di lega -- vedi il
     # commento esteso sulla costante, con la griglia misurata (B11/B22, P3).
-    # NB: in produzione il blend e' ACCESO (GK_TEAM_CS_WEIGHT=0.5 arriva davvero
-    # qui, verificato in P0). Il vecchio commento "default 0.0 -> produzione
-    # INVARIATA" e' rimasto dopo l'accensione del 03/08 ed era falso.
+    # NB: in produzione il blend e' ACCESO (GK_TEAM_CS_WEIGHT=22.0/35.0~=0.629
+    # arriva davvero qui, alzato da 0.5 in P9). Coefficiente scelto per
+    # l'ORDINAMENTO dei portieri, non per l'accuratezza assoluta: di
+    # portieri se ne schiera uno solo a formazione. Il vecchio commento
+    # "default 0.0 -> produzione INVARIATA" e' rimasto dopo l'accensione del
+    # 03/08 ed era falso.
     if team_cs_weight and team_cs_prob is not None:
         risultato += team_cs_weight * GK_TEAM_CS_POINTS * (team_cs_prob - GK_TEAM_CS_BASELINE)
 
