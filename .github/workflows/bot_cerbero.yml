@@ -3,8 +3,9 @@ on:
   # Raccolta continua: ogni run ascolta 5h, il cron riparte ogni 6h.
   # Da schedule non arrivano input -> valgono i default piu' sotto
   # (diagnostica, LIVE_MODE=no: non tocca soldi).
-  schedule:
-    - cron: "0 */6 * * *"
+  # DISATTIVATO: esecuzioni solo manuali via workflow_dispatch
+  # schedule:
+  #   - cron: "0 */6 * * *"
   workflow_dispatch:
     inputs:
       autobuy_live_mode:
