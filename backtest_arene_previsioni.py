@@ -462,8 +462,75 @@ def delta_casa(ctx):
     return (1.0 if casa else 0.0) - sum(1.0 for c in storici if c) / len(storici)
 
 
+_ODDS_1X2_PATH = os.path.join(_ROOT, 'dati_globali', 'odds_1x2_index.json')
+_odds_1x2_index = None
+
+
+def _carica_odds_1x2():
+    global _odds_1x2_index
+    if _odds_1x2_index is None:
+        try:
+            with open(_ODDS_1X2_PATH, encoding='utf-8') as fh:
+                import json as _json
+                _odds_1x2_index = _json.load(fh)
+        except (OSError, ValueError):
+            _odds_1x2_index = {}
+    return _odds_1x2_index
+
+
+def _p_own_opp_odds(squadra, avversario, quando):
+    """(p_win_own, p_win_opp) dalle quote 1X2 pre-partita (SorareInside via
+    `winOddsBasisPoints`), o None se la partita non e' nella finestra coperta
+    (persistente da ~18/11/2025, vedi indagine 05/08) o e' eliteserien
+    (esclusa in fase di costruzione dell'indice, sempre null misurato)."""
+    if not squadra or not avversario or quando is None:
+        return None
+    idx = _carica_odds_1x2()
+    if not idx:
+        return None
+    data = quando.strftime('%Y-%m-%d') if hasattr(quando, 'strftime') else str(quando)[:10]
+    chiave = '|'.join(sorted([squadra, avversario]) + [data])
+    riga = idx.get(chiave)
+    if riga is None:
+        return None
+    if riga['home'] == squadra:
+        return riga['p_home'], riga['p_away']
+    elif riga['away'] == squadra:
+        return riga['p_away'], riga['p_home']
+    return None
+
+
+def delta_favorito_odds(ctx):
+    """Come `delta_favorito` (scarto dalla media storica del giocatore, mai il
+    livello assoluto -- stesso motivo, evitare il doppio conteggio con lo
+    storico dei punteggi) ma con favorito_odds = p_win_own - p_win_opp dalle
+    quote 1X2 esterne invece del differenziale di gol attesi interno.
+
+    MISURATO 05/08 (screening appaiato su 54.687 righe, finestra quote):
+    corr singola +0.114 (IC[+0.106,+0.122]) contro +0.056 di `delta_favorito`
+    sullo stesso campione; in regressione congiunta sopra
+    rank_avversario+casa+favorito aggiunge R2 +0.58% e assorbe quasi tutto il
+    segnale prima attribuito a rank_avversario e casa. INTERRUTTORE SPENTO
+    di default (favorito_odds_k/favorito_odds_mult_k=None): nessuna variante
+    e' stata ancora adottata in produzione, vedi taratura_confronto_odds.py."""
+    squadra, opp, cutoff = ctx.get('squadra'), ctx.get('opp_slug'), ctx.get('cutoff')
+    ora = _p_own_opp_odds(squadra, opp, cutoff)
+    if ora is None:
+        return None
+    ora = ora[0] - ora[1]
+    storici = []
+    for opp_h, data_h in zip(ctx['s'].get('opp_slug') or [], ctx['s'].get('date') or []):
+        v = _p_own_opp_odds(squadra, opp_h, data_h)
+        if v is not None:
+            storici.append(v[0] - v[1])
+    if len(storici) < 5:
+        return None
+    return ora - (sum(storici) / len(storici))
+
+
 def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None,
             usa_avversario=False, favorito_k=None, ranking_k=None, casa_k=None,
+            favorito_odds_k=None, favorito_odds_mult_k=None,
             avversario_lambda=True, avversario_stadio_d=True, sensitivity_by_role=None):
     """La previsione di produzione dagli ingressi di `contesto`.
 
@@ -510,6 +577,14 @@ def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None,
         delta = delta_casa(ctx)
         if delta is not None:
             base = base + casa_k * delta
+    if favorito_odds_k:
+        delta = delta_favorito_odds(ctx)
+        if delta is not None:
+            base = base + favorito_odds_k * delta
+    if favorito_odds_mult_k:
+        delta = delta_favorito_odds(ctx)
+        if delta is not None:
+            base = base * (1.0 + favorito_odds_mult_k * delta)
     return base
 
 
