@@ -1,0 +1,208 @@
+REPORT P9-bis (Sonnet, passaggio 2) -- 05/08/2026 ~14:35 Roma (CEST, UTC+2)
+Destinatario: orchestratore.
+
+===============================================================================
+1. CHECKPOINT SULL'n E SUI VALORI DI CONTROLLO
+===============================================================================
+
+Campione rigenerato con p3_v1.py (script Opus P3 riusato senza modifiche,
+solo fix del parsing argv: MAX va PRIMA di --gk, non dopo -- il file
+originale falliva con "invalid literal for int()" se lanciato come
+"p3_v1.py --gk"; lanciato come "p3_v1.py 0 --gk" gira come da script).
+
+  giocatori in cache:      4.311   (report P3: 4.311, OK)
+  contesti GK dedup:       6.973   (report P3: 6.973, OK)
+  giornate valutabili:     120     (report P3: 120, OK)
+
+Valori di controllo a c=0 (blend spento):
+  MAE  16.061   (report P3: 16.061, OK)
+  corr 0.0347   (report P3: 0.0347, OK)
+
+Valori a c=17.5 (produzione precedente):
+  MAE  16.091   (report P3: 16.091, OK)
+  corr 0.0674   (report P3: 0.0674, OK)
+
+CHECKPOINT SUPERATO. Il campione P9 (n=1.487) era davvero un frammento
+parziale rimasto nello scratchpad; questo e' il campione vero.
+
+===============================================================================
+2. SCANSIONE COMPLETA (n=6.973, 120 giornate)
+===============================================================================
+
+  c      MAE      corr     lift%
+  0.0    16.061   0.0347    5.57
+  12.5   16.074   0.0619    4.88
+  17.5   16.091   0.0674    6.92
+  22.0   16.114   0.0707    8.86
+  26.0   16.139   0.0728    8.38
+  35.0   16.221   0.0756    7.12
+
+Riproduce esattamente la tabella del brief P9/P9-bis (identica a 3 decimali
+su MAE/corr). Confermato: compromesso monotono, nessun c dominante.
+
+Bootstrap appaiato 400 ricampionamenti sulle giornate, delta vs c=17.5:
+
+  c      dMAE (IC95)                  dcorr (IC95)                  dlift (IC95, non discrim.)
+  0.0    -0.0292 [-0.0780,+0.0133]    -0.0325 [-0.0456,-0.0203]     -1.83 [-7.39,+3.89]
+  12.5   -0.0165 [-0.0313,-0.0036]    -0.0055 [-0.0082,-0.0026]     -0.78 [-2.89,+1.65]
+  22.0   +0.0227 [+0.0114,+0.0360]    +0.0033 [+0.0011,+0.0053]     +1.42 [-1.09,+3.75]
+  26.0   +0.0479 [+0.0267,+0.0721]    +0.0053 [+0.0017,+0.0089]     +1.58 [-1.24,+4.63]
+  35.0   +0.1287 [+0.0846,+0.1816]    +0.0080 [+0.0014,+0.0141]     +0.97 [-2.99,+4.97]
+
+(dMAE puntuale c=26 vs c=17.5, non arrotondato: 16.139361... - 16.090971...
+= +0.04839, sotto la soglia +0.05 del brief)
+
+===============================================================================
+3. COEFFICIENTE SCELTO E PERCHE'
+===============================================================================
+
+Regola operativa del brief: c piu' alto che soddisfa insieme
+  (a) dcorr vs c=17.5 con IC95 che esclude lo zero
+  (b) dMAE vs c=17.5 entro +0.05 (punto-stima)
+
+  c=22: (a) IC95 [+0.0011,+0.0053] esclude 0 -> PASSA. (b) +0.0227 -> PASSA.
+  c=26: (a) IC95 [+0.0017,+0.0089] esclude 0 -> PASSA. (b) +0.0484 -> PASSA
+        (margine 0.0016 sotto la soglia; IC95 di dMAE [+0.0267,+0.0721]
+        include valori sopra 0.05, ma la regola del brief e' scritta su
+        punto-stima, non su IC).
+  c=35: (b) +0.1287 -> FALLISCE (sopra 0.05).
+
+CANDIDATO: c=26 (non 22). E' il valore piu' alto che supera entrambi i
+vincoli con la regola scritta nel brief, che esplicitamente autorizza a
+non forzare 22 se l'ottimo cade altrove.
+
+AVVERTENZA su c=26: il margine sulla MAE (0.0484 contro soglia 0.05) e'
+sottile -- 3% dello spazio disponibile -- e l'IC95 del delta MAE arriva
+fino a +0.0721, sopra soglia. Se l'intento implicito del brief era "un
+margine di sicurezza visibile", c=22 resta l'alternativa piu' prudente
+(margine su MAE 0.0227 contro 0.05, quasi 55% di spazio). Applicato c=26
+per aderenza letterale alla regola scritta; segnalato qui perche' e' la
+prima volta che la regola meccanica e quella "di buon senso" divergono.
+
+APPLICATO: GK_TEAM_CS_WEIGHT = 26/35 = 0.742857... (GK_TEAM_CS_POINTS
+lasciato a 35, invariato).
+
+file:riga -- formazione_mls/predict/test_gk.py:172-183 (commento riscritto
+con motivazione e numeri), riga 183 (era 175):
+  GK_TEAM_CS_WEIGHT = float(os.environ.get('GK_TEAM_CS_WEIGHT', str(26.0 / 35.0)))
+
+===============================================================================
+4. SPOSTAMENTO DI score_atteso GK (c=17.5 -> c=26, n=6.973)
+===============================================================================
+
+  media    +0.157
+  mediana  +0.000   (21.1% delle righe ha p_next=None -> blend nullo, delta=0)
+  sd       0.950
+  min      -2.320
+  max      +4.478
+  |delta| p50 0.502   p95 1.989   p99 2.997   max 4.478
+
+Come frazione della soglia arena tipica (259.5 punti-formazione):
+  delta medio  ~0.060%
+  delta p95    ~0.766%
+
+===============================================================================
+5. CATENA §1bis -- BIAS / CALIB_PER_RUOLO / SOGLIE / SCOUTING
+===============================================================================
+
+taratura_formazioni_sintetiche.py NON e' stato rilanciato in modo
+significativo: legge dati_globali/taratura_coppie.json, un dataset
+PRE-CALCOLATO (timestamp 04/08, 19MB) che contiene i previsto/realizzato
+gia' calcolati con la vecchia GK_TEAM_CS_WEIGHT=0.5. Lo script non
+ricalcola compute_score_atteso_gk dal codice: rilanciarlo ora avrebbe
+prodotto lo STESSO bias/CALIB di prima, perche' leggerebbe SEMPRE gli
+stessi numeri cachati -- esattamente la trappola "predizioni cachate" di
+cui avvisa il brief. Non esiste nello scope di questa sessione uno script
+che rigenera taratura_coppie.json (verificato con grep, nessun generatore
+trovato); rigenerarlo da zero e' un lavoro pesante fuori budget per questo
+blocco.
+
+VERIFICA "A PREDIZIONI COSTANTI" fatta in alternativa (§4): lo spostamento
+medio di score_atteso GK e' +0.157 punti (p95 +1.99, max +4.48) su una
+soglia arena tipica di 259.5 punti-formazione totali (5 giocatori). Questo
+e' un ordine di grandezza sotto l'intervallo di incertezza gia' noto e
+documentato sulla soglia stessa (intervallo 90% storico 258.8-273.9,
+ampiezza 15 punti -- vedi taratura_formazioni_sintetiche.py, docstring
+iniziale). Anche il caso peggiore misurato (max +4.48, un solo portiere su
+6.973 con storico anomalo) resta sotto un terzo di quell'ampiezza.
+
+VERDETTO: SOGLIE INVARIATE per ora, sulla base della stima analitica dello
+spostamento (non di un refit vero). Non e' una chiusura definitiva:
+resta aperto (§7) rigenerare taratura_coppie.json con il nuovo
+coefficiente alla prossima occasione in cui viene comunque rinfrescato,
+per un refit vero di bias/CALIB_PER_RUOLO invece della stima analitica
+qui sopra.
+
+Effetto sullo scouting: non misurato direttamente per lo stesso motivo
+(predizioni scouting cachate, nessuna ricostruzione a costo contenuto
+disponibile in questa sessione). Sulla base dello stesso ordine di
+grandezza (<1% della soglia in media), l'impatto atteso sui verdetti di
+acquisto e' marginale tranne per i pochi portieri in coda alla
+distribuzione (delta >2-3 punti, ~1% dei casi storici).
+
+===============================================================================
+6. PROPAGAZIONE
+===============================================================================
+
+python propaga_modello.py (scrittura reale, non --check):
+  "Propagati 208 file (52 leghe x 4 ruoli)."
+  nessun PROBLEMI segnalato (nessun residuo 'formazione_mls/',
+  "league='mls'", '/output/mls_').
+
+git status dopo la propagazione: 53 file test_gk.py modificati (52 leghe
++ formazione_mls canonico). ZERO file test_def.py/test_mid.py/
+test_mls_fwd_all.py toccati (verificato: nessuna riga " M" fuori da
+"predict/test_gk.py").
+
+Verifica --check successiva (sola lettura): "Verificati 208 file (52
+leghe x 4 ruoli)." nessun residuo.
+
+Tutti i 53 file committati in un unico commit (c28097a0dd).
+
+===============================================================================
+7. DOMANDE APERTE
+===============================================================================
+
+A) c=26 vs c=22 (vedi §3): la regola meccanica del brief seleziona c=26,
+   ma il margine di sicurezza sul vincolo MAE e' sottile (3% dello spazio
+   disponibile, IC95 del delta sopra soglia). Se l'orchestratore preferisce
+   il margine piu' ampio di c=22 (GK_TEAM_CS_WEIGHT=0.63), e' un cambio di
+   una riga (float, non struttura) -- lo segnalo qui invece di decidere
+   unilateralmente quale "prudenza" prevale sulla "lettera della regola".
+
+B) La verifica di catena (§5) e' analitica, non un refit vero: non ho
+   rigenerato taratura_coppie.json ne' le predizioni scouting cachate.
+   Se l'orchestratore vuole un refit vero di CALIB_PER_RUOLO col nuovo
+   coefficiente, serve pianificare la rigenerazione di
+   dati_globali/taratura_coppie.json (script generatore non trovato in
+   questa sessione, va cercato o ricostruito).
+
+Caso concreto da controllare su Sorare quando si decide: prendere un
+portiere di una squadra in forte striscia difensiva positiva rispetto al
+proprio storico (p_next - p_hist grande e positivo, es. squadra che ha
+appena cambiato modulo/portiere titolare avversari deboli in arrivo) e
+verificare che lo score_atteso pubblicato nel tool scouting si sia
+spostato in modo visibile (ordine di 1-2 punti) rispetto a prima del
+27/07 (data indicativa pre-blend), non solo che il numero sia "diverso
+per rumore di cache".
+
+===============================================================================
+8. COSA RESTA PER P8
+===============================================================================
+
+Invariato: P8 (decomposizione all-around per categoria), sessione Opus
+successiva, indipendente da questo blocco.
+
+In piu' da riportare: la domanda A (c=26 vs c=22) e la domanda B (refit
+vero di taratura_coppie.json) restano aperte e non bloccano P8, che lavora
+su un asse diverso (categoria, non GK).
+
+===============================================================================
+9. AGGIORNAMENTO RIASSUNTO
+===============================================================================
+
+NON ANCORA FATTO in questo report -- da fare in commit separato a priorita'
+bassa come da brief, dopo che l'orchestratore ha visto la domanda A. Le 8
+voci indicate nel brief P9-bis sono pronte per essere trascritte in
+HANDOFF_UNIFICATO_MODELLO_SCOUTING.md non appena confermato quale c
+resta in produzione (26 o 22).
