@@ -39,6 +39,7 @@ Output: SOLO HTML (richiesta esplicita utente), in generatore_formazioni/output/
 import os
 import re
 import sys
+import math
 import copy
 import glob
 import json
@@ -839,7 +840,7 @@ def load_league_role_data():
             # starterOdds sulle righe (31/07): il valore e' gia' dentro
             # player_card_counts.json, scritto da discovery_fixture.py nella
             # stessa entry di copie/L10 -- serve al tie-break fra candidati
-            # con punteggio quasi identico (vedi _chiave_ordinamento). Chi non
+            # con punteggio quasi identico (vedi _sort_ordinamento). Chi non
             # ce l'ha (discovery vecchia, precedente a questo fix) resta senza
             # e viene trattato come "odds ignote", quindi nessun bonus:
             # comportamento invariato rispetto a prima.
@@ -889,56 +890,33 @@ def build_quality_pools(role_data):
     }
 
 
-# --- Preferenza per le starter odds alte (31/07, richiesta esplicita utente)
+# --- Preferenza per le starter odds alte (31/07, RISCRITTA P5/passaggio 2)
 #
-# Regola voluta: "se il bot deve scegliere tra due giocatori con project score
-# entro 2 punti di distanza, preferire quello con starter odds 0.80 anche se
-# l'altro ha un punteggio maggiore". Esempio dell'utente: Son 66 (0.70) contro
-# Zinckernagel 64 (0.80) -> vince Zinckernagel; ma se Zinckernagel avesse 63
-# (scarto 3) -> vince Son.
+# Regola voluta, riformulata testualmente dall'utente nel passaggio 2: "a
+# parita' di atteso, si preferisce quello con starter odds piu' alta".
+# Decisione utente (opzione C): e' un TIE-BREAK, non un bonus additivo al
+# punteggio -- non deve entrare nella funzione obiettivo (ne' qui ne' nel
+# knapsack, vedi _optimize_capped_lineup in build_formazione_finale.py).
+# Tolleranza fissata dall'utente: 1 punto pieno di atteso.
 #
-# Implementata come BONUS di PREFERENZA_ODDS_SCARTO punti al punteggio di
-# ordinamento, non come confronto a coppie: un "sono equivalenti entro 2
-# punti" non e' un ordinamento valido (A~B e B~C non implicano A~C, quindi il
-# risultato dipenderebbe dall'ordine di confronto). Col bonus invece la
-# regola vale sempre e in modo trasparente:
-#   Zinck 64 + 2 = 66 pari a Son 66 -> a parita' vince chi ha le odds piu'
-#   alte, quindi Zinck. Zinck 63 + 2 = 65 < 66 -> vince Son. Esattamente i due
-#   casi dell'esempio.
-# NON tocca il punteggio mostrato ne' i totali: agisce solo sull'ordine con
-# cui i candidati vengono considerati.
-PREFERENZA_ODDS_SOGLIA = float(os.environ.get('PREFERENZA_ODDS_SOGLIA', '0.80'))
-PREFERENZA_ODDS_SCARTO = float(os.environ.get('PREFERENZA_ODDS_SCARTO', '2'))
-
-
-def _bonus_odds(row):
-    """I 2 punti di preferenza, portati sulla scala giusta (03/08).
-
-    La regola e' stata definita in punti di PREVISIONE GREZZA (l'esempio era
-    Son 66 contro Zinckernagel 64, che sono i numeri che si leggevano allora).
-    Ma `calibra_riga` gira PRIMA di qui, quindi lo scarto veniva confrontato
-    con punteggi gia' calibrati: 2 punti calibrati valgono 2 / b punti grezzi,
-    cioe' circa 2.7 -- la regola scattava un terzo delle volte in piu' di
-    quanto l'utente avesse chiesto. Qui lo scarto viene moltiplicato per la
-    pendenza del ruolo, cosi' resta 2 punti nella scala in cui e' stato
-    deciso."""
-    odds = row.get('starter_odds') or 0.0
-    if odds < PREFERENZA_ODDS_SOGLIA:
-        return 0.0
-    _a, b = CALIB_PER_RUOLO.get(row.get('role_key'), (CALIB_A, CALIB_B))
-    # + il passo di arrotondamento: `calibra` arrotonda a un decimale, quindi
-    # due punti grezzi possono presentarsi qui come 1.7 invece di 1.63 e la
-    # regola non scatterebbe proprio nel caso limite che l'utente ha portato
-    # come esempio (Son 66 con odds 0.70 contro Zinckernagel 64 con 0.80, dove
-    # deve vincere Zinckernagel). Meglio sbagliare di un centesimo dalla parte
-    # della regola che tradirla sul suo caso di riferimento.
-    return PREFERENZA_ODDS_SCARTO * b + 0.1
-
-
-def _chiave_ordinamento(row):
-    base = row.get('sort_score', row['atteso'])
-    odds = row.get('starter_odds') or 0.0
-    return (base + _bonus_odds(row), odds)
+# Implementazione: un bucket a griglia fissa (floor(score/tolleranza)) e'
+# stato provato e SCARTATO in fase di verifica -- due righe a 66.0 e 65.5
+# (0.5 di distanza, ben dentro la tolleranza di 1.0) cadono in bucket
+# ADIACENTI (floor(66.0)=66, floor(65.5)=65) e NON fanno tie-break: un falso
+# negativo proprio sul caso che la regola deve coprire. Un confronto pairwise
+# puro (|a-b|<tolleranza) e' l'alternativa naturale ma non e' un ordinamento
+# valido su una LISTA (A~B e B~C non implicano A~C, commento originale di
+# questa funzione, corretto).
+#
+# Soluzione: SPOGLIAMENTO ANCORATO AL MIGLIORE, non un comparatore. Ad ogni
+# passo si prende il punteggio massimo residuo, si guarda chi sta entro
+# tolleranza da QUEL massimo (non da una griglia fissa ne' da un confronto
+# fra coppie arbitrarie), e fra quelli vince chi ha odds piu' alte. Il
+# procedimento e' una sequenza di decisioni ben definite (ogni passo ha un
+# unico vincitore deterministico), non un comparatore: non c'e' proprieta' di
+# transitivita' da violare perche' non si sta ordinando via confronti a
+# coppie indipendenti.
+PREFERENZA_ODDS_TOLLERANZA = float(os.environ.get('PREFERENZA_ODDS_TOLLERANZA', '1.0'))
 
 
 def _sort_ordinamento(rows):
@@ -949,7 +927,22 @@ def _sort_ordinamento(rows):
     # nonostante il fix a monte -- bug reale trovato in corsa. Ordina sempre
     # per 'sort_score' se presente (bonus XP per la selezione, vedi
     # _apply_xp_bonus), altrimenti per 'atteso' (il punteggio vero).
-    rows.sort(key=_chiave_ordinamento, reverse=True)
+    #
+    # Spogliamento ancorato al migliore per il tie-break odds (vedi commento
+    # sopra PREFERENZA_ODDS_TOLLERANZA): O(n^2) nel caso peggiore, accettabile
+    # -- questa funzione gira una manciata di volte per generazione, mai in
+    # un ciclo per-candidato.
+    restanti = list(rows)
+    ordinati = []
+    while restanti:
+        migliore = max(r.get('sort_score', r['atteso']) for r in restanti)
+        vicini = [r for r in restanti
+                  if r.get('sort_score', r['atteso']) >= migliore - PREFERENZA_ODDS_TOLLERANZA]
+        vincitore = max(vicini, key=lambda r: (
+            r.get('starter_odds') or 0.0, r.get('sort_score', r['atteso'])))
+        ordinati.append(vincitore)
+        restanti.remove(vincitore)
+    rows[:] = ordinati
     return rows
 
 

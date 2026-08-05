@@ -1116,6 +1116,29 @@ def _optimize_capped_lineup(shape, role_data, card_pool, l10_cap):
     EPS = 1e-9
     budget_units = int(math.floor(l10_cap * RES + EPS))
 
+    # Tie-break starter odds (P5/passaggio 2, B07): la regola "a parita' di
+    # atteso, si preferisce quello con starter odds piu' alta" (decisione
+    # utente: TIE-BREAK, non bonus additivo, tolleranza 1 punto pieno di
+    # atteso) non arrivava MAI qui -- il knapsack ottimizzava solo
+    # row['atteso'] puro, ignorando l'ordine del percorso greedy (dove vive
+    # _sort_ordinamento in build_formazione_globale.py). Non serve un bucket a
+    # griglia fissa qui: ad ogni cella di budget si confrontano ESATTAMENTE
+    # due candidati (il nuovo e l'occupante attuale), quindi un confronto
+    # pairwise diretto sulla distanza e' corretto e non ha il problema di
+    # transitivita' che riguarda l'ordinamento di una LISTA (vedi commento
+    # in build_formazione_globale.py su _sort_ordinamento) -- qui non si sta
+    # costruendo un ordine, solo decidendo un vincitore alla volta.
+    PREFERENZA_ODDS_TOLLERANZA = float(os.environ.get('PREFERENZA_ODDS_TOLLERANZA', '1.0'))
+
+    def _vince_su(ns, odds_ns, score_cur, odds_cur):
+        """True se il candidato 'ns/odds_ns' deve sostituire l'occupante
+        attuale 'score_cur/odds_cur' nella stessa cella di budget."""
+        if abs(ns - score_cur) <= PREFERENZA_ODDS_TOLLERANZA:
+            if (odds_ns or 0.0) != (odds_cur or 0.0):
+                return (odds_ns or 0.0) > (odds_cur or 0.0)
+            return ns > score_cur
+        return ns > score_cur
+
     frontiers = {}
     for role in ('GK', 'DEF', 'MID', 'FWD'):
         f = _pareto_frontier(role_data[role], card_pool, role)
@@ -1143,7 +1166,12 @@ def _optimize_capped_lineup(shape, role_data, card_pool, l10_cap):
                     continue
                 ns = score + row['atteso']
                 cur = new_states.get(nb)
-                if cur is None or cur[0] < ns:
+                if cur is None:
+                    vince = True
+                else:
+                    cur_odds = cur[1].get(role, {}).get('starter_odds')
+                    vince = _vince_su(ns, row.get('starter_odds'), cur[0], cur_odds)
+                if vince:
                     new_picks = dict(picks)
                     new_picks[role] = row
                     new_states[nb] = (ns, new_picks, l10_reale + l10)
@@ -1155,28 +1183,35 @@ def _optimize_capped_lineup(shape, role_data, card_pool, l10_cap):
     for role in shape['extra_roles']:
         for row, l10 in _pareto_frontier(role_data[role], card_pool, role):
             extra_candidates.append((role, row, l10))
-    extra_candidates.sort(key=lambda x: -x[1]['atteso'])
 
     best_total = best_picks = best_extra = best_used = None
     for used, (score4, picks4, l10_reale4) in states.items():
         used_slugs = {row['slug'] for row in picks4.values()}
-        for role, row, l10 in extra_candidates:
-            if row['slug'] in used_slugs:
-                continue
-            l10_reale_totale = l10_reale4 + l10
-            # Verifica sulla somma VERA, non sul budget discretizzato: e' la
-            # garanzia (2) del fix, indipendente dall'arrotondamento sopra.
-            if l10_reale_totale > l10_cap + EPS:
-                continue
-            total = score4 + row['atteso']
-            if best_total is None or total > best_total:
-                best_total = total
-                best_picks = picks4
-                best_extra = (role, row, l10)
-                best_used = l10_reale_totale
-            break  # extra_candidates e' gia' ordinato per atteso decrescente:
-                   # il primo che rientra nel vincolo vero e' il migliore per
-                   # questo budget residuo.
+        # Candidati che rientrano DAVVERO nel vincolo vero per questo budget
+        # residuo (verifica sulla somma reale, non sul discretizzato -- stessa
+        # garanzia (2) del fix R3/P4, indipendente dall'arrotondamento sopra).
+        fittanti = [(role, row, l10) for role, row, l10 in extra_candidates
+                    if row['slug'] not in used_slugs
+                    and l10_reale4 + l10 <= l10_cap + EPS]
+        if not fittanti:
+            continue
+        # Tie-break odds (P5/B07): ancorato al MIGLIOR atteso fra i fittanti,
+        # non a una griglia fissa -- fra chi sta entro PREFERENZA_ODDS_
+        # TOLLERANZA da quel massimo, vince chi ha odds piu' alte. Un solo
+        # slot da scegliere qui (non un ordinamento di lista): nessun
+        # problema di transitivita'.
+        migliore_atteso = max(row['atteso'] for _r, row, _l in fittanti)
+        vicini = [c for c in fittanti
+                  if c[1]['atteso'] >= migliore_atteso - PREFERENZA_ODDS_TOLLERANZA]
+        role, row, l10 = max(vicini, key=lambda c: (
+            c[1].get('starter_odds') or 0.0, c[1]['atteso']))
+        l10_reale_totale = l10_reale4 + l10
+        total = score4 + row['atteso']
+        if best_total is None or total > best_total:
+            best_total = total
+            best_picks = picks4
+            best_extra = (role, row, l10)
+            best_used = l10_reale_totale
 
     if best_picks is None:
         return None, None

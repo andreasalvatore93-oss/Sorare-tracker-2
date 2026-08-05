@@ -790,7 +790,7 @@ def _odds_run_corrente():
     """{slug: odds} dei sopravvissuti al prefiltro di QUESTO run (31/07,
     richiesta esplicita utente): serve ad attaccare le starterOdds alle righe
     del consiglio, cosi' il tie-break condiviso con la produzione
-    (_chiave_ordinamento in build_formazione_globale.py) puo' preferire un
+    (_sort_ordinamento in build_formazione_globale.py) puo' preferire un
     titolare all'80% a uno al 70% quando i punteggi sono quasi pari. Vuoto in
     uso locale/manuale, dove PREFILTRO_GRUPPI non e' impostata: in quel caso
     nessun bonus e comportamento invariato."""
