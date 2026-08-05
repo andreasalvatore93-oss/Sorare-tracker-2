@@ -967,7 +967,9 @@ LISTEN_SECONDS = min(18000, LISTEN_SECONDS)
 # 'campionato_inseason_temp' (15gg, vedi BLACKLISTED_INSEASON_LEAGUE_SLUGS) --
 # quindi finche' resta attiva viene di fatto valutato solo il ramo classic.
 EXCLUDED_LEAGUE_SLUGS = {'mlspa', 'k-league-1', 'primeira-liga-pt', 'austrian-bundesliga',
-                          'premiership-gb-sct', '1-hnl'}
+                          'premiership-gb-sct', '1-hnl', 'j1-league', '2-bundesliga',
+                          'eredivisie', 'football-league-championship', 'jupiler-pro-league',
+                          'ligue-2-fr'}
 
 AUTOBUY_TARGET_MATCHES = int(os.environ.get('AUTOBUY_TARGET_MATCHES', '10'))
 AUTOBUY_TARGET_MATCHES = max(1, min(100, AUTOBUY_TARGET_MATCHES))
