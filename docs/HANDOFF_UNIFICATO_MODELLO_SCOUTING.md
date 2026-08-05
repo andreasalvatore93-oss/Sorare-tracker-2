@@ -11,11 +11,12 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 05/08/2026, ore ~23:00 (Roma, CEST)**.
-Sessione: pattern arene (§7) + validazione soglie cap 260, APPLICATA A MAIN
-(σ 42.70→50.6, pareggio 265→259.5, guadagno 8.8→7.9). Dettaglio in
-`analisi_manager/VALIDAZIONE_SOGLIE.md`. Regola di stile: file SNELLO
-(max ~4 pagine), sessione/giorno/ora Roma.
+Ultimo aggiornamento: **sessione 05/08/2026, ore ~15:00 (Roma, CEST)**.
+Sessione: passaggio 2 P9/P9-bis/P9-ter, blend GK `c` 17.5→22 (§5/§9), NON
+pushato. Sessione precedente: pattern arene (§7) + validazione soglie cap 260,
+APPLICATA A MAIN (σ 42.70→50.6, pareggio 265→259.5, guadagno 8.8→7.9).
+Dettaglio in `analisi_manager/VALIDAZIONE_SOGLIE.md`. Regola di stile: file
+SNELLO (max ~4 pagine), sessione/giorno/ora Roma.
 
 ---
 
@@ -250,25 +251,68 @@ riprende il filone backtest.
   `GK_TEAM_CS_WEIGHT=0.5` con P(clean sheet) di squadra (lift misurato
   0.3%→9.4%, correlazione x3), non risolto del tutto: resta la leva più
   grande mai lasciata sul tavolo per il GK, richiederebbe più profondità.
-- **Blend GK, le tre "correzioni ovvie"**: BOCCIATE dal metro (05/08, P3,
-  n=6.973 contesti GK, bootstrap appaiato su 120 giornate). Abbassare
-  `GK_TEAM_CS_POINTS` 35→25 (che è il salto vero della scala Sorare), usare la
-  media storica del singolo portiere al posto della baseline globale 0.28, e
-  applicare la ricalibrazione affine `0.130+0.460p`: **tutte e tre migliorano
-  il MAE e peggiorano la correlazione** (IC95 esclude lo zero), col lift
-  indistinguibile. Produzione invariata. `w*POINTS` non è un valore in punti,
-  è un coefficiente di scala, e la correlazione **cresce monotona** con esso
-  (0.0347 a c=0 → 0.0674 a c=17.5 di oggi → 0.0756 a c=35) mentre il MAE
-  peggiora monotono. Se mai si toccherà, va **alzato**, non abbassato — ma
-  serve prima decidere quanto vale ordinare rispetto a indovinare il voto.
-  Corollario misurato: il doppio conteggio del clean sheet (già dentro
-  `level_score`, di nuovo nel blend) esiste come meccanica ma **non è
-  dannoso**, perché `level_score` comprime il segnale al punto che il livello
-  assoluto aggiunge ancora informazione. Dettagli:
-  `docs/handoff/REPORT_PASSAGGIO_2_OPUS_P3_2026-08-05.txt`.
+- **Blend GK: sotto-pesato, non sovra-pesato — `c` alzato 17.5→22 (05/08, P3
+  + P9-bis/ter, n=6.973 contesti GK, bootstrap appaiato su 120 giornate,
+  campione rigenerato e riverificato identico due volte)**. `c = WEIGHT×POINTS`
+  nel termine `c*(p-0.28)`; `GK_TEAM_CS_WEIGHT` 0.5→**0.63** (=22/35),
+  `GK_TEAM_CS_POINTS` invariato a 35 (è il coefficiente di scala, non un
+  valore in punti — conta solo il prodotto). La correlazione cresce monotona
+  con `c` (0.0347 a c=0 → 0.0674 a c=17.5 → 0.0707 a c=22 → 0.0756 a c=35),
+  il MAE peggiora monotono: **compromesso puro, nessun `c` dominante**. Scelto
+  22: dcorr vs 17.5 = +0.0033 (IC95 esclude zero), dMAE = +0.0227 (soglia di
+  guardia +0.05). Scartato 26 (misurato, poi rigettato in P9-ter): fra 22 e 26
+  il guadagno di corr è +0.0020 (rumore) mentre il degrado di MAE raddoppia e
+  il suo IC95 sfora la soglia (+0.0721). **Deroga al metro a tre gambe,
+  LIMITATA a questo parametro/ruolo**: per il GK conta l'ordinamento (se ne
+  schiera uno solo), non il voto — quindi si decide sulla correlazione con il
+  MAE come vincolo di guardia, non sulle tre gambe insieme. Prima deroga del
+  progetto al metro standard.
+  Le tre "correzioni ovvie" (`POINTS`→25, baseline per-portiere, `p_cal`
+  affine `0.130+0.460p`) restano **BOCCIATE**: tutte e tre migliorano il MAE
+  e peggiorano la correlazione (IC95 esclude lo zero), lift indistinguibile.
+  `p_cal` è algebricamente identico ad abbassare il peso
+  (`pcal(p)-pcal(q)=0.4599*(p-q)`, l'intercetta si cancella) — stessa
+  operazione bocciata con un altro nome. Il doppio conteggio del clean sheet
+  (già dentro `level_score`, di nuovo nel blend) esiste come meccanica ma
+  **non è dannoso**: il riferimento globale 0.28 batte quello per-portiere
+  sulla correlazione a OGNI `c`, perché `level_score` comprime il segnale al
+  punto che il livello assoluto aggiunge ancora informazione vera (indicazione
+  per P8: la compressione sta in `level_score`, non nel blend). Score_atteso
+  GK misurato a c=26 vs c=17.5 (P9-bis): media +0.16 pt, p95 +1.99, max +4.48
+  su una soglia arena tipica di 259.5 (<1% in media) — c=22 applicato è più
+  vicino a 17.5 di quanto lo sia 26, quindi lo spostamento reale è minore di
+  questi numeri, comunque sotto l'incertezza già nota sulla soglia (±15 pt).
+  **Verifica di catena fatta ad ampiezza analitica, non con un refit vero**:
+  vedi pendenza sotto. Dettagli:
+  `docs/handoff/REPORT_PASSAGGIO_2_OPUS_P3_2026-08-05.txt`,
+  `REPORT_PASSAGGIO_2_SONNET_P9_2026-08-05.txt`,
+  `REPORT_PASSAGGIO_2_SONNET_P9BIS_2026-08-05.txt`.
 - **Il lift di selezione non discrimina sui portieri**: IC95 dei delta larghi
   4-8 punti su 120 giornate. Sul GK il metro a tre gambe è di fatto a due
-  (MAE + correlazione). Da sapere prima di leggere un lift GK come segnale.
+  (MAE + correlazione). Non costruire ora una terza metrica per aggirarlo:
+  decisione presa, non riproporre. Da sapere prima di leggere un lift GK come
+  segnale.
+- **D2 — misuratore e produzione non condividono lo stesso P(clean sheet)**:
+  `test_gk.py` (produzione) usa il cutoff esatto, `backtest_arene_previsioni.
+  _pcs_squadra` (misuratore) la griglia settimanale. Decisione: si lascia e si
+  documenta, non si allinea (costerebbe una `stima()` per ogni
+  giocatore-partita). Irrilevante per i confronti fra varianti (stesso `p` su
+  entrambi i lati del delta), rilevante per le stime ASSOLUTE di lift/corr sul
+  GK, che girano sul `p` vecchio.
+- **PENDENZA APERTA — refit vero di `CALIB_PER_RUOLO` dopo il blend GK**: la
+  verifica di catena §1bis fatta per c=22 è analitica (spostamento medio dello
+  score_atteso confrontato con l'incertezza nota sulla soglia), non un refit.
+  `taratura_formazioni_sintetiche.py` legge `dati_globali/taratura_coppie.json`
+  pre-calcolato con il vecchio coefficiente (0.5); nessuno script generatore di
+  quel file è stato trovato in due sessioni di ricerca. Da rifare come refit
+  vero alla prossima occasione in cui `taratura_coppie.json` viene comunque
+  rigenerato. Non è un blocco: lo spostamento è sotto l'incertezza nota.
+- **Regola nuova (dal 05/08)**: prima di riusare dati o script di una sessione
+  precedente, verificare che l'`n` coincida con quello dichiarato nel report
+  corrispondente, PRIMA di misurare qualunque cosa. Secondo caso in cui un
+  numero "già misurato" non era riproducibile dal materiale ereditato — il
+  primo è D2 sopra, il secondo è `p3_gk_righe.json` (1.487 righe invece di
+  6.973, frammento parziale rimasto in uno scratchpad).
 - **Compressione di scala** (portiere 4.8x, DEF/MID/FWD 2.5-2.9x): il
   modello ORDINA bene dentro lo slot ma comprime la dispersione assoluta —
   il danno è FUORI dallo slot (fascia capitano, quale competizione, soglie
@@ -486,7 +530,7 @@ sottostimati +4.9** (n71, da riverificare). Accumulare altre GW rende poco
 
 ## 9. Ultima modifica di produzione (05/08/2026)
 
-**Passaggio 2 (audit + fix), 9 commit su `main` — NON ancora pushati.** P1-P7
+**Passaggio 2 (audit + fix), 13 commit su `main` — NON ancora pushati.** P1-P7
 (Sonnet): rimosso `fattore_forza_avversario` morto, scouting portato sulla
 scala calibrata, fix aritmetica L10 nel cap del knapsack, tie-break odds vero,
 blend CS del portiere da ~124 chiamate a `stima()` a 1 (e mai più muto),
@@ -496,13 +540,12 @@ per il gradino `-3` (score_atteso si muove ≤ 0.032 pt nel caso peggiore su
 19.229 righe, MAE/corr/lift identici a 4 decimali → soglie d'arena e scouting
 invariati) e per il cutoff esatto del blend (nessun bias, media +0.0025 pt; la
 coda arriva a 8 pt ma solo su squadre con 3-9 partite di storico, e il metodo
-nuovo è il lato giusto). Commit `4370d72197` e precedenti.
-
-**Da sapere**: `backtest_arene_previsioni._pcs_squadra` usa ancora la griglia
-settimanale mentre la produzione usa il cutoff esatto — misuratore e
-produzione non condividono più lo stesso P(clean sheet). Irrilevante per i
-confronti fra varianti (delta sullo stesso campione), rilevante per le stime
-assolute di lift/corr del portiere. Decisione aperta.
+nuovo è il lato giusto). P9/P9-bis/P9-ter (Sonnet): `GK_TEAM_CS_WEIGHT`
+0.5→0.63 (c=17.5→22, §5) — P9 si è fermato per campione ereditato non
+riproducibile (1.487 righe invece di 6.973), P9-bis ha rigenerato il campione
+vero e applicato c=26, P9-ter lo ha corretto a c=22 (margine più largo, stesso
+guadagno direzionale). Propagato a tutte le leghe (`propaga_modello.py`, solo
+`test_gk.py`, verificato `--check`). Commit `cc7bdfdae2` e precedenti.
 
 ---
 
