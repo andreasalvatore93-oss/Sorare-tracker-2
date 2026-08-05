@@ -118,10 +118,56 @@ PLAYER_SLUGS = load_player_slugs()
 
 WINDOW_SIZE = 30  # AMPLIATO (29/07) da 15 a 30 su richiesta esplicita dell'utente, dopo il caso Daniel De Sousa Brito -- mantenuto lo stesso half_life per ruolo, l'allargamento serve a dare piu' contesto storico alla media pesata
 HALF_LIFE_GAMES = 6.0  # AGGIORNATO (29/07): ridotto da 12.0 a 6.0 SOLO per GK, su richiesta esplicita dell'utente dopo un caso reale (Daniel De Sousa Brito, media pesata 46.6 vs media reale ultime 11 partite 41.2 -- il modello si aspettava un punteggio del 29% sopra lo standard recente senza nessun segnale di miglioramento). Verificato con backtest rigoroso pooled su 66 portieri/538 partite (16 campionati): l'intera griglia half_life 4-30 sta in una forbice di MAE dell'1.4%, quindi accorciarlo non peggiora sensibilmente l'accuratezza aggregata mentre risolve l'incoerenza logica sui casi con un tratto di forma alta ormai superato nella finestra storica.
-# Blend porta inviolata squadra (03/08, vedi compute_score_atteso_gk): quanto
-# vale ~una porta inviolata in punti, e la P(clean sheet) media di riferimento
-# (gol medi a partita ~1.29 -> exp(-1.29) ~ 0.28). Tarabili via env per il test.
+# Blend porta inviolata squadra (03/08, vedi compute_score_atteso_gk).
+#
+# ATTENZIONE AL NOME (corretto P3, passaggio 2, B11): GK_TEAM_CS_POINTS **non
+# e' "quanto vale una porta inviolata"**. Sulla scala Sorare (LEVEL_TABLE qui
+# sotto, verificata su due screenshot indipendenti) 35 e' il livello BASE
+# (netto 0) e il SALTO prodotto dal clean sheet e' 60-35 = 25, cioe' il valore
+# gia' scritto in BONUS_CLEAN_SHEET_POINTS. Il commento precedente diceva il
+# falso.
+#
+# Il 35 NON e' stato pero' abbassato a 25, perche' misurato:  il prodotto
+# w*POINTS (= 17.5 oggi) e' un COEFFICIENTE DI SCALA libero, non un valore in
+# punti, e sui dati veri si comporta al contrario di come vorrebbe la fisica
+# della scala. Backtest walk-forward su 6.973 contesti GK (4.311 giocatori in
+# cache, de-dup su (data, slug), 120 giornate):
+#
+#   c = w*POINTS      MAE      corr    lift%      (riferimento globale 0.28)
+#        0 (spento) 16.061    0.0347    5.6
+#       12.5 (=25)  16.074    0.0619    4.9
+#       17.5 (=35)  16.091    0.0674    6.9   <- produzione
+#       26.0        16.139    0.0728    8.4
+#       35.0        16.221    0.0756    7.1
+#
+# La correlazione previsto/realizzato CRESCE in modo monotono con c e il MAE
+# peggiora in modo monotono: e' un compromesso puro, nessun valore domina, e
+# quindi la regola CLAUDE.md (MAE + correlazione + lift devono muoversi
+# INSIEME) non autorizza nessuno spostamento. Portare POINTS a 25 costerebbe
+# corr -0.0055 (IC95 [-0.0082,-0.0026], appaiato su 400 ricampionamenti delle
+# giornate) in cambio di MAE -0.017: peggiora proprio la cosa per cui il blend
+# era stato acceso (ordinare i portieri). Chi volesse rimetterci mano: il
+# numero da muovere e' il PRODOTTO w*POINTS, e va giudicato sul metro pieno.
 GK_TEAM_CS_POINTS = float(os.environ.get('GK_TEAM_CS_POINTS', '35'))
+# Riferimento da cui si misura lo scostamento: la P(clean sheet) media di lega
+# (gol medi a partita ~1.29 -> exp(-1.29) ~ 0.28).
+#
+# B22/B10 (sospetto di doppio conteggio) MISURATO e NON confermato (P3): il
+# tasso storico di clean sheet del singolo portiere e' effettivamente gia'
+# dentro level_score_atteso via pos_decisive_values, quindi la teoria diceva di
+# sostituire lo 0.28 globale con la media storica di P(CS) di QUEL portiere,
+# cosi' che a squadra costante l'effetto fosse zero. Provato sullo stesso
+# campione (n=6.973, media storica pesata con gli stessi pesi esponenziali del
+# modello): il riferimento per-portiere PEGGIORA la correlazione a OGNI valore
+# di c (0.0596 contro 0.0674 a c=17.5; 0.0644 contro 0.0756 a c=35), migliora
+# solo il MAE (-0.053, IC95 [-0.086,-0.024]) e lascia il lift indistinguibile
+# (IC95 del delta [-4.2,+3.3]: su questo campione il lift NON discrimina). Non
+# applicato. Lettura: level_score comprime cosi' tanto il segnale di clean
+# sheet (vedi la compressione 2.5-4.8x gia' documentata) che il doppio
+# conteggio e' in buona parte teorico, e togliere il livello assoluto toglie
+# informazione vera. Stessa sorte per la ricalibrazione affine p_cal =
+# 0.130+0.460*p (che sul blend equivale a moltiplicare c per 0.46): MAE meglio,
+# corr peggio (-0.0126, IC95 [-0.0184,-0.0068]), lift indistinguibile.
 GK_TEAM_CS_BASELINE = float(os.environ.get('GK_TEAM_CS_BASELINE', '0.28'))
 # Peso del blend porta-inviolata (03/08): ACCESO di default (0.5) dopo il
 # backtest sulle arene reali (corr previsto/reale 0.157->0.211, piu' arene a
@@ -139,6 +185,24 @@ GK_TEAM_CS_WEIGHT = float(os.environ.get('GK_TEAM_CS_WEIGHT', '0.5'))
 # 7 giorni) -- da ~124 chiamate a stima() a 1. La cache qui sotto resta solo
 # per il caso (locale/diagnostico) in cui piu' portieri della stessa run
 # condividano lo stesso processo e lo stesso giorno di cutoff.
+#
+# V2 (P3, passaggio 2) -- il valore NON e' identico a quello della griglia
+# settimanale, e il report P6 si contraddiceva su questo punto. Misurato sui
+# soli lati veri (n=421, 40 giorni campionati, stessi team/avversario/venue):
+#   scarto firmato (nuovo-vecchio): media +0.00014, mediana -0.00008 -> nessun
+#     bias sistematico, le soglie d'arena non si spostano;
+#   |scarto|: media 0.0096, mediana 0.0032, p95 0.0377, p99 0.0884, max 0.4745;
+#   in punti di score_atteso (w=0.5, POINTS=35): |delta| medio 0.17, p95 0.66,
+#     p99 1.55, max 8.30.
+# La coda sta tutta sulle squadre con pochi dati (|delta| medio 0.011 con 3-9
+# osservazioni contro 0.006 con 20-49), dove una settimana in piu' di storico
+# muove molto la stima: il metodo NUOVO e' il lato giusto dello scarto, perche'
+# usa strettamente PIU' osservazioni e la data di riferimento vera.
+# NB: backtest_arene_previsioni._pcs_squadra usa ANCORA la griglia settimanale,
+# quindi da qui in poi misuratore e produzione non usano lo stesso snapshot.
+# Non allineato di proposito (allinearlo significa una stima() per ogni
+# giocatore-partita del backtest); irrilevante per i confronti fra varianti,
+# che sono delta sullo stesso campione, ma va saputo.
 _FORZE_CS_PROD_CACHE = {}
 
 
@@ -1036,6 +1100,15 @@ def extract_level_score(detail):
 # da due screenshot Sorare indipendenti (portiere e difensore, 04/08): la
 # barra del punteggio decisivo mostra i marker -3 -2 -1 0 1 2 3 4 5 sopra i
 # valori 0 5 15 35 60 70 80 90 100. Il floor del clamp scende da -2 a -3.
+# V1 (P3, passaggio 2): catena §1bis CHIUSA. Effetto misurato sullo
+# score_atteso rigiocando l'intero backtest con e senza il gradino, per ruolo
+# (GK n=6.973, DEF n=5.531, MID n=1.486, FWD n=1.228):
+#   |delta| medio 0.0003 (GK) / 0.0004 (DEF) / 0.0002 (MID) / 0.00003 (FWD);
+#   p99 <= 0.007; massimo assoluto su tutti i ruoli 0.032 punti;
+#   zero righe sopra 0.1 punti; MAE, correlazione e lift IDENTICI a 4 decimali.
+# Il netto e' un valore atteso su convoluzione Poisson e la coda netto<=-3 e'
+# rarissima: bias di taratura, CALIB_PER_RUOLO, soglie d'arena e verdetti dello
+# scouting restano invariati. Nessuna riverifica a valle necessaria.
 LEVEL_TABLE = {-3: 0, -2: 5, -1: 15, 0: 35, 1: 60, 2: 70, 3: 80, 4: 90, 5: 100}
 LEVEL_SCORE_POISSON_K_MAX = 6
 
@@ -1537,9 +1610,13 @@ def compute_score_atteso_gk(scores, is_home_flags, granulari_values,
     # 0.02). team_cs_prob e' la P(porta inviolata) della SUA squadra per QUESTA
     # partita (dal modello_partita, attacco/difesa delle due squadre). Misurato
     # walk-forward su 3885 GK: un blend sposta il lift di selezione da +0.3% a
-    # +9.4% e la correlazione da 0.02 a 0.08, MAE piatto. Una porta inviolata
-    # vale ~GK_TEAM_CS_POINTS punti; si sposta il voto rispetto alla media lega.
-    # Default team_cs_weight=0.0 -> produzione INVARIATA finche' non si accende.
+    # +9.4% e la correlazione da 0.02 a 0.08, MAE piatto.
+    # GK_TEAM_CS_POINTS non e' "quanto vale una porta inviolata": e' il
+    # coefficiente di scala dello scostamento dalla media di lega -- vedi il
+    # commento esteso sulla costante, con la griglia misurata (B11/B22, P3).
+    # NB: in produzione il blend e' ACCESO (GK_TEAM_CS_WEIGHT=0.5 arriva davvero
+    # qui, verificato in P0). Il vecchio commento "default 0.0 -> produzione
+    # INVARIATA" e' rimasto dopo l'accensione del 03/08 ed era falso.
     if team_cs_weight and team_cs_prob is not None:
         risultato += team_cs_weight * GK_TEAM_CS_POINTS * (team_cs_prob - GK_TEAM_CS_BASELINE)
 
@@ -2140,6 +2217,14 @@ def build_prediction(player_slug):
     # match per trasparenza diagnostica — il valore e' comunque gia' presente
     # nella media_pesata, quindi bonus_clean_sheet_atteso NON viene sommato
     # una seconda volta allo score_atteso, resta solo informativo in output).
+    # B11 (P3, passaggio 2) -- le due costanti da 25 e da 35 NON sono un
+    # duplicato da unificare, e restano separate di proposito:
+    #   BONUS_CLEAN_SHEET_POINTS (qui, 25) = il SALTO vero della scala Sorare
+    #     (LEVEL_TABLE: netto 0 -> 35, netto +1 -> 60). Usato SOLO per la voce
+    #     diagnostica in output, mai sommato a score_atteso.
+    #   GK_TEAM_CS_POINTS (in testa al file, 35) = il coefficiente di scala del
+    #     blend, che entra in score_atteso. Non e' un valore in punti; portarlo
+    #     a 25 e' stato misurato e bocciato, vedi il commento su quella costante.
     BONUS_CLEAN_SHEET_POINTS = 25.0  # osservato: level_score ~60 con clean sheet vs ~35 senza, delta ~25
     clean_sheet_rate = sum(clean_sheet_flag_values) / len(clean_sheet_flag_values) if clean_sheet_flag_values else 0.0
     bonus_clean_sheet_atteso = clean_sheet_rate * BONUS_CLEAN_SHEET_POINTS  # solo diagnostico, vedi nota sopra
