@@ -1,0 +1,293 @@
+REPORT PASSAGGIO 2 — BLOCCO OPUS (P0 + P0-bis), SOLA LETTURA
+Sessione 06/08/2026, ~00:40 Roma (CEST) — 05/08 22:40 UTC
+Destinatario: orchestratore. Nessuna modifica: nessun edit, commit, workflow.
+Unico file scritto: questo. P3 NON eseguito (per istruzione: sessione separata,
+dopo scioglimento ambiguita' di P0). Repo: branch main, working tree pulito
+all'avvio + questo file; git pull gia' fatto (up to date).
+
+Tutte le costanti confrontate fra le 53 leghe con predict/ (contender escluso,
+non ha predict/) via audit_costanti.py: NESSUNA divergenza fra leghe su nessuna
+delle costanti di dominio qui sotto. Le divergenze sono solo GK_TEAM_CS_POINTS
+vs BONUS_CLEAN_SHEET_POINTS DENTRO test_gk.py (B11), non fra leghe.
+
+
+================================================================================
+1. P0 — TABELLA COSTANTI DI DOMINIO
+================================================================================
+
+costante                | valore in codice        | cosa rappresenta            | dove | verif. da screenshot
+------------------------ | ----------------------- | --------------------------- | ---- | --------------------
+LEVEL_TABLE             | {-2:5,-1:15,0:35,1:60,  | scala Sorare netto-eventi-  | 4    | SI — combacia esatto
+                        |  2:70,3:80,4:90,5:100}  | decisivi -> punteggio       | ruoli| (vedi §2)
+                        |                         | decisivo. netto 0 = 35 base,|      |
+                        |                         | netto +1 = 60               |      |
+netto clamp             | max(-2, min(5, ...))    | dominio della tabella       | 4    | PARZIALE — manca -3
+                        |                         |                             | ruoli| (vedi B20)
+POSITIVE/NEGATIVE_      | categorie lette dal     | conteggio eventi decisivi   | 4    | SI (implicito: il
+DECISIVE_STAT           | detailedScore Sorare    | (gol/assist/CS/cartellini)  | ruoli| conteggio netto muove
+                        | (statValue), NON        | -> lambda Poisson ->        |      | la posizione sulla
+                        | hardcoded               | expected_level_from_rates   |      | scala, Crettaz netto+1)
+GK clean sheet          | clean_sheet_60 e' un    | per il PORTIERE il CS e' un | gk   | SI — Crettaz: "Positivo
+                        | POSITIVE_DECISIVE_STAT  | evento decisivo +1: 35->60  |      | decisivo 1 / Clean
+                        |                         |                             |      | sheet 60 = 1"
+DEF clean sheet         | clean_sheet_60 in       | per il DIFENSORE il CS NON  | def  | da verificare (B21):
+                        | CLEAN_SHEET_STATS       | e' decisive: e' un          |      | popup DEF con CS, il
+                        | (all-around), =10pt     | all-around da +10pt fisso   |      | "clean sheet 60" sta
+                        | fisso (comm. Fofana)    | (verif. dal vivo Fofana)    |      | sotto Generale, non
+                        |                         |                             |      | sotto Decisivo
+BONUS_CLEAN_SHEET_POINTS| 25.0                    | valore del salto decisivo   | gk   | SI — = 60-35 = 25.
+                        |                         | CS del GK (35->60).         |      | Coerente con LEVEL_
+                        |                         | SOLO DIAGNOSTICO: NON       |      | TABLE
+                        |                         | sommato a score_atteso
+                        |                         | (test_gk.py:2119-2123)
+GK_TEAM_CS_POINTS       | 35 (env, default 35)    | usato nel BLEND squadra     | gk   | NO — e' il numero
+                        |                         | (:1522) come "valore di una |      | sbagliato: dovrebbe
+                        |                         | porta inviolata". E' il     |      | essere 25 (= salto CS),
+                        |                         | LIVELLO BASE (netto 0), non |      | non 35 (base). -> P3
+                        |                         | il salto CS -> B11/R1
+GK_TEAM_CS_BASELINE     | 0.28 (env)              | baseline globale P(CS) nel  | gk   | NO (regola non da
+                        |                         | blend. R1/P3: va sostituita |      | screenshot; e' scelta
+                        |                         | col tasso storico del GK    |      | di modellazione) -> P3
+GK_TEAM_CS_WEIGHT       | 0.5 (env)               | peso del blend. Produzione  | gk   | NO
+                        |                         | lo passa (blend ATTIVO)     |      |
+MEDIA_RUOLO_*_PRIOR     | GK 48.81 DEF 51.34      | prior di ruolo (shrinkage). | 4    | NO (parametro, non
+(costante statica)      | MID 53.94 FWD 53.74     | SOLO DIAGNOSTICO: la prod.  | ruoli| regola di gioco)
+                        |                         | usa il prior DINAMICO ->    |      |
+prior dinamico          | GK 46.20+4.05*pr        | shrinkage target vero in    | 4    | NO (parametro tarato)
+(presence_rate)         | DEF 45.36+7.96*pr       | produzione quando           | ruoli|
+                        | MID 42.68+12.34*pr      | presence_rate != None       |      |
+                        | FWD 47.44+6.62*pr       |                             |      |
+
+Costanti TARATE (fuori da questo audit, giuste per definizione se ottimizzano —
+NON regole di dominio): HALF_LIFE_GAMES (GK/FWD 6, DEF 30, MID 25), RANGE_
+MULTIPLIER (GK/FWD 1.15, DEF/MID 1.1), SHRINK_K, SPLIT_FACTOR_SCALE_PER_STD
+0.05, TREND_INTENSITY (0.0 ovunque in produzione, docstring stantie = B16).
+OPPONENT_SENSITIVITY 29.0 = INERTE (B19, gia' in report P1). Tutte uniformi
+sulle 53 leghe.
+
+NUOVI RILIEVI DI QUESTO GIRO:
+
+B20  test_{gk,def,mid,fwd}.py netto_to_level: `k = max(-2, min(5, round(netto)))`.
+     Lo screenshot Crettaz mostra la scala con un gradino in PIU' in basso:
+     marker -3 -> 0 punti (l'estremo sinistro "0"). Il modello floora a -2 -> 5.
+     Impatto: solo sulla coda molto negativa (netto<=-3), rara perche' netto e'
+     un valore atteso su convoluzione Poisson; ma per i ruoli offensivi con
+     molti eventi negativi possibili non e' impossibile. Gravita': cosmetico/
+     silenzioso-piccolo. Verificabile da screenshot: SI (gia' visibile). Fix
+     banale: aggiungere -3:0 a LEVEL_TABLE e cambiare il floor a -3.
+
+B22  test_gk.py: doppio ingresso del clean sheet del GK (conferma quantitativa
+     di B10). Il CS entra (1) dentro level_score_atteso via pos_decisive_values,
+     che INCLUDE clean_sheet_60 come POSITIVE_DECISIVE_STAT -> il tasso storico
+     di CS del singolo portiere e' gia' prezzato; (2) di nuovo nel blend :1522
+     con baseline GLOBALE 0.28. A parita' di squadra l'effetto (2) dovrebbe
+     essere zero e non lo e' (baseline globale != tasso del giocatore). E' la
+     radice di B10 e la ragione per cui la mossa 2 di P3 (baseline = tasso
+     storico del GK) e' corretta.
+
+
+================================================================================
+2. P0 — VERIFICA DELLA REGOLA DI DOMINIO CONTRO LO SCREENSHOT
+================================================================================
+
+Screenshot Crettaz (N.E.C., 4 ago 2026, clean sheet):
+- barra "Punteggio decisivo 60 pt", cursore sul marker "1" (netto +1);
+- scala numerica sopra: 0 5 15 35 [60] 70 80 90 100;
+- marker sotto: -3 -2 -1 0 1 2 3 4 5;
+- "Positivo decisivo 1" (Clean sheet 60 = 1), "Negativo decisivo 0";
+- "Punteggio complessivo 15,3 pt" (all-around: Generale 0, Possesso -8,7,
+  Passaggio 1, Portiere 23), totale mostrato 75.
+
+Riscontro nel codice:
+- LEVEL_TABLE[1] = 60. netto = pos(1) - neg(0) = +1 -> 60. ESATTO.
+- I punti 5..9 della scala screenshot (5,15,35,60,70,80,90,100) coincidono
+  UNO A UNO con LEVEL_TABLE per k da -2 a 5. L'unico gradino non in tabella e'
+  il primo (-3 -> 0), vedi B20.
+- Decomposizione 60 = 35 (netto 0, base) + 25 (salto a netto 1 per il CS):
+  esattamente cio' che R1 afferma. Quindi BONUS_CLEAN_SHEET_POINTS=25 e' il
+  numero giusto per "quanto vale una porta inviolata sul decisivo del GK",
+  GK_TEAM_CS_POINTS=35 e' il numero sbagliato (e' la base, non il salto).
+- Totale 75 = 60 (decisivo) + 15,3 (all-around) arrotondato: conferma che
+  decisivo e all-around si SOMMANO (non media, non pesata). Il modello lo
+  rispecchia: grezzo = level_score_atteso + media_granulari_pesata*trend
+  (test_gk.py:1500). Il level_score_atteso stima il decisivo (scala 5..100),
+  il pezzo granulare stima l'all-around: due addendi, coerente con Sorare.
+
+CONCLUSIONE P0: la regola di dominio centrale (tabella netto->livello, base 35,
+CS del GK = +25) e' CORRETTA e ora verificata contro il gioco. L'unica costante
+di dominio SBAGLIATA e' GK_TEAM_CS_POINTS (35 dove serve 25) — gia' isolata da
+R1 e assegnata a P3. Non emergono altre costanti di scala errate: DEF/MID/FWD
+NON hanno un "level base" per ruolo diverso da 35 (la base e' la stessa per
+tutti, il ruolo entra solo via i tassi di evento e i prior di shrinkage). Il
+meccanismo che aveva nascosto l'errore GK (l'ottimizzatore compensa) qui non ha
+altro da nascondere sul lato level_score, perche' la scala e' letta dal gioco,
+non tarata.
+
+
+================================================================================
+3. P0 — AGGREGAZIONE ALL-AROUND / GRANULARI (come e' DAVVERO in produzione)
+================================================================================
+
+Verificato per data-flow su tutti e 4 i ruoli (compute_score_atteso_*):
+
+  all-around atteso = media_granulari_pesata = weighted_mean(granulari_values,
+                      weights_det)
+
+dove granulari_values[i] = all-around TOTALE della partita i (uno scalare per
+partita), weights_det = pesi esponenziali (half_life) azzerati sulle partite
+senza dettaglio (mask_weights). Quindi:
+- NON e' una media semplice: e' una media pesata per recency.
+- NON e' un sottoinsieme: e' il totale all-around della partita.
+- NON e' decomposto per stat nel grezzo principale: entra come UN numero.
+- Il trend (fattore_trend_granulare) moltiplica questo scalare; in produzione
+  TREND_INTENSITY=0.0 -> trend neutro, quindi oggi = pura media pesata.
+
+Poi il grezzo passa per shrinkage verso il prior dinamico e per il
+fattore_casa_trasferta (calcolato sul RESIDUO = score - somma gruppi granulari,
+per non doppio-contare). Infine Stadio D aggiunge correzioni additive (§4).
+
+Nota: i singoli gruppi granulari (goals_conceded, passing, offensive,
+clean_sheet, duels, fouls, ...) SONO tracciati per-partita e disponibili, ma
+oggi vengono usati SOLO da Stadio D e dai delta avversario (§4), non per
+comporre il grezzo. Nel grezzo l'all-around resta lo scalare medio.
+
+
+================================================================================
+4. P0-bis — INTERAZIONE GRANULARE x AVVERSARIO: COSA GIRA GIA' OGGI
+================================================================================
+
+PRIMO PASSO (accertare l'aggregazione reale): fatto, §3. L'all-around nel grezzo
+e' uno scalare. MA l'interazione granulare x avversario NON e' assente: esiste
+gia' in TRE forme, che vanno distinte perche' cambiano il verdetto di P0-bis.
+
+(1) TASSO DECISIVO x forza avversario (tutti e 4 i ruoli):
+    lambda_pos_dec = weighted_mean(pos_decisive_values) * opponent_lambda_mult
+    opponent_lambda_multiplier(league, role, opp_slug, cutoff) = funzione dei
+    gol subiti reali del prossimo avversario nelle ultime N (opponent_strength
+    .py:291). Interazione sul DECISIVO, non sull'all-around. Attiva.
+
+(2) STADIO D — granulare PROPRIO condizionato su forza avversario BINARIA
+    (forte/debole = gol subiti sopra/sotto media, opponent_is_strong):
+      DEF (test_def.py:1478-1482): delta su goals_conceded + passing +
+          clean_sheet, ciascuno = (cond_venue-fallback)+(cond_avv-fallback).
+      MID (test_mid.py:1338-1340): offensive + passing + goals_conceded.
+      FWD (test_mls_fwd_all.py:1338-1341): SOLO passing venue, NESSUN avversario.
+      GK: nessuno Stadio D avversario sul granulare (usa (3)).
+    Interazione = media del granulare PROPRIO ristretta alle partite contro
+    avversari forti/deboli, spostata verso lo stato del prossimo avversario.
+    E' un'interazione granulare x avversario, ma l'avversario e' un flag
+    BINARIO di forza globale, non la sua tendenza nella stat specifica.
+
+(3) DELTA PER-STAT: granulare PROPRIO x tendenza SPECIFICA dell'avversario
+    (questa e' esattamente la forma proposta da P0-bis, gia' implementata):
+      FWD: fwd_offense_granular_delta (opponent_strength.py:426-449).
+        Legge la serie def_poss_lost del prossimo avversario (quanto perde
+        palla in difesa, per squadra), la standardizza (z su media/std globali),
+        e la MOLTIPLICA per il granulare offensivo storico del giocatore:
+        delta = SENS * z * own_offensive_hist * 0.3 * peso_campione, cap +-3.
+        ATTIVO in produzione. Validato a -0.38% di MAE; cap +-3 messo apposta
+        perche' senza cap arrivava a -9..+14.8 pt, e "un contributo di quella
+        scala non e' una correzione, e' una seconda previsione" (:417-423).
+      GK: gk_def_pen_area_granular_delta (opponent_strength.py:536).
+        Stessa forma (parate del GK x tendenza dell'avversario in area).
+        GK_PEN_AREA_SENSITIVITY = 0.0 -> SPENTO (03/08). Rimisurato pulito su
+        6.019 previsioni walk-forward: MAE 15.961->15.960, corr 0.043->0.045,
+        selezione 4.9%->6.4%: spegnerlo migliora tutte e tre. "Rimesso nella
+        forma giusta, il segnale non c'e'" (:452-469).
+
+VERDETTO P0-bis (tenendo separati effetto principale e interazione, come da
+vincolo):
+- L'affermazione del brief "la domanda non e' mai stata posta in questa forma"
+  e' PARZIALMENTE SMENTITA dal codice: la forma "granulare proprio x tendenza
+  specifica dell'avversario" e' gia' implementata come DELTA ADDITIVO per FWD
+  (offense x palle perse avversario) e per GK (parate x area avversario).
+- Dove e' stata misurata PULITA (GK, 6.019 walk-forward): segnale ASSENTE,
+  spenta.
+- Dove e' tenuta (FWD): marginale (-0.38% MAE) e volutamente cappata a +-3 come
+  "seconda previsione", non come correzione.
+- Cio' che NON e' stato testato in questa forma: DEF e MID con la loro
+  composizione difensiva SPECIFICA (won_tackle/duelli) x la tendenza SPECIFICA
+  dell'avversario a perdere QUEI duelli. Oggi DEF/MID hanno solo l'interazione
+  BINARIA di forza globale (Stadio D, forma (2)), non quella per-stat.
+
+Quindi: la domanda dell'utente NON e' il filone chiuso "granulare come feature
+autonoma" (giusto), ma NON e' nemmeno del tutto nuova: e' nuova SOLO per
+DEF/MID sulla composizione dei duelli. Per FWD/GK la risposta empirica esiste
+gia' ed e' debole/nulla.
+
+FATTIBILITA' del test per DEF/MID (non svolto: e' analisi, non lettura, e P0 e'
+sola lettura):
+- Serve una serie per-stat della tendenza dell'avversario nei duelli difensivi
+  (analoga a _build_def_poss_lost_series, che oggi copre solo poss_lost). Non
+  esiste ancora per won_tackle/duel_lost concessi. Va costruita dai gamelog.
+- I dati grezzi ci sono (detail cache per-stat dei giocatori + slug squadre),
+  ma il test e' un walk-forward con costruzione di un nuovo profilo avversario:
+  costo MEDIO, non un read. Va deciso se vale, dato il prior negativo di GK e
+  marginale di FWD.
+
+
+================================================================================
+5. DOMANDE APERTE (non risolvibili leggendo il repo — con caso Sorare concreto)
+================================================================================
+
+Q-P0-1 (per P3). Conferma che il salto clean sheet sul DECISIVO del GK vale 25
+  e non 35. Gia' sciolto da R1+screenshot Crettaz (60 = 35+25). Nessuna
+  ulteriore verifica necessaria: GK_TEAM_CS_POINTS -> 25 in P3.
+
+Q-P0-2 (B21). Per il DIFENSORE il clean sheet e' modellato come ALL-AROUND da
+  +10 fisso (non decisive). Verificare su un popup Sorare di un difensore con
+  clean sheet: il "clean sheet 60" deve comparire SOTTO il punteggio
+  COMPLESSIVO (all-around, es. voce "Generale"/"Portiere"?) e NON come "Positivo
+  decisivo". Caso concreto suggerito: stesso formato dello screenshot Crettaz
+  ma per un difensore titolare di una squadra che ha tenuto la porta inviolata.
+  Se invece comparisse come decisive anche per il DEF, il modello DEF
+  sottostima i clean sheet difensivi (li tratta come +10 all-around invece che
+  come salto di livello). Impatto: medio sul ruolo DEF.
+
+Q-P0-3 (B20). netto=-3 esiste sulla scala Sorare (screenshot: marker -3 -> 0
+  punti) ma il modello floora a -2 -> 5. Confermare che -3 -> 0 e' reale (lo
+  screenshot lo mostra gia'; e' una conferma, non un'indagine). Se si', in P7/
+  igiene si aggiunge -3:0 a LEVEL_TABLE e si abbassa il floor. Impatto: piccolo.
+
+Q-P0-4 (P0-bis, decisione, non fatto). Vale costruire il profilo per-stat
+  dell'avversario sui duelli difensivi per testare l'interazione DEF/MID
+  composizione x avversario, dato che la stessa forma e' gia' NULLA per GK e
+  marginale-cappata per FWD? E' l'unica parte di P0-bis non gia' risolta dal
+  codice. Se la risposta e' no, il filone si chiude qui e il riassunto lo
+  registra (interazione per-stat: nulla GK, marginale FWD, non testata DEF/MID
+  ma con prior negativo).
+
+
+================================================================================
+6. COSA RESTA PER IL BLOCCO OPUS SUCCESSIVO (P3) E PER SONNET
+================================================================================
+
+P3 (OPUS, sessione separata, dopo che l'utente scioglie Q-P0-2/Q-P0-4):
+  Le tre mosse del brief restano valide e non cambiano alla luce di P0:
+  1. GK_TEAM_CS_POINTS 35 -> 25 (confermato da §2), rimuovere il duplicato B11
+     (BONUS_CLEAN_SHEET_POINTS resta come costante diagnostica, o si unifica).
+  2. baseline 0.28 -> tasso storico CS del singolo GK (toglie il doppio
+     conteggio B22/B10; a squadra costante l'effetto deve annullarsi).
+  3. p_cal = 0.130 + 0.460*p prima dell'uso (toglie sovra-dispersione ~2.2x).
+  VINCOLO: mosse 2 e 3 spingono la media in versi opposti -> misurare
+  SEPARATAMENTE, mai per differenza (gia' nel brief). Metro: MAE+corr+lift
+  insieme; ripercorrere la catena fino allo scouting.
+  NB per P3: il blend e' ATTIVO in produzione (GK_TEAM_CS_WEIGHT=0.5 passato),
+  quindi B10/B12 impattano davvero, non sono ipotetici.
+
+Sonnet (P1..P7): invariato rispetto al brief. Segnalo solo che B20 (clamp -3)
+  e' un nuovo item da mettere in P7/igiene se l'utente conferma Q-P0-3, e che
+  B21 (clean sheet DEF) puo' diventare un fix di modello se Q-P0-2 rivela che
+  il DEF tratta male i clean sheet — in quel caso NON e' igiene, tocca la
+  catena §1bis e va gestito come P3, non P7.
+
+
+================================================================================
+7. COME RIFARE LE MISURE
+================================================================================
+
+audit_costanti.py (confronto costanti fra 53 leghe, <10s, offline) copiato dallo
+scratchpad della sessione P1 (8e0a56bf.../scratchpad/). Tutto il resto di questo
+report e' lettura statica del codice: nessun run, nessuna rete. File letti:
+formazione_mls/predict/test_{gk,def,mid,fwd}.py, opponent_strength.py, e lo
+screenshot Crettaz fornito in chat.

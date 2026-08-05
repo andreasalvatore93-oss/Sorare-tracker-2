@@ -1,0 +1,288 @@
+REPORT PASSAGGIO 2 — BLOCCO SONNET (P1, P2, P4, P5, P6, P7)
+Sessione 06/08/2026, ~00:30-01:40 Roma (CEST) — 22:30-23:40 UTC 05/08
+Destinatario: orchestratore. P0/P0-bis (Opus) letti, non ripetuti qui. P3/P8
+NON eseguiti (assegnati a Opus, sessioni separate). Branch main, 7 commit:
+f7eb26a9a9 (P1), 203a64345f (P2), 73b0790de7 (P4), a7796f87e8 (P5),
+358efb68e6 (P6), 131e51f313 (P7).
+
+
+================================================================================
+1. ESEGUITO / NON ESEGUITO
+================================================================================
+
+Eseguiti: P1, P2, P4, P5, P6, P7, tutti committati separatamente come da
+brief. Nessun push (mai chiesto in questo passaggio).
+NON eseguiti (fuori scope esplicito): P0, P0-bis, P3, P8. Se durante il
+lavoro fosse emerso un bisogno di anticiparli non e' successo -- nessun
+blocco ha richiesto di toccare il blend GK (P3) o l'aggregazione all-around
+(P8).
+
+
+================================================================================
+2. P1 — B19 fattore_forza_avversario: rimozione
+================================================================================
+
+Trovato: confermato per data-flow (gia' in P0) che score_atteso nei 4 ruoli
+non referenzia mai OPPONENT_SENSITIVITY/fattore_forza_avversario.
+Test A/A ESEGUITO (richiesto dal brief, non solo data-flow): monkeypatch
+OPPONENT_SENSITIVITY=1e9 su compute_score_atteso_{gk,def,mid,fwd} con input
+sintetici fissi -> score_atteso IDENTICO bit-per-bit sui 4 ruoli (base=50.168462
+gk, 51.053019 def, 55.590722 mid, 54.277034 fwd, prima e dopo).
+Cambiato: rimosso il calcolo/dict-entry/log di fattore_forza_avversario in
+build_prediction (4 file, formazione_mls/predict/test_{gk,def,mid,fwd}.py).
+Lasciato OPPONENT_SENSITIVITY: alimenta ancora la funzione diagnostica legacy
+rigorous_backtest (non _prod), fuori scope B19 (quella non e' mai stata
+descritta come "in produzione").
+Catena §1bis: NON APPLICABILE. Nessun valore di score_atteso si muove (era
+codice morto), quindi nessuna soglia/scouting da riverificare.
+
+
+================================================================================
+3. P2 — B01+B02: scouting sulla scala calibrata
+================================================================================
+
+Trovato: _atteso_dai_consigli leggeva l'atteso GREZZO da prediction_*.txt
+(commento "gia' calibrato" falso, confermato leggendo l'intestazione del file
+che il predict stesso scrive: "il generatore POI riordina per punteggio
+calibrato" -- ammette lui stesso di essere grezzo). PUNTI_SLOT_MEDIO=51.8 ed
+ESSENZE_PER_PUNTO=8.8 erano costanti locali mai aggiornate al merge del 05/08
+(7.9 vivo).
+Cambiato: _atteso_dai_consigli ora accetta gg (generatore) e calibra ogni
+atteso per ruolo (gg.calibra, CALIB_PER_RUOLO) usando il primo ruolo noto del
+giocatore dal pool. Nuova funzione _slot_medio_e_per_punto(gg): slot_medio =
+PAREGGIO_ARENA['ARENA_ALLSTARS_260']/5, per_punto = GUADAGNO_PER_PUNTO della
+stessa chiave -- stessa fonte della sezione arene (getattr, come _conto_arena),
+fallback ai vecchi valori statici se gg non caricabile.
+Verifica (a predizioni costanti, nessuna rigenerazione, come richiesto):
+  caso brief (brian-schwake, GK, atteso grezzo 57, dalla cache reale del
+  04/08 mls_gk_all): essenze/GW vecchio = (57-51.8)*8.8 = +45.8; nuovo =
+  (35.78+0.264*57 - 51.9)*7.9 = (50.8-51.9)*7.9 = -8.7. Combacia esattamente
+  coi numeri del brief.
+  Campione 60 predizioni cachate reali (15 per ruolo, prezzo sintetico fisso
+  10 EUR per isolare l'effetto scala): 0/60 verdetti ribaltati -- l'errore
+  pesa sui casi vicino soglia (schwake-like), non sulla media del pool.
+Catena §1bis: ripercorsa SI. Generatore/soglie NON toccati (nessun valore di
+produzione si muove): lo scouting ora legge correttamente soglie e scala gia'
+esistenti, non ne introduce di nuove. Nessuna ricalibrazione a valle richiesta.
+Questione aperta NON chiusa (segnalata, non affrontata): audit capitano P1
+(n=307) mostra hit-rate piu' alto su atteso GREZZO (28.7%) che calibrato
+(25.1%) -- indizio contro la scala relativa di CALIB_PER_RUOLO, la stessa
+estesa qui allo scouting. Non toccato in questa sessione.
+
+
+================================================================================
+4. P4 — R3: vincolo cap L10 violato in produzione
+================================================================================
+
+CAUSA: ipotesi (a) CONFERMATA (aritmetica), non (b). _optimize_capped_lineup
+(formazione_mls/build_formazione_finale.py) arrotondava ogni L10 al piu'
+vicino decimo (round()) PRIMA di sommarlo nel budget discretizzato. Per
+difetto fino a 0.05/carta, 0.25 su 5 carte -- il budget discretizzato
+accettava combinazioni la cui somma VERA superava l10_cap, e il chiamante
+segnava SEMPRE l10_cap_rispettato=True per questo percorso (nessun controllo
+indipendente a valle).
+Fix in due parti: (1) costi arrotondati per ECCESSO (math.ceil), budget per
+DIFETTO (math.floor) -- garanzia aritmetica, non approssimazione; (2) la somma
+L10 REALE (non discretizzata) di ogni combinazione candidata viene verificata
+indipendentemente <= l10_cap prima di accettarla, sia per i 4 slot principali
+sia per lo slot EXTRA.
+Verifica offline (pool sintetico, nessuna rete): 5 carte da 52.04 L10 (somma
+vera 260.20, ognuna arrotondava a 52.0 col vecchio round -> somma
+arrotondata 260.0<=260 -> ACCETTATA dal vecchio codice). Confermato con
+l'aritmetica vecchia isolata: budget_units_old=2600, sum_costs_old=2600,
+ACCETTATO=True, mentre vero_totale=260.2>260. Col fix: RIFIUTATA (nessuna
+combinazione entro il vincolo vero). Caso valido (somma vera 205) resta
+ACCETTATA.
+Catena §1bis: NON tocca predizione/soglie -- e' l'allocazione (assembla le
+formazioni SOTTO le soglie gia' esistenti). Nessuna ricalibrazione richiesta.
+
+
+================================================================================
+5. P5 — B07: tie-break odds vero, non bonus
+================================================================================
+
+Decisione utente (opzione C) applicata: tie-break, tolleranza 1 punto pieno
+di atteso, NON bonus additivo alla funzione obiettivo.
+Percorso GREEDY (generatore_formazioni/build_formazione_globale.py):
+  Trovato: _chiave_ordinamento faceva `base + _bonus_odds(row)` -- un BONUS,
+  non un tie-break, come temuto dal brief. Rimossi _bonus_odds/
+  PREFERENZA_ODDS_SOGLIA/PREFERENZA_ODDS_SCARTO (verificato: mai usati
+  altrove nel repo).
+  Prima implementazione PROVATA E SCARTATA in verifica: bucket a griglia
+  fissa floor(score/tolleranza). Test: 66.0 e 65.5 (0.5 di distanza, dentro
+  tolleranza 1.0) cadono in bucket ADIACENTI (floor 66 vs 65) -> NESSUN
+  tie-break, falso negativo sul caso stesso che la regola deve coprire.
+  Implementazione finale: _sort_ordinamento riscritta con "spogliamento
+  ancorato al migliore" -- ad ogni passo si prende il punteggio massimo
+  residuo, si isolano i candidati entro tolleranza da QUEL massimo (non da
+  una griglia), vince chi ha odds piu' alte. E' una sequenza di decisioni,
+  non un comparatore: nessun problema di transitivita' (A~B~C non implica
+  A~C, commento originale corretto, ma non si applica qui perche' non si
+  confrontano coppie indipendenti).
+Percorso KNAPSACK (formazione_mls/build_formazione_finale.py,
+_optimize_capped_lineup): la regola non arrivava MAI qui prima (B07
+originale). Due punti diversi: (a) cella di budget del DP, confronto fra
+ESATTAMENTE due candidati -> confronto pairwise diretto sulla distanza,
+corretto perche' non e' un ordinamento di lista; (b) slot EXTRA, scelta fra N
+candidati che rientrano nel vincolo L10 vero -> stesso "ancorato al migliore"
+del percorso greedy.
+Verifica: caso brief (Son 66/odds 0.70 vs Zinck 64/odds 0.80, scarto 2 pt) ->
+vince Son (atteso), CORRETTO perche' con la tolleranza ATTUALE di 1.0 (non
+piu' 2, il brief ha cambiato la tolleranza in questo passaggio) lo scarto di
+2 e' fuori soglia. Scarto 0.5 (dentro tolleranza) -> vince l'odds piu' alta.
+Scarto 3 -> vince l'atteso (Son). Stesso test replicato sul knapsack (MID:
+59.5/odds 0.90 vs 60.0/odds 0.60, entro tolleranza) -> vince l'odds piu' alta.
+Nessuna regressione sul fix P4 (rilanciato lo stesso test, RIFIUTATO
+correttamente).
+Catena §1bis: NON tocca score_atteso, solo l'ordine di selezione a parita'.
+Nessuna soglia da riverificare.
+
+
+================================================================================
+6. P6 — B13+B14: blend CS portiere, costo e silenzio
+================================================================================
+
+B13: _pcs_squadra_prod costruiva ~124 snapshot SETTIMANALI di
+modello_partita.stima() sull'intero storico per usarne UNO SOLO (1.09s/
+snapshot misurato nella sessione precedente, 60-130s CPU/portiere). stima()
+accetta gia' un `riferimento` arbitrario: eliminata la griglia, si calcola
+DIRETTAMENTE lo snapshot al cutoff vero (piu' preciso: cutoff esatto, non il
+multiplo di 7 giorni piu' vicino). Cache di processo per giorno mantenuta
+(run locali con piu' portieri nello stesso processo).
+B14: `except Exception: return None` sostituito con log() su ogni causa di
+uscita None (storico insufficiente, squadra non conosciuta, eccezione).
+Verifica offline su dati_globali/partite_gol.json (6.408 partite, nessuna
+rete): celtic-glasgow vs club-brugge-brugge, cutoff 2026-07-01 -> prima
+chiamata 0.80s, risultato valido P(CS)=0.1622; seconda chiamata stesso
+giorno 0.0000s (cache). Da ~124 chiamate a stima() a 1.
+Catena §1bis: NON tocca il valore calcolato (stessa formula, stesso
+risultato a parita' di cutoff -- verificato che il calcolo diretto al cutoff
+esatto e' MATEMATICAMENTE la stessa chiamata che prima veniva presa dalla
+griglia al bucket piu' vicino, solo piu' precisa). Nessuna soglia da
+riverificare. Nota: essendo piu' preciso (cutoff esatto vs bucket
+settimanale), il valore numerico di P(CS) puo' differire IMPERCETTIBILMENTE
+(entro un raggio di 7 giorni di forza attacco/difesa) da quello che sarebbe
+uscito con la vecchia griglia sullo STESSO identico giocatore -- non e' un
+comportamento diverso, e' la stessa formula valutata a una data piu' esatta.
+
+
+================================================================================
+7. P7 — igiene (commit separato)
+================================================================================
+
+B03/B04 (dead code, non solo stale): RAPPORTO_ARENA_MINIMO_TESTO
+(scouting_gw.py) e PAREGGIO_ARENA_260/RAPPORTO_ARENA_MINIMO (best_five.py)
+verificate con grep sull'intero repo -- MAI lette da nessun punto del codice,
+nemmeno dal tooltip che il commento diceva servissero. Rimosse.
+B05: 4 fallback .get(tipo, N) di GUADAGNO_PER_PUNTO (29.0/7.5/8.8) in
+generatore_formazioni/build_formazione_globale.py (x2),
+ottimizza_portafoglio_arene.py, backtest_arene_produzione.py (x2),
+scouting_gw.py (x2) -- allineati tutti a 7.9.
+B06: due commenti in build_formazione_globale.py ("SIGMA=42.70", "un punto
+vale 29 essenze") riscritti per riflettere la ritaratura del 05/08 (sigma
+50.6, 7.9 essenze/punto).
+B09: SOLO documentale come da istruzione. Docstring di pick_captain
+(formazione_mls, versione di produzione) ora spiega che le 52 copie
+per-lega non hanno GK_CAPTAIN_MARGIN, non sono allineate da
+propaga_modello.py (copre solo predict/test_*.py) e non vanno allineate
+senza chiedere. Nessuna delle 52 copie toccata.
+B16: PARAMETRI di test_def/mid/fwd.py (canonici) diceva ancora
+"TREND_INTENSITY=X -- da ricalibrare" (X=1.0 def, 0.7 mid/fwd). Riscritto
+coi parametri veri correnti (0.0 ovunque, HALF_LIFE/RANGE_MULTIPLIER reali).
+test_gk.py gia' corretto in P1.
+B20 (UNICO FIX REALE di P7, tocca score_atteso -- vedi catena sotto):
+LEVEL_TABLE nei 4 ruoli mancava il gradino -3:0. Confermato da due
+screenshot Sorare indipendenti dell'utente (GK Crettaz e DEF Sandler,
+04/08): la barra mostra marker -3 -2 -1 0 1 2 3 4 5 sopra i valori
+0 5 15 35 60 70 80 90 100. Aggiunto -3:0 a LEVEL_TABLE, floor del clamp
+abbassato da -2 a -3, sui 4 ruoli. Verificato: netto_to_level(-3)==0,
+netto_to_level(-10)==0 (clamp).
+MEDIA_RUOLO_*_PRIOR (GK/DEF/MID): marcate "SOLO DIAGNOSTICO" nel commento
+(la produzione usa il prior dinamico da presence_rate) -- FWD ce l'aveva
+gia', ora coerente sui 4 ruoli.
+Beginner (R2): NON ho inventato un nuovo numero di soglia (nessuna misura
+dedicata disponibile). Ho corretto un'affermazione FALSA nel commento di
+backtest_arene_produzione.py ("i valori Beginner coincidono con quelli di
+build_formazione_globale.py" -- vero solo fino al 03/08, la ritaratura del
+05/08 ha spostato cap 260 da 265.0 a 259.5 senza toccare Beginner) e marcato
+esplicitamente ogni soglia Beginner/cap260-grezzo in backtest_arene_
+produzione.py e backtest_arene_economia.py come "NON riverificata dopo
+05/08". Le arene Beginner restano registrate in questi due backtest
+(necessario: e' cosi' che R2 misura il loro ROI storico -19.2%), non nel
+generatore (che non le conosce, per scelta dell'utente).
+
+PROPAGAZIONE (obbligatoria per CLAUDE.md, eseguita 2 volte in questa
+sessione): `python propaga_modello.py`, 208 file (52 leghe x 4 ruoli),
+zero residui di token non sostituito ('formazione_mls/', "league='mls'")
+in entrambi i --check preliminari. NOTA IMPORTANTE: senza questa
+propagazione i fix P1 (fattore_forza_avversario) e P6 (blend GK) sarebbero
+rimasti attivi SOLO su MLS in produzione -- ogni lega gira la propria copia
+di predict/test_*.py via la matrice GitHub Actions, non importa quella di
+formazione_mls. Spot-check formazione_argentina/predict/test_gk.py: path e
+league='argentina' sostituiti correttamente, nessun residuo.
+
+Catena §1bis per B20 (unico item di P7 che muove un valore di produzione):
+NON RIVERIFICATA in questo passaggio -- vedi §8 domande aperte. Impatto
+atteso piccolo (il gradino -3 si attiva solo per un netto di eventi
+decisivi molto negativo, raro nell'aspettativa Poisson pesata) ma non
+misurato.
+
+
+================================================================================
+8. DOMANDE APERTE / DA VERIFICARE (non risolvibili leggendo il repo da sole)
+================================================================================
+
+Q1 (B20, catena §1bis non chiusa). Il gradino -3:0 aggiunto a LEVEL_TABLE
+  sposta score_atteso per la coda molto negativa. Non ho misurato quanto
+  sposta le soglie d'arena (PAREGGIO_ARENA) ne' i verdetti scouting. Prima
+  di considerare B20 chiuso: ripetere la taratura_formazioni_sintetiche.py
+  con la tabella corretta e verificare che il bias (oggi 63.43+0.736x /
+  CALIB_PER_RUOLO) non si sposti in modo apprezzabile. Se il segnale e'
+  piccolo (come atteso, essendo un evento raro), nessuna azione; se non lo
+  e', le soglie vanno riverificate.
+
+Q2 (Beginner, numerico, richiede dati che non ho ricalcolato). Le soglie
+  Beginner (264.1 reale, 2.1/0.736 essenze/punto) sono ferme al 03/08. Se
+  l'utente vuole riverificarle con SIGMA aggiornato serve rifare la stessa
+  catena (taratura_formazioni_sintetiche.py) isolata sulle sole formazioni
+  Beginner -- non fatto qui per non inventare un numero senza misura.
+
+Q3 (P2, gia' segnalata, riportata per completezza). L'anomalia B2 del
+  passaggio 1 (capitano scelto meglio su atteso GREZZO che calibrato) non
+  e' stata indagata. Riguarda CALIB_PER_RUOLO, non lo scouting: se D1 (coda
+  del passaggio 1) viene ripreso, questa e' la prima cosa da guardare PRIMA
+  di ritoccare i coefficienti.
+
+
+================================================================================
+9. COSA RESTA PER OPUS (P3, P8)
+================================================================================
+
+P3 (blend portiere, GK_TEAM_CS_POINTS 35->25 + baseline storica + p_cal):
+  la catena di produzione che P3 tocca (compute_score_atteso_gk) e' la
+  STESSA che P6 ha appena velocizzato (_pcs_squadra_prod) -- nessun conflitto,
+  P6 non ha cambiato la formula del blend, solo come si calcola team_cs_prob
+  a monte. P3 puo' partire dal codice attuale senza rebase concettuale.
+  Nota per P3: dopo B20 (LEVEL_TABLE -3:0), se P3 tocca compute_score_atteso_gk
+  vale la pena ripercorrere ANCHE quella verifica (Q1) nella stessa passata,
+  non due volte separate.
+
+P8 (decomposizione all-around per categoria, P0-bis): il report Opus ha
+  gia' isolato dove le interazioni granulare x avversario esistono oggi
+  (fwd_offense_granular_delta attivo, gk_def_pen_area_granular_delta spento)
+  e dove NON sono mai state testate (DEF/MID sui duelli specifici). Nessuna
+  sovrapposizione con P1-P7: nessuno dei fix di questa sessione ha toccato
+  Stadio D o i delta granulari per-stat.
+
+
+================================================================================
+10. VERIFICA MECCANICA FINALE
+================================================================================
+
+Import puliti (nessun errore) di tutti i moduli toccati: build_formazione_
+globale, build_formazione_finale (mls), test_gk/def/mid/fwd, scouting_gw,
+best_five. Nessun residuo di simboli rimossi (fattore_forza_avversario,
+_bonus_odds, PREFERENZA_ODDS_SOGLIA/SCARTO, PAREGGIO_ARENA_260/
+RAPPORTO_ARENA_MINIMO, RAPPORTO_ARENA_MINIMO_TESTO) verificato con grep
+sull'intero repo dopo ogni rimozione. Working tree pulito a fine sessione
+tranne questo report e quello di Opus (P0), entrambi da committare.

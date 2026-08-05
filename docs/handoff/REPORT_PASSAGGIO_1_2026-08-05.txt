@@ -1,0 +1,755 @@
+REPORT PASSAGGIO 1 — AUDIT DI SOLA LETTURA
+Sessione 05/08/2026, ore ~23:50 Roma (CEST) — 21:50 UTC
+Destinatario: orchestratore. Nessuna modifica applicata: nessun edit al codice,
+nessun commit, nessun workflow lanciato. Unico file scritto: questo.
+
+Repo: branch main, working tree pulito all'avvio, `git pull` fatto (ha portato
+i CSV di bot_profit del 05/08). Tutte le misure sono locali, offline, su dati
+gia' su disco.
+
+
+================================================================================
+1. SINTESI BUG
+================================================================================
+
+id   file:riga                                   descrizione                                   impatto                                        gravita'
+---- ------------------------------------------- --------------------------------------------- ---------------------------------------------- ------------------
+B01  scouting_gw.py:1452-1504 + :373-387          Lo scouting legge l'atteso GREZZO dai          Ess/GW, EUR/EssGW, GW di rientro e verdetto     BLOCCANTE
+                                                 prediction_*.txt e lo confronta con            COMPRA/FORSE/NO calcolati su scala sbagliata,   (silenzioso)
+                                                 PUNTI_SLOT_MEDIO=51.8, che e' sulla scala      con distorsione DIVERSA per ruolo -> il
+                                                 REALE (post `calibra_riga`). Il commento a     confronto fra ruoli, che e' lo scopo
+                                                 :1495-96 afferma il falso ("il pt e' gia'      dichiarato della tabella unica (:1596-1600),
+                                                 calibrato").                                   e' viziato. Vedi §3.A2 per il caso numerico.
+B02  scouting_gw.py:364                          ESSENZE_PER_PUNTO = 8.8 hardcoded: NON e'      Ess/GW gonfiate dell'11.4%, GW di rientro       silenzioso-
+                                                 stato aggiornato a 7.9 col merge del 05/08.    sottostimate dell'11.4%; sposta le soglie       pericoloso
+                                                 VALIDAZIONE_SOGLIE.md e §7 del riassunto       COMPRA(<=15 GW)/FORSE(<=40 GW).
+                                                 dicono che lo scouting "si aggiorna da solo
+                                                 via getattr": e' vero solo per la sezione
+                                                 arene (:1245,1258,1328,1334), non per questa.
+B03  scouting_gw.py:369                          RAPPORTO_ARENA_MINIMO_TESTO='1.019' (=265/260) Solo testo del tooltip.                         cosmetico
+                                                 mentre il valore vivo e' 259.5/260 = 0.998.
+B04  best_five.py:2205-2213                      Il commento dice "Un posto solo per questo      Oggi allineato (259.5) ma resta un doppione     silenzioso-
+                                                 numero (03/08) ... ora si legge da li'".       che va sincronizzato a mano ad ogni cambio.     pericoloso
+                                                 Il codice invece HARDCODA PAREGGIO_ARENA_260.
+B05  build_formazione_globale.py:588 (29.0),      Quattro default diversi per lo stesso          Oggi irraggiungibili (le chiavi dei due dict    cosmetico
+     :1133 (7.5), scouting_gw.py:1258,1334 (8.8), fallback di GUADAGNO_PER_PUNTO.                coincidono sempre), ma alla prima chiave        (trappola)
+     ottimizza_portafoglio_arene.py:61 (7.5),                                                    nuova darebbero tre risposte diverse.
+     backtest_arene_produzione.py:318,628 (7.5)
+B06  build_formazione_globale.py:425-438, 552-555 Commenti stantii: "SIGMA=42.70 -> le soglie    Chi legge il file crede a una catena che non    silenzioso
+                                                 qui sotto" (per cap 260 ora e' 50.6) e "in     esiste piu'; e' l'origine del fallback 29.0.
+                                                 cap 260 un solo punto vale 29 essenze" (7.9).
+B07  build_formazione_globale.py:914-941 +        `_bonus_odds` (PREFERENZA_ODDS_SCARTO, la      La regola d'ordinamento chiesta               silenzioso-
+     formazione_mls/build_formazione_finale.py:   regola Son-vs-Zinckernagel voluta              esplicitamente dall'utente NON si applica      pericoloso
+     1227-1249                                    dall'utente) agisce solo su                    nella competizione principale dell'utente.
+                                                  `_chiave_ordinamento`, cioe' sul percorso
+                                                  GREEDY. Nelle arene con cap il percorso e'
+                                                  il knapsack, che ottimizza `row['atteso']`
+                                                  puro e ignora l'ordine della lista.
+B08  formazione_mls/build_formazione_finale.py:   Il DP e' indicizzato SOLO sul budget speso e   Puo' perdere l'ottimo vero; la docstring       silenzioso
+     1102-1158                                    tiene un solo stato per cella; il vincolo      lo chiama "knapsack ESATTO".                   (piccolo)
+                                                  "stesso slug non due volte" e la scelta
+                                                  greedy dell'EXTRA rompono l'ottimalita'.
+B09  formazione_<lega>/build_formazione_finale.py `pick_captain` diverso in 52 leghe su 53:      Produzione OK (il generatore globale importa   silenzioso
+     :748 (52 copie) vs formazione_mls:1561       nessun GK_CAPTAIN_MARGIN, nessuna regola       solo formazione_mls), ma qualunque run
+                                                  GK/movimento. 1182 righe contro 2349.          per-lega standalone da' un capitano diverso.
+B10  formazione_mls/predict/test_gk.py:1521-1522  Il blend porta-inviolata somma                 Doppio conteggio della forza difensiva di       silenzioso-
+                                                  w*35*(p_cs - 0.28) sopra una media pesata      squadra: i GK di difese strutturalmente forti   pericoloso
+                                                  che (commento a :2110-2123) INCLUDE gia' il    prendono l'effetto due volte, quelli di difese
+                                                  tasso storico di clean sheet del giocatore.    deboli lo prendono due volte in negativo.
+                                                  La baseline e' una costante globale (0.28),
+                                                  non il tasso storico del giocatore.
+B11  test_gk.py:121 vs :2121                      GK_TEAM_CS_POINTS=35 e                         Il coefficiente del blend cambia del 40% a     silenzioso
+                                                  BONUS_CLEAN_SHEET_POINTS=25.0 sono due         seconda di quale delle due si consideri vera.
+                                                  costanti per LA STESSA quantita' fisica.
+B12  test_gk.py:130-171 (misura, §3.A4)           P(clean sheet) mal calibrata: n=6781,          Il blend sposta il voto ~2.2x piu' di quanto    silenzioso-
+                                                  OLS reale = 0.130 + 0.460*p_pred; media        l'informazione giustifichi, e in media di       pericoloso
+                                                  prevista 0.3097 vs reale 0.2725; Brier         +0.52 pt verso l'alto su OGNI portiere.
+                                                  skill NEGATIVO (-1.4% vs costante); AUC 0.589.
+B13  test_gk.py:140-157                           `_pcs_squadra_prod` costruisce ~124 snapshot   Misurato: 1.09 s per snapshot -> ~60-130 s di   silenzioso
+                                                  settimanali di `modello_partita.stima()` su    CPU per OGNI portiere, per usarne UNO.
+                                                  tutto il dataset, per poi usarne uno solo.
+                                                  La cache `_FORZE_CS_PROD` e' di PROCESSO e
+                                                  ogni giocatore gira in un processo separato.
+                                                  Nessuna cache su disco.
+B14  test_gk.py:170-171                           `except Exception: return None` senza log:     Impossibile sapere a posteriori se il blend    silenzioso
+                                                  il blend si spegne in silenzio.                 e' stato applicato o no.
+B15  build_formazione_globale.py:439-447,558-569  'ARENA_ALLSTARS_ELITE' ha soglia, guadagno e   Il generatore non genera ne' valuta le arene    silenzioso
+                                                  costo ma NESSUNA shape/label/priorita'.        Elite; e nemmeno le Beginner, che sono
+                                                  'Beginner' non esiste affatto (solo iniettato  182/673 = 27% dello storico reale dell'utente
+                                                  a mano in backtest_arene_produzione.py:144).   (Elite: 76/442 nel campione manager).
+B16  test_gk.py:41 / test_def.py:42 /             Docstring: "TREND_INTENSITY=1.3 / 1.0 / 0.7    Chi legge l'intestazione crede che il trend    cosmetico
+     test_mid.py:33 (x53 leghe)                   — da ricalibrare". Il valore vero e' 0.0 in    sia acceso. CLAUDE.md: la fonte va corretta.
+                                                  tutte le 53 leghe x 4 ruoli (verificato).
+B17  analisi_manager/analizza_gw.py:28,234-236    SLOT_MEDIO=51.8 (scala reale) confrontato con  Il "lift di selezione" nei report_*.md e'      silenzioso
+                                                  l'atteso GREZZO di backtest_arene_previsioni.  su scale miste. Stessa classe di B01.
+B18  (dati su disco)                              18 cartelle formazione_* con pipeline predict  "Coperta != popolata" su un terzo delle        silenzioso
+                                                  completa e ZERO gamelog: arabia, azerbaigian,  cartelle. formazione_contender non ha
+                                                  belgio2, germania3, giappone2, israele,        nemmeno predict/.
+                                                  italia2, kleague2, olanda2, resto_mondo,
+                                                  romania, senza_lega, serbia, slovacchia,
+                                                  svezia, ucraina, venezuela, contender.
+
+BUG PIU' GRAVE — B19, tenuto separato perche' invalida due affermazioni del
+riassunto:
+
+B19  test_gk.py:2130-2135 / test_def.py:2079-2084 `fattore_forza_avversario` E' DI NUOVO UNA     Il parametro OPPONENT_SENSITIVITY=29.0,        BLOCCANTE
+     test_mid.py:1911-1916 /                      COSTANTE INERTE. Viene calcolato e finisce     documentato in §2.1 come parametro di          (concettuale)
+     test_mls_fwd_all.py:1920-1925                SOLO nel dict `result` (:2386) e in una riga   produzione per tutti e 4 i ruoli e definito
+                                                  di stampa (:2480). Non e' passato a            "l'unico mai risultato instabile", NON HA
+                                                  `compute_score_atteso_*` ne' moltiplicato in   NESSUN EFFETTO sulla produzione.
+                                                  nessun punto (verificato per data-flow su
+                                                  tutti e 4 i ruoli: nessuna occorrenza di
+                                                  `* fattore_forza_avversario`).
+                                                  OPPONENT_SENSITIVITY e' letto in due soli
+                                                  posti: quella riga inerte e il vecchio
+                                                  `rigorous_backtest` (test_gk.py:1307), NON
+                                                  `rigorous_backtest_prod_gk`, che e' quello
+                                                  allineato alla produzione e non accetta
+                                                  nemmeno l'argomento.
+
+  Conseguenza metodologica: la grid search del 26/07 che ha "scelto" opp_sens=29.0
+  girava sul vecchio harness, cioe' misurava un componente che in produzione non
+  esiste. E' esattamente il caso «il misuratore misura una cosa, la produzione ne
+  esegue un'altra» gia' costato caro il 03/08.
+  NB: l'effetto avversario in produzione ESISTE, ma passa da un altro canale
+  (`opponent_lambda_multiplier` / modulo `opponent_strength`, piu'
+  `gk_def_pen_area_granular_delta` per il GK). Quindi non manca il segnale:
+  manca il parametro documentato.
+  Verifica fatta: statica, per data-flow completo (le uniche occorrenze del nome
+  sono assegnazione, dict di output, stampa). Non serve run.
+
+
+================================================================================
+2. DIVERGENZE RIASSUNTO / CODICE
+================================================================================
+
+D-1  §2.1, formula: "score_atteso = P(gioca) x media_pesata x fattore_casa_trasferta
+     x fattore_forza_avversario x fattore_trend".
+     CODICE: `fattore_forza_avversario` non e' nel prodotto (B19) e
+     `fattore_trend` e' spento (TREND_INTENSITY=0.0 ovunque). La formula viva e':
+       grezzo = level_score_atteso + granulari*trend_granulare + pen_area_delta
+       grezzo_corretto = shrinkage(grezzo, prior dinamico)
+       risultato = grezzo_corretto * fattore_casa_trasferta [+ blend CS solo GK]
+     con l'avversario che entra via opponent_lambda_multiplier dentro
+     level_score_atteso, non come fattore moltiplicativo finale.
+
+D-2  §2.1, tabella parametri: la colonna `opp_sens` = 29.0 documenta un parametro
+     INERTE (B19). La colonna `trend_int` = 0.0 e' corretta e verificata su
+     53 leghe x 4 ruoli.
+
+D-3  §5: "`fattore_forza_avversario`: era una costante inerte mai letta, poi
+     riabilitata con dato pulito (29/07) — oggi in produzione, stabile."
+     E' FALSO nel codice odierno. Da riscrivere.
+
+D-4  §7 e analisi_manager/VALIDAZIONE_SOGLIE.md:180-186: "Propagazione automatica:
+     scouting_gw.py ... legge le costanti dal generatore via getattr -> si
+     aggiorna da solo". FALSO per la colonna Ess/GW: `ESSENZE_PER_PUNTO` e
+     `PUNTI_SLOT_MEDIO` sono costanti locali di scouting_gw.py (B02). Il getattr
+     copre solo la sezione "arene che converrebbe giocare".
+
+D-5  §2.2: "`€/EssGW` ... e' la colonna giusta per ORDINARE i candidati" — vero
+     solo se l'atteso fosse sulla stessa scala per tutti i ruoli. Non lo e' (B01):
+     l'ordinamento fra ruoli e' distorto, quello dentro un ruolo no.
+
+D-6  §5, "level_score portiere binario ... Il vero valore e' 35.0 senza clean
+     sheet / 60.0 con clean sheet, mai intermedio" — gia' segnalato come da
+     correggere in §C.2 del brief. Aggiungo il riscontro dai dati: sui detail
+     cache dei GK (9.542 partite con mins>=60) `clean_sheet_60` coincide
+     ESATTAMENTE con "0 gol subiti" (2.642 su 2.642), quindi il flag Sorare non
+     introduce nessuno scarto rispetto alla porta inviolata piena. Il tasso
+     osservato e' 27.7%, coerente col 27.25% misurato sulle partite (§3.A4).
+
+D-7  §2.3: "`scouting_gw.py` lo importa ancora come libreria per alcune funzioni
+     (riuso previsione, render carte, knapsack cheapest/valore, tooltip soglie
+     arena)". Il knapsack NON e' fra le funzioni importate. Elenco esatto in §3.A1.
+
+D-8  §4, "Buco mai spiegato" (673 vs 870): da eliminare, vedi §6 (correzione gia'
+     validata dall'utente). Confermo che `arene_storico.json` ha 673 arene e che
+     la ripartizione per tipo e': arena division 191, Beginner 182, cap 260 194,
+     cap 220 53, Uncapped 38, arena uncapped 15.
+
+D-9  Brief §D1: "I coefficienti OLS sono gia' misurati (b = 0.72 DEF / 0.71 MID /
+     0.58 GK / 1.15 FWD) e MAI APPLICATI". FALSO: la ricalibrazione affine per
+     ruolo E' IN PRODUZIONE da prima di questa sessione —
+     build_formazione_globale.py:393-415, `CALIB_PER_RUOLO`:
+       GK (35.78, 0.264) | DEF (7.28, 0.831) | MID (11.61, 0.740) | FWD (8.40, 0.789)
+     applicata da `calibra_riga` su atteso/low/high/ordinamento/sort_score
+     all'ingresso del generatore (:837) e, per lo scouting, dentro
+     `best_five._parse_consiglio_calibrato`. Dettaglio in §5.D1.
+
+
+================================================================================
+3. VERIFICHE MIRATE A1-A4
+================================================================================
+
+--- A1. best_five.py: cosa e' ancora vivo -------------------------------------
+
+Dipendenti REALI di best_five.py in tutto il repo (codice, non commenti):
+  - scouting_gw.py  (unico consumatore in produzione)
+  - best_five_telegram_notify.py
+  - .github/workflows/best_five.yml e best_five_contender.yml (da non lanciare)
+  - .github/workflows/scouting_gw.yml: solo un commento
+  - formazione_*/consiglio/build_consiglio*.py: SOLO commenti, nessun import
+
+Attributi effettivamente usati da scouting_gw.py — sei, tutti qui:
+  bf._predizione_riutilizzabile   (:534)  usato a scouting_gw.py:1053
+  bf.output_dir_per_ruolo         (:652)  usato a :1144
+  bf._import_gg                   (:1198) usato a :1125, :1516, :1565
+  bf._parse_consiglio_calibrato   (:1206) usato a :1155
+  bf._renderizza_risultati        (:2587) usato a :1294
+  bf.rendi_carte_cliccabili       (:2726) usato a :1775
+
+  NON usati da nessuno all'esterno: `costruisci_formazione_contender` (:2652),
+  `_annota_prezzi_html` (:2489, scouting ne ha una versione propria — vedi il
+  commento a scouting_gw.py:1526), `_stati_sotto_cap` e tutta la famiglia
+  knapsack (:2228+), PAREGGIO_ARENA_260/RAPPORTO_ARENA_MINIMO (:2213/:2226),
+  FILL_QUOTA_MAX, TARGET_PUNTEGGIO.
+  Il file ha 80 funzioni top-level su 3.378 righe: le sei sopra piu' le loro
+  dipendenze interne sono la parte da conservare.
+
+VERDETTO A1: il file NON e' cancellabile, ma la §2.3 del riassunto puo' essere
+ridotta a due righe + l'elenco dei sei nomi qui sopra. Attenzione: se in
+passaggio 2 si tocca `_import_gg`, si rompe anche il CSS/prezzi delle carte
+nel report di scouting, non solo i numeri.
+
+--- A2. Soglie cap 260: la propagazione e' reale? -----------------------------
+
+Sorgente unica: build_formazione_globale.py:439-447 e :558-563.
+  PAREGGIO_ARENA = {260: 259.5, 220: 244.1, UNCAPPED: 288.3, ELITE: 342.7}
+  GUADAGNO_PER_PUNTO = {260: 7.9, 220: 6.3, UNCAPPED: 8.0, ELITE: 9.1}
+  arene dedicate: pareggio 262.9, guadagno 8.8 (NON aggiornato, vedi sotto)
+
+Consumatori verificati uno per uno:
+  ottimizza_portafoglio_arene.py:55,61,125   getattr/attributo diretto  -> OK
+  diagnostica_arene_perse.py:69              attributo diretto          -> OK
+  backtest_arene_produzione.py:317-318,627-8 attributo diretto          -> OK
+                                             (ma sovrascrive Beginner con 264.1
+                                              e 2.1/0.736 presi da
+                                              backtest_arene_economia.py)
+  scouting_gw.py:1245,1258,1328,1334         getattr -> OK, MA copre solo la
+                                             sezione arene del report
+  scouting_gw.py:364 ESSENZE_PER_PUNTO=8.8   COPIA MORTA -> B02
+  scouting_gw.py:369 tooltip '1.019'         COPIA MORTA -> B03
+  best_five.py:2213 PAREGGIO_ARENA_260=259.5 COPIA sincronizzata a mano -> B04
+  backtest_arene_economia.py:55-71           dizionario PROPRIO e indipendente
+                                             ('cap 260': 273.9 con nota
+                                             "reale 265.0") -> non allineato al
+                                             259.5. E' la fonte dei numeri
+                                             Beginner usati dal backtest.
+
+Le arene dedicate ('arena division', 28% dello storico) hanno GUADAGNO_PER_PUNTO
+= 8.8, cioe' il VECCHIO valore cap 260 pre-05/08, mentre la loro soglia (262.9)
+e' stata misurata con SIGMA=42.70. Sono inerti solo perche' ARENA_LEAGUES e'
+vuota di default: se l'utente valorizza ARENA_LEAGUES_ENABLED, rientrano in
+gioco con parametri non riverificati.
+
+Altri tipi validati con lo stesso metodo? Si', ma non allo stesso livello:
+VALIDAZIONE_SOGLIE.md dichiara di aver misurato la sigma su 3 dataset e trovato
+uncapped/cap220 "coerenti con 42.70"; non riporta pero' una tabella
+sigma-per-tipo con le n, come fa per la cap 260. Beginner ed Elite non sono
+validati affatto nel generatore perche' non esistono come tipo (B15).
+
+CASO NUMERICO che unisce B01+B02 (il vero danno della catena §1bis):
+  portiere reale dal consiglio MLS del 04/08: brian-schwake, atteso GREZZO 57.
+  - scouting oggi:  (57 - 51.8) * 8.8  = +45.8 Ess/GW  -> verdetto COMPRA
+  - scala corretta: calibrato = 35.78 + 0.264*57 = 50.8
+                    (50.8 - 51.9) * 7.9 = -8.7 Ess/GW -> verdetto NO
+  Il segno si ribalta. Per un attaccante (b=0.789) l'errore c'e' ma e' molto
+  minore: raw 60 -> 55.7 calibrato, cioe' l'errore relativo fra ruoli e' il
+  problema, non l'errore medio.
+
+--- A3. Knapsack su L10: c'e' o e' un greedy? ---------------------------------
+
+C'E'. formazione_mls/build_formazione_finale.py:1074-1158
+(`_optimize_capped_lineup`), attivato da :1227-1235 quando l10_cap non e' None,
+max_classic e' None, nessuno stack guard e i 4 slot sono GK/DEF/MID/FWD distinti
+— cioe' SEMPRE nelle cap 260 / cap 220 / arene dedicate. La riduzione con
+`_pareto_frontier` (:1054-1071) e' corretta (elimina solo dominati veri).
+Non e' `best_five` a fornirlo: best_five ha il proprio knapsack (`_stati_sotto_cap`,
+:2228) e NON e' importato dal generatore.
+
+Ma il knapsack ottimizza `sum(row['atteso'])`, non `atteso/L10`: e' la scelta
+giusta (il rapporto e' un'euristica, il DP sul budget e' l'ottimo), pero':
+  - ignora `_bonus_odds` e qualunque `sort_score` -> B07;
+  - ignora i nudge di sinergia (documentato e voluto, 27/07);
+  - il DP e' indicizzato solo sul budget e con il vincolo anti-duplicato non e'
+    piu' esatto -> B08.
+Sul regime che interessa (cap 260 tipiche dell'utente ~270 di L10 su 260 di
+budget, cioe' il vincolo morde) la parte che conta e' proprio l'allocazione di
+budget, e quella e' corretta.
+
+--- A4. P(clean sheet) del GK: da dove viene e quanto e' calibrata ------------
+
+PROVENIENZA (test_gk.py:130-171): NON riusa `fattore_forza_avversario`. Chiama
+`modello_partita.stima()` su tutte le osservazioni gol precedenti (Poisson con
+log-legame, attacco/difesa/fattore campo stimati per discesa; regolarizzazione
+0.30 ed emivita 120 giorni — entrambi diversi dai default del modulo, 0.08/180),
+in snapshot SETTIMANALI, e poi
+    p_cs = exp( -lambda_atteso(avversario, squadra_del_GK, in_casa = not is_home) ).
+Quindi: aggiustata per avversario SI, per casa/trasferta SI, walk-forward SI
+(solo osservazioni precedenti allo snapshot). Nessuna contaminazione dal futuro.
+
+CALIBRAZIONE MISURATA (replica esatta della catena di produzione, snapshot
+mensili invece che settimanali per costo; dati: dati_globali/partite_gol.json,
+6.408 partite, 8.713 lati noti; valutabili 6.781 lati con entrambe le squadre
+conosciute):
+
+  P media prevista 0.3097   |  frequenza reale 0.2725  |  bias +0.0372
+  bucket        n     p_med   reale    delta
+  0.00-0.15    710    0.106   0.176   +0.070
+  0.15-0.20    713    0.176   0.178   +0.002
+  0.20-0.25    930    0.226   0.244   +0.018
+  0.25-0.30   1073    0.276   0.267   -0.009
+  0.30-0.35    972    0.324   0.283   -0.041
+  0.35-0.40    817    0.374   0.322   -0.052
+  0.40-0.50   1022    0.443   0.326   -0.117
+  0.50-1.01    544    0.587   0.390   -0.198
+  AUC 0.5889 (n_cs 1848 / n_no 4933)
+  Brier 0.2010 contro 0.1983 della costante  ->  SKILL NEGATIVA -1.4%
+  Solo lati con minuti>=85 (n=6282): stessa forma, bias +0.0419, skill -1.6%
+
+  OLS: reale = 0.1301 + 0.4599 * p_pred    (n=6781)
+       sd(p_pred) = 0.1324
+
+RISPOSTA ALLA DOMANDA DEL BRIEF: "nelle partite previste al 30%, in quante e'
+arrivato davvero il clean sheet?" -> nel bucket 0.30-0.35 (p medio 0.324,
+n=972) il clean sheet e' arrivato nel 28.3% dei casi. Al 44% previsto (n=1022)
+ne arriva il 32.6%. Al 59% previsto (n=544) ne arriva il 39.0%.
+
+LETTURA. La stima ORDINA (AUC 0.589, e la pendenza e' positiva e ben diversa da
+zero), ma e' sovra-dispersa di un fattore ~2.2 e spostata in alto di 3.7 punti
+percentuali. Come PROBABILITA' e' peggio di una costante (Brier skill negativa).
+
+QUANTO PESA SUL VOTO. L'effetto in produzione e' 0.5 * 35 * (p - 0.28):
+  sd dell'effetto oggi:                      2.32 pt
+  sd dell'effetto con la pendenza vera:      1.07 pt
+  effetto MEDIO oggi su ogni portiere:       +0.52 pt (perche' la baseline 0.28
+                                             sta sotto la media prevista 0.3097)
+Il coefficiente totale in produzione e' 17.5 per unita' di p. Il coefficiente
+"onesto" e' POINTS * 0.4599, cioe' 16.1 se POINTS=35 (B11: 8% troppo forte,
+sostanzialmente giusto per caso) oppure 11.5 se POINTS=25 (52% troppo forte).
+Cioe': il peso 0.5 sta gia' facendo, per caso, lo shrinkage che la calibrazione
+richiederebbe — ma solo se si accetta POINTS=35, e le due costanti in file si
+contraddicono (B11).
+
+Quello che resta rotto anche accettando 35: il doppio conteggio (B10) e la
+baseline globale al posto di quella del giocatore. La strada corretta e'
+    risultato += w * POINTS * ( p_cal(prossima) - p_cal(media storica del GK) )
+con p_cal = 0.130 + 0.460 * p_grezza, cosi' che a squadra "sempre uguale"
+l'effetto sia zero invece che positivo.
+
+VERDETTO A4: si', la stima e' mal calibrata, ed e' quantificato quanto. Ma NON
+e' vero che "ogni raffinamento successivo del GK e' inutile": la stima ordina, e
+il difetto e' una trasformazione affine nota, cioe' correggibile con due numeri.
+
+
+================================================================================
+4. ESITO ANALISI B1-B3
+================================================================================
+
+--- B1. Triage dei filoni "chiusi" --------------------------------------------
+
+PREMESSA CHE CAMBIA IL TRIAGE. La numerosita' NON e' cresciuta quasi da nessuna
+parte. Misurato oggi sul disco:
+  dati_globali/errore_storico.json          2.690 partite   (=uguale al 04/08)
+  dati_globali/errore_storico_tutte.json    2.690
+  dati_globali/taratura_coppie.json        75.474 coppie    (era 74.515, +1.3%)
+  dati_globali/partite_gol.json             6.408 partite
+  dati_globali/arene_storico.json             673 arene     (invariato)
+  dati_globali/arene_formazioni.json          593 formazioni(invariato)
+  backtest_arene_dettaglio.json / _0805       306 / 323 arene
+  analisi_manager: 442 arene, 2.045 righe -> 1.142 uniche (gw,slug), 8 GW
+  cache game-log: 6.229 gamelog / 5.689 detail_cache su 36 leghe
+L'unico dataset cresciuto davvero e' quello dei manager (8 GW contro le 4 di
+qualche giorno fa). Tutto il resto e' fermo. Quindi la premessa "ogni CHIUSO e'
+sotto-potenziato oggi" NON regge in generale: regge solo per i filoni misurati
+sulle arene dei manager.
+
+filone chiuso                          n alla chiusura     n oggi          guadagno   verdetto
+-------------------------------------- ------------------- --------------- ---------- ------------------------------
+storico <10 partite sottostimato        71 righe            92 uniche       +30%       RIAPRIRE — vedi D4: oggi
+                                                            (1.142 tot)                l'IC95 esclude lo zero
+capitano favorita/sfavorita             3.130 formazioni    +307 complete   +10%       resta CHIUSO (serve un
+  (IC95 [-0.0015,+0.14])                (manager_crowss)    nel campione               campione INDIPENDENTE, non
+                                                            manager                    piu' righe dello stesso)
+corr(atteso_somma, rank) uncapped       "poche arene"       33 arene        n.d.       reproduce (-0.330) ma n=33:
+                                                            uncapped                   vale un rerun solo dopo aver
+                                                                                       accumulato altre GW uncapped
+indice P(>=1 boom) come metrica di      442 arene           442 (stesse)    0          resta CHIUSO
+  selezione arena (05/08)
+boom-classifier dedicato (05/08)        442 arene           442 (stesse)    0          resta CHIUSO
+covarianza boom fra compagni (05/08)    442 arene           442 (stesse)    0          resta CHIUSO
+piattezza del punto (04/08)             2.690 + 87k walk-fw invariati       0          resta CHIUSO
+fattori granulari                       268 partite reali   invariato       0          resta CHIUSO
+affidabile vs forte                     20k+ partite        invariato       0          resta CHIUSO
+opponent_lambda cap tutti i ruoli       misurato 30/07      invariato       0          resta CHIUSO (decisione utente)
+ottimizzazione congiunta MILP           bug di misura       —               —          resta CHIUSO (era un bug)
+regole di decisione / allocazione       5.768 confronti     invariato       0          resta CHIUSO (dimostrazione,
+                                                                                       non misura) — ma vedi D2
+Esclusi dal triage per istruzione: bonus additivi, quote bookmaker,
+trend_intensity, level_score GK binario (decisione utente).
+
+--- B2. pick_captain: audit ---------------------------------------------------
+
+Campione: 307 formazioni complete su 442 (scartate quelle con carte senza
+atteso/reale o non giocate). Realizzato = `reale` GREZZO, capitano gia'
+scorporato (trappola §8.1 rispettata). L'unita' e' la formazione, quindi la
+de-duplicazione §8.15 non si applica qui (si applica in D4, dove e' fatta).
+Attesi calibrati con CALIB_PER_RUOLO prima di applicare la regola, perche' in
+produzione `pick_captain` vede righe gia' calibrate.
+
+  policy                              n     hit-rate       pt del capitano
+  ----------------------------------- ---- -------------- ----------------
+  atteso GREZZO, max puro             307   28.7% ±5.1        56.95
+  atteso calibrato, max puro          307   25.1% ±4.8        56.24
+  PRODUZIONE (calibrato + GK margin)  307   24.8% ±4.8        56.17
+  L10 piu' alto                       307   25.7% ±4.9        56.10
+  capitano scelto dal manager vero    307   26.1% ±4.9        56.54
+  casuale (una estrazione)            307   22.8% ±4.7          —
+  oracolo (max realizzato)            307    100%             75.56
+  carta qualunque della formazione      —      —              53.01
+
+  La policy di produzione becca il migliore dei cinque nel 24.8% dei casi,
+  contro il 20% atteso dal caso: +4.8 punti percentuali, con IC95 ±4.8 —
+  cioe' AL LIMITE della significativita', e sotto la scelta a caso... no:
+  sopra, ma di quanto basta a non escludere il caso.
+  In punti: il capitano scelto vale 56.17 contro 53.01 di una carta a caso e
+  75.56 dell'oracolo. Con il +20% d'arena, la produzione cattura 11.23 pt di
+  bonus contro i 15.11 dell'oracolo.
+
+  MAPPA DEGLI ERRORI (policy di produzione)
+  per RUOLO SCELTO:      FWD  n= 63  hit 39.7%
+                         MID  n=145  hit 22.8%
+                         DEF  n= 99  hit 18.2%
+                         GK   n=  0  (il margine GK funziona: non lo sceglie mai)
+  perdita media (max_reale - reale_scelto): DEF 24.59 | MID 17.33 | FWD 16.01
+  ruolo del VERO migliore quando sbagliamo: FWD 73, MID 63, DEF 58, GK 37
+  per LEGA:              mls n=113 29.2% | kleague n=40 15.0% | argentina n=25
+                         16.0% | brasile n=11 9.1% | germania n=10 30.0%
+  per CASA/TRASFERTA:    casa n=154 26.6% | trasferta n=153 22.9%
+  per TIPO ARENA:        cap260 23.8% | Elite 24.0% | cap220 26.8% |
+                         Beginner 27.5% | Uncapped 24.1%  (nessuna differenza)
+  per STORICO:           304 su 307 con storico >=10, segmento vuoto
+
+  L'errore SISTEMATICO e' uno solo e si legge senza ambiguita': la produzione
+  nomina un DIFENSORE nel 32% dei casi (99/307), ed e' il segmento peggiore
+  (18.2% di hit) e piu' costoso (24.6 punti persi rispetto all'oracolo). Il
+  GK e' gia' protetto da GK_CAPTAIN_MARGIN; il DEF no.
+
+  Ho misurato la policy alternativa ovvia (capitano solo fra FWD/MID):
+    solo FWD/MID su atteso grezzo   hit 27.0%   56.17 -> 57.14 pt
+    delta APPAIATO sul bonus arena: +0.194 pt per formazione,
+                                     IC95 [-0.145, +0.533]  ->  NON significativo
+  Cioe': la mappa degli errori indica una direzione chiara, ma la posta e'
+  di due decimi di punto a formazione. Coerente con §5 ("capitano chiuso"),
+  senza contraddirlo.
+
+  ANOMALIA DA SEGNALARE: la scelta su atteso GREZZO batte quella su atteso
+  CALIBRATO (28.7% contro 25.1%; +0.78 pt di capitano). Se non e' rumore
+  (n=307, non testato in appaiato), e' un indizio contro la scala relativa
+  fra ruoli di CALIB_PER_RUOLO — che e' esattamente cio' che D1 propone di
+  sistemare. Va guardato PRIMA di toccare quei coefficienti.
+
+--- B3. P(>=1 boom) come funzione OBIETTIVO ------------------------------------
+
+Punto analitico prima dei numeri, perche' cambia l'aspettativa: con la shape
+d'arena (GK+DEF+MID+FWD+extra) e con P(boom) MONOTONA nell'atteso dentro il
+ruolo, massimizzare 1 - prod(1-p_i) e massimizzare sum(atteso) scelgono la
+STESSA carta in ognuno dei 4 slot di ruolo. Le due policy possono divergere
+solo (a) sullo slot EXTRA, che e' l'unico confronto fra ruoli, e (b) sotto il
+cap L10, dove il budget accoppia gli slot. Non e' una policy "diversa": e' la
+stessa policy con un tie-break diverso.
+
+Stima di P(boom | atteso_calibrato, ruolo) — 1.142 righe uniche (gw,slug),
+boom = reale >= 75, tasso base 12.7%:
+  ruolo   n     boom% per terzile di atteso     atteso_cal medio del terzile
+  GK    191      11.1   9.5  13.8               47.7  48.7  49.6
+  DEF   365       5.8   7.4  13.8               47.4  50.8  54.2
+  MID   298       9.1  15.2  25.0               47.6  52.1  57.1
+  FWD   288       5.2  13.5  24.0               47.7  50.5  54.7
+  logit p = -9.516 + 1.534*(atteso_cal/10) - 0.677*DEF - 0.275*MID - 0.195*FWD
+  (la monotonia c'e' per DEF/MID/FWD; per il GK e' piatta — coerente con
+   l'AUC 0.57 gia' misurata sul boom-classifier)
+
+Backtest della POLICY, mazzo fisso (trappola §8.8 rispettata: il mazzo di ogni
+(GW, manager) e' l'insieme delle carte che QUEL manager ha davvero schierato in
+QUELLA giornata, nessun clone, nessun pescaggio dal pool globale):
+  mazzi con almeno 6 carte distinte e tutti e 4 i ruoli: 31
+
+  [SENZA cap]     n=31  scelte identiche 22 (71%)
+     realizzato 5 carte: sum-atteso 280.9 | P(>=1boom) 282.6
+     delta +1.76  IC95 [-4.61, +8.13]
+     formazioni con almeno un boom: 71.0% -> 74.2%
+  [cap L10 260]   n=30  scelte identiche 14 (47%)
+     realizzato 5 carte: sum-atteso 275.1 | P(>=1boom) 276.3
+     delta +1.17  IC95 [-8.44, +10.79]
+     formazioni con almeno un boom: 56.7% -> 60.0%
+
+LETTURA: il segno e' quello sperato in entrambi i regimi, e sotto il cap le due
+policy divergono davvero (53% di formazioni diverse) — quindi la domanda NON e'
+vuota, al contrario di quanto suggerisce il punto analitico da solo. Ma n=31 e
+gli IC contengono lo zero con ampio margine: questo NON e' un risultato, e' una
+misura di fattibilita' che dice che vale la pena farlo sul dataset giusto.
+
+COSA MANCA per il backtest chiesto dal brief (mazzo dell'utente, non dei
+manager): `dati_globali/backtest_arene_dettaglio_0805.json` contiene solo i NOMI
+delle 5 carte per arena, non l'atteso/realizzato per carta. Rigiocare le 323
+arene con la seconda funzione obiettivo richiede `backtest_arene_produzione.py`
+con un secondo criterio in `generate_lineups_for_type` — cioe' una modifica al
+codice, vietata in questo passaggio. E' il primo candidato per il passaggio 2:
+il costo e' una funzione obiettivo alternativa piu' un giro di backtest, e i
+dati (mazzo reale + 9 avversari veri + cutoff podio `terzo`) ci sono gia' tutti.
+
+
+================================================================================
+5. ESITO CODA D1-D5
+================================================================================
+
+--- D1. Ricalibrazione affine per ruolo ---------------------------------------
+GIA' IN PRODUZIONE (D-9). CALIB_PER_RUOLO in build_formazione_globale.py:393,
+applicata da `calibra_riga` a atteso/low/high/ordinamento/sort_score.
+  GK (35.78, 0.264) | DEF (7.28, 0.831) | MID (11.61, 0.740) | FWD (8.40, 0.789)
+Il commento a :340-392 riporta anche la retta unica (10.76, 0.757) e le n
+(74.515 coppie; 6.019 casi GK) e spiega che la pendenza 0.264 del portiere non
+e' un errore.
+
+Quindi la voce D1 va RIFORMULATA, non eseguita: i coefficienti citati nel brief
+(0.72/0.71/0.58/1.15) sono una MISURA DIVERSA da quelli in produzione (diverso
+campione e, con ogni probabilita', misurata sull'atteso gia' calibrato — nel
+qual caso applicarli sarebbe una SECONDA calibrazione sopra la prima).
+Prima di toccarli servono due cose:
+  1. sapere su quale scala sono stati misurati (grezza o calibrata). Nel repo
+     non c'e' lo script che li produce con quella firma.
+  2. spiegare l'anomalia di B2: il grezzo batte il calibrato nella scelta del
+     capitano, che e' proprio la decisione "fra ruoli" che la calibrazione
+     dovrebbe migliorare.
+Sull'impatto atteso: la scala fra ruoli e' gia' allineata in produzione; il
+danno residuo documentato in §5 come "compressione di scala" e' quindi gia'
+mitigato per il generatore, MA NON per lo scouting, che consuma l'atteso grezzo
+(B01). Il vero impatto di D1, oggi, e' tutto dentro B01.
+
+--- D2. Ownership / differenziali ---------------------------------------------
+NON svolto (budget consumato da A e B). Fattibilita' verificata: i dati ci sono
+— `formazioni_*.json` contiene le 5 carte di OGNI manager di ogni arena, quindi
+il tasso di possesso per (gw, slug) e' calcolabile con un giro solo, e
+`aggrega.py:133` costruisce gia' l'indice (gw,slug) -> set(manager). Costo
+stimato: basso (mezz'ora di calcolo locale). Resta valida l'obiezione del
+brief: la dimostrazione esistente usa sigma della formazione propria (49.4),
+non della differenza contro il campo.
+
+--- D3. Censimento cache multi-lega -------------------------------------------
+Fatto con os.walk (mai glob('**'), §8.14) e criterio gamelog (non detail_cache,
+§8.16). Totale: 6.229 gamelog, 5.689 detail_cache, 36 leghe con almeno un file.
+
+  lega            gamelog  detail     lega            gamelog  detail
+  mls               1523    1319      brasile             47      47  <
+  kleague            597     519      danimarca           47      44  <
+  germania           586     514      francia2            45      45  <
+  spagna             452     430      svizzera            41      39  <
+  inghilterra        429     404      cina                27      26  <
+  italia             398     383      grecia              25      25  <
+  belgio             364     319      inghilterra2        21      20  <
+  francia            339     325      russia              20      20  <
+  olanda             224     218      norvegia            19      19  <
+  austria            120     106      colombia            17      17  <
+  giappone           116     110      cile                14      14  <
+  messico            114     113      peru                 9       9  <
+  turchia            111     111      cechia               5       5  <
+  scozia             103      93      polonia              4       4  <
+  giappone100         98      90      cipro                4       3  <
+  portogallo          83      82      islanda              2       1  <
+  argentina           75      74      spagna2              1       1  <
+  germania2           75      69
+  croazia             74      71                (< = sotto le 50 unita')
+
+  ZERO gamelog, pipeline presente: arabia, azerbaigian, belgio2, germania3,
+  giappone2, israele, italia2, kleague2, olanda2, resto_mondo, romania,
+  senza_lega, serbia, slovacchia, svezia, ucraina, venezuela (17) +
+  contender (che non ha nemmeno predict/).
+  Russia: 20 gamelog, non 3 come dice §7 — cresciuta ma ancora inerte.
+  Il rapporto detail/gamelog e' ~0.91 ovunque: nessuna anomalia di copertura.
+  copertura_cache.json: 1.022 pick unici, 29 saltati per lega senza pipeline
+  (17 di questi sono 'lega-non-risolta').
+
+--- D4. Storico <10 partite ---------------------------------------------------
+Rifatto oggi con de-duplicazione su (gw, slug) (§8.15). 2.045 righe grezze ->
+1.142 uniche.
+  storico <10   n=  92   residuo medio  +5.35   IC95 [+1.44, +9.26]
+  storico >=10  n=1050   residuo medio  -0.24   IC95 [-1.30, +0.82]
+  storico < 6   n=  35   residuo medio  +5.59   IC95 [-0.88, +12.06]
+Alla chiusura era +4.9 su n=71. Oggi n=92 e L'IC95 ESCLUDE LO ZERO. Il segmento
+>=10 e' centrato su zero, quindi non e' un bias generale del modello: e'
+specifico dello storico corto. Il segmento <6 ha lo stesso segno e la stessa
+magnitudine ma non e' ancora significativo (n=35).
+Ricaduta sullo scouting confermata nel merito: sono i giocatori piu' economici,
+quindi quelli con miglior EUR/EssGW apparente — e lo scouting li sottostima di
+~5 punti, cioe' li fa sembrare PEGGIORI di quanto siano (il residuo e'
+positivo: il reale supera l'atteso).
+
+--- D5. corr(atteso_somma, rank) per tipo di arena ----------------------------
+Rifatto sulle 442 formazioni, solo quelle con >=4 attesi (rank basso = meglio,
+quindi correlazione NEGATIVA = il modello predice).
+  Cap 260    n=210   corr +0.006
+  Elite      n= 76   corr -0.081
+  Cap 220    n= 64   corr -0.090
+  Beginner   n= 56   corr +0.041
+  Uncapped   n= 33   corr -0.330
+Il -0.30 delle uncapped REGGE (-0.330 con n=33), e il contrasto con le cap
+(dove il segnale sparisce) e' netto. Ma n=33 e' lo stesso ordine di grandezza
+di prima: e' una riproduzione, non un rafforzamento. Supporta A3 (dove il cap
+morde, il totale atteso non discrimina piu') e la separazione delle soglie
+fra cap e uncapped.
+
+
+================================================================================
+6. CORREZIONI AL RIASSUNTO — LISTA PRONTA PER IL PASSAGGIO 2
+================================================================================
+
+Dal brief (gia' validate dall'utente), da applicare cosi' come sono:
+  C1. §4 — ROI: il +13.3% e' corretto e verificato su 870 arene da fonte
+      indipendente; le 673 sono un sottoinsieme CASUALE. ELIMINARE del tutto
+      "Buco mai spiegato".
+  C2. §5 — GK: sostituire "35.0 senza / 60.0 con clean sheet, mai intermedio"
+      con: il clean sheet e' un decisive positivo che fissa un FLOOR a 60, sopra
+      cui si sommano gli all-around; senza clean sheet non c'e' pavimento e il
+      punteggio si costruisce dal basso, superando 60 solo di rado. Due
+      distribuzioni con supporto sovrapposto, non due valori secchi.
+  C3. §7 Secondarie — RIMUOVERE "APIKEY Sorare" e "Tabelle premi classifiche
+      grandi".
+  C4. §2.3 — best_five.py ridotto a menzione minima, con l'avvertenza di NON
+      cancellare il file e l'elenco dei sei simboli importati (vedi §3.A1).
+  C5. §9 — arene dedicate: precisare che la disattivazione di default e' una
+      SCELTA dell'utente e funziona come previsto; con ARENA_LEAGUES_ENABLED
+      rientrano nel pool delle arene efficienti. Non e' un problema aperto.
+
+Aggiunte che emergono da questo audit (da validare con l'utente prima di
+scriverle):
+  C6. §2.1 — la formula di previsione va riscritta: `fattore_forza_avversario`
+      non e' nel prodotto e `fattore_trend` e' spento. (B19, D-1)
+  C7. §2.1 tabella parametri — togliere o marcare come INERTE la colonna
+      opp_sens; la frase "l'unico parametro mai risultato instabile in nessun
+      ruolo" riguarda un parametro che non entra in produzione. (B19, D-2)
+  C8. §5 — riscrivere la voce `fattore_forza_avversario`: NON e' in produzione.
+      L'effetto avversario passa da opponent_lambda_multiplier. (B19, D-3)
+  C9. §7 e VALIDAZIONE_SOGLIE.md:180-186 — la propagazione automatica al
+      scouting e' PARZIALE: Ess/GW usa costanti locali. (B02, D-4)
+  C10. §2.2 — precisare che €/EssGW ordina correttamente DENTRO un ruolo ma non
+      FRA ruoli finche' l'atteso resta grezzo. (B01, D-5)
+  C11. §5 "compressione di scala" — precisare che per il GENERATORE e' gia'
+      mitigata da CALIB_PER_RUOLO in produzione; il problema aperto e' solo
+      nello scouting. (D-9)
+  C12. §7 Secondarie, Russia: 20 gamelog, non 3. E aggiungere le altre 17 leghe
+      a zero. (B18, D3)
+  C13. §7 "storico <10 sottostimati +4.9 (n71, da riverificare)": riverificato
+      oggi, +5.35 su n=92 de-duplicate, IC95 [+1.44,+9.26]. Non e' piu' una
+      ipotesi. (D4)
+  C14. Aggiungere a §8 (trappole) due voci nuove:
+       - "un valore di produzione e uno di soglia devono stare sulla STESSA
+         scala: grezza o calibrata. Confrontare un atteso grezzo con una soglia
+         reale non produce nessun errore visibile" (B01/B17);
+       - "una costante letta solo dal backtest e mai dalla produzione sembra un
+         parametro tarato e non lo e': prima di tarare, seguire il valore fino
+         al punto in cui MOLTIPLICA qualcosa" (B19).
+
+
+================================================================================
+7. DOMANDE APERTE (non risolvibili leggendo il repo)
+================================================================================
+
+Q1. GK_TEAM_CS_POINTS: quanto vale davvero una porta inviolata sul level_score
+    del portiere, 25 o 35? Le due costanti convivono nello stesso file (B11) e
+    il coefficiente del blend cambia del 40%. Serve una decisione o una misura
+    su casi reali (popup Sorare / partite con e senza clean sheet).
+
+Q2. `fattore_forza_avversario` (B19): va RIMOSSO come codice morto o
+    RIALLACCIATO alla formula? Sono due passaggi 2 molto diversi. Nota: se si
+    riallaccia, va rifatta la taratura di opponent_sensitivity, perche' quella
+    del 26/07 e' stata fatta sull'harness vecchio, e va verificato che non
+    duplichi opponent_lambda_multiplier, che l'avversario lo tratta gia'.
+
+Q3. Le arene Beginner sono il 27% dello storico reale dell'utente e il
+    generatore non le conosce (B15). E' una scelta (il §7 dice "Beginner da
+    evitare") o un buco? Se e' una scelta, il generatore dovrebbe almeno saper
+    dire "non entrare", cosa che oggi non puo' fare.
+
+Q4. I coefficienti 0.72/0.71/0.58/1.15 del brief: misurati sull'atteso grezzo o
+    su quello gia' calibrato? Da questa risposta dipende se D1 sia una correzione
+    o una doppia calibrazione (D-9, §5.D1).
+
+Q5. La regola PREFERENZA_ODDS (Son vs Zinckernagel) deve valere anche nelle
+    arene con cap? Oggi non vale (B07). Riportarla nel knapsack significa
+    ottimizzare su `atteso + bonus_odds` invece che su `atteso`, cioe' cambiare
+    la funzione obiettivo di una competizione dove il budget morde.
+
+
+================================================================================
+8. PROPOSTA DI PRIORITA' PER IL PASSAGGIO 2
+================================================================================
+
+Ordine proposto, con costo (tempo di lavoro) e rischio (di rompere la
+produzione). Tutto quello sotto tocca la catena §1bis: nessuna voce si chiude
+senza ripercorrere generatore -> soglie -> scouting.
+
+P1  B01+B02 — lo scouting sulla scala giusta.       costo BASSO   rischio BASSO
+    Far passare gli attesi da `calibra_riga` (o leggerli gia' calibrati) e
+    leggere ESSENZE_PER_PUNTO / PUNTI_SLOT_MEDIO dal generatore via getattr,
+    come fa gia' la sezione arene. E' il solo bug di questo report che cambia
+    una DECISIONE reale (COMPRA/NO) e cambia segno su un ruolo intero.
+    Verifica: rigenerare il report di scouting sull'ultima GW e confrontare
+    riga per riga i verdetti prima/dopo.
+
+P2  B19 — decidere fra rimuovere e riallacciare `fattore_forza_avversario`,
+    e correggere §2.1/§5 del riassunto.              costo BASSO   rischio NULLO
+    (se si sceglie "rimuovere": si cancella codice morto e si corregge la
+    documentazione; se si sceglie "riallacciare" diventa costo ALTO e rischio
+    ALTO, perche' serve una nuova taratura e un controllo anti-doppio-conteggio
+    con opponent_lambda_multiplier.)
+    Prima di qualunque cosa: test A/A sull'interruttore, come da CLAUDE.md —
+    OPPONENT_SENSITIVITY a 1e9 e verifica che NESSUN numero si muova. Se non si
+    muove niente, la diagnosi e' confermata sul campo e non solo sul data-flow.
+
+P3  B10+B11+B12 — il blend GK. costo MEDIO  rischio MEDIO (tocca la produzione)
+    Tre cose insieme, nell'ordine: (a) risolvere Q1 sui punti; (b) sostituire la
+    baseline globale 0.28 con il tasso storico del giocatore (toglie il doppio
+    conteggio); (c) applicare la trasformazione affine 0.130+0.460*p alla
+    probabilita' prima di usarla. Il metro e' quello di CLAUDE.md: MAE +
+    correlazione + lift di selezione insieme, non uno solo.
+    Nota: (b) e (c) si muovono in direzioni opposte sul risultato medio, quindi
+    vanno misurate SEPARATAMENTE, mai per sottrazione.
+
+P4  B13 — cache su disco per le forze di `modello_partita`. costo BASSO rischio
+    BASSO. Salvare la serie di snapshot in dati_globali/ e, meglio ancora,
+    calcolare il SOLO snapshot che serve. Risparmia ~1-2 minuti di CPU per
+    portiere per run, su ~30 leghe.
+
+P5  B3 sul mazzo dell'utente — funzione obiettivo P(>=1 boom) dentro
+    `backtest_arene_produzione.py`.                  costo MEDIO   rischio NULLO
+    (backtest, non produzione). Da fare DOPO P1/P3, perche' se l'atteso del GK
+    cambia, cambia anche la P(boom) stimata. Il segno preliminare e' favorevole
+    ma non significativo (n=31): il dataset giusto sono le 323 arene reali.
+
+P6  B07/B08 — knapsack: decidere Q5 e, se si vuole, rendere il DP davvero
+    esatto.                                          costo MEDIO   rischio MEDIO
+
+P7  Igiene — B03, B04, B05, B06, B16, B17, B18 e le correzioni C6-C14 al
+    riassunto.                                       costo BASSO   rischio NULLO
+    Da fare in un commit unico, senza mescolarlo con P1-P6.
+
+NON proporre in passaggio 2: tutto quello che il §5 del riassunto marca chiuso e
+che il triage B1 conferma chiuso (nessuna crescita di dati). L'unico riaperto
+dai numeri e' lo storico corto (D4).
+
+
+================================================================================
+9. COME RIFARE LE MISURE DI QUESTO REPORT
+================================================================================
+
+Gli script sono nella cartella scratchpad della sessione (NON nel repo, per non
+sporcarlo):
+  a4_cs_calib.py    calibrazione P(clean sheet), ~4 min, offline
+  audit_costanti.py divergenze di costanti fra le 53 leghe, <10 s
+  b2_capitano.py    B2 + D4 + D5, <10 s
+  b3_boom.py        B3 (stima P(boom) + backtest policy), ~2 min
+Tutti leggono solo dati gia' su disco: nessuna chiamata di rete, nessun rerun di
+predizioni. Se servono nel repo, vanno messi in formazione_mls/diagnostics/ o in
+analisi_manager/, non in root.
