@@ -1,3 +1,11 @@
+# REGOLA SUPREMA — RISPARMIO TOKEN (sovrasta tutte le altre)
+
+La priorita' assoluta e' il risparmio di token. Prima di qualunque operazione,
+mi chiedo se esiste un modo alternativo di ottenere lo stesso risultato
+spendendo meno token: se esiste, uso quello. Non eseguo un'operazione costosa
+(run, query, lettura di file grossi, fetch) quando una via piu' economica da'
+la stessa risposta. Questa regola viene prima di ogni altra in questo file.
+
 # Regole di interazione (valgono per ogni sessione)
 
 Riguardano SOLO come mi rapporto all'utente. Nessuna istruzione operativa sui tool qui dentro.

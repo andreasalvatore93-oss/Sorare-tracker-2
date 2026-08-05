@@ -1,140 +1,97 @@
-HANDOFF CERBERO — UNICO FILE DI RIFERIMENTO (aggiornato 2026-08-05 08:30 Roma)
+HANDOFF CERBERO — UNICO FILE DI RIFERIMENTO (aggiornato 2026-08-05 09:30 Roma)
 ================================================================================
 UNICO handoff cerbero: si aggiorna in-place ogni sessione, non se ne creano
 altri con data nel nome (regola in CLAUDE.md).
 
->>> NOTA PER LA PROSSIMA SESSIONE: l'utente NON ha ancora chiaro il passo per
-    passo per lanciare l'apprendimento la prima volta (dove cliccare su
-    GitHub, cosa aspettarsi). GUIDARLO passo-passo quando chiede di
-    procedere, non dare per scontato che sappia usare il workflow. Istruzioni
-    dettagliate al punto 5.
+
+0) PROSSIMO PASSO (domani, 06/08 mattina Roma) — lo fa l'utente
+------------------------------------------------------------------
+UNA sola run del workflow "Cerbero (apprendimento)" -> modalita' TRASVERSALE.
+Perche' domani e non oggi: le ~4.900 righe con margine trasversale sono state
+raccolte nelle ultime run e sono ancora FRESCHE (<30h). Maturano tutte fra la
+sera del 05/08 e la mattina del 06/08; oggi ne erano mature solo 20 -> girare
+oggi sarebbe uno spreco di query.
+Costo: ~1.602 fetch giocatori. E' giustificato: l'asse trasversale (spread
+1o/2o prezzo live) NON esiste nel dataset storico, quindi non si puo' validare
+offline. E' l'unico pezzo del bot mai verificato.
+Come: GitHub -> Actions -> "Cerbero (apprendimento)" -> Run workflow ->
+scegliere "trasversale" -> Run. Non scrive soglie, stampa solo la
+distribuzione del rendimento 24h per fascia di margine (serve N>=30, domani
+ci sara'). Poi Claude legge docs/handoff/LEARN_trasversale_*.txt.
 
 
-1) REGIME: MANUALE, non automatico
-------------------------------------
-Il cron di bot_cerbero.yml non e' mai scattato (causa nota: workflow
-aggiunto da poco, non e' un bug di config). Ogni run = lancio manuale da
-GitHub, dura ~5h. Non serve ricontrollare la sintassi del workflow.
+1) PERPLESSITA' DELL'UTENTE (da tenere sul tavolo)
+------------------------------------------------------
+L'utente e' perplesso: Cerbero non sta combinando nulla di nuovo rispetto a
+prima, e i due tool originali (Bot Profit, Bot Definitivo) davano risultati
+migliori PRESI SEPARATAMENTE. Il dubbio e' legittimo e non ancora sciolto: ad
+oggi Cerbero ha solo REPLICATO, non superato. La validazione dell'asse
+trasversale (passo 0) e' il primo test che puo' dire se l'unione aggiunge
+qualcosa o no. Se anche quello non mostra edge, va rimessa in discussione la
+ragione stessa di Cerbero, non solo i parametri.
 
 
-2) COSA E' STATO CAMBIATO E PERCHE'
---------------------------------------
-- Orizzonte di apprendimento: passato da 48h a 24h (lift quasi identico,
-  0.92x, ma matura 30h prima -> in regime manuale conta molto). Riga
-  usabile quando ha eta'>30h.
-- Asse trasversale (margine): prima si registrava solo sopra soglia
-  MakeOffer, ora anche sotto (nuova colonna tipo_riga: 'completa' vs
-  'trasversale_only'). Chiude un bias di selezione, zero query in piu',
-  soglie temporali verificate identiche prima/dopo.
-- Nuovo workflow GitHub "Cerbero (apprendimento)" (vedi §4), mai lanciato.
+2) STATO OGGI (05/08) — cosa e' stato accertato
+---------------------------------------------------
+- OP1 (run 'osservazioni') FATTA. Esito: soglie di produzione INVARIATE.
+  Nessuna lega nuova qualifica; restano mls/k-league/eredivisie/jupiler = 5%
+  (dal dataset), tutte le altre = default prudente 10%.
+- Il dato che conta: su ~4.350 righe mature, la run ha risolto solo 184 (~4%).
+  Diagnosi (misurata in locale, zero query, sul dataset storico): NON e' la
+  finestra forward troppo stretta -- sulle carte liquide 18-30h risolve gia'
+  l'80,8%, 18-48h il 92,6%. Il 4% live e' ILLIQUIDITA': la maggioranza delle
+  carte osservate non ri-passa di mano in 24h. Quelle illiquide Cerbero non
+  potrebbe rivenderle comunque.
+- Conseguenza: altri run di APPRENDIMENTO non muoveranno le soglie. Le uniche
+  leghe che risolvono bene sono gia' quelle coperte a 5%. Filone
+  "apprendimento soglie temporali" -> CHIUSO fino a nuovi dati.
+- Backup soglie pre-run: docs/handoff/cerbero_soglie_apprese_backup_2026-08-05.json.
 
 
-3) DOVE SIAMO COL DATASET (misurato 05/08 08:30 Roma = 06:28 UTC)
----------------------------------------------------------
-5.248 righe (1.391 complete, 3.857 trasversale_only), raccolte dal 03/08
-19:03 Roma al 05/08 06:36 Roma. Altre run sono girate dopo l'handoff del
-04/08: i numeri e gli orari di maturazione scritti allora sono SUPERATI.
-
-Righe complete gia' MATURE (eta' >= 30h, orizzonte 24h = finestra 18-30h) e
-dentro la finestra di fetch (<= 6 giorni): 343, su 209 giocatori distinti
-(= 209 fetch transazioni, questo e' il costo query del risolutore).
-
-Complete mature per lega (solo >= 10):
-  mlspa 64 | premiership-gb-sct 60 | premier-league-gb-eng 35
-  primeira-liga-pt 26 | 2-bundesliga 23 | austrian-bundesliga 22
-  eredivisie 19 | k-league-1 19 | jupiler-pro-league 12 | laliga-es 12
-Tutte le altre stanno sotto 10.
-
-CORREZIONE ALL'HANDOFF 04/08: la stima "12 leghe pronte" contava le righe
-complete TOTALI per lega, non quelle mature. Il criterio di apprendimento
-(MIN_N=30) si applica alle righe mature CHE SI RISOLVONO (serve almeno una
-transazione della stessa carta nella finestra 18-30h) e per giunta dopo il
-filtro sconto >= soglia candidata. Quindi oggi solo 3 leghe partono sopra
-30 PRIMA di quei due filtri: e' realistico attendersi 0-1 leghe qualificate
-al primo giro, non 12. Il resto restera' sul default prudente 10%, che e'
-lo stato attuale: nessuna regressione, ma nemmeno molto guadagno.
-
-Asse trasversale: solo 7 righe mature hanno margine_trasversale_pct
-valorizzato. Il report --trasversale richiede N>=30 per dire qualcosa:
-oggi stampa "campione insufficiente" ed e' atteso.
-
-Soglie in vigore (cerbero_soglie_apprese.json, fonte dataset_storico
-03/08): mlspa/k-league-1/eredivisie/jupiler-pro-league = 5%. Tutte le altre
-leghe = default prudente 10%. NB: il commento in motore_affare.py dice
-"mlspa 10%" ma il JSON vince e mette 5% — il valore reale in produzione per
-MLS e' 5%.
+3) REGIME E DATASET
+-----------------------
+Regime MANUALE: il cron di bot_cerbero.yml non e' mai scattato (workflow
+aggiunto da poco, non e' un bug). Ogni run = lancio manuale, diagnostica ~5h.
+cerbero_osservazioni.csv: 5.248 righe (1.391 complete, 3.857 trasversale_only).
+Con margine trasversale valorizzato: 4.912 righe (per lo piu' fresche, vedi §0).
+Le righe raccolte prima del 04/08 hanno 11 campi invece di 14: csv.DictReader
+le completa a None, restano valide sull'asse temporale.
 
 
-4) WORKFLOW "Cerbero (apprendimento)" — come si usa
--------------------------------------------------------
-File: .github/workflows/cerbero_learn.yml. Solo lancio manuale (nessun
-cron). Un input a tendina, `modalita`, con 4 scelte:
- - osservazioni: legge le righe mature del CSV, impara le soglie per lega e
-   RISCRIVE cerbero_soglie_apprese.json. Serve secret Sorare validi + righe
-   gia' mature (vedi §3).
- - trasversale: stampa solo un report (rendimento per fascia di margine),
-   NON scrive nulla. Diagnostico.
- - entrambi: prima osservazioni, poi trasversale (se la prima riesce).
- - storico: bootstrap offline dal dataset storico, zero query, funziona
-   sempre anche a secret scaduti.
-Output: file docs/handoff/LEARN_<modalita>_<data_ora>.txt committato in
-automatico + artifact scaricabile (30gg). Se i secret sono scaduti, il log
-lo dice esplicitamente ("SECRET SORARE SCADUTI").
-
-PASSO PASSO per lanciarlo dal sito GitHub (usare quando l'utente e' pronto):
- 1. github.com -> repo Sorare-tracker-2 -> scheda "Actions".
- 2. Colonna sinistra -> "Cerbero (apprendimento)".
- 3. Bottone "Run workflow" in alto a destra della lista run.
- 4. Branch: main (default). Menu "cosa lanciare": scegliere "osservazioni".
- 5. Bottone verde "Run workflow".
- 6. Aspettare qualche secondo, ricomparira' una riga con pallino giallo (in
-    corso) -> giallo diventa verde (ok) o rosso (errore) in pochi minuti.
- 7. Risultato: aprire docs/handoff/LEARN_osservazioni_*.txt nel repo, oppure
-    chiedere a Claude di leggerlo e riassumerlo.
+4) WORKFLOW "Cerbero (apprendimento)" — modalita'
+-----------------------------------------------------
+File: .github/workflows/cerbero_learn.yml. Solo manuale. Input a tendina:
+ - osservazioni: impara soglie temporali per lega, RISCRIVE il JSON. (Fatta
+   oggi, non utile ripeterla a breve: vedi §2.)
+ - trasversale: report rendimento per fascia di margine, NON scrive nulla.
+   E' il PASSO DI DOMANI (§0).
+ - entrambi / storico: vedi help del workflow.
+Output: docs/handoff/LEARN_<modalita>_<data_ora>.txt committato + artifact.
+Secret Sorare: aggiornati (confermato dall'utente 05/08).
 
 
-5) COSA RESTA CHIUSO (non riaprire senza nuovi dati)
---------------------------------------------------------
-Orizzonte 12h (non verificabile in regime manuale) e 48h (superato da 24h);
-bug di scrittura sull'asse trasversale (escluso); cron come bug di sintassi
-(escluso); contaminazione soglie da b2 (esclusa, no-op provato).
+5) FILONI CHIUSI (non riaprire senza nuovi dati)
+----------------------------------------------------
+Apprendimento soglie temporali (§2, illiquidita'); orizzonte 12h/48h (superati
+da 24h); allargare la finestra forward (non e' la leva del problema live, §2);
+cron come bug di sintassi; contaminazione soglie da b2.
 
 
-6) DECISIONI APERTE (nessuna azione richiesta se non riguardano)
-----------------------------------------------------------------------
-A) b2 letto come "zero query incrementali", non "zero fetch a monte in
-   assoluto". Da rivedere solo se l'interpretazione non e' quella voluta.
-B) Se un giorno il cron partisse in continuo 24h/giorno, il volume di
-   scrittura si avvicinerebbe alla soglia di guardia (20.000 righe/giorno).
-   Non rilevante nel regime manuale attuale.
+6) DOPO IL PASSO 0 (biforcazione, da decidere insieme)
+----------------------------------------------------------
+Se il report trasversale mostra edge sullo spread -> ha senso valutare il
+passaggio in LIVE sulle sole leghe liquide gia' coperte (oggi acquisto/offerta
+SPENTI: AUTOBUY_LIVE_MODE / MAKEOFFER_LIVE_MODE = 'no').
+Se NON mostra edge -> riaprire la perplessita' di §1: Cerbero non aggiunge
+valore rispetto ai due bot separati, e va deciso se ha senso tenerlo.
 
 
-7) OPERAZIONI DA EFFETTUARE (elenco, 05/08)
-------------------------------
-Ordine consigliato. Nessuna e' stata ancora fatta.
-
-OP1 — Lanciare 'osservazioni' (workflow §4). E' il primo giro vero del
-  risolutore forward. Costo: ~209 fetch transazioni, servono secret Sorare
-  freschi. Aspettativa onesta: 0-1 leghe qualificate (vedi §3), il valore e'
-  soprattutto capire se il risolutore RISOLVE (quante righe trovano un
-  prezzo forward) — non le soglie che produce.
-  ATTENZIONE: riscrive cerbero_soglie_apprese.json. Il merge tiene il
-  bootstrap dove il live non qualifica, quindi non si perdono le 4 leghe a
-  5%. Comunque conviene salvarne una copia prima.
-
-OP2 — Leggere l'output (docs/handoff/LEARN_osservazioni_*.txt) e decidere
-  se il numero di righe risolte e' accettabile. Se si risolve pochissimo,
-  il collo di bottiglia non e' il volume ma la liquidita' delle carte
-  osservate: cambia la strategia di raccolta, non il tempo di attesa.
-
-OP3 — Altra run di diagnostica (workflow "Cerbero (diagnostica)",
-  listen_seconds=18000) per accumulare righe. Serve per portare piu' leghe
-  sopra i 30 campioni maturi. Ogni run manuale ~5h di ascolto.
-
-OP4 — Solo quando l'asse trasversale avra' >=30 righe mature con margine:
-  lanciare 'trasversale' (diagnostico, non scrive nulla). Oggi sarebbe uno
-  spreco di query: 7 righe.
-
-OP5 — Decisione rimandata, non ancora sul tavolo: schedulare cerbero_learn
-  in automatico, e valutare il passaggio in live (oggi acquisto/offerta
-  sono SPENTI di default: AUTOBUY_LIVE_MODE / MAKEOFFER_LIVE_MODE = 'no').
+7) FILE DI RIFERIMENTO
+--------------------------
+bots/cerbero/cerbero.py            il bot (reattivo + gate + esecuzione)
+bots/cerbero/motore_affare.py      gate temporale + soglie per-lega
+bots/cerbero/cerbero_learn.py      apprendimento (dataset + osservazioni live)
+cerbero_soglie_apprese.json        soglie in vigore (4 leghe 5%, resto 10%)
+cerbero_osservazioni.csv           dati di apprendimento
+docs/RIASSUNTO_CERBERO.md          spiegazione discorsiva del progetto
+docs/BOT_CERBERO_PROGETTO.md       dettaglio tecnico
