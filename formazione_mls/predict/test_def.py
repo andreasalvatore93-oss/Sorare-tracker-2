@@ -43,10 +43,11 @@ granulare). Ora fattore_casa_trasferta si calcola SOLO sul RESIDUO (score
 totale meno la somma di tutti i gruppi granulari tracciati), cosi' l'effetto
 venue viene applicato esattamente una volta per ogni punto di score, mai due.
 
-PARAMETRI: riusati gli stessi valori dei centrocampisti come punto di
-partenza (HALF_LIFE_GAMES=12.0, RANGE_MULTIPLIER=1.4, OPPONENT_SENSITIVITY=29.0,
-TREND_INTENSITY=1.0) — da ricalibrare con un grid search dedicato ai
-difensori quando avremo piu' giocatori di test.
+PARAMETRI (B16, P7 passaggio 2: questo blocco diceva ancora "TREND_INTENSITY=
+1.0 -- da ricalibrare", stantio da mesi): HALF_LIFE_GAMES=30.0, RANGE_
+MULTIPLIER=1.1, TREND_INTENSITY=0.0 (spento, vedi costante sotto per la
+misura che l'ha azzerato). OPPONENT_SENSITIVITY=29.0 resta solo per la
+funzione diagnostica legacy rigorous_backtest (non tocca score_atteso).
 
 Giocatore di test: Mamadou Fofana (Defender, slug mamadou-fofana).
 
@@ -158,7 +159,7 @@ TREND_INTENSITY = 0.0  # AGGIORNATO (29/07): backtest walk-forward su tutte le l
 # Portogallo, Austria, Scozia, Belgio, Olanda, Spagna), ricalibrata sessione
 # 27/07 con validate_outlier_shrinkage.py (variabile media_ruolo).
 SHRINK_K_OUTLIER_DEF = 15.0  # AGGIORNATO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~2600 punti di test, minimo interno pulito su entrambi i segmenti (-2.23% tot, -2.49%/-2.16%), stesso valore ora su TUTTE le leghe incluso MLS/Korea
-MEDIA_RUOLO_DEF_PRIOR = 51.34
+MEDIA_RUOLO_DEF_PRIOR = 51.34  # SOLO DIAGNOSTICO (marcato P7/passaggio 2): la produzione usa il prior DINAMICO da presence_rate (vedi compute_score_atteso_def, media_ruolo_prior = 45.36+7.96*presence_rate), non questa costante statica.
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
@@ -977,12 +978,16 @@ def extract_level_score(detail):
 # Logica identica a formazione_mls/diagnostics/validate_level_score_event_rate.py,
 # rivalidata su 6 campionati con i parametri di produzione aggiornati in
 # sezione 21: -1.38% di MAE per DEF. NESSUNA ri-taratura di half_life/trend.
-LEVEL_TABLE = {-2: 5, -1: 15, 0: 35, 1: 60, 2: 70, 3: 80, 4: 90, 5: 100}
+# B20 (P7, passaggio 2): aggiunto il gradino -3:0, mancante -- confermato
+# da due screenshot Sorare indipendenti (portiere e difensore, 04/08): la
+# barra del punteggio decisivo mostra i marker -3 -2 -1 0 1 2 3 4 5 sopra i
+# valori 0 5 15 35 60 70 80 90 100. Il floor del clamp scende da -2 a -3.
+LEVEL_TABLE = {-3: 0, -2: 5, -1: 15, 0: 35, 1: 60, 2: 70, 3: 80, 4: 90, 5: 100}
 LEVEL_SCORE_POISSON_K_MAX = 6  # troncamento Poisson: massa residua accumulata sull'ultimo bin
 
 
 def netto_to_level(netto):
-    k = max(-2, min(5, round(netto)))
+    k = max(-3, min(5, round(netto)))
     return LEVEL_TABLE[k]
 
 

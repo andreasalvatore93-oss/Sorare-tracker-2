@@ -58,7 +58,7 @@ def essenze(g, tipo, atteso):
     margine = atteso - soglia
     if margine < 0:
         return 0.0
-    return margine * g.GUADAGNO_PER_PUNTO.get(tipo, 7.5)
+    return margine * g.GUADAGNO_PER_PUNTO.get(tipo, 7.9)  # B05: allineato a cap 260 (05/08)
 
 
 def totale(g, tipo, formazioni, card_pool):

@@ -199,7 +199,7 @@ TREND_INTENSITY = 0.0  # ABBASSATO 0.7 -> 0.0 (31/07). Due misure indipendenti c
 # 45 giornate reali). MEDIA_RUOLO_GK_PRIOR = media reale su 2664 partite GK
 # cache multi-campionato.
 SHRINK_K_OUTLIER_GK = 30.0  # AGGIORNATO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~7500 punti di test conferma k=30 pulito su entrambi i segmenti n<8/n>=8 (-5.36%/-9.28%/-4.31%), il vecchio timore "overfitting al bordo griglia" non regge piu' con questo volume di dati -- stesso valore ora su TUTTE le leghe incluso MLS/Korea
-MEDIA_RUOLO_GK_PRIOR = 48.81
+MEDIA_RUOLO_GK_PRIOR = 48.81  # SOLO DIAGNOSTICO (marcato P7/passaggio 2): la produzione usa il prior DINAMICO da presence_rate (vedi compute_score_atteso_gk, media_ruolo_prior = 46.20+4.05*presence_rate), non questa costante statica.
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
@@ -1032,7 +1032,11 @@ def extract_level_score(detail):
 # --- level_score ATTESO da tasso di eventi decisivi (27/07 notte, sezione 22
 # del riassunto) -- vedi formazione_mls/predict/test_def.py per la stessa
 # implementazione commentata per esteso. Rivalidato su 6 campionati: -0.87% MAE.
-LEVEL_TABLE = {-2: 5, -1: 15, 0: 35, 1: 60, 2: 70, 3: 80, 4: 90, 5: 100}
+# B20 (P7, passaggio 2): aggiunto il gradino -3:0, mancante -- confermato
+# da due screenshot Sorare indipendenti (portiere e difensore, 04/08): la
+# barra del punteggio decisivo mostra i marker -3 -2 -1 0 1 2 3 4 5 sopra i
+# valori 0 5 15 35 60 70 80 90 100. Il floor del clamp scende da -2 a -3.
+LEVEL_TABLE = {-3: 0, -2: 5, -1: 15, 0: 35, 1: 60, 2: 70, 3: 80, 4: 90, 5: 100}
 LEVEL_SCORE_POISSON_K_MAX = 6
 
 # Shrinkage del fattore casa/trasferta del PORTIERE (ALZATO 5.0->20.0 il
@@ -1094,7 +1098,7 @@ def venue_factor_gk(scores, is_home_flags, target_is_home, weights):
 
 
 def netto_to_level(netto):
-    k = max(-2, min(5, round(netto)))
+    k = max(-3, min(5, round(netto)))
     return LEVEL_TABLE[k]
 
 

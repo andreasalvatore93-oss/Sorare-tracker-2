@@ -2203,27 +2203,19 @@ def _render_cheapest(bff, card_pool, label, risultato, titolo='Cheapest'):
 # Chi ha L10 ignoto e' ESCLUSO: qui il cap e' un vincolo vero, contarlo 0
 # falserebbe tutto (vedi il bug del 31/07 in fetch_l10_reale).
 FILL_QUOTA_MAX = float(os.environ.get('BEST_FIVE_FILL_QUOTA_MAX', '1.6'))
-# Pareggio di un'arena cap 260, RIMISURATO il 02/08 su 40.000 formazioni
-# sintetiche costruite da 74.515 coppie previsione/realizzato: 265.0 punti
-# REALI (era 282.9, calcolato come se il punteggio fosse certo).
-#
-# Un posto solo per questo numero (03/08): stava scritto qui a mano e anche in
-# build_formazione_globale.py, ed e' esattamente il tipo di doppione che in
-# questo progetto ha gia' prodotto bug veri. Ora si legge da li'.
-PAREGGIO_ARENA_260 = 259.5  # sync con build_formazione_globale (sigma 50.6, 05/08)
 TARGET_PUNTEGGIO = float(os.environ.get('BEST_FIVE_TARGET_PUNTEGGIO', '300'))
 
-# La previsione va CALIBRATA prima di confrontarla con l'L10 (il modello
-# esagera gli scarti: proiezione 60 -> 56.2 reali, 40 -> 40.9). Qui non serve
-# nessuna costante: le righe arrivano gia' calibrate da
-# _parse_consiglio_calibrato, che usa `gg.calibra_riga` -- gli unici
-# coefficienti del sistema stanno in build_formazione_globale.py. Una copia
-# locale c'era, non era chiamata da nessuno, ed era un secondo posto dove i
-# numeri potevano divergere: rimossa.
-#
-# Sotto un cap la valuta non e' il punteggio ma il punteggio PER UNITA' DI L10:
-# cinque carte devono fare 264.4 punti reali con 260 di L10 in tutto.
-RAPPORTO_ARENA_MINIMO = PAREGGIO_ARENA_260 / 260.0
+# RIMOSSE (B04, P7 passaggio 2): PAREGGIO_ARENA_260 e RAPPORTO_ARENA_MINIMO
+# erano un doppione HARDCODATO (259.5) del pareggio vero in
+# build_formazione_globale.py (PAREGGIO_ARENA['ARENA_ALLSTARS_260']) --
+# il commento diceva "ora si legge da li'" ma il codice non lo faceva
+# affatto, proprio il tipo di divergenza silenziosa che questo progetto ha
+# gia' pagato caro. Verificato che nessun punto del repo le importava
+# (ne' qui ne' altrove, solo un commento in scouting_gw.py le nominava,
+# rimosso anche quello): costanti morte, non solo disallineate. La
+# previsione va CALIBRATA prima di confrontarla con l'L10, ma qui non serve
+# nessuna costante locale: le righe arrivano gia' calibrate da
+# _parse_consiglio_calibrato, che usa `gg.calibra_riga`.
 
 
 def _stati_sotto_cap(shape, role_data, prezzi, max_classic, l10_cap, l10_map):

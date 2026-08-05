@@ -18,12 +18,18 @@ storico integrata FIN DA SUBITO in questo script (non aggiunta dopo come
 per gli altri ruoli) — cosi' viene testata gia' durante la calibrazione dei
 parametri. Vedi CACHE INCREMENTALE piu' sotto per i dettagli.
 
-Formula REALE in produzione (26/07: granulari rimossi da score_atteso dopo
-calibrazione allargata, vedi HALF_LIFE_GAMES sotto -- i gruppi granulari
-restano calcolati solo a scopo diagnostico nell'output):
-  score_atteso = P(gioca) x media_pesata_esponenziale(N partite)
-                 x fattore_casa_trasferta x fattore_forza_avversario x fattore_trend
+Formula REALE in produzione (RISCRITTA P1/passaggio 2, B19: la vecchia
+versione elencava fattore_forza_avversario nel prodotto, mai applicato
+davvero -- verificato per data-flow + test A/A OPPONENT_SENSITIVITY=1e9 ->
+score_atteso invariato). Vedi compute_score_atteso_def:
+  grezzo = level_score_atteso(eventi decisivi x opponent_lambda_mult)
+           + media_granulari_pesata * fattore_trend_granulare
+  grezzo_corretto = shrinkage(grezzo, prior dinamico da presence_rate)
+  risultato = grezzo_corretto * fattore_casa_trasferta
+              + Stadio D (delta venue+avversario su gol subiti/passaggio/CS)
   range_confidenza = +/- dev_std_pesata * RANGE_MULTIPLIER
+L'avversario entra via opponent_lambda_multiplier (decisivi) e via Stadio D
+(granulare, flag forte/debole), mai come fattore moltiplicativo finale.
 
 RARE_EVENTS_STATS (eventi rari) RIMOSSO il 26/07 dai gruppi granulari
 diagnostici: pesava 0.0% sul movimento del punteggio su 1534 partite reali
@@ -37,10 +43,11 @@ granulare). Ora fattore_casa_trasferta si calcola SOLO sul RESIDUO (score
 totale meno la somma di tutti i gruppi granulari tracciati), cosi' l'effetto
 venue viene applicato esattamente una volta per ogni punto di score, mai due.
 
-PARAMETRI: riusati gli stessi valori dei centrocampisti come punto di
-partenza (HALF_LIFE_GAMES=12.0, RANGE_MULTIPLIER=1.4, OPPONENT_SENSITIVITY=29.0,
-TREND_INTENSITY=1.0) — da ricalibrare con un grid search dedicato ai
-difensori quando avremo piu' giocatori di test.
+PARAMETRI (B16, P7 passaggio 2: questo blocco diceva ancora "TREND_INTENSITY=
+1.0 -- da ricalibrare", stantio da mesi): HALF_LIFE_GAMES=30.0, RANGE_
+MULTIPLIER=1.1, TREND_INTENSITY=0.0 (spento, vedi costante sotto per la
+misura che l'ha azzerato). OPPONENT_SENSITIVITY=29.0 resta solo per la
+funzione diagnostica legacy rigorous_backtest (non tocca score_atteso).
 
 Giocatore di test: Mamadou Fofana (Defender, slug mamadou-fofana).
 
@@ -152,7 +159,7 @@ TREND_INTENSITY = 0.0  # AGGIORNATO (29/07): backtest walk-forward su tutte le l
 # Portogallo, Austria, Scozia, Belgio, Olanda, Spagna), ricalibrata sessione
 # 27/07 con validate_outlier_shrinkage.py (variabile media_ruolo).
 SHRINK_K_OUTLIER_DEF = 15.0  # AGGIORNATO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~2600 punti di test, minimo interno pulito su entrambi i segmenti (-2.23% tot, -2.49%/-2.16%), stesso valore ora su TUTTE le leghe incluso MLS/Korea
-MEDIA_RUOLO_DEF_PRIOR = 51.34
+MEDIA_RUOLO_DEF_PRIOR = 51.34  # SOLO DIAGNOSTICO (marcato P7/passaggio 2): la produzione usa il prior DINAMICO da presence_rate (vedi compute_score_atteso_def, media_ruolo_prior = 45.36+7.96*presence_rate), non questa costante statica.
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
@@ -971,12 +978,16 @@ def extract_level_score(detail):
 # Logica identica a formazione_germania3/diagnostics/validate_level_score_event_rate.py,
 # rivalidata su 6 campionati con i parametri di produzione aggiornati in
 # sezione 21: -1.38% di MAE per DEF. NESSUNA ri-taratura di half_life/trend.
-LEVEL_TABLE = {-2: 5, -1: 15, 0: 35, 1: 60, 2: 70, 3: 80, 4: 90, 5: 100}
+# B20 (P7, passaggio 2): aggiunto il gradino -3:0, mancante -- confermato
+# da due screenshot Sorare indipendenti (portiere e difensore, 04/08): la
+# barra del punteggio decisivo mostra i marker -3 -2 -1 0 1 2 3 4 5 sopra i
+# valori 0 5 15 35 60 70 80 90 100. Il floor del clamp scende da -2 a -3.
+LEVEL_TABLE = {-3: 0, -2: 5, -1: 15, 0: 35, 1: 60, 2: 70, 3: 80, 4: 90, 5: 100}
 LEVEL_SCORE_POISSON_K_MAX = 6  # troncamento Poisson: massa residua accumulata sull'ultimo bin
 
 
 def netto_to_level(netto):
-    k = max(-2, min(5, round(netto)))
+    k = max(-3, min(5, round(netto)))
     return LEVEL_TABLE[k]
 
 
@@ -2071,17 +2082,13 @@ def build_prediction(player_slug):
     fattore_gol_subiti = compute_split_factor(goals_conceded_values, is_home_flags, next_is_home, weights_det)
     fattore_clean_sheet = compute_split_factor(clean_sheet_values, is_home_flags, next_is_home, weights_det)
 
-    # --- Fattore forza avversario (lineare sul ranking assoluto) ---
-    # Ranking medio delle 14 partite (tra gli avversari con dato disponibile)
+    # Ranking medio delle 14 partite (tra gli avversari con dato disponibile).
+    # Resta per il fallback di Stadio D e per il log diagnostico. RIMOSSO
+    # (P1, passaggio 2, B19): fattore_forza_avversario, calcolato da questo
+    # ranking e mai usato in score_atteso (data-flow + test A/A
+    # OPPONENT_SENSITIVITY=1e9 -> score_atteso invariato bit-per-bit).
     valid_opp_ranks = [r for r in opponent_rankings if r is not None]
     avg_opp_rank_hist = sum(valid_opp_ranks) / len(valid_opp_ranks) if valid_opp_ranks else None
-
-    fattore_forza_avversario = 1.0
-    if avg_opp_rank_hist and next_opp_rank:
-        # rank piu' basso = squadra piu' forte. Se il prossimo avversario ha un
-        # rank piu' basso (piu' forte) della media storica affrontata, penalizza.
-        delta = (next_opp_rank - avg_opp_rank_hist) / OPPONENT_SENSITIVITY
-        fattore_forza_avversario = max(0.5, min(1.5, 1.0 + delta))
 
     # --- P(gioca) ---
     p_gioca = None
@@ -2350,7 +2357,6 @@ def build_prediction(player_slug):
         'next_opponent_team_slug': next_opponent_team_slug,
         'next_own_rank': next_own_rank,
         'next_is_home': next_is_home,
-        'fattore_forza_avversario': fattore_forza_avversario,
         'opp_lambda_mult': _opp_lambda_mult,
         'fattore_falli': fattore_falli,
         'fattore_duelli': fattore_duelli,
@@ -2436,15 +2442,11 @@ def format_output(result):
     lines.append(f"Ranking prossimo avversario: {result['next_opp_rank']}")
     # AVV_FACTOR (03/08, fix output ingannevole): questa riga e' quella che
     # build_consiglio.py porta fino al report come 'AVV_FACTOR', cioe' l'unico
-    # numero sull'avversario che arriva sotto gli occhi. Mostrava
-    # 'fattore_forza_avversario', costruito su domesticLeagueRanking, che pero'
-    # e' documentato come contaminato e RIMOSSO da score_atteso il 26/07: il
-    # report esibiva come 'applicato' un fattore che non veniva applicato, e
-    # nascondeva quello vero. Ora mostra il moltiplicatore davvero in uso.
+    # numero sull'avversario che arriva sotto gli occhi. Mostra il
+    # moltiplicatore davvero in uso (RIMOSSO P1/B19 il vecchio
+    # fattore_forza_avversario su domesticLeagueRanking, mai applicato).
     lines.append(f"Fattore forza avversario applicato: {result['opp_lambda_mult']:.3f} "
                  f"(gol subiti reali dell'avversario, ultime 10)")
-    lines.append(f"Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): "
-                 f"{result['fattore_forza_avversario']:.3f}")
     lines.append(f"Fattore falli (casa/trasferta, da dati reali): {result['fattore_falli']:.3f}")
     lines.append(f"Fattore duelli (casa/trasferta, da dati reali): {result['fattore_duelli']:.3f}")
     lines.append(f"Fattore efficacia offensiva (casa/trasferta, da dati reali): {result['fattore_offensivo']:.3f}")

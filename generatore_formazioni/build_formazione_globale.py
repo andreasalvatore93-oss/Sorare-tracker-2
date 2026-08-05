@@ -424,19 +424,20 @@ def calibra_riga(row, ruolo=None):
 # Il valore dipende dal campo, non dall'utente: e' il punteggio al quale
 # l'incasso medio -- calcolato pescando i nove avversari da arene vere e i
 # premi da quelli davvero visti, arene gold incluse -- uguaglia il costo.
-# RIFATTE (03/08) dopo i fix e la ritaratura del modello, ripercorrendo la
-# stessa catena che le aveva prodotte:
-#   1. taratura_giocatore.py       -> 74.515 coppie previsione/realizzato
-#   2. taratura_formazioni_sintetiche.py -> 40.000 formazioni da cinque col
-#      capitano: realizzato = 63.43 + 0.736 x previsto, dispersione 42.70
-#   3. SIGMA=42.70 consiglio_arena.py -> le soglie qui sotto
 #
-# Si spostano di mezzo punto, e non per fortuna: nella catena l'UNICO ingresso
-# che dipende dal modello e' SIGMA, la dispersione dell'errore a livello di
-# formazione, e quella e' passata da 43.3 a 42.70 (-1.3%). Il campo avversario
-# e i premi vengono dalle 673 arene reali, che il modello non tocca. Verificato
-# a monte: con SIGMA=43.3 il tool ristampa esattamente le soglie precedenti
-# (264.5/243.6/287.9/342.9), quindi la catena e' quella giusta.
+# STORIA (B06, P7 passaggio 2: questo commento descriveva solo la catena fino
+# al 03/08, con SIGMA=42.70 -- gia' superata dalla ritaratura del 05/08, che
+# aveva finito per lasciare solo un commento inline sulla riga della cap 260.
+# Aggiornata qui la fonte, non solo la riga):
+#   1. taratura_giocatore.py             -> 74.515 coppie previsione/realizzato
+#   2. taratura_formazioni_sintetiche.py -> 40.000 formazioni da cinque col
+#      capitano: dispersione dell'errore a livello di formazione (SIGMA)
+#   3. consiglio_arena.py                -> converte SIGMA nelle soglie sotto
+#
+# VALORE CORRENTE (05/08, VALIDAZIONE_SOGLIE.md): SIGMA cap 260 corretta da
+# 42.70 a 50.6 -- le soglie sotto vengono da quella ritaratura. Il campo
+# avversario e i premi restano dalle 673 arene reali, invariati: solo SIGMA
+# dipende dal modello ed e' l'unico ingresso che puo' spostare questi numeri.
 PAREGGIO_ARENA = {
     # In punteggio REALE, perche' la previsione arriva gia' calibrata (vedi
     # calibra_riga). Prima erano espresse in previsione grezza -- 274.1 per la
@@ -552,10 +553,13 @@ def _verdetto_arene_html(all_results):
 # li' qualunque premio e' guadagno netto.
 # Quanto rende ogni punto sopra il pareggio, misurato su 673 arene reali: la
 # curva e' ripida vicino alla soglia, perche' pochi punti spostano molto la
-# probabilita' di finire nei primi tre. In cap 260 un solo punto vale 29
-# essenze, quindi anche un margine di mezzo punto NON e' zero (vale 14).
-# RIMISURATE (03/08) insieme alle soglie, come pendenza della curva
-# dell'incasso nell'intorno del pareggio (+-5 punti), con la stessa SIGMA=42.70.
+# probabilita' di finire nei primi tre. RIMISURATE insieme alle soglie, come
+# pendenza della curva dell'incasso nell'intorno del pareggio (+-5 punti).
+# B06 (P7 passaggio 2): questo commento diceva ancora "un punto vale 29
+# essenze" e "SIGMA=42.70" -- la cifra del 03/08, superata dalla ritaratura
+# del 05/08 (SIGMA cap 260 -> 50.6). Il valore vivo oggi e' 7.9 essenze/punto
+# per la cap 260 (vedi GUADAGNO_PER_PUNTO sotto), non 29: chi legge questo
+# commento credeva a una catena che non esiste piu'.
 GUADAGNO_PER_PUNTO = {
     # Essenze guadagnate per ogni punto REALE sopra il pareggio.
     'ARENA_ALLSTARS_260': 7.9, 'ARENA_ALLSTARS_220': 6.3,   # cap260 8.8->7.9 (sigma 50.6, 05/08); cap220 era 7.4
@@ -586,7 +590,12 @@ def _etichetta_arena(tipo, atteso):
     if soglia is None:
         return None, None
     margine = atteso - soglia
-    guadagno = margine * GUADAGNO_PER_PUNTO.get(tipo, 29.0)
+    # B05 (P7, passaggio 2): fallback allineato a 7.9 (cap 260, la chiave
+    # vera del 05/08) su TUTTI i punti del repo con lo stesso .get(tipo, N) --
+    # prima erano 29.0/7.5/8.8 a seconda del file, tutti irraggiungibili oggi
+    # (le chiavi di PAREGGIO_ARENA e GUADAGNO_PER_PUNTO coincidono sempre),
+    # ma alla prima chiave nuova avrebbero dato tre risposte diverse.
+    guadagno = margine * GUADAGNO_PER_PUNTO.get(tipo, 7.9)
     costo = COSTO_INGRESSO.get(tipo, 300)
     if guadagno >= costo * QUOTA_MINIMA:
         return (f'SCHIERA -- guadagno atteso +{guadagno:.0f} essenze '
@@ -1123,7 +1132,7 @@ def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool):
             if not valide:
                 continue
             atteso = _atteso_con_capitano(valide[0])
-            resa = (atteso - soglia) * GUADAGNO_PER_PUNTO.get(tipo, 7.5)
+            resa = (atteso - soglia) * GUADAGNO_PER_PUNTO.get(tipo, 7.9)  # B05, vedi _etichetta_arena
             if migliore is None or resa > migliore[0]:
                 migliore = (resa, tipo, atteso)
         if migliore is None or migliore[0] <= 0:

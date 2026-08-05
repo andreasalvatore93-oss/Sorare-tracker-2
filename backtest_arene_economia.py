@@ -52,12 +52,21 @@ COSTO_INGRESSO = {
 # previsioni), quindi le soglie sono l'equivalente grezzo di quelle reali di
 # build_formazione_globale.py, invertendo la retta di formazione
 # realizzato = 63.43 + 0.736 x previsto:  grezza = (reale - 63.43) / 0.736.
+# B (P7, passaggio 2): questo dizionario NON e' stato riallineato alla
+# ritaratura del 05/08 (build_formazione_globale.PAREGGIO_ARENA['ARENA_
+# ALLSTARS_260'] 265.0 -> 259.5, sigma 50.6). 'cap 260' qui resta 273.9
+# (grezzo di 265.0), quindi NON coincide piu' con la soglia viva. 'Beginner'
+# non e' mai stato validato ne' prima ne' dopo (P0 report passaggio 2): non
+# aggiornarlo per analogia, servirebbe una misura dedicata sulle arene
+# Beginner reali. Questo file resta la fonte storica per R2 (ROI per tipo),
+# non la fonte viva delle soglie -- quella e' SOLO in build_formazione_
+# globale.py.
 PAREGGIO = {
-    'Beginner': 272.6,        # reale 264.1
-    'cap 220': 245.5,         # reale 244.1
-    'cap 260': 273.9,         # reale 265.0
-    'arena division': 271.0,  # reale 262.9 (sono cap 260 a tutti gli effetti)
-    'Uncapped': 305.5,        # reale 288.3
+    'Beginner': 272.6,        # reale 264.1 -- NON riverificato dopo 05/08
+    'cap 220': 245.5,         # reale 244.1 -- NON riverificato dopo 05/08
+    'cap 260': 273.9,         # reale 265.0 -- SUPERATO, il vivo e' 259.5
+    'arena division': 271.0,  # reale 262.9 (sono cap 260 a tutti gli effetti) -- NON riverificato dopo 05/08
+    'Uncapped': 305.5,        # reale 288.3 -- NON riverificato dopo 05/08
     'arena uncapped': 305.5,
 }
 # Essenze per ogni punto GREZZO sopra la soglia = per punto reale x 0.736.

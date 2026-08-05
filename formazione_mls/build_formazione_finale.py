@@ -1622,7 +1622,18 @@ GK_CAPTAIN_MARGIN = 6.7
 
 
 def pick_captain(formazione, avoid_slugs=None):
-    """Il capitano ottimale sarebbe, in puro valore atteso, il giocatore con
+    """B09 (P7, passaggio 2, SOLO documentale -- nessuna modifica di massa
+    senza chiedere all'utente): questa versione (CON GK_CAPTAIN_MARGIN e la
+    regola GK/movimento) e' quella DI PRODUZIONE -- il generatore globale
+    (generatore_formazioni/build_formazione_globale.py) importa SOLO
+    formazione_mls. Le 52 copie per-lega in formazione_<lega>/
+    build_formazione_finale.py:pick_captain NON hanno questa regola (versione
+    piu' vecchia, 1182 righe contro 2349): qualunque run per-lega STANDALONE
+    (fuori dal generatore globale) sceglie un capitano diverso, senza errore
+    visibile. Non sono allineate da propaga_modello.py (che copre solo
+    predict/test_*.py, non build_formazione_finale.py).
+
+    Il capitano ottimale sarebbe, in puro valore atteso, il giocatore con
     lo score atteso piu' alto della formazione (il bonus e' una percentuale
     del punteggio REALE di quel giocatore, quindi massimizzare l'atteso
     massimizza il bonus atteso) -- MA questo vale solo se l'atteso e'

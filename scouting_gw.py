@@ -363,11 +363,13 @@ ORE_CONSIGLIO_VALIDO = float(os.environ.get('SCOUTING_ORE_CONSIGLIO', '12'))
 # col merge del 05/08 che aveva portato la cap 260 da 8.8 a 7.9 essenze/punto).
 PUNTI_SLOT_MEDIO = float(os.environ.get('SCOUTING_PUNTI_SLOT', '51.8'))
 ESSENZE_PER_PUNTO = float(os.environ.get('SCOUTING_ESSENZE_PUNTO', '8.8'))
-# Solo per il testo del tooltip. Il valore vivo sta nel generatore
-# (PAREGGIO_ARENA['ARENA_ALLSTARS_260'] / 260) -- vedi B03, correzione
-# separata (P7), qui non toccato.
-RAPPORTO_ARENA_MINIMO_TESTO = '1.019'   # = 265.0 / 260, vedi best_five.RAPPORTO_ARENA_MINIMO
 EURO_PER_1000_ESSENZE = float(os.environ.get('SCOUTING_EURO_1000_ESSENZE', '2'))
+# RIMOSSA (B03, P7 passaggio 2): RAPPORTO_ARENA_MINIMO_TESTO='1.019' era un
+# valore statico (265.0/260, superato dal 05/08: il vivo e' 259.5/260=0.998)
+# e mai letto da nessun tooltip o punto del codice -- costante morta, non
+# solo stale. best_five.PAREGGIO_ARENA_260/RAPPORTO_ARENA_MINIMO a cui
+# puntava sono a loro volta morte (mai importate da qui ne' da altri, vedi
+# rimozione in best_five.py).
 
 
 def _slot_medio_e_per_punto(gg):
@@ -1281,7 +1283,7 @@ def _arene_per_euro(gg, tipi, massimo, role_data, pools, card_pool, prezzi_per_s
             if not valide:
                 continue
             atteso = gg._atteso_con_capitano(valide[0])
-            essenze = (atteso - soglia) * getattr(gg, 'GUADAGNO_PER_PUNTO', {}).get(tipo, 8.8)
+            essenze = (atteso - soglia) * getattr(gg, 'GUADAGNO_PER_PUNTO', {}).get(tipo, 7.9)  # B05
             if essenze <= 0:
                 continue
             costo = 0.0
@@ -1357,7 +1359,7 @@ def _conto_arena(gg, risultato, prezzi_per_slug):
     except Exception:
         atteso = sum(row.get('atteso', 0) for _s, row, _c in risultato.get('formazione') or [])
     margine = (atteso - soglia) if soglia is not None else None
-    per_punto = getattr(gg, 'GUADAGNO_PER_PUNTO', {}).get(tipo, 8.8)
+    per_punto = getattr(gg, 'GUADAGNO_PER_PUNTO', {}).get(tipo, 7.9)  # B05
     # Guadagno NETTO sopra l'ingresso: il pareggio e' per definizione il punto
     # in cui il premio atteso copre le essenze spese per entrare.
     essenze = margine * per_punto if margine is not None else None

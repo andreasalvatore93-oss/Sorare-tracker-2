@@ -35,10 +35,14 @@ NUOVO in questa versione (25/07, richiesta esplicita utente):
 - PARAMETRI FISSATI: grid search cross-player completato su 14 giocatori,
   combinazione vincente individuata (MAE medio 18.13, copertura media
   68.93% — praticamente perfetta). Il grid search NON gira piu' ad ogni
-  esecuzione: i parametri sono ora costanti fisse (HALF_LIFE_GAMES=12.0,
-  RANGE_MULTIPLIER=1.4, OPPONENT_SENSITIVITY=29.0, TREND_INTENSITY=0.7),
-  con un solo backtest rigoroso (non piu' 72 combinazioni) per calcolare
-  MAE/copertura di riferimento per il singolo giocatore — molto piu' veloce.
+  esecuzione: i parametri sono ora costanti fisse. VALORI CORRENTI (B16, P7
+  passaggio 2: questa riga diceva ancora TREND_INTENSITY=0.7, stantio da
+  mesi) HALF_LIFE_GAMES=6.0, RANGE_MULTIPLIER=1.15, TREND_INTENSITY=0.0
+  (spento, vedi costante sotto per la misura che l'ha azzerato).
+  OPPONENT_SENSITIVITY=29.0 resta solo per la funzione diagnostica legacy
+  rigorous_backtest (non tocca score_atteso), con un solo backtest rigoroso
+  (non piu' 72 combinazioni) per calcolare MAE/copertura di riferimento per
+  il singolo giocatore — molto piu' veloce.
 - Output riepilogo: "CONSIGLIO ATTACCANTI" ordinato per score atteso
   decrescente, formato compatto "N) slug: X pt attesi (low-high)" — projected
   score come numero secco arrotondato + range, non piu' tabella dettagliata.
@@ -895,12 +899,16 @@ def extract_level_score(detail):
 # --- level_score ATTESO da tasso di eventi decisivi (27/07 notte, sezione 22
 # del riassunto) -- vedi formazione_mls/predict/test_def.py per la stessa
 # implementazione commentata per esteso. Rivalidato su 6 campionati: -0.78% MAE.
-LEVEL_TABLE = {-2: 5, -1: 15, 0: 35, 1: 60, 2: 70, 3: 80, 4: 90, 5: 100}
+# B20 (P7, passaggio 2): aggiunto il gradino -3:0, mancante -- confermato
+# da due screenshot Sorare indipendenti (portiere e difensore, 04/08): la
+# barra del punteggio decisivo mostra i marker -3 -2 -1 0 1 2 3 4 5 sopra i
+# valori 0 5 15 35 60 70 80 90 100. Il floor del clamp scende da -2 a -3.
+LEVEL_TABLE = {-3: 0, -2: 5, -1: 15, 0: 35, 1: 60, 2: 70, 3: 80, 4: 90, 5: 100}
 LEVEL_SCORE_POISSON_K_MAX = 6
 
 
 def netto_to_level(netto):
-    k = max(-2, min(5, round(netto)))
+    k = max(-3, min(5, round(netto)))
     return LEVEL_TABLE[k]
 
 

@@ -124,13 +124,21 @@ NOMINAL_CAP = {'cap 220': 220.0, 'cap 260': 260.0, 'Beginner': 260.0,
 # struttura/cap (5 carte, L10<=260) ma costo d'ingresso e premi diversi
 # (100 essenze / 500-250-150 contro 300 essenze / 1300-800-500, vedi
 # consiglio_arena.py:52 e backtest_arene_economia.py:24-36). genera_arene_
-# efficienti (build_formazione_globale.py) non ha un tipo Beginner: lo
-# registriamo qui, SOLO per questo backtest, con le costanti reali di
-# backtest_arene_economia.py (soglia/guadagno "reale" li' annotati, stessa
-# scala di PAREGGIO_ARENA/GUADAGNO_PER_PUNTO -- verificato: i suoi valori
-# "reale" per cap260/220/uncapped coincidono esattamente con quelli gia' in
-# build_formazione_globale.py, quindi la stessa fonte per Beginner e'
-# affidabile).
+# efficienti (build_formazione_globale.py) non ha un tipo Beginner (decisione
+# utente, R2: ROI -19.2% su 190 ingressi -- FUORI dalla catena §1bis, il
+# generatore non deve mai consigliarla). La registriamo comunque QUI, SOLO
+# per MISURARE le arene Beginner gia' giocate in passato (e' cosi' che R2 ha
+# la sua tabella ROI per tipo): rimuoverla del tutto cancellerebbe anche
+# quella misura.
+#
+# B (P7, passaggio 2): il vecchio commento diceva che i valori "reale"
+# coincidevano con quelli di build_formazione_globale.py -- vero SOLO fino al
+# 03/08. La ritaratura del 05/08 ha spostato PAREGGIO_ARENA['ARENA_ALLSTARS_
+# 260'] da 265.0 a 259.5 (sigma 50.6, VALIDAZIONE_SOGLIE.md); le soglie
+# Beginner sotto NON sono state riverificate con quella ritaratura (P0 report
+# passaggio 2: "Beginner ed Elite non sono validati affatto nel generatore").
+# NON aggiornare questi numeri per analogia con cap 260 senza una misura
+# dedicata sulle arene Beginner reali -- si rischia di inventare un valore.
 _TIPO_BEGINNER = 'ARENA_BEGINNER'
 
 
@@ -141,8 +149,8 @@ def registra_tipo_beginner():
     bfg.POOL_LEAGUE_BY_TYPE[_TIPO_BEGINNER] = 'mixed'
     bfg.LABELS[_TIPO_BEGINNER] = 'Beginner'
     bfg.CAPTAIN_BONUS_BY_TYPE[_TIPO_BEGINNER] = 0.2
-    bfg.PAREGGIO_ARENA[_TIPO_BEGINNER] = 264.1        # reale, backtest_arene_economia.py:56
-    bfg.GUADAGNO_PER_PUNTO[_TIPO_BEGINNER] = 2.1 / 0.736  # reale, backtest_arene_economia.py:65
+    bfg.PAREGGIO_ARENA[_TIPO_BEGINNER] = 264.1        # NON riverificato dopo 05/08, vedi commento sopra
+    bfg.GUADAGNO_PER_PUNTO[_TIPO_BEGINNER] = 2.1 / 0.736  # NON riverificato dopo 05/08, vedi commento sopra
     bfg.COSTO_INGRESSO[_TIPO_BEGINNER] = 100
 
 
@@ -315,7 +323,7 @@ def bilancio_stesse_carte(cache, fixture, arene_storico, formazioni):
         v = trova_formazione_valida(a)
         tipo_bfg, _fam, _av = classifica_tipo_produzione(a)
         soglia = bfg.PAREGGIO_ARENA.get(tipo_bfg)
-        guadagno = bfg.GUADAGNO_PER_PUNTO.get(tipo_bfg, 7.5)
+        guadagno = bfg.GUADAGNO_PER_PUNTO.get(tipo_bfg, 7.9)  # B05
         costo = E.costo(a)
 
         carte, ok = [], True
@@ -625,7 +633,7 @@ def bilancio_arena_per_arena(cache, fixture, arene_storico, formazioni, escludi_
                 pool_league = bfg.POOL_LEAGUE_BY_TYPE[tipo_bfg]
                 l10_cap = bfg.L10_CAP_BY_TYPE.get(tipo_bfg)
                 soglia = bfg.PAREGGIO_ARENA.get(tipo_bfg)
-                guadagno = bfg.GUADAGNO_PER_PUNTO.get(tipo_bfg, 7.5)
+                guadagno = bfg.GUADAGNO_PER_PUNTO.get(tipo_bfg, 7.9)  # B05
                 if soglia is None:
                     continue
                 stato = bfg._istantanea_pool(card_pool)
