@@ -242,33 +242,12 @@ riprende il filone backtest.
 
 ## 5. Lo stato dell'arte — cosa è CHIUSO (non riproporre)
 
-- **Scomposizione degli all-around per categoria: CHIUSA due volte, ora anche
-  con misura diretta (05/08, P8)**. I "fattori granulari" per categoria erano
-  già stati rimossi ovunque perché non battevano la media pesata semplice; P8 ha
-  chiesto la domanda più pulita — *a parità di totale all-around, la
-  ripartizione per categoria predice meglio il futuro?* — e la risposta è NO.
-  Dati: 39.594 partite FINAL ≥60′, 2.164 giocatori, 26 leghe, dalle
-  `.cache/*_detail_cache.json` già in casa (le categorie Sorare GENERAL/
-  DEFENDING/POSSESSION/PASSING/ATTACKING/GOALKEEPING ci sono tutte: nessuna
-  ri-estrazione servita). Walk-forward mensile, bootstrap appaiato su 36-41
-  giornate. Composizione ricalibrata contro totale ricalibrato: DEF dMAE −0.045
-  [−0.075;−0.020] e dcorr +0.0131 [+0.006;+0.022] ma **dlift −0.03 [−1.42;
-  +1.31]**; MID dMAE −0.018, dcorr +0.005, **dlift −0.81**; FWD e GK nulli su
-  tutte e tre. Forma additiva compatibile con la produzione (half-life diversa
-  per categoria, interruttore verificato: a tutte 30 coincide con la produzione):
-  **nulla su MAE e correlazione su tutti e 4 i ruoli**, e sul lift due risultati
-  significativi di segno OPPOSTO fra ruoli (FWD +0.69, MID −0.76) = rumore.
-  Metro a tre gambe non soddisfatto da nessuna forma: **nessuna modifica
-  applicata**. Diagnosi del perché: dentro un ruolo le categorie che pesano
-  hanno persistenze quasi identiche (MID: tutte fra +0.41 e +0.46), e dove c'è
-  spread la categoria più persistente è anche la meno variabile (DEF: ATTACKING
-  r +0.47 ma sd 2.2 contro POSSESSION sd 7.2). Sul GK, GOALKEEPING porta tutta
-  la varianza (sd 9.0) ed è la meno persistente (+0.13) — coerente col fatto che
-  ciò che decide è il clean sheet di SQUADRA. **Corregge l'indicazione lasciata
-  da P3**: la compressione che P3 aveva trovato riguarda il DECISIVO
-  (`level_score`, scala a gradini) e NON si trasferisce agli all-around, che
-  sono già una somma di punti continui. Dettaglio:
-  `docs/handoff/REPORT_PASSAGGIO_2_OPUS_P8_2026-08-05.txt`.
+- **Scomposizione degli all-around per categoria: CHIUSA (05/08, P8)**, anche
+  con misura diretta walk-forward (39.594 partite, 26 leghe, bootstrap
+  appaiato): nessuna forma soddisfa MAE+corr+lift insieme su nessun ruolo.
+  Corregge P3: la compressione trovata da P3 riguarda solo il DECISIVO
+  (`level_score`, scala a gradini), non si trasferisce agli all-around (già
+  somma continua). Dettaglio: `docs/handoff/REPORT_PASSAGGIO_2_OPUS_P8_2026-08-05.txt`.
 - **Trend recente** (`TREND_INTENSITY`): 0.0 su tutti i ruoli/leghe, monotono
   verso il peggio in ogni test.
 - **`fattore_forza_avversario`**: RIMOSSO dal codice il 05/08 (passaggio 2,
@@ -313,6 +292,22 @@ riprende il filone backtest.
   `docs/handoff/REPORT_PASSAGGIO_2_OPUS_P3_2026-08-05.txt`,
   `REPORT_PASSAGGIO_2_SONNET_P9_2026-08-05.txt`,
   `REPORT_PASSAGGIO_2_SONNET_P9BIS_2026-08-05.txt`.
+- **P10 (05/08)**: refit vero di `CALIB_PER_RUOLO` NON completato — trovato
+  lo script che rigenera i dati grezzi (`taratura_giocatore.raccogli`, 4 min,
+  nessuna rete) ma **manca nel repo lo script che calcola i 4 coefficienti
+  `CALIB_A/B_GK/DEF/MID/FWD`** (solo hardcoded in
+  `generatore_formazioni/build_formazione_globale.py:394-399`); la retta
+  "in produzione" 63.43+0.736x (`analisi_manager/valida_soglie.py`) non
+  coincide né col rigenerato vecchio (75k coppie: 40.64+0.823x) né nuovo
+  (82k coppie: 33.49+0.853x) — scollegata da tempo, non solo da P9. Backlog
+  aperto, sessione dedicata. **Anomalia capitano grezzo/calibrato (n=307,
+  confermato esatto)**: causa isolata — `pick_captain` vede attesi già
+  calibrati in produzione; su 42/307 casi discordanti il calibrato sceglie
+  DEF 35 volte (`CALIB_PER_RUOLO` DEF ha la pendenza più alta, 0.831), il
+  grezzo sceglie FWD/MID. Hit-rate 28.7% grezzo vs 25.1% calibrato, ma il
+  delta in punti sui discordanti (+5.2 pt) ha IC95 [-2.75,+13.14]: non
+  significativo. Chiusa, nessuna modifica. Dettaglio:
+  `docs/handoff/REPORT_PASSAGGIO_2_SONNET_P10_2026-08-05.txt`.
 - **Il lift di selezione non discrimina sui portieri**: IC95 dei delta larghi
   4-8 punti su 120 giornate. Sul GK il metro a tre gambe è di fatto a due
   (MAE + correlazione). Non costruire ora una terza metrica per aggirarlo:

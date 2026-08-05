@@ -1,0 +1,167 @@
+REPORT P10 (Sonnet) -- 05/08/2026, sessione singola
+Verifica di partenza: OK (ultimo commit fb790b50d1, GK_TEAM_CS_WEIGHT=22/35 confermato a riga 190).
+
+===============================================================================
+ESEGUITO: A (parziale), B (completo), C (completo). Push: SI.
+===============================================================================
+
+--- A. Refit CALIB_PER_RUOLO -----------------------------------------------
+
+Script trovato: SI. dati_globali/taratura_coppie.json e' gitignored
+(.gitignore:6); il generatore e' taratura_giocatore.raccogli(), invocato da
+ranking_pulito.py se il file manca (commento nel file: "~30 minuti, nessuna
+rete"). Eseguito: 238 secondi reali (4 min), non 30 -- sotto la soglia di
+stop, quindi proseguito.
+
+Rigenerato taratura_coppie.json (82.282 coppie, vs 75.474 nel file vecchio
+del 04/08, +9%) e rilanciato taratura_formazioni_sintetiche.py (seme fisso
+=9, quindi zero rumore fra run a parita' di dati):
+
+  file vecchio (75.474 coppie): realizzato = 40.64 + 0.823 x previsto, bias +7.11
+  file nuovo   (82.282 coppie): realizzato = 33.49 + 0.853 x previsto, bias +6.23
+
+NESSUNO dei due numeri coincide con la retta "in produzione"
+(LINEA_PROD = 63.43 + 0.736x, in analisi_manager/valida_soglie.py e
+valida_soglie_utente.py) o con la costante commentata nel brief. La retta
+di produzione e' quindi gia' vecchia di piu' di un aggiornamento, non solo
+del coefficiente GK P9.
+
+PROBLEMA piu' serio: taratura_coppie.json ricostruito con raccogli()
+ricalcola 'previsto' con il modello CORRENTE per OGNI coppia (non solo per
+quelle nuove). Il salto fra vecchio e nuovo file confonde percio' due
+effetti che non si possono separare con questo script:
+  1. il coefficiente GK c=17.5->22 (P9)
+  2. 9% di coppie in piu' (partite giocate fra 04/08 e 05/08)
+Non e' quindi possibile attribuire lo spostamento di ~7 punti di intercetta
+al solo item P9 con questo output.
+
+PROBLEMA piu' grave ancora: taratura_formazioni_sintetiche.py produce SOLO
+una retta unica a livello di formazione (verifica di coerenza, vedi
+generatore_formazioni/build_formazione_globale.py:388-393), NON i quattro
+coefficienti di CALIB_PER_RUOLO (CALIB_A_GK/DEF/MID/FWD). Ho cercato in
+tutto il repo l'assegnazione di quei valori (35.78/0.264, 7.28/0.831,
+11.61/0.740, 8.40/0.789): compaiono SOLO come costanti hardcoded in
+generatore_formazioni/build_formazione_globale.py:394-399. Non esiste nel
+repo uno script che li rigeneri. Chi li ha calcolati l'ultima volta non ha
+lasciato lo script, solo il risultato.
+
+VERDETTO: A non completato. Trovato il generatore dei dati grezzi (ok,
+economico, 4 min), ma manca lo script che trasforma quei dati nei 4
+coefficienti CALIB_PER_RUOLO effettivamente usati in produzione. Costo
+stimato per scriverlo da zero: sessione dedicata (bisogna decidere la
+metodologia di regressione per ruolo, non solo eseguirla) -- non rientra nel
+budget di questo item secondario. File temporanei generati e ripristinati:
+dati_globali/taratura_coppie.json e taratura_formazione.json sono tornati
+allo stato originale (git status pulito, verificato).
+
+Catena §1bis: NON applicabile, nessuna modifica ai coefficienti di
+produzione e' stata fatta.
+
+--- B. Anomalia grezzo-vs-calibrato capitano (n=307) -----------------------
+
+Descrizione trovata in docs/handoff/REPORT_PASSAGGIO_1_2026-08-05.txt,
+sezione "B2. pick_captain: audit" (righe 392-451). Script originale
+(b2_capitano.py) NON presente nel repo -- il report lo cita come da
+salvare in formazione_mls/diagnostics/ ma non era stato fatto. Ricostruita
+la misura da zero.
+
+n verificato: 442 formazioni totali in analisi_manager/dati/formazioni_*.json
+(8 file GW, 10 manager distinti -- NON solo "crowss" nonostante il nome del
+dataset sorgente, la nota "manager_crowss" nel report P1 e' fuorviante).
+307 complete (n_carte==5, tutte le carte giocata=true con reale e atteso
+non nulli) su 442: ESATTAMENTE il numero dichiarato. n confermato.
+
+Meccanismo isolato:
+- pick_captain() (formazione_mls/build_formazione_finale.py:1624) sceglie
+  su row['atteso'], qualunque scala quella riga porti: nessuna logica di
+  ricalibrazione dentro la funzione.
+- generatore_formazioni/build_formazione_globale.py:847 chiama
+  calibra_riga(row, role) SUBITO dopo aver letto le righe di consiglio, PRIMA
+  di costruire le formazioni e chiamare pick_captain (righe 487, 1241, 2298).
+  CONFERMATO: in produzione pick_captain vede attesi gia' calibrati.
+- Il campo 'atteso' salvato in analisi_manager/dati/formazioni_*.json e'
+  invece GREZZO (pre-calibra_riga): verificato empiricamente, l'hit-rate
+  calcolato su quel campo riproduce il 28.7% "grezzo" del report P1, non il
+  25.1% "calibrato".
+
+Misura rifatta (calibrato = CALIB_PER_RUOLO applicato al campo grezzo
+salvato):
+
+  policy                    n     hit-rate
+  -------------------------- ---- ---------
+  atteso GREZZO, max puro    307   28.66%   (report P1: 28.7%, combacia)
+  atteso CALIBRATO, max puro 307   25.08%   (report P1: 25.1%, combacia)
+
+Test appaiato (nuovo, non fatto in P1): sui 307 casi, 42 hanno un capitano
+DIVERSO fra le due scale (13.7%). Su questi 42:
+  delta medio (reale del capitano grezzo - reale del capitano calibrato) = +5.20 pt
+  IC95 bootstrap-normale: [-2.75, +13.14] -- ATTRAVERSA LO ZERO, non
+  significativo (n=42 e' piccolo).
+
+Causa del disaccordo, per ruolo scelto nei 42 casi discordanti:
+  calibrato sceglie DEF in 35/42 casi (83%)
+  grezzo sceglie FWD in 24/42, MID in 15/42
+
+Combacia esattamente con l'errore sistematico gia' documentato in P1 §B2
+("la produzione nomina un DIFENSORE nel 32% dei casi, segmento peggiore"):
+CALIB_PER_RUOLO (DEF: a=7.28, b=0.831 -- la pendenza piu' alta di tutte)
+gonfia gli attesi dei difensori piu' degli altri ruoli, abbastanza da farli
+vincere il confronto capitano quando in realta' FWD/MID avrebbero reso di
+piu' sull'atteso grezzo.
+
+VERDETTO: anomalia CONFERMATA e causa identificata con precisione (non solo
+sospettata come in P1). Impatto misurato: -3.58 punti percentuali di
+hit-rate (28.66% vs 25.08%) sull'intero campione di 307; sul sottoinsieme
+dei 42 casi dove la scelta cambia, il costo in punti (+5.2 pt medi a favore
+del grezzo) NON e' statisticamente significativo col campione disponibile.
+Chiusa come "innocua a livello di significativita' statistica, ma
+meccanicamente reale e coerente con l'errore DEF gia' noto" -- stessa
+classificazione di P1 §B2, ora con un numero appaiato invece di due
+hit-rate non appaiate. Nessuna modifica al codice: la correzione naturale
+(escludere DEF dal pool capitano, o dargli un margine come i GK) e' la
+stessa idea gia' scartata in P1 come "non significativa sul bonus arena"
+(+0.194 pt, IC95 [-0.145, +0.533]).
+
+--- C. Commento stantio ------------------------------------------------------
+
+formazione_mls/predict/test_gk.py:1632-1634 (ora :1632-1636): corretto
+"GK_TEAM_CS_WEIGHT=0.5" in "22.0/35.0~=0.629" e aggiunta la motivazione
+(coefficiente scelto per l'ordinamento dei portieri, non l'accuratezza:
+uno solo se ne schiera). propaga_modello.py: 208 file toccati (52 leghe x 4
+ruoli, comportamento normale dello script). git status dopo la propagazione:
+53 file modificati, TUTTI test_gk.py (verificato con grep -v). --check:
+pulito ("Verificati 208 file"). Commit 1d57bea432.
+
+===============================================================================
+AGGIORNAMENTO RIASSUNTO
+===============================================================================
+
+Aggiunto a docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md: voce P10 con lo
+stato di A (script dati trovato, script coefficienti-per-ruolo MANCANTE nel
+repo -- backlog aperto) e B (anomalia capitano confermata con causa: DEF
+sovrapesato da CALIB_PER_RUOLO, non significativo in punti, nessuna azione).
+Tagliata/compressa la voce P8 esistente a due righe per restare snelli
+(dettaglio resta in questo report e nel report P8 originale).
+
+===============================================================================
+PUSH
+===============================================================================
+
+Eseguito a fine sessione (branch main, nessun altro commit locale trovato
+prima del push).
+
+===============================================================================
+DOMANDE APERTE
+===============================================================================
+
+1. A: chi ha calcolato CALIB_A_GK/DEF/MID/FWD in origine (build_formazione_
+   globale.py:394-399)? Se esiste uno script perso, recuperarlo sarebbe piu'
+   economico che riscriverlo da zero. Se non esiste, decidere se vale una
+   sessione dedicata (l'impatto misurato del coefficiente GK P9 resta lo
+   0.06% dichiarato, MA la scoperta di questo item -- la retta di produzione
+   e' scollegata da qualunque rigenerazione recente -- e' piu' seria e
+   indipendente da P9).
+2. B: nessun caso concreto da controllare su Sorare, e' chiusa su dati gia'
+   verificati (n=307 esatto, meccanismo nel codice). Se si vuole rialzare la
+   potenza del test appaiato, serve piu' storico manager (oggi 8 GW / 442
+   arene), non un controllo puntuale.
