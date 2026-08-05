@@ -169,10 +169,20 @@ GK_TEAM_CS_POINTS = float(os.environ.get('GK_TEAM_CS_POINTS', '35'))
 # 0.130+0.460*p (che sul blend equivale a moltiplicare c per 0.46): MAE meglio,
 # corr peggio (-0.0126, IC95 [-0.0184,-0.0068]), lift indistinguibile.
 GK_TEAM_CS_BASELINE = float(os.environ.get('GK_TEAM_CS_BASELINE', '0.28'))
-# Peso del blend porta-inviolata (03/08): ACCESO di default (0.5) dopo il
-# backtest sulle arene reali (corr previsto/reale 0.157->0.211, piu' arene a
-# premio). 0 lo spegne. Vale in produzione E nello scouting (stesso modulo).
-GK_TEAM_CS_WEIGHT = float(os.environ.get('GK_TEAM_CS_WEIGHT', '0.5'))
+# Peso del blend porta-inviolata (03/08, alzato P9-bis/passaggio 2): non e'
+# una "quota di blend", e' la leva che fissa c = WEIGHT*POINTS nel termine
+# c*(p-riferimento). Scansione su n=6.973 contesti GK (stesso campione di
+# P3, rigenerato identico: c=0 -> MAE 16.061/corr 0.0347, c=17.5 -> MAE
+# 16.091/corr 0.0674, invarianti verificati) mostra un compromesso monotono
+# MAE/correlazione, nessun c dominante. Poiche' del portiere se ne schiera
+# UNO e conta l'ordinamento non il voto (decisione utente), il criterio per
+# questo ruolo e' la correlazione con la MAE come vincolo di guardia
+# (+0.05 max vs c=17.5), non il metro a tre gambe standard -- deroga
+# documentata in HANDOFF_UNIFICATO_MODELLO_SCOUTING.md. c piu' alto che
+# supera il vincolo: c=26 (dcorr +0.0053 IC95[+0.0017,+0.0089] vs c=17.5,
+# dMAE +0.0484 punto-stima, entro la soglia; c=35 fallisce, dMAE +0.1287).
+# WEIGHT=26/35. 0 spegne il blend. Vale in produzione E nello scouting.
+GK_TEAM_CS_WEIGHT = float(os.environ.get('GK_TEAM_CS_WEIGHT', str(26.0 / 35.0)))
 # Cache di PROCESSO, chiave = giorno del cutoff (03/08 originale, RISCRITTA
 # P6/passaggio 2, B13+B14): la versione precedente costruiva ~124 snapshot
 # SETTIMANALI di modello_partita.stima() su TUTTO il dataset (un ciclo che
