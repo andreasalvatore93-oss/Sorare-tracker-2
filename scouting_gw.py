@@ -356,27 +356,53 @@ PAGINA_SEARCH = int(os.environ.get('SCOUTING_PAGINA_SEARCH', '50'))
 # di un'altra giornata e di un altro avversario.
 ORE_CONSIGLIO_VALIDO = float(os.environ.get('SCOUTING_ORE_CONSIGLIO', '12'))
 
+# FALLBACK statici, usati solo se il generatore non e' caricabile (vedi
+# _slot_medio_e_per_punto). B01/B02 (passaggio 2, P2): prima erano l'UNICO
+# valore usato, sempre, confrontati con un atteso GREZZO -- due errori che si
+# sommavano (scala diversa fra generatore e scouting, e valore non aggiornato
+# col merge del 05/08 che aveva portato la cap 260 da 8.8 a 7.9 essenze/punto).
 PUNTI_SLOT_MEDIO = float(os.environ.get('SCOUTING_PUNTI_SLOT', '51.8'))
-# AGGIORNATO (03/08): 7.65 -> 8.8, rimisurato insieme alle soglie d'arena con
-# la dispersione nuova (consiglio_arena.py, pendenza della curva dell'incasso
-# attorno al pareggio). Era il valore medio dei vecchi 7.5/7.4/7.3, ricalcolati
-# oggi a 8.8/6.3/8.0: si compra per giocare in cap 260, quindi vale quella.
 ESSENZE_PER_PUNTO = float(os.environ.get('SCOUTING_ESSENZE_PUNTO', '8.8'))
-# Solo per il testo del tooltip. Il valore vivo sta in best_five
-# (PAREGGIO_ARENA_260 / 260), ma qui best_five non e' importato e un tooltip
-# non vale una dipendenza a runtime: si scrive il numero e si dice da dove
-# viene, cosi' chi lo cambia sa che c'e' anche questo da toccare.
+# Solo per il testo del tooltip. Il valore vivo sta nel generatore
+# (PAREGGIO_ARENA['ARENA_ALLSTARS_260'] / 260) -- vedi B03, correzione
+# separata (P7), qui non toccato.
 RAPPORTO_ARENA_MINIMO_TESTO = '1.019'   # = 265.0 / 260, vedi best_five.RAPPORTO_ARENA_MINIMO
 EURO_PER_1000_ESSENZE = float(os.environ.get('SCOUTING_EURO_1000_ESSENZE', '2'))
 
 
-def _economia(atteso, prezzo_eur):
+def _slot_medio_e_per_punto(gg):
+    """Slot medio (punti REALI di uno slot in una formazione da 5 a cap 260) e
+    essenze guadagnate per punto REALE sopra quella soglia -- dal generatore,
+    stessa fonte della sezione arene (getattr, come _conto_arena), non piu'
+    una costante locale scollegata (B02).
+
+    PAREGGIO_ARENA['ARENA_ALLSTARS_260'] e' il pareggio della FORMAZIONE da 5
+    carte: diviso 5 e' il pareggio di UNO slot, la stessa quantita' che
+    PUNTI_SLOT_MEDIO approssimava a mano. GUADAGNO_PER_PUNTO della stessa
+    chiave e' l'essenze/punto REALE per quel tipo di arena -- si compra per
+    giocare in cap 260, quindi e' quella la scala giusta, non una media fra
+    tipi diversi. Fallback ai vecchi default statici se gg manca o non ha
+    ancora queste chiavi (nessuna regressione per chi non ha il generatore)."""
+    if gg is None:
+        return PUNTI_SLOT_MEDIO, ESSENZE_PER_PUNTO
+    pareggio = getattr(gg, 'PAREGGIO_ARENA', {}).get('ARENA_ALLSTARS_260')
+    per_punto = getattr(gg, 'GUADAGNO_PER_PUNTO', {}).get('ARENA_ALLSTARS_260')
+    slot_medio = (pareggio / 5.0) if pareggio is not None else PUNTI_SLOT_MEDIO
+    per_punto = per_punto if per_punto is not None else ESSENZE_PER_PUNTO
+    return slot_medio, per_punto
+
+
+def _economia(atteso, prezzo_eur, slot_medio=None, per_punto=None):
     """(essenze a giornata, euro per essenza-al-turno, GW di rientro).
 
-    Ognuno None quando non calcolabile, mai zero al posto di 'non lo so'."""
+    Ognuno None quando non calcolabile, mai zero al posto di 'non lo so'.
+    slot_medio/per_punto: se non passati, ricadono sui vecchi default statici
+    (compatibilita' per chiamanti che non hanno gg)."""
     if not atteso:
         return None, None, None
-    essenze_gw = (atteso - PUNTI_SLOT_MEDIO) * ESSENZE_PER_PUNTO
+    sm = PUNTI_SLOT_MEDIO if slot_medio is None else slot_medio
+    pp = ESSENZE_PER_PUNTO if per_punto is None else per_punto
+    essenze_gw = (atteso - sm) * pp
     if prezzo_eur is None or essenze_gw <= 0:
         # Sotto la media di slot la carta non guadagna essenze: un "euro per
         # essenza" li' sarebbe un numero senza senso, e le GW di rientro
@@ -1449,7 +1475,7 @@ _HTML_ORDINAMENTO = """
 _HTML_CODA = _HTML_ORDINAMENTO + "</body></html>"
 
 
-def _atteso_dai_consigli(pool):
+def _atteso_dai_consigli(pool, gg=None):
     """L'atteso di ogni candidato, letto dalle PREDIZIONI GREZZE
     (prediction_<slug>_*.txt), non dai consigli aggregati.
 
@@ -1462,7 +1488,21 @@ def _atteso_dai_consigli(pool):
     Per ogni slug si tiene l'ULTIMA predizione (timestamp nel nome, non mtime:
     git checkout in CI lo riscrive). Il KICKOFF (riga 'Data:') dev'essere nella
     finestra della fixture: una predizione vecchia punta a un'altra partita.
-    Predict non ancora lanciato = colonna vuota, nessun numero inventato."""
+    Predict non ancora lanciato = colonna vuota, nessun numero inventato.
+
+    CALIBRAZIONE (B01, P2 passaggio 2): il valore scritto nel file e' quello
+    GREZZO di score_atteso (vedi test_{gk,def,mid,fwd}.py, riga "N) slug: X pt
+    attesi") -- il commento che diceva "gia' calibrato su scala reale" era
+    falso, il generatore calibra SOLO quando legge il consiglio aggregato via
+    calibra_riga/_parse_consiglio_calibrato, non quando scrive il file. Qui si
+    applica la STESSA calibrazione (gg.calibra, CALIB_PER_RUOLO) prima di
+    restituire il valore, cosi' la tabella confronta ruoli sulla stessa scala
+    del generatore -- se gg non e' disponibile si ricade sul grezzo
+    (comportamento INVARIATO, nessuna regressione per chi non ha il generatore)."""
+    ruolo_per_slug = {}
+    for g in pool['giocatori']:
+        if g.get('slug') and g.get('ruoli'):
+            ruolo_per_slug[g['slug']] = g['ruoli'][0]
     inizio = (pool['fixture'].get('startDate') or '')[:10]
     fine = (pool['fixture'].get('endDate') or '')[:10]
     slugs_pool = {g['slug'] for g in pool['giocatori'] if g.get('slug')}
@@ -1501,6 +1541,9 @@ def _atteso_dai_consigli(pool):
     if fuori_giornata:
         log(f"Attesi: {fuori_giornata} predizioni con kickoff fuori da "
             f"{inizio}..{fine} (altre giornate, scartate).")
+    if gg is not None and hasattr(gg, 'calibra'):
+        per_slug = {slug: gg.calibra(v, ruolo_per_slug.get(slug)) if v is not None else v
+                    for slug, v in per_slug.items()}
     return per_slug
 
 
@@ -1581,7 +1624,18 @@ def _escape(testo):
 
 
 def scrivi_html(pool, dest, formazioni=()):
-    attesi = _atteso_dai_consigli(pool)
+    # gg (generatore) caricato qui, non a livello modulo: stesso schema di
+    # componi_arene, cosi' calibrazione (CALIB_PER_RUOLO) e soglie
+    # (PAREGGIO_ARENA/GUADAGNO_PER_PUNTO) vengono da un solo posto invece di
+    # essere ricopiate localmente e disallinearsi in silenzio (B01/B02).
+    try:
+        gg = _import('scouting_best_five', 'best_five.py')._import_gg()
+    except Exception as e:
+        log(f"ATTENZIONE: generatore non caricabile ({e}), atteso/soglie "
+            f"scouting ricadono sui vecchi valori grezzi/statici.")
+        gg = None
+    attesi = _atteso_dai_consigli(pool, gg)
+    slot_medio, per_punto = _slot_medio_e_per_punto(gg)
     filtri = pool.get('filtri') or {}
     testa = _HTML_TESTA % {
         'fixture': pool['fixture']['slug'],
@@ -1613,7 +1667,7 @@ def scrivi_html(pool, dest, formazioni=()):
             atteso = attesi.get(g['slug'])
             if atteso is None:
                 return (4, None, 'muted', 'dati mancanti', None, None)
-            essenze_gw, _e, rientro = _economia(atteso, g.get('prezzo_eur'))
+            essenze_gw, _e, rientro = _economia(atteso, g.get('prezzo_eur'), slot_medio, per_punto)
             odds = g.get('starter_odds')
             if odds is not None and odds < soglia_odds:
                 return (3, essenze_gw, 'ko', 'NO', rientro, 'odds basse')
@@ -1646,7 +1700,7 @@ def scrivi_html(pool, dest, formazioni=()):
             "<tr><th>Conviene</th><th>Giocatore</th><th>R</th><th>Atteso</th>"
             "<th>Prezzo</th>"
             "<th title='Essenze in piu' a giornata rispetto a uno slot medio "
-            f"da {PUNTI_SLOT_MEDIO} punti'>Ess/GW</th>"
+            f"da {slot_medio:.1f} punti (scala calibrata, cap 260)'>Ess/GW</th>"
             "<th title='In quante giornate le essenze guadagnate ripagano il "
             "prezzo pieno della carta'>Si ripaga in</th>"
             "<th title='Starter odds Sorare'>Odds</th><th>Note</th></tr>")
