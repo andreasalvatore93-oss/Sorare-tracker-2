@@ -135,25 +135,53 @@ l'atteso non discrimina (valore a livello di tipo-arena/soglia).
 Da rivedere: **solo la σ della cap 260** (unica correzione solida).
 
 ## Ricalibrazione fatta (modello attuale, scala di produzione)
-σ per tipo su `backtest_arene_dettaglio_0805.json` (n=323, modello attuale):
-cap 260 **50.6**, arena division 42.8, Uncapped 42.9, Beginner 46.9,
-cap 220 41.9. Confermato su 2 dataset in più (utente 2 ago: cap 260 54.1;
-manager: cap 260 54.1). → σ=42.70 va bene per tutti TRANNE cap 260 (~51).
+σ cap 260 su 3 dataset: **50.6** (utente scala attuale, n=113), 54.1 (utente
+2 ago), 54.1 (manager, n=199). Sempre chiaramente > 42.70. Gli altri tipi in
+scala attuale: arena division 42.8, Uncapped 42.9, Beginner 46.9, cap 220 41.9
+→ σ=42.70 va bene per tutti TRANNE cap 260.
 
-`consiglio_arena.py` con SIGMA=42.70 ristampa ESATTAMENTE le soglie di
-produzione (cap 260 265.0, cap 220 244.1, uncapped 288.3, elite 342.7,
-guadagno/punto 8.83): catena intatta. Con la σ corretta della cap 260:
+**Cache backtest COMPLETA** (`scarica_cache_backtest.py --elenco`: solo 6
+giocatori mancanti su tutte le 673 arene) → nessuna run GitHub serve, il
+campione cap 260 non è cache-limitato. (Correzione a una mia ipotesi
+precedente: il gap 323/426 arene ricostruite è formazioni senza storico/
+capitano/data, non cache.)
+
+**σ per lega dentro cap 260** (n=199 manager, hanno la lega): σ NON uniforme —
+MLS (il grosso, 117) 47.1, kleague (16) 58.4, brasile (15) 40.1, argentina
+(9, rumore) 78.5. E σ CRESCE col numero di leghe distinte (1 lega 45.8 → 5
+leghe 80.1), non con la concentrazione di club. **Ritratto** la spiegazione
+"concentrazione→covarianza→σ alta (Filone 3)": è smentita, la σ alta è
+ETEROGENEITÀ fra leghe, non correlazione fra compagni.
+
+`consiglio_arena.py` a SIGMA=42.70 ristampa ESATTAMENTE le soglie di produzione
+(catena intatta). Con la σ corretta della cap 260:
 
     cap 260   sigma 42.70 -> pareggio 265.0  guadagno/punto 8.83  (ATTUALE)
-    cap 260   sigma 51.0  -> pareggio 259.0  guadagno/punto 7.92  (PROPOSTO)
-    cap 260   sigma 55.0  -> pareggio 256.1  guadagno/punto 7.41  (sensibilità)
+    cap 260   sigma 47.0  -> pareggio 262.0  guadagno/punto 7.82  (MLS, lega dominante)
+    cap 260   sigma 50.6  -> pareggio 259.5  guadagno/punto 7.93  (tua pop. attuale)
+    cap 260   sigma 54.0  -> pareggio 256.9  guadagno/punto 7.46  (manager)
 
-Effetto pratico: la cap 260 (arena +37.6% ROI) diventa conveniente a partire da
-259 invece di 265 → poche formazioni marginali in più schierate lì invece che
-nelle competizioni gratuite. Modesto ma +EV e ben fondato.
+## VERDETTO (per la revisione)
+σ=42.70 è **dimostrabilmente troppo bassa per cap 260** (reale 47–54, tua ~50.6):
+robusto su 3 dataset. La correzione (**pareggio 265→259.5, guadagno 8.83→7.9**,
+a σ=50.6) è più accurata, a basso rischio e reversibile, MA il guadagno pratico
+è **piccolo** (entri in cap 260 da 259.5 invece di 265: poche formazioni
+marginali; il tuo cap 260 tipico è ~270, ben sopra entrambe). Il limite più
+profondo NON si risolve con la σ: dentro una cap l'atteso non discrimina
+(corr +0.04) → il valore del modello è nella scelta del TIPO arena e nella
+decisione d'ingresso (che vale +10350 essenze risparmiate nel backtest), non
+nell'ordinare le formazioni dentro la cap.
 
-## Decisione aperta + catena §1bis
-Applicare in `build_formazione_globale.py`: PAREGGIO_ARENA['ARENA_ALLSTARS_260']
-265.0→259.0 e GUADAGNO_PER_PUNTO['ARENA_ALLSTARS_260'] 8.8→7.9. Poi, per la
-catena di produzione, riverificare che lo scouting (colonne margine/Ess-GW,
-soglie cap 260) resti coerente. NON applicato: da decidere con l'utente.
+**Conviction: media.** La σ è oggettivamente sbagliata, ma la posta è modesta.
+
+## Catena §1bis — pronta su branch (NON su main)
+La modifica è preparata su branch `soglia-cap260-sigma`, non applicata a main
+(scelta con l'utente). Cosa tocca (verificato):
+- `build_formazione_globale.py`: PAREGGIO_ARENA['ARENA_ALLSTARS_260'] 265.0→259.5,
+  GUADAGNO_PER_PUNTO['ARENA_ALLSTARS_260'] 8.8→7.9 (+ commento con derivazione).
+- **Propagazione automatica**: `scouting_gw.py`, `ottimizza_portafoglio_arene.py`,
+  `backtest_arene_produzione.py` leggono le costanti dal generatore via
+  `getattr(gg,...)` → si aggiornano da sole.
+- `best_five.py` (deprecato) ha una copia hardcoded `PAREGGIO_ARENA_260=265.0`
+  → sincronizzata a 259.5 sul branch per coerenza.
+Per applicare: merge del branch. Nessun'altra dipendenza scoperta.

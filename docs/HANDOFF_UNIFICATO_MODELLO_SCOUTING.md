@@ -361,17 +361,19 @@ non discrimina, corr +0.04), il numero vero via catena è 7.9.
 Confermato: cap 260 miniera; arena division (−73%) e Beginner (−38%) da
 evitare; l'atteso ORDINA il realizzato (scouting valido) ma NON discrimina
 dentro una cap → valore a livello di TIPO-arena/soglia, non per-formazione.
-**DECISIONE APERTA — produzione NON toccata** (utente cauto, giustamente). La
-correzione (cap 260 pareggio 259.0 + guadagno 7.9) è pronta ma prima serve un
-campione più solido:
-1. il backtest ricostruisce solo **113 delle ~194 arene cap 260** in archivio
-   (58%, cache a 133 giocatori) → σ=51 forse sbilanciata verso le leghe cachate;
-2. σ non ancora spaccata PER LEGA dentro cap 260 (se la concentrazione viene da
-   poche leghe, correggere mirato, non globale sul tipo).
-Strada pulita = PASSO 0 archiviato: espandere la cache (run GitHub
-`cache_backtest_arene.yml`) → ~194 arene cap 260 → riconfermare σ + per-lega →
-POI applicare in `build_formazione_globale.py` e percorrere TUTTA la catena
-(§1bis) fino allo scouting incluso. "Se tocchiamo produzione, tocchiamo tutto."
+**VERDETTO FINALE (05/08, autonomo) — pronta su branch, NON su main.**
+Diligenza completata: (a) cache backtest COMPLETA (solo 6 giocatori mancanti,
+nessuna run serve — il gap 323/426 è formazioni senza storico/capitano, non
+cache); (b) σ per lega dentro cap 260: NON uniforme (MLS 47, kleague 58,
+argentina 78 n9) e cresce col n. di leghe distinte, non con la concentrazione
+→ RITRATTA la spiegazione "concentrazione/Filone 3", è eterogeneità fra leghe.
+Numeri finali (σ=50.6, tua pop. attuale): cap 260 **pareggio 265→259.5,
+guadagno 8.83→7.9**. Conviction MEDIA: σ oggettivamente sbagliata ma posta
+modesta (cap 260 tipico ~270, ben sopra entrambe le soglie); il limite vero
+(atteso non discrimina dentro la cap) non si risolve con la σ. Modifica
+preparata su branch **`soglia-cap260-sigma`** (build_formazione_globale +
+best_five; scouting/ottimizza/backtest_produzione si propagano da soli via
+getattr). Per applicare: merge del branch. Dettaglio in `VALIDAZIONE_SOGLIE.md`.
 
 ### Cosa ESPLORARE nelle 435 arene (agganci concreti già trovati)
 - **Cosa serve per vincere** (punteggio formazione, cap. incluso): media 261,
