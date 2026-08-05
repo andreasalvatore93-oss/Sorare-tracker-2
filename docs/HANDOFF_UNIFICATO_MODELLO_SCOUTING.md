@@ -96,8 +96,8 @@ per ruolo), `consiglio/`, `output/` (per ruolo/scopo: `_all` produzione,
 **Formula di previsione** (identica nella struttura su tutti i ruoli/leghe):
 ```
 score_atteso = P(gioca) x media_pesata_esponenziale(N partite)
-               x fattore_casa_trasferta x fattore_forza_avversario
-               x fattore_trend
+               x fattore_casa_trasferta x fattore_trend
+               [+ condizionamento avversario: opponent_lambda_mult, Stadio D]
 range_confidenza = +/- dev_std_pesata x RANGE_MULTIPLIER
 ```
 GK ha in più il blend con P(clean sheet) di squadra (§7). I "fattori
@@ -240,14 +240,35 @@ riprende il filone backtest.
   battono la media pesata semplice.
 - **Trend recente** (`TREND_INTENSITY`): 0.0 su tutti i ruoli/leghe, monotono
   verso il peggio in ogni test.
-- **`fattore_forza_avversario`**: era una costante inerte mai letta, poi
-  riabilitata con dato pulito (29/07) — oggi in produzione, stabile.
+- **`fattore_forza_avversario`**: RIMOSSO dal codice il 05/08 (passaggio 2,
+  P1/B19). Era calcolato e mai usato in `score_atteso`: verificato per
+  data-flow e con test A/A su `OPPONENT_SENSITIVITY=1e9`. Il condizionamento
+  sull'avversario che agisce davvero è `opponent_lambda_mult` + Stadio D.
 - **`level_score` portiere binario**: CHIUSO su decisione utente (02/08). Il
   vero valore è 35.0 senza clean sheet / 60.0 con clean sheet, mai
   intermedio — il modello ne prevede uno continuo. Mitigato dal blend
   `GK_TEAM_CS_WEIGHT=0.5` con P(clean sheet) di squadra (lift misurato
   0.3%→9.4%, correlazione x3), non risolto del tutto: resta la leva più
   grande mai lasciata sul tavolo per il GK, richiederebbe più profondità.
+- **Blend GK, le tre "correzioni ovvie"**: BOCCIATE dal metro (05/08, P3,
+  n=6.973 contesti GK, bootstrap appaiato su 120 giornate). Abbassare
+  `GK_TEAM_CS_POINTS` 35→25 (che è il salto vero della scala Sorare), usare la
+  media storica del singolo portiere al posto della baseline globale 0.28, e
+  applicare la ricalibrazione affine `0.130+0.460p`: **tutte e tre migliorano
+  il MAE e peggiorano la correlazione** (IC95 esclude lo zero), col lift
+  indistinguibile. Produzione invariata. `w*POINTS` non è un valore in punti,
+  è un coefficiente di scala, e la correlazione **cresce monotona** con esso
+  (0.0347 a c=0 → 0.0674 a c=17.5 di oggi → 0.0756 a c=35) mentre il MAE
+  peggiora monotono. Se mai si toccherà, va **alzato**, non abbassato — ma
+  serve prima decidere quanto vale ordinare rispetto a indovinare il voto.
+  Corollario misurato: il doppio conteggio del clean sheet (già dentro
+  `level_score`, di nuovo nel blend) esiste come meccanica ma **non è
+  dannoso**, perché `level_score` comprime il segnale al punto che il livello
+  assoluto aggiunge ancora informazione. Dettagli:
+  `docs/handoff/REPORT_PASSAGGIO_2_OPUS_P3_2026-08-05.txt`.
+- **Il lift di selezione non discrimina sui portieri**: IC95 dei delta larghi
+  4-8 punti su 120 giornate. Sul GK il metro a tre gambe è di fatto a due
+  (MAE + correlazione). Da sapere prima di leggere un lift GK come segnale.
 - **Compressione di scala** (portiere 4.8x, DEF/MID/FWD 2.5-2.9x): il
   modello ORDINA bene dentro lo slot ma comprime la dispersione assoluta —
   il danno è FUORI dallo slot (fascia capitano, quale competizione, soglie
@@ -463,17 +484,34 @@ sottostimati +4.9** (n71, da riverificare). Accumulare altre GW rende poco
 
 ---
 
-## 9. Ultima modifica di produzione (04/08/2026)
+## 9. Ultima modifica di produzione (05/08/2026)
 
-**Arene dedicate per lega disattivate di default.** Il generatore le
-proponeva come più efficienti in base al punteggio atteso, ma senza sapere
-se la giornata le rendeva davvero schierabili (es. In Season non attivo
-quella GW) — l'utente le sostituiva comunque a mano con Arena All Stars 260.
-`ARENA_LEAGUES` in `generatore_formazioni/build_formazione_globale.py` ora è
-vuota di default; riattivabile con l'env/input workflow
-`ARENA_LEAGUES_ENABLED` (`mls,kleague` o `tutte`), rispettando comunque il
-vincolo di efficienza esistente (PRIORITY_ORDER + confronto atteso/pareggio).
-Commit `ee4c2deec2`.
+**Passaggio 2 (audit + fix), 9 commit su `main` — NON ancora pushati.** P1-P7
+(Sonnet): rimosso `fattore_forza_avversario` morto, scouting portato sulla
+scala calibrata, fix aritmetica L10 nel cap del knapsack, tie-break odds vero,
+blend CS del portiere da ~124 chiamate a `stima()` a 1 (e mai più muto),
+gradino `-3: 0` nella `LEVEL_TABLE` sui 4 ruoli. P3+V1+V2 (Opus): le tre
+correzioni al blend GK misurate e **non applicate** (§5); catena §1bis chiusa
+per il gradino `-3` (score_atteso si muove ≤ 0.032 pt nel caso peggiore su
+19.229 righe, MAE/corr/lift identici a 4 decimali → soglie d'arena e scouting
+invariati) e per il cutoff esatto del blend (nessun bias, media +0.0025 pt; la
+coda arriva a 8 pt ma solo su squadre con 3-9 partite di storico, e il metodo
+nuovo è il lato giusto). Commit `4370d72197` e precedenti.
+
+**Da sapere**: `backtest_arene_previsioni._pcs_squadra` usa ancora la griglia
+settimanale mentre la produzione usa il cutoff esatto — misuratore e
+produzione non condividono più lo stesso P(clean sheet). Irrilevante per i
+confronti fra varianti (delta sullo stesso campione), rilevante per le stime
+assolute di lift/corr del portiere. Decisione aperta.
+
+---
+
+## 9bis. Modifica precedente (04/08/2026)
+
+**Arene dedicate per lega disattivate di default** (`ARENA_LEAGUES` vuota in
+`generatore_formazioni/build_formazione_globale.py`, riattivabile con
+`ARENA_LEAGUES_ENABLED`): venivano proposte come più efficienti senza sapere
+se la GW le rendeva schierabili. Commit `ee4c2deec2`.
 
 ---
 
