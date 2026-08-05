@@ -79,6 +79,7 @@ import sys
 import glob
 import html
 import json
+import math
 import datetime
 
 ROLES = {
@@ -1089,8 +1090,31 @@ def _optimize_capped_lineup(shape, role_data, card_pool, l10_cap):
     qui l'obiettivo e' il punteggio reale, non l'ordine di scelta). Ritorna
     (picks_dict {ruolo/EXTRA: row}, l10_totale) o (None, None) se nessuna
     combinazione e' possibile (pool esaurito per almeno un ruolo)."""
+    # R3/P4 (passaggio 2, fix reale: formazione non schierabile, L10 261.1 su
+    # cap 260 in produzione). CAUSA: `int(round(l10 * RES))` arrotonda ogni
+    # L10 al piu' vicino decimo PRIMA di sommarlo -- puo' arrotondare per
+    # DIFETTO fino a 0.05 per carta, quindi fino a 0.25 sulle 5 carte. Il
+    # budget discretizzato (budget_units) accettava percio' combinazioni la
+    # cui somma REALE (non arrotondata) superava l10_cap, senza che il knapsack
+    # se ne accorgesse -- e il ramo che lo chiama (build_one_lineup) segnava
+    # SEMPRE l10_cap_rispettato=True per questo percorso, nessun controllo a
+    # valle. FIX in due parti, mai una sola:
+    # 1. i costi si arrotondano per ECCESSO (math.ceil), mai per difetto: ogni
+    #    cost_i e' un limite superiore garantito del vero l10_i*RES, quindi
+    #    "sum(cost_i) <= budget_units" implica "sum(l10_i) <= l10_cap" con
+    #    certezza aritmetica, non per approssimazione. Il budget stesso si
+    #    arrotonda per DIFETTO (math.floor), stessa direzione conservativa.
+    # 2. la somma L10 REALE (non discretizzata) di ogni combinazione candidata
+    #    viene ricalcolata e riverificata <= l10_cap prima di accettarla come
+    #    "best": la prima parte del fix la rende ridondante nel caso comune,
+    #    ma e' la garanzia che conta, non un'euristica in piu' (vedi CLAUDE.md,
+    #    non dedurre per differenza: qui si VERIFICA il vincolo vero, non si
+    #    assume che il proxy discretizzato l'abbia gia' rispettato).
+    # L'eps (1e-9) serve solo a non far scattare ceil/floor per rumore in
+    # virgola mobile su valori gia' esatti (es. 26.0 * 10 = 260.00000000001).
     RES = 10  # risoluzione: decimi di L10, gestisce valori con 1 decimale
-    budget_units = int(round(l10_cap * RES))
+    EPS = 1e-9
+    budget_units = int(math.floor(l10_cap * RES + EPS))
 
     frontiers = {}
     for role in ('GK', 'DEF', 'MID', 'FWD'):
@@ -1099,10 +1123,13 @@ def _optimize_capped_lineup(shape, role_data, card_pool, l10_cap):
             return None, None
         frontiers[role] = f
 
-    states = {0: (0.0, {})}
+    # states[nb] = (score, picks, l10_reale_totale) -- l10_reale_totale e' la
+    # somma NON arrotondata dei l10 scelti finora, portata avanti a parte dal
+    # proxy discretizzato (nb) usato solo per la ricerca del budget.
+    states = {0: (0.0, {}, 0.0)}
     for role in ('GK', 'DEF', 'MID', 'FWD'):
         new_states = {}
-        for used, (score, picks) in states.items():
+        for used, (score, picks, l10_reale) in states.items():
             # un giocatore non puo' stare due volte nella stessa formazione,
             # nemmeno con carte di ruolo diverso (regola Sorare). Qui mancava:
             # il controllo c'era solo sullo slot EXTRA.
@@ -1110,7 +1137,7 @@ def _optimize_capped_lineup(shape, role_data, card_pool, l10_cap):
             for row, l10 in frontiers[role]:
                 if row['slug'] in gia_scelti:
                     continue
-                cost = int(round(l10 * RES))
+                cost = int(math.ceil(l10 * RES - EPS))
                 nb = used + cost
                 if nb > budget_units:
                     continue
@@ -1119,7 +1146,7 @@ def _optimize_capped_lineup(shape, role_data, card_pool, l10_cap):
                 if cur is None or cur[0] < ns:
                     new_picks = dict(picks)
                     new_picks[role] = row
-                    new_states[nb] = (ns, new_picks)
+                    new_states[nb] = (ns, new_picks, l10_reale + l10)
         if not new_states:
             return None, None
         states = new_states
@@ -1131,24 +1158,25 @@ def _optimize_capped_lineup(shape, role_data, card_pool, l10_cap):
     extra_candidates.sort(key=lambda x: -x[1]['atteso'])
 
     best_total = best_picks = best_extra = best_used = None
-    for used, (score4, picks4) in states.items():
+    for used, (score4, picks4, l10_reale4) in states.items():
         used_slugs = {row['slug'] for row in picks4.values()}
-        remaining = (budget_units - used) / RES
-        chosen_extra = None
         for role, row, l10 in extra_candidates:
             if row['slug'] in used_slugs:
                 continue
-            if l10 <= remaining:
-                chosen_extra = (role, row, l10)
-                break
-        if chosen_extra is None:
-            continue
-        total = score4 + chosen_extra[1]['atteso']
-        if best_total is None or total > best_total:
-            best_total = total
-            best_picks = picks4
-            best_extra = chosen_extra
-            best_used = used / RES + chosen_extra[2]
+            l10_reale_totale = l10_reale4 + l10
+            # Verifica sulla somma VERA, non sul budget discretizzato: e' la
+            # garanzia (2) del fix, indipendente dall'arrotondamento sopra.
+            if l10_reale_totale > l10_cap + EPS:
+                continue
+            total = score4 + row['atteso']
+            if best_total is None or total > best_total:
+                best_total = total
+                best_picks = picks4
+                best_extra = (role, row, l10)
+                best_used = l10_reale_totale
+            break  # extra_candidates e' gia' ordinato per atteso decrescente:
+                   # il primo che rientra nel vincolo vero e' il migliore per
+                   # questo budget residuo.
 
     if best_picks is None:
         return None, None
