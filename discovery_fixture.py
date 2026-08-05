@@ -532,6 +532,13 @@ def _resolve_query_with_retry(query, variables, operation_name, extract):
 
 
 def risolvi_fixture():
+    # Jitter iniziale (05/08): con max-parallel 20, tutti gli shard sparano la
+    # query di risoluzione giornata nello stesso istante -- raffica che ha
+    # fatto scattare blocchi CloudFront 403 durati piu' a lungo dei retry
+    # (vedi run fallite 03-05/08, sempre sulla stessa query). Disperdendo le
+    # 20 chiamate su una finestra di 15s si evita il burst simultaneo, a
+    # costo trascurabile (una volta per job).
+    time.sleep(random.uniform(0, 15.0))
     if FIXTURE_SLUG:
         f, _d = _resolve_query_with_retry(
             FIXTURE_BY_SLUG, {"slug": FIXTURE_SLUG}, "FixtureBySlug",
