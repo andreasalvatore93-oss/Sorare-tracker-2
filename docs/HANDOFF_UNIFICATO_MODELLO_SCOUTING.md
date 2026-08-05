@@ -11,10 +11,11 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 05/08/2026, sera (Roma, CEST)**.
-Sessione: passaggio 2 P8 — composizione all-around per categoria misurata e
-**CHIUSA senza modifiche** (§5); i 16 commit del passaggio 2 (P1-P9-ter, blend
-GK `c` 17.5→22) sono **PUSHATI su `main`**. Sessione precedente: pattern arene
+Ultimo aggiornamento: **sessione 05/08/2026, sera tardi (Roma, CEST)**.
+Sessione: passaggio 2 **P11** — `P(≥1 boom)` come funzione obiettivo della
+formazione misurata e **CHIUSA senza modifiche** (§5, blocco boom). Prima:
+P8 composizione all-around **CHIUSA**; i 16 commit del passaggio 2 (P1-P9-ter,
+blend GK `c` 17.5→22) sono **PUSHATI su `main`**. Sessione precedente: pattern arene
 (§7) + validazione soglie cap 260 (σ 42.70→50.6, pareggio 265→259.5, guadagno
 8.8→7.9), dettaglio in `analisi_manager/VALIDAZIONE_SOGLIE.md`. Regola di
 stile: file SNELLO (max ~4 pagine), sessione/giorno/ora Roma.
@@ -397,19 +398,50 @@ riprende il filone backtest.
   è già quella giusta.**
 - **Arene dedicate per lega**: disattivate di default nel generatore (04/08,
   vedi §9) — non un filone di ricerca chiuso, una scelta operativa.
-- **Indice `P(≥1 boom)` come metrica di selezione arena**: CHIUSO 05/08 (442
-  arene, `PATTERN_ARENE.md`). Non batte `sum_atteso` né `max_atteso` (tutti
-  ~−0.05 centrati); il boom-index non aiuta a scegliere in quale arena entrare.
-- **Boom-classifier dedicato**: CHIUSO 05/08. L'evento boom (reale>=75) è
-  debolmente predicibile (OOF AUC 0.658) ma `atteso` fa quasi tutto
-  (+0.025 dal modello completo). `in_casa` NON predice il boom (AUC 0.466). La
-  cosa utile è l'eterogeneità per RUOLO: FWD 0.70, MID 0.64, DEF 0.61, GK 0.57
-  (≈caso) — l'edge boom vive negli attaccanti, sul GK è testa-o-croce.
-- **Covarianza boom fra compagni ("partire dalla partita")**: CHIUSO 05/08 per
-  la selezione-boom. Sul boom binario la covarianza fra compagni ≈0 (phi
-  +0.012): l'indipendenza del modello regge sulla coda. Sul punteggio continuo
-  c'è +0.13 (vs 0.03 controllo) ma non arriva al boom → un layer match non
-  migliora `P(≥1 boom)`.
+- **BLOCCO BOOM — tutto CHIUSO (05/08, tre passaggi).** "Boom" = carta con
+  realizzato ≥75. I boom decidono il podio (0 boom → podio 7.6%, 1 → 35.7%,
+  2 → 68.0%, n=442 formazioni, riverificato in P11), ma **non sono una leva
+  separata**: sono una conseguenza del punteggio alto.
+  1. *Come metrica per scegliere in QUALE arena entrare*: bocciata. Non batte
+     `sum_atteso` né `max_atteso` (tutti ~−0.05 centrati per competizione),
+     `PATTERN_ARENE.md`.
+  2. *Come classifier dedicato*: l'evento è debolmente predicibile (OOF AUC
+     0.658) ma `atteso` fa quasi tutto (+0.025 dal modello completo);
+     `in_casa` non predice (0.466). Eterogeneità per RUOLO — logistica su
+     82.282 coppie al valore di produzione (P11): pendenza FWD 0.145,
+     MID 0.098, DEF 0.088, **GK 0.027**; AUC fuori campione FWD 0.671,
+     MID 0.648, DEF 0.603, **GK 0.514 = caso**. L'edge boom vive negli
+     attaccanti, sul portiere non esiste.
+  3. *Come FUNZIONE OBIETTIVO per COSTRUIRE la formazione* (**P11, la domanda
+     vera**): bocciata. Massimizzare `P(≥1 boom)` invece della somma degli
+     attesi, sul mazzo reale dell'utente, coi vincoli veri e lo stesso
+     knapsack (obiettivo lineare `Σ−log(1−p_i)`): pareggia col mazzo fisso
+     (Δrank +0.02, IC95 contiene zero, 228 arene) e **perde** ad arene
+     isolate (Δrank +0.381 IC95 [+0.025,+0.725]; Δpunti −6.04 IC95
+     [−11.63,−0.35]; 244 arene, bootstrap appaiato). Le due policy divergono
+     davvero (sovrapposizione 1.3–3.5 carte su 5): non era nullo per
+     costruzione. **Causa**: dentro un ruolo p è monotona nell'atteso → stesso
+     ordinamento; tutta la differenza è cross-ruolo, e la pendenza ripida dei
+     FWD sposta lo slot EXTRA da MID a FWD (1.02 → 1.59 attaccanti). Risultato:
+     più boom (0.93 vs 0.82) ma **concentrati**, e la P(almeno uno)
+     *realizzata* scende (54.5% vs 57.0%). In più, ottimizzare direttamente su
+     `p̂` raccoglie l'errore di stima (maledizione dell'ottimizzatore: scarto
+     previsto−realizzato −0.141 per B contro −0.097 per A).
+     → **massimizzare la somma degli attesi è già la policy giusta.**
+     Dettaglio: `docs/handoff/REPORT_PASSAGGIO_2_OPUS_P11_2026-08-05.txt`,
+     script `analisi_manager/p11_*.py`.
+  4. *Covarianza fra compagni*: phi ≈0 per squadra (+0.012, replicato);
+     condizionata ai `p_i` dentro formazione +0.0315 IC95 [+0.0000,+0.0642] →
+     l'indipendenza regge come approssimazione, ma il prodotto dei
+     complementari **sovrastima** P(≥1 boom) di ~3.5 pp (osservata 0.468 vs
+     modello 0.504). Sul punteggio continuo la covarianza c'è (+0.13 vs 0.03
+     di controllo) ma non arriva al boom.
+- **DIFETTO APERTO (trovato in P11, non corretto)**:
+  `backtest_arene_previsioni.py:257-260` ha ancora default
+  `GK_TEAM_CS_WEIGHT=0.5` con il commento "come produzione" — **falso dopo
+  P9-ter** (22/35). Chi usa quel modulo senza esportare la variabile misura un
+  modello che non esiste più. Correggere al prossimo commit sul file (meglio:
+  leggerlo da `test_gk` invece di duplicarlo).
 
 ## 6. Il numero da portarsi via
 
@@ -426,9 +458,13 @@ Dataset: **442 arene reali con l'esito di OGNI carta** (`analisi_manager/dati/
 formazioni_*.json`+`righe_*.json`, 8 GW) + 306/323 arene reali dell'utente
 (`dati_globali/backtest_arene_dettaglio*.json`).
 
-**Sessione 05/08 — 3 filoni pattern arene** (metrica di selezione, modellare
-il boom, covarianza-partita): nessun breakthrough, dettaglio in
-`analisi_manager/PATTERN_ARENE.md`.
+**Sessione 05/08 — 4 filoni boom** (metrica di selezione arena, classifier,
+covarianza-partita, e in P11 la funzione obiettivo della formazione): tutti
+chiusi, nessun breakthrough. Dettaglio in `analisi_manager/PATTERN_ARENE.md` e
+`docs/handoff/REPORT_PASSAGGIO_2_OPUS_P11_2026-08-05.txt`; riepilogo in §5.
+Il backtest P11 gira sulle **300 arene reali** dell'utente non-Beginner e
+non-division (le division sono escluse: `ARENA_LEAGUES` è vuota, il generatore
+le tratterebbe come cap 260 miste e costruirebbe formazioni non ammissibili).
 
 **Sessione 05/08 — validazione soglie, APPLICATA A MAIN (05/08 sera).** σ
 della cap 260 era sottostimata (42.70 vs reale ~50-54, validato su 3 dataset
@@ -441,23 +477,18 @@ cap 260 = miniera, arena division/Beginner da evitare, l'atteso ordina il
 realizzato ma non discrimina dentro una cap. Cronistoria completa e numeri
 integrali in `analisi_manager/VALIDAZIONE_SOGLIE.md`.
 
-### Cosa ESPLORARE nelle 435 arene (agganci concreti già trovati)
-- **Cosa serve per vincere** (punteggio formazione, cap. incluso): media 261,
-  podio ≈294, vittoria ≈352. Scalino 3°→4° solo 12 pt: podio su margini
-  stretti. Una carta ≥75 ("boom") capita nel 13.9% dei pick.
-- **I boom decidono**: 0 carte ≥75 → podio 7.7%; 1 → 36%; 2 → 68%; 3 → 100%.
-  Un flop (<25) uccide: 0 flop → podio 37%, 2 flop → 0%. → la leva è
-  massimizzare P(almeno una carta esplode), non alzare la media.
-- **Il modello ordina i boom**: quintile-alto di atteso 26% boom vs 11%
-  quintile-basso; dentro la stessa formazione la carta #1-atteso fa boom 21%
-  vs 8% della #5.
-- **[RISOLTO 05/08 — `analisi_manager/PATTERN_ARENE.md`]** L'indice
-  `P(≥1 boom)` NON batte il totale-atteso né `max_atteso` per predire il rank
-  (tutti ~−0.05 centrati per competizione): idea **bocciata**. E il famoso
-  `corr(atteso_somma,rank)=−0.02` era un artefatto di pooling: within-comp è
-  −0.05, e in **arene Uncapped −0.30** (il cap comprime i totali attesi e
-  nasconde il segnale; dove non morde, il totale predice il rank). Da
-  riverificare con più arene uncapped.
+### Cosa serve per vincere, e cosa resta da esplorare
+- **Soglie reali** (punteggio formazione, cap. incluso): media 261, podio ≈294,
+  vittoria ≈352. Scalino 3°→4° solo 12 pt: podio su margini stretti. Una carta
+  ≥75 ("boom") capita nel 13.9% dei pick; un flop (<25) uccide (0 flop → podio
+  37%, 2 flop → 0%). Il modello ORDINA i boom (quintile-alto di atteso 26% vs
+  11%; carta #1-atteso 21% vs 8% della #5) — ma vedi il blocco boom in §5:
+  come leva d'azione è chiuso in tutte e tre le forme.
+- **UNICO THREAD VIVO**: `corr(atteso_somma, rank)` = −0.02 era un artefatto di
+  pooling; within-competizione è −0.05, e in **arene Uncapped −0.30** (n=31).
+  Il cap comprime i totali attesi e nasconde il segnale; dove non morde, il
+  totale predice il rank. **Da riverificare con più arene uncapped**: è anche
+  l'unico ambiente in cui la scelta della funzione obiettivo potrebbe contare.
 
 ### Infrastruttura — cartella `analisi_manager/`
 - `analizza_gw.py` (`--gw <slug> --fine <data>` → `dati/righe_/formazioni_/
