@@ -1,0 +1,359 @@
+REPORT PASSAGGIO 2 -- BLOCCO P3 + V1 + V2  (OPUS)
+Sessione del 5 agosto 2026, ore 2026-08-05 (Roma, CEST).
+Destinatario: orchestratore.
+
+Repo all'avvio: branch main, i 7 commit Sonnet presenti (f7eb26a9a9 ... bc7bb40184),
+LEVEL_TABLE con il gradino -3 verificata. Working tree pulito.
+Repo alla fine: 1 commit nuovo 4370d72197, NON pushato (8 commit locali in totale).
+
+
+================================================================================
+1. COSA E' STATO ESEGUITO
+================================================================================
+
+ESEGUITO: V2, P3 (tutte e quattro le configurazioni, piu' tre di controllo),
+V1 su tutti e 4 i ruoli. Un commit, comment-only. Propagazione eseguita.
+
+NON ESEGUITO, con motivo:
+- nessuna modifica numerica alla produzione: nessuna delle mosse di P3 supera
+  il metro CLAUDE.md (vedi §3). Il brief le prescriveva come applicazione; la
+  regola 5 del brief stesso ("non dare per vere le affermazioni della
+  documentazione, comprese quelle di questo brief") e la regola dei tre
+  indicatori insieme portano a NON applicarle. Sono state comunque tutte
+  implementate e misurate.
+- nessuna ri-esecuzione di taratura_formazioni_sintetiche.py ne' dello
+  scouting: lo spostamento di score_atteso da V1 e' <= 0.032 punti nel caso
+  peggiore su 19.229 righe (§4), tre ordini di grandezza sotto il tremolio
+  fra ambienti; per la regola "il delta deve essere almeno 3x il tremolio" non
+  c'e' niente da riverificare. Dichiarato esplicitamente, non assunto in
+  silenzio.
+- nessun push.
+- P8 non toccato.
+
+
+================================================================================
+2. V2 -- EFFETTO NUMERICO DELLA RISCRITTURA P6 DI _pcs_squadra_prod
+================================================================================
+
+Il report P6 si contraddiceva. La versione vera e' la seconda: il valore
+CAMBIA. Ecco quanto.
+
+Metodo. Stesso insieme di lati (squadra che difende, avversario, venue, cutoff),
+presi dalle osservazioni vere di modello_partita (dati_globali/partite_gol.json,
+8.713 osservazioni, 2024-03-07 -> 2026-07-30). 40 giorni campionati a caso
+(seme 7) -> 570 lati, 421 valutabili (149 scartati: una delle due squadre non
+`conosciuta`, cioe' < 3 partite). Per ognuno:
+  VECCHIO = griglia settimanale + bucket piu' vicino precedente
+            (copia esatta di backtest_arene_previsioni._pcs_squadra: 74
+            checkpoint, 26.5 s)
+  NUOVO   = una stima() al cutoff esatto (test_gk._pcs_squadra_prod dopo P6:
+            291 cutoff distinti, 82.5 s)
+Script: scratchpad/v2_pcs.py.
+
+DISTRIBUZIONE DELLO SCARTO (n=421)
+  p_old  media 0.3197  sd 0.1488
+  p_new  media 0.3199  sd 0.1495
+  correlazione p_old/p_new 0.98094
+  staleness del bucket vecchio: media 2.25 giorni, max 7
+
+  scarto FIRMATO (new - old):  media +0.00014   mediana -0.00008   sd 0.02913
+  scarto ASSOLUTO:  media 0.00962  p50 0.00323  p90 0.01984
+                    p95 0.03768   p99 0.08844   max 0.47452
+
+  quota sopra soglia:  |d|>0.02  9.7%   |d|>0.05  3.1%
+                       |d|>0.10  1.0%   |d|>0.20  0.2%
+
+TRADOTTO IN PUNTI DI score_atteso (w=0.5)
+  POINTS=35 (coef 17.5): |delta| medio 0.168  p50 0.057  p95 0.660
+                         p99 1.548  max 8.304   |  delta firmato medio +0.0025
+  POINTS=25 (coef 12.5): |delta| medio 0.120  p50 0.040  p95 0.471
+                         p99 1.106  max 5.932   |  delta firmato medio +0.0018
+
+DOVE STA LA CODA. Non e' casuale: e' sulle squadre con poco storico.
+  osservazioni min(squadra, avversario) prima del cutoff:
+     3-9    lati 207   |d| medio 0.0111  p95 0.0423  max 0.4745
+    10-19   lati  79   |d| medio 0.0116  p95 0.0570  max 0.1394
+    20-49   lati 128   |d| medio 0.0061  p95 0.0320  max 0.0509
+    50+     lati   7   |d| medio 0.0082  p95 0.0187  max 0.0187
+  Il caso peggiore: charlotte-fc vs cincinnati, cutoff 2025-08-10, staleness
+  3 giorni, 10 e 8 osservazioni -> p 0.130 (vecchio) contro 0.605 (nuovo).
+
+VERDETTO V2: CATENA CHIUSA, con una riserva registrata.
+- Nessun bias sistematico (media dello scarto firmato +0.00014, cioe' +0.0025
+  punti di score_atteso). Le soglie d'arena sono tarate su un livello medio di
+  punti attesi: quel livello non si muove. Nessuna riverifica dovuta.
+- La coda NON e' trascurabile (p99 = 1.5 punti, massimo 8.3 punti) ma cade tutta
+  su squadre con 3-9 partite di storico, e li' il metodo NUOVO e' il lato giusto
+  dello scarto: usa strettamente PIU' osservazioni e la data di riferimento vera
+  invece di un multiplo di 7 giorni. P6 non ha introdotto un errore, ha tolto
+  un'approssimazione che sulle squadre magre valeva fino a mezzo punto di
+  probabilita'.
+- RISERVA DA SAPERE: backtest_arene_previsioni._pcs_squadra usa ANCORA la
+  griglia settimanale. Da P6 in poi il misuratore e la produzione non usano lo
+  stesso snapshot. Non l'ho allineato: allinearlo vuol dire una stima() per ogni
+  giocatore-partita del backtest (invece di 74 in tutto), cioe' ore. Non
+  invalida nessun confronto fra varianti -- sono delta sullo stesso campione,
+  con lo stesso p -- ma e' esattamente il pattern "il misuratore aggira, la
+  produzione subisce". Scritto nel codice (test_gk.py, commento su
+  _FORZE_CS_PROD_CACHE). Decisione da prendere, vedi §7.
+
+
+================================================================================
+3. P3 -- BLEND DEL PORTIERE, QUATTRO CONFIGURAZIONI (+ TRE DI CONTROLLO)
+================================================================================
+
+CAMPIONE. 4.311 giocatori in cache -> 6.973 contesti GK walk-forward, de-dup su
+(data, slug), 120 giornate valutabili per il lift. Stessa catena della
+produzione: backtest_arene_previsioni.calcola -> compute_score_atteso_gk.
+Il blend e' ADDITIVO e in coda alla funzione: la base e' stata calcolata UNA
+volta con GK_TEAM_CS_WEIGHT=0 e i termini sommati dopo. Esatto, non
+approssimato. p_next e p_hist dai 74 checkpoint settimanali (stesso snapshot
+per tutte le righe -> il confronto fra configurazioni e' pulito).
+  righe con p_next disponibile: 5.502 / 6.973 (21% senza blend, come in
+  produzione quando una squadra non e' conosciuta)
+  righe con p_hist disponibile: 5.423
+p_hist = media dei P(CS) delle partite storiche del portiere, pesata con gli
+STESSI pesi esponenziali del modello (exponential_weights, HALF_LIFE_GAMES=6).
+
+  p_next media 0.3034 sd 0.1254
+  p_hist media 0.3113 sd 0.0833
+  p_next - p_hist:  media -0.00811  sd 0.12030
+  p_next - 0.28  :  media +0.02336  sd 0.12536
+  (lo 0.28 globale sta sotto la media prevista: da qui il +0.52 pt medio
+  misurato in passaggio 1 -- confermato)
+
+Script: scratchpad/p3_v1.py (raccolta + base) e scratchpad/p3_analisi.py
+(configurazioni + bootstrap + scansione). Righe salvate in p3_gk_righe.json.
+
+TABELLA -- METRO COMPLETO, TUTTE LE CONFIGURAZIONI (n=6.973, 120 giornate)
+
+  config                                          MAE     corr  sd prev  lift%
+  SPENTO             base                      16.061   0.0347    2.50    5.57
+  0  OGGI            0.5*35*(p-0.28)           16.091   0.0674    3.49    6.92
+  1  m1              0.5*25*(p-0.28)           16.074   0.0619    3.11    4.88
+  2  m1+m2           0.5*25*(p-p_hist)         16.038   0.0556    2.93    6.38
+  3  m1+m2+m3        0.5*25*(pcal p-pcal p_h)  16.043   0.0464    2.62    5.20
+  --- controlli che SEPARANO le mosse (il brief vieta di dedurle per differenza)
+  2b m2 SOLA         0.5*35*(p-p_hist)         16.044   0.0596    3.23    6.88
+  3b m3 SOLA         0.5*35*(pcal p-pcal 0.28) 16.064   0.0547    2.83    6.46
+  1+3                0.5*25*(pcal p-pcal 0.28) 16.061   0.0500    2.71    6.03
+
+DELTA vs LA PRODUZIONE DI OGGI (config 0), con bootstrap APPAIATO su 400
+ricampionamenti delle GIORNATE (IC 95%):
+
+  config           dMAE    IC95              dcorr     IC95               dlift   IC95
+  SPENTO         -0.0292 [-0.0780,+0.0133]  -0.0325 [-0.0456,-0.0203]   -1.83 [-7.39,+3.89]
+  1  m1          -0.0165 [-0.0313,-0.0036]  -0.0055 [-0.0082,-0.0026]   -0.78 [-2.89,+1.65]
+  2  m1+m2       -0.0509 [-0.0863,-0.0237]  -0.0122 [-0.0200,-0.0030]   -0.64 [-4.22,+3.26]
+  3  m1+m2+m3    -0.0466 [-0.0874,-0.0105]  -0.0211 [-0.0303,-0.0113]   -0.82 [-5.16,+4.15]
+  2b m2 SOLA     -0.0441 [-0.0801,-0.0118]  -0.0083 [-0.0172,+0.0020]   -0.50 [-4.37,+3.69]
+  3b m3 SOLA     -0.0262 [-0.0539,-0.0022]  -0.0126 [-0.0184,-0.0068]   -0.52 [-4.20,+3.33]
+  1+3            -0.0294 [-0.0635,-0.0002]  -0.0173 [-0.0249,-0.0098]   -0.70 [-4.70,+3.39]
+
+LETTURA, TRE PUNTI.
+
+(a) IL LIFT NON DISCRIMINA su questo campione. Gli IC95 dei delta sono larghi
+    4-8 punti percentuali. Qualunque conclusione basata sul lift qui sarebbe
+    rumore. E' un limite del metro, non un risultato: va detto invece di
+    scegliere il segno che conviene. Restano MAE e correlazione, ed entrambi
+    hanno IC95 che escludono lo zero.
+
+(b) OGNI MOSSA MIGLIORA IL MAE E PEGGIORA LA CORRELAZIONE. Tutte e tre, sia
+    cumulate sia isolate. La regola CLAUDE.md ("si applica solo se si muovono
+    tutte e tre nello stesso verso") non autorizza nessuna delle tre. La
+    configurazione con la correlazione piu' alta di tutte e' quella di OGGI
+    (0.0674). E' il contrario di quello che il brief si aspettava.
+
+(c) LA SCANSIONE DEL COEFFICIENTE spiega perche'. Il blend e'
+    base + c*(p - riferimento), con c = w*POINTS (oggi 17.5).
+
+      riferimento GLOBALE 0.28          riferimento PER-PORTIERE p_hist
+      c        MAE     corr   lift%     c        MAE     corr   lift%
+      0     16.061   0.0347    5.57     0     16.061   0.0347    5.57
+      4     16.059   0.0458    5.71     4     16.047   0.0432    4.46
+      8     16.064   0.0546    6.51     8     16.040   0.0500    4.42
+     12.5   16.074   0.0619    4.88    12.5   16.038   0.0556    6.38
+     17.5   16.091   0.0674    6.92    17.5   16.044   0.0596    6.88
+     22     16.114   0.0707    8.86    22     16.056   0.0619    7.56
+     26     16.139   0.0728    8.38    26     16.073   0.0631    8.10
+     35     16.221   0.0756    7.12    35     16.137   0.0644    6.57
+
+    Due fatti:
+    - la correlazione cresce MONOTONA con c e il MAE peggiora MONOTONO: e' un
+      compromesso puro, nessun valore di c domina. Se qualcosa, il blend e'
+      SOTTO-pesato per l'ordinamento, non sovra-pesato. Abbassare POINTS da 35
+      a 25 va nella direzione sbagliata per la cosa per cui il blend e' stato
+      acceso.
+    - il riferimento GLOBALE batte quello PER-PORTIERE sulla correlazione a
+      OGNI valore di c (0.0674 vs 0.0596 a c=17.5; 0.0756 vs 0.0644 a c=35).
+      Il doppio conteggio B22/B10 esiste come meccanica ma NON e' dannoso nei
+      numeri: level_score comprime cosi' tanto il segnale di clean sheet (la
+      compressione 2.5-4.8x gia' nota) che togliere il livello assoluto toglie
+      informazione vera invece di togliere ridondanza.
+    - mossa 3 e' esattamente un riscalamento: pcal(p)-pcal(q) = 0.4599*(p-q),
+      cioe' moltiplicare c per 0.46. L'intercetta 0.130 si cancella. Quindi
+      "calibrare p" e "abbassare il peso" sono la STESSA operazione, e la
+      scansione dice che va nel verso sbagliato per la correlazione. Vale la
+      pena scriverlo: la sovra-dispersione ~2.2x misurata in passaggio 1 e'
+      vera come probabilita' (Brier skill negativa) e resta falsa come
+      prescrizione sul peso del blend, perche' qui p non serve come
+      probabilita' ma come ordinatore.
+
+COSA E' STATO CAMBIATO NEL CODICE (comment-only, zero righe di codice)
+  formazione_mls/predict/test_gk.py:121-172   commento esteso su
+      GK_TEAM_CS_POINTS: dice che 35 e' il livello BASE e non il salto (il
+      commento precedente diceva il falso), che w*POINTS e' un coefficiente di
+      scala e non un valore in punti, e riporta la griglia misurata. B11
+      risolto tenendo le due costanti SEPARATE con i ruoli scritti, non
+      unificandole: sono cose diverse (25 = salto vero della scala, usato solo
+      in diagnostica; 35 = coefficiente di scala del blend, entra nello score).
+  formazione_mls/predict/test_gk.py:~155-172  commento su GK_TEAM_CS_BASELINE
+      con l'esito di B22/B10 (per-portiere misurato e bocciato) e di p_cal.
+  formazione_mls/predict/test_gk.py:~2190     nota su BONUS_CLEAN_SHEET_POINTS:
+      esplicitamente diagnostica, rimando all'altra costante.
+  formazione_mls/predict/test_gk.py:~1600     rimosso dal commento del blend il
+      "Default team_cs_weight=0.0 -> produzione INVARIATA", che era rimasto li'
+      dopo l'accensione del 03/08 ed era FALSO (il blend e' acceso, w=0.5).
+  formazione_mls/predict/test_gk.py:~140-160  esito V2 sul commento di
+      _FORZE_CS_PROD_CACHE, e la riserva sul misuratore disallineato.
+  formazione_mls/predict/test_gk.py:~1090     esito V1 sul commento di
+      LEVEL_TABLE.
+
+VERDETTO P3: le tre mosse sono teoricamente giuste e empiricamente bocciate.
+Produzione INVARIATA. Non e' un "nessun miglioramento" da archiviare come
+filone chiuso: e' un compromesso MAE/correlazione con una direzione precisa
+(c piu' grande ordina meglio e sbaglia di piu'), che diventa decidibile solo
+sapendo quanto vale ordinare rispetto a indovinare il punteggio. Vedi §7.
+
+
+================================================================================
+4. V1 -- GRADINO -3 DELLA LEVEL_TABLE (B20)
+================================================================================
+
+Metodo. Per ogni ruolo, l'intero backtest rigiocato DUE volte sullo stesso
+campione: con la tabella di oggi e con netto_to_level monkeypatchato alla
+versione precedente (clamp floor -2, nessun gradino -3). Non dedotto per
+sottrazione, non stimato: le due previsioni calcolate riga per riga.
+
+  ruolo        n      delta medio  delta mediano   |d| p95   |d| p99   |d| max   >0.1 pt
+  Goalkeeper  6973     -0.0003      -0.0000        0.0012    0.0040    0.0126    0.00%
+  Defender    5531     -0.0004      -0.0000        0.0015    0.0069    0.0319    0.00%
+  Midfielder  1486     -0.0002      +0.0000        0.0007    0.0023    0.0107    0.00%
+  Forward     1228     -0.0000      +0.0000        0.0003    0.0009    0.0047    0.00%
+  (GK sul pool completo 4.311 slug; DEF su 900 slug; MID/FWD su 250 slug --
+   la coda e' cosi' rara che allargare il campione sposta solo il massimo)
+
+METRO COMPLETO, vecchia contro nuova (identici a 4 decimali su tutti i ruoli):
+  Goalkeeper  n=6973  MAE 16.061 / 16.061   corr 0.0347 / 0.0347   lift 5.5 / 5.5
+  Defender    n=5531  MAE 14.908 / 14.908   corr 0.1833 / 0.1833   lift 18.6 / 18.6
+  Midfielder  n=1486  MAE 12.586 / 12.586   corr 0.2265 / 0.2265   lift 32.9 / 32.9
+  Forward     n=1228  MAE 14.764 / 14.764   corr 0.2064 / 0.2064   lift 31.6 / 31.6
+
+L'aspettativa del brief ("poco, perche' il netto e' un valore atteso su
+convoluzione Poisson e la coda -3 e' rara") e' CONFERMATA come misura: il
+delta e' -5 * P(netto <= -3) propagato attraverso shrinkage e fattore venue, e
+P(netto <= -3) e' dell'ordine di 1e-4.
+
+VERDETTO V1: B20 CHIUSO. Catena §1bis ripercorsa: nessuna riverifica dovuta a
+valle. Il bias di taratura (63.43 + 0.736x) e CALIB_PER_RUOLO sono funzioni
+dello score_atteso, che si muove di 0.032 punti nel caso peggiore su 19.229
+righe e di 0.0004 in media: e' tre ordini di grandezza sotto il tremolio fra
+ambienti, quindi le soglie d'arena e i verdetti dello scouting non possono
+spostarsi. taratura_formazioni_sintetiche.py e lo scouting NON sono stati
+rilanciati, per questo motivo, dichiarato.
+
+
+================================================================================
+5. CATENA §1bis PER OGNI MODIFICA
+================================================================================
+
+  modifica                             catena  cosa si e' mosso a valle
+  P3 GK_TEAM_CS_POINTS 35->25          n/a     NON APPLICATA (bocciata dal metro)
+  P3 baseline per-portiere             n/a     NON APPLICATA (bocciata dal metro)
+  P3 p_cal affine                      n/a     NON APPLICATA (bocciata dal metro)
+  commenti test_gk.py (6 punti)        SI      niente: zero righe di codice
+                                               cambiate, verificato meccanicamente
+                                               sul diff (nessuna riga +/- fuori
+                                               dai commenti)
+  V1 gradino -3 (gia' in main)         SI      niente: score_atteso invariato
+                                               entro 0.032 pt, bias/CALIB/soglie/
+                                               scouting non toccati
+  V2 cutoff esatto (gia' in main)      SI      niente in media (+0.0025 pt);
+                                               coda sulle squadre magre, dalla
+                                               parte giusta
+
+
+================================================================================
+6. PROPAGAZIONE
+================================================================================
+
+Eseguita: `python propaga_modello.py` -> 208 file (52 leghe x 4 ruoli).
+Prima della modifica `--check` dava 208 file gia' allineati (la propagazione
+di Sonnet in P7 e' integra).
+File effettivamente toccati dal commit: 53 (i 52 test_gk.py delle altre leghe
++ formazione_mls/predict/test_gk.py). DEF/MID/FWD non toccati.
+Diff: 4823 inserzioni / 318 cancellazioni, TUTTE commenti -- verificato
+filtrando il diff su ogni riga +/- che non inizi per '#': insieme vuoto.
+Residui: nessuno.
+
+
+================================================================================
+7. DOMANDE APERTE (con il caso concreto da controllare)
+================================================================================
+
+D1 -- LA DOMANDA CHE SBLOCCA P3. Il blend e' un compromesso monotono: c piu'
+grande = ordina meglio (corr 0.0347 -> 0.0756 da c=0 a c=35) e sbaglia di piu'
+(MAE 16.061 -> 16.221). La regola dei tre indicatori insieme lo blocca per
+costruzione, perche' MAE e correlazione qui non possono muoversi nello stesso
+verso. Serve una decisione dell'utente su COSA vale di piu' per il portiere,
+visto che di GK se ne schiera UNO e serve solo sceglierlo, non prevederne il
+voto. Se conta ordinare, c andrebbe ALZATO (verso 22-26), non abbassato a 12.5
+come chiedeva il brief. Nessuna azione presa.
+CASO CONCRETO DA CONTROLLARE SU SORARE: prendere una giornata chiusa e, fra i
+portieri effettivamente disponibili in galleria, guardare se il portiere della
+squadra piu' favorita ha fatto meglio di quello con la media personale piu'
+alta. E' esattamente il confronto che c grande contro c piccolo fa in
+automatico, e su 2-3 giornate reali l'utente puo' dire se il modello sta
+scegliendo come sceglierebbe lui.
+
+D2 -- IL MISURATORE E LA PRODUZIONE NON USANO LO STESSO P(CS) (§2). Da P6,
+test_gk usa il cutoff esatto e backtest_arene_previsioni la griglia
+settimanale. Non tocca i confronti fra varianti, ma tutte le stime ASSOLUTE
+di lift/corr del portiere (comprese quelle di questo report) girano sul p
+vecchio. Allinearlo costa una stima() per giocatore-partita. Opzioni: (a)
+lasciare cosi' e scriverlo; (b) allineare accettando che il backtest GK
+diventi molto piu' lento; (c) allineare la PRODUZIONE alla griglia (peggiore:
+si torna indietro sulle squadre magre). Non decisa.
+
+D3 -- IL LIFT NON MISURA NIENTE SUI PORTIERI (§3a). IC95 larghi 4-8 punti su
+120 giornate. Finche' resta cosi', il metro a tre gambe sui GK e' di fatto un
+metro a due. Se si vuole una terza gamba vera per il ruolo, va costruita
+diversa (es. quota di volte in cui il GK scelto e' nei primi 3 della giornata,
+su piu' giornate), non allargando il campione. Non fatta.
+
+
+================================================================================
+8. COSA RESTA PER P8
+================================================================================
+
+- P8 (decomposizione all-around per categoria): intatto, niente di questa
+  sessione lo tocca.
+- Nota utile per P8: level_score comprime il segnale di clean sheet al punto
+  che il "doppio conteggio" con il blend non e' dannoso (§3c). Se P8 scompone
+  per categoria, la compressione dentro pos_decisive_values/level_score e' il
+  posto dove guardare: e' li' che il segnale si perde, non nel blend che lo
+  rimette.
+- Resta fuori e non toccata: l'anomalia grezzo-vs-calibrato sul capitano
+  (audit P1, n=307).
+
+FILE DI RIFERIMENTO
+  formazione_mls/predict/test_gk.py                (unico file modificato; poi
+                                                    propagato)
+  scratchpad/v2_pcs.py, v2_pcs_righe.json          V2
+  scratchpad/p3_v1.py, p3_gk_righe.json, v1_out.json   P3 base + V1
+  scratchpad/p3_analisi.py                         P3 configurazioni, bootstrap,
+                                                   scansione di c
+  (scratchpad = C:\Users\Andrea\AppData\Local\Temp\claude\
+   C--Users-Andrea-Documents-GitHub-Sorare-tracker-2\
+   f8111dc2-e62b-47a1-860a-9127efad04ce\scratchpad)
+  commit 4370d72197, NON pushato.
