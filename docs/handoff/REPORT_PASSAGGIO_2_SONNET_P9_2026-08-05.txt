@@ -1,0 +1,169 @@
+REPORT P9 (Sonnet, passaggio 2) -- 05/08/2026 ~14:00 Roma (CEST, UTC+2)
+Destinatario: orchestratore.
+
+===============================================================================
+1. ESEGUITO / NON ESEGUITO
+===============================================================================
+
+ESEGUITO:
+- Verifica di partenza (commit locali, GK_TEAM_CS_POINTS=35, WEIGHT=0.5): OK.
+- Recupero p3_analisi.py + p3_gk_righe.json dallo scratchpad della sessione
+  Opus P3 (id f8111dc2-e62b-47a1-860a-9127efad04ce).
+- Rerun IDENTICO dello script (nessuna riscrittura) e rimisura mirata
+  c=17.5 vs c=22 con bootstrap appaiato 400 ricampionamenti sulle giornate.
+
+NON ESEGUITO -- FERMATO AL CRITERIO DI STOP:
+- Modifica di GK_TEAM_CS_WEIGHT (0.5 -> 0.63): NON APPLICATA.
+- Catena §1bis (taratura_formazioni_sintetiche, soglie arena, scouting):
+  NON ripercorsa, perche' la modifica a monte non e' stata applicata.
+- Propagazione (propaga_modello.py sui 208 file): NON eseguita, nulla da
+  propagare.
+- Aggiornamento HANDOFF_UNIFICATO_MODELLO_SCOUTING.md: NON fatto (nessun
+  esito numerico nuovo da registrare, solo l'anomalia sotto).
+
+MOTIVO DELLO STOP: il file p3_gk_righe.json riusato NON e' lo stesso
+campione su cui e' stata scritta la tabella del brief P9 (§1, "gia'
+misurato -- non rifarlo"). Vedi §2.
+
+===============================================================================
+2. L'ANOMALIA: CAMPIONE DIVERSO DA QUELLO CITATO NEL BRIEF
+===============================================================================
+
+Il brief P9 riporta (citando P3):
+  c=17.5 (oggi)    MAE 16.091   corr 0.0674
+  c=22   (target)  MAE 16.114   corr 0.0707
+  c=0    (spento)  MAE 16.061   corr 0.0347
+
+Il report Opus effettivamente committato (docs/handoff/
+REPORT_PASSAGGIO_2_OPUS_P3_2026-08-05.txt, riga 105 e 128) dichiara:
+  "4.311 giocatori in cache -> 6.973 contesti GK walk-forward"
+  "TABELLA -- METRO COMPLETO, TUTTE LE CONFIGURAZIONI (n=6.973, 120 giornate)"
+  riga 247: "Goalkeeper  n=6973  MAE 16.061 ... corr 0.0347"  (= config spenta)
+
+Il file p3_gk_righe.json trovato nello scratchpad Opus contiene invece:
+
+  righe totali:        1.487
+  con p_next disponib.: 1.212
+  con p_hist disponib.: 1.192
+
+Rerun IDENTICO di p3_analisi.py su questo file (nessuna riga cambiata):
+
+  c      MAE      corr     lift%
+  0.0    15.835   0.0030   -4.31
+  17.5   15.862   0.0450    5.33
+  22.0   15.882   0.0502    7.15
+  26.0   15.904   0.0537    8.83
+  35.0   15.986   0.0591   10.33
+
+Confronto:
+  - n: 1.487 (qui) vs 6.973 (report Opus)  -> RAPPORTO ~1:4.7
+  - MAE a c=0: 15.835 (qui) vs 16.061 (report)  -> non coincide
+  - corr a c=0: 0.0030 (qui) vs 0.0347 (report) -> non coincide
+
+Il file NON e' il campione usato per scrivere il report P3. E' quasi
+certamente un frammento parziale (forse il primo blocco di giocatori
+processato prima che la sessione Opus estendesse la query, o un file
+di lavoro intermedio salvato con lo stesso nome finale) rimasto nello
+scratchpad al posto del dataset completo. Il file p3_v1.py presente
+nella stessa cartella non è stato ispezionato oltre la verifica del nome
+(fuori scope, riguarda V1 non P9).
+
+===============================================================================
+3. PERCHE' QUESTO ATTIVA IL CRITERIO DI STOP DEL BRIEF
+===============================================================================
+
+Il brief P9, §3 "Criterio di stop": "Se la rimisura non riproduce la
+scansione di P3 ... fermati, non applicare, segnala. Vorrebbe dire che il
+campione o la catena sono cambiati rispetto alla sessione P3, e la
+decisione dell'utente e' stata presa su quei numeri."
+
+Sul SEGNO il pattern regge (corr sale 0.0450->0.0502 andando da c=17.5 a
+c=22; MAE peggiora di +0.020, sotto la soglia di guardia 0.05). Ma i
+valori ASSOLUTI del campione non coincidono affatto con quelli su cui
+l'utente ha basato la decisione (target c=22 scelto leggendo 16.091/0.0674
+-> 16.114/0.0707). Applicare il coefficiente 0.63 sulla base di una
+rimisura su 1/5 del campione originale, per giunta con MAE/corr assoluti
+diversi, significherebbe validare la produzione su dati che non sono
+quelli discussi nel brief.
+
+Delta bootstrap appaiato (400 ricampionamenti, SU QUESTO campione ridotto,
+riportato solo per completezza -- non usato per decidere):
+  dMAE  = +0.0193  IC95 [-0.0052, +0.0453]
+  dcorr = +0.0052  IC95 [+0.0003, +0.0094]
+  dlift = +1.48    IC95 [-2.21, +5.95]  (non discriminante, come da brief)
+
+===============================================================================
+4. score_atteso GK -- NON QUANTIFICATO
+===============================================================================
+
+Nessuna modifica applicata -> nessuno spostamento da misurare. Punto §3.1
+del brief non eseguito.
+
+===============================================================================
+5. FILE:RIGA DI OGNI MODIFICA
+===============================================================================
+
+Nessuna modifica al codice di produzione. Nessun file toccato in
+formazione_mls/predict/test_gk.py.
+
+===============================================================================
+6. PROPAGAZIONE
+===============================================================================
+
+Non eseguita (nulla da propagare).
+
+===============================================================================
+7. AGGIORNAMENTO RIASSUNTO
+===============================================================================
+
+Non toccato HANDOFF_UNIFICATO_MODELLO_SCOUTING.md: non ci sono esiti
+numerici nuovi da registrare, e registrare l'anomalia li' prima di una
+decisione dell'orchestratore rischia di essere corretto due volte.
+L'anomalia e le due strade possibili sono descritte qui.
+
+===============================================================================
+8. DOMANDE APERTE -- BLOCCANTI
+===============================================================================
+
+Serve una decisione dell'orchestratore/utente su come procedere, PRIMA di
+riprovare P9:
+
+OPZIONE A -- Rigenerare il campione da 6.973 contesti GK walk-forward
+(stessa estrazione della sessione Opus P3: 4.311 giocatori in cache, dedup
+su (data, slug), 120 giornate) e rifare la scansione del coefficiente su
+quello. Costo: tempo di ricalcolo locale sulla cache game-log esistente
+(nessuna chiamata Sorare, solo lettura cache + stima() locale), ordine di
+grandezza minuti-decine di minuti vista la dimensione (~5x quella
+disponibile qui). Se qualcuno ha ancora accesso alla sessione Opus P3
+originale, chiedere di ri-esportare p3_gk_righe.json e' piu' rapido che
+ricostruirlo da zero.
+
+OPZIONE B -- Procedere applicando comunque GK_TEAM_CS_WEIGHT=0.63 sul
+SEGNO del delta misurato qui (corr sale, MAE degrada poco), accettando che
+i valori assoluti target (16.114/0.0707) restano non verificati su questo
+campione. Rischio: se il campione ridotto e' distorto (es. solo giornate
+con meno varieta' di GK, o solo una fascia temporale), il punto ottimo
+c=22 potrebbe non essere quello giusto neanche sul segno per il campione
+vero.
+
+Caso concreto da controllare su Sorare, quando la decisione sara' presa e
+il coefficiente eventualmente cambiato: prendere un portiere con forte
+scarto fra p_next (probabilita' clean sheet squadra prossima gara) e
+p_hist (media storica), verificare che lo score_atteso pubblicato nel
+tool scouting si sposti nella direzione attesa (squadra in forma
+difensiva migliore del solito -> score piu' alto) e non sia un rumore da
+game-log incompleto per quella squadra.
+
+===============================================================================
+9. COSA RESTA PER P8
+===============================================================================
+
+Invariato rispetto al brief: P8 (decomposizione all-around per categoria),
+sessione Opus successiva, indipendente da questo blocco.
+
+In piu', da riportare a chi coordina: prima di lanciare P8, verificare che
+qualunque altro file dati riusato da sessioni precedenti (scratchpad)
+abbia lo stesso n dichiarato nei report corrispondenti -- questo e' il
+secondo caso (dopo B18/misuratore-disallineato) in cui un numero "gia'
+misurato" nel brief non e' riproducibile 1:1 dal materiale lasciato in
+eredita'.
