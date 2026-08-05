@@ -1,0 +1,431 @@
+REPORT P11 (Opus) -- 05/08/2026, sera (Roma, CEST)
+Destinatario: orchestratore. Sola lettura/analisi: NESSUNA modifica di produzione.
+
+===============================================================================
+1. VERIFICA DI PARTENZA
+===============================================================================
+
+git status pulito, HEAD = 896bc89e59add9c57f1040fde0caaa88601037b7,
+identico a origin/main.
+
+P10 eseguito: SI.
+  - item C: formazione_mls/predict/test_gk.py:1632 NON cita piu' 0.5 come
+    valore corrente ("GK_TEAM_CS_WEIGHT=22.0/35.0~=0.629 arriva davvero qui,
+    alzato da 0.5 in P9"). OK.
+  - test_gk.py:190  GK_TEAM_CS_WEIGHT = 22.0/35.0. OK.
+
+P10 item A (refit di CALIB_PER_RUOLO): NON ESEGUITO. Il report P10 dichiara
+che manca nel repo lo script che calcola i 4 coefficienti; CALIB_PER_RUOLO in
+build_formazione_globale.py:394-399 e' invariato (GK 35.78/0.264, DEF
+7.28/0.831, MID 11.61/0.740, FWD 8.40/0.789). Verificato nel file.
+QUESTA ANALISI GIRA QUINDI SUI VALORI ATTUALI DI CALIB_PER_RUOLO, non su
+valori rifittati. Dichiarato come richiesto dal brief.
+
+Modello usato ovunque in P11: GK_TEAM_CS_WEIGHT = 22/35 (produzione).
+ATTENZIONE, difetto trovato: backtest_arene_previsioni.py:260 ha ancora
+`_GK_CS_WEIGHT = float(os.environ.get('GK_TEAM_CS_WEIGHT', '0.5'))` e il
+commento sopra dice "Default 0.5 = come produzione". FALSO dopo P9-ter.
+Chiunque lanci calibrazione/backtest senza esportare la variabile misura un
+modello che non esiste piu'. In P11 la variabile e' stata esportata a 22/35
+in ogni script. NON corretto nel repo (blocco di sola analisi): va sistemato
+nel prossimo commit che tocca quel file.
+
+Verifiche di `n` sul materiale ereditato (regola nuova del 05/08):
+  - taratura_giocatore.raccogli rigenerato con GK weight 22/35: 82.282 coppie,
+    identico all'n dichiarato da P10 (82.282). Il file in repo
+    dati_globali/taratura_coppie.json ne ha 75.474 ed e' quello vecchio del
+    04/08 a weight 0.5: NON e' stato toccato (P11 scrive solo nello scratchpad).
+  - contesti GK nel campione rigenerato: 6.973, identico all'n dichiarato da
+    P9-bis/P9-ter.
+  - analisi_manager/dati: 442 formazioni, 2210 card-slot, 2045 righe,
+    1142 uniche (gw,slug) -- coincide con handoff e PATTERN_ARENE.md.
+  - arene_storico.json 673 arene / arene_formazioni.json 593 formazioni:
+    coincide.
+
+Premessa del brief riverificata sui dati (442 formazioni):
+  carte>=75 = 0 : n=238  podio  7.6%   (brief: 7.7%)
+  carte>=75 = 1 : n=140  podio 35.7%   (brief: 36%)
+  carte>=75 = 2 : n= 50  podio 68.0%   (brief: 68%)
+  carte>=75 = 3 : n= 11  podio 100%
+  solo Cap 260: 0 boom -> 4.4% (n=113), 1 -> 40.8% (n=71), 2 -> 69.6% (n=23)
+La premessa regge.
+
+===============================================================================
+2. PASSO 1 -- STIMA DI P(reale >= 75 | ruolo, atteso)
+===============================================================================
+
+DATI. 82.282 coppie (previsione walk-forward, punteggio realizzato), 4.311
+giocatori in cache, date 2023-02-25 .. 2026-08-04, rigenerate con il modello
+di produzione. Deviazione dichiarata dal brief: il brief prescriveva di
+stimare P(boom) dal dataset manager (1.142 osservazioni indipendenti). Con
+1.142 osservazioni e ~140 boom totali una logistica per ruolo avrebbe ~35
+eventi per ruolo: troppo pochi. Si e' usato il pool grande e il dataset
+manager e' servito come CROSS-CHECK fuori campione (sotto). Il dataset
+dell'utente (arene_storico/arene_formazioni) NON e' stato usato per la stima,
+come da brief.
+
+FORMA SCELTA: logistica lineare nell'atteso GREZZO, un fit per ruolo.
+  logit P(boom) = a_r + b_r * atteso_grezzo
+
+  ruolo      n      boom%        a          b       AUC    Brier
+  GK       6973    11.17%   -3.4106   0.02694    0.530   0.09913
+  DEF     28060    10.10%   -6.7256   0.08841    0.600   0.08964
+  MID     26166     9.57%   -7.3620   0.09755    0.653   0.08368
+  FWD     21083    10.31%   -9.7541   0.14495    0.659   0.08871
+
+Perche' questa forma e non binning/isotonica: il test di adeguatezza per
+decili di atteso mostra che la logistica segue il tasso empirico entro il
+rumore su DEF/MID/FWD, quindi non c'e' curvatura da recuperare. Esempio FWD
+(n=2108 per decile):
+  decile   atteso medio   boom osservato   boom logistica
+    1         46.04           4.32%            4.42%
+    3         48.87           5.93%            6.47%
+    5         50.58           8.21%            8.15%
+    7         52.48          11.24%           10.46%
+    9         55.30          14.99%           14.98%
+   10         59.21          24.51%           24.33%
+Su GK il tasso empirico e' PIATTO (9.33% nel primo decile, 12.75% nel decimo,
+su un atteso che va da 42.9 a 56.7): la logistica lo riproduce ma il segnale
+non c'e'.
+
+CALIBRAZIONE. La calibrazione affine in-campione e' tautologica per una
+logistica (esce esattamente (0,1)): non e' una verifica. La verifica vera e'
+il taglio TEMPORALE (fit sul primo 70% delle date, test sul restante 30%):
+
+  ruolo    n test   boom oss   p media   AUC    calib (intercetta, pendenza)
+  GK        1943    10.71%     11.25%   0.514   (-1.530, 0.285)
+  DEF       8566     9.13%     10.72%   0.603   (-0.175, 1.003)
+  MID       7697     8.96%     10.03%   0.648   (-0.366, 0.886)
+  FWD       6479    10.31%     11.08%   0.671   (-0.185, 0.949)
+
+Cross-check sul dataset MANAGER (1215 carte uniche con atteso, pool diverso,
+completamente fuori campione):
+  boom osservato 11.93%   p media stimata 12.50%   AUC 0.646   Brier 0.10025
+  calibrazione affine: intercetta +0.1805  pendenza 1.1266
+  per ruolo: GK AUC 0.571 (n=204), DEF 0.614 (n=393), MID 0.635 (n=316),
+             FWD 0.696 (n=302)
+Coincide con PATTERN_ARENE.md (FWD 0.696, GK 0.571 identici).
+
+GIUDIZIO SULLA STIMA. Ben calibrata in livello (p media 12.50% vs 11.93%
+osservato) e con pendenza ~1 su DEF/MID/FWD. SUL PORTIERE NON DISCRIMINA:
+AUC 0.514 fuori campione, pendenza di calibrazione 0.285. Come da avviso del
+brief, ogni metro che tocca i GK e' di fatto a due gambe: qui la stima di
+p_boom del portiere e' poco piu' che il tasso base.
+
+===============================================================================
+3. PASSO 2 -- INDIPENDENZA
+===============================================================================
+
+Riverifica su analisi_manager/dati (442 formazioni), boom = reale>=75,
+bootstrap 2000 ricampionamenti.
+
+(a) coppie STESSO team/GW (il numero del riassunto):
+    n=1707  phi = +0.0120  IC95 [-0.0350, +0.0613]
+    -> replica ESATTA del +0.012 dichiarato. Non distinguibile da zero.
+
+(b) coppie DENTRO la stessa formazione, de-dup su (gw, slug_i, slug_j) --
+    e' questa che serve a P(>=1 boom), non quella per squadra:
+    n=4236  phi = +0.0446  IC95 [+0.0139, +0.0771]   -> esclude zero.
+
+(c) controllo (stessa GW, squadre diverse): n=10414  phi = +0.0014.
+
+Il phi di (b) e' pero' gonfiato dall'ETEROGENEITA' dei p_i (una formazione
+forte ha 5 carte con p alta, una debole 5 con p bassa: correlazione apparente
+anche sotto indipendenza condizionata). Test corretto -- correlazione dei
+RESIDUI (boom_i - p_i) sulle coppie dentro formazione:
+
+    n=4091   rho = +0.0315   IC95 [+0.0000, +0.0642]
+
+cioe' il limite inferiore tocca lo zero: nessuna dipendenza condizionata
+dimostrata, ma nemmeno esclusa.
+
+Test diretto sulla distribuzione del numero di boom per formazione
+(408 formazioni con 5 carte predette), osservata vs Poisson-binomiale sui p_i:
+
+    k    osservato    atteso (Poisson-binomiale)
+    0       217            202.6
+    1       134            149.9
+    2        44             46.9
+    3        10              7.9
+    4         2              0.7
+    5         1              0.0
+    chi2 = 42.68
+    P(>=1 boom): osservata 0.4681   modello 0.5035
+
+VERDETTO PASSO 2: l'indipendenza REGGE come approssimazione operativa (rho
+condizionato +0.03 con IC che tocca zero), ma il prodotto dei complementari
+SOVRASTIMA sistematicamente P(>=1 boom) di ~3.5 punti percentuali, perche' la
+distribuzione osservata ha piu' code (piu' zeri E piu' 3+) di quella
+indipendente. La formula prodotto e' stata usata comunque -- l'errore e' nella
+stessa direzione per entrambe le policy, quindi non falsa il confronto -- ma
+va saputo che la P(>=1 boom) del modello e' ottimista.
+
+===============================================================================
+4. PASSI 3-4 -- LE DUE POLICY SUL MAZZO DELL'UTENTE
+===============================================================================
+
+IMPIANTO.
+  - Mazzo: per ogni giornata, tutte le carte che l'utente ha REALMENTE
+    schierato quel giorno, con le COPIE possedute, previsione walk-forward
+    (cutoff = primo calcio d'inizio della giornata), L10 al momento della
+    scelta, punteggio reale grezzo (capitano tolto). 71 giornate preparate,
+    2728 carte-giornata con previsione valida su 2878 uniche (94.8%).
+  - Vincoli reali: shape arena (GK+DEF+MID+FWD+EXTRA), cap L10 con i decimali
+    (<= soglia), un giocatore una volta sola, copie possedute. Identici per
+    le due policy: e' lo STESSO knapsack esatto di produzione
+    (_optimize_capped_lineup), cambia solo il valore massimizzato.
+  - policy A: massimizza la somma degli attesi CALIBRATI (produzione di oggi).
+  - policy B: massimizza P(>=1 boom). Poiche' P(>=1 boom) = 1 - prod(1-p_i),
+    massimizzarla equivale a massimizzare sum(-log(1-p_i)): obiettivo LINEARE,
+    quindi lo stesso knapsack esatto lo ottimizza davvero (verificato, punto 6).
+  - Capitano: STESSA regola su entrambe (pick_captain sull'atteso calibrato).
+    Deliberato: isola la SELEZIONE delle carte, unico effetto in esame.
+  - Sinergie disattivate su entrambe (il knapsack delle arene con cap non le
+    usa comunque; accenderle in policy B avrebbe confrontato bonus in punti
+    con un obiettivo in log-probabilita', scale incommensurabili).
+  - Esito: si sostituisce il punteggio dell'utente nel campo REALE di 10
+    punteggi di quella arena e si legge il piazzamento (E.piazzamento), il
+    premio dalla tabella premi reale, il netto = premio - costo d'ingresso.
+  - Walk-forward: la logistica p_boom di una giornata e' addestrata SOLO sulle
+    coppie con data strettamente precedente al cutoff di quella giornata.
+
+SLOT ESCLUSI (dichiarati, non nascosti):
+  - Beginner (182) ed Elite: fuori dal brief per decisione dell'utente.
+  - arena division (191): in produzione ARENA_LEAGUES e' VUOTA (arene dedicate
+    disattivate il 04/08), quindi il generatore le tratterebbe come cap 260
+    miste e costruirebbe formazioni con carte di leghe diverse, NON ammissibili
+    in una arena dedicata a un campionato. Misurarle avrebbe prodotto un numero
+    su formazioni impossibili.
+  Restano 300 slot reali (194 cap 260, 53 cap 220, 53 uncapped); di questi
+  sono valutabili quelli in giornate con pool completo per tutti e 4 i ruoli.
+
+--- A) ARENE CON CAP L10 (cap 260 + cap 220), MAZZO FISSO che si svuota ------
+228 arene, 27 giornate. Le arene della stessa giornata consumano lo stesso
+mazzo, in ordine fisso identico per le due policy.
+
+                                utente    policy A    policy B
+  punteggio medio               268.68      273.18      272.89
+  rank medio (basso = meglio)    4.763       4.601       4.623
+  a premio (rank<=3)             38.6%       42.1%       40.8%
+  netto medio (essenze)           86.8        95.6        59.2
+  P(>=1 boom) della formazione       -        0.53        0.53
+  somma attesi calibrati             -       270.3       269.9
+
+  delta B-A, bootstrap appaiato su GIORNATE (cluster: col mazzo fisso le
+  arene della stessa giornata non sono indipendenti), IC95:
+    punteggio             -0.29    IC95 [ -2.95,  +2.57]
+    rank (negativo=B meglio) +0.022 IC95 [-0.157,  +0.189]
+    podio (frazione)      -0.0132   IC95 [-0.0584, +0.0358]
+    netto essenze         -36.4     IC95 [-84.7,  +11.9]
+
+--- B) SOLO CAP 260 (la competizione principale) ----------------------------
+181 arene, 27 giornate.
+
+                                utente    policy A    policy B
+  punteggio medio               270.78      276.50      275.86
+  rank medio                     4.790       4.552       4.552
+  a premio                       38.1%       43.1%       41.4%
+  netto medio (essenze)           72.9        99.4        52.5
+
+  delta B-A (bootstrap su giornate), IC95:
+    punteggio             -0.65    IC95 [ -4.40,  +3.17]
+    rank                  +0.000   IC95 [-0.216,  +0.232]
+    podio                 -0.0166  IC95 [-0.0794, +0.0523]
+    netto essenze         -47.0    IC95 [-106.5,  +11.4]
+
+--- C) CONTROLLO: pool PIENO per ogni arena (arene indipendenti) -------------
+244 arene, 27 giornate. Bootstrap APPAIATO SULLE ARENE, come chiesto dal brief.
+NB: qui le carte si "clonano" fra arene della stessa giornata (trappola 8.8),
+quindi i LIVELLI assoluti sono gonfiati per entrambe le policy e NON vanno
+letti; il DELTA B-A resta valido ed e' l'unica cosa che si legge qui. Questo
+design serve perche' col mazzo fisso i punti sono conservati (trappola 8.9):
+riallocando fra 8-30 arene lo stesso mazzo, le differenze di policy si
+compensano e il confronto si diluisce -- vedi blocco A, delta ~0 con overlap
+bassissimo.
+
+                                utente    policy A    policy B
+  punteggio medio               267.94      281.54      275.50
+  rank medio                     4.865       4.189       4.570
+  a premio                       38.1%       48.4%       44.3%
+  netto medio (essenze)           85.2       175.8       132.8
+  P(>=1 boom) della formazione       -        0.67        0.69
+  somma attesi calibrati             -       285.7       283.9
+
+  delta B-A, bootstrap appaiato sulle ARENE, IC95:
+    punteggio             -6.04    IC95 [-11.63,  -0.35]   <- esclude zero
+    rank                  +0.381   IC95 [+0.025,  +0.725]  <- esclude zero
+    podio                 -0.0410  IC95 [-0.1066, +0.0246]
+    netto essenze         -43.0    IC95 [-102.0,  +17.6]
+
+--- D) ARENE UNCAPPED -- BLOCCO NON INFORMATIVO, dichiarato -----------------
+49 arene, 25 giornate. Senza cap L10 il generatore NON usa il knapsack esatto
+ma un greedy per slot: risultato, sulle arene in cui le due policy differiscono
+la P(>=1 boom) di B e' PIU' BASSA di quella di A (-0.0351). Cioe' su questo
+percorso "policy B" non massimizza il proprio obiettivo: l'interruttore non
+funziona, e il blocco NON misura la domanda del brief. Numeri riportati solo
+per completezza (rank A 4.980, B 5.122, delta +0.143 IC95 [-0.421,+0.646]),
+nessuna conclusione tratta da qui.
+
+===============================================================================
+5. PASSO 5 -- SOVRAPPOSIZIONE E DIAGNOSI
+===============================================================================
+
+SOVRAPPOSIZIONE (carte in comune su 5).
+
+  blocco A (mazzo fisso, 228 arene):  media 1.632/5, identiche 7.5%
+      0/5: 25.9%  1/5: 26.3%  2/5: 24.1%  3/5: 13.6%  4/5: 2.6%  5/5: 7.5%
+  blocco B (solo cap 260, 181 arene): media 1.287/5, identiche 3.3%
+  blocco C (pool pieno, 244 arene):   media 3.512/5, identiche 27.5%
+      1/5: 1.2%  2/5: 16.8%  3/5: 38.9%  4/5: 15.6%  5/5: 27.5%
+  blocco D (uncapped, 49 arene):      media 2.857/5, identiche 10.2%
+
+Le due policy NON convergono: il filone non e' nullo per costruzione. Il
+confronto misura una differenza vera.
+
+VERIFICA DELL'INTERRUTTORE (regola CLAUDE.md: prima di misurare, dimostrare
+che il parametro muove i numeri). Su 244 arene del blocco C, policy B ha
+P(>=1 boom) >= policy A in 244/244 casi, guadagno medio +0.0196 (0.6667 ->
+0.6863). Il knapsack ottimizza davvero l'obiettivo B.
+
+L'OBIETTIVO SI REALIZZA A META'. Sulle stesse 244 arene, esito REALE:
+  formazioni con almeno una carta reale >=75:  A 57.0%   B 54.5%   (-2.5 pp)
+  numero medio di boom per formazione:         A 0.820   B 0.926   (+0.106)
+Policy B ottiene PIU' boom in totale, ma li CONCENTRA: piu' formazioni con
+2-3 boom e piu' formazioni con zero. La grandezza che voleva massimizzare
+(P(almeno uno)) scende.
+
+MECCANISMO -- e' una riallocazione di ruolo, non una scelta di code.
+Ripartizione media del budget L10 e degli attesi calibrati (244 arene):
+
+  ruolo      L10 A     L10 B    att.cal A   att.cal B
+  GK         40.81     38.82       48.91       48.44
+  DEF        68.48     57.35       76.74       66.01
+  MID        86.76     65.02       93.09       70.06
+  FWD        53.73     89.14       55.09       87.51
+  TOTALE    249.77    250.34      285.74      283.93
+
+  numero di carte per ruolo (slot EXTRA incluso):
+    GK   A 1.000  B 1.000
+    DEF  A 1.373  B 1.205
+    MID  A 1.611  B 1.205
+    FWD  A 1.016  B 1.590
+  portiere diverso fra le due policy: 35.7% delle arene
+
+La causa e' nei coefficienti del passo 1: b_FWD = 0.14495 contro b_MID
+0.09755, b_DEF 0.08841, b_GK 0.02694. A parita' di atteso un attaccante ha
+una p_boom molto piu' alta, quindi policy B sposta lo slot EXTRA da MID a FWD
+in modo quasi sistematico (1.02 -> 1.59 attaccanti per formazione). NON e'
+"scegliere carte con la coda destra piu' lunga a parita' di ruolo": dentro un
+ruolo p e' monotona nell'atteso, quindi B e A ordinano IDENTICAMENTE. Tutta la
+differenza fra le due policy e' cross-ruolo e budget L10.
+
+IL PREZZO. B cede 1.81 punti di atteso calibrato per guadagnare +0.0196 di
+P(>=1 boom); il realizzato perde 6.04 punti e il rank peggiora di 0.381.
+
+MALEDIZIONE DELL'OTTIMIZZATORE. Le due policy sovrastimano entrambe la propria
+P(>=1 boom), ma B molto di piu':
+    policy A: prevista 0.667  realizzata 0.570   (-0.097)
+    policy B: prevista 0.686  realizzata 0.545   (-0.141)
+Ottimizzare DIRETTAMENTE sulla p stimata raccoglie l'errore di stima: il
+knapsack sceglie le carte con p_hat piu' alta, che sono anche quelle con
+l'errore positivo piu' grande. Policy A, che ottimizza su una grandezza
+diversa (l'atteso), e' meno esposta.
+
+===============================================================================
+6. VERDETTO
+===============================================================================
+
+FILONE CHIUSO. Costruire le formazioni massimizzando P(>=1 boom) NON produce
+un rank realizzato migliore: pareggia dove il mazzo fisso diluisce tutto
+(blocchi A e B, delta rank +0.02 e +0.00 con IC che contengono zero) e PERDE
+dove il confronto e' isolato (blocco C: rank +0.381 IC95 [+0.025,+0.725],
+punteggio -6.04 IC95 [-11.63,-0.35], entrambi escludono zero). Nessuna delle
+tre metriche, in nessuno dei tre blocchi validi, va nella direzione di B.
+
+Il risultato NON e' una ripetizione del test chiuso il 05/08 (indice boom come
+PREDITTORE del rank a formazione data, corr ~-0.05). Qui l'indice COSTRUISCE
+la formazione, le due policy divergono davvero (sovrapposizione 1.3-3.5 carte
+su 5, formazioni identiche dal 3% al 27%), e la ragione del fallimento e'
+nuova e specifica: la riallocazione dello slot EXTRA da centrocampista ad
+attaccante, indotta dalla pendenza molto piu' ripida della logistica del boom
+sui FWD.
+
+Cosa significa operativamente: massimizzare la somma degli attesi E' GIA' la
+policy giusta. La relazione boom->podio (0 boom 7.6%, 1 boom 35.7%, 2 boom
+68%) e' una CONSEGUENZA del punteggio alto, non una leva separata su cui
+agire. La stessa cosa detta al contrario: dentro una arena con cap L10 il
+vincolo comprime i totali attesi (gia' misurato in PATTERN_ARENE.md: std ~9),
+tutte le formazioni ammissibili si somigliano, e spostare la funzione
+obiettivo su una trasformazione convessa della stessa variabile serve solo a
+pagare punti attesi per varianza che non si converte in piazzamento.
+
+Se qualcuno volesse comunque riaprirlo, servirebbe: (1) un p_boom che
+discrimini davvero sul GK (oggi AUC 0.514, il portiere e' un terzo del budget
+L10 e la stima non lo ordina); (2) una correzione della maledizione
+dell'ottimizzatore (shrinkage di p_hat verso il tasso base di ruolo prima di
+ottimizzarci sopra); (3) piu' arene UNCAPPED, l'unico ambiente in cui il
+totale-atteso predice il rank (-0.30 su n=31) e quindi l'unico dove la scelta
+della funzione obiettivo puo' contare. Nessuna delle tre e' economica e
+nessuna e' promettente alla luce del punto 5.
+
+===============================================================================
+7. DOMANDE APERTE / COSE DA CONTROLLARE
+===============================================================================
+
+1. DIFETTO REALE TROVATO, non risolto (blocco di sola analisi):
+   backtest_arene_previsioni.py:257-260 dichiara "Default 0.5 = come
+   produzione (test_gk.GK_TEAM_CS_WEIGHT)". Dopo P9-ter la produzione e'
+   22/35 = 0.629. Ogni misura fatta con quel modulo senza esportare la
+   variabile d'ambiente gira su un modello che non esiste piu'.
+   Da correggere nel prossimo commit che tocca il file (default a 22/35, o
+   meglio: leggerlo da test_gk invece di duplicarlo).
+
+2. Il pool di ogni giornata e' l'insieme delle carte che l'utente ha
+   EFFETTIVAMENTE schierato quel giorno, non il mazzo completo: le carte
+   possedute e lasciate fuori non sono ricostruibili dai dati in repo.
+   Effetto: il pool e' piu' piccolo e gia' pre-selezionato dall'utente. Vale
+   identico per le due policy, quindi non falsa il delta, ma limita quanto le
+   due policy possono divergere. Non c'e' modo di allargarlo senza uno storico
+   del mazzo per data, che non esiste.
+
+3. CASO CONCRETO DA CONTROLLARE SU SORARE (unica domanda vera per l'utente):
+   nelle arene "dedicate a un campionato" (arena division, 191 ingressi
+   nell'archivio, slug del tipo `seasonal-korea-...`), la formazione deve
+   essere composta SOLO da giocatori di quel campionato, o basta rispettare
+   cap L10 e ruoli come in una cap 260 normale? Se bastasse la seconda, i 191
+   slot esclusi da P11 tornerebbero misurabili (e con loro tutta l'analisi
+   arena division, oggi ferma). Da leggere sul popup di ingresso di una arena
+   dedicata.
+
+4. Curiosita', non un blocco: 150 carte-giornata su 2878 (5.2%) non hanno
+   previsione valida (storico insufficiente o partita bersaglio non trovata in
+   cache). Concentrate sulle giornate piu' vecchie (2025).
+
+===============================================================================
+8. FILE
+===============================================================================
+
+Script salvati in repo (per non ripetere il problema di P10, script usato e
+mai committato):
+  analisi_manager/p11_boom.py       stima di P(boom) (logistica IRLS pura)
+  analisi_manager/p11_prepara.py    costruisce il pool per giornata (64 s)
+  analisi_manager/p11_confronta.py  le due policy sulle arene reali (~4 min)
+  analisi_manager/p11_diagnosi.py   passo 5, ripartizione L10/ruolo
+  analisi_manager/p11_passo1.py     passo 1 + passo 2b (indipendenza)
+  analisi_manager/p11_passo2.py     passo 2 (phi) + verifica premessa
+  analisi_manager/p11_raccogli.py   rigenera le coppie a GK weight 22/35 (5 min)
+
+Rilancio (nell'ordine, tutto in locale, nessuna rete):
+  set GK_TEAM_CS_WEIGHT=0.6285714285714286
+  python analisi_manager/p11_raccogli.py <out_coppie.json>     ~5 min
+  python analisi_manager/p11_prepara.py  <out_pool.json>       ~1 min
+  python analisi_manager/p11_passo1.py                         ~2 min
+  python analisi_manager/p11_confronta.py                      ~4 min
+  python analisi_manager/p11_diagnosi.py                       ~2 min
+(gli script leggono/scrivono i JSON intermedi nella propria cartella; in P11
+sono stati tenuti nello scratchpad, nessun file di dati del repo e' stato
+modificato -- git status pulito prima e dopo, a parte i file nuovi qui sopra)
+
+Dati letti: dati_globali/arene_storico.json, dati_globali/arene_formazioni.json,
+analisi_manager/dati/formazioni_*.json, cache game-log condivisa
+(<lega>/output/*/.game_log_cache + dati_globali/backtest_arene_cache).
