@@ -1,4 +1,4 @@
-HANDOFF CERBERO — UNICO FILE DI RIFERIMENTO (aggiornato 2026-08-04 17:30 Roma)
+HANDOFF CERBERO — UNICO FILE DI RIFERIMENTO (aggiornato 2026-08-05 08:30 Roma)
 ================================================================================
 UNICO handoff cerbero: si aggiorna in-place ogni sessione, non se ne creano
 altri con data nel nome (regola in CLAUDE.md).
@@ -29,22 +29,40 @@ GitHub, dura ~5h. Non serve ricontrollare la sintassi del workflow.
 - Nuovo workflow GitHub "Cerbero (apprendimento)" (vedi §4), mai lanciato.
 
 
-3) DOVE SIAMO COL DATASET (cerbero_osservazioni.csv)
+3) DOVE SIAMO COL DATASET (misurato 05/08 08:30 Roma = 06:28 UTC)
 ---------------------------------------------------------
-2.816 righe (1.033 complete, 1.783 trasversale_only). 12 leghe hanno gia'
-volume sufficiente e maturano tutte fra l'01:00 e l'01:35 di Roma della
-notte 04/08->05/08: mlspa, austrian-bundesliga, eredivisie,
-premier-league-gb-eng, primeira-liga-pt, 2-bundesliga, jupiler-pro-league,
-laliga-es, bundesliga-de, k-league-1, premiership-gb-sct, 1-hnl.
-Sotto soglia (serve piu' raccolta, non solo tempo): serie-a-it(28),
-championship(27), russian-premier-league(24), j1-league(20), ligue-1-fr(19)
-e code piu' corte.
-NOTA: questi orari si ricalcolano ogni volta che si raccolgono altre righe
-(l'eta' si misura sulla riga piu' vecchia). Se si fa un'altra run prima di
-lanciare l'apprendimento, ricalcolare invece di fidarsi di questi numeri.
-Soglie bootstrap attuali (da dataset storico, non da osservazioni live):
-mlspa/k-league-1/eredivisie/jupiler-pro-league = 5%. Le altre leghe usano
-il default prudente 10%.
+5.248 righe (1.391 complete, 3.857 trasversale_only), raccolte dal 03/08
+19:03 Roma al 05/08 06:36 Roma. Altre run sono girate dopo l'handoff del
+04/08: i numeri e gli orari di maturazione scritti allora sono SUPERATI.
+
+Righe complete gia' MATURE (eta' >= 30h, orizzonte 24h = finestra 18-30h) e
+dentro la finestra di fetch (<= 6 giorni): 343, su 209 giocatori distinti
+(= 209 fetch transazioni, questo e' il costo query del risolutore).
+
+Complete mature per lega (solo >= 10):
+  mlspa 64 | premiership-gb-sct 60 | premier-league-gb-eng 35
+  primeira-liga-pt 26 | 2-bundesliga 23 | austrian-bundesliga 22
+  eredivisie 19 | k-league-1 19 | jupiler-pro-league 12 | laliga-es 12
+Tutte le altre stanno sotto 10.
+
+CORREZIONE ALL'HANDOFF 04/08: la stima "12 leghe pronte" contava le righe
+complete TOTALI per lega, non quelle mature. Il criterio di apprendimento
+(MIN_N=30) si applica alle righe mature CHE SI RISOLVONO (serve almeno una
+transazione della stessa carta nella finestra 18-30h) e per giunta dopo il
+filtro sconto >= soglia candidata. Quindi oggi solo 3 leghe partono sopra
+30 PRIMA di quei due filtri: e' realistico attendersi 0-1 leghe qualificate
+al primo giro, non 12. Il resto restera' sul default prudente 10%, che e'
+lo stato attuale: nessuna regressione, ma nemmeno molto guadagno.
+
+Asse trasversale: solo 7 righe mature hanno margine_trasversale_pct
+valorizzato. Il report --trasversale richiede N>=30 per dire qualcosa:
+oggi stampa "campione insufficiente" ed e' atteso.
+
+Soglie in vigore (cerbero_soglie_apprese.json, fonte dataset_storico
+03/08): mlspa/k-league-1/eredivisie/jupiler-pro-league = 5%. Tutte le altre
+leghe = default prudente 10%. NB: il commento in motore_affare.py dice
+"mlspa 10%" ma il JSON vince e mette 5% — il valore reale in produzione per
+MLS e' 5%.
 
 
 4) WORKFLOW "Cerbero (apprendimento)" — come si usa
@@ -91,9 +109,32 @@ B) Se un giorno il cron partisse in continuo 24h/giorno, il volume di
    Non rilevante nel regime manuale attuale.
 
 
-7) PROSSIMO STEP CONCRETO
+7) OPERAZIONI DA EFFETTUARE (elenco, 05/08)
 ------------------------------
-Dall'01:30 di Roma le 12 leghe di §3 sono lanciabili con 'osservazioni'.
-L'utente potrebbe non essere online a quell'ora: i dati non scadono, si puo'
-lanciare quando torna disponibile. Guidarlo con §4 passo-passo, poi
-confrontare le soglie apprese col bootstrap (§3).
+Ordine consigliato. Nessuna e' stata ancora fatta.
+
+OP1 — Lanciare 'osservazioni' (workflow §4). E' il primo giro vero del
+  risolutore forward. Costo: ~209 fetch transazioni, servono secret Sorare
+  freschi. Aspettativa onesta: 0-1 leghe qualificate (vedi §3), il valore e'
+  soprattutto capire se il risolutore RISOLVE (quante righe trovano un
+  prezzo forward) — non le soglie che produce.
+  ATTENZIONE: riscrive cerbero_soglie_apprese.json. Il merge tiene il
+  bootstrap dove il live non qualifica, quindi non si perdono le 4 leghe a
+  5%. Comunque conviene salvarne una copia prima.
+
+OP2 — Leggere l'output (docs/handoff/LEARN_osservazioni_*.txt) e decidere
+  se il numero di righe risolte e' accettabile. Se si risolve pochissimo,
+  il collo di bottiglia non e' il volume ma la liquidita' delle carte
+  osservate: cambia la strategia di raccolta, non il tempo di attesa.
+
+OP3 — Altra run di diagnostica (workflow "Cerbero (diagnostica)",
+  listen_seconds=18000) per accumulare righe. Serve per portare piu' leghe
+  sopra i 30 campioni maturi. Ogni run manuale ~5h di ascolto.
+
+OP4 — Solo quando l'asse trasversale avra' >=30 righe mature con margine:
+  lanciare 'trasversale' (diagnostico, non scrive nulla). Oggi sarebbe uno
+  spreco di query: 7 righe.
+
+OP5 — Decisione rimandata, non ancora sul tavolo: schedulare cerbero_learn
+  in automatico, e valutare il passaggio in live (oggi acquisto/offerta
+  sono SPENTI di default: AUTOBUY_LIVE_MODE / MAKEOFFER_LIVE_MODE = 'no').
