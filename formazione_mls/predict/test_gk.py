@@ -127,50 +127,65 @@ GK_TEAM_CS_BASELINE = float(os.environ.get('GK_TEAM_CS_BASELINE', '0.28'))
 # backtest sulle arene reali (corr previsto/reale 0.157->0.211, piu' arene a
 # premio). 0 lo spegne. Vale in produzione E nello scouting (stesso modulo).
 GK_TEAM_CS_WEIGHT = float(os.environ.get('GK_TEAM_CS_WEIGHT', '0.5'))
-_FORZE_CS_PROD = None   # cache pigra delle forze squadre (modello_partita)
+# Cache di PROCESSO, chiave = giorno del cutoff (03/08 originale, RISCRITTA
+# P6/passaggio 2, B13+B14): la versione precedente costruiva ~124 snapshot
+# SETTIMANALI di modello_partita.stima() su TUTTO il dataset (un ciclo che
+# ripercorreva l'intero storico ad ogni passo di 7 giorni) per poi usarne UNO
+# SOLO -- 1.09 s/snapshot misurati, 60-130 s di CPU per OGNI portiere, perche'
+# ogni giocatore gira in un processo GitHub Actions separato (nessuna cache
+# fra portieri). `stima()` accetta gia' un `riferimento` arbitrario: non
+# serve costruire una griglia di approssimazione, si calcola DIRETTAMENTE il
+# solo snapshot al cutoff vero (piu' preciso, non il piu' vicino multiplo di
+# 7 giorni) -- da ~124 chiamate a stima() a 1. La cache qui sotto resta solo
+# per il caso (locale/diagnostico) in cui piu' portieri della stessa run
+# condividano lo stesso processo e lo stesso giorno di cutoff.
+_FORZE_CS_PROD_CACHE = {}
 
 
 def _pcs_squadra_prod(team, opp, is_home, cutoff):
     """P(porta inviolata) della squadra del portiere per la prossima partita,
     dal modello_partita (forza attacco/difesa stimata sul solo passato). None
     -- quindi nessun blend -- se il dato non c'e' o qualcosa fallisce: la
-    produzione non deve mai rompersi per questo."""
-    global _FORZE_CS_PROD
+    produzione non deve mai rompersi per questo (ma il fallimento si LOGGA,
+    B14: prima era un `except Exception: return None` muto, impossibile
+    sapere a posteriori se il blend era stato applicato o no)."""
     if GK_TEAM_CS_WEIGHT <= 0 or not team or not opp:
         return None
     if not isinstance(cutoff, datetime.datetime):
         return None
+    cutoff_day = cutoff.date()
     try:
-        import bisect as _b
-        if _FORZE_CS_PROD is None:
+        f = _FORZE_CS_PROD_CACHE.get(cutoff_day)
+        if f is None:
+            import bisect as _b
             import modello_partita as _mp
             oss = _mp.osservazioni(_mp.partite_da_cache())
             oss.sort(key=lambda o: o['data'])
             darr = [o['data'] for o in oss]
-            cps, fz = [], []
-            if oss:
-                d = oss[0]['data']
-                while d <= oss[-1]['data'] + datetime.timedelta(days=7):
-                    lo = _b.bisect_left(darr, d)
-                    if lo >= 400:
-                        cps.append(d)
-                        fz.append(_mp.stima(oss[:lo], riferimento=d,
-                                            regolarizzazione=0.30, emivita=120.0))
-                    d += datetime.timedelta(days=7)
-            _FORZE_CS_PROD = (cps, fz)
-        cps, fz = _FORZE_CS_PROD
-        if not cps:
+            lo = _b.bisect_left(darr, cutoff)
+            if lo < 400:
+                # Storico insufficiente al cutoff: stesso comportamento di
+                # prima (nessun blend), ma ora e' un log, non un buco muto.
+                log(f"Blend CS squadra: storico insufficiente al cutoff "
+                    f"{cutoff_day} ({lo} osservazioni, servono >=400) -- "
+                    f"blend non applicato.")
+                _FORZE_CS_PROD_CACHE[cutoff_day] = False
+                return None
+            f = _mp.stima(oss[:lo], riferimento=cutoff,
+                         regolarizzazione=0.30, emivita=120.0)
+            _FORZE_CS_PROD_CACHE[cutoff_day] = f
+        elif f is False:
             return None
-        i = _b.bisect_right(cps, cutoff) - 1
-        if i < 0:
-            return None
-        f = fz[i]
         if not (f.conosciuta(team) and f.conosciuta(opp)):
+            log(f"Blend CS squadra: {team} o {opp} non conosciuta dal modello "
+                f"al cutoff {cutoff_day} -- blend non applicato.")
             return None
         # gol attesi dell'avversario contro la squadra del GK = quanti ne subisce
         lam = f.lambda_atteso(opp, team, in_casa=not is_home)
         return math.exp(-lam)
-    except Exception:
+    except Exception as e:
+        log(f"ATTENZIONE: blend CS squadra fallito ({team} vs {opp}, "
+            f"cutoff {cutoff_day}): {e}. Blend non applicato.")
         return None
 
 RANGE_MULTIPLIER = 1.15  # AGGIORNATO (30/07, richiesta esplicita utente): centrato sulla copertura reale target ~68% (validate_range_multiplier_coverage.py, 233 giocatori/3293 punti test: 1.4 dava 78.0% di copertura, troppo largo). Solo cosmetico -- non tocca score_atteso/selezione, cambia solo l'ampiezza del range mostrato.
