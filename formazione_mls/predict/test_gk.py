@@ -25,21 +25,24 @@ DIFFERENZE STRUTTURALI CHIAVE rispetto agli altri ruoli:
   fattore/bonus separato nella formula, NON tramite il normale
   extract_group_score sui gruppi granulari (che leggerebbe sempre 0).
 
-Formula IN PRODUZIONE (FIX 25/07: i fattori granulari sono stati rimossi
-dallo score_atteso -- la calibrazione che ha fissato i parametri li
-escludeva gia' (use_granular_factors=False, peggioravano il MAE per questo
-ruolo), ma la produzione li applicava comunque prima di questo fix. Restano
-calcolati e mostrati in output SOLO a scopo diagnostico):
-  score_atteso = P(gioca) x media_pesata_esponenziale(N partite)
-                 x fattore_casa_trasferta x fattore_forza_avversario
-                 x fattore_trend
-                 [+ bonus_clean_sheet gia' incorporato nella media pesata, vedi sotto]
+Formula IN PRODUZIONE (RISCRITTA P1/passaggio 2, B19: la vecchia versione
+elencava fattore_forza_avversario nel prodotto, ma non c'era mai finito,
+verificato per data-flow + test A/A OPPONENT_SENSITIVITY=1e9 -> score_atteso
+invariato). Formula REALE (vedi compute_score_atteso_gk):
+  grezzo = level_score_atteso(eventi decisivi x opponent_lambda_mult)
+           + media_granulari_pesata * fattore_trend_granulare
+           + pen_area_delta (gk_def_pen_area_granular_delta, SPENTO)
+  grezzo_corretto = shrinkage(grezzo, prior dinamico da presence_rate)
+  risultato = grezzo_corretto * fattore_casa_trasferta
+              [+ blend team_cs_prob se GK_TEAM_CS_WEIGHT>0]
   range_confidenza = +/- dev_std_pesata * RANGE_MULTIPLIER
+L'avversario entra SOLO via opponent_lambda_multiplier (gol fatti reali,
+ultime 10) dentro level_score_atteso, mai come fattore moltiplicativo finale.
 
-PARAMETRI: riusati gli stessi valori dei difensori come punto di partenza
-(HALF_LIFE_GAMES=9.0, RANGE_MULTIPLIER=1.2, OPPONENT_SENSITIVITY=29.0,
-TREND_INTENSITY=1.3) — da ricalibrare con un grid search dedicato ai
-portieri quando avremo piu' giocatori di test.
+PARAMETRI: HALF_LIFE_GAMES=6.0, RANGE_MULTIPLIER=1.15, TREND_INTENSITY=0.0
+(spento, docstring storiche 1.3 mai applicate). OPPONENT_SENSITIVITY=29.0
+resta solo per la funzione diagnostica legacy rigorous_backtest (non tocca
+score_atteso).
 
 Cache incrementale del game log integrata (stessa logica di
 centrocampisti/difensori/attaccanti).
@@ -2122,17 +2125,16 @@ def build_prediction(player_slug):
     clean_sheet_rate = sum(clean_sheet_flag_values) / len(clean_sheet_flag_values) if clean_sheet_flag_values else 0.0
     bonus_clean_sheet_atteso = clean_sheet_rate * BONUS_CLEAN_SHEET_POINTS  # solo diagnostico, vedi nota sopra
 
-    # --- Fattore forza avversario (lineare sul ranking assoluto) ---
-    # Ranking medio delle 14 partite (tra gli avversari con dato disponibile)
+    # Ranking medio delle 14 partite (tra gli avversari con dato disponibile).
+    # Resta per il fallback di Stadio D (media_condizionata su
+    # opponent_forte_flags quando manca opponent_team_slugs_hist) e per il
+    # log diagnostico. RIMOSSO (P1, passaggio 2, B19): fattore_forza_avversario,
+    # calcolato da questo ranking e mai usato in score_atteso (verificato per
+    # data-flow + test A/A su OPPONENT_SENSITIVITY=1e9: score_atteso invariato
+    # bit-per-bit sui 4 ruoli). L'effetto avversario reale passa da
+    # opponent_lambda_multiplier / gk_def_pen_area_granular_delta.
     valid_opp_ranks = [r for r in opponent_rankings if r is not None]
     avg_opp_rank_hist = sum(valid_opp_ranks) / len(valid_opp_ranks) if valid_opp_ranks else None
-
-    fattore_forza_avversario = 1.0
-    if avg_opp_rank_hist and next_opp_rank:
-        # rank piu' basso = squadra piu' forte. Se il prossimo avversario ha un
-        # rank piu' basso (piu' forte) della media storica affrontata, penalizza.
-        delta = (next_opp_rank - avg_opp_rank_hist) / OPPONENT_SENSITIVITY
-        fattore_forza_avversario = max(0.5, min(1.5, 1.0 + delta))
 
     # --- P(gioca) ---
     p_gioca = None
@@ -2383,7 +2385,6 @@ def build_prediction(player_slug):
         'next_own_rank': next_own_rank,
         'next_opponent_team_slug': next_opponent_team_slug,
         'next_is_home': next_is_home,
-        'fattore_forza_avversario': fattore_forza_avversario,
         'opp_lambda_mult': _opp_lambda_mult,
         'gk_pen_area_delta': _gk_pen_area_delta,
         'fattore_possesso': fattore_possesso,
@@ -2468,16 +2469,12 @@ def format_output(result):
     lines.append(f"Ranking prossimo avversario: {result['next_opp_rank']}")
     # AVV_FACTOR (03/08, fix output ingannevole): questa riga e' quella che
     # build_consiglio.py porta fino al report come 'AVV_FACTOR', cioe' l'unico
-    # numero sull'avversario che arriva sotto gli occhi. Mostrava
-    # 'fattore_forza_avversario', costruito su domesticLeagueRanking, che pero'
-    # e' documentato come contaminato e RIMOSSO da score_atteso il 26/07: il
-    # report esibiva come 'applicato' un fattore che non veniva applicato, e
-    # nascondeva quello vero. Ora mostra il moltiplicatore davvero in uso.
+    # numero sull'avversario che arriva sotto gli occhi. Mostra il
+    # moltiplicatore davvero in uso (RIMOSSO P1/B19 il vecchio
+    # fattore_forza_avversario su domesticLeagueRanking, mai applicato).
     lines.append(f"Fattore forza avversario applicato: {result['opp_lambda_mult']:.3f} "
                  f"(gol fatti reali dell'avversario, ultime 10; delta granulare "
                  f"parate {result['gk_pen_area_delta']:+.2f} pt)")
-    lines.append(f"Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): "
-                 f"{result['fattore_forza_avversario']:.3f}")
     lines.append("NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello "
                  "score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). "
                  "Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 "

@@ -7,10 +7,16 @@ generata da mls_fwd_discovery.py) da mls_fwd_discovery/player_slugs.json.
 Fallback su una lista statica ridotta se il file non esiste (es. esecuzione
 manuale senza aver ancora girato la discovery).
 
-Formula REALE in produzione (26/07: granulari rimossi da score_atteso dopo
-calibrazione allargata -- restano solo diagnostici nell'output):
-  score_atteso = P(gioca) x media_pesata_esponenziale(30 partite)
-                 x fattore_casa_trasferta x fattore_forza_avversario x fattore_trend
+Formula REALE in produzione (RISCRITTA P1/passaggio 2, B19: la vecchia
+versione elencava fattore_forza_avversario nel prodotto, mai applicato
+davvero -- verificato per data-flow + test A/A OPPONENT_SENSITIVITY=1e9 ->
+score_atteso invariato). Vedi compute_score_atteso_fwd:
+  grezzo = level_score_atteso(eventi decisivi x opponent_lambda_mult)
+           + media_granulari_pesata * fattore_trend_granulare
+           + fwd_offense_granular_delta (granulare offensivo x poss.persi avv.)
+  grezzo_corretto = shrinkage(grezzo, prior dinamico da presence_rate)
+  risultato = grezzo_corretto * fattore_casa_trasferta
+              + Stadio D (delta venue su passaggio)
   range_confidenza = +/- dev_std_pesata * RANGE_MULTIPLIER
 
 RARE_EVENTS_STATS (eventi rari) RIMOSSO il 26/07 dai gruppi granulari
@@ -1912,17 +1918,13 @@ def build_prediction(player_slug):
     fattore_passaggio = compute_split_factor(passing_values, is_home_flags, next_is_home, weights_det)
     fattore_difesa_rari = compute_split_factor(defense_rare_values, is_home_flags, next_is_home, weights_det)
 
-    # --- Fattore forza avversario (lineare sul ranking assoluto) ---
-    # Ranking medio delle 14 partite (tra gli avversari con dato disponibile)
+    # Ranking medio delle 14 partite (tra gli avversari con dato disponibile).
+    # Resta per il fallback di Stadio D e per il log diagnostico. RIMOSSO
+    # (P1, passaggio 2, B19): fattore_forza_avversario, calcolato da questo
+    # ranking e mai usato in score_atteso (data-flow + test A/A
+    # OPPONENT_SENSITIVITY=1e9 -> score_atteso invariato bit-per-bit).
     valid_opp_ranks = [r for r in opponent_rankings if r is not None]
     avg_opp_rank_hist = sum(valid_opp_ranks) / len(valid_opp_ranks) if valid_opp_ranks else None
-
-    fattore_forza_avversario = 1.0
-    if avg_opp_rank_hist and next_opp_rank:
-        # rank piu' basso = squadra piu' forte. Se il prossimo avversario ha un
-        # rank piu' basso (piu' forte) della media storica affrontata, penalizza.
-        delta = (next_opp_rank - avg_opp_rank_hist) / OPPONENT_SENSITIVITY
-        fattore_forza_avversario = max(0.5, min(1.5, 1.0 + delta))
 
     # --- P(gioca) ---
     p_gioca = None
@@ -2141,7 +2143,6 @@ def build_prediction(player_slug):
         'next_opponent_team_slug': next_opponent_team_slug,
         'next_own_rank': next_own_rank,
         'next_is_home': next_is_home,
-        'fattore_forza_avversario': fattore_forza_avversario,
         'opp_lambda_mult': _opp_lambda_mult,
         'fwd_offense_delta': _fwd_offense_delta,
         'fattore_falli': fattore_falli,
@@ -2225,19 +2226,14 @@ def format_output(result):
     lines.append(f"Ranking prossimo avversario: {result['next_opp_rank']}")
     # AVV_FACTOR (03/08, fix output ingannevole): questa riga e' quella che
     # build_consiglio.py porta fino al report come 'AVV_FACTOR', cioe' l'unico
-    # numero sull'avversario che arriva sotto gli occhi. Mostrava
-    # 'fattore_forza_avversario', costruito su domesticLeagueRanking, che pero'
-    # e' documentato come contaminato e RIMOSSO da score_atteso il 26/07: il
-    # report esibiva come 'applicato' un fattore che non veniva applicato, e
-    # nascondeva quello vero. Ora mostra il moltiplicatore davvero in uso
-    # (opponent_lambda_multiplier sui gol subiti reali dall'avversario) e il
-    # delta additivo sul granulare offensivo; il vecchio ranking resta sotto,
-    # etichettato per quello che e'.
+    # numero sull'avversario che arriva sotto gli occhi. Mostra il
+    # moltiplicatore davvero in uso (opponent_lambda_multiplier sui gol
+    # subiti reali dall'avversario) e il delta additivo sul granulare
+    # offensivo. RIMOSSO P1/B19 il vecchio fattore_forza_avversario su
+    # domesticLeagueRanking, mai applicato.
     lines.append(f"Fattore forza avversario applicato: {result['opp_lambda_mult']:.3f} "
                  f"(gol subiti reali dell'avversario, ultime 10; delta granulare "
                  f"offensivo {result['fwd_offense_delta']:+.2f} pt)")
-    lines.append(f"Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): "
-                 f"{result['fattore_forza_avversario']:.3f}")
     lines.append(f"Fattore falli (casa/trasferta, da dati reali): {result['fattore_falli']:.3f}")
     lines.append(f"Fattore duelli (casa/trasferta, da dati reali): {result['fattore_duelli']:.3f}")
     lines.append(f"Fattore efficacia offensiva (casa/trasferta, da dati reali): {result['fattore_offensivo']:.3f}")
