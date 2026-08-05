@@ -440,7 +440,7 @@ PAREGGIO_ARENA = {
     # In punteggio REALE, perche' la previsione arriva gia' calibrata (vedi
     # calibra_riga). Prima erano espresse in previsione grezza -- 274.1 per la
     # cap 260 -- che e' lo stesso pareggio letto sull'altra scala.
-    'ARENA_ALLSTARS_260': 265.0,      # era 264.4
+    'ARENA_ALLSTARS_260': 259.5,      # era 265.0; sigma cap 260 corretta 42.70->50.6 (validazione 05/08, VALIDAZIONE_SOGLIE.md)
     'ARENA_ALLSTARS_220': 244.1,      # era 243.5
     'ARENA_ALLSTARS_UNCAPPED': 288.3,  # era 288.2
     'ARENA_ALLSTARS_ELITE': 342.7,    # invariata
@@ -557,7 +557,7 @@ def _verdetto_arene_html(all_results):
 # dell'incasso nell'intorno del pareggio (+-5 punti), con la stessa SIGMA=42.70.
 GUADAGNO_PER_PUNTO = {
     # Essenze guadagnate per ogni punto REALE sopra il pareggio.
-    'ARENA_ALLSTARS_260': 8.8, 'ARENA_ALLSTARS_220': 6.3,   # erano 7.5 e 7.4
+    'ARENA_ALLSTARS_260': 7.9, 'ARENA_ALLSTARS_220': 6.3,   # cap260 8.8->7.9 (sigma 50.6, 05/08); cap220 era 7.4
     'ARENA_ALLSTARS_UNCAPPED': 8.0, 'ARENA_ALLSTARS_ELITE': 9.1,  # erano 7.3 e 10.0
 }
 GUADAGNO_PER_PUNTO.update({arena_type(lg): 8.8 for lg in ARENA_LEAGUES})
