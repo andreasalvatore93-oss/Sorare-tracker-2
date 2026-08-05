@@ -7,11 +7,19 @@ soglie di produzione (`PAREGGIO_ARENA`, `GUADAGNO_PER_PUNTO`, tarate su
 Script: `analisi_manager/valida_soglie.py` (442 manager) e
 `analisi_manager/valida_soglie_utente.py` (306 arene utente). Pure Python.
 
-## Verdetto in una riga
-**Vanno riviste.** Due tarature model-dipendenti sono sbagliate nello stesso
-verso su DUE popolazioni indipendenti: **σ sottostimata** (42.70 vs reale
-~51 utente / ~62 manager) e **GUADAGNO_PER_PUNTO sovrastimato** (8.8 vs reale
-~5.4 utente / 3.77 manager, cap 260). Il resto conferma scelte già prese.
+## Verdetto in una riga (AGGIORNATO col modello attuale)
+**Una sola correzione solida: la σ della cap 260.** Rigenerato il backtest col
+modello attuale (`backtest_arene_dettaglio_0805.json`, n=323) la σ è **~51 solo
+per cap 260** (arena concentrata), mentre uncapped/cap220 sono ~43 = coerenti
+con il 42.70 di produzione. Correggendo cap 260 a σ=51 via `consiglio_arena.py`:
+**pareggio 265.0 → 259.0** e **guadagno/punto 8.8 → 7.9**. Gli altri tipi
+restano invariati.
+
+RETTIFICA di una mia stima precedente: avevo scritto "GUADAGNO sovrastimato
+8.8 → ~5.4" regredendo l'incasso REALE sull'atteso. È SBAGLIATO: dentro cap 260
+l'atteso non discrimina (corr +0.04) → quel 5.4 è attenuazione/rumore, non il
+guadagno per punto vero. La catena giusta (consiglio_arena con σ corretta) dà
+7.9. Il numero da usare è 7.9.
 
 ---
 
@@ -91,8 +99,8 @@ taglio è netto: sotto atteso ~272 si PERDE (netto −130, podio ~23%), sopra si
 - **arena division −73.2%**: conferma che disattivarla di default (04/08) era
   giusto. **Beginner ess/punto 0.65 ≈ piatto e −38%**: l'atteso lì non si
   converte in essenze, non giocarle.
-- **ess/punto reale ~5.4** contro 8.8 di produzione: il generatore SOVRASTIMA
-  di ~60% il valore in essenze di ogni punto di margine.
+- ess/punto qui ~5.4, ma è ATTENUAZIONE (dentro cap l'atteso non discrimina),
+  non il guadagno vero — vedi rettifica in cima: la catena giusta dà 7.9.
 
 Side: modello vs utente su 291 arene diverse — modello 272.6 vs utente 268.1
 (+4.5 pt medi) ma vince solo il 47%: alza la media, non il piazzamento (arene
@@ -124,21 +132,28 @@ Confermato (non toccare): cap 260 è la miniera; arena division e Beginner
 vanno evitate; l'atteso ordina il realizzato → scouting valido; dentro una cap
 l'atteso non discrimina (valore a livello di tipo-arena/soglia).
 
-Da rivedere (due input model-dipendenti, sbagliati su 2 popolazioni):
-- **σ: 42.70 → ~51** (reale a decisione). Con σ più alta il pareggio vero
-  SCENDE ancora (convessità): il generatore è un filo troppo conservativo.
-- **GUADAGNO_PER_PUNTO: 8.8 → ~5.4** (cap 260). Sovrastima il valore del
-  margine → lo scouting sovravaluta le carte ad alto atteso in assoluto (il
-  ranking €/EssGW è un rapporto, si salva; il "conviene/non conviene" e i
-  confronti fra tipi no).
+Da rivedere: **solo la σ della cap 260** (unica correzione solida).
 
-**Caveat**: i dati utente sono in scala 2 ago → σ e ordinamento validi, i
-valori ASSOLUTI di pareggio/ess-punto sono direzionali. Per fissare i NUMERI
-nuovi di produzione serve rigenerare l'atteso in scala attuale.
+## Ricalibrazione fatta (modello attuale, scala di produzione)
+σ per tipo su `backtest_arene_dettaglio_0805.json` (n=323, modello attuale):
+cap 260 **50.6**, arena division 42.8, Uncapped 42.9, Beginner 46.9,
+cap 220 41.9. Confermato su 2 dataset in più (utente 2 ago: cap 260 54.1;
+manager: cap 260 54.1). → σ=42.70 va bene per tutti TRANNE cap 260 (~51).
 
-## Prossimo passo proposto
-Rigenerare `backtest_arene.py` col modello ATTUALE (verificato: legge le
-costanti dai moduli di produzione, `GK_TEAM_CS_WEIGHT=0.5`, nessuna rete;
-cache 133 gamelog → ~306 arene) su un file NUOVO (non sovrascrivere il 2 ago)
-→ ricalcolare σ e GUADAGNO_PER_PUNTO in scala attuale → proporre
-PAREGGIO/GUADAGNO aggiornati → poi riverificare lo scouting (catena §1bis).
+`consiglio_arena.py` con SIGMA=42.70 ristampa ESATTAMENTE le soglie di
+produzione (cap 260 265.0, cap 220 244.1, uncapped 288.3, elite 342.7,
+guadagno/punto 8.83): catena intatta. Con la σ corretta della cap 260:
+
+    cap 260   sigma 42.70 -> pareggio 265.0  guadagno/punto 8.83  (ATTUALE)
+    cap 260   sigma 51.0  -> pareggio 259.0  guadagno/punto 7.92  (PROPOSTO)
+    cap 260   sigma 55.0  -> pareggio 256.1  guadagno/punto 7.41  (sensibilità)
+
+Effetto pratico: la cap 260 (arena +37.6% ROI) diventa conveniente a partire da
+259 invece di 265 → poche formazioni marginali in più schierate lì invece che
+nelle competizioni gratuite. Modesto ma +EV e ben fondato.
+
+## Decisione aperta + catena §1bis
+Applicare in `build_formazione_globale.py`: PAREGGIO_ARENA['ARENA_ALLSTARS_260']
+265.0→259.0 e GUADAGNO_PER_PUNTO['ARENA_ALLSTARS_260'] 8.8→7.9. Poi, per la
+catena di produzione, riverificare che lo scouting (colonne margine/Ess-GW,
+soglie cap 260) resti coerente. NON applicato: da decidere con l'utente.

@@ -35,7 +35,8 @@ def auc(sc,lb):
     sp=sum(ranks[i] for i in range(len(lb)) if lb[i]==1)
     return (sp-npos*(npos+1)/2)/(npos*nneg)
 
-d=json.load(open('dati_globali/backtest_arene_dettaglio.json',encoding='utf-8'))
+PATH=sys.argv[1] if len(sys.argv)>1 else 'dati_globali/backtest_arene_dettaglio.json'
+d=json.load(open(PATH,encoding='utf-8'))
 rows=[r for r in d if r.get('utente_atteso') is not None and r.get('utente_reale') is not None]
 out=[]
 def p(*a): s=' '.join(str(x) for x in a);out.append(s);print(s)

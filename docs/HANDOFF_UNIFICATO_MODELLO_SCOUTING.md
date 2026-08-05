@@ -348,21 +348,30 @@ covarianza-partita) → `analisi_manager/PATTERN_ARENE.md`. Poi, su richiesta
 utente, VALIDAZIONE DELLE SOGLIE di produzione → `analisi_manager/
 VALIDAZIONE_SOGLIE.md` (include la cronistoria di come sono nate le soglie).
 
-### >>> RISULTATO CHIAVE 05/08 — le soglie vanno riviste
-Validato su 2 popolazioni (306 arene utente `backtest_arene_dettaglio.json` +
-442 manager). Due input model-dipendenti sbagliati nello stesso verso:
-- **σ sottostimata**: produzione 42.70, reale ~51 (utente) / ~62 (manager).
-- **GUADAGNO_PER_PUNTO sovrastimato**: 8.8 vs reale ~5.4 (utente) / 3.77
-  (manager), cap 260.
-Confermato invece: cap 260 = miniera (+37.6%); arena division (−73%) e Beginner
-(−38%, ess/punto 0.65) da evitare (disattivazione 04/08 giusta); l'atteso
-ORDINA il realizzato (quintili 252→283) → scouting valido; ma DENTRO una cap
-l'atteso non discrimina (corr +0.02, restrizione di range) → il valore è a
-livello di TIPO-arena/soglia, non per-formazione.
-Caveat: dati utente in scala 2 ago → σ/ordinamento validi, valori ASSOLUTI
-direzionali. **DECISIONE APERTA**: rigenerare `backtest_arene.py` col modello
-attuale (locale, cache 133 gamelog, ~306 arene) per fissare i NUMERI nuovi di
-σ e GUADAGNO_PER_PUNTO, poi riverificare lo scouting (catena §1bis).
+### >>> RISULTATO CHIAVE 05/08 — una correzione alle soglie (cap 260)
+Validato su 3 dataset (306 arene utente 2 ago + 442 manager + backtest
+rigenerato col modello attuale, n=323). **Unica correzione solida: la σ della
+cap 260** è ~51 (arena concentrata: cap L10 → stessa lega, carte correlate,
+Filone 3), non 42.70. Uncapped/cap220 sono ~43 = ok. `consiglio_arena.py` con
+SIGMA=42.70 ristampa esattamente le soglie attuali (catena intatta); con σ=51:
+**cap 260 pareggio 265→259, guadagno/punto 8.8→7.9**. Effetto: entri in cap 260
+(la miniera, +37.6% ROI) da 259 invece di 265 — modesto, +EV.
+RETTIFICA: avevo detto "GUADAGNO 8.8→5.4"; era attenuazione (dentro cap l'atteso
+non discrimina, corr +0.04), il numero vero via catena è 7.9.
+Confermato: cap 260 miniera; arena division (−73%) e Beginner (−38%) da
+evitare; l'atteso ORDINA il realizzato (scouting valido) ma NON discrimina
+dentro una cap → valore a livello di TIPO-arena/soglia, non per-formazione.
+**DECISIONE APERTA — produzione NON toccata** (utente cauto, giustamente). La
+correzione (cap 260 pareggio 259.0 + guadagno 7.9) è pronta ma prima serve un
+campione più solido:
+1. il backtest ricostruisce solo **113 delle ~194 arene cap 260** in archivio
+   (58%, cache a 133 giocatori) → σ=51 forse sbilanciata verso le leghe cachate;
+2. σ non ancora spaccata PER LEGA dentro cap 260 (se la concentrazione viene da
+   poche leghe, correggere mirato, non globale sul tipo).
+Strada pulita = PASSO 0 archiviato: espandere la cache (run GitHub
+`cache_backtest_arene.yml`) → ~194 arene cap 260 → riconfermare σ + per-lega →
+POI applicare in `build_formazione_globale.py` e percorrere TUTTA la catena
+(§1bis) fino allo scouting incluso. "Se tocchiamo produzione, tocchiamo tutto."
 
 ### Cosa ESPLORARE nelle 435 arene (agganci concreti già trovati)
 - **Cosa serve per vincere** (punteggio formazione, cap. incluso): media 261,
