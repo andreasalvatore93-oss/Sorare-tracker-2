@@ -1008,3 +1008,104 @@ le leghe della piattaforma Sorare, no filtro di pipeline).
 File salvati: analisi_manager/dati/storico_grade_{Goalkeeper,Defender,
 Midfielder,Forward}_20260806.json (JSON compatto, array di
 giocatore×partita).
+
+===============================================================================
+14. SESSIONE 06/08/2026 sera Roma (~21:30 CEST) -- S4-BIS + CORRELAZIONI SU
+    DEF/MID/FWD/GK, campione Haiku 175 giocatori/ruolo (Sonnet, no modifica
+    produzione, no commit di script/JSON di produzione)
+===============================================================================
+Dataset: analisi_manager/dati/storico_grade_{Goalkeeper,Defender,Midfielder,
+Forward}_20260806.json (sez.13, Haiku). NB niente campo minsPlayed in questo
+formato: usato scoreStatus=='DID_NOT_PLAY' come proxy di min=0 (coincide quasi
+esattamente con score_realizzato==0, verificato). Righe REVIEWING (partita in
+corso stasera, score parziale) escluse ovunque. Script:
+analisi_manager/p14_storico_grade_4ruoli.py, output completo in
+analisi_manager/p14_storico_grade_4ruoli_out.json.
+
+--- PUNTO 1: il campione FWD e' distorto? ---
+74 giocatori Forward con almeno una riga utile (non 175: gli altri hanno
+tutte righe DID_NOT_PLAY/REVIEWING o scartate dal dedup). Distribuzione
+partite/giocatore fra questi 74: min 12, mediana 15, max 15, 65/74 arrivano a
+15. NON e' un campione distorto verso giovani/marginali: i 175 CAMPIONATI in
+sez.13 includevano molti profili con storico cortissimo (media ~6.3 partite
+sull'intero pool di 175), ma il sottoinsieme che sopravvive ai filtri usati
+nei test qui sotto (74 giocatori) ha storico normale, in linea con gli altri
+3 ruoli. Nessun trattamento separato necessario.
+
+--- PUNTO 2: S4-BIS per ruolo (A=corr con partita k, B=k-1, C=k+1), filtro
+    "k" (min>0 solo sulla partita k) ---
+  ruolo        var           n_righe n_giocatori   A       B       C      A-C>0/1000  A-B>0/1000
+  Goalkeeper   grade          1393    157          0.091   0.237   0.101   37.8%       0.0%
+  Goalkeeper   starter_odds   1394    157          0.013   0.134  -0.028   88.6%       0.5%
+  Defender     grade          1661    173          0.250   0.257   0.100  100.0%      41.7%
+  Defender     starter_odds   1662    174          0.210   0.210   0.026  100.0%      52.5%
+  Midfielder   grade          1806    175          0.351   0.344   0.213  100.0%      61.9%
+  Midfielder   starter_odds   1809    175          0.271   0.248   0.134  100.0%      81.1%
+  Forward      grade           702     73          0.366   0.316   0.190  100.0%      93.3%
+  Forward      starter_odds    699     73          0.295   0.273   0.113  100.0%      69.7%
+(filtro "all3", piu' severo: stessa forma, numeri completi nel JSON di output.)
+
+LETTURA PUNTO 2: nessun ruolo mostra il pattern di riscrittura (A che stacca
+nettamente B e C). Su GK, B resta la piu' alta come nel S4-bis originale
+(bootstrap A-B>0 solo 0.0%: B batte A quasi sempre). Su DEF/MID/FWD invece A
+e B sono vicine e comparabili (bootstrap A-B>0 42%-93%, ne' A ne' B vince in
+modo netto), ma SEMPRE con C nettamente piu' basso e con la STESSA forma per
+grade e starter_odds sulle stesse righe (es. Midfielder: grade A-B=+0.007,
+odds A-B=+0.023; Forward: grade A-B=+0.050, odds A-B=+0.022) -- coerente con
+la lettura di autocorrelazione di contesto gia' data in sez.12/12-bis, non
+un segno di fuga dal risultato. IPOTESI ORCHESTRATORE SMENTITA su un punto:
+non tutti i ruoli mostrano B>A come il GK -- solo GK lo mostra nettamente,
+DEF/MID/FWD mostrano A~B. Ma il criterio del brief (nessun picco anomalo del
+grade rispetto a starter_odds sulle stesse righe) e' soddisfatto in TUTTI e 4
+i ruoli: nessuno va trattato separatamente per sospetto di riscrittura.
+
+--- PUNTO 3: corr(grade), corr(starter_odds), corr(L10) sulle stesse righe,
+    per tutti e 4 i ruoli (tutti passano il punto 2) ---
+L10 = media (non pesata) delle ultime fino a 10 partite REALMENTE giocate
+precedenti alla riga, dentro lo stesso dataset (non produzione).
+
+  ruolo        n_righe n_giocatori  corr_grade  corr_odds  corr_L10  boot grade>odds  boot grade>L10
+  Goalkeeper    1451    153          0.083       0.014      0.022     99.3%            98.0%
+  Defender      1739    172          0.249       0.220      0.082     95.9%           100.0%
+  Midfielder    1893    175          0.352       0.268      0.200    100.0%           100.0%
+  Forward        730     72          0.353       0.287      0.225     99.2%           100.0%
+
+LETTURA PUNTO 3: il grade batte SIA starter_odds SIA L10 su tutti e 4 i
+ruoli, sempre con bootstrap forte (>95% dei ricampionamenti a favore del
+grade). Il vantaggio su L10 e' il piu' solido e piu' grande in valore
+assoluto ovunque (0.06 pt su GK, fino a 0.15 su DEF); il vantaggio su
+starter_odds e' piu' piccolo (0.03-0.07 pt) ma comunque presente e mai in
+dubbio nel bootstrap. IPOTESI ORCHESTRATORE PARZIALMENTE CONFERMATA: "il
+grade batte L10 di poco" era sbagliato nel verso -- batte L10 di PIU' che le
+starter_odds, non di meno. "Vantaggio piu' piccolo che sul portiere" e' FALSO
+nei numeri assoluti: il vantaggio grade-odds e grade-L10 e' piu' grande su
+DEF/MID/FWD (0.03-0.15) che su GK (0.014-0.06) -- il portiere e' il ruolo
+dove il grade aiuta MENO in punti di correlazione, non di piu'.
+
+--- PUNTO 4: GK sul nuovo campione indipendente (175 portieri Haiku, non i 55
+    di R4/S4-bis) ---
+corr(grade, score) = 0.091 (filtro "k", 1393 righe/157 giocatori, stesso
+filtro dello 0.111 storico) o 0.083 (punto 3, 1451 righe/153 giocatori,
+filtro leggermente diverso perche' richiede anche L10 disponibile -- non sono
+due misure indipendenti, stesso dataset). CONFRONTO CON LO 0.111 (sez.12-bis,
+GK ampio 55 portieri, filtro "k"): il nuovo campione (0.091) e' PIU' BASSO ma
+stesso ordine di grandezza (~20% sotto, non un crollo, non uno zero) --
+conferma DEBOLE, non netta: segno e scala reggono su un campione indipendente
+3 volte piu' grande (157 vs 55 giocatori), ma il numero preciso si sposta.
+ATTENZIONE, chiarimento per l'utente: lo 0.111 di sez.12-bis (corr GRADE
+filtrato) e lo 0.111 di sez.9-V2 (corr SCORE_ATTESO DI PRODUZIONE
+walk-forward) sono DUE quantita' diverse uscite uguali per coincidenza di
+cifre -- l'ipotesi "confermare lo 0.111" nel brief andava letta come il primo
+(il grade), qui confermato solo debolmente (0.091, non 0.111).
+
+--- VERDETTO SEZIONE 14 ---
+Nessun ruolo mostra segno di riscrittura (punto 2 pulito ovunque). Il grade
+batte odds e L10 su tutti e 4 i ruoli (punto 3), con vantaggio MAGGIORE fuori
+dal portiere, non minore come ipotizzato -- il portiere resta il ruolo dove il
+modello e' piu' cieco (compressione di scala), ma non e' li' che il grade
+aggiunge di piu' in punti di correlazione: aggiunge di piu' su DEF/MID/FWD.
+Decisione aperta: se/come integrare il grade in produzione e su quali ruoli
+-- non decisa qui.
+
+File aggiunti: analisi_manager/p14_storico_grade_4ruoli.py,
+analisi_manager/p14_storico_grade_4ruoli_out.json.
