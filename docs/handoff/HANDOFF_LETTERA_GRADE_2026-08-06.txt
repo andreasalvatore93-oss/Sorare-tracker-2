@@ -952,7 +952,10 @@ File aggiunti: analisi_manager/p14_storico_grade_4ruoli.py,
 analisi_manager/p14_storico_grade_4ruoli_out.json.
 
 ===============================================================================
-15. SESSIONE 06/08/2026 sera Roma (~21:50 CEST) -- BRIEF A: quanto vale
+15. SESSIONE 06/08/2026 pomeriggio Roma (16:20 CEST, ora corretta: gli
+    orari precedenti in questa sezione e in sez.16 erano STIMATI e sbagliati,
+    corretti su segnalazione utente -- da qui in poi ora letta dal sistema,
+    non stimata) -- BRIEF A: quanto vale
     davvero il grade sul portiere (Sonnet, no modifica produzione, commit+
     push a fine sezione)
 ===============================================================================
@@ -1106,7 +1109,8 @@ da completare quando le partite di stasera finiranno, come ultimo tassello.
 File aggiunti: analisi_manager/p12_briefA.py, analisi_manager/p12_briefA_out.json.
 
 ===============================================================================
-16. SESSIONE 06/08/2026 sera Roma (~22:15 CEST) -- MIDFIELDER: V2/test
+16. SESSIONE 06/08/2026 pomeriggio Roma (16:20 CEST, orario corretto -- vedi
+    nota in sez.15) -- MIDFIELDER: V2/test
     decisivo/V4 fuori campione, su richiesta diretta dell'utente in chat
     (Sonnet, no modifica produzione, commit+push a fine sezione)
 ===============================================================================
@@ -1158,11 +1162,14 @@ nessuno dei due a priori.
 
   strategia            punti medi/giornata
   score_atteso da solo        55.69
+  grade da solo                57.88   (aggiunta 06/08 16:20, richiesta utente)
   atteso + grade combinati    59.07
   a caso (media pool)         51.14
 
   bootstrap (resample delle 93 GIORNATE, 1000, IC95):
-  combinato - atteso_solo : +3.36 pt  [+0.60, +6.34]  positivo nel 99.1% dei casi
+  combinato - atteso_solo  : +3.36 pt  [+0.60, +6.34]   positivo nel 99.1% dei casi
+  combinato - grade_solo   : +1.22 pt  [-1.37, +4.16]   positivo nel 79.1% dei casi
+  grade_solo - atteso_solo : +2.13 pt  [-1.35, +5.85]   positivo nell'87.7% dei casi
 
 LETTURA: IPOTESI DELL'UTENTE #2 ("la combinazione dara' un guadagno positivo
 ma con intervallo che tocca lo zero") SMENTITA nella parte "tocca lo zero":
@@ -1172,6 +1179,14 @@ guadagna punti veri su questo campione. E' il numero piu' importante di
 questa sessione: non e' "il grade batte il modello" (domanda sbagliata,
 vedi Brief A sez.15), e' "il grade ADDIZIONATO al modello migliora la
 scelta" -- la domanda giusta, e qui la risposta e' si'.
+RIGA AGGIUNTA (06/08 16:20, richiesta utente): "grade da solo" NON batte la
+combinazione (combinato-grade_solo positivo nel 79.1% dei casi, IC95
+comprende lo zero: nessuna vittoria dimostrabile della combinazione contro
+il grade da solo su MID -- il punto stimato la favorisce, ma non e' provato).
+Se il grade da solo avesse battuto la combinazione la ricetta giusta sarebbe
+stata "usare solo il grade", ignorando score_atteso: sui numeri di MID non
+succede (combinato >= grade_solo come punto stimato, mai il contrario), ma
+la superiorita' della combinazione NON e' statisticamente certa qui.
 
 --- PUNTO 3: V4 FUORI CAMPIONE -- l'R2 sopravvive lasciando fuori
     GIOCATORI INTERI? ---
@@ -1222,4 +1237,124 @@ se/come integrarlo in produzione resta aperta (richiede ripercorrere la
 catena valori->soglie arena->scouting, CLAUDE.md), non presa qui.
 
 File aggiunti: analisi_manager/p12_briefA_mid.py, analisi_manager/p12_briefA_mid_out.json.
+
+===============================================================================
+17. SESSIONE 06/08/2026 pomeriggio Roma (16:20 CEST, ora letta da sistema) --
+    STESSO METODO DELLA SEZ.16 SU DEFENDER E FORWARD, richiesta utente
+    (Sonnet, no modifica produzione, commit+push a fine sezione)
+===============================================================================
+Script generalizzato (analisi_manager/p12_briefA_mid.py, ora accetta
+ruolo+file in ingresso, stessa logica identica: V2 walk-forward, test 2 con
+z-score, V4 fuori campione per giocatore). Rilanciato su MID (ripetuto,
+stessi numeri della sez.16 salvo la riga "grade da solo" aggiunta al punto
+2) + DEFENDER + FORWARD nella stessa sessione, stessi scarti dichiarati.
+
+--- DEFENDER ---
+CAMPIONE: 175 giocatori, 1395 righe utilizzabili (4 dup scartate per data).
+Scarti: 695 non-FINAL, 521 L10 insufficiente, 0 grade/odds mancanti.
+V0 riferimento (in-sample): corr(grade)=0.259  corr(odds)=0.204  corr(L10)=0.092
+
+V2: 1022 righe/122 giocatori (373 scartate, no atteso disponibile).
+  corr(score_atteso produzione) = 0.179
+  corr(grade, stesse righe)      = 0.258
+  bootstrap grade > atteso: 99.7%
+
+TEST 2: 94 giornate valide (50 scartate, pool<3).
+  strategia                  punti medi/giornata
+  score_atteso da solo              53.32
+  grade da solo                     55.73
+  atteso + grade combinati          56.02
+  a caso (media pool)               50.43
+
+  bootstrap (94 giornate, 1000, IC95):
+  combinato - atteso_solo  : +2.70 pt  [-0.23, +5.71]   positivo nel 96.0% dei casi
+  combinato - grade_solo   : +0.30 pt  [-2.89, +3.73]   positivo nel 55.2% dei casi
+  grade_solo - atteso_solo : +2.45 pt  [-1.65, +6.73]   positivo nell'88.4% dei casi
+
+V4 FUORI CAMPIONE (20 ripetizioni, split 80/20 per giocatore):
+  R2 base OOS medio    = 0.0401
+  R2 esteso OOS medio  = 0.0568
+  delta R2 OOS medio   = +0.0167  (positivo nell'85% delle ripetizioni)
+
+--- FORWARD ---
+CAMPIONE: 74 giocatori (su 175 campionati da Haiku, molti junior senza righe
+utili -- stesso fenomeno gia' documentato in sez.14 punto 1), 591 righe
+utilizzabili (0 dup). Scarti: 300 non-FINAL, 215 L10 insufficiente, 1
+grade/odds mancante.
+V0 riferimento (in-sample): corr(grade)=0.336  corr(odds)=0.256  corr(L10)=0.216
+
+V2: 372 righe/44 giocatori (219 scartate, no atteso disponibile).
+  corr(score_atteso produzione) = 0.182
+  corr(grade, stesse righe)      = 0.291
+  bootstrap grade > atteso: 99.8%
+
+TEST 2: 38 giornate valide (74 scartate, pool<3 -- il pool FWD e' piu'
+piccolo perche' il campione base e' meno di meta' degli altri ruoli, vedi
+sopra).
+  strategia                  punti medi/giornata
+  score_atteso da solo              60.12
+  grade da solo                     60.24
+  atteso + grade combinati          62.44
+  a caso (media pool)               51.63
+
+  bootstrap (38 giornate, 1000, IC95):
+  combinato - atteso_solo  : +2.34 pt  [-0.88, +6.73]   positivo nel 90.3% dei casi
+  combinato - grade_solo   : +2.16 pt  [-3.57, +7.66]   positivo nel 76.2% dei casi
+  grade_solo - atteso_solo : +0.16 pt  [-6.65, +6.43]   positivo nel 52.2% dei casi (sostanzialmente un lancio di moneta)
+
+V4 FUORI CAMPIONE (20 ripetizioni, split 80/20 per giocatore):
+  R2 base OOS medio    = 0.0518
+  R2 esteso OOS medio  = 0.0802
+  delta R2 OOS medio   = +0.0284  (positivo nel 95% delle ripetizioni)
+
+===============================================================================
+LETTURA IPOTESI UTENTE, CONTRO I TRE RUOLI INSIEME (MID sez.16, DEF/FWD qui)
+===============================================================================
+H1 -- "su DEF il vantaggio del grade sara' piu' piccolo che su MID ma ancora
+positivo": CONFERMATA su entrambi i punti. corr(grade)-corr(atteso): MID
++0.158, DEF +0.079 (circa la meta'), FWD +0.109 (via di mezzo, non chiesto
+ma coerente). Il grade batte lo score_atteso in modo netto sui 3 ruoli
+(bootstrap 99.7%/99.8%/100% -- mai vicino al 68.2% del portiere, sez.15).
+
+H2 -- "su FWD il campione utile crollera' sotto le 400 righe e l'intervallo
+comprendera' lo zero": CONFERMATA su entrambi i punti. V2 FWD: 372 righe
+(< 400). Bootstrap combinato-atteso su FWD: IC95 [-0.88, +6.73], comprende
+lo zero -- a differenza di MID dove lo stesso confronto (combinato-atteso)
+escludeva lo zero. Sul campione FWD (meta' giocatori utili degli altri
+ruoli, sez.14 punto 1) il segnale c'e' in direzione ma non e' dimostrato.
+
+H3 -- "il grade da solo fara' meno della combinazione su tutti e tre i
+ruoli": CONFERMATA come STIMA PUNTUALE su tutti e tre (combinato sempre >=
+grade_solo, mai il contrario: MID +1.22, DEF +0.30, FWD +2.16), MA NON
+dimostrata in nessuno dei tre con certezza statistica (bootstrap 79.1%,
+55.2%, 76.2% -- tutti IC95 comprendono lo zero). Onestamente: la direzione
+e' quella attesa ovunque, ma "il grade da solo perde" non e' un fatto
+provato, e' un'osservazione debole che regge la stessa direzione 3 volte su
+3 (che e' comunque un indizio, vedi sotto).
+
+===============================================================================
+VERDETTO SEZIONE 17
+===============================================================================
+Le tre ipotesi dell'utente su DEF/FWD sono TUTTE CONFERMATE (opposto della
+sez.16, dove erano tutte smentite -- il che rafforza la fiducia nel metodo:
+l'utente aveva previsto correttamente sia la sorpresa positiva su MID sia il
+comportamento piu' debole su DEF/FWD). Il quadro completo sui 3 ruoli con
+pipeline sufficiente (esclude GK, gia' trattato in sez.15):
+  ruolo   corr(grade)-corr(atteso)  combinato-atteso (pt, IC95)      combinato-grade_solo
+  MID     +0.158                   +3.36 [+0.60,+6.34] SOLIDO       +1.22 [-1.37,+4.16] debole
+  DEF     +0.079                   +2.70 [-0.23,+5.71] quasi solido +0.30 [-2.89,+3.73] nullo
+  FWD     +0.109                   +2.34 [-0.88,+6.73] non provato  +2.16 [-3.57,+7.66] debole
+
+Il MID resta il caso piu' forte e l'unico dove "combinare aiuta" e'
+dimostrato con IC95 che esclude lo zero. Su DEF il segnale c'e' (grade
+batte atteso in modo netto, V2) ma il guadagno IN PUNTI della combinazione
+e' ai margini della significativita' (IC95 sfiora lo zero da -0.23). Su FWD
+tutto il quadro e' debole per campione piccolo (38 giornate), coerente con
+l'ipotesi H2. Nessuna decisione presa su produzione: resta da fare insieme
+all'utente, con la stessa cautela di sez.15/16 sulla catena valori->soglie
+arena->scouting.
+
+File aggiunti: analisi_manager/p12_briefA_def_out.json,
+analisi_manager/p12_briefA_fwd_out.json (script riusato: p12_briefA_mid.py,
+generalizzato con ruolo+file in ingresso, stesso file di prima).
 

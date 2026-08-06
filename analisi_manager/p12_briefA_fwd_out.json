@@ -1,0 +1,87 @@
+{
+ "ruolo": "Forward",
+ "campione": {
+  "n_giocatori": 74,
+  "n_righe": 591,
+  "dup_scartate": 0,
+  "scarti": {
+   "non_final": 300,
+   "l10_insufficiente": 215,
+   "grade_odds_mancanti": 1,
+   "score_nullo": 0
+  }
+ },
+ "V0_riferimento": {
+  "corr_grade": 0.336463214917872,
+  "corr_odds": 0.25553399879809935,
+  "corr_l10": 0.21631424553619996
+ },
+ "V2": {
+  "n_righe": 372,
+  "n_giocatori": 44,
+  "n_scartate_atteso_non_disponibile": 219,
+  "corr_atteso_produzione": 0.18154416590012504,
+  "corr_grade_stesse_righe": 0.2911848174208548,
+  "bootstrap_grade_meno_atteso": {
+   "n_boot": 1000,
+   "n_giocatori": 44,
+   "corr_a_pct_positivo": 1.0,
+   "diff_pct_positivo": 0.998,
+   "diff_media": 0.11348883958447273
+  }
+ },
+ "test2_decisivo": {
+  "n_giornate": 38,
+  "n_scartate_pochi": 74,
+  "punti_medi": {
+   "atteso_solo": 60.12263157894736,
+   "combinato": 62.44368421052632,
+   "grade_solo": 60.236315789473686,
+   "media_pool": 51.63189832935608
+  },
+  "boot_combinato_meno_atteso": {
+   "media_diff": 2.344313157894737,
+   "pct_positivo": 0.903,
+   "IC95": [
+    -0.8763157894736722,
+    6.734210526315792
+   ]
+  },
+  "boot_combinato_meno_grade": {
+   "media_diff": 2.1599010526315787,
+   "pct_positivo": 0.762,
+   "IC95": [
+    -3.5652631578947407,
+    7.660000000000004
+   ]
+  },
+  "boot_grade_meno_atteso": {
+   "media_diff": 0.1644284210526315,
+   "pct_positivo": 0.522,
+   "IC95": [
+    -6.654736842105258,
+    6.434210526315788
+   ]
+  },
+  "boot_atteso_meno_pool": {
+   "media_diff": 8.435333685388713,
+   "pct_positivo": 0.997,
+   "IC95": [
+    2.670913292501595,
+    14.439087814232558
+   ]
+  }
+ },
+ "V4_out_of_sample": {
+  "n_ripetizioni_valide": 20,
+  "n_giocatori_totali": 70,
+  "R2_base_medio_oos": 0.05183868865398729,
+  "R2_esteso_medio_oos": 0.08020107069313084,
+  "delta_R2_medio_oos": 0.02836238203914356,
+  "delta_R2_pct_positivo": 0.95,
+  "delta_R2_range": [
+   -0.05924965481538946,
+   0.0783879850928283
+  ]
+ }
+}

@@ -163,11 +163,11 @@ def atteso_produzione(slug, date_iso, ruolo='Midfielder'):
     return atteso
 
 
-def run_v2(rows):
+def run_v2(rows, ruolo='Midfielder'):
     rows_v2 = []
     n_non_disp = 0
     for r in rows:
-        atteso = atteso_produzione(r['slug'], r['date'])
+        atteso = atteso_produzione(r['slug'], r['date'], ruolo=ruolo)
         if atteso is None:
             n_non_disp += 1
             continue
@@ -220,10 +220,12 @@ def run_test2(rows_v2):
         combinato = [a + g for a, g in zip(z_atteso, z_grade)]
         idx_atteso = max(range(len(rr)), key=lambda i: rr[i]['atteso'])
         idx_comb = max(range(len(rr)), key=lambda i: combinato[i])
+        idx_grade = max(range(len(rr)), key=lambda i: rr[i]['grade_num'])
         media_pool = sum(r['score'] for r in rr) / len(rr)
         righe_giornate.append({'day': day, 'n': len(rr),
                                'atteso_solo': rr[idx_atteso]['score'],
                                'combinato': rr[idx_comb]['score'],
+                               'grade_solo': rr[idx_grade]['score'],
                                'media_pool': media_pool})
 
     def boot_giornate(campo_a, campo_b, n_boot=1000):
@@ -246,15 +248,20 @@ def run_test2(rows_v2):
         'punti_medi': {
             'atteso_solo': sum(r['atteso_solo'] for r in righe_giornate) / len(righe_giornate) if righe_giornate else None,
             'combinato': sum(r['combinato'] for r in righe_giornate) / len(righe_giornate) if righe_giornate else None,
+            'grade_solo': sum(r['grade_solo'] for r in righe_giornate) / len(righe_giornate) if righe_giornate else None,
             'media_pool': sum(r['media_pool'] for r in righe_giornate) / len(righe_giornate) if righe_giornate else None,
         },
         'boot_combinato_meno_atteso': boot_giornate('combinato', 'atteso_solo'),
+        'boot_combinato_meno_grade': boot_giornate('combinato', 'grade_solo'),
+        'boot_grade_meno_atteso': boot_giornate('grade_solo', 'atteso_solo'),
         'boot_atteso_meno_pool': boot_giornate('atteso_solo', 'media_pool'),
     }
     print('--- TEST 2 (decisivo) ---')
     print(f'  n_giornate={len(giornate)} scartate(pochi)={scartate_pochi}')
     print('  punti medi:', out['punti_medi'])
     print('  boot combinato-atteso:', out['boot_combinato_meno_atteso'])
+    print('  boot combinato-grade_solo:', out['boot_combinato_meno_grade'])
+    print('  boot grade_solo-atteso:', out['boot_grade_meno_atteso'])
     return out
 
 
@@ -336,34 +343,47 @@ def run_v4_oos(rows, n_rep=20):
     return out
 
 
-def main():
-    players, n_dup = load_mid('analisi_manager/dati/storico_grade_Midfielder_20260806.json')
+def esegui_ruolo(ruolo, path_dati, path_out):
+    players, n_dup = load_mid(path_dati)
     rows, scarti = build_rows(players)
-    print('--- COSTRUZIONE CAMPIONE MID ---')
+    print(f'--- COSTRUZIONE CAMPIONE {ruolo.upper()} ---')
     print(f'  giocatori totali: {len(players)}  righe utilizzabili: {len(rows)}  dup scartate: {n_dup}')
     print(f'  scarti: {scarti}')
 
-    v2, rows_v2 = run_v2(rows)
-    if rows_v2:
-        test2 = run_test2(rows_v2)
-    else:
-        test2 = None
+    v2, rows_v2 = run_v2(rows, ruolo=ruolo)
+    test2 = run_test2(rows_v2) if rows_v2 else None
     v4 = run_v4_oos(rows)
 
-    # V0 in-sample per riferimento (stesso schema del Brief A GK)
     A_grade_all = corr([r['grade_num'] for r in rows], [r['score'] for r in rows])
     A_odds_all = corr([r['starter_odds'] for r in rows], [r['score'] for r in rows])
     A_l10_all = corr([r['l10'] for r in rows], [r['score'] for r in rows])
-    print('--- V0 riferimento (tutto il campione, in-sample) ---')
+    print(f'--- V0 riferimento {ruolo} (tutto il campione, in-sample) ---')
     print(f'  corr(grade)={A_grade_all}  corr(odds)={A_odds_all}  corr(L10)={A_l10_all}')
 
     result = {
+        'ruolo': ruolo,
         'campione': {'n_giocatori': len(players), 'n_righe': len(rows), 'dup_scartate': n_dup, 'scarti': scarti},
         'V0_riferimento': {'corr_grade': A_grade_all, 'corr_odds': A_odds_all, 'corr_l10': A_l10_all},
         'V2': v2, 'test2_decisivo': test2, 'V4_out_of_sample': v4,
     }
-    with open('analisi_manager/p12_briefA_mid_out.json', 'w', encoding='utf-8') as fh:
+    with open(path_out, 'w', encoding='utf-8') as fh:
         json.dump(result, fh, ensure_ascii=False, indent=1)
+    return result
+
+
+def main():
+    ruoli = [
+        ('Midfielder', 'analisi_manager/dati/storico_grade_Midfielder_20260806.json',
+         'analisi_manager/p12_briefA_mid_out.json'),
+        ('Defender', 'analisi_manager/dati/storico_grade_Defender_20260806.json',
+         'analisi_manager/p12_briefA_def_out.json'),
+        ('Forward', 'analisi_manager/dati/storico_grade_Forward_20260806.json',
+         'analisi_manager/p12_briefA_fwd_out.json'),
+    ]
+    for ruolo, path_dati, path_out in ruoli:
+        print('\n' + '=' * 70)
+        esegui_ruolo(ruolo, path_dati, path_out)
+        _ctx_cache.clear()
 
 
 if __name__ == '__main__':
