@@ -376,3 +376,118 @@ angioletto33-26bf317c-4d50-431d-90f7-8b6fc37a9bbc,john942}.json.
 
 NESSUN BACKTEST LANCIATO. Nessuna run GitHub (down). Nessuna modifica a
 CLAUDE.md/soglie di produzione. majinboooh resta da chiarire con l'utente.
+
+
+===============================================================================
+11. FINESTRA ALLARGATA A 15 GW + 4 MANAGER NUOVI (Sonnet, 07/08 sera, in
+locale, GitHub down)
+===============================================================================
+OBIETTIVO: (a) allargare i 4 manager della sez.10 da 5 a 15 GW chiuse; (b)
+estrarre da zero tijmenmaaktpap, snoerre, lafindubal, matangel716, stessa
+finestra. Solo estrazione, NESSUN backtest.
+
+GW USATE (15 chiuse piu' recenti, verificate con query so5Fixtures al
+calendario reale; football-4-7-aug-2026 e' 'started', esclusa):
+  football-31-jul-4-aug-2026, football-28-31-jul-2026, football-24-28-jul-2026,
+  football-21-24-jul-2026, football-15-20-jul-2026, football-10-13-jul-2026,
+  football-5-8-jul-2026, football-1-4-jul-2026, football-24-28-jun-2026,
+  football-18-24-jun-2026, football-11-18-jun-2026, football-5-11-jun-2026,
+  football-2-5-jun-2026, football-30-may-2-jun-2026, football-26-29-may-2026
+
+Comando identico a sez.10, `--giornate` con le 15 GW, SENZA --solo-arene.
+Per i 4 gia' presenti lo script salta da solo le GW gia' fatte (log "gia'
+fatta, salto") e scarica solo le 10 mancanti: nessuna riestrazione a vuoto.
+matangel716 aveva gia' in dati_globali (da sessione precedente, non di
+questo brief) alcune GW fuori dalla finestra corrente (football-27-feb-3-mar,
+football-3-7-apr, football-8-12-may, football-23-26-may, football-15-19-may,
+football-1-5-may-2026, tutte a 0 arene): lasciate intatte, non toccate.
+
+CAP 30 arene/GW: MAI superato. Massimo osservato: 11 arene (lafindubal,
+5-11-jun-2026).
+
+--- CONTROLLI PER MANAGER/GW (righe / senza_carte / arene / pool / slot / retry / falliti) ---
+(0 in tutte le colonne senza_carte/retry/falliti per TUTTI i manager e TUTTE
+le GW: fix D1 tiene, nessun contender pendente, nessun fallito definitivo.
+Sotto solo le righe con dati (arene>0 o pool>0); le GW a 0 partecipazioni
+sono omesse per brevita', sono zero legittimo non mancante.)
+
+matteoogg (TOT 8 arene/15 GW):
+  31jul-4aug   righe=7  arene=3  pool=41  slot=15  pool>slot=SI
+  24-28jul     righe=4  arene=1  pool=26  slot=5   pool>slot=SI
+  15-20jul     righe=2  arene=2  pool=10  slot=10  pool>slot=NO  <- 0 scorte
+  10-13jul     righe=1  arene=1  pool=5   slot=5   pool>slot=NO  <- 0 scorte
+  30may-2jun   righe=1  arene=1  pool=5   slot=5   pool>slot=NO  <- 0 scorte
+  (28-31jul, 21-24jul: righe con pool ma 0 arene, legittimo)
+
+chuchochavez (TOT 1 arena/15 GW):
+  31jul-4aug   righe=5  arene=1  pool=31  slot=5   pool>slot=SI
+  Solo 1 GW con arene su 15: campione minimo per la suite p13 su questo mazzo.
+
+angioletto33-...-9bbc (TOT 9 arene/15 GW):
+  31jul-4aug   righe=16 arene=1  pool=98  slot=5   pool>slot=SI
+  24-28jul     righe=20 arene=5  pool=118 slot=25  pool>slot=SI
+  21-24jul     righe=16 arene=1  pool=98  slot=5   pool>slot=SI
+  15-20jul     righe=12 arene=1  pool=80  slot=5   pool>slot=SI
+  5-11jun      righe=7  arene=1  pool=47  slot=5   pool>slot=SI
+
+john942 (TOT 6 arene/15 GW):
+  31jul-4aug   righe=18 arene=1  pool=104 slot=5   pool>slot=SI
+  24-28jul     righe=21 arene=2  pool=123 slot=10  pool>slot=SI
+  15-20jul     righe=16 arene=2  pool=88  slot=10  pool>slot=SI
+  5-11jun      righe=5  arene=1  pool=33  slot=5   pool>slot=SI
+
+tijmenmaaktpap NUOVO (TOT 24 arene/15 GW):
+  31jul-4aug   righe=15 arene=5  pool=79  slot=25  pool>slot=SI
+  28-31jul     righe=5  arene=5  pool=25  slot=25  pool>slot=NO  <- 0 scorte
+  24-28jul     righe=11 arene=5  pool=55  slot=25  pool>slot=SI
+  21-24jul     righe=15 arene=9  pool=75  slot=45  pool>slot=SI
+  Manager molto attivo in arena, unica GW con pool==slot segnalata.
+
+snoerre NUOVO (TOT 3 arene/15 GW):
+  31jul-4aug   righe=5  arene=1  pool=33  slot=5   pool>slot=SI
+  24-28jul     righe=5  arene=1  pool=33  slot=5   pool>slot=SI
+  21-24jul     righe=1  arene=1  pool=5   slot=5   pool>slot=NO  <- 0 scorte
+  Campione minimo (3 arene totali).
+
+lafindubal NUOVO (TOT 43 arene/15 GW, il piu' attivo di tutti gli 8):
+  31jul-4aug   righe=27 arene=9  pool=143 slot=45  pool>slot=SI
+  24-28jul     righe=18 arene=4  pool=106 slot=20  pool>slot=SI
+  21-24jul     righe=19 arene=7  pool=106 slot=35  pool>slot=SI
+  15-20jul     righe=15 arene=1  pool=86  slot=5   pool>slot=SI
+  1-4jul       righe=7  arene=3  pool=43  slot=15  pool>slot=SI
+  24-28jun     righe=8  arene=6  pool=43  slot=30  pool>slot=SI
+  5-11jun      righe=16 arene=11 pool=87  slot=55  pool>slot=SI
+  2-5jun       righe=5  arene=2  pool=31  slot=10  pool>slot=SI
+  Durante l'estrazione: 3 rate-limit (90s+90s+22s) su football-5-8-jul-2026,
+  gestiti in automatico dal retry della funzione graphql(), nessun dato perso
+  (0 senza_carte/retry residui a fine run).
+
+matangel716 NUOVO (TOT 0 arene/15 GW):
+  Nessuna arena in tutta la finestra (18-24jun, 11-18jun, 5-11jun, 2-5jun,
+  26-29may hanno righe/pool ma 0 arene: partecipa a competizioni non-arena).
+  Non utilizzabile per la suite p13 in questa finestra.
+
+--- TOTALE ARENE ESTRATTE, 8 MANAGER, 15 GW: 94 ---
+  matteoogg 8, chuchochavez 1, angioletto33 9, john942 6, tijmenmaaktpap 24,
+  snoerre 3, lafindubal 43, matangel716 0.
+
+CASI POOL==SLOT (0 carte di scorta, segnalati non nascosti, D1-D7 style):
+  matteoogg: 15-20jul, 10-13jul, 30may-2jun (tutte a 1-2 arene, pool minimo)
+  tijmenmaaktpap: 28-31jul (5 arene, pool 25==slot 25)
+  snoerre: 21-24jul (1 arena)
+Su queste singole GW il Test1/selezione sarebbe nullo per costruzione (nessuna
+scorta): le altre GW dello stesso manager restano utilizzabili normalmente.
+
+CACHE GAME-LOG: non verificata in questo brief (solo estrazione manager
+grezzi, non backtest/predizione, nessuna lettura della cache condivisa
+richiesta da questo passaggio). Da fare quando si lancera' la suite p13 su
+questi manager, come da addendum ricevuto.
+
+COMMIT: tutti i controlli passano puliti (0 senza_carte, 0 retry, 0 falliti,
+nessun manager sopra cap 30 in nessuna GW). Committati
+dati_globali/manager_{matteoogg,chuchochavez,
+angioletto33-26bf317c-4d50-431d-90f7-8b6fc37a9bbc,john942,tijmenmaaktpap,
+snoerre,lafindubal,matangel716}.json.
+
+NESSUN BACKTEST LANCIATO. Nessuna run GitHub (down). Nessuna modifica a
+CLAUDE.md/soglie di produzione.
