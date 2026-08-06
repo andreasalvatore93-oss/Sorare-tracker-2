@@ -160,13 +160,22 @@ def prepara_gw_base(giornate, gw_target):
     base_pool = []
     n_scartate_atteso = 0
     n_scartate_reale = 0
+    n_reale_fallback_raw = 0
     for (slug, ruolo_full), info in carte_per_slug.items():
         cod = RUOLO_COD.get(ruolo_full)
         if cod is None:
             continue
-        reale = reale_target.get((slug, ruolo_full))
+        # Fix D6/G6 (07/08, stesso pattern gia' applicato a
+        # p11_bloccato_tutti_mazzi.py, commit 144708a1a6): 'reale' va letto
+        # SEMPRE dalla cache game-log grezza per prima cosa. c['punteggio']
+        # (reale_target, riga 88 di costruisci_pool_gw) ha xp+capitano dentro
+        # per le righe NON-arena (regola D4): usarlo come fonte primaria
+        # gonfia il punteggio. Resta solo come ripiego, contato.
+        reale = reale_da_cache(slug, gw_data)
         if reale is None:
-            reale = reale_da_cache(slug, gw_data)
+            reale = reale_target.get((slug, ruolo_full))
+            if reale is not None:
+                n_reale_fallback_raw += 1
         if reale is None:
             n_scartate_reale += 1
             continue
@@ -182,7 +191,7 @@ def prepara_gw_base(giornate, gw_target):
         base_pool.append({'slug': slug, 'ruolo_full': ruolo_full, 'codice': cod,
                           'base': base, 'ctx': ctx, 'reale': reale, 'lega': lega,
                           'copie': len(info['ids']), 'l10': l10_reale})
-    return base_pool, n_scartate_atteso, n_scartate_reale
+    return base_pool, n_scartate_atteso, n_scartate_reale, n_reale_fallback_raw
 
 
 def applica_policy(base_pool, policy, centra=False):
@@ -289,7 +298,7 @@ def gioca(pool, tipo_bfg_list):
 def esegui(manager_file, manager_label):
     manager, giornate = carica_manager(manager_file)
     righe_out = []
-    scartate_atteso_tot = scartate_reale_tot = 0
+    scartate_atteso_tot = scartate_reale_tot = fallback_raw_tot = 0
     pool_sizes = []
     for gw_target, info in sorted(giornate.items(), key=lambda kv: kv[1]['data']):
         slots_righe = [r for r in info['righe'] if r.get('tipo_arena') in TIPI_VALIDI]
@@ -305,8 +314,8 @@ def esegui(manager_file, manager_label):
         if not tipo_bfg_list:
             continue
 
-        base_pool, sa, sr = prepara_gw_base(giornate, gw_target)
-        scartate_atteso_tot += sa; scartate_reale_tot += sr
+        base_pool, sa, sr, fr = prepara_gw_base(giornate, gw_target)
+        scartate_atteso_tot += sa; scartate_reale_tot += sr; fallback_raw_tot += fr
         pool_sizes.append(len(base_pool))
         if len(base_pool) < 5:
             continue
@@ -347,7 +356,7 @@ def esegui(manager_file, manager_label):
                                'E_punti': pe, 'E_comp': dict(comp_e),
                                'overlap_AB': len(sa_ & sb_), 'overlap_AC': len(sa_ & sc_),
                                'overlap_AD': len(sa_ & sd_), 'overlap_AE': len(sa_ & se_)})
-    return righe_out, scartate_atteso_tot, scartate_reale_tot, pool_sizes
+    return righe_out, scartate_atteso_tot, scartate_reale_tot, fallback_raw_tot, pool_sizes
 
 
 def media(v):
@@ -428,11 +437,12 @@ def main():
     p('P11 AMPLIATO -- manager forever-young, ricostruzione mazzo +/-30gg')
     p('SOLO punti/composizione/sovrapposizione: NIENTE rank/premio (vedi limiti)')
 
-    righe, sc_att, sc_re, pool_sizes = esegui('manager_forever-young.json', 'forever-young')
+    righe, sc_att, sc_re, fr_raw, pool_sizes = esegui('manager_forever-young.json', 'forever-young')
     p('\ngiornate con almeno 1 arena valida: %d' % len(set(r['gw'] for r in righe)))
     p('dimensione pool ricostruito per GW: media=%.1f  min=%d  max=%d  (su %d GW con >=5 carte)'
       % (media(pool_sizes), min(pool_sizes) if pool_sizes else 0, max(pool_sizes) if pool_sizes else 0, len(pool_sizes)))
     p('carte scartate per atteso non calcolabile: %d, per reale non trovato: %d' % (sc_att, sc_re))
+    p('carte con reale letto dal RAW manager (fallback, cache assente): %d  <- fix D6/D4 07/08' % fr_raw)
     p('arene totali valutate: %d' % len(righe))
 
     report(righe, 'TOTALE (tutte le arene limited: Beginner+220+260+uncapped)')
