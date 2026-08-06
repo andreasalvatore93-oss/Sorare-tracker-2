@@ -2466,3 +2466,155 @@ pool 23-bis invece del vincolo errato di sez.23),
 analisi_manager/p12_backtest_manager_grade_bis_out.json,
 analisi_manager/p12_backtest_manager_variants.py,
 analisi_manager/p12_backtest_manager_variants_out.json.
+
+===============================================================================
+24. SESSIONE 06/08/2026 notte Roma (~01:00 CEST) -- MANAGER REALE VS MODELLO
+    (A/G), stesse arene/carte disponibili di quella GW, scelta libera di
+    abbinamento e di quante arene schierare (Sonnet esecutore, no modifica
+    produzione, commit locale non ancora pushato)
+===============================================================================
+Disegno nuovo (sostituisce il pool walk-backward di sez.23/23-bis): pool
+costruito SOLO dalle carte che il manager ha gia' schierato QUELLA STESSA
+GW (in qualunque sua arena), zero storia pregressa, zero look-ahead --
+tutte le carte del pool sono un fatto osservato quella settimana. Il
+modello e' libero di riassegnare le carte fra le arene reali di quella
+GW (non vincolato a riprodurre gli abbinamenti reali) e di decidere quante
+arene schierare, con le soglie di produzione PAREGGIO_ARENA.
+
+--- VERIFICA BONUS (richiesta esplicita, PRIMA di ogni numero) ---
+Campione: fins49, GW football-31-jul-4-aug-2026, formazione Cap 260 (5
+carte). Confronto punteggio in dati_globali/manager_fins49.json contro lo
+score RAW nella cache game-log locale, stessa partita/stessa data:
+  viljami-sinisalo  (non cap.) punteggio=72.5   cache=72.5   uguali
+  alistair-johnston (non cap.) punteggio=71.28  cache=71.28  uguali
+  blair-spittal     (non cap.) punteggio=60.1   cache=60.1   uguali
+  tuur-rommens      (non cap.) punteggio=51.68  cache=51.68  uguali
+  kevin-nisbet      (CAPITANO) punteggio=91.08  cache=75.9   75.9*1.2=91.08 ESATTO
+VERDETTO: 'punteggio' = score RAW del giocatore, x1.2 se e solo se
+capitano. Nessun bonus_carta/xp/in-season nel numero -- confermato quanto
+dichiarato dall'utente. Per questo, i candidati del pool usano il
+punteggio GIA' REGISTRATO (raw = punteggio/1.2 se capitano, altrimenti
+punteggio) invece del window-matching sul game-log usato in sez.23: piu'
+preciso, zero ambiguita' di data.
+
+--- SCOPE ARENE (deciso con l'utente PRIMA di scrivere lo script) ---
+Cap 260/Cap 220/Uncapped: shape/pool_league/L10-cap/soglia di produzione
+(generatore_formazioni/build_formazione_globale.py), invariati.
+Beginner: IDENTICA a Cap 260 tranne i premi (confermato dall'utente) --
+stessa shape, stessa soglia PAREGGIO_ARENA (259.5). Nessun premio/essenza
+usato in nessun punto di questa sezione: il metro e' solo il punteggio.
+Elite ESCLUSA dal choice-set del modello (utente: "troppo rare") -- le sue
+carte/punti restano nel totale 'reale' e nel pool disponibile, il modello
+semplicemente non puo' scegliere di giocarla (in questo campione, 0 arene
+Elite comunque presenti sul gruppo A).
+
+--- BUG TROVATO E CORRETTO PRIMA di riportare i numeri: il grade non
+    incideva MAI (A e G uscivano identici al centesimo) ---
+Primo giro: A e G identici su OGNI metrica (stesso totale, stesse
+schierate, stesso overlap). Causa: la chiave di lookup del grade era
+(slug, ultimo_giorno_della_GW) -- troppo stretta, il grade e' legato alla
+data VERA della partita di quella carta, che puo' cadere in un giorno
+qualunque della finestra (3-8 giorni), quasi mai l'ultimo. Verifica
+diretta: su 355 carte del pool gruppo A, 339 (95.5%) avevano grade noto
+per QUALCHE data nell'indice, ma solo 15 (4.2%) sulla data esatta usata
+come chiave. Corretto: la ricerca del grade ora scandisce l'INTERA
+finestra della GW (funzione trova_grade_finestra), non solo l'ultimo
+giorno. Dopo il fix, A e G divergono (vedi sotto). Segnalato perche' e'
+l'errore silenzioso piu' pericoloso possibile in questo filone: senza il
+controllo di sanita' "A==G su tutto?" il risultato sarebbe sembrato "grade
+inerte" quando in realta' non veniva mai letto.
+
+--- CAMPIONE (gruppo A, 5 manager: braddersfc, eoghankelly, lairdinho,
+    ninoshooter, shirimimi) ---
+coppie (manager,GW) valide: 22 (su 8 GW x 5 manager = 40 combinazioni
+possibili, le altre non hanno arene Cap/Uncapped/Beginner quella GW o
+hanno pool<5 carte)
+dimensione pool per coppia: min=5, mediana=10, max=55 (P50 = P-tutte in
+questo dataset: nessuno dei 10 manager ha mai giocato All Star/Hot
+Streak/In Season/U23 in tutta la storia nota -- verificato su tutte le
+combinazioni competizione/tipo_arena presenti, solo 5: Cap260/Cap220/
+Elite/Uncapped/Beginner. LETTURA OBBLIGATA rispettata: non essendoci
+differenza fra i due pool su questo dataset, un eventuale vantaggio non
+puo' essere "da pool piu' largo" -- la distinzione P50/P-tutte qui e'
+strutturalmente vuota, dichiarato.
+
+--- PUNTO 1: PUNTI TOTALI (22 coppie) ---
+  reale (tutte le arene incl. Elite): 17997.5
+  reale (solo tipi nel choice-set del modello, Cap/Uncapped/Beginner): 17997.5 (Elite=0 in questo gruppo)
+  A (produzione): 9561.2
+  G (produzione+grade): 9778.6
+Il reale e' quasi il doppio di A/G perche' il manager gioca TUTTE le sue
+arene reali (67/67), mentre A/G ne giocano molte di meno (vedi punto 3) --
+non e' un confronto ad armi pari sul totale grezzo, e' il motivo per cui
+il punto 3 (grezzo E media/arena) e' il numero onesto, non il totale.
+
+--- PUNTO 2: PER TIPO ARENA ---
+  tipo       reale(n)          A(schierate)        G(schierate)
+  Cap 260    10056.4(19)       5904.3(22)          6243.8(23)
+  Cap 220     5781.8(6)        2601.7(10)          2823.6(11)
+  Uncapped     952.1(3)         389.3(1)            389.3(1)
+  Beginner    1207.3(3)         666.0(2)            322.0(1)
+  Elite          0.0(0)        N/A (fuori choice-set)  N/A
+(n reale = arene reali di quel tipo su tutte le 22 coppie; schierate = arene
+che A/G hanno deciso di giocare, puo' superare n perche' A/G possono
+schierare PIU' arene di quel tipo di quante il manager ne abbia davvero
+giocate, se il pool/soglia lo permette -- il modello non e' vincolato al
+numero reale di arene per tipo, solo al POOL di carte disponibile)
+
+--- PUNTO 3: QUANTE ARENE SCHIERA (su 67 slot reali nel choice-set) ---
+  A: 35/67  totale grezzo=9561.2  media/arena schierata=273.18
+  G: 36/67  totale grezzo=9778.6  media/arena schierata=271.63
+  reale: 67/67  totale grezzo=17997.5  media/arena=268.62
+LETTURA: A e G schierano circa META' delle arene che il manager gioca
+davvero (le soglie PAREGGIO_ARENA di produzione sono piu' selettive del
+comportamento reale dei manager, che spesso entrano anche sotto soglia).
+La media per arena schierata di A/G (271-273) e' leggermente SOPRA quella
+del manager reale (268.6) -- un piccolo vantaggio di selezione, ma su meta'
+del volume.
+
+--- PUNTO 4: CAMBIO CARTE E COMPOSIZIONE PER RUOLO ---
+formazioni che cambiano >=1 carta rispetto al reale (su 67 slot):
+  A: 63/67 (94.0%)   G: 63/67 (94.0%)
+(alto per costruzione: A/G sono liberi di riassegnare le carte fra le
+arene, quindi anche quando SELEZIONANO esattamente le stesse 5 carte del
+manager reale, l'abbinamento carta-arena puo' differire e contare come
+"cambiata" se anche solo l'arena e' diversa da quella reale)
+
+composizione per ruolo (su tutte le formazioni schierate, extra_roles
+Sorare inclusi, quindi piu' di 5 carte/formazione):
+  reale (67 formazioni): GK 67, DEF 102, MID 93, FWD 73
+  A (35 formazioni):     GK 35, DEF 50, MID 48, FWD 42
+  G (36 formazioni):     GK 35+1, DEF 49, MID 50, FWD 45
+Normalizzato per formazione (rapporto sul GK=1.0): A = DEF 1.43, MID 1.37,
+FWD 1.20; G = DEF 1.36, MID 1.39, FWD 1.25. G sposta leggermente la
+composizione verso MID e FWD e via da DEF rispetto ad A -- COERENTE con
+dove il grade e' storicamente piu' forte nel filone (MID il caso piu'
+forte, sez.16), ma il movimento e' piccolo (poche unita' su un totale di
+~35 formazioni) e non testato per significativita' qui (serve per
+diagnosi, non per decisione).
+
+--- DELTA PRINCIPALE, bootstrap sulle 22 coppie (manager,GW) ---
+delta G-A medio per coppia: +9.883 pt
+bootstrap (4000 resample): IC95 [-31.351, +54.184], positivo nel 68.6% dei
+ricampionamenti
+
+===============================================================================
+VERDETTO SEZIONE 24 -- POSITIVO COME STIMA PUNTUALE, NON SOLIDO: CASO
+AMBIGUO RISPETTO ALLA REGOLA A/B, DECISIONE DELL'UTENTE PRIMA DI TOCCARE B
+===============================================================================
+Il punto centrale e' positivo (+9.88 pt/coppia, G batte A sia sul totale
+sia sulla media/arena su Cap 260 e Cap 220, i due tipi con piu' massa) ma
+l'IC95 attraversa ampiamente lo zero e il bootstrap e' positivo solo nel
+68.6% dei ricampionamenti -- lontano dal 95%+ usato altrove nel filone per
+dire "solido" (es. MID sez.16: 99.1%). Non e' il caso "A nullo" di sez.23-
+bis (li' il punto centrale era negativo), ma non e' nemmeno il caso "A
+solido" per cui l'addendum precedente prevedeva di aprire subito il
+gruppo B. E' un terzo caso non previsto esplicitamente dal metodo
+concordato: FERMO QUI, non apro il gruppo B ne' cerco varianti, perche'
+nessuna delle due regole dichiarate si applica in modo pulito. Decisione
+sul come classificare questo risultato (abbastanza positivo da verificare
+su B? troppo debole, serve prima una variante come in sez.23-bis?) lasciata
+all'utente.
+
+File aggiunti: analisi_manager/p12_backtest_manager_full.py,
+analisi_manager/p12_backtest_manager_full_out.json.
