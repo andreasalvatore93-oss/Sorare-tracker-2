@@ -362,14 +362,45 @@ riprende il filone backtest.
      nel numero** (std previsto ~4 contro std reale ~19). Il numero medio
      appiattisce un ordinamento che invece funziona.
   3. Screening segnali (`screening_segnali.json`, 73k partite, sessione
-     mattina 04/08): il residuo (reale−atteso) è predicibile a R²=0.008. Unico
-     segnale forte = starter_odds (corr 0.163) ma è già usato come filtro a
-     monte. Casa +1.9pt, rank avversario, favorito: tutti già dentro o nulli.
+     mattina 04/08): il residuo (reale−atteso) è predicibile a R²=0.008.
+     **ATTENZIONE — il "segnale forte starter_odds (corr 0.163)" è LEAKAGE,
+     non segnale** (accertato 06/08, vedi voce dedicata sotto): il campo in
+     cache viene riscritto dopo le formazioni ufficiali. Non usarlo come
+     riferimento di "quanto è forte un segnale". Casa +1.9pt, rank avversario,
+     favorito: tutti già dentro o nulli.
      **Non c'è segnale-media libero da aggiungere con le feature disponibili.**
+- **`starter_odds` come variabile continua in `score_atteso`: CHIUSO (06/08),
+  per due ragioni indipendenti.**
+  1. *Non è una variabile nuova*: `p_gioca` era esattamente
+     `starterOddsBasisPoints/10000`, rimossa il 28/07 (commit `2c34af62f7`)
+     per **decisione di significato** dell'utente, non per una misura —
+     `score_atteso` deve dire "quanto rende SE gioca", il rischio presenza si
+     gestisce col filtro secco (`MIN_STARTER_ODDS`). Vedi
+     `RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md` §31.B/31.F ("NON riproporre").
+  2. *Il dato storico è contaminato*: **64.6% dei valori in cache (42.318 oss.)
+     sono 0% o 100% esatti**, perché il campo viene riscritto dopo l'annuncio
+     delle formazioni. Su 230 coppie con quote raccolte prima della deadline,
+     solo il 6.1% coincide col valore poi salvato in cache, e il 77.8% dei
+     valori post è più alto. In PRODUZIONE non c'è problema (si legge prima
+     della deadline); nel BACKTEST è quasi la conferma di chi ha giocato.
+     Qualunque griglia su questo campo misurerebbe leakage.
+  Se un giorno lo si volesse davvero misurare, l'unica via è **registrare le
+  starter odds pre-deadline in avanti**, GW per GW, come per la lettera A→F.
   4. Calibrazione OLS reale=a+b·atteso: b<1 per DEF/MID/GK (0.72/0.71/0.58),
      b=1.15 solo FWD. Cioè per 3 ruoli su 4 il punto è già leggermente
      SOVRA-disperso: **espandere i numeri per "differenziare" li allontana dal
      realizzato, peggiora. NON farlo.**
+     **ATTENZIONE (06/08): questi 4 coefficienti NON sono riproducibili dal
+     repo.** Verificato: `screening_segnali.py`/`.json` non li ha mai
+     calcolati in nessuna versione della sua storia git, e non contengono
+     nessun campo OLS reale=a+b·atteso per ruolo. L'unica occorrenza nel repo
+     è una citazione "dal brief" in `REPORT_PASSAGGIO_1_2026-08-05.txt:171`,
+     testo esterno mai riprodotto da uno script. Resta aperta anche la Q4 di
+     quella sessione: misurati sul grezzo o sul calibrato? Finché non si sa
+     da dove vengono, **non usarli come conferma indipendente di nulla** (già
+     costato un falso collegamento col refit FWD del 06/08). La conclusione
+     operativa della voce (non espandere i numeri) resta valida perché
+     poggia anche sui punti 1-3 e 5, non solo su questi coefficienti.
   5. Range/dispersione per-giocatore NON calibrato (walk-forward 87k): pred_std
      va da 7 a 22, ma |errore| reale resta 15-17 piatto e boom% non si muove
      (GK addirittura invertito). **Il range mostrato nel report è decorativo,
@@ -396,10 +427,31 @@ riprende il filone backtest.
   (sempre il lift). **In formazione il guadagno NON e' dimostrato** su 880
   arene e due mazzi indipendenti: i ruoli competono per lo slot libero e
   l'effetto sparisce nel rumore (σ≈50 pt/arena; servirebbero ~2.500 arene).
-  NON adottato, nulla committato sul modello. Prossima strada consigliata:
-  misurarlo sullo **scouting**, dove si confrontano carte dentro lo stesso
-  ruolo e non c'e' competizione fra ruoli. Dettaglio integrale, tabelle,
-  falsi allarmi e decisione aperta:
+  **CHIUSO il 06/08 per la FORMAZIONE: effetto ESCLUSO, non "non dimostrato".**
+  Su ~37 mazzi indipendenti e ~7.000 arene il delta pesato ha IC95 di
+  ampiezza ~1.3 pt con limite superiore mai oltre **+0.8**, che ESCLUDE sia
+  il +2.98 di forever-young sia il +3.33 delle arene sintetiche (entrambi
+  risultati isolati e non replicati). Esclusi anche i due bias sospettati
+  (cecita' al rischio panchina, capitano che cambia). Il massimo guadagno
+  compatibile coi dati (<4 essenze/arena) non giustifica di toccare la
+  produzione. **Non riproporre l'adozione in formazione senza dati nuovi di
+  natura diversa.** Restano veri e non smentiti i numeri per-ruolo sul DEF.
+  Bocciate nella stessa sessione anche: **`p_draw`** (quota di pareggio,
+  testata con variabile centrata e griglia riscalata sulla sua SD, come da
+  correzione di scala: **2 PASS su 64 varianti, entrambi FWD e non
+  indipendenti** — additiva k=−21.17 e moltiplicativa k=−0.353 sono lo stesso
+  punto in due forme, fragili fuori da lì. Con 64 test al 95% il caso ne
+  produce ~3: 2 e' SOTTO l'atteso da rumore puro. DEF/GK/MID bocciati, segno
+  spesso opposto all'atteso. Il segno negativo su FWD e' l'unica cosa
+  coerente con l'ipotesi — partita bloccata penalizza l'attaccante — ma
+  dcorr +0.005 e' 12x piu' piccolo del +0.060 di `favorito_odds` sul DEF,
+  che gia' non arrivava a spostare un punto in formazione), il capitano
+  scelto con la p_win di mercato (che chiude
+  definitivamente l'ultima ipotesi capitano rimasta aperta), e tre ipotesi
+  strutturali su dimensione/dispersione/concentrazione del pool.
+  Unica strada mai misurata: lo **scouting**, dove si confrontano carte
+  dentro lo stesso ruolo e non c'e' competizione fra ruoli. Dettaglio
+  integrale, tabelle e falsi allarmi:
   `docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt`.
 - **Lettera "Potenziale della GW" (grade A→F)**: individuata
   (`So5Score.projection.grade` + `reliabilityBasisPoints`, solo nel contesto
