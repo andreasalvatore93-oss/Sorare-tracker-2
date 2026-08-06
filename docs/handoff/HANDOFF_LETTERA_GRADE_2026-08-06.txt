@@ -392,3 +392,61 @@ analisi_manager/p12_verifica_leakage_grade.py,
 analisi_manager/dati/grade_snapshot_football-4-7-aug-2026_20260806_1124.json,
 analisi_manager/dati/grade_snapshot_ALL_LIMITED_football-4-7-aug-2026_20260806_1127.json.
 Commit 857da2a23e pushato su main.
+
+===============================================================================
+9. SESSIONE 06/08/2026 pomeriggio Roma (~13:50) -- SONDA S1/S2 PRE-TEST
+   (Sonnet, no modifica produzione, no commit ancora)
+===============================================================================
+Ipotesi dichiarate PRIMA dei numeri (Opus): grade solo su passato recente
+(settimane), corr(grade,realizzato) bassa ~+0.2/+0.3, S3 stasera dara'
+identico. Campione: 12 giocatori (3 per ruolo) dai 32 di p12_step3_righe.json.
+File: analisi_manager/p12_sonda_storico_grade.json.
+
+--- S1: PROFONDITA' E COPERTURA -- IPOTESI SMENTITA SU ENTRAMBI I PUNTI ---
+Con playerGameScores(last: 50) si ottengono SEMPRE ESATTAMENTE 15 partite
+per tutti e 12 i giocatori (cap server-side a 15, non il tetto vero della
+carriera -- va verificato con last: 15/16/20 se e' proprio 15 o coincidenza
+di finestra temporale, non ancora fatto). Range date: da inizio
+febbraio/marzo 2026 a fine luglio/inizio agosto 2026, quindi ~5 MESI di
+storico, non "poche settimane" come ipotizzato. grade_null = 0/15 su TUTTI
+e 12 -- copertura 100%, nessun buco. Lo storico e' piu' profondo e piu'
+pieno di quanto atteso: se genuino (S3), il dataset e' MOLTO piu' grande
+del previsto (potenzialmente ~15 partite x centinaia di giocatori, non
+20-200 righe).
+
+--- S2: CORRELAZIONE grade vs SCORE REALIZZATO -- SEGNALE D'ALLARME ---
+n=45 per ruolo (15 partite x 3 giocatori), n=180 totale:
+  ruolo        n    corr(grade, score realizzato)
+  Goalkeeper   45   +0.285
+  Defender     45   +0.638
+  Midfielder   45   +0.490
+  Forward      45   +0.648
+  TOTALE      180   +0.560
+
+Solo il GK e' nella fascia "onesta" attesa (+0.2/+0.3, coerente anche con
+STEP3 di stamattina che aveva trovato il GK il ruolo piu' rumoroso). DEF e
+FWD sono VICINI alla soglia di sospetto (+0.7) indicata nel brief come
+sintomo di riscrittura post-risultato, MID a meta' strada. Questo NON prova
+il leakage (il brief lo dice chiaro: e' un test dell'odore, non la prova),
+ma orienta l'aspettativa PRIMA di S3: e' plausibile che S3 trovi valori
+DIVERSI (riscritto) su DEF/FWD/MID, non identici come l'ipotesi iniziale
+sperava. Il GK, paradossalmente il ruolo "peggiore" per informazione di
+matchup (vedi sez.4), e' quello con la correlazione piu' bassa e quindi
+meno sospetta.
+
+--- NON FATTO IN QUESTA SESSIONE ---
+S3 (test decisivo): non eseguibile, le partite di football-4-7-aug-2026
+non sono ancora concluse (kickoff 18:00 Roma di oggi). Da lanciare stasera/
+domattina con p12_verifica_leakage_grade.py gia' pronto.
+
+--- PROSSIMO PASSO ---
+Lanciare S3 appena le partite sono finite. Se S3 conferma "diversi" su
+DEF/FWD/MID (leakage), il filone si chiude su questi ruoli con SOLO il GK
+eventualmente ancora aperto (correlazione piu' bassa, ma comunque da
+verificare col GK stesso in S3). Se S3 desse "identici" nonostante le
+correlazioni alte, andrebbe capito perche' un grade genuino pre-partita
+avrebbe una correlazione cosi' alta col realizzato -- non scartare quella
+possibilita' a priori solo perche' "sembra troppo bello", ma trattarla con
+sospetto rafforzato e cercare un secondo campione prima di fidarsene.
+
+File aggiunto: analisi_manager/p12_sonda_storico_grade.json.
