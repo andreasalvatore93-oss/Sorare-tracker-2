@@ -2703,3 +2703,72 @@ richiesta utente, numeri poi forniti direttamente da lui),
 analisi_manager/p12_backtest_manager_perarena.py,
 analisi_manager/p12_slug_mancanti_sez25.json,
 analisi_manager/dati/storico_grade_backtest_20260806.json (678/678).
+
+===============================================================================
+26. SESSIONE 06/08/2026 notte Roma (~02:00 CEST) -- VERIFICA UNICA SU
+    GRUPPO B: CAP 260 NON REGGE. VERDETTO FINALE DEL FILONE: NO,
+    NON SI RIPESCA (Sonnet esecutore, no modifica produzione, commit
+    locale non ancora pushato)
+===============================================================================
+Candidata unica dichiarata PRIMA di guardare (come da istruzione): Cap 260,
+delta punti per arena singola (G-A), bootstrap cluster-manager -- stesso
+identico metodo di sez.25 su gruppo A, stesso codice (p12_backtest_
+manager_full.py::elabora_coppia riusato senza modifiche), solo il gruppo
+di manager cambia. Copertura grade sul pool gruppo B verificata PRIMA del
+test: 595/595 slug (100%, 0 mancanti -- nessuna raccolta necessaria).
+
+--- RISULTATO SU B (candidata unica) ---
+  Cap 260: n_arene=174  n_manager=5  delta_medio_per_arena=+1.254
+    IC95=[-14.512, +10.375]  positivo=66.7%
+    manager con delta totale G-A concorde (segno positivo): 3/5
+
+Confronto diretto col risultato di sez.25 (gruppo A) che aveva aperto
+questa verifica:
+  gruppo A: +9.175  IC95 [+2.256,+14.255]  positivo 98.9%  (SOLIDO)
+  gruppo B: +1.254  IC95 [-14.512,+10.375]  positivo 66.7%  (NON regge)
+Il punto centrale resta positivo ma l'IC95 su B attraversa ampiamente lo
+zero e solo 3 manager su 5 hanno il segno concorde -- non e' una replica,
+e' un risultato che NON supera la soglia dichiarata prima di guardare.
+
+--- DIAGNOSTICA (non decide, richiesto comunque) ---
+  Cap 220  (42 arene, 4 manager): +11.756  IC95 [-17.964,+45.597]  positivo 74.2%  concordi 2/4
+  Uncapped (31 arene, 3 manager): +3.953   IC95 [-11.243,+48.022]  positivo 58.4%  concordi 1/3
+  Beginner (51 arene, 2 manager): -11.544  IC95 [-26.907,-9.874]   positivo 0.0%   concordi 0/2 (SOLIDO ma negativo)
+Nessuno di questi entra nella decisione (dichiarato prima di guardare):
+riportati solo per trasparenza. Da notare che Beginner e' negativo e
+SOLIDO su B (IC95 esclude lo zero) come lo era su A (seppure li' con n
+minuscolo, 5 arene/2 manager) -- le due misure indipendenti concordano
+nella direzione negativa su questo tipo, il pattern piu' interessante di
+tutta la sezione diagnostica ma NON e' quello su cui si era deciso di
+decidere, quindi resta un'osservazione, non un'azione.
+
+===============================================================================
+VERDETTO FINALE DEL FILONE SEZ.16-26 -- NO, IL GRADE (COSI' COM'E' TESTATO)
+NON VA IN PRODUZIONE. NESSUN RIPESCAGGIO.
+===============================================================================
+Come dichiarato dall'utente prima del test: "se il risultato su B non
+regge, la risposta e' no e non si ripesca". Cap 260 non regge su B (IC95
+attraversa ampiamente lo zero, solo 3/5 manager concordi, ben lontano dal
+98.9%/5-5 di A). Il filone si chiude qui SENZA aprire la catena valori->
+soglie arena->scouting di CLAUDE.md, perche' quella catena si apre solo se
+il filone passa in produzione, e non e' il caso.
+
+Lettura d'insieme, per chi riprende questo lavoro in futuro: il grade
+(letterale, da anyPlayer.playerGameScores.projection.grade) mostra SEMPRE
+una correlazione grezza reale col punteggio realizzato (V0/V2 di sez.14-22,
+mai in dubbio, bootstrap 100% ovunque) e un segnale per-slot spesso solido
+(MID sez.16 il piu' forte). Ma ogni volta che si e' provato a tradurlo in
+un guadagno di FORMAZIONE/ARENA su un campione indipendente e sufficiente
+(crowss sez.21, manager proxy sez.23/23-bis, manager pool-stessa-GW sez.24/
+25 su A), il guadagno o non e' apparso o non ha retto una seconda verifica
+indipendente (sez.26). L'unica eccezione (Cap 260 su A, sez.25) non si e'
+riprodotta. Non e' provato che il grade sia inutile in assoluto -- e'
+provato che, con i dati e i metodi disponibili finora, non c'e' un caso
+abbastanza solido e riproducibile da giustificare il rischio di
+modificare la produzione.
+
+File aggiunti: analisi_manager/p12_backtest_manager_full_B.py,
+analisi_manager/p12_backtest_manager_full_B_out.json,
+analisi_manager/p12_backtest_manager_perarena_B.py,
+analisi_manager/p12_slug_mancanti_sez26_B.json (0 mancanti, nessuna
+raccolta eseguita).
