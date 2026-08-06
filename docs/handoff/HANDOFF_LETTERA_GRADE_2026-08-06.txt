@@ -632,3 +632,107 @@ DEF/MID/FWD per lo stesso motivo di R4 (campione insufficiente).
 
 File aggiunti: analisi_manager/p12_r5_gk_candidati.json,
 analisi_manager/p12_r5_gk_ampio.json.
+
+===============================================================================
+12. SESSIONE 06/08/2026 sera Roma (~19:40 CEST) -- S3 parziale + S4 "confronto
+    coi vicini" (Sonnet, no modifica produzione, commit+push a fine sezione)
+===============================================================================
+
+--- S3 (test diretto, BRIEF_SONNET_S3_LEAKAGE_2026-08-06.txt): SOLO PARZIALE,
+    partite non ancora concluse ---
+Cookie/CSRF freschi ricevuti dall'utente in chat (non salvati su disco).
+Verificato currentUser{slug}="crowss" prima di procedere (F1 confermato).
+S3.0/S3.1/S3.2: lanciati analisi_manager/p12_verifica_leakage_grade.py e
+analisi_manager/p12_s3_esteso.py sui 32 e 174 giocatori pre-catturati oggi.
+RISULTATO: 0/32 e 0/174 confrontabili. Kickoff GW football-4-7-aug-2026 e'
+alle 18:00 Roma di oggi (06/08): al momento del run nessuna partita del
+campione risultava ancora chiusa nella rotta storica. S3.1/S3.2/S3.3 restano
+da rilanciare quando le partite sono concluse (ultima 13:35 Roma del 07/08).
+Script pronti, nessuna modifica necessaria: analisi_manager/p12_s3_esteso.py.
+
+S3.4 (costo zero, nessuna query, fatto per intero): confronto fra le due
+catture pre-partita della stessa rotta compose a orari diversi (p12_step3_righe.json
+~10:39 Roma vs grade_snapshot_..._1124.json ~13:24 Roma). Intersezione 32
+giocatori, IDENTICI 32/32 (100%). Conferma H3 e il fatto accertato F2: zero
+rumore da rotta compose col solo passare del tempo pre-partita.
+S3.5: 0 righe scartate per doppia partita stessa data.
+
+File: analisi_manager/p12_verifica_leakage_out.json (vuoto/0 confrontabili),
+analisi_manager/p12_s3_esteso_out.json.
+
+--- S4 (test indiretto, BRIEF_SONNET_S4_VICINI_2026-08-06.txt): ESEGUITO PER
+    INTERO, zero query, dati gia' in repo ---
+Idea: un grade genuino pre-partita deve "azzeccare" la partita k quanto le
+partite vicine k-1/k+1 (entrambe fatte di forma lenta, non del risultato
+puntuale). A = corr(grade_k, score_k), B = corr(grade_k, score_k-1),
+C = corr(grade_k, score_k+1). Codifica grade A=6...F=1. Ogni riga richiede
+tutti e 3 gli score disponibili (scarta prima/ultima partita di ciascun
+giocatore). Bootstrap per GIOCATORE (non per riga), 1000 ricampionamenti,
+seed fisso 20260806.
+
+TABELLA (a) -- campione GK ampio, il campione vero (55->60 portieri distinti
+interrogati, n_giocatori_distinti nella tabella e' quello con righe utilizzabili):
+  variabile      n_righe  n_giocatori  A       B       C       A-C>0/1000  A-B>0/1000
+  grade          777      60           0.768   0.674   0.602   100.0%      100.0%
+  starter_odds   777      60           0.833   0.671   0.632   100.0%      100.0%
+
+LETTURA (a): il grade MOSTRA il picco su A che il brief avvertiva essere il
+segno di riscrittura -- A stacca nettamente B e C, bootstrap conferma al
+100% che non e' rumore. MA la STESSA identica forma, sulle STESSE righe,
+esce anche per starter_odds (dato che sappiamo con certezza essere
+pre-partita, mai riscritto) -- e li' il gap A-B (0.162) e' PIU' grande di
+quello del grade (0.094). Questo e' il confronto piu' informativo del brief
+(S4.5): un dato sicuramente genuino produce da solo il pattern "A piu' alta
+delle vicine", quindi il picco del grade NON e' una prova di riscrittura.
+Spiegazione plausibile (non provata qui): la partita di oggi e quella di
+oggi condividono contesto reale (chi gioca, condizione fisica, ruolo nella
+squadra in quel momento) che la partita di 1-2 settimane prima/dopo non
+condivide altrettanto -- e' autocorrelazione di contesto, non fuga del
+risultato. H1/H3 dell'orchestratore erano quindi solo parzialmente corrette
+(B non e' la piu' alta, A lo e' anche per il dato fidato) ma H3 nella
+sostanza (grade e starter_odds hanno la stessa forma) e' CONFERMATA, ed e'
+la lettura che il brief indicava come piu' forte.
+
+TABELLA (b) -- campione piccolo, 12 giocatori/4 ruoli insieme (debole,
+solo a supporto):
+  variabile      n_righe  n_giocatori  A      B      C      A-C>0/1000  A-B>0/1000
+  grade          156      12           0.564  0.473  0.381  99.7%       82.9%
+  starter_odds   156      12           0.568  0.377  0.349  99.3%       96.4%
+
+Stessa forma A>B>C per entrambe le variabili, coerente con (a).
+
+TABELLA (b) per ruolo (3 giocatori ciascuno, n minuscolo, SOLO CONTESTO,
+non conclusivo -- bootstrap su 3 soli giocatori e' poco informativo):
+  ruolo        n_righe  A(grade)  B(grade)  C(grade)  A(odds)  B(odds)  C(odds)
+  Goalkeeper   39       0.358    -0.091     0.116     0.543    -0.226   0.155
+  Defender     39       0.711     0.647     0.543     0.690     0.376   0.469
+  Midfielder   39       0.447     0.238     0.057     0.370     0.173  -0.085
+  Forward      39       0.616     0.680     0.403     0.580     0.624   0.462
+
+Nota: su Forward, B(grade) supera leggermente A(grade) (0.680 vs 0.616) --
+stesso pattern anche in starter_odds (0.624 vs 0.580) -- coerente con (a),
+nessuna anomalia specifica del grade. Su Goalkeeper con questo n minuscolo
+(3 giocatori) sia grade che starter_odds hanno B negativo: rumore di
+campione piccolo, non un pattern (gia' avvisato dal brief di non trarre
+conclusioni da n=3).
+
+--- S4.4 sanity check ---
+0 righe scartate per doppia data sullo stesso giocatore, in entrambi i
+campioni (a) e (b).
+
+--- VERDETTO S4 ---
+S4 NON trova il segno di riscrittura: il picco su A esiste ma e' della
+STESSA forma e ordine di grandezza di quello di un dato pre-partita fidato
+(starter_odds) sulle stesse identiche righe. Indizio forte a favore della
+genuinita', non prova diretta (quella resta S3, ancora da completare quando
+le partite di stasera saranno concluse).
+
+Per istruzione del brief S4 ("se S4 non trova il picco, procedi col BRIEF A
+V1/V2/V3"): S4 non ha trovato un picco ANOMALO (il picco c'e' ma e' normale),
+quindi la condizione per procedere e' soddisfatta -- ma il brief A dipende a
+sua volta da S3 completo per essere conclusivo secondo la sezione 9 (decisione
+aperta) dell'handoff orchestratore. Segnalato in chat, non deciso qui.
+
+File aggiunti: analisi_manager/p12_s4_vicini.py,
+analisi_manager/p12_s4_vicini_out.json, analisi_manager/p12_s3_esteso.py,
+analisi_manager/p12_s3_esteso_out.json, analisi_manager/p12_verifica_leakage_out.json.
