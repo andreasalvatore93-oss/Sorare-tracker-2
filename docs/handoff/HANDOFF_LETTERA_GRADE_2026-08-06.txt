@@ -1,0 +1,394 @@
+HANDOFF -- LETTERA "POTENZIALE DELLA GW" (grade A-F)
+Sessione 06/08/2026 sera Roma (CEST). Filone NUOVO, separato dalla
+calibrazione (vedi HANDOFF_calib_per_ruolo_riproducibilita_2026-08-06.txt
+per quel filone, non toccato qui). Nessuna modifica produzione, nessun
+commit.
+
+===============================================================================
+1. STATO DEL REPO
+===============================================================================
+Nessun file di produzione toccato. Nessun commit. Cookie Sorare ricevuto
+dall'utente in chat per questa sessione (SORARE_COOKIE in env locale, non
+salvato su disco, non committato). Nessuna run GitHub lanciata.
+
+===============================================================================
+2. PERCHE' ESISTE QUESTO FILONE
+===============================================================================
+La lettera A-F ("potenziale della GW", campo So5Score.projection.grade,
+gia' individuata in HANDOFF_FAVORITO_ODDS_2026-08-06.txt) e' una terza
+informazione esterna candidata, oltre a starter-odds e quote 1X2. Domanda:
+e' un segnale nuovo (matchup) o solo un'euristica ridondante con L10?
+L'utente ha dato un ancoraggio empirico su 2 GK reali (Olafsson-Midtjylland
+lettera D, Trubin-Benfica lettera B) e ha chiesto di verificare se il
+NOSTRO score_atteso (che dovrebbe essere piu' "matchup-aware") gia' cattura
+la differenza che la lettera cattura, prima di investire in query aggiuntive.
+
+===============================================================================
+3. STEP 1/2 (query GW attuale + recupero a ritroso) -- FERMO, SERVE INPUT
+   UTENTE
+===============================================================================
+Esplorato lo schema GraphQL con query mirate (introspezione disabilitata,
+regola CLAUDE.md: query minima, leggi l'errore). Percorso seguito:
+
+  so5.composeTeamBenchCard          -> NON esiste (suggerito dall'errore:
+                                        composeTeamBenchObject)
+  so5.composeTeamBenchObject        -> esiste, e' un'INTERFACCIA
+                                        (ComposeTeamBenchObjectInterface),
+                                        non ha 'slug' diretto
+  so5.composeTeamBenchObject(id: ID!) -> RICHIEDE un argomento 'id'
+                                        obbligatorio (errore
+                                        missingRequiredArguments), e i
+                                        fragment su tipi concreti come
+                                        So5LeaderboardContender vengono
+                                        rifiutati ("can't be spread inside
+                                        ComposeTeamBenchObjectInterface")
+
+CONCLUSIONE STEP 1: questa query NON e' enumerabile liberamente da fixture/
+lega/ruolo come le query pubbliche gia' in uso nel resto del repo (es.
+INDICE_QUERY/FORMAZIONE_QUERY di ricostruisci_manager.py, che prendono uno
+slug pubblico). composeTeamBenchObject vuole un `id` (probabilmente un ID
+globale opaco di una sessione di "componi formazione" GIA' aperta per una
+specifica leaderboard/GW dell'account collegato al cookie) -- non e' un
+parametro che si possa indovinare o derivare da slug pubblici gia' noti.
+
+Coerente con un precedente in questo stesso repo (RIASSUNTO_EVOLUZIONE_
+MODELLO_PREDITTIVO.md, punto E, e la nota "Fonte: SorareInside" nell'
+handoff favorito_odds): l'ultima volta che si e' lavorato su
+ComposeTeamBenchCard/Object, il campo e' stato individuato "con l'utente
+che incollava risposte GraphQL reali" -- cioe' dal traffico di rete vero
+del browser mentre l'utente aveva la schermata aperta, non per tentativi
+di schema alla cieca. Stessa situazione qui.
+
+NON HO CONTINUATO A INDOVINARE 'id' alla cieca (violerebbe la regola
+risparmio-token: ogni tentativo in piu' senza un indizio concreto e' query
+sprecata). SERVE uno di questi due, dall'utente, con la schermata "componi
+formazione" aperta su una GW futura (In Season o Arena, quella dove vede
+le lettere):
+  (a) la Network tab del browser -> la request GraphQL completa (query +
+      variables) verso api.sorare.com/graphql fatta da quella schermata,
+      copiata e incollata qui; OPPURE
+  (b) anche solo il valore dell'`id` passato a composeTeamBenchObject in
+      quella request (visibile nel payload della query).
+Con (a) o (b) lo STEP 1 (tabella 15-20 giocatori/2-3 leghe) e lo STEP 2
+(stesso campo su un giocatore gia' sceso in campo e su una GW di un mese
+fa, per vedere se il valore sparisce o resta) diventano fattibili nella
+stessa sessione, senza altri tentativi alla cieca.
+
+STEP 2 nota metodologica gia' pronta per quando arriva l'id: NON basta
+vedere "campo popolato" su una partita passata per concludere che si puo'
+fare a ritroso -- va verificato SE il valore e' quello pre-partita o e'
+stato sovrascritto dopo il risultato (lezione starter-odds/leakage, stessa
+cautela gia' scritta nell'handoff favorito_odds per le quote 1X2). Il modo
+piu' pulito: se il campo resta popolato su partite passate, confrontare il
+valore su una partita chiusa DA POCHI MINUTI (starter noti, risultato
+forse non ancora finale) con una chiusa da giorni -- se cambiano nel tempo
+dopo il fischio d'inizio, e' riscritto.
+
+===============================================================================
+4. ADDENDUM UTENTE -- TEST-SEME SUI 2 GK (Olafsson vs Trubin): FATTO,
+   NESSUNA QUERY NECESSARIA (dati gia' in repo, run del 04-05/08)
+===============================================================================
+Entrambi i giocatori hanno pipeline completa (Danimarca/Portogallo).
+Recuperate le predizioni di produzione piu' recenti su disco, ENTRAMBE per
+la partita di OGGI 06/08/2026 (non serve rilanciare nulla):
+
+  ELIAS RAFN OLAFSSON (Danimarca, GK, FC Midtjylland)
+    Prossima partita: Bohemian FC (CASA) vs FC Midtjylland (TRASFERTA)
+    Competizione: UEFA Europa Conference League -- 2026-08-06T18:45
+    score_atteso PRODUZIONE: 51.0 (range 31.2-72.3)
+    P(gioca): 90% (starterOddsBasisPoints 9000)
+    Fattore forza avversario APPLICATO: 1.000 (nessun aggiustamento --
+    vedi sotto)
+
+  ANATOLII TRUBIN (Portogallo, GK, SL Benfica)
+    Prossima partita: SL Benfica (CASA) vs Heart of Midlothian (TRASFERTA)
+    Competizione: UEFA Europa League -- 2026-08-06T19:00
+    score_atteso PRODUZIONE: 53.7 (range 30.3-73.9)
+    P(gioca): 80% (starterOddsBasisPoints 8000)
+
+RISULTATO: il nostro score_atteso mette Trubin (53.7) LEGGERMENTE SOPRA
+Olafsson (51.0) -- STESSA DIREZIONE della lettera (Trubin B > Olafsson D),
+NON la direzione che l'ipotesi dell'utente si aspettava (Olafsson sopra
+per via della partita piu' facile). Gap piccolo (2.7 pt), dentro il rumore
+di un singolo GK (SD residua tipica ~19-22 pt su questo ruolo).
+
+MA -- ed e' la scoperta piu' importante di questo test-seme, letta nel
+file di predizione stesso (righe 59, 68-69 di
+formazione_danimarca/output/danimarca_gk_all/prediction_elias-rafn-
+olafsson_2026-08-04_160514.txt): il "Fattore forza avversario" per
+Olafsson e' ESPLICITAMENTE 1.000, cioe' NON APPLICATO. Il file lo dice
+in chiaro: "Fattore forza avversario applicato: 1.000 (gol fatti reali
+dell'avversario, ultime 10; delta granulare parate +0.00 pt)" e piu' sopra
+"Punteggio decisivo condizionato per forza prossimo avversario: [...]
+SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-
+forward: peggiorava il MAE reale del +4.21%".
+
+QUESTO CAMBIA LA DOMANDA DEL BRIEF: il nostro modello GK in produzione
+NON E' matchup-aware -- il termine di forza-avversario per il portiere e'
+stato tolto DA TEMPO (26/07) perche' peggiorava il MAE reale, e resta solo
+come numero diagnostico nei log, mai usato nel calcolo. Quindi non e' che
+"il nostro modello matchup-aware batte o perde contro il grade
+matchup-cieco sul GK" -- e' che SU QUESTO RUOLO, IN PRODUZIONE, NESSUNO
+DEI DUE (score_atteso E grade) ha necessariamente un vantaggio strutturale
+di matchup l'uno sull'altro, perche' il nostro non ne usa affatto. Il
+piccolo gap Trubin>Olafsson che abbiamo e' quasi tutto storico
+individuale/casa-trasferta, non lettura della partita.
+
+Questo NON dice se il grade "funziona" (serve lo storico vero, STEP 2) ma
+dice con certezza che il confronto "il nostro modello batte il grade sul
+matchup" e' MAL POSTO per il portiere: non abbiamo un termine di matchup
+in produzione con cui confrontarlo. Per gli altri ruoli (DEF/MID/FWD) la
+situazione va verificata separatamente prima di generalizzare -- il brief
+dell'utente lo dice gia' esplicitamente ("il GK e' il ruolo dove il grade
+parte peggio, non generalizzare agli altri da qui"), e questo vale anche
+al contrario: il GK e' anche il ruolo dove IL NOSTRO modello e' meno
+matchup-aware, quindi il confronto va rifatto ruolo per ruolo quando
+arrivera' l'id per la query vera.
+
+===============================================================================
+5. VERDETTO PARZIALE E DECISIONE APERTA
+===============================================================================
+- STEP 1/2 (la query vera sulla lettera): FERMO, serve dall'utente la
+  request di rete reale (o l'id) dalla schermata "componi formazione" --
+  vedi punto 3. Nessuna query aggiuntiva alla cieca nel frattempo.
+- STEP 3 (grade vs L10 vs matchup): NON FATTO, dipende dallo stesso dato
+  dello step 1 (serve poter leggere il grade per un campione di
+  giocatori). Nell'attesa, l'addendum (punto 4) e' l'unico pezzo di
+  evidenza disponibile e dice: sul GK, il nostro modello non ha
+  informazione di matchup da confrontare -- l'unico confronto possibile
+  sara' "grade vs realizzato" diretto (registrazione in avanti, gia'
+  previsto), non "grade vs score_atteso matchup-aware nostro" (quella
+  domanda non si applica al portiere).
+- N=2 (Olafsson/Trubin): come gia' scritto dall'utente, ipotesi non prova.
+  Direzione osservata: grade e score_atteso vanno nella STESSA direzione
+  (Trubin sopra su entrambi), non in direzioni opposte come l'ipotesi
+  "grade segue L10 e ignora il matchup" avrebbe previsto SE il nostro
+  modello fosse stato matchup-aware -- ma siccome non lo e' per il
+  portiere, questo singolo campione non conferma ne' smentisce nulla
+  sulla capacita' del grade di leggere il matchup. Resta da vedere sugli
+  altri ruoli, con la query vera.
+
+PROSSIMO PASSO: aspettare l'id/network-request dall'utente, poi eseguire
+STEP 1 (tabella 15-20 giocatori/2-3 leghe) + STEP 2 (persistenza a
+ritroso, con controllo leakage) + STEP 3 affinato (grade vs L10 vs
+starter-odds vs score_atteso vs favorito_odds, per ruolo, NON in pool) in
+una volta sola, per minimizzare le query.
+
+===============================================================================
+6. FILE DI RIFERIMENTO
+===============================================================================
+docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt (sezione "LETTERA
+Potenziale della GW", dove il campo e' stato individuato la prima volta)
+docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md (punto E, precedente su
+ComposeTeamBenchCard/Object trovato via risposte reali incollate
+dall'utente)
+formazione_danimarca/output/danimarca_gk_all/prediction_elias-rafn-
+olafsson_2026-08-04_160514.txt
+formazione_portogallo/output/portogallo_gk_all/prediction_anatolii-
+trubin_2026-08-05_155729.txt
+dati_globali/odds_1x2_index.json (favorito_odds, gia' pronto per lo STEP 3
+quando la query sara' fattibile)
+
+===============================================================================
+7. SESSIONE 06/08/2026 sera Roma -- QUERY VERA TROVATA, STEP 1/2/3 FATTI
+   (Sonnet, nessuna modifica produzione, nessun commit)
+===============================================================================
+L'utente ha incollato il payload di rete reale di FootballComposeBenchQuery
+(query+variabili+risposta) dalla schermata "componi formazione". Questo ha
+sbloccato tutto il punto 3: niente piu' bisogno di indovinare un `id`.
+
+RICOSTRUZIONE QUERY (per query mirate su schema, regola CLAUDE.md, ~10
+tentativi con lettura errore):
+  so5.so5Leaderboard(slug: So5LeaderboardSlug!)
+     .myFilteredBench(filters: BenchFilterInput!, first: Int)
+     .nodes[... on ComposeTeamBenchCard]
+     .eligiblePlayerGameScores(so5LeaderboardSlug: String!)   <- arg
+        OBBLIGATORIO, non ovvio dallo schema (l'errore "doesn't accept
+        argument" su un nome finto non segnala gli argomenti mancanti se
+        sono facoltativi per firma ma necessari per popolare dati -- qui
+        senza l'arg la lista torna sempre [], SENZA errore, trappola vera)
+     .projection { grade reliabilityBasisPoints }
+
+OSTACOLO CENTRALE, RISOLTO: `myFilteredBench` ("MY" = carte dell'utente)
+tornava SEMPRE nodes:[] col solo header Cookie, perche' `currentUser`
+risultava null nonostante il cookie valido -- Sorare usa protezione CSRF
+stile Rails: serve ANCHE l'header `X-CSRF-Token` col valore del cookie
+`csrftoken`. Con Cookie+X-CSRF-Token insieme, `currentUser{slug}` torna
+"crowss" e tutte le query "my*" funzionano. Salvato in
+analisi_manager/p12_lettera_grade.py per riuso futuro (CSRF letto da env
+SORARE_CSRF, fallback al valore di sessione).
+
+--- STEP 1: TABELLA GW ATTUALE (32 giocatori, 4 ruoli, GW football-4-7-
+    aug-2026, leaderboard All Star Cap 260/220/Beginner/uncapped misti) ---
+Confermato ESATTAMENTE quanto l'utente vede a schermo: Olafsson=D,
+Trubin=B (stessi valori del brief). Copertura multi-lega naturale (il pool
+e' il mazzo REALE dell'utente): Danimarca, Austria, Portogallo, Olanda,
+Croazia, MLS, Turchia, Giappone, Germania, Scozia in un colpo solo.
+Tabella completa e correlazioni in analisi_manager/p12_step3_out.txt e
+p12_step3_righe.json (32 righe, grade+L10+starter_odds+favorito_odds per
+ciascuna).
+
+--- STEP 2: RECUPERO A RITROSO -- CONFERMATO NO, per una via nuova ---
+Testato su 3 leaderboard slug di settimane passate (football-31-jul-4-aug-
+2026, football-24-28-jul-2026, football-5-8-jul-2026, tutte con lo stesso
+suffisso -seasonal-all_star-all_seasons_all_star_arena_limited): in TUTTI
+e tre i casi `myFilteredBench` torna 0 nodi, non solo grade nullo -- l'
+INTERA leaderboard non e' piu' componibile una volta chiusa la GW, non e'
+un dettaglio per-giocatore. Anche cercando fra 160 carte della GW attuale
+(40 per ruolo, ordinate per POPULAR_STARTERS) NESSUNA aveva un game gia'
+concluso al momento del test (10:39 Roma/UTC 06/08): tutte le partite
+campionate erano ancora "scheduled". Non e' stato quindi possibile
+testare la granularita' fine "sparisce esattamente al fischio d'inizio
+del singolo giocatore o dopo" -- ma la domanda piu' grande (si puo'
+recuperare lo storico via questa via) ha gia' risposta: NO, la leaderboard
+chiude in blocco. Conferma (con test diretto, non piu' solo per
+deduzione) quanto gia' scritto nell'handoff favorito_odds: "nessuno
+storico, unica via: registrarla in avanti".
+
+--- STEP 3: EURISTICA BANALE O SEGNALE NUOVO? (n=8 per ruolo, prime
+    misure, NON definitive) ---
+Correlazione grade (numerico A=6..F=1) vs L10 e vs favorito_odds (quota
+propria - quota avversario, da own/awayStats.winOddsBasisPoints):
+
+  ruolo        n  corr(grade,L10)  corr(grade,favorito_odds)
+  Goalkeeper   8      +0.23              -0.15
+  Defender     8      +0.47              +0.04
+  Midfielder   8      -0.12              -0.22
+  Forward      8      +0.68              +0.42
+
+Nessuna correlazione e' forte in nessun ruolo con questo n minuscolo (8),
+ma la FORMA CAMBIA per ruolo, coerente con l'avviso dell'utente di non
+generalizzare dal GK: sul portiere il grade NON segue chiaramente ne' L10
+(+0.23, debole) ne' il favorito_odds (-0.15, debole e di SEGNO SBAGLIATO
+rispetto all'ipotesi "grade legge il matchup"), mentre su FWD entrambe le
+correlazioni sono piu' forti (+0.68 con L10, +0.42 con favorito_odds) --
+suggerendo che sui FWD il grade potrebbe portare informazione aggiuntiva
+reale, sul GK invece sembra piu' rumoroso o legato a qualcos'altro non
+ancora identificato.
+
+Casi di divergenza (L10 sotto mediana ma grade sopra, o viceversa),
+per contesto, non per conclusione (n troppo piccolo):
+  Dominik Kotarski (GK): grade B, L10=50.3 (sotto mediana 51.6)
+  Matt Freese (GK): grade B, L10=41.8 (sotto mediana), favorito_odds +0.44
+  Peter Ankersen (DEF): grade E, L10=57.8 (SOPRA mediana) -- grade basso
+    nonostante L10 alto, favorito_odds comunque +0.71 (partita facile):
+    QUESTO e' il pattern opposto a quanto atteso se il grade seguisse le
+    quote, un caso da riguardare quando n sara' piu' grande.
+  Oscar Gloukh (MID): grade B, L10=51.4 (circa mediana), favorito_odds
+    +0.83 (partita molto facile) -- qui grade E favorito_odds vanno
+    nella stessa direzione (coerenti).
+
+VERDETTO PARZIALE (n=8/ruolo, da NON trattare come conclusivo): l'ipotesi
+"il grade segue solo L10 e ignora il matchup" NON e' confermata in modo
+pulito su questo campione -- le correlazioni con favorito_odds sono
+deboli e disomogenee per ruolo, non sistematicamente vicine a zero come
+ci si aspetterebbe da un'euristica pura-L10, ma nemmeno forti come ci si
+aspetterebbe da un vero indicatore di matchup. Serve un campione piu'
+grande (ora che la query FUNZIONA, si puo' allargare a pageSize piu' alto
+e piu' leaderboard/ruoli nella stessa sessione, costo query basso) prima
+di decidere se il grade e' un segnale utile o rumore.
+
+PROSSIMO PASSO: allargare lo STEP 3 (piu' giocatori per ruolo, ora che la
+query e' risolta) e, in parallelo, impostare la "registrazione in avanti"
+per lo STEP 2 fine (un cron/snapshot che salva grade+scoreStatus ogni
+tanto durante la stessa GW, per vedere il momento esatto in cui sparisce
+e se il valore e' mai stato riscritto prima di sparire) -- entrambi da
+decidere insieme, non ancora iniziati.
+
+File aggiunti: analisi_manager/p12_lettera_grade.py,
+analisi_manager/p12_step1_grade.json, analisi_manager/p12_step3_out.txt,
+analisi_manager/p12_step3_righe.json.
+
+===============================================================================
+8. SESSIONE 06/08/2026 pomeriggio Roma (13:30 circa) -- CATTURA URGENTE +
+   ROTTA ALTERNATIVA PER LO STORICO (Sonnet, commit fatto, push fatto)
+===============================================================================
+Eseguito il brief "cattura grade GW corrente prima delle 18:00 Roma" +
+l'addendum ricevuto in corsa (multi-leaderboard + rotta alternativa
+storico). Nessuna modifica a produzione.
+
+--- TETTO DEL POOL (task A1) ---
+Sulla leaderboard base (Cap 260 all_star, quella dei 32 di stamattina),
+pageSize 100 e 200 danno lo STESSO numero per DEF/MID (50): e' un cap
+server-side, non il tetto vero delle carte possedute. Tetto per ruolo:
+  Goalkeeper 28, Defender 50 (capped, vero valore ignoto ma >=50),
+  Midfielder 50 (capped, >=50), Forward 46.
+Confermata l'ipotesi del brief: siamo nell'ordine di poche decine per
+ruolo, non centinaia.
+
+--- CATTURA SINGOLA LEADERBOARD (task A3) ---
+File analisi_manager/dati/grade_snapshot_football-4-7-aug-2026_20260806_1124.json
+174 righe (28+50+50+46), timestamp 11:24 UTC / 13:24 Roma, con tutti i campi
+richiesti (grade, reliability, starter_odds, l10, quote proprie/avversario,
+minuti al fischio, ecc). reliability_bp: da verificare nel file se costante
+a 10000 (task C2, non ancora fatto per mancanza di tempo -- priorita' sulla
+cattura e sulla rotta storico).
+
+--- CATTURA MULTI-LEADERBOARD (addendum punto 2) ---
+Enumerate le 21 leaderboard "base" (no UUID istanza) della fixture, filtrate
+alle 8 compatibili con Limited (le uniche carte possedute dall'utente):
+In-Season Japan, All Star Limited, Under23 Limited, Cap260 Japan, Cap260
+All Star, Uncapped, Cap220, Beginner. Catturate tutte e deduplicate per
+(slug giocatore, game_date).
+
+RISULTATO IMPORTANTE, NON PREVISTO DAL BRIEF: dedup = 171 righe, quasi
+identico alle 174 della singola leaderboard Cap260. Le diverse leaderboard
+(Cap260/220/Beginner/Uncapped/Limited/In-Season) NON ampliano il pool: sono
+la STESSA riserva di carte dell'utente vista attraverso 8 filtri diversi
+(idoneita' diversa, non inventario diverso). L'assunzione dell'addendum
+("molti giocatori del mazzo hanno gia' giocato quindi serve sommare piu'
+leaderboard per un campione decente") non regge sui NUMERI: il tetto resta
+quello, sommare leaderboard non lo alza. Salvato comunque in
+analisi_manager/dati/grade_snapshot_ALL_LIMITED_football-4-7-aug-2026_20260806_1127.json
+(171 righe: GK 25, DEF 53, MID 52, FWD 41 -- leggermente diverso dal singolo
+per via di dedup/roster idoneo diverso per fascia cap, non un pool piu' grande
+nella sostanza).
+
+--- ROTTA ALTERNATIVA PER LO STORICO (addendum punto 3): TROVATA ---
+Query mirate (schema, errore letto, ~4 tentativi):
+  anyPlayer(slug: String!) { playerGameScores(last: Int!) {
+      id score anyGame { date } projection { grade reliabilityBasisPoints } } }
+Testata su Trubin: RESTITUISCE grade su 5 partite passate (fino a
+2026-05-11), con score realizzato assieme al grade. Questa e' la rotta che
+mancava allo STEP 2 (che aveva testato solo myFilteredBench, chiuso in
+blocco a GW conclusa). Qui invece il grade storico e' leggibile per
+giocatore, a prescindere dalla leaderboard.
+
+NON DICE ANCORA se il valore e' genuino pre-partita o riscritto dopo il
+risultato -- serve il confronto diretto (task 4 dell'addendum).
+
+--- TEST ANTI-RISCRITTURA (addendum punto 4): PREPARATO, NON ESEGUITO ---
+Le partite della GW football-4-7-aug-2026 (i 32 giocatori di stamattina in
+p12_step3_righe.json) iniziano alle 18:00 Roma di oggi e finiscono in
+finestre diverse stanotte/domani mattina: il confronto va fatto SOLO dopo
+che ciascuna partita e' conclusa, quindi non era eseguibile in questa
+sessione (13:30 Roma, partite non ancora iniziate).
+
+Script pronto: analisi_manager/p12_verifica_leakage_grade.py. Legge i 32
+giocatori di p12_step3_righe.json, per ciascuno chiama playerGameScores e
+cerca la partita con la stessa data, confronta grade_mattina vs
+grade_dopo_partita, salva in analisi_manager/p12_verifica_leakage_out.json.
+Verdetto:
+  - se identici -> genuino, il filone si sblocca su centinaia di righe
+    storiche subito, senza aspettare settimane;
+  - se diversi -> riscritto post-risultato, leakage, resta solo-in-avanti.
+DA LANCIARE stasera/domani mattina quando le partite di football-4-7-aug
+sono concluse (dopo le 13:35 Roma del 07/08 per essere sicuri su tutte,
+prima si puo' lanciare parziale sui giocatori le cui partite sono gia'
+finite).
+
+--- PROSSIMO PASSO ---
+1. Lanciare p12_verifica_leakage_grade.py quando le partite sono finite
+   (priorita' massima, vale piu' di tutta l'analisi di ridondanza).
+2. Se il test conferma genuino: STEP 3 (correlazioni/regressione, task C
+   del brief originale) si puo' rifare su uno storico di settimane invece
+   che sul solo n=8/32 di oggi, con l'avvertenza sul campione (carte
+   possedute, non casuale) che resta valida.
+3. Task C (reliability A/A, correlazioni, regressione) del brief originale:
+   non fatto in questa sessione per priorita' sulla cattura/rotta storico.
+
+File aggiunti in questa sessione: analisi_manager/grade_snapshot.py,
+analisi_manager/p12_verifica_leakage_grade.py,
+analisi_manager/dati/grade_snapshot_football-4-7-aug-2026_20260806_1124.json,
+analisi_manager/dati/grade_snapshot_ALL_LIMITED_football-4-7-aug-2026_20260806_1127.json.
+Commit 857da2a23e pushato su main.
