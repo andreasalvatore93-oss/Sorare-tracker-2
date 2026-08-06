@@ -125,10 +125,14 @@ def carica_gw(manager, gw):
     return righe
 
 
-def costruisci_pool(righe):
+def costruisci_pool(righe, modo='globale'):
     """Una voce per CARTA (non per giocatore: xp e bonus distinguono le copie).
 
-    Prende da TUTTE le formazioni della giornata, arene comprese.
+    modo='globale': prende da TUTTE le formazioni della giornata, arene comprese.
+    modo='arena'  : prende SOLO dalle formazioni schierate in arena. In questa
+        modalita' il pool coincide quasi con gli slot (vedi CLAUDE.md/handoff
+        06/08): non misura la selezione delle carte, solo l'allocazione fra
+        arene e la scelta del capitano.
     """
     pool = {}
     vuote = 0
@@ -138,6 +142,8 @@ def costruisci_pool(righe):
             vuote += 1
             continue
         in_arena = bool(f.get('tipo_arena'))
+        if modo == 'arena' and not in_arena:
+            continue
         for c in carte:
             cid = c.get('carta')
             if cid and cid not in pool:
@@ -252,18 +258,35 @@ def main():
     ap.add_argument('--manager', default='crowss')
     ap.add_argument('--gw', required=True)
     ap.add_argument('--dump', default=None, help='file di dump leggibile')
+    ap.add_argument('--pool', choices=('globale', 'arena'), default='globale',
+                     help='globale = tutte le competizioni (test probante); '
+                          'arena = solo carte schierate in arena (controllo aggiuntivo, '
+                          'NON misura selezione: vedi handoff 06/08 sez.5)')
+    ap.add_argument('--consenti-pool-uguale-slot', action='store_true',
+                     help='autorizza il caso pool<=slot SOLO con --pool arena; '
+                          'in modalita globale resta sempre un errore fatale')
     args = ap.parse_args()
+
+    if args.consenti_pool_uguale_slot and args.pool != 'arena':
+        raise SystemExit('--consenti-pool-uguale-slot e\' ammesso SOLO con --pool arena')
 
     righe = carica_gw(args.manager, args.gw)
     arene = [f for f in righe if f.get('tipo_arena') in ARENE_AMMESSE_TIPO]
     non_arene = [f for f in righe if not f.get('tipo_arena')]
-    pool, vuote = costruisci_pool(righe)
+    pool, vuote = costruisci_pool(righe, modo=args.pool)
 
     slot_totali = sum(len(f.get('carte') or []) for f in arene)
 
     print('=' * 72)
-    print(f'BACKTEST GW {args.gw} -- manager {args.manager}')
+    print(f'BACKTEST GW {args.gw} -- manager {args.manager}  -- modalita pool: {args.pool.upper()}')
     print('=' * 72)
+    if args.pool == 'arena':
+        print('ATTENZIONE: pool = SOLO carte schierate in arena quella GW. Il pool')
+        print('coincide quasi con gli slot: questo test NON misura la selezione delle')
+        print('carte, misura solo (a) come il modello alloca le stesse carte fra le')
+        print('arene e (b) chi rinuncia/sceglie come capitano. Il test probante resta')
+        print('la modalita globale (default).')
+        print()
     print(f'formazioni totali in giornata : {len(righe)}')
     print(f'  di cui ARENE                : {len(arene)}')
     print(f'  di cui altre competizioni   : {len(non_arene)}')
@@ -277,10 +300,20 @@ def main():
     print(f'slot da riempire        : {slot_totali}')
     print(f'CARTE DI SCORTA         : {len(pool) - slot_totali}')
     if len(pool) <= slot_totali:
-        print()
-        print('POOL NON PIU\' GRANDE DEGLI SLOT: nessuna selezione da misurare.')
-        print('Il test sarebbe nullo per costruzione. MI FERMO QUI.')
-        return 1
+        if args.pool == 'arena' and args.consenti_pool_uguale_slot:
+            print()
+            print('POOL NON PIU\' GRANDE DEGLI SLOT -- autorizzato esplicitamente con')
+            print('--consenti-pool-uguale-slot in modalita ARENA. Questo test misura SOLO')
+            print('allocazione/capitano, non selezione delle carte (vedi avviso sopra).')
+            print()
+        else:
+            print()
+            print('POOL NON PIU\' GRANDE DEGLI SLOT: nessuna selezione da misurare.')
+            if args.pool == 'arena':
+                print('Se e\' l\'esito atteso in modalita arena, rilancia con')
+                print('--consenti-pool-uguale-slot per procedere comunque.')
+            print('Il test sarebbe nullo per costruzione. MI FERMO QUI.')
+            return 1
     print()
 
     if vuote:
@@ -373,7 +406,11 @@ def main():
 
     if args.dump:
         with open(args.dump, 'w', encoding='utf-8') as fh:
-            fh.write(f'DUMP {args.gw} -- {args.manager}\n')
+            fh.write(f'DUMP {args.gw} -- {args.manager}  -- modalita pool: {args.pool.upper()}\n')
+            if args.pool == 'arena':
+                fh.write('ATTENZIONE: pool = solo carte schierate in arena quella GW. Pool quasi\n'
+                         'uguale agli slot: NON misura la selezione delle carte, solo allocazione\n'
+                         'fra arene e scelta del capitano. Test probante = modalita globale.\n\n')
             fh.write('grezzo = punteggio del giocatore senza bonus, letto dalla '
                      'cache game-log (fonte: cache). Dove il giocatore non e\' in '
                      'cache, ricostruito per divisione (fonte: ricostruito).\n\n')

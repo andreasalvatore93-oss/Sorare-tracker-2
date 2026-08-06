@@ -239,6 +239,49 @@ autorizzare il caso pool == slot SOLO in questa modalita', mai in silenzio.
 
 
 ===============================================================================
+5bis. ESITO PASSO 1: VERSIONE RISTRETTA CONSEGNATA (Sonnet, 06/08 notte)
+===============================================================================
+Fatto in analisi_manager/p13_backtest_gw_crowss.py: aggiunto --pool
+globale|arena (default globale) e --consenti-pool-uguale-slot (ammesso SOLO
+con --pool arena, altrimenti SystemExit). In modalita arena il controllo
+pool-vs-slot blocca comunque per default; serve il flag esplicito per
+procedere. Nessun knapsack nuovo: stesso build_one_lineup_with_growth di
+prima, stessa lettura grezzo da cache.
+
+REGRESSIONE: --pool globale riproduce ESATTAMENTE i numeri di sez.4 sopra
+(REALE 4175.81, A 4539.07, G 4663.02/4663.03 -- arrotondamento). Nessuna
+modifica di comportamento nella modalita esistente.
+
+MODALITA ARENA (GW football-21-24-jul-2026, crowss): pool 85 carte, slot 85
+(CARTE DI SCORTA = 0, confermata l'ipotesi dell'orchestratore). Con
+--consenti-pool-uguale-slot:
+  REALE su 17 arene: 4175.81 (come sempre)
+  A: 3014.35 su 12/17 arene schierate (5 arene rinunciate per margine
+     sotto PAREGGIO_ARENA: le 4 Cap 260 tranne una, e 1 Beginner)
+  G: 3133.34 su 12/17 arene schierate (stesse 5 rinunciate)
+  Per tipo: Cap 260 REALE 834.24 vs A 186.62(1/4) vs G 300.42(1/4);
+            Cap 220 REALE 416.69 vs A 248.78(1/2) vs G 254.60(1/2);
+            Beginner REALE 2924.88 vs A 2578.95(10/11) vs G 2578.32(10/11).
+
+LETTURA (da NON confondere col test globale): con pool ristretto alle sole
+carte gia' in arena, il modello rinuncia a schierare 5 arene su 17 (soprattutto
+Cap 260) perche' non ha scorte per costruire una formazione sopra soglia
+PAREGGIO_ARENA. Questo NON e' un giudizio sulla capacita' di scelta del
+modello: e' l'effetto atteso e dichiarato di un pool senza scorte (vedi
+avviso in sez.5). Non usarlo per dire "il modello schiera peggio".
+
+Dump prodotti:
+  analisi_manager/dati/DUMP_p13_crowss_21-24jul_globale.txt (= contenuto
+    invariato rispetto al vecchio DUMP_p13_crowss_21-24jul.txt)
+  analisi_manager/dati/DUMP_p13_crowss_21-24jul_arena.txt (nuovo)
+
+Non committato/pushato da questa sessione esecutore: in attesa di avviso
+utente prima di commit, come da regola CLAUDE.md (fix testato in locale ->
+commit senza chiedere, ma qui aspetto conferma perche' tocca solo backtest
+non produzione e l'orchestratore potrebbe voler rivedere prima).
+
+
+===============================================================================
 6. DA DOVE RIPARTIRE, IN ORDINE
 ===============================================================================
 PASSO 0 (se l'utente lo chiede): tutto cio' che gli serve per schierare
