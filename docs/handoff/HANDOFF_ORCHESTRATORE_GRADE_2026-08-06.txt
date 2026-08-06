@@ -1,0 +1,340 @@
+PASSAGGIO DI CONSEGNE FRA ORCHESTRATORI -- FILONE LETTERA/GRADE
+Scritto da Opus (orchestratore uscente), 06/08/2026 ore 14:10 Roma (12:10 UTC).
+Destinatario: il PROSSIMO ORCHESTRATORE, che riprendera' il filone in una
+sessione dedicata. Leggere per intero prima di scrivere qualunque cosa.
+
+Questo file NON sostituisce docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt
+(sezioni 1-11, scritte da Sonnet, con i dati grezzi e i numeri). Quello e' il
+diario del filone. Questo e' il manuale di guida: stato, errori gia' commessi,
+brief pronti da spedire, e cosa decidere.
+
+
+===============================================================================
+1. STATO DEL REPO
+===============================================================================
+Branch main. Sonnet ha committato e pushato durante la sessione: gli snapshot
+della GW corrente, gli script di sonda, e le sezioni 8-11 dell'handoff del
+filone. Questo file e' l'unico non ancora pushato al momento della scrittura:
+va incluso nel push di chiusura.
+
+File del filone (tutti in repo):
+  analisi_manager/p12_lettera_grade.py          query compose + CSRF
+  analisi_manager/p12_step1_grade.json          primo campione 32 righe
+  analisi_manager/p12_step3_righe.json          32 righe pre-partita 06/08
+  analisi_manager/p12_sonda_storico_grade.json  sonda S1/S2, 12 giocatori
+  analisi_manager/p12_verifica_leakage_grade.py script del test S3 (PRONTO,
+                                                 MAI ESEGUITO)
+  analisi_manager/dati/grade_snapshot_*.json     snapshot GW corrente
+  docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt   sezioni 1-11
+  docs/handoff/BRIEF_SONNET_GRADE_SNAPSHOT_2026-08-06.txt  brief iniziale +
+                                                 fatti accertati dall'utente
+
+NESSUNA MODIFICA ALLA PRODUZIONE. Nessuna soglia arena toccata. Nessuna run
+GitHub lanciata.
+
+
+===============================================================================
+2. PERCHE' ESISTE QUESTO FILONE (5 righe)
+===============================================================================
+Sorare mostra, nella schermata "componi formazione", una lettera A-F per ogni
+giocatore in ogni partita futura ("potenziale della GW", campo
+So5Score.projection.grade). Domanda: e' un'informazione nuova che noi non
+abbiamo, o e' la ripetizione di cose che gia' usiamo (forma recente L10, quote
+di titolarita', quote 1X2)? Se fosse nuova, entrerebbe nel modello predittivo.
+Antefatti: i filoni favorito_odds e quote 1X2 sono stati chiusi perche'
+correlavano col risultato ma non aggiungevano nulla sopra il resto.
+
+
+===============================================================================
+3. COSA E' STATO ACCERTATO OGGI -- FATTI, NON IPOTESI
+===============================================================================
+F1. La query funziona. Serve Cookie + header X-CSRF-Token insieme (protezione
+    stile Rails): col solo Cookie, currentUser torna null e le query "my*"
+    tornano 0 nodi SENZA errore. Trappola silenziosa, gia' documentata.
+F2. La lettera NON cambia avvicinandosi al calcio d'inizio (confermato
+    dall'utente). Un solo snapshot per GW basta.
+F3. La lettera sparisce al fischio d'inizio DEL SINGOLO GIOCATORE, non a fine
+    GW. Il pool utile di una GW si erode ora per ora.
+F4. La lettera e' identica in ogni leaderboard (arena, Under 23, In Season):
+    e' una proprieta' di (giocatore, partita), non del campo di avversari.
+    Non serve controllare per leaderboard nelle analisi.
+F5. Le 8 leaderboard Limited pescano dallo stesso mazzo: dopo deduplica per
+    (player, game) danno 171 righe contro le 174 di una sola. Il tetto e' il
+    mazzo dell'utente, non il numero di leaderboard.
+F6. ESISTE UNO STORICO, per una rotta diversa da quella della schermata:
+    anyPlayer.playerGameScores(last:N).projection.grade. Funziona su QUALSIASI
+    slug giocatore, non solo sulle carte possedute -> il campione e'
+    praticamente illimitato. Cap server-side a 15 partite per giocatore,
+    profondita' ~5 mesi, copertura 100% (zero grade nulli).
+F7. Lo storico mostra SOLO partite gia' concluse (0/32 partite pendenti di
+    stasera). Le due rotte non si contraddicono: coprono periodi diversi.
+F8. Il grade VARIA partita per partita nello storico (test U1). Non e' il
+    valore attuale ristampato su tutte le righe passate. Questa ipotesi
+    dell'utente e' stata testata ed esclusa.
+
+
+===============================================================================
+4. I NUMERI, INTEGRALI (compresi quelli che non ci piacciono)
+===============================================================================
+
+--- Correlazione grade vs punteggio realizzato, TUTTE le righe (n=45 per
+    ruolo, ma solo 3 giocatori per ruolo -- campione debolissimo) ---
+  GK +0.285   DEF +0.638   MID +0.490   FWD +0.648   totale +0.560 (n=180)
+
+--- Le stesse, filtrate ai soli giocatori CHE HANNO GIOCATO (minuti > 0) ---
+  DEF 0.638 -> 0.20     FWD 0.648 -> 0.17     GK e MID: NON RIPORTATI, MANCANO
+  Lettura: gran parte della correlazione grezza era il canale "gioca / non
+  gioca", che noi gia' possediamo tramite le quote di titolarita'. Non e'
+  leakage, e' informazione lecita ma NON nuova.
+  Sullo stesso campione, le sole starter_odds danno correlazioni uguali o
+  superiori al grade grezzo.
+
+--- Metro di produzione (backtest del 05/08, REPORT_PASSAGGIO_2_OPUS_P3) ---
+  correlazione previsto/realizzato del nostro score_atteso:
+  GK 0.0347 (n=6973)   DEF 0.1833 (n=5531)   MID 0.2265 (n=1486)
+  FWD 0.2064 (n=1228)
+  ATTENZIONE: questi numeri vengono da un ALTRO campione. Vedi errore E1.
+
+--- Campione GK allargato (R4/R5, 55 portieri distinti, 550 righe) ---
+  grade 0.119   starter_odds 0.060   produzione 0.035 (ma da altro campione)
+  R6: aggiungendo il grade a un modello che ha gia' starter_odds + L10
+  (L10 calcolata correttamente con le sole partite precedenti), R2 passa da
+  0.014 a 0.021, coefficiente positivo.
+  Lettura onesta: si passa dallo spiegare l'1,4% al 2,1% di cio' che
+  determina il punteggio di un portiere. Il "+47% relativo" e' vero ma e' un
+  modo ingannevole di dirlo (come "raddoppia il rischio" da 1 su 1000 a 2 su
+  1000).
+
+--- DEF / MID / FWD ---
+  Restano su 3 giocatori a ruolo. Non valgono niente. Da rifare col metodo
+  usato per il GK.
+
+--- IL DATO CHE MANCA, ED E' IL GIUDICE ---
+  S3, test anti-riscrittura: MAI ESEGUITO. Le partite della GW
+  football-4-7-aug-2026 finiscono fra le 18:00 del 06/08 e le 13:35 del 07/08
+  ora di Roma. Script pronto: analisi_manager/p12_verifica_leakage_grade.py.
+  Confronta i grade pre-partita catturati la mattina del 06/08 (rotta
+  compose, p12_step3_righe.json e gli snapshot) con quelli riletti dalla
+  rotta storica a partite concluse, sulle stesse (giocatore, partita).
+  ESITO IDENTICI -> lo storico e' genuino pre-partita, tutto il resto vale.
+  ESITO DIVERSI  -> il valore storico e' riscritto dopo il risultato, e OGNI
+                    numero della sezione 4 va buttato.
+  ASIMMETRIA DA SAPERE: il test puo' dimostrare "pulito" in modo conclusivo,
+  ma non puo' dimostrare "sporco" in modo conclusivo, perche' confronta due
+  ROTTE diverse oltre che due momenti diversi (la rotta storica non espone le
+  partite pendenti, F7, quindi il confondimento non e' eliminabile). Se esce
+  "diversi", serve un test ulteriore prima di chiudere il filone.
+
+
+===============================================================================
+5. ERRORI GIA' COMMESSI OGGI -- NON RIFARLI
+===============================================================================
+
+E1. CONFRONTO FRA CAMPIONI DIVERSI. Successo DUE VOLTE nella stessa sessione,
+    da parte dell'esecutore, ed e' l'errore piu' pericoloso del filone.
+    Prima volta: grade non filtrato (0.64) accostato al nostro modello
+    (0.183). Seconda volta: grade GK sulle nostre 550 righe (0.119) accostato
+    al nostro 0.035 misurato su 6973 righe di un altro backtest.
+    REGOLA (gia' in CLAUDE.md, "il delta non il valore assoluto"): due numeri
+    si confrontano solo se calcolati sulle STESSE RIGHE nello STESSO RUN.
+    Il prossimo orchestratore deve controllare ATTIVAMENTE ogni tabella che
+    l'esecutore produce: chiedere sempre "su quali righe e' calcolato ciascun
+    numero di questa riga?".
+
+E2. SOGLIA INVENTATA. L'orchestratore uscente (io) ha scritto in un brief che
+    una correlazione sopra +0.7 sarebbe stata "sintomo di riscrittura". Era
+    un numero inventato, senza base. Ha portato l'esecutore a interpretare
+    +0.64 come allarme leakage quando era semplicemente il canale
+    "gioca/non gioca". SOGLIA ANNULLATA: non usarla. Il metro giusto e'
+    sempre un numero misurato in casa sullo stesso campione, mai una soglia a
+    priori.
+
+E3. RIGHE SCAMBIATE PER CASI. 550 righe su 55 portieri non sono 550 casi
+    indipendenti: lo stesso portiere misurato 10 volte resta un portiere solo.
+    Ogni incertezza va calcolata raggruppando per giocatore. Vale anche per
+    DEF/MID/FWD quando arriveranno.
+
+E4. CAMPIONE SELEZIONATO. Il primo campione veniva da myFilteredBench ordinato
+    per POPULAR_STARTERS: solo carte dell'utente, solo le piu' titolari.
+    Su un campione cosi' stretto le correlazioni escono sottostimate e il
+    residuo sovrastimato. Ora che la rotta storica funziona su chiunque (F6)
+    il problema e' evitabile: campionare largo e dichiarare come si e'
+    campionato.
+
+E5. GUARDARE NEL FUTURO SENZA ACCORGERSENE. Per una partita passata, L10 e
+    ogni altra feature vanno calcolate con le sole partite PRECEDENTI a
+    quella. Usando la media di oggi si infilano dentro partite successive a
+    quella da prevedere. Sonnet lo ha fatto correttamente in R6: mantenere
+    questo standard in tutto cio' che segue.
+
+E6. PERCENTUALI RELATIVE SU BASI MINUSCOLE. "+47%" su un R2 che va da 0.014 a
+    0.021 e' vero e fuorviante insieme. Riportare sempre anche il valore
+    assoluto e tradurlo in linguaggio comune per l'utente.
+
+
+===============================================================================
+6. COME SI LAVORA IN QUESTO FILONE
+===============================================================================
+Modello consolidato, gia' in CLAUDE.md, qui la versione operativa.
+
+- L'ORCHESTRATORE (tu) non esegue: decide cosa misurare, scrive brief
+  autosufficienti, legge i numeri, e soprattutto CONTROLLA che il confronto
+  sia lecito (vedi E1). Aggiorna gli handoff.
+- SONNET: query mirate, analisi, regressioni, backtest. Tutto cio' che
+  contiene un "decidi se".
+- HAIKU: raccolta massiva, estrazioni ripetitive, conteggi. Tutto cio' che si
+  scrive come "fai N volte questa cosa e riporta gli errori".
+- L'UTENTE fa da navetta: copia i brief e riporta gli esiti. Gli agenti non
+  si parlano fra loro. Dirgli SEMPRE a chi va dato un brief.
+- L'utente e' laureato in legge, non in statistica: ogni numero che conta per
+  una decisione va spiegato con un esempio banale (medicine, monete, altezze)
+  PRIMA del numero vero. Se dice "non ho capito", riformulare piu' stupido,
+  non piu' preciso.
+- In chat pochissime righe, tutto il contenuto nei file. L'utente paga a
+  token.
+- Serve il cookie Sorare + csrftoken freschi ad ogni sessione: chiederglieli,
+  sono gia' anche secrets GitHub (SORARE_COOKIE, SORARE_CSRF).
+
+
+===============================================================================
+7. ORDINE DELLE OPERAZIONI PER LA PROSSIMA SESSIONE
+===============================================================================
+PASSO 0 (prima di tutto, blocca tutto il resto): far eseguire S3 a Sonnet.
+        Le partite sono finite. Se S3 dice "diversi", fermarsi e ragionare
+        sull'asimmetria descritta al punto 4 prima di chiudere il filone.
+PASSO 1: se S3 e' pulito, spedire i DUE brief gia' scritti (sezione 8) --
+        quello a Sonnet e quello a Haiku, in parallelo.
+PASSO 2: alla luce dei risultati, decidere se il grade entra in un backtest
+        vero. Criterio da CLAUDE.md: MAE + correlazione + lift di selezione
+        INSIEME, nello stesso verso.
+PASSO 3: se si decide di portarlo in produzione, ripercorrere TUTTA la catena
+        valori di produzione -> soglie arena (PAREGGIO_ARENA,
+        GUADAGNO_PER_PUNTO in generatore_formazioni/) -> tool di scouting.
+        Nessuna modifica si considera chiusa prima.
+
+NOTA STRATEGICA per l'orchestratore entrante: il punto interessante di oggi
+NON e' che il grade correla col risultato -- quello lo fa anche cio' che gia'
+abbiamo. E' che sui PORTIERI il nostro modello ha correlazione 0.035, cioe'
+ordina i portieri quasi a caso, mentre il grade sembra ordinarli un po'
+meglio (0.119). Il valore potenziale del filone e' tutto li': non "un segnale
+in piu' ovunque", ma "l'unica cosa che ordina i portieri". Se il confronto
+sullo stesso campione (brief V2) conferma, quello e' il risultato da
+perseguire. Se lo smentisce, il filone e' probabilmente da chiudere come
+favorito_odds. L'utente e' convinto che siamo vicini a una svolta: e'
+possibile, ma finora l'unico numero solido e' quello del portiere, ed e'
+piccolo.
+
+
+===============================================================================
+8. I DUE BRIEF GIA' SCRITTI E NON ANCORA SPEDITI
+===============================================================================
+
+------------------------------------------------------------------------------
+BRIEF A -- PER SONNET: le due prove che mancano prima di dire "oro"
+------------------------------------------------------------------------------
+Correzione da recepire prima di tutto: il confronto grade-vs-nostro-modello
+della sezione 10/11 accosta numeri calcolati su campioni diversi (grade sulle
+nostre righe, produzione su un backtest di 6973 righe). Vale solo un
+confronto sullo stesso campione. Correggi l'handoff, non lasciare la versione
+sbagliata accanto a quella giusta. Annulla anche la soglia "+0.7 = sospetto
+riscrittura" di un brief precedente: era inventata, non ha base.
+
+V1 -- REGGE SU META' CAMPIONE? Dividi i 55 portieri in due gruppi casuali da
+  ~27 e calcola la correlazione grade-realizzato separatamente su ciascuno.
+  Se escono entrambe intorno a +0.12 il segnale e' reale; se una da' +0.25 e
+  l'altra +0.00 e' rumore appoggiato su qualche portiere fortunato. Ripeti la
+  divisione 20 volte con gruppi diversi e riporta il RANGE dei valori.
+  I casi indipendenti sono 55 portieri, non 550 righe: calcola l'incertezza
+  raggruppando per giocatore e dimmi se +0.119 e' distinguibile da zero su
+  quella base.
+
+V2 -- CONFRONTO SULLO STESSO CAMPIONE, NELLO STESSO RUN. Calcola score_atteso
+  per le STESSE 550 righe GK, usando i soli dati disponibili prima di ciascuna
+  partita (nessuna informazione successiva), e correla su quelle identiche
+  righe. E' l'unico confronto valido contro il grade. Se far girare la
+  pipeline su 550 partite costa troppo, riduci a 20-25 portieri ma tieni il
+  sottoinsieme IDENTICO per entrambi i modelli.
+
+V3 -- IL METRO CHE DECIDE: IL LIFT. Sulle stesse righe: se ogni giornata
+  scegliessi il portiere migliore secondo il grade, quanti punti farei in
+  media? E scegliendolo secondo score_atteso? E a caso? Riporta anche il MAE,
+  cosi' abbiamo i tre criteri di CLAUDE.md insieme (MAE + correlazione +
+  lift).
+
+NON FARE: nessuna modifica a produzione, nessuna soglia arena toccata. Se
+V1/V2/V3 passano, la catena produzione -> soglie arena -> scouting va
+ripercorsa tutta e si decide con l'utente.
+
+IPOTESI DELL'ORCHESTRATORE PRIMA DEI NUMERI: V1 dara' un range largo (da
+~0.02 a ~0.22) e +0.119 risultera' a malapena distinguibile da zero su 55
+portieri; V2 alzera' il nostro modello sopra 0.035 sul campione nuovo; V3
+mostrera' un vantaggio piccolo ma nella direzione giusta.
+
+Output in coda a HANDOFF_LETTERA_GRADE_2026-08-06.txt.
+
+------------------------------------------------------------------------------
+BRIEF B -- PER HAIKU: raccolta storico grade su larga scala
+------------------------------------------------------------------------------
+Leggi prima: CLAUDE.md, docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt
+(sezioni 9-11), e analisi_manager/p12_sonda_storico_grade.json per il
+formato. Compito puramente esecutivo: raccogliere dati, nessuna analisi,
+nessuna conclusione.
+
+COSA FARE: con la rotta storica gia' verificata
+(playerGameScores(last:15), funziona su qualsiasi slug, non solo carte
+possedute), raccogli 150-200 giocatori DISTINTI per ruolo, tutti e 4 i ruoli,
+15 partite ciascuno.
+
+COME SCEGLIERLI -- REGOLA IMPORTANTE: NON prendere i piu' forti, i piu'
+popolari o i piu' titolari. Se il campione contiene solo giocatori simili fra
+loro, i numeri calcolati sopra escono sbagliati. Prendi tutti i giocatori
+disponibili nelle leghe con pipeline, oppure un campione casuale se sono
+troppi. Scrivi nell'handoff COME li hai scelti e da quale elenco sei partito.
+
+CAMPI PER OGNI RIGA (giocatore, partita): player slug e nome, ruolo, squadra,
+lega, projection.grade, reliabilityBasisPoints, punteggio So5 realizzato,
+minsPlayed, starterOddsBasisPoints e sua reliability, data partita, squadra
+casa/trasferta e relative winOddsBasisPoints, scoreStatus.
+
+OUTPUT: un file per ruolo,
+analisi_manager/dati/storico_grade_<ruolo>_<AAAAMMGG>.json. Committa e pusha.
+Nell'handoff scrivi solo: quanti giocatori e quante righe per ruolo, quante
+leghe coperte, come hai campionato, elenco degli errori e dei giocatori
+saltati con il perche'.
+
+NON FARE: nessun calcolo di correlazioni o regressioni (le fa Sonnet), nessun
+score_atteso, nessuna run GitHub, nessuna modifica a produzione, non toccare
+i file p12_* di Sonnet.
+
+SEGNALA SE: il cap di 15 partite non regge su qualche giocatore, o alcune
+leghe non tornano dati.
+
+
+===============================================================================
+9. DECISIONE APERTA (non presa)
+===============================================================================
+Se S3 e' pulito e V1/V2/V3 confermano il vantaggio sul portiere, restano tre
+strade, da scegliere con l'utente e non da soli:
+  (a) usare il grade solo come correttivo sul ruolo GK, dove il nostro
+      modello e' cieco, lasciando invariati gli altri ruoli;
+  (b) raccogliere anche DEF/MID/FWD su campione largo prima di decidere
+      qualunque cosa, e valutare il grade come feature generale;
+  (c) chiudere il filone se il vantaggio del portiere si rivela non
+      distinguibile da zero (V1) o sparisce nel confronto omogeneo (V2).
+Il costo di (b) e' basso ora che il campione e' illimitato; il costo di (a)
+e' ripercorrere tutta la catena di produzione fino allo scouting.
+
+
+===============================================================================
+10. FILE DI RIFERIMENTO
+===============================================================================
+CLAUDE.md
+docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt        (sezioni 1-11)
+docs/handoff/BRIEF_SONNET_GRADE_SNAPSHOT_2026-08-06.txt  (brief iniziale +
+                                                          fatti utente)
+docs/handoff/REPORT_PASSAGGIO_2_OPUS_P3_2026-08-05.txt   (metro di produzione)
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md               (stato dell'arte
+                                                          modello + scouting)
+analisi_manager/p12_verifica_leakage_grade.py            (S3, da eseguire)
+analisi_manager/p12_sonda_storico_grade.json
+analisi_manager/p12_step3_righe.json
