@@ -353,9 +353,59 @@ F) NOTA DI METODO -- PERCHE' SI E' SMESSO. Fra policy, spezzature e
    Il prossimo passo utile aggiunge DATI (estrazione manager via Haiku),
    non rilegge lo stesso campione.
 
-6. DECISIONE APERTA
--------------------
-Nessuna presa. Le opzioni sul tavolo:
+6. DECISIONE -- PRESA IL 06/08 MATTINA: NIENTE ADOZIONE IN FORMAZIONE
+---------------------------------------------------------------------
+Il test decisivo (Brief 1 su ~37 mazzi indipendenti, ~7.000 arene, dopo
+l'estensione dell'estrazione manager) chiude la domanda:
+  - conteggio dei segni: 15 positivi / 22 negativi, p=0.32 (indistinguibile
+    da una moneta);
+  - delta PESATO per numero di arene: ~0 con forever-young, leggermente
+    negativo senza, IC che include lo zero in entrambi i casi.
+=> `favorito_odds` NON si adotta nel generatore di formazioni.
+
+EFFETTO ESCLUSO, NON "CAMPIONE INSUFFICIENTE" -- distinzione decisiva,
+verificata chiedendo gli IC95 espliciti del delta pesato per arene:
+  con forever-young, capitano libero    [-0.637, +0.737]
+  con forever-young, capitano bloccato  [-0.594, +0.772]
+  senza forever-young, capitano libero  [-1.042, +0.166]
+  senza forever-young, cap. bloccato    [-0.951, +0.189]
+Ampiezza ~1.3 pt, limite superiore MAI oltre +0.8. Tutti e quattro gli
+intervalli ESCLUDONO sia il +2.98 di forever-young sia il +3.33 delle
+sintetiche. Quindi non e' "non dimostrato": qualunque guadagno superiore a
+~1 punto per formazione e' escluso dai dati. Il massimo compatibile
+(+0.8 pt, <4 essenze per arena) non giustifica di toccare la produzione e
+rifare la catena §1bis.
+La catena si spezza fra "prevedo meglio il singolo difensore" (vero,
+misurato su 14.230 righe) e "faccio piu' punti in arena" (escluso).
+
+DUE BIAS SOSPETTATI ED ESCLUSI (06/08, prima di chiudere):
+- *Cecita' al rischio panchina*: nel backtest il knapsack sceglie solo fra
+  carte con realizzato noto (= che hanno giocato), quindi nessuna policy
+  rischia lo zero. VERIFICATO: la distribuzione di `favorito_odds` fra
+  carte tenute e scartate e' praticamente identica su tutti i ruoli
+  (differenze <10% di una SD; sul DEF le scartate sono semmai leggermente
+  PIU' favorite). Tasso di scarto 0-27%, mai sopra 30%. Nessuna distorsione.
+- *Il capitano sporca il confronto*: B' gira la stessa regola su attesi
+  diversi, quindi cambia anche la fascia (+20% in arena). Il capitano
+  cambia nel 76% delle arene (e nel 69% e' impossibile bloccarlo perche'
+  il DEF scelto da A viene sostituito), ma bloccandolo dove possibile i
+  numeri restano identici (15-16 positivi/22 negativi, p~0.32-0.42, delta
+  pesato ancora indistinguibile da zero). Nessun effetto.
+Cadono di conseguenza due letture precedenti di questa stessa sessione:
+il +3.33 delle arene SINTETICHE era un artefatto del campionamento casuale
+(pool di carte scorrelate non somigliano a nessun mazzo vero), e il +2.98
+di forever-young era un mazzo fortunato, fra i piu' favorevoli dei 37.
+RESTA VERO E NON SMENTITO: sul singolo DEF il modello migliora davvero
+(MAE+corr+lift, criterio severo, campione pieno, n=14.230). Ordinare meglio
+i difensori fra loro semplicemente non basta a spostare il punteggio di una
+formazione da 5 carte immersa in ~50 pt di rumore.
+LIMITE DEL CAMPIONE, per chi volesse riaprire: solo forever-young supera le
+16 giornate. Il collo di bottiglia NON e' piu' il numero di mazzi ma la
+PROFONDITA' TEMPORALE di ciascuno -> estrarre tutto lo storico di pochi
+manager, non pochi giorni di tanti.
+
+6bis. COSA RESTA SUL TAVOLO
+----------------------------
 
 (1) SCOUTING invece che formazione. Nello scouting si confrontano carte
     DENTRO lo stesso ruolo: nessuna competizione fra ruoli, nessuno slot
@@ -399,6 +449,277 @@ Nessuna presa. Le opzioni sul tavolo:
     target.
 
 
+5ter. BRIEF 1 RIPETUTO SU TUTTI I MAZZI (sessione Sonnet, 06/08 pomeriggio)
+------------------------------------------------------------------
+Script nuovo: analisi_manager/p11_bloccato_tutti_mazzi.py (in repo, non
+committato). Riusa l'impianto di p11_manager_confronto.py (mazzo
+ricostruito +/-30gg, walk-forward, carte non clonate, stessa regola
+capitano). Policy B' = DEF mult k=0.2 con COMPOSIZIONE PER RUOLO FORZATA
+identica ad A nella stessa arena: si prende la formazione A, si conta il
+ruolo che ha vinto lo slot extra, e si ricostruisce B' con la stessa shape
+ma extra_roles ridotto a quel solo ruolo (invece dei 3 in competizione).
+Verificato che la composizione risulta sempre identica ad A (per
+costruzione, non solo empiricamente).
+
+Girato su 38 mazzi (esclusi crowss/badamt/matangel716/un file che non e'
+un mazzo). Output integrale in analisi_manager/p11_bloccato_out.txt e
+p11_bloccato_righe.json. Un solo mazzo scartato come MUTO
+(ninoshooter, overlap 4.71/5, n=7 arene).
+
+TABELLA (37 mazzi utili, arene/giornate/pool ricostruito medio/overlap
+carte con A su 5/delta B'-A punti/IC95 bootstrap su giornate):
+  forever-young    652 arene 35gg pool 419.9 ovlp 1.63  +2.98 [+0.33,+6.12]
+  satonio          514 arene  4gg pool 424.2 ovlp 1.84  -1.32 [-2.65,-0.24]
+  pablo0078        448 arene  5gg pool 563.2 ovlp 1.01  -1.10 [-1.75,-0.02]
+  qtn-...          443 arene 10gg pool 251.8 ovlp 1.52  -1.30 [-3.77,+0.22]
+  private_joker    220 arene  3gg pool 355.0 ovlp 1.04  +0.05 [-3.23,+2.76]
+  outbackeras      203 arene  3gg pool 370.0 ovlp 1.13  -1.87 [-3.33,+2.24]
+  bartholomaus     200 arene  5gg pool 267.0 ovlp 1.19  -0.39 [-2.13,+2.65]
+  talwiwi          199 arene  5gg pool 305.2 ovlp 2.32  +4.02 [+1.48,+9.87]
+  sorare2gether    184 arene  2gg pool 426.5 ovlp 1.07  -1.14 [-1.69,-0.31]
+  bxl-spartak      179 arene 11gg pool 151.4 ovlp 2.12  -3.20 [-5.84,+0.64]
+  mamatouniang     177 arene  2gg pool 498.0 ovlp 1.55  +1.38 [-0.31,+2.75]
+  mattross         164 arene  5gg pool 241.0 ovlp 1.46  -1.25 [-2.85,+0.59]
+  140spb34         141 arene  4gg pool 190.6 ovlp 1.14  +2.38 [+0.66,+3.75]
+  bassmn26         141 arene  4gg pool 116.8 ovlp 2.60  -0.38 [-1.63,+0.99]
+  mad-bunny        135 arene  5gg pool 174.0 ovlp 1.50  -1.30 [-4.12,+5.45]
+  helgivilli       123 arene  5gg pool 150.0 ovlp 1.79  +2.14 [-1.92,+8.51]
+  handicap-fc       88 arene  5gg pool 119.6 ovlp 1.95  -2.85 [-5.42,+0.78]
+  llooll4412        76 arene  5gg pool 112.0 ovlp 1.89  +0.43 [-3.18,+3.69]
+  el_pepito         69 arene  4gg pool 115.8 ovlp 1.54  -3.40 [-6.76,+0.50]
+  lairdinho         65 arene 12gg pool  47.2 ovlp 2.82  +3.71 [-3.15,+11.28]
+  mortz-utl         62 arene  5gg pool 113.0 ovlp 1.71  +1.44 [-3.18,+5.50]
+  globidoug81       51 arene  5gg pool  79.2 ovlp 2.02  +0.84 [-5.77,+4.69]
+  s-g-51d741...     39 arene  5gg pool  71.8 ovlp 2.85  +6.57 [+4.26,+7.96]
+  shirimimi         34 arene  7gg pool  60.4 ovlp 2.68  +2.03 [-4.87,+10.58]
+  sirbyss-471...    33 arene  4gg pool  67.4 ovlp 2.45  -5.42 [-23.02,-2.49]
+  gonlea            32 arene  4gg pool  48.5 ovlp 1.66  -1.11 [-5.07,+6.45]
+  fins49            31 arene  7gg pool  40.7 ovlp 3.10  -0.33 [-4.14,+1.84]
+  eoghankelly       29 arene  9gg pool  29.6 ovlp 2.72  -3.67 [-6.04,+1.19]
+  milkyfresht       29 arene  4gg pool  60.5 ovlp 2.52  -2.34 [-5.21,+0.21]
+  bryanmid          28 arene  6gg pool  46.0 ovlp 3.00  -1.85 [-8.79,+3.23]
+  s2t               27 arene  4gg pool  55.0 ovlp 3.00  +0.44 [-2.90,+3.91]
+  toschi            24 arene  4gg pool  49.8 ovlp 3.50  -2.51 [-9.28,+3.31]
+  sticole-...       14 arene  3gg pool  49.3 ovlp 3.57  -1.61 [-10.70,+5.95]
+  braddersfc        12 arene  2gg pool  31.7 ovlp 3.33  +7.06 [+0.00,+10.59]
+  spillo678         11 arene  4gg pool  15.6 ovlp 3.73  +3.05 [-2.06,+22.95]
+  serji0             5 arene  4gg pool  20.8 ovlp 4.20  -1.62 [-6.06,+0.00]
+  ericeinicke         4 arene  3gg pool  11.3 ovlp 4.25  -0.53 [-1.06,+0.00]
+  (ninoshooter: 7 arene, ovlp 4.71/5 -> MUTO, escluso da tutte le letture sotto)
+
+LETTURA 1 -- segno su tutti i 37 mazzi utili:
+  positivi 15, negativi 22, zero 0. Test del segno p=0.3240 (NON
+  significativo, coerente con rumore puro / nessun effetto sistemico).
+
+LETTURA 2 -- ristretta a mazzi con >=16 giornate:
+  n=1 (solo forever-young, 35gg). Nessuno degli altri 36 mazzi raggiunge
+  16 giornate (il piu' vicino e' lairdinho con 12). Lettura non
+  informativa in questo giro: il campione "abbastanza denso da non essere
+  rumore puro" e' rimasto un solo mazzo, come nel giro precedente.
+
+LETTURA 3 -- delta pesato per arene (bootstrap su cluster manager+giornata):
+  con forever-young: 4.886 arene, 37 mazzi, 214 cluster
+    delta = +0.002  IC95 [-0.637, +0.737]  -> zero netto, IC strettissimo
+  senza forever-young: 4.234 arene, 36 mazzi, 179 cluster
+    delta = -0.456  IC95 [-1.042, +0.166]  -> leggermente negativo, IC
+    esclude ancora lo zero solo debolmente (include zero)
+
+CONCLUSIONE DI QUESTO GIRO: ampliare il campione da 2 a 37 mazzi NON ha
+fatto emergere un segno concorde. Il conteggio dei segni e' vicino al
+50/50 (15/22, p=0.32) e il delta pesato per arene e' indistinguibile da
+zero (con forever-young) o debolmente negativo ma con IC che include lo
+zero (senza). forever-young resta un caso isolato favorevole (+2.98,
+IC esclude zero) ma non rappresentativo: nessun altro mazzo comparabile
+per numero di giornate esiste in questo pool per confermarlo o smentirlo.
+Il limite vero non e' piu' la composizione (isolata correttamente, come
+gia' verificato con la sanity-check precedente) ma la PROFONDITA'
+TEMPORALE per mazzo: quasi tutti i 37 mazzi hanno 2-12 giornate, lo
+stesso problema di rumore gia' segnalato nel giro precedente (20/35
+mazzi con 2-5 giornate). Servirebbe storico piu' lungo per mazzo, non piu'
+mazzi diversi, per separare segnale da rumore qui.
+
+
+6bis. p_draw COME SEGNALE AGGIUNTIVO -- BOCCIATO (sessione 06/08, chat nuova)
+-----------------------------------------------------------------------------
+Ipotesi: favorito_odds = p_win_own - p_win_opp scarta il pareggio (40-35-25
+e 50-10-40 hanno differenziale simile ma sono partite opposte, chiusa vs
+aperta). p_draw alta = proxy di "partita bloccata": atteso positivo per
+DEF/GK, negativo per FWD (dichiarato PRIMA dei numeri).
+
+PASSO 0 (fatto prima di tutto il resto, come richiesto): verificato che
+p_gioca (rimosso da score_atteso il 28/07) e starter_odds sono un filone
+DIVERSO da questo -- non riguarda p_draw. Durante la stessa indagine,
+richiesto separatamente un test su starter_odds come variabile continua:
+BLOCCATO da leakage gia' dimostrato nel repo (screening_segnali.py,
+verifica 04/08: il campo in cache viene riscritto DOPO le formazioni
+ufficiali, 64.6% dei valori cache a 0%/100% esatto, confermato di nuovo su
+42.318 righe in questa sessione). Quel filone resta sospeso, NON e' questo.
+
+STEP 1-2 -- feature costruite (p_win_own, p_win_opp, p_draw da
+odds_1x2_index.json) e prima misura sul residuo (screening_p_draw.py,
+stesso impianto walk-forward di screening_favorito_odds.py, joint
+regression p_draw sopra favorito_odds gia' presente, per ruolo):
+
+  ruolo        n      coeff p_draw          IC95                    R2 incr.
+  Defender   18204    -9.454   [-18.402, -0.488]      0.033%   ESCLUDE ZERO
+  Midfielder 17485   -14.503   [-20.357, -8.232]       0.103%   ESCLUDE ZERO
+  Forward    13310   -15.629   [-23.230, -6.778]       0.112%   ESCLUDE ZERO
+  Goalkeeper  4276   -13.422   [-32.053, +4.378]        0.063%   attraversa zero
+
+SEGNO: NEGATIVO su tutti e 4 i ruoli (dove significativo). Per DEF questo
+e' L'OPPOSTO della direzione dichiarata (positiva attesa) -- riportato
+cosi' com'e', non reinterpretato. Solo FWD ha il segno atteso. R2
+incrementale piccolo (0.03-0.11%) ma non nullo, molto piu' piccolo del
+contributo di favorito_odds da solo (1.1-1.9% sugli stessi ruoli).
+
+STEP 3 -- test A/A: SI MUOVE (k=0 invariato, la formula applica
+correttamente delta_p_draw). Griglia campione PIENO, bootstrap 200,
+criterio SEVERO, ENTRAMBE le direzioni (negativa indicata dai dati +
+positiva di controllo), additiva e moltiplicativa, 4 ruoli, 8 varianti a
+testa (32 totali):
+
+  DEF  (n=14.230): additiva k=-3/-6/-12/-20 e k=+3/+6/+12/+20, mult
+    k=-0.05/-0.1/-0.2/-0.3 e speculari positivi -- 0/8 PASSA. Ai k piu'
+    estremi (+12, +20 additiva; +0.2,+0.3 mult) corr e lift peggiorano
+    ma MAE resta piatto: nessuna riga supera tutti e tre gli IC95.
+  GK   (n=3.923): 0/8 PASSA. Tutti gli IC ampi e attraversano zero
+    ovunque, nessuna direzione promettente.
+  MID  (n=13.101): 0/8 PASSA. Pattern simile a DEF: a k negativi piccoli
+    (-3,-6) corr migliora debolmente (IC arriva a sfiorare escludere zero,
+    es. k=-12 corr IC[+0.0015,+0.0042]) ma MAE e lift non seguono mai.
+  FWD  (n=9.758): 0/8 PASSA. Stesso pattern: a k negativi piccoli corr
+    migliora (k=-20 IC[-0.0014,+0.0062], quasi passa) ma MAE piatto/
+    peggiora leggermente e lift mai fuori dall'IC.
+
+VERDETTO: 0/32 VARIANTI PASSANO IL CRITERIO SEVERO, su tutti e 4 i ruoli,
+in entrambe le direzioni. p_draw BOCCIATO come correzione di score_atteso,
+nella forma testata (additiva/moltiplicativa sullo scarto dalla media
+storica del giocatore, stessa forma di favorito_odds).
+
+NOTA APERTA (non risolta, da segnalare invece di ignorare): la
+regressione sul residuo mostra IC che escludono zero su 3 ruoli su 4, ma
+iniettare la stessa quantita' (delta_p_draw) in score_atteso con k della
+stessa scala di grandezza usata per favorito_odds non sposta MAE/corr/
+lift in modo distinguibile dal rumore -- gli effetti assoluti (MAE
+d=0.001-0.02pt anche a |k|=20) sono un ordine di grandezza piu' piccoli di
+quelli di favorito_odds agli stessi k. Possibile causa NON verificata:
+delta_p_draw (scarto dalla media ricorrente, finestra WINDOW_SIZE=30,
+minimo 5 osservazioni) ha una scala tipica molto piu' piccola del p_draw
+grezzo centrato per giocatore usato nella regressione (che centra sulla
+media dell'INTERO storico taratura_coppie, non su una finestra recente) --
+non confermato, da verificare separatamente se si vuole capire la
+discrepanza invece di limitarsi al verdetto operativo (che resta: BOCCIATO
+per l'uso in score_atteso).
+
+Nessuna modifica alla produzione. backtest_arene_previsioni.py ha ora
+anche delta_p_draw(ctx)/p_draw_k/p_draw_mult_k (stesso pattern di
+favorito_odds, default None/0.0 = spento), NON committato.
+
+
+5quater. DUE VERIFICHE SUL BRIEF 1 (sessione Sonnet, 06/08 pomeriggio-sera)
+------------------------------------------------------------------
+Script: analisi_manager/p11_verifiche_rischio_capitano.py (in repo, non
+committato). Girato sugli stessi 38 mazzi del giro precedente (ninoshooter
+qui NON escluso come muto, e' incluso nei 38 -- differenza minima rispetto
+al giro di composizione, segnalata).
+
+VERIFICA 1 -- il backtest e' cieco al rischio di non giocare?
+  Confronto favorito_odds fra righe TENUTE (reale trovato, entrano nel
+  knapsack) e SCARTATE (reale assente, mai rischiate da nessuna policy),
+  su tutte le carte candidate della finestra +/-30gg (non solo quelle poi
+  in formazione), per ruolo, pool di tutti i 38 mazzi:
+
+    ruolo  n_tenute  media_T   SD_T    | n_scart  media_S   SD_S   | diff(S-T)
+    GK        5.373  -0.0114  0.2630   |    803   -0.0388  0.2769  |  -0.0274
+    DEF       9.728  -0.0116  0.2755   |  1.844   -0.0024  0.2684  |  +0.0092
+    MID       9.364  -0.0141  0.2750   |  1.498   -0.0115  0.2746  |  +0.0026
+    FWD       8.017  -0.0260  0.2784   |  1.212   -0.0336  0.2713  |  -0.0076
+
+  Le differenze sono PICCOLE rispetto alla SD (~0.27-0.28 su tutti i ruoli
+  e su entrambi i gruppi): il piu' grande e' GK (-0.027, ~10% di una SD),
+  gli altri sotto 1/30 di SD. Le scartate NON sono sistematicamente piu'
+  favorite ne' piu' sfavorite delle tenute: nessuna distorsione di rilievo
+  verso una policy o l'altra su favorito_odds. Sul DEF (il ruolo che conta
+  per Brief 1) la differenza e' +0.0092, il segno opposto a un'ipotesi di
+  "le scartate sono le sfavorite che il modello avrebbe punito" -- se mai
+  le scartate DEF sono leggermente PIU' favorite in media, non meno.
+
+  Tasso di scarto per mazzo (quota di righe scartate sul totale con d
+  calcolabile): mediana intorno al 8-9%, range 0% (braddersfc, ericeinicke,
+  pochissime giornate) - 27.4% (eoghankelly). Sopra il 20%: eoghankelly
+  (27.4%), qtn-... (26.5%), lairdinho (20.7%). forever-young e' al 18.6%,
+  sotto la soglia di riserva ma non trascurabile. Nessun mazzo sopra 30%.
+  => Il rischio-panchina invisibile al backtest ESISTE (8-27% delle righe
+  candidate), ma la sua composizione per favorito_odds non e' distorta:
+  non gonfia ne' sgonfia artificialmente il guadagno misurato per Brief 1.
+  Resta un limite dichiarato (nessuna policy paga mai lo zero da
+  panchina), ma non e' la spiegazione del segno instabile trovato nel
+  giro precedente.
+
+VERIFICA 2 -- capitano bloccato
+  In Brief 1 originale il capitano si ricalcola sull'atteso di ciascuna
+  policy: su 4.893 arene (38 mazzi), il capitano di B' era DIVERSO da
+  quello di A nel 75.8% dei casi (3.707/4.893) -- non un caso raro, la
+  norma. Di questi, nel 69.2% (3.388/4.893) il capitano di A era
+  addirittura un DEF non piu' presente nella formazione B' (sostituito
+  dalla selezione), quindi impossibile da "bloccare" in senso letterale:
+  in quei casi si e' tenuto il capitano di B' non bloccato (fallback,
+  segnalato riga per riga nello script).
+
+  Con capitano bloccato dove possibile (stessa carta di A se presente in
+  B', altrimenti fallback su B' libero):
+    LETTURA 1 -- segno su 38 mazzi: positivi=16 negativi=22, p=0.4177
+      (era 15/22 su 37 mazzi utili nel giro senza blocco: PRATICAMENTE
+      IDENTICO)
+    LETTURA 2 -- mazzi con >=16 giornate: n=1 (solo forever-young, come
+      nel giro precedente)
+    LETTURA 3 -- delta pesato per arene, con forever-young:
+      +0.023 IC95 [-0.594,+0.772]  (era +0.002 [-0.637,+0.737])
+    LETTURA 3bis -- senza forever-young:
+      -0.423 IC95 [-0.951,+0.189]  (era -0.456 [-1.042,+0.166])
+
+  => Bloccare il capitano NON CAMBIA IL VERDETTO: i numeri sono
+  indistinguibili (entro il rumore) da quelli con capitano libero. Il
+  sospetto che il +20% del capitano stesse sporcando la misura di
+  selezione pura NON E' CONFERMATO: il capitano cambia spessissimo (76%
+  delle arene) ma il suo contributo medio al delta e' trascurabile,
+  probabilmente perche' i cambi vanno in entrambe le direzioni (a volte
+  premia B', a volte A) e si compensano nella media.
+
+CONCLUSIONE DI QUESTO GIRO: nessuna delle due ipotesi di distorsione
+regge. Ne' lo scarto delle righe senza reale ne' la regola del capitano
+spiegano il segno instabile (15-16 positivi su 22 negativi, p~0.32-0.42,
+delta pesato indistinguibile da zero). Il limite resta quello gia'
+identificato nel giro precedente: profondita' temporale per mazzo (quasi
+tutti a 2-12 giornate, un solo mazzo con >=16). Non ci sono altre leve di
+metodo facili da provare su questo stesso campione: il passo successivo
+utile e' storico piu' lungo per mazzo, non un'altra correzione del test.
+
+
+5quinquies. GLI IC95 ESCLUDONO I VALORI DI RIFERIMENTO? (+3,33 sintetiche,
++2,98 forever-young)
+------------------------------------------------------------------
+    delta pesato per arene         IC95                  esclude +2,98? esclude +3,33?
+    con f-young, non bloccato    +0.002 [-0.637,+0.737]        SI              SI
+    con f-young, capit. bloccato +0.023 [-0.594,+0.772]        SI              SI
+    senza f-young, non bloccato  -0.456 [-1.042,+0.166]        SI              SI
+    senza f-young, capit. blocc. -0.423 [-0.951,+0.189]        SI              SI
+
+In TUTTE E QUATTRO le letture l'estremo superiore dell'IC95 resta sotto
++0.8, quindi ESCLUDE sia +2,98 (forever-young da solo) sia +3,33 (arene
+sintetiche). Gli intervalli sono relativamente stretti (ampiezza ~1.3-1.4
+punti), non ampi e inconcludenti: non e' un caso di "campione ancora
+troppo piccolo per vedere l'effetto", e' un caso di EFFETTO ESCLUSO alla
+scala aggregata su questi 37-38 mazzi. Il numero +2,98 di forever-young
+preso da solo e' compatibile con l'IC del proprio mazzo (che lo contiene,
+[+0.27,+6.03]) ma sparisce appena si aggrega con gli altri 36-37 mazzi,
+la maggioranza dei quali ha delta negativo o vicino a zero: e' un
+risultato favorevole isolato di UN mazzo, non un pavimento sotto cui gli
+altri si nascondono per rumore. La lettura corretta resta quella gia'
+scritta al punto 5ter: il problema e' la profondita' temporale per mazzo
+(1 solo mazzo con >=16 giornate), non l'ampiezza del campione aggregato.
+
+
 7. FILE DI RIFERIMENTO
 ----------------------
 - backtest_arene_previsioni.py (modificato, NON committato)
@@ -411,3 +732,55 @@ Nessuna presa. Le opzioni sul tavolo:
 - docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md (aggiornato)
 - script di misura in scratchpad: taratura_confronto_odds.py e derivati P11
   -- FUORI REPO, da recuperare se si vuole riprodurre senza riscriverli.
+
+8. p_draw v2 -- CORREZIONE METODOLOGICA E RISULTATO FINALE (06/08 notte)
+-------------------------------------------------------------------------
+Rifatto il test dopo che la bocciatura v1 e' stata contestata (fondatamente)
+per due difetti: (a) p_draw non e' centrato a zero come favorito_odds (media
+storica ~0.15-0.35), quindi iniettarlo grezzo sposta la media della
+popolazione invece di riordinarla; (b) la griglia di k usava la stessa scala
+di favorito_odds nonostante p_draw abbia una SD molto piu' piccola.
+
+Correzioni applicate:
+- p_draw centrato sulla MEDIA DI GIORNATA (non media storica del giocatore
+  come favorito_odds): per ogni giornata, p_draw - media_p_draw_quella_giornata.
+- Griglia di k riscalata per il rapporto SD(favorito_odds)/SD(p_draw):
+  rapporto ~6.8-7.2 a seconda del ruolo (vedi tabella sotto). Testate 4
+  ampiezze x2 direzioni (negativa=indicata dai dati, positiva=controllo) x2
+  forme (additiva/moltiplicativa) x4 ruoli = 64 varianti totali.
+- Test A/A superato su tutti i ruoli (k=1e6 sposta MAE di ordini di
+  grandezza, il parametro e' vivo).
+
+SD e rapporto per ruolo (campione pieno, finestra 18/11/2025+):
+  DEF: SD(favorito_odds)=0.2774 SD(p_draw)=0.0397  rapporto=6.98  n=14230
+  GK:  SD(favorito_odds)=0.2763 SD(p_draw)=0.0406  rapporto=6.80  n=3923
+  MID: SD(favorito_odds)=0.2827 SD(p_draw)=0.0392  rapporto=7.21  n=13101
+  FWD: SD(favorito_odds)=0.2830 SD(p_draw)=0.0401  rapporto=7.06  n=9758
+
+Esito, 64 varianti, criterio severo (MAE+corr+lift IC95 bootstrap 200,
+tutti e tre escludono zero nello stesso verso): 2 PASS su 64, entrambi FWD,
+entrambi nella direzione negativa indicata dai dati:
+
+  FWD additiva  k=-21.17  MAE d=-0.039 IC(-0.056,-0.024)
+                          corr d=+0.005 IC(+0.001,+0.009)
+                          lift d=+3.74% IC(+0.54,+5.79)   PASSA
+  FWD mult.     k=-0.353  MAE d=-0.036 IC(-0.051,-0.024)
+                          corr d=+0.006 IC(+0.002,+0.009)
+                          lift d=+3.88% IC(+0.72,+5.77)   PASSA
+
+Ampiezze piu' grandi su FWD (k=-42.35, -84.7 additivi) restano con MAE e
+lift IC che escludono zero nel verso giusto, ma il lift a k=-84.7 ha IC
+che tocca il basso (+... -2.34 a +5.70, attraversa zero) -> non passano
+per lift. Quindi il segnale FWD e' reale ma FRAGILE fuori dal punto
+ottimale, si degrada rapidamente allargando k.
+
+DEF, GK, MID: 0/48 PASS. Il segno del coefficiente resta quello osservato
+nella regressione congiunta (negativo anche dove l'ipotesi si aspettava
+positivo, per DEF/MID) e la correzione di scala/centratura NON lo
+capovolge: l'osservazione va presa come e', non reinterpretata.
+
+VERDETTO: l'ipotesi "p_draw aiuta DEF/GK, danneggia FWD" e' BOCCIATA per
+DEF/GK/MID (nessun passaggio, segno spesso opposto all'atteso). Per FWD
+l'ipotesi (p_draw fa male, quindi sottrarlo aiuta) e' CONFERMATA ma solo in
+una finestra stretta di k, non su tutta la griglia. Nessuna modifica alla
+produzione, nessun commit: puro risultato di misura.
