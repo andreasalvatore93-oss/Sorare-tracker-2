@@ -67,6 +67,17 @@ COMP_TO_BUILD = {
     'Uncapped': ('ARENA_ALLSTARS_UNCAPPED', True),
     'Beginner': ('ARENA_ALLSTARS_260', True),   # identica alla 260 tranne i premi
 }
+# Competizioni ARENA ESCLUSE come le beginner (brief 06/08 notte, seconda
+# rettifica): le "arena dedicate a un campionato" (es. 'Jupiler Pro League
+# Arena - Limited', 'Turkish League Arena - Limited', 'All Star Arena -
+# Limited', 'Under 23 Arena - Limited'...) hanno tipo_arena in
+# ARENE_AMMESSE_TIPO (sono arena_limited a tutti gli effetti) ma competizione
+# NON in COMP_TO_BUILD. Prima venivano scartate in silenzio dentro
+# costruisci_slots ("competizione arena non mappata"). Ora si escludono ESPLI-
+# CITAMENTE, come le beginner: l'utente non le gioca e nel generatore sono
+# spente di default (evita anche di dover tarare una soglia per arene che
+# non si giocano). Contate e stampate per GW, mai piu' silenziose.
+COMPETIZIONI_ARENA_AMMESSE = {'Cap 260', 'Cap 220', 'Uncapped'}
 CAP_ARENA = 0.2      # build_formazione_globale: arene
 CAP_FUORI = 0.5      # build_formazione_globale: tutto il resto
 
@@ -118,6 +129,13 @@ def grezzo_carta(carta, in_arena, d_start, d_end, contatore):
     return punteggio_grezzo(carta, in_arena), 'ricostruito'
 
 
+def arena_ammessa(f):
+    """Vero se questa formazione e' un'arena AMMESSA nei 3 test: tipo Cap
+    260/220/Uncapped, ne' beginner ne' dedicata a un campionato."""
+    return (f.get('tipo_arena') in ARENE_AMMESSE_TIPO
+            and f.get('competizione') in COMPETIZIONI_ARENA_AMMESSE)
+
+
 def carica_gw(manager, gw):
     path = os.path.join(ROOT, 'dati_globali', f'manager_{manager}.json')
     with open(path, encoding='utf-8') as f:
@@ -148,8 +166,7 @@ def costruisci_pool(righe, modo='globale'):
             vuote += 1
             continue
         in_arena = bool(f.get('tipo_arena'))  # per il bonus corretto (CAP_ARENA), qualunque tipo di arena
-        in_arena_ammessa = f.get('tipo_arena') in ARENE_AMMESSE_TIPO  # per il filtro del pool modo='arena'
-        if modo == 'arena' and not in_arena_ammessa:
+        if modo == 'arena' and not arena_ammessa(f):  # filtro del pool modo='arena': solo arene ammesse
             continue
         for c in carte:
             cid = c.get('carta')
@@ -262,16 +279,25 @@ def gioca_arene(pool_rows, slots, obiettivo_key):
 
 
 def setup_comune(args):
-    """Caricamento condiviso dai 3 test: righe GW, arene (beginner escluse),
-    reale_per_arena (punteggi ufficiali), date, contatore fonte-grezzo."""
+    """Caricamento condiviso dai 3 test: righe GW, arene (beginner e dedicate
+    a campionato escluse), reale_per_arena (punteggi ufficiali), date,
+    contatore fonte-grezzo."""
     righe = carica_gw(args.manager, args.gw)
-    arene = [f for f in righe if f.get('tipo_arena') in ARENE_AMMESSE_TIPO]
+    arene_tipo = [f for f in righe if f.get('tipo_arena') in ARENE_AMMESSE_TIPO]
+    arene = [f for f in arene_tipo if arena_ammessa(f)]
     non_arene = [f for f in righe if not f.get('tipo_arena')]
     n_beginner = sum(1 for f in righe if f.get('tipo_arena') == 'arena_limited_beginner')
+    dedicate = [f for f in arene_tipo if not arena_ammessa(f)]
+    n_dedicate = len(dedicate)
+    dedicate_tipi = collections.Counter(f.get('competizione') for f in dedicate)
 
     print(f'formazioni totali in giornata : {len(righe)}')
-    print(f'  di cui ARENE (no beginner)  : {len(arene)}')
+    print(f'  di cui ARENE AMMESSE        : {len(arene)}  (Cap 260/220/Uncapped)')
     print(f'  di cui BEGINNER (escluse)   : {n_beginner}')
+    print(f'  di cui DEDICATE A CAMPIONATO (escluse): {n_dedicate}')
+    if dedicate_tipi:
+        for k, v in dedicate_tipi.most_common():
+            print(f'      dedicata: {v:3} x {k}')
     print(f'  di cui altre competizioni   : {len(non_arene)}')
     comp = collections.Counter(f.get('competizione') for f in arene)
     for k, v in comp.most_common():

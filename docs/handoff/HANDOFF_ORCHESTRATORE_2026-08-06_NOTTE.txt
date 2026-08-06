@@ -504,7 +504,34 @@ football-1-4-jul-2026 (1/1)    1 / 0 / 0 / 0                                 1 /
 football-24-28-jun-2026 (1/1)  0 / 1 / 0 / 0                                 0 / 1 / 0 / 0
 TOTALI su 6 GW (26 arene valutate su 34 reali):
   A: giusto=8, ERRORE(persa buona)=1, GIUSTO(batte REALE)=1, errore=16
-  G: giusto=8, ERRORE(persa buona)=1, GIUSTO(batte REALE)=3, errore=18
+  G: giusto=8, ERRORE(persa buona)=1, GIUSTO(batte REALE)=3, errore=14
+CORREZIONE (segnalata dall'utente, verificata riga per riga): la prima
+stesura riportava errore=18 per G, ARITMETICAMENTE SBAGLIATO. Somma corretta
+per GW (colonna "errore come REALE" di G): 7+2+2+3+0+0=14, non 18. Le altre
+tre colonne (giusto=8, ERRORE persa=1, GIUSTO batte=3) erano gia' corrette.
+8+1+3+14=26, torna col totale arene valutate.
+
+CAUSA ESATTA delle 8 arene escluse su football-31-jul-4-aug-2026 (richiesta
+dall'utente, non a occhio): non e' "il giocatore non ha giocato". E'
+backtest_arene_previsioni.partita_target() che cerca, dentro la cache
+game-log del giocatore, una partita nella finestra [fine_giornata-6gg,
+fine_giornata] = [29/07, 04/08]. Per le 8 carte, l'ULTIMA partita presente
+in cache cade FUORI da quella finestra:
+  amer-gojak, ante-orec, niko-jankovic: ultima in cache 23/07 (6 giorni
+    prima dell'inizio finestra)
+  matthew-james-corcoran: ultima in cache 26/07
+  stjepan-radeljic: ultima in cache 28/07 (un solo giorno fuori)
+  dominik-weixelbraun: ultima in cache 25/05 -- qui il gap e' di mesi, non
+    di giorni: da verificare se il giocatore era davvero fermo o se e' un
+    buco di copertura piu' vecchio, non solo mancata attualita'.
+E' un problema di FRESCHEZZA della cache condivisa (i game-log di questi
+giocatori non sono stati aggiornati con le partite di fine luglio/inizio
+agosto), non un buco strutturale del modello: la card veniva schierata da
+crowss quindi il giocatore una partita quella settimana l'ha fatta, solo
+non ancora catturata in cache. Vale la regola CLAUDE.md "cache game-log
+condivisa: verificarla sempre" -- qui la verifica l'ha fatta questo test,
+non un controllo a monte.
+
 Essenze d'ingresso RISPARMIATE dai salti "GIUSTO (batte REALE)" (COSTO_INGRESSO
 in generatore_formazioni/build_formazione_globale.py: Cap260=300, Cap220=200,
 Uncapped=300), UNICA GW dove capita: football-21-24-jul-2026 --
@@ -525,6 +552,90 @@ Dump per GW: analisi_manager/dati/DUMP_p13_crowss_<gw>_test{1,2,3}.txt (test2
 solo sulle 4 GW solide). Log completi: analisi_manager/dati/log_6gw/.
 Nessuna modifica alla produzione. dati_globali/manager_crowss.json aggiornato
 (estrazione locale) e da committare insieme a questa sezione.
+
+
+===============================================================================
+5septies. TEST3 VARIANTE A SU 27 GW: arene dedicate a campionato ESCLUSE
+come le beginner (Sonnet, 06/08 notte)
+===============================================================================
+Correzione utente (dopo prima consegna in chat): le "arene dedicate a
+campionato" (es. 'Jupiler Pro League Arena - Limited', 'Turkish League
+Arena - Limited', 'All Star Arena - Limited', 'Under 23 Arena - Limited',
+'Eredivisie Arena - Limited', 'Portuguese League Arena - Limited') NON si
+mappano su una soglia sostitutiva: si ESCLUDONO in blocco come le beginner,
+perche' l'utente non le gioca e nel generatore sono spente di default.
+Evita anche di dover tarare una soglia per arene che non si giocano.
+
+FIX IN p13_backtest_gw_crowss.py: aggiunta costante COMPETIZIONI_ARENA_AMMESSE
+= {'Cap 260','Cap 220','Uncapped'} e funzione arena_ammessa(f) (tipo_arena
+ammesso E competizione ammessa). setup_comune() ora esclude ESPLICITAMENTE le
+dedicate come fa gia' per le beginner, e le CONTA e STAMPA per GW (mai piu'
+silenziose: prima finivano nel ramo "competizione arena non mappata" dentro
+costruisci_slots, un'unica riga di ATTENZIONE senza dettaglio). costruisci_pool
+in modalita' 'arena' usa la stessa funzione arena_ammessa(). Le carte delle
+arene dedicate RESTANO nel pool globale (sono carte vere possedute quel
+giorno, come per le beginner), solo l'ARENA in se' non entra piu' nei 3 test.
+
+CAMPIONE RIDOTTO DI CONSEGUENZA (come da attesa): 3 GW su 27 perdono arene:
+  football-13-17-feb-2026:  arene ammesse 9 -> 2   (7 dedicate escluse)
+  football-6-10-feb-2026:   arene ammesse 10 -> 3  (7 dedicate escluse)
+  football-30-jan-3-feb-2026: arene ammesse 2 -> 1 (1 dedicata esclusa)
+Totale: 15 arene dedicate escluse su tutto il campione (invariato rispetto
+alla stima precedente: erano gia' escluse dalla matrice per mancata mappatura,
+solo non contate/dichiarate correttamente GW per GW).
+
+TABELLA AGGIORNATA (stessa struttura di prima, ora con colonna "dedic" =
+arene dedicate escluse per quella GW; i numeri di matrice A/G, essenze,
+copertura sono IDENTICI a prima perche' quelle arene erano gia' fuori dal
+calcolo -- cambia solo la trasparenza del conteggio, non l'esito):
+
+GW                             end        arene dedic val  escl cop.cache cop.grade soglia?  A giusto/ERR/GIU/err   G giusto/ERR/GIU/err   essA  essG
+football-31-jul-4-aug-2026     2026-08-04    16     0    8    8      96%      90% si       1/0/0/7                1/0/0/7                    0     0
+football-28-31-jul-2026        2026-07-31     4     0    4    0      96%     100% si       2/0/0/2                2/0/0/2                    0     0
+football-24-28-jul-2026        2026-07-28     6     0    6    0      98%      96% si       4/0/0/2                4/0/0/2                    0     0
+football-21-24-jul-2026        2026-07-24     6     0    6    0      96%      95% NO       0/0/1/5                0/0/3/3                  200   800
+football-1-4-jul-2026          2026-07-04     1     0    1    0      83%      93% NO       1/0/0/0                1/0/0/0                    0     0
+football-24-28-jun-2026        2026-06-28     1     0    1    0     100%      90% NO       0/1/0/0                0/1/0/0                    0     0
+football-23-26-may-2026        2026-05-26    13     0   12    1      93%      82% NO       6/0/4/2                4/2/4/2                 1200  1000
+football-15-19-may-2026        2026-05-19    21     0   21    0      95%      85% NO       11/4/1/5               10/5/4/2                 300  1100
+football-13-15-may-2026        2026-05-15    15     0   14    1      85%      77% NO       6/1/3/4                7/0/4/3                  900  1200
+football-1-5-may-2026          2026-05-05    14     0   14    0      97%      86% NO       11/0/1/2               9/2/0/3                  300     0
+football-24-28-apr-2026        2026-04-28    22     0   22    0      95%      79% NO       9/2/5/6                8/3/6/5                 1500  1800
+football-21-24-apr-2026        2026-04-24     5     0    5    0      96%      74% NO       2/1/0/2                2/1/0/2                    0     0
+football-17-21-apr-2026        2026-04-21    16     0   15    1      96%      80% NO       7/1/2/5                6/2/4/3                  600  1200
+football-10-14-apr-2026        2026-04-14    20     0   18    2      96%      75% NO       10/1/1/6               8/3/2/5                  300   600
+football-3-7-apr-2026          2026-04-07    15     0   15    0      98%      67% NO       7/2/1/5                7/2/2/4                  300   600
+football-20-24-mar-2026        2026-03-24     8     0    7    1      98%      55% NO       1/2/0/4                2/1/2/2                    0   500
+football-17-20-mar-2026        2026-03-20     3     0    3    0      98%      39% NO       1/0/0/2                0/1/1/1                    0   300
+football-13-17-mar-2026        2026-03-17    12     0   11    1      97%      48% NO       8/0/1/2                7/1/1/2                  300   300
+football-10-13-mar-2026        2026-03-13     1     0    1    0      98%      20% NO       0/1/0/0                0/1/0/0                    0     0
+football-3-6-mar-2026          2026-03-06     1     0    1    0      98%      23% NO       0/0/1/0                0/0/1/0                  200   200
+football-24-27-feb-2026        2026-02-27     3     0    3    0      99%      18% NO       0/2/1/0                0/2/1/0                  300   300
+football-20-24-feb-2026        2026-02-24    12     0    9    3      97%      36% NO       5/0/0/4                5/0/1/3                    0   200
+football-17-20-feb-2026        2026-02-20     1     0    1    0      99%       3% NO       1/0/0/0                1/0/0/0                    0     0
+football-13-17-feb-2026        2026-02-17     2     7    2    0      96%      23% NO       1/1/0/0                1/1/0/0                    0     0
+  escluse (dedicate): {'Jupiler Pro League Arena - Limited': 2, 'All Star Arena - Limited': 2, 'Turkish League Arena - Limited': 1, 'Eredivisie Arena - Limited': 1, 'Under 23 Arena - Limited': 1}
+football-6-10-feb-2026         2026-02-10     3     7    2    1      96%      19% NO       1/0/0/1                1/0/0/1                    0     0
+  escluse (dedicate): {'Turkish League Arena - Limited': 1, 'All Star Arena - Limited': 2, 'Jupiler Pro League Arena - Limited': 2, 'Portuguese League Arena - Limited': 1, 'Under 23 Arena - Limited': 1}
+football-30-jan-3-feb-2026     2026-02-03     1     1    1    0      97%      16% NO       1/0/0/0                1/0/0/0                    0     0
+  escluse (dedicate): {'Jupiler Pro League Arena - Limited': 1}
+football-28-30-jan-2026        2026-01-30     1     0    1    0      98%       1% NO       1/0/0/0                1/0/0/0                    0     0
+
+TOTALE arene dedicate a campionato escluse: 15, su 3/27 GW
+TOTALI: A giusto=97 ERRORE=19 GIUSTO=22 errore=66  essenze_risparmiate=6400
+        G giusto=88 ERRORE=28 GIUSTO=36 errore=52  essenze_risparmiate=10100
+GW su cui A e' 'avanti' (corrette>sbagliate): 16/27
+GW su cui G e' 'avanti' (corrette>sbagliate): 17/27
+
+RICORDA (invariato dalla consegna precedente): PAREGGIO_ARENA non esisteva
+prima del 27/07/2026 (introdotta quel giorno, ritarata ancora il 03/08 e il
+05/08). Solo 3 GW su 27 (31lug-4ago, 28-31lug, 24-28lug) sono successive
+alla sua introduzione: le altre 24 sono giudicate con una soglia che allora
+non esisteva. NESSUN VERDETTO.
+
+File: analisi_manager/p13_backtest_gw_crowss.py (fix arena_ammessa/
+COMPETIZIONI_ARENA_AMMESSE, committato). Script di misura ad-hoc per le 27
+GW non versionato (girato in scratchpad, riusa le funzioni del modulo).
 
 
 ===============================================================================
