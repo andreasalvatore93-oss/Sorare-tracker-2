@@ -792,18 +792,167 @@ LETTURA S4-BIS -- RISULTATO CHIARO E RASSICURANTE:
    "sospetto") di quello di starter_odds: entrambi vanno nella stessa
    direzione (B>A), con margini paragonabili. Il criterio del brief ("gap
    grade <= gap starter_odds") e' soddisfatto: nessun allarme.
-3. CONFERMA INCROCIATA CON R4 (sez.11): il valore A filtrato per il grade
-   sul GK ampio (0.111, filtro "k") e' quasi identico a quello gia' trovato
-   in R4 con metodo diverso (0.119, corr(grade,realizzato) su min>0). Due
-   metodi indipendenti sullo stesso campione danno lo stesso numero --
-   rafforza la fiducia che 0.11-0.12 sia il valore vero del segnale grade
-   sul GK, non un artefatto di calcolo.
+3. COERENZA INTERNA CON R4 (sez.11) -- CORREZIONE: il valore A filtrato per
+   il grade sul GK ampio (0.111, filtro "k") e' quasi identico a quello gia'
+   trovato in R4 (0.119, corr(grade,realizzato) su min>0). NON sono pero'
+   due metodi indipendenti: sono lo STESSO dato (p12_r5_gk_ampio.json) con un
+   filtro leggermente diverso -- la frase precedente lo diceva in modo
+   fuorviante, corretta qui su segnalazione dell'orchestratore. E' una
+   conferma di coerenza interna del calcolo (nessun errore di codice fra le
+   due versioni dello script), non una conferma indipendente del segnale.
 4. IL RIBALTAMENTO ANTICIPATO DALL'ORCHESTRATORE E' CONFERMATO: non
    filtrato, starter_odds batte il grade (0.833 vs 0.768, sez.12); filtrato
    "k", il grade batte le starter_odds (0.111 vs 0.056) -- coerente con
    R4 (grade 0.119 vs odds 0.060). E' un argomento a favore del fatto che il
    grade porti qualcosa oltre al semplice "gioca o non gioca", quando si
    guarda solo a chi ha davvero giocato.
+
+===============================================================================
+13. SESSIONE 06/08/2026 sera Roma (~21:50 CEST) -- BRIEF A: quanto vale
+    davvero il grade sul portiere (Sonnet, no modifica produzione, commit+
+    push a fine sezione)
+===============================================================================
+Eseguito docs/handoff/BRIEF_SONNET_A_VALORE_GRADE_2026-08-06.txt (sostituisce
+il vecchio Brief A). Zero query API: dati da p12_r5_gk_ampio.json (55 GK
+distinti, gia' in repo) + il backtest di produzione locale
+(backtest_arene_previsioni + backtest_arene_cache.CacheLocale, zero rete).
+
+CAMPIONE BASE (V0/V4): 433 righe, 55 portieri distinti. Filtri applicati in
+ordine, con gli scarti dichiarati: minsPlayed>0 sulla partita k (scartate
+347), L10 con almeno 3 partite storiche PRECEDENTI disponibili (scartate
+altre 117), grade e starter_odds entrambi presenti (scartata 1). L10
+calcolata SOLO sulle partite precedenti (mai la partita stessa, mai le
+successive -- stesso metodo di R6, errore E5 evitato).
+
+--- V0: IL CONFRONTO CHE MANCAVA, CON BOOTSTRAP PER GIOCATORE (1000 resample,
+    55 portieri con reimmissione, seed 20260806) ---
+  variabile        corr(realizzato)
+  grade            0.136
+  starter_odds     0.070
+  L10              0.105
+
+  grade - starter_odds > 0 in 89.1% dei 1000 ricampionamenti
+  grade - L10          > 0 in 71.6% dei 1000 ricampionamenti
+  grade da solo         > 0 in 99.2% dei 1000 ricampionamenti (distinguibile
+                                da zero su 55 portieri, non su 433 righe)
+
+LETTURA: H1 confermata (0.136, distinguibile da zero al 99.2%, ma piccola).
+H2 confermata nella direzione ma non "netta" quanto ipotizzato: 89.1% e' un
+vantaggio reale, non schiacciante -- su 1 ricampionamento su 9 le starter_odds
+vincono. H3 confermata: corr(grade,L10)=0.527 (vedi V4), in mezzo alla
+fascia 0.3-0.6 attesa -- il grade e' in parte L10 ridetta, in parte no.
+
+--- V2: IL NOSTRO MODELLO SULLE STESSE RIGHE, CALCOLATO DAVVERO (non stimato
+    per differenza, non preso da un altro backtest) ---
+Usato backtest_arene_previsioni.contesto()+calcola() (la stessa catena di
+produzione, compute_score_atteso_gk, walk-forward stretto: solo partite
+strettamente precedenti) sulle 433 righe di V0, con CacheLocale locale
+(zero query, stesso principio del backtest arene gia' in repo). Per ogni
+riga verificato che la partita-bersaglio ricostruita dal contesto coincida
+(entro 2 giorni) con la data della riga: 141/433 scartate perche' il
+portiere non ha cache/pipeline sufficiente per quella data (giocatore fuori
+dalle 27 leghe con pipeline completa, o storico insufficiente per quella
+partita specifica) -- SCARTO DICHIARATO, non ignorato.
+
+  n_righe=292  n_giocatori=33
+  corr(score_atteso produzione) = 0.111
+  corr(grade, STESSE 292 righe)  = 0.140  (leggermente diverso da 0.136 di
+                                            V0 perche' il sottoinsieme e'
+                                            piu' piccolo, dichiarato)
+  bootstrap grade - atteso > 0 in 68.2% dei 1000 ricampionamenti
+
+LETTURA: H4 SOLO PARZIALMENTE confermata. Il nostro score_atteso sul
+campione NUOVO (0.111) e' ben sopra lo 0.035 del backtest walk-forward
+generale (REPORT_PASSAGGIO_2_OPUS_P3, n=6973) -- ma quei due numeri restano
+su campioni diversi (regola CLAUDE.md, non confrontabili direttamente: qui
+solo 33 portieri filtrati per pipeline completa, li' 4311 slug in cache).
+Sullo STESSO campione (292 righe), grade (0.140) e score_atteso di
+produzione (0.111) sono vicini, e il bootstrap NON dice che il grade vince
+in modo convincente: 68.2% e' poco piu' di un lancio di moneta pesato,
+lontano dal 90%+ che farebbe un'affermazione solida. Onestamente: sullo
+stesso identico campione, il grade e il nostro modello sono nella stessa
+lega, non uno schiaccia l'altro.
+
+--- V3: I PUNTI, IL METRO CHE DECIDE DAVVERO ---
+Giornate = stessa data di calendario (giorno) fra portieri diversi delle
+292 righe di V2 (serve lo score_atteso per confrontare tutte e 3 le
+strategie sulle stesse giornate). 34 giornate con almeno 3 portieri
+disponibili, 58 scartate per pool troppo piccolo (dichiarato).
+NOTA METODOLOGICA IMPORTANTE, CORRETTA IN CORSA: la prima versione dello
+script simulava "a caso" con UN SOLO sorteggio per giornata -- risultato
+rumoroso e fuorviante (il sorteggio unico batteva grade e score_atteso per
+puro caso). Corretto usando il VALORE ATTESO di un sorteggio uniforme, cioe'
+la media del pool disponibile quella giornata (matematicamente lo stesso
+numero a cui converge la media di infiniti sorteggi). Segnalato perche' e'
+un errore facile da rifare.
+
+  strategia        punti medi/giornata   MAE selezione (vs il migliore reale)
+  grade                   57.79                    19.31
+  score_atteso            58.49                    18.61
+  L10                     55.64                    21.46
+  a caso (media pool)     52.06                    n/a
+
+  bootstrap (resample delle 34 GIORNATE, 1000, IC95):
+  grade  - a caso   : +5.78 pt  [+0.05, +11.46]  positivo nel 97.6% dei casi
+  atteso - a caso   : +6.32 pt  [+1.13, +11.78]  positivo nel 99.1% dei casi
+  grade  - atteso   : -0.68 pt  [-6.64, +5.53]   positivo nel 41.1% dei casi
+                       (IC95 comprende lo zero: NESSUNA differenza misurabile)
+
+LETTURA (il numero che l'utente aspettava): sia il grade sia il nostro
+score_atteso battono la scelta a caso in modo statisticamente solido (IC95
+esclude lo zero per entrambi, ~+6 punti a giornata su un pool medio di
+score ~52). MA fra grade e score_atteso NON c'e' una differenza misurabile:
+il segno oscilla, l'IC95 e' ampio e comprende lo zero. In italiano semplice:
+sapere il grade aiuta quanto sapere il nostro modello ad azzeccare il
+portiere giusto -- nessuno dei due batte l'altro in modo dimostrabile su
+questo campione.
+
+--- V4: IL GRADE AGGIUNGE QUALCOSA A starter_odds+L10? ---
+Regressione OLS sulle 433 righe di V0 (stesso campione, stessa struttura di
+R6 in sez.11, qui rifatta da zero per verifica indipendente del codice):
+  R2 base (starter_odds + L10):                0.0130
+  R2 esteso (+ grade):                          0.0203
+  delta R2:                                    +0.0073 (assoluto: si passa
+                                                dall'1,3% al 2,0% di quanto
+                                                determina il punteggio del
+                                                portiere -- valore assoluto
+                                                piccolo, come gia' avvisato
+                                                in E6, non ripetere l'errore
+                                                "+56% relativo")
+  coefficiente su grade_num nel modello esteso: +1.69 (positivo)
+  corr(grade_num, L10) sulle stesse righe:       0.527
+
+LETTURA: coerente con R6 (sez.11: da 0.0141 a 0.0209, qui 0.0130 a 0.0203 --
+stessa dimensione, piccolo scarto dovuto a differenze minori nel calcolo
+dell'incertezza numerica, non un problema). Il grade aggiunge un contributo
+piccolo ma misurabile sopra starter_odds+L10, e la correlazione 0.527 con
+L10 dice che meta' del segnale del grade e' gia' L10 travestita, l'altra
+meta' e' nuova.
+
+===============================================================================
+VERDETTO COMPLESSIVO DEL BRIEF A
+===============================================================================
+Il grade sul portiere e' un segnale REALE (distinguibile da zero su 55
+portieri, V0), NON contaminato da riscrittura post-risultato (S4/S4-bis), e
+batte la scelta a caso in modo solido in punti (V3, +5.8 pt/giornata IC95
+positivo). Ma NON batte in modo dimostrabile il nostro score_atteso di
+produzione sullo stesso identico campione (V2/V3: 68.2% e 41.1%, entrambi
+lontani da una vittoria netta) -- l'affermazione "il grade ordina i portieri
+meglio del nostro modello" NON e' sostenuta dai numeri di questa sessione.
+Il valore pratico piu' solido e' V4: aggiunto a starter_odds+L10 il grade
+migliora l'R2 (piccolo ma positivo, stesso verso di V0/V3), quindi come
+CORRETTIVO/INPUT AGGIUNTIVO sul GK (non come sostituto del modello) il
+segnale regge su tre misure indipendenti (correlazione, punti, R2 marginale).
+
+DECISIONE APERTA PER L'UTENTE (non presa qui, vedi sez.9 dell'handoff
+orchestratore): tra le tre strade (a: correttivo solo GK, b: raccogliere
+anche DEF/MID/FWD, c: chiudere), i numeri di questa sessione supportano (a)
+piu' di (c) -- il segnale c'e' ed e' misurabile in punti veri -- ma NON
+supportano un'affermazione forte tipo "batte il modello": e' un contributo
+marginale, non una svolta. S3 (prova diretta anti-riscrittura) resta ancora
+da completare quando le partite di stasera finiranno, come ultimo tassello.
+
+File aggiunti: analisi_manager/p12_briefA.py, analisi_manager/p12_briefA_out.json.
 
 VERDETTO S4-BIS: nessun segnale di riscrittura anche guardando dentro il
 canale "gioca/non gioca". Anzi, il pattern B>A (la partita precedente conta
