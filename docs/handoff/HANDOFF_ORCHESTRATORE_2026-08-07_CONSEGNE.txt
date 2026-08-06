@@ -497,3 +497,106 @@ CLAUDE.md/soglie di produzione.
     docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt sezione 7 per il
     verdetto nuovo (segno si sposta verso positivo, ma non ancora
     significativo).
+
+
+===============================================================================
+13. ESTRAZIONE 8 MANAGER NUOVI (Sonnet, 07/08 sera, in locale, GitHub down)
+===============================================================================
+OBIETTIVO: allargare ulteriormente il campione. Stessa finestra 15 GW di
+sez.11 (verificata di nuovo col calendario reale: football-4-7-aug-2026
+ancora 'started', invariato). Solo estrazione, NESSUN backtest.
+
+MANAGER: destroyerstorm, joulos_, nivenzg, braddersfc, fins49, roucash,
+keano88, cedric9093-61e65334-068e-4a77-bea1-5e25e69e3500.
+
+NOTA: braddersfc e fins49 avevano gia' in dati_globali alcune GW della
+finestra (righe 1-9/14 "gia' fatta, salto" nei log), da una sessione
+precedente non di questo brief. Lo script ha completato solo le mancanti,
+nessuna riestrazione a vuoto.
+
+CAP 30 arene/GW: MAI superato. Massimo osservato: 18 arene (fins49,
+31jul-4aug-2026).
+
+--- CONTROLLI (0 senza_carte, 0 retry, 0 falliti per TUTTI manager/GW: fix D1
+tiene su tutto il giro. Sotto solo righe con dati, GW a 0 partecipazioni
+omesse) ---
+
+destroyerstorm (TOT 0 arene/15 GW): nessuna arena in tutta la finestra.
+
+joulos_ (TOT 2 arene/15 GW):
+  24-28jun  righe=1  arene=1  pool=5   slot=5   pool>slot=NO  <- 0 scorte
+  5-11jun   righe=2  arene=1  pool=12  slot=5   pool>slot=SI
+  Campione minimo.
+
+nivenzg (TOT 13 arene/15 GW):
+  31jul-4aug  righe=23 arene=3  pool=131 slot=15  pool>slot=SI
+  28-31jul    righe=8  arene=2  pool=52  slot=10  pool>slot=SI
+  21-24jul    righe=24 arene=5  pool=134 slot=25  pool>slot=SI
+  24-28jun    righe=7  arene=3  pool=43  slot=15  pool>slot=SI
+
+braddersfc (TOT 1 arena/15 GW):
+  28-31jul  righe=1  arene=1  pool=5  slot=5  pool>slot=NO  <- 0 scorte
+  Campione minimo, unica GW con arena e pool==slot.
+
+fins49 (TOT 39 arene/15 GW):
+  31jul-4aug  righe=18 arene=18 pool=90  slot=90  pool>slot=NO  <- 0 scorte
+  24-28jul    righe=7  arene=7  pool=35  slot=35  pool>slot=NO  <- 0 scorte
+  15-20jul    righe=4  arene=4  pool=20  slot=20  pool>slot=NO  <- 0 scorte
+  10-13jul    righe=2  arene=2  pool=10  slot=10  pool>slot=NO  <- 0 scorte
+  5-8jul      righe=5  arene=5  pool=25  slot=25  pool>slot=NO  <- 0 scorte
+  1-4jul      righe=1  arene=1  pool=5   slot=5   pool>slot=NO  <- 0 scorte
+  24-28jun    righe=2  arene=2  pool=10  slot=10  pool>slot=NO  <- 0 scorte
+  ATTENZIONE PARTICOLARE: fins49 e' l'unico manager, fra tutti quelli estratti
+  finora, dove OGNI GW con arene ha pool esattamente uguale allo slot (0
+  scorte sistematiche, non un caso isolato). Il generatore predice tante
+  arene quante carte possiede: probabile che fins49 giochi solo In-Season +
+  arene senza mai tenere carte di scorta. Test1/selezione NULLO per
+  costruzione su TUTTE le sue GW con arene; solo Test3 e' utilizzabile per
+  questo manager. Segnalato, non nascosto.
+
+roucash (TOT 0 arene/15 GW): nessuna arena in tutta la finestra.
+
+keano88 (TOT 11 arene/15 GW):
+  31jul-4aug  righe=11 arene=5  pool=55 slot=25  pool>slot=SI
+  24-28jul    righe=7  arene=2  pool=37 slot=10  pool>slot=SI
+  21-24jul    righe=7  arene=1  pool=35 slot=5   pool>slot=SI
+  15-20jul    righe=1  arene=1  pool=5  slot=5   pool>slot=NO  <- 0 scorte
+  5-11jun     righe=5  arene=2  pool=28 slot=10  pool>slot=SI
+
+cedric9093-...-3500 (TOT 29 arene/15 GW):
+  31jul-4aug  righe=21 arene=9  pool=113 slot=45  pool>slot=SI
+  28-31jul    righe=3  arene=2  pool=17  slot=10  pool>slot=SI
+  24-28jul    righe=17 arene=7  pool=93  slot=35  pool>slot=SI
+  21-24jul    righe=15 arene=5  pool=83  slot=25  pool>slot=SI
+  15-20jul    righe=10 arene=2  pool=49  slot=10  pool>slot=SI
+  10-13jul    righe=1  arene=1  pool=5   slot=5   pool>slot=NO  <- 0 scorte
+  5-8jul      righe=1  arene=1  pool=5   slot=5   pool>slot=NO  <- 0 scorte
+  1-4jul      righe=1  arene=1  pool=5   slot=5   pool>slot=NO  <- 0 scorte
+  5-11jun     righe=4  arene=1  pool=26  slot=5   pool>slot=SI
+  Manager attivo, buon secondo candidato dopo lafindubal.
+  Durante l'estrazione: 3 rate-limit (90+90+23s) gestiti dal retry automatico,
+  nessun dato perso.
+
+--- TOTALE ARENE QUESTO GIRO (8 manager nuovi): 95 ---
+  destroyerstorm 0, joulos_ 2, nivenzg 13, braddersfc 1, fins49 39, roucash 0,
+  keano88 11, cedric9093 29.
+
+NUOVO TOTALE COMPLESSIVO (sez.11 + sez.13, 16 manager, esclusi
+crowss/forever-young): 94 + 95 = 189 arene.
+
+CASI POOL==SLOT NUOVI (in aggiunta a quelli gia' noti in sez.11):
+  joulos_: 24-28jun; braddersfc: 28-31jul; fins49: TUTTE le sue 7 GW con
+  arene (vedi nota sopra); keano88: 15-20jul; cedric9093: 10-13jul, 5-8jul,
+  1-4jul.
+
+CACHE GAME-LOG: non verificata in questo passo (solo estrazione grezza, non
+backtest). Da fare al lancio della suite p13 (passo 2).
+
+COMMIT: tutti i controlli passano puliti (0 senza_carte, 0 retry, 0 falliti,
+nessuno sopra cap 30 in nessuna GW). Committati
+dati_globali/manager_{destroyerstorm,joulos_,nivenzg,braddersfc,fins49,
+roucash,keano88,cedric9093-61e65334-068e-4a77-bea1-5e25e69e3500}.json.
+
+NESSUN BACKTEST LANCIATO IN QUESTO PASSO. Nessuna run GitHub (down). Nessuna
+modifica a CLAUDE.md/soglie di produzione. PASSO 1 PULITO: si procede al
+PASSO 2 (suite p13).
