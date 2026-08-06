@@ -1,0 +1,55 @@
+========================================================================
+BACKTEST GW football-28-31-jul-2026 -- manager crowss  -- TEST 2
+========================================================================
+formazioni totali in giornata : 8
+  di cui ARENE (no beginner)  : 4
+  di cui BEGINNER (escluse)   : 0
+  di cui altre competizioni   : 4
+    arena:   4 x Cap 260
+
+TOTALE REALE crowss su 4 arene: 1076.30 (media 269.07 per arena)
+
+IPOTESI: pool ~ slot (85=85 su GW93, vedi handoff sez.5). Questo test
+NON misura la selezione delle carte: misura solo come il modello
+alloca le STESSE carte fra le arene e la scelta del capitano.
+
+--- CONTROLLO OBBLIGATORIO POOL vs SLOT (CLAUDE.md 06/08/2026) ---
+carte distinte nel pool : 20
+slot da riempire        : 20
+CARTE DI SCORTA         : 0
+
+POOL NON PIU' GRANDE DEGLI SLOT -- atteso in questa modalita' (vedi
+avviso in testa): si misura SOLO allocazione/capitano, non selezione.
+
+righe pool con atteso+grezzo utilizzabili: 20/20  (scarti: {})
+
+========================================================================
+TEST2 (pool ristretto): PUNTI TOTALI su 4 arene nel choice-set (REALE su queste stesse arene: 1076.30)
+  REALE : 1076.30  (4/4 schierate, e' il manager vero)
+  A     : 870.58  (3/4 schierate)
+  G     : 870.58  (3/4 schierate)
+
+PER TIPO ARENA:
+  Cap 260    REALE= 1076.30(n= 4)  A=  870.58(schierate=3/4)  G=  870.58(schierate=3/4)
+
+PER SINGOLA ARENA (REALE vs A vs G):
+  [ 1] Cap 260    amm= 20  REALE= 327.62  A= 313.24  G= 313.24
+  [ 2] Cap 260    amm= 20  REALE= 278.28  A= 268.68  G= 268.68
+  [ 3] Cap 260    amm= 20  REALE= 237.06  A= 288.66  G= 288.66
+  [ 4] Cap 260    amm= 20  REALE= 233.34  A=     --  G=     --
+
+TEST2 -- METRICA k (concentrazione appaiata), per tipo arena:
+k = numero di arene di quel tipo schierate dal modello. Si confronta
+la media del modello sulle sue k arene contro la media delle k MIGLIORI
+arene REALI dello stesso tipo (quelle con piu' punti realizzati).
+
+  --- A ---
+  Cap 260    k=3  modello_media= 290.19  REALE-best-3_media= 280.99  delta=  +9.21
+
+  --- G ---
+  Cap 260    k=3  modello_media= 290.19  REALE-best-3_media= 280.99  delta=  +9.21
+
+dump scritto in analisi_manager/dati/DUMP_p13_crowss_football-28-31-jul-2026_test2.txt
+
+punteggi grezzi letti dalla CACHE : 57
+punteggi RICOSTRUITI per divisione: 3   <- questi hanno un errore dell'1-3%

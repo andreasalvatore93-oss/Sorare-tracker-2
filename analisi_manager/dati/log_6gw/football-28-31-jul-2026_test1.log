@@ -1,0 +1,41 @@
+========================================================================
+BACKTEST GW football-28-31-jul-2026 -- manager crowss  -- TEST 1
+========================================================================
+formazioni totali in giornata : 8
+  di cui ARENE (no beginner)  : 4
+  di cui BEGINNER (escluse)   : 0
+  di cui altre competizioni   : 4
+    arena:   4 x Cap 260
+
+TOTALE REALE crowss su 4 arene: 1076.30 (media 269.07 per arena)
+
+IPOTESI: col pool globale (102 carte di scorta gia' viste sulla GW93)
+il modello ha margine reale di scelta; ci si aspetta che A e G possano
+discostarsi da REALE sia in meglio che in peggio, arena per arena.
+
+--- CONTROLLO OBBLIGATORIO POOL vs SLOT (CLAUDE.md 06/08/2026) ---
+carte distinte nel pool : 48
+slot da riempire        : 20
+CARTE DI SCORTA         : 28
+
+righe pool con atteso+grezzo utilizzabili: 48/48  (scarti: {})
+
+========================================================================
+TEST1 (full pool): PUNTI TOTALI su 4 arene nel choice-set (REALE su queste stesse arene: 1076.30)
+  REALE : 1076.30  (4/4 schierate, e' il manager vero)
+  A     : 1140.96  (4/4 schierate)
+  G     : 1152.88  (4/4 schierate)
+
+PER TIPO ARENA:
+  Cap 260    REALE= 1076.30(n= 4)  A= 1140.96(schierate=4/4)  G= 1152.88(schierate=4/4)
+
+PER SINGOLA ARENA (REALE vs A vs G):
+  [ 1] Cap 260    amm= 48  REALE= 327.62  A= 316.44  G= 310.24
+  [ 2] Cap 260    amm= 48  REALE= 278.28  A= 275.18  G= 332.06
+  [ 3] Cap 260    amm= 48  REALE= 237.06  A= 279.68  G= 267.08
+  [ 4] Cap 260    amm= 48  REALE= 233.34  A= 269.66  G= 243.50
+
+dump scritto in analisi_manager/dati/DUMP_p13_crowss_football-28-31-jul-2026_test1.txt
+
+punteggi grezzi letti dalla CACHE : 111
+punteggi RICOSTRUITI per divisione: 5   <- questi hanno un errore dell'1-3%

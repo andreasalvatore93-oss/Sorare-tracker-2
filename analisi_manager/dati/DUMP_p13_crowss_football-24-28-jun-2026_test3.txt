@@ -1,0 +1,19 @@
+DUMP football-24-28-jun-2026 -- crowss  -- TEST3 decisione entra/salta
+Formazione FISSA = quella di REALE in ogni arena (stesse 5 carte, stesso
+capitano). Il modello decide solo se schierarla, confrontando l'atteso
+(A/G) con PAREGGIO_ARENA. carta = ID carta specifica.
+
+--- ARENA 1: Uncapped  REALE 292.08 ---
+    Goalkeeper  Dominik Livaković          carta=dominik-livakovic-2024-limited-597 uff=  35.00 grezzo=  35.00 [cache]
+    Defender    Nicolás Otamendi           carta=nicolas-hernan-otamendi-2025-limited-424 uff=  59.56 grezzo=  59.56 [cache]
+    Midfielder  Valeri Qazaishvili         carta=valeri-qazaishvili-2023-limited-207 uff= 115.92 grezzo=  96.60 [cache]  [CAPITANO]
+    Forward     Julián Álvarez             carta=julian-alvarez-2025-limited-318 uff=  36.70 grezzo=  36.70 [cache]
+    Midfielder  Federico Valverde          carta=federico-santiago-valverde-dipetta-2022-limited-382 uff=  44.90 grezzo=  44.90 [cache]
+    soglia=288.30  conviene=True
+    A: atteso=281.88 SALTA -> ERRORE (persa arena buona)
+    G: atteso=279.73 SALTA -> ERRORE (persa arena buona)
+
+
+MATRICE FINALE:
+  A: giusto=0  ERRORE_persa_buona=1  GIUSTO_batte_reale=0  errore_come_reale=0
+  G: giusto=0  ERRORE_persa_buona=1  GIUSTO_batte_reale=0  errore_come_reale=0

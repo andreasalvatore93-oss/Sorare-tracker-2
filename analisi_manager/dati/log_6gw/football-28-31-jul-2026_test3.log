@@ -1,0 +1,46 @@
+========================================================================
+BACKTEST GW football-28-31-jul-2026 -- manager crowss  -- TEST 3
+========================================================================
+formazioni totali in giornata : 8
+  di cui ARENE (no beginner)  : 4
+  di cui BEGINNER (escluse)   : 0
+  di cui altre competizioni   : 4
+    arena:   4 x Cap 260
+
+TOTALE REALE crowss su 4 arene: 1076.30 (media 269.07 per arena)
+
+IPOTESI: isolando la sola decisione entra/salta (formazione fissa =
+quella di REALE), ci si aspetta che il modello rinunci soprattutto
+alle arene REALI che poi hanno reso sotto soglia -- se la calibrazione
+di score_atteso e PAREGGIO_ARENA sono coerenti fra loro.
+
+righe pool con atteso+grezzo utilizzabili: 48/48  (scarti: {}) -- usate solo per leggere l'atteso delle carte REALI
+
+TEST3 -- arene valutate: 4
+
+PER SINGOLA ARENA (soglia PAREGGIO_ARENA, atteso A/G, decisione):
+  [ 1] Cap 260    soglia= 259.50  REALE= 327.62 (conviene=True)  A: atteso= 287.98 ENTRA -> giusto  G: atteso= 292.56 ENTRA -> giusto
+  [ 2] Cap 260    soglia= 259.50  REALE= 278.28 (conviene=True)  A: atteso= 270.20 ENTRA -> giusto  G: atteso= 272.00 ENTRA -> giusto
+  [ 3] Cap 260    soglia= 259.50  REALE= 237.06 (conviene=False)  A: atteso= 278.02 ENTRA -> errore (come REALE)  G: atteso= 280.31 ENTRA -> errore (come REALE)
+  [ 4] Cap 260    soglia= 259.50  REALE= 233.34 (conviene=False)  A: atteso= 270.00 ENTRA -> errore (come REALE)  G: atteso= 269.32 ENTRA -> errore (come REALE)
+
+MATRICE A (su 4 arene):
+  conviene  + entra  = giusto                    : 2
+  conviene  + salta  = ERRORE (persa arena buona) : 0
+  non conv. + salta  = GIUSTO (batte REALE)       : 0
+  non conv. + entra  = errore (come REALE)        : 2
+  -> batte REALE (salti giusti)      : 0
+  -> sbaglia in modo costoso (persi)  : 0
+
+MATRICE G (su 4 arene):
+  conviene  + entra  = giusto                    : 2
+  conviene  + salta  = ERRORE (persa arena buona) : 0
+  non conv. + salta  = GIUSTO (batte REALE)       : 0
+  non conv. + entra  = errore (come REALE)        : 2
+  -> batte REALE (salti giusti)      : 0
+  -> sbaglia in modo costoso (persi)  : 0
+
+dump scritto in analisi_manager/dati/DUMP_p13_crowss_football-28-31-jul-2026_test3.txt
+
+punteggi grezzi letti dalla CACHE : 65
+punteggi RICOSTRUITI per divisione: 3   <- questi hanno un errore dell'1-3%

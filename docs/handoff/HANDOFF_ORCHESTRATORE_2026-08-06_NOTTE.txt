@@ -412,6 +412,120 @@ completo, D2), max_giornate=0. Esito e controlli (pool/slot, cache,
 copertura grade per GW) a seguire in questo stesso file dopo il completamento
 della run.
 
+GITHUB ACTIONS ERA DOWN (status.github.com confermato dall'utente, cancel via
+API 500/502 ripetuti su run 31128057850 e sul rilancio 31128108889): eseguita
+l'estrazione IN LOCALE con ricostruisci_manager.py, cookie fornito
+dall'utente in chat, stessi 6 --giornate, SENZA --solo-arene. Le due run
+GitHub restano in coda (innocue: alla ripresa troveranno le GW gia' fatte e
+non sovrascrivono nulla, lo script riprende da dove si era fermato).
+
+RISULTATO ESTRAZIONE: 6/6 GW scaricate, 0 righe senza carte, 0 retry
+pendenti, 0 falliti definitivi (fix D1 verificato anche su dato vero, non
+solo simulato). MA: nessuna delle 6 GW mancanti ha arene giocate da crowss
+(solo In-Season/Uncapped/All Star/Under 23/Elite/Limited, mai
+arena_limited*): football-5-8-jul, football-18-24-jun, football-11-18-jun,
+football-5-11-jun, football-2-5-jun, football-26-29-may-2026 sono tutte a
+ZERO arene. Non utilizzabili per la suite p13.
+
+Quindi delle 15 GW nel limite, quelle CON arene reali (no beginner) sono
+SOLO 6, non 15: football-31-jul-4-aug-2026 (16), football-28-31-jul-2026 (4),
+football-24-28-jul-2026 (6), football-21-24-jul-2026 (6), football-1-4-jul-2026
+(1), football-24-28-jun-2026 (1). Le altre 9 nel limite sono a zero arene
+(crowss non le ha giocate in quel periodo). Decisione utente: girare Test1/3
+su tutte e 6, Test2 (metrica k) solo sulle 4 con >=4 arene (le 2 da 1 arena
+non permettono un k significativo).
+
+
+===============================================================================
+5sexies. SUITE 3 TEST SU 6 GW: TABELLA RIASSUNTIVA (Sonnet, 06/08 notte)
+===============================================================================
+IPOTESI PRIMA DEI NUMERI: con solo 6 GW (2 delle quali a 1 sola arena), il
+segno di qualunque differenza A/G vs REALE NON e' un verdetto: la soglia
+fissata per decidere (9-12 GW concordi) non e' raggiunta. Questa sezione e'
+descrizione pura, GW per GW, non una conclusione.
+
+--- CONTROLLO POOL vs SLOT, CACHE, GRADE (TEST1, pool globale) ---
+GW                           pool  slot scorte  atteso+grezzo  cache  ricostr.  cop.cache  cop.grade
+football-31-jul-4-aug-2026    226    80    146     202/226      449      59       88%        90%
+football-28-31-jul-2026        48    20     28      48/48       111       5       96%       100%
+football-24-28-jul-2026       137    30    107     136/137      295       8       97%        96%
+football-21-24-jul-2026       187    30    157     185/187      385      17       96%        95%
+football-1-4-jul-2026          35     5     30      35/35        63      12       84%        93%
+football-24-28-jun-2026        10     5      5      10/10        25       0      100%        90%
+Pool sempre > slot in tutte e 6 (globale): nessun test nullo per costruzione.
+Copertura grade sempre >=90%, coerente con lo scivolo di 5quater (GW recenti).
+Righe non ricostruite (fix D1): 0 su tutte e 6 (nessun contender perso).
+
+--- TEST1 (full pool, selezione): REALE vs A vs G ---
+GW                           REALE      A (n/n)          G (n/n)
+football-31-jul-4-aug-2026  3516.60  4649.33 (16/16)   4674.62 (16/16)
+football-28-31-jul-2026     1076.30  1140.96 (4/4)      1152.88 (4/4)
+football-24-28-jul-2026     1602.87  1530.10 (5/6)      1705.82 (6/6)
+football-21-24-jul-2026     1250.93  1595.32 (6/6)      1685.37 (6/6)
+football-1-4-jul-2026        263.68   211.06 (1/1)       254.20 (1/1)
+football-24-28-jun-2026      292.08     0.00 (0/1)         0.00 (0/1)
+Descrittivo: A batte REALE in 4/6 GW, G batte REALE in 5/6 GW; su
+football-24-28-jun-2026 (1 sola arena, pool 10 carte) il modello rinuncia
+del tutto sia in A sia in G (sotto soglia PAREGGIO_ARENA con quel pool).
+
+--- TEST2 (pool ristretto, metrica k): solo le 4 GW con >=4 arene ---
+Le 2 GW da 1 arena (football-1-4-jul-2026, football-24-28-jun-2026) NON
+hanno una metrica k calcolabile: k massimo possibile e' 1, "media delle k
+migliori REALI" coinciderebbe sempre col singolo valore REALE stesso,
+un confronto degenere che non dice niente sull'allocazione. Escluse di
+proposito, non un numero finto.
+GW                            tipo      k    modello_media  REALE-best-k  delta
+football-21-24-jul-2026  A   Cap260     4      209.16          208.56    +0.60
+                          A   Cap220     1      208.38          222.45   -14.07
+                          G   Cap260     3      200.89          219.11   -18.22
+                          G   Cap220     1      219.38          222.45    -3.07
+football-24-28-jul-2026  A   Cap260     4      285.01          276.62    +8.39
+                          A   Cap220     0      (nessuna arena di questo tipo schierata)
+                          G   Cap260     4      299.92          276.62   +23.30
+                          G   Cap220     0      (nessuna arena di questo tipo schierata)
+football-28-31-jul-2026  A   Cap260     3      290.19          280.99    +9.21
+                          G   Cap260     3      290.19          280.99    +9.21
+football-31-jul-4-aug-26 A   Cap260     9      273.64          262.81   +10.82
+                          A   Cap220     0      (nessuna arena di questo tipo schierata)
+                          G   Cap260     9      280.12          262.81   +17.30
+                          G   Cap220     0      (nessuna arena di questo tipo schierata)
+Descrittivo: nella maggior parte delle celle Cap260 il modello (a parita' di
+carte e di k) batte le migliori k arene REALI dello stesso tipo; su Cap220
+(sempre k=0 o k=1, campione minimo) il segno e' incoerente GW per GW.
+
+--- TEST3 (decisione entra/salta, formazione fissa=REALE): matrice + essenze ---
+GW                            A: giusto/ERRORE-persa/GIUSTO-batte/errore   G: giusto/ERRORE-persa/GIUSTO-batte/errore
+football-31-jul-4-aug-2026 (8/16 valutate, 8 escluse per atteso mancante)
+                              1 / 0 / 0 / 7                                 1 / 0 / 0 / 7
+football-28-31-jul-2026 (4/4)  2 / 0 / 0 / 2                                 2 / 0 / 0 / 2
+football-24-28-jul-2026 (6/6)  4 / 0 / 0 / 2                                 4 / 0 / 0 / 2
+football-21-24-jul-2026 (6/6)  0 / 0 / 1 / 5                                 0 / 0 / 3 / 3
+football-1-4-jul-2026 (1/1)    1 / 0 / 0 / 0                                 1 / 0 / 0 / 0
+football-24-28-jun-2026 (1/1)  0 / 1 / 0 / 0                                 0 / 1 / 0 / 0
+TOTALI su 6 GW (26 arene valutate su 34 reali):
+  A: giusto=8, ERRORE(persa buona)=1, GIUSTO(batte REALE)=1, errore=16
+  G: giusto=8, ERRORE(persa buona)=1, GIUSTO(batte REALE)=3, errore=18
+Essenze d'ingresso RISPARMIATE dai salti "GIUSTO (batte REALE)" (COSTO_INGRESSO
+in generatore_formazioni/build_formazione_globale.py: Cap260=300, Cap220=200,
+Uncapped=300), UNICA GW dove capita: football-21-24-jul-2026 --
+  A: 1 arena Cap220 saltata = 200 essenze risparmiate
+  G: 2 arene Cap260 + 1 arena Cap220 saltate = 2*300+200 = 800 essenze risparmiate
+Nelle altre 5 GW zero salti "giusti": zero essenze risparmiate li'. Su
+football-24-28-jun-2026 il modello ha invece PERSO un'arena buona (ERRORE,
+-292 punti mancati, nessun risparmio a compensarlo: qui il salto e' costato,
+non ha fatto guadagnare).
+
+NESSUN VERDETTO: 6 GW (di cui 2 a 1 arena sola) sono lontanissime dalla
+soglia 9-12 GW concordi fissata per decidere. Il segno oscilla GW per GW
+(Test1: A perde su 21-24-jul e 1-4-jul, vince altrove; Test3: G piu'
+prudente di A ma su football-24-28-jun anche G sbaglia il salto). Serve
+molto piu' campione, anche oltre crowss (altri manager con arene complete).
+
+Dump per GW: analisi_manager/dati/DUMP_p13_crowss_<gw>_test{1,2,3}.txt (test2
+solo sulle 4 GW solide). Log completi: analisi_manager/dati/log_6gw/.
+Nessuna modifica alla produzione. dati_globali/manager_crowss.json aggiornato
+(estrazione locale) e da committare insieme a questa sezione.
+
 
 ===============================================================================
 6. DA DOVE RIPARTIRE, IN ORDINE

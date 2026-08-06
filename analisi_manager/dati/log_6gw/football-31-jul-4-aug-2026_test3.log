@@ -1,0 +1,53 @@
+========================================================================
+BACKTEST GW football-31-jul-4-aug-2026 -- manager crowss  -- TEST 3
+========================================================================
+formazioni totali in giornata : 43
+  di cui ARENE (no beginner)  : 16
+  di cui BEGINNER (escluse)   : 8
+  di cui altre competizioni   : 19
+    arena:  15 x Cap 260
+    arena:   1 x Cap 220
+
+TOTALE REALE crowss su 16 arene: 3516.60 (media 219.79 per arena)
+
+IPOTESI: isolando la sola decisione entra/salta (formazione fissa =
+quella di REALE), ci si aspetta che il modello rinunci soprattutto
+alle arene REALI che poi hanno reso sotto soglia -- se la calibrazione
+di score_atteso e PAREGGIO_ARENA sono coerenti fra loro.
+
+righe pool con atteso+grezzo utilizzabili: 202/226  (scarti: {'no_atteso': 24}) -- usate solo per leggere l'atteso delle carte REALI
+
+ATTENZIONE: 8 arene REALI escluse dalla matrice (atteso non disponibile per una delle 5 carte).
+
+TEST3 -- arene valutate: 8
+
+PER SINGOLA ARENA (soglia PAREGGIO_ARENA, atteso A/G, decisione):
+  [ 1] Cap 260    soglia= 259.50  REALE= 288.60 (conviene=True)  A: atteso= 268.70 ENTRA -> giusto  G: atteso= 275.00 ENTRA -> giusto
+  [ 2] Cap 260    soglia= 259.50  REALE= 251.14 (conviene=False)  A: atteso= 273.68 ENTRA -> errore (come REALE)  G: atteso= 283.35 ENTRA -> errore (come REALE)
+  [ 3] Cap 260    soglia= 259.50  REALE= 248.48 (conviene=False)  A: atteso= 268.48 ENTRA -> errore (come REALE)  G: atteso= 262.56 ENTRA -> errore (come REALE)
+  [ 4] Cap 260    soglia= 259.50  REALE= 187.16 (conviene=False)  A: atteso= 279.88 ENTRA -> errore (come REALE)  G: atteso= 265.28 ENTRA -> errore (come REALE)
+  [ 5] Cap 260    soglia= 259.50  REALE= 115.40 (conviene=False)  A: atteso= 291.78 ENTRA -> errore (come REALE)  G: atteso= 301.26 ENTRA -> errore (come REALE)
+  [ 6] Cap 260    soglia= 259.50  REALE= 240.72 (conviene=False)  A: atteso= 269.14 ENTRA -> errore (come REALE)  G: atteso= 275.63 ENTRA -> errore (come REALE)
+  [ 7] Cap 260    soglia= 259.50  REALE= 188.74 (conviene=False)  A: atteso= 269.54 ENTRA -> errore (come REALE)  G: atteso= 274.55 ENTRA -> errore (come REALE)
+  [ 8] Cap 260    soglia= 259.50  REALE= 244.52 (conviene=False)  A: atteso= 284.34 ENTRA -> errore (come REALE)  G: atteso= 277.62 ENTRA -> errore (come REALE)
+
+MATRICE A (su 8 arene):
+  conviene  + entra  = giusto                    : 1
+  conviene  + salta  = ERRORE (persa arena buona) : 0
+  non conv. + salta  = GIUSTO (batte REALE)       : 0
+  non conv. + entra  = errore (come REALE)        : 7
+  -> batte REALE (salti giusti)      : 0
+  -> sbaglia in modo costoso (persi)  : 0
+
+MATRICE G (su 8 arene):
+  conviene  + entra  = giusto                    : 1
+  conviene  + salta  = ERRORE (persa arena buona) : 0
+  non conv. + salta  = GIUSTO (batte REALE)       : 0
+  non conv. + entra  = errore (come REALE)        : 7
+  -> batte REALE (salti giusti)      : 0
+  -> sbaglia in modo costoso (persi)  : 0
+
+dump scritto in analisi_manager/dati/DUMP_p13_crowss_football-31-jul-4-aug-2026_test3.txt
+
+punteggi grezzi letti dalla CACHE : 255
+punteggi RICOSTRUITI per divisione: 27   <- questi hanno un errore dell'1-3%

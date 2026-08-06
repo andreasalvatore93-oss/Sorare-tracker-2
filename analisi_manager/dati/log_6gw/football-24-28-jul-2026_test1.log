@@ -1,0 +1,47 @@
+========================================================================
+BACKTEST GW football-24-28-jul-2026 -- manager crowss  -- TEST 1
+========================================================================
+formazioni totali in giornata : 25
+  di cui ARENE (no beginner)  : 6
+  di cui BEGINNER (escluse)   : 1
+  di cui altre competizioni   : 18
+    arena:   4 x Cap 260
+    arena:   1 x Uncapped
+    arena:   1 x Cap 220
+
+TOTALE REALE crowss su 6 arene: 1602.87 (media 267.15 per arena)
+
+IPOTESI: col pool globale (102 carte di scorta gia' viste sulla GW93)
+il modello ha margine reale di scelta; ci si aspetta che A e G possano
+discostarsi da REALE sia in meglio che in peggio, arena per arena.
+
+--- CONTROLLO OBBLIGATORIO POOL vs SLOT (CLAUDE.md 06/08/2026) ---
+carte distinte nel pool : 137
+slot da riempire        : 30
+CARTE DI SCORTA         : 107
+
+righe pool con atteso+grezzo utilizzabili: 136/137  (scarti: {'no_atteso': 1})
+
+========================================================================
+TEST1 (full pool): PUNTI TOTALI su 6 arene nel choice-set (REALE su queste stesse arene: 1602.87)
+  REALE : 1602.87  (6/6 schierate, e' il manager vero)
+  A     : 1530.10  (5/6 schierate)
+  G     : 1705.82  (6/6 schierate)
+
+PER TIPO ARENA:
+  Cap 260    REALE= 1106.48(n= 4)  A= 1154.86(schierate=4/4)  G= 1174.28(schierate=4/4)
+  Cap 220    REALE=  246.81(n= 1)  A=    0.00(schierate=0/1)  G=  217.88(schierate=1/1)
+  Uncapped   REALE=  249.58(n= 1)  A=  375.24(schierate=1/1)  G=  313.66(schierate=1/1)
+
+PER SINGOLA ARENA (REALE vs A vs G):
+  [ 1] Cap 260    amm=136  REALE= 319.72  A= 265.70  G= 279.90
+  [ 2] Cap 260    amm=136  REALE= 276.28  A= 255.22  G= 290.88
+  [ 3] Cap 260    amm=136  REALE= 239.14  A= 303.98  G= 322.22
+  [ 4] Uncapped   amm=136  REALE= 249.58  A= 375.24  G= 313.66
+  [ 5] Cap 260    amm=136  REALE= 271.34  A= 329.96  G= 281.28
+  [ 6] Cap 220    amm=136  REALE= 246.81  A=     --  G= 217.88
+
+dump scritto in analisi_manager/dati/DUMP_p13_crowss_football-24-28-jul-2026_test1.txt
+
+punteggi grezzi letti dalla CACHE : 295
+punteggi RICOSTRUITI per divisione: 8   <- questi hanno un errore dell'1-3%

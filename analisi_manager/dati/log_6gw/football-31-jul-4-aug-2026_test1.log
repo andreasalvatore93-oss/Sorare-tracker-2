@@ -1,0 +1,55 @@
+========================================================================
+BACKTEST GW football-31-jul-4-aug-2026 -- manager crowss  -- TEST 1
+========================================================================
+formazioni totali in giornata : 43
+  di cui ARENE (no beginner)  : 16
+  di cui BEGINNER (escluse)   : 8
+  di cui altre competizioni   : 19
+    arena:  15 x Cap 260
+    arena:   1 x Cap 220
+
+TOTALE REALE crowss su 16 arene: 3516.60 (media 219.79 per arena)
+
+IPOTESI: col pool globale (102 carte di scorta gia' viste sulla GW93)
+il modello ha margine reale di scelta; ci si aspetta che A e G possano
+discostarsi da REALE sia in meglio che in peggio, arena per arena.
+
+--- CONTROLLO OBBLIGATORIO POOL vs SLOT (CLAUDE.md 06/08/2026) ---
+carte distinte nel pool : 226
+slot da riempire        : 80
+CARTE DI SCORTA         : 146
+
+righe pool con atteso+grezzo utilizzabili: 202/226  (scarti: {'no_atteso': 24})
+
+========================================================================
+TEST1 (full pool): PUNTI TOTALI su 16 arene nel choice-set (REALE su queste stesse arene: 3516.60)
+  REALE : 3516.60  (16/16 schierate, e' il manager vero)
+  A     : 4649.33  (16/16 schierate)
+  G     : 4674.62  (16/16 schierate)
+
+PER TIPO ARENA:
+  Cap 260    REALE= 3399.50(n=15)  A= 4361.13(schierate=15/15)  G= 4487.98(schierate=15/15)
+  Cap 220    REALE=  117.10(n= 1)  A=  288.20(schierate=1/1)  G=  186.63(schierate=1/1)
+
+PER SINGOLA ARENA (REALE vs A vs G):
+  [ 1] Cap 260    amm=202  REALE= 301.42  A= 364.52  G= 356.22
+  [ 2] Cap 260    amm=202  REALE= 209.40  A= 322.04  G= 321.72
+  [ 3] Cap 260    amm=202  REALE= 288.60  A= 317.18  G= 329.56
+  [ 4] Cap 260    amm=202  REALE= 251.14  A= 346.22  G= 313.78
+  [ 5] Cap 260    amm=202  REALE= 278.14  A= 263.74  G= 322.58
+  [ 6] Cap 260    amm=202  REALE= 262.13  A= 340.12  G= 257.68
+  [ 7] Cap 260    amm=202  REALE= 248.48  A= 161.70  G= 302.02
+  [ 8] Cap 260    amm=202  REALE= 194.78  A= 279.48  G= 350.08
+  [ 9] Cap 260    amm=202  REALE= 187.16  A= 301.88  G= 250.34
+  [10] Cap 260    amm=202  REALE= 250.18  A= 305.86  G= 355.88
+  [11] Cap 260    amm=202  REALE= 115.40  A= 298.42  G= 317.22
+  [12] Cap 260    amm=202  REALE= 240.72  A= 284.12  G= 216.34
+  [13] Cap 260    amm=202  REALE= 188.74  A= 235.09  G= 345.86
+  [14] Cap 260    amm=202  REALE= 138.68  A= 310.56  G= 287.36
+  [15] Cap 220    amm=202  REALE= 117.10  A= 288.20  G= 186.63
+  [16] Cap 260    amm=202  REALE= 244.52  A= 230.20  G= 161.34
+
+dump scritto in analisi_manager/dati/DUMP_p13_crowss_football-31-jul-4-aug-2026_test1.txt
+
+punteggi grezzi letti dalla CACHE : 449
+punteggi RICOSTRUITI per divisione: 59   <- questi hanno un errore dell'1-3%

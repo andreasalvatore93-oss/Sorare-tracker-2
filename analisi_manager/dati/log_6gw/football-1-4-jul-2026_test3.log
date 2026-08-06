@@ -1,0 +1,43 @@
+========================================================================
+BACKTEST GW football-1-4-jul-2026 -- manager crowss  -- TEST 3
+========================================================================
+formazioni totali in giornata : 7
+  di cui ARENE (no beginner)  : 1
+  di cui BEGINNER (escluse)   : 0
+  di cui altre competizioni   : 6
+    arena:   1 x Cap 260
+
+TOTALE REALE crowss su 1 arene: 263.68 (media 263.68 per arena)
+
+IPOTESI: isolando la sola decisione entra/salta (formazione fissa =
+quella di REALE), ci si aspetta che il modello rinunci soprattutto
+alle arene REALI che poi hanno reso sotto soglia -- se la calibrazione
+di score_atteso e PAREGGIO_ARENA sono coerenti fra loro.
+
+righe pool con atteso+grezzo utilizzabili: 35/35  (scarti: {}) -- usate solo per leggere l'atteso delle carte REALI
+
+TEST3 -- arene valutate: 1
+
+PER SINGOLA ARENA (soglia PAREGGIO_ARENA, atteso A/G, decisione):
+  [ 1] Cap 260    soglia= 259.50  REALE= 263.68 (conviene=True)  A: atteso= 262.32 ENTRA -> giusto  G: atteso= 266.53 ENTRA -> giusto
+
+MATRICE A (su 1 arene):
+  conviene  + entra  = giusto                    : 1
+  conviene  + salta  = ERRORE (persa arena buona) : 0
+  non conv. + salta  = GIUSTO (batte REALE)       : 0
+  non conv. + entra  = errore (come REALE)        : 0
+  -> batte REALE (salti giusti)      : 0
+  -> sbaglia in modo costoso (persi)  : 0
+
+MATRICE G (su 1 arene):
+  conviene  + entra  = giusto                    : 1
+  conviene  + salta  = ERRORE (persa arena buona) : 0
+  non conv. + salta  = GIUSTO (batte REALE)       : 0
+  non conv. + entra  = errore (come REALE)        : 0
+  -> batte REALE (salti giusti)      : 0
+  -> sbaglia in modo costoso (persi)  : 0
+
+dump scritto in analisi_manager/dati/DUMP_p13_crowss_football-1-4-jul-2026_test3.txt
+
+punteggi grezzi letti dalla CACHE : 34
+punteggi RICOSTRUITI per divisione: 6   <- questi hanno un errore dell'1-3%

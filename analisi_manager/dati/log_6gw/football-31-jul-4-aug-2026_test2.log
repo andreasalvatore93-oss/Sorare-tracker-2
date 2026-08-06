@@ -1,0 +1,71 @@
+========================================================================
+BACKTEST GW football-31-jul-4-aug-2026 -- manager crowss  -- TEST 2
+========================================================================
+formazioni totali in giornata : 43
+  di cui ARENE (no beginner)  : 16
+  di cui BEGINNER (escluse)   : 8
+  di cui altre competizioni   : 19
+    arena:  15 x Cap 260
+    arena:   1 x Cap 220
+
+TOTALE REALE crowss su 16 arene: 3516.60 (media 219.79 per arena)
+
+IPOTESI: pool ~ slot (85=85 su GW93, vedi handoff sez.5). Questo test
+NON misura la selezione delle carte: misura solo come il modello
+alloca le STESSE carte fra le arene e la scelta del capitano.
+
+--- CONTROLLO OBBLIGATORIO POOL vs SLOT (CLAUDE.md 06/08/2026) ---
+carte distinte nel pool : 80
+slot da riempire        : 80
+CARTE DI SCORTA         : 0
+
+POOL NON PIU' GRANDE DEGLI SLOT -- atteso in questa modalita' (vedi
+avviso in testa): si misura SOLO allocazione/capitano, non selezione.
+
+righe pool con atteso+grezzo utilizzabili: 67/80  (scarti: {'no_atteso': 13})
+
+========================================================================
+TEST2 (pool ristretto): PUNTI TOTALI su 16 arene nel choice-set (REALE su queste stesse arene: 3516.60)
+  REALE : 3516.60  (16/16 schierate, e' il manager vero)
+  A     : 2462.74  (9/16 schierate)
+  G     : 2521.06  (9/16 schierate)
+
+PER TIPO ARENA:
+  Cap 260    REALE= 3399.50(n=15)  A= 2462.74(schierate=9/15)  G= 2521.06(schierate=9/15)
+  Cap 220    REALE=  117.10(n= 1)  A=    0.00(schierate=0/1)  G=    0.00(schierate=0/1)
+
+PER SINGOLA ARENA (REALE vs A vs G):
+  [ 1] Cap 260    amm= 67  REALE= 301.42  A= 421.02  G= 356.22
+  [ 2] Cap 260    amm= 67  REALE= 209.40  A= 234.28  G= 313.70
+  [ 3] Cap 260    amm= 67  REALE= 288.60  A= 315.32  G= 333.50
+  [ 4] Cap 260    amm= 67  REALE= 251.14  A= 159.80  G= 188.40
+  [ 5] Cap 260    amm= 67  REALE= 278.14  A= 330.26  G= 260.10
+  [ 6] Cap 260    amm= 67  REALE= 262.13  A= 164.19  G= 295.28
+  [ 7] Cap 260    amm= 67  REALE= 248.48  A= 315.73  G= 214.58
+  [ 8] Cap 260    amm= 67  REALE= 194.78  A= 249.12  G= 289.68
+  [ 9] Cap 260    amm= 67  REALE= 187.16  A= 273.02  G= 269.60
+  [10] Cap 260    amm= 67  REALE= 250.18  A=     --  G=     --
+  [11] Cap 260    amm= 67  REALE= 115.40  A=     --  G=     --
+  [12] Cap 260    amm= 67  REALE= 240.72  A=     --  G=     --
+  [13] Cap 260    amm= 67  REALE= 188.74  A=     --  G=     --
+  [14] Cap 260    amm= 67  REALE= 138.68  A=     --  G=     --
+  [15] Cap 220    amm= 67  REALE= 117.10  A=     --  G=     --
+  [16] Cap 260    amm= 67  REALE= 244.52  A=     --  G=     --
+
+TEST2 -- METRICA k (concentrazione appaiata), per tipo arena:
+k = numero di arene di quel tipo schierate dal modello. Si confronta
+la media del modello sulle sue k arene contro la media delle k MIGLIORI
+arene REALI dello stesso tipo (quelle con piu' punti realizzati).
+
+  --- A ---
+  Cap 260    k=9  modello_media= 273.64  REALE-best-9_media= 262.81  delta= +10.82
+  Cap 220    k=0 (modello non ha schierato nessuna arena di questo tipo)
+
+  --- G ---
+  Cap 260    k=9  modello_media= 280.12  REALE-best-9_media= 262.81  delta= +17.30
+  Cap 220    k=0 (modello non ha schierato nessuna arena di questo tipo)
+
+dump scritto in analisi_manager/dati/DUMP_p13_crowss_football-31-jul-4-aug-2026_test2.txt
+
+punteggi grezzi letti dalla CACHE : 183
+punteggi RICOSTRUITI per divisione: 44   <- questi hanno un errore dell'1-3%
