@@ -2231,3 +2231,132 @@ gli altri ruoli. Nessuna decisione su produzione presa qui.
 File aggiunti: analisi_manager/p12_forward_ampio.py,
 analisi_manager/p12_forward_ampio_out.json,
 analisi_manager/p12_forward_ampio_placement_out.json.
+
+===============================================================================
+23. SESSIONE 06/08/2026 sera Roma (~23:40 CEST) -- BACKTEST FORMAZIONE SULLE
+    8 GW MANAGER REALI (proxy walk-backward): CAMPIONE TROPPO PICCOLO PER
+    DECIDERE, fermo qui, decisione aperta (Sonnet esecutore, no modifica
+    produzione, commit locale non ancora pushato)
+===============================================================================
+AVVISO PRELIMINARE SUL NUMERO DI MANAGER: il brief parlava di "42 manager".
+I file gia' in repo (analisi_manager/dati/righe_football-*.json /
+formazioni_*.json, le 8 GW estratte da analizza_gw.py) contengono SOLO 10
+manager distinti (il set MANAGER_SMART, filtro gia' nello script di
+estrazione). Non e' un errore di questa sessione: e' il campione reale
+disponibile. Usati i 10 REALMENTE presenti, dichiarato subito, non 42.
+
+SPLIT A/B (fissato PRIMA di guardare qualunque numero, come richiesto):
+manager ordinati per slug alfabetico, indici pari (0-based) -> gruppo A
+(ricerca), dispari -> gruppo B (verifica, mai guardato in questa sessione):
+  GRUPPO A (ricerca): braddersfc, eoghankelly, lairdinho, ninoshooter, shirimimi
+  GRUPPO B (verifica, non toccato): bxl-spartak, fins49, milkyfresht,
+    qtn-d8cd72ac-240c-493c-894c-a45f5b3d151d, spillo678
+
+IPOTESI PRIMA DEI NUMERI: coerente con sez.16 (MID il caso piu' forte) e
+sez.22 (FWD debole/grade-solo meglio della combinazione), su questo campione
+proxy ci si aspetta un segnale nella stessa direzione ma PIU' RUMOROSO e
+probabilmente PIU' PICCOLO del sez.21 crowss (232 arene), perche' il pool
+candidato qui e' un sottoinsieme proxy (solo carte gia' schierate in
+passato dallo stesso manager), non il mazzo vero.
+
+--- METODO (dichiarato) ---
+1. Pool proxy per ogni (manager, GW target): carte distinte (rarita' =
+   'limited', in_season = False, dichiarato: le uniche idonee alle arene
+   Cap 220/260) che il manager ha schierato in QUALSIASI GW nota nel suo
+   file dati_globali/manager_<nome>.json (fino a 16 GW disponibili per
+   manager, non solo le 8 target) con data di INIZIO strettamente
+   precedente alla GW target. Mai carte da GW future.
+2. Idoneita' competizione: solo Cap 220/Cap 260 (stessa restrizione gia'
+   presente in p12_backtest_formazione_grade.py, TIPI_CAPPED) -- Elite/
+   Beginner/Uncapped fuori scope in questa sessione, non testati.
+3. Scarto dichiarato: pool<15 carte O il pool non contiene tutte le 5
+   carte effettivamente schierate quella GW (la carta appena acquisita/mai
+   schierata prima non e' nel proxy: limite STRUTTURALE del metodo, non un
+   bug -- vedi sotto).
+4. score_atteso ricalcolato walk-forward per OGNI candidato del pool
+   (P.score_atteso, stesso motore di produzione, zero query: cache locale
+   gia' gonfia dai giocatori di queste 8 GW), poi bfg.calibra() sulla
+   stessa scala di sez.21. 'reale' per i candidati NON schierati: cercato
+   nel game-log cache dentro la finestra della GW target (FINAL/REVIEWING),
+   0.0 se non trovato (non giocato).
+5. Combinazione G = z-score(atteso_cal)+z-score(grade) per gruppo
+   (lega,ruolo), riportata alla scala di atteso_cal -- IDENTICA a sez.21/22,
+   nessun peso tarato.
+6. Indice grade: fonte primaria analisi_manager/dati/
+   storico_grade_backtest_20260806.json (raccolta COMPLETATA in questa
+   sessione, 625/625 slug, 0 errori, 22.778 coppie slug-data totali con le
+   fonti precedenti unite), fonti GK/DEF/MID/FWD di sez.15-17 come fallback.
+7. METRO = solo punteggio della formazione (G-A). Rank/premio/podio NON
+   calcolabili qui: dati_globali/arene_storico.json (usato da sez.21 per
+   rank vero) copre SOLO le arene di crowss, non degli altri manager --
+   per i 41 manager diversi da crowss non abbiamo la lista punteggi degli
+   avversari di leaderboard. Bloccato e dichiarato PRIMA di scrivere lo
+   script (non un limite scoperto a numeri gia' visti).
+8. Bootstrap sulle COPPIE (manager, GW), non sulle arene/giornate, come
+   richiesto esplicitamente.
+
+--- RISULTATO SU GRUPPO A (5 manager) ---
+Tentativi totali scartati: 55, tutti per lo stesso motivo ("pool<15 o manca
+almeno una delle 5 carte schierate"). Righe valide sopravvissute: SOLO 4,
+su SOLO 2 coppie (manager, GW) distinte.
+
+  n_pool medio: non riportato (n troppo piccolo per una media sensata)
+  formazioni che cambiano >=1 carta: 3/4 (75.0%)
+  overlap A vs G: 2/5 carte in comune in 3 casi, 5/5 (identiche) in 1 caso
+  composizione ruoli A: GK 4, DEF 7, MID 5, FWD 4 (su 4 formazioni da 5 carte = 20 slot totali)
+  composizione ruoli G: IDENTICA (GK 4, DEF 7, MID 5, FWD 4) -- il grade
+    sposta QUALI carte dentro ogni ruolo, non quanti slot per ruolo
+    (diverso da favorito_odds, dove la composizione per ruolo si spostava)
+  punteggio medio: A=274.38  G=270.16
+  delta punti medio (G-A): -4.215 (negativo, direzione OPPOSTA a sez.21)
+  bootstrap su n=2 coppie, 4000 resample: IC95 [-5.620, +0.000], positivo
+    nello 0.0% dei ricampionamenti
+
+--- LETTURA: IL CAMPIONE NON E' UTILIZZABILE, NON E' UN VERDETTO NEGATIVO ---
+n=2 coppie (manager,GW) è troppo poco per QUALUNQUE lettura, positiva o
+negativa: un bootstrap su 2 unita' di cluster ricampiona di fatto solo 3
+combinazioni possibili (AA, AB, BB), l'IC95 e il segno (-4.2, 0.0% positivo)
+non dicono nulla sul vero effetto -- sarebbero uguali e opposti con un
+piccolo riordino dei dati. NON e' l'esito "A nullo" previsto dall'addendum
+(quello richiederebbe un campione che regge ma non mostra segno, qui il
+campione proprio non regge): passare al punto 5 dell'addendum (ricerca di
+varianti su A) su 2 coppie produrrebbe una scelta tarata sul rumore di 2
+osservazioni, esattamente l'errore che CLAUDE.md vieta esplicitamente.
+FERMO QUI, non busso al punto 5 ne' tantomeno al gruppo B.
+
+--- PERCHE' IL CAMPIONE E' COSI' PICCOLO: causa strutturale, non bug ---
+Lo scarto dominante (55/55, il 100% degli scarti) e' "il pool proxy non
+contiene tutte le 5 carte effettivamente schierate quella GW". Causa: il
+proxy si costruisce SOLO dalle carte che il manager ha GIA' SCHIERATO in
+un'arena in passato (non dal suo intero mazzo posseduto, che richiederebbe
+query). Un manager che ruota il roster, prova una carta mai schierata prima,
+o ne acquista una nuova, la schiera SENZA che sia mai comparsa nel proxy --
+e quella (manager,GW) va scartata. Con solo 8 GW disponibili e roster che
+ruotano, la sovrapposizione "5 carte gia' viste E pool>=15" e' rara: e'
+successa 2 volte su ~40 tentativi (5 manager x 8 GW, alcuni con piu' di una
+competizione Cap220/260 nella stessa GW). Non e' un errore di calcolo (gia'
+verificato: parsing date, filtro rarita/in_season, containment check tutti
+testati singolarmente sul primo caso riuscito).
+
+--- DECISIONE APERTA (non presa qui) ---
+Il metodo proxy walk-backward, cosi' com'e', non produce un campione
+sufficiente su questo dataset di 8 GW. Opzioni sul tavolo, nessuna scelta
+fatta:
+  a) Allentare il vincolo "contiene tutte le 5 carte schierate" a "contiene
+     ALMENO N delle 5" (perde la garanzia che A riproduca esattamente la
+     scelta reale, ma aumenta il campione).
+  b) Costruire il pool da TUTTO lo storico posseduto del manager, non solo
+     dalle carte gia' schierate in arena (richiede una fonte diversa da
+     dati_globali/manager_*.json, che registra solo le formazioni giocate,
+     non il mazzo intero -- servirebbe una query roster per manager, non
+     piu' zero-query).
+  c) Accettare il limite e chiudere il filone "backtest formazione sui
+     manager reali" qui, tenendo solo il risultato sez.21 (crowss, 232
+     arene, gia' solido come metodo anche se null in punti).
+Nessuna opzione scelta in questa sessione: decisione dell'utente.
+
+File aggiunti: analisi_manager/p12_raccolta_grade_backtest.py (gia'
+committato, raccolta completata 625/625 in questa sessione),
+analisi_manager/dati/storico_grade_backtest_20260806.json,
+analisi_manager/p12_backtest_manager_grade.py,
+analisi_manager/p12_backtest_manager_grade_out.json.
