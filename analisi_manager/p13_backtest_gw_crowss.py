@@ -566,6 +566,7 @@ def esegui_test3(args, righe, arene, reale_per_arena, d_start, d_end, conta, leg
 
     righe_report = []
     matrice = {'A': collections.Counter(), 'G': collections.Counter()}
+    matrice_soglia_nuda = {'A': collections.Counter(), 'G': collections.Counter()}
     saltate_dati_mancanti = 0
     for a in reale_per_arena:
         comp = a['competizione']
@@ -576,6 +577,16 @@ def esegui_test3(args, righe, arene, reale_per_arena, d_start, d_end, conta, leg
         soglia = S21.bfg.PAREGGIO_ARENA.get(tipo_bfg)
         if soglia is None:
             continue
+        # COMPITO 1 (brief 07/08 notte, parere Opus sez.4): la produzione NON
+        # schiera appena sopra il pareggio -- schiera solo se il guadagno
+        # atteso vale almeno QUOTA_MINIMA del costo di ingresso
+        # (build_formazione_globale.py riga ~600). soglia_decisione e' il
+        # vero limite SCHIERA/MARGINALE; 'soglia' (pareggio nudo) resta
+        # invariata per 'conviene' (verita' sul REALE, indipendente dalla
+        # condotta simulata).
+        costo = S21.bfg.COSTO_INGRESSO.get(tipo_bfg, 300)
+        guad_punto = S21.bfg.GUADAGNO_PER_PUNTO.get(tipo_bfg, 7.9)
+        soglia_decisione = soglia + costo * S21.bfg.QUOTA_MINIMA / guad_punto
         carte = a['carte']
         rows = [riga_per_carta.get(c.get('carta')) for c in carte]
         if any(r is None for r in rows):
@@ -586,8 +597,12 @@ def esegui_test3(args, righe, arene, reale_per_arena, d_start, d_end, conta, leg
         atteso_G = sum(r['_combinato'] for r in rows) + (0.2 * rows[cap_idx]['_combinato'] if cap_idx is not None else 0.0)
         real_points = a['punti']
         conviene = real_points >= soglia
-        dec_A = atteso_A >= soglia
-        dec_G = atteso_G >= soglia
+        dec_A = atteso_A >= soglia_decisione
+        dec_G = atteso_G >= soglia_decisione
+        # TEST A/A (CLAUDE.md): decisione con la soglia nuda, solo per il
+        # confronto vecchio/nuovo richiesto dal brief -- non entra in matrice.
+        dec_A_nuda = atteso_A >= soglia
+        dec_G_nuda = atteso_G >= soglia
 
         def esito_cella(conviene, decide_entra):
             if conviene and decide_entra:
@@ -602,9 +617,13 @@ def esegui_test3(args, righe, arene, reale_per_arena, d_start, d_end, conta, leg
         cella_G = esito_cella(conviene, dec_G)
         matrice['A'][cella_A] += 1
         matrice['G'][cella_G] += 1
-        righe_report.append({'competizione': comp, 'soglia': soglia, 'real_points': real_points,
+        matrice_soglia_nuda['A'][esito_cella(conviene, dec_A_nuda)] += 1
+        matrice_soglia_nuda['G'][esito_cella(conviene, dec_G_nuda)] += 1
+        righe_report.append({'competizione': comp, 'soglia': soglia, 'soglia_decisione': soglia_decisione,
+                             'costo': costo, 'guad_punto': guad_punto, 'real_points': real_points,
                              'conviene': conviene, 'atteso_A': atteso_A, 'dec_A': dec_A, 'cella_A': cella_A,
-                             'atteso_G': atteso_G, 'dec_G': dec_G, 'cella_G': cella_G})
+                             'atteso_G': atteso_G, 'dec_G': dec_G, 'cella_G': cella_G,
+                             'dec_A_nuda': dec_A_nuda, 'dec_G_nuda': dec_G_nuda})
 
     if saltate_dati_mancanti:
         print(f'ATTENZIONE: {saltate_dati_mancanti} arene REALI escluse dalla matrice '
@@ -612,22 +631,30 @@ def esegui_test3(args, righe, arene, reale_per_arena, d_start, d_end, conta, leg
         print()
 
     print(f'TEST3 -- arene valutate: {len(righe_report)}')
-    print('\nPER SINGOLA ARENA (soglia PAREGGIO_ARENA, atteso A/G, decisione):')
+    print('\nPER SINGOLA ARENA (soglia PAREGGIO_ARENA, soglia_decisione SCHIERA, atteso A/G, decisione):')
     for i, r in enumerate(righe_report, 1):
         print(f"  [{i:2d}] {r['competizione']:10s} soglia={r['soglia']:7.2f}  "
+              f"soglia_decisione={r['soglia_decisione']:7.2f}  "
               f"REALE={r['real_points']:7.2f} (conviene={r['conviene']})  "
               f"A: atteso={r['atteso_A']:7.2f} {'ENTRA' if r['dec_A'] else 'SALTA':5s} -> {r['cella_A']}  "
               f"G: atteso={r['atteso_G']:7.2f} {'ENTRA' if r['dec_G'] else 'SALTA':5s} -> {r['cella_G']}")
 
     for label in ('A', 'G'):
         m = matrice[label]
-        print(f'\nMATRICE {label} (su {len(righe_report)} arene):')
+        mn = matrice_soglia_nuda[label]
+        n_schiera_nudo = sum(1 for r in righe_report if r[f'dec_{label}_nuda'])
+        n_schiera_vero = sum(1 for r in righe_report if r[f'dec_{label}'])
+        print(f'\nMATRICE {label} (su {len(righe_report)} arene) -- soglia_decisione (regola VERA del tool):')
         print(f"  conviene  + entra  = giusto                    : {m['giusto']}")
         print(f"  conviene  + salta  = ERRORE (persa arena buona) : {m['ERRORE (persa arena buona)']}")
         print(f"  non conv. + salta  = GIUSTO (batte REALE)       : {m['GIUSTO (batte REALE)']}")
         print(f"  non conv. + entra  = errore (come REALE)        : {m['errore (come REALE)']}")
         print(f"  -> batte REALE (salti giusti)      : {m['GIUSTO (batte REALE)']}")
         print(f"  -> sbaglia in modo costoso (persi)  : {m['ERRORE (persa arena buona)']}")
+        print(f"  CONFRONTO SOGLIA NUDA vs SOGLIA_DECISIONE: SCHIERA scende da "
+              f"{n_schiera_nudo} a {n_schiera_vero} su {len(righe_report)} "
+              f"(matrice soglia nuda: giusto={mn['giusto']} ERRORE={mn['ERRORE (persa arena buona)']} "
+              f"GIUSTO={mn['GIUSTO (batte REALE)']} errore={mn['errore (come REALE)']})")
 
     if args.dump:
         with open(args.dump, 'w', encoding='utf-8') as fh:
@@ -650,7 +677,9 @@ def esegui_test3(args, righe, arene, reale_per_arena, d_start, d_end, conta, leg
                 match = next((r for r in righe_report if r is not None and
                              r['competizione'] == comp and abs(r['real_points'] - a['punti']) < 1e-6), None)
                 if match:
-                    fh.write(f"    soglia={match['soglia']:.2f}  conviene={match['conviene']}\n")
+                    fh.write(f"    soglia={match['soglia']:.2f}  "
+                             f"soglia_decisione={match['soglia_decisione']:.2f}  "
+                             f"conviene={match['conviene']}\n")
                     fh.write(f"    A: atteso={match['atteso_A']:.2f} "
                              f"{'ENTRA' if match['dec_A'] else 'SALTA'} -> {match['cella_A']}\n")
                     fh.write(f"    G: atteso={match['atteso_G']:.2f} "
