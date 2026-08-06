@@ -859,3 +859,114 @@ esecutore.
 File aggiornati: analisi_manager/p11_bloccato_tutti_mazzi.py,
 analisi_manager/p11_bloccato_out.txt, analisi_manager/p11_bloccato_righe.json
 (commit 144708a1a6, non pushato).
+
+
+================================================================================
+8. FINESTRA ALLARGATA A 25 GW SU forever-young/lafindubal/tijmenmaaktpap
+   (Sonnet esecutore, 07/08 mattina/sera Roma)
+================================================================================
+OBIETTIVO: piu' profondita' temporale per mazzo (limite gia' identificato in
+sezione 7), non piu' mazzi diversi.
+
+VERIFICA COPERTURA favorito_odds (dati_globali/odds_1x2_index.json, non
+assunta): date min/max nell'indice = 2025-11-19 / 2026-08-07. Le 25 GW a
+ritroso da football-31-jul-4-aug-2026 (calcolate su fixture_date_map.json)
+vanno da football-21-24-apr-2026 a football-31-jul-4-aug-2026: TUTTE dopo
+meta' novembre 2025, nessun problema di copertura per questo giro (il
+vincolo esiste davvero, ma qui non si applica).
+
+ESTRAZIONE (cookie fornito dall'utente in chat, in locale, network a tratti
+lento -- 2 timeout di comando, ripresi da dove si erano fermati, lo script
+salta le GW gia' fatte):
+  forever-young: GIA' A 72 GW in dati_globali (risalgono ad ago 2025),
+    copre gia' abbondantemente la finestra 25 GW. NESSUNA estrazione fatta,
+    non serviva.
+  lafindubal: aggiunte le 10 GW mancanti (football-21-24-apr-2026 .. 
+    football-23-26-may-2026). Controllo D1: 513 righe totali, 0 senza carte.
+  tijmenmaaktpap: stesse 10 GW aggiunte. Controllo D1: 313 righe totali,
+    0 senza carte.
+  Di queste 10, non tutte hanno arene per ogni manager (dato legittimo, non
+  mancante): lafindubal 7/10 con arene>0, tijmenmaaktpap 7/10.
+
+RILANCIO p11_bloccato_tutti_mazzi.py (fix D6 gia' dentro) su tutti i mazzi:
+
+  lafindubal:      42->158 arene, 8->15 giornate valide, pool medio 93.4->218.7
+  tijmenmaaktpap:  19->87  arene, 4->11 giornate valide, pool medio 70.8->167.2
+  forever-young:   invariato (652 arene, 35 giornate, gia' il piu' profondo)
+
+CONFRONTO CON SEZIONE 7 (47 mazzi -> 49 mazzi processati, 45 utili vs 43):
+  LETTURA 1 (segno pieno):
+    sez.7 : positivi 22, negativi 21 -- p=1.0000
+    ora   : positivi 23, negativi 22 -- p=1.0000
+    Sostanzialmente invariato, ancora 50/50.
+
+  LETTURA 2 (>=16 giornate): ANCORA n=2 (solo pablo0078 e forever-young).
+  Ne' lafindubal (15 giornate valide) ne' tijmenmaaktpap (11) hanno
+  superato la soglia nonostante le 10 GW in piu' estratte: molte delle
+  nuove GW non avevano arene per loro (vedi sopra, 7/10), o non hanno
+  superato il filtro pool>=5. La soglia >=16 resta raggiunta solo dai due
+  mazzi che gia' la superavano.
+
+  LETTURA 3 (delta pesato per arene):
+    sez.7 con forever-young   : +0.557  IC95 [-0.007, +1.132]
+    ora  con forever-young    : +0.547  IC95 [+0.045, +1.132]  <- IC95 ora
+                                          ESCLUDE lo zero (limite inf. positivo)
+    sez.7 senza forever-young : +0.364  IC95 [-0.175, +0.918]
+    ora  senza forever-young  : +0.359  IC95 [-0.165, +0.911]  <- ancora
+                                          include lo zero, quasi invariato
+
+CONTATORI RIPIEGO/SCARTO (chiesti a valle del brief, non nel testo
+originale): n_reale_fallback_raw (carte con 'reale' preso dal punteggio
+grezzo del file manager perche' non trovate in cache) e n_scartate_reale
+(carte scartate del tutto, ne' cache ne' raw disponibile).
+
+  Per i 3 manager (su carte "risolte" = trovate in cache O col ripiego,
+  esclude le scartate):
+    forever-young    resolved=14773  fallback=1233 ( 8.3%)  scartate=9477
+    lafindubal       resolved= 3281  fallback= 312 ( 9.5%)  scartate=2521
+    tijmenmaaktpap   resolved= 1839  fallback= 246 (13.4%)  scartate= 818
+    TOTALE 3 manager resolved=19893  fallback=1791 ( 9.0%)  scartate=12816
+
+  Fallback split GW vecchie (gia' presenti prima di questo giro) vs nuove
+  (le 10 aggiunte, 16-25 indietro) -- NESSUN pattern pulito, direzione
+  opposta fra i due mazzi:
+    lafindubal:     vecchie 19.0% (152/802)   nuove  6.5% (160/2479)
+    tijmenmaaktpap: vecchie  3.2% (9/283)     nuove 15.2% (237/1556)
+  Non si puo' dire che le GW piu' vecchie abbiano sistematicamente cache
+  meno fresca: qui succede il contrario su un mazzo su due. Con solo 2
+  mazzi il campione e' troppo piccolo per un verdetto sulla direzione.
+
+  Sui 49 mazzi totali del giro: fallback 8105, scartate_reale 36777,
+  scartate_atteso 17817, su una stima di pool totale ~64.300 (fallback
+  ~12.6% del pool risolto, stima approssimata da pool_medio*giornate, non
+  conteggio esatto). SOGLIA 10-15% (indicata come limite da segnalare):
+  siamo dentro quella fascia sui 3 manager singolarmente e sul totale.
+  Va quindi trattato come limite reale del campione, non solo un numero a
+  margine: una quota rilevante (8-15% a seconda del mazzo) delle carte nel
+  pool porta ancora un punteggio con xp/capitano non tolti correttamente
+  (il ripiego raw-manager non e' la stessa cosa della lettura in cache,
+  vedi D4/D6), quindi il pool NON e' pulito al 100% nemmeno dopo il fix
+  D6: e' pulito per la maggioranza (85-92%), sporco per il resto.
+
+LETTURA ONESTA: allargare la finestra a 25 GW su 2 manager NON ha spostato
+il segno (ancora 50/50) e non ha fatto entrare nessun altro mazzo nella
+soglia >=16 giornate. L'UNICO numero che si e' mosso e' il delta pesato per
+arene CON forever-young, il cui IC95 ora esclude lo zero per la prima volta
+(limite inferiore +0.045 invece di -0.007) -- ma il numero centrale e'
+quasi identico (+0.547 vs +0.557): e' un affinamento del bordo dell'IC, non
+un segnale nuovo. E resta trainato da forever-young (senza, l'IC include
+ancora lo zero). Il collo di bottiglia resta la profondita' temporale per
+mazzo, come gia' scritto in sezione 7: servirebbero altri mazzi con
+storico lungo quanto forever-young, non solo altre 10 GW su mazzi che gia'
+ne avevano 15.
+
+DECISIONE APERTA: non presa da questo esecutore. Il difensore resta
+"riaperto ma non confermato" come in sezione 7. Se si vuole insistere su
+questa via, serve trovare altri mazzi con >=16-20 giornate di storico
+utile, non allargare ulteriormente i 2 mazzi gia' processati.
+
+File toccati: dati_globali/manager_lafindubal.json,
+dati_globali/manager_tijmenmaaktpap.json (dati_globali/manager_forever-
+young.json NON toccato), analisi_manager/p11_bloccato_tutti_mazzi.py
+(aggiunto conteggio n_reale_fallback_raw in output, non cambia la logica),
+analisi_manager/p11_bloccato_out.txt, analisi_manager/p11_bloccato_righe.json.
