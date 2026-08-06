@@ -509,16 +509,11 @@ walk-forward su migliaia di partite, produzione attuale):
   Midfielder  n=1486  corr 0.2265
   Forward     n=1228  corr 0.2064
 
-QUESTO E' IL NUMERO CHE CONTA. Il nostro modello in produzione ha
-correlazione con il realizzato FRA 0.03 e 0.23 per ruolo -- molto piu' bassa
-del grade grezzo (0.29-0.65) e anche piu' bassa del grade filtrato per soli
-giocati (DEF 0.20-0.33, MID 0.39-0.43, FWD 0.17-0.25). Su MID e DEF
-(filtrati), il grade e' nello stesso ordine di grandezza o leggermente
-superiore al nostro modello; su FWD filtrato (0.17-0.25) e' comparabile.
-Su nessun ruolo il grade grezzo o filtrato esce cosi' fuori scala da urlare
-riscrittura -- alla luce del vero metro, +0.64 su DEF (grezzo, con canale
-gioca/non-gioca dentro) e' semplicemente cio' che ci si aspetta da un
-segnale che include starter-status, non un'anomalia.
+QUESTO E' IL NUMERO CHE CONTA, MA -- CORREZIONE (vedi sez.11) -- va
+confrontato SOLO con i valori FILTRATI di R1a (soli giocati, min>0), non
+col grade grezzo: mischiare grezzo/filtrato accostava campioni diversi
+(grade non filtrato contro backtest su realizzati, non omogenei). Il
+confronto corretto e' in sezione 11 (R4).
 
 --- LETTURA D'INSIEME (non ancora un verdetto: S3 resta il giudice) ---
 Le due correzioni dell'utente reggono entrambe ai numeri:
@@ -546,3 +541,94 @@ U1/U2/R1/R2 in mano, il risultato di S3 va letto cosi':
 
 File aggiunti: analisi_manager/p12_u2_storica_pre_partita.json,
 analisi_manager/p12_r1_minuti.json.
+
+===============================================================================
+11. SESSIONE 06/08/2026 pomeriggio Roma (~14:20) -- R4/R5/R6: confronto sul
+    campione giusto, campione GK allargato, primo test predittivo (Sonnet)
+===============================================================================
+Correzione utente alla sez.10: il confronto R2 accostava numeri di campioni
+diversi (grade grezzo non filtrato vs backtest reale sui giocati). Il
+confronto valido usa SOLO i numeri filtrati (min>0) di R1a. Questa sezione
+lo rifa' pulito, completa GK/MID mancanti in R1a, allarga il campione GK
+(era n=45 su 3 soli giocatori NON indipendenti) e fa il primo test
+predittivo vero (R6).
+
+--- R5: LA ROTTA FUNZIONA SU QUALSIASI GIOCATORE, NON SOLO CARTE POSSEDUTE
+    -- CAMPIONE GK ALLARGATO A 55 GIOCATORI DISTINTI ---
+Testato anyPlayer(slug).playerGameScores su 3 giocatori sicuramente non
+tutti posseduti (eduardo-camavinga, david-olatukunbo-alaba,
+pablo-fornals-malla): tutti e 3 rispondono con 15 partite. Verificato
+anche contro il pool posseduto (grade_snapshot_ALL_LIMITED, 171 slug
+dedup): nessuno dei 3 e' nel pool ELEGGIBILE di questa GW (nota: l'utente
+segnala di possedere la carta di Camavinga, ma non e' nel bench eleggibile
+di questa GW -- comunque irrilevante, la query non ha filtro di proprieta',
+e' confermato dagli altri 2). CONCLUSIONE: playerGameScores e' una query
+globale per-giocatore, non ristretta a "MY" come myFilteredBench.
+
+Estratti 535 portieri distinti dai file dati_globali/manager_*.json (roster
+di managers reali gia' in repo, nessuna query aggiuntiva per la lista).
+Campionati 60 a caso (seed fisso), interrogati tutti: 60/60 hanno risposto
+con storico (55/60 con almeno una riga min>0/starter_odds/grade completi
+per l'uso in R4/R6). File: analisi_manager/p12_r5_gk_ampio.json.
+
+--- R4: TABELLA COMPLETA, CAMPIONE FILTRATO (min>0), CONFRONTO OMOGENEO ---
+  ruolo        n(giocatori)  n(righe)  corr(grade)  corr(starter_odds)  produzione(corr atteso-realizzato)
+  Goalkeeper   55            550       0.119        0.060                0.0347
+  Defender      3             40       0.327        0.284                0.1833
+  Midfielder    3             44       0.432        0.254                0.2265
+  Forward       3             34       0.247        0.138                0.2064
+
+ATTENZIONE CAMPIONE: solo il GK ha un n vero (55 giocatori distinti, righe
+non tutte dipendenti dagli stessi 3 individui). DEF/MID/FWD restano sul
+campione debole di ieri (3 giocatori, 34-44 righe NON indipendenti tra
+loro) -- da allargare con lo stesso metodo di R5 (roster manager gia' in
+repo, stesso costo zero) prima di trarre conclusioni su questi 3 ruoli.
+
+Lettura SOLO sul GK (unico campione solido): il grade filtrato (0.119) e'
+gia' 3-4 volte la correlazione della produzione attuale (0.035), e le sole
+starter_odds filtrate (0.060) fanno peggio del grade. Su questo ruolo,
+quindi, il grade sembra portare qualcosa in piu' sia del nostro modello
+attuale sia delle sole quote di titolarita' -- il contrario esatto di
+quanto suggerito ieri (dove il GK sembrava il ruolo piu' "pulito"/meno
+sospetto proprio perche' meno correlato: qui la lettura cambia con un
+campione vero).
+Su DEF/MID/FWD (campione debole, provvisorio): tutti e tre restano sopra
+la produzione attuale anche filtrati, ma vanno riverificati su un campione
+largo prima di dire alcunche' con sicurezza.
+
+--- R6: IL GRADE AGGIUNGE INFORMAZIONE OLTRE starter_odds+L10? (solo GK,
+    unico campione abbastanza grande) ---
+L10 calcolata correttamente: per ogni partita, media delle SOLE partite
+precedenti nella stessa sequenza storica (mai partite successive), minimo
+3 partite di storico richieste, finestra fino a 10 precedenti. Righe
+utilizzabili: 433 (dopo il filtro min>0 + storico minimo).
+
+Regressione OLS punteggio realizzato ~ [intercetta, starter_odds, L10]
+  R2 BASE (starter_odds + L10):           0.0141
+Regressione OLS punteggio realizzato ~ [intercetta, starter_odds, L10, grade_num]
+  R2 ESTESO (+ grade):                    0.0209
+  delta R2:                              +0.0067 (aumento ~47% relativo)
+  coefficiente su grade_num: +1.62 (positivo, grade alto -> punteggio piu'
+  alto a parita' di starter_odds/L10); il coefficiente di L10 si riduce da
+  0.125 a 0.066 quando si aggiunge il grade -- il grade assorbe parte
+  dell'informazione che prima passava per L10, e aggiunge qualcosa in piu'.
+
+LETTURA (solo GK, cautela d'obbligo su R2 comunque piccoli in assoluto --
+il modello a 3 variabili spiega poco della varianza totale, normale per un
+punteggio So5 molto rumoroso): il grade sembra portare segnale INCREMENTALE
+reale sopra starter_odds+L10 sul portiere, coerente con R4. Non fatto per
+DEF/MID/FWD per lo stesso motivo di R4 (campione insufficiente).
+
+--- PROSSIMO PASSO ---
+1. Allargare DEF/MID/FWD con lo stesso metodo di R5 (roster gia' in
+   dati_globali/manager_*.json, zero query aggiuntive per la lista, poi le
+   query playerGameScores su ~40-60 giocatori per ruolo) e rifare R4/R6 su
+   campioni omogenei per tutti i ruoli.
+2. S3 resta il giudice finale: se il grade risultasse riscritto post-
+   risultato, tutto R4/R6 andrebbe buttato (il segnale "aggiuntivo" sarebbe
+   fuga di informazione dal risultato stesso, non previsione). Il quadro
+   di questa sezione rende S3 ANCORA PIU' urgente: se genuino, sul GK
+   sembra esserci un guadagno reale non banale.
+
+File aggiunti: analisi_manager/p12_r5_gk_candidati.json,
+analisi_manager/p12_r5_gk_ampio.json.
