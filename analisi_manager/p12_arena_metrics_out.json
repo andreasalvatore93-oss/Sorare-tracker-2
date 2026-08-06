@@ -1,0 +1,587 @@
+{
+ "Midfielder": {
+  "ruolo": "Midfielder",
+  "n_giornate": 93,
+  "n_scartate": 56,
+  "tabella_medie": {
+   "atteso": {
+    "tasso_migliore_pct": 22.580645161290324,
+    "tasso_top_quartile_pct": 47.31182795698925,
+    "percentile_medio": 61.08398495769288,
+    "tasso_boom70_pct": 18.27956989247312,
+    "tasso_boom90_pct": 3.225806451612903,
+    "distribuzione_punteggio_scelto": {
+     "min": 28.4,
+     "Q1": 43.2,
+     "mediana": 53.5,
+     "Q3": 65.4,
+     "max": 99.2
+    }
+   },
+   "grade": {
+    "tasso_migliore_pct": 29.032258064516128,
+    "tasso_top_quartile_pct": 47.31182795698925,
+    "percentile_medio": 63.19707107648751,
+    "tasso_boom70_pct": 24.731182795698924,
+    "tasso_boom90_pct": 7.526881720430108,
+    "distribuzione_punteggio_scelto": {
+     "min": 8.2,
+     "Q1": 42.2,
+     "mediana": 55.1,
+     "Q3": 69.9,
+     "max": 100.0
+    }
+   },
+   "combinato": {
+    "tasso_migliore_pct": 33.333333333333336,
+    "tasso_top_quartile_pct": 52.68817204301075,
+    "percentile_medio": 66.9428363055792,
+    "tasso_boom70_pct": 25.806451612903224,
+    "tasso_boom90_pct": 7.526881720430108,
+    "distribuzione_punteggio_scelto": {
+     "min": 26.8,
+     "Q1": 44.4,
+     "mediana": 57.5,
+     "Q3": 70.1,
+     "max": 100.0
+    }
+   },
+   "casuale": {
+    "tasso_migliore_pct": 18.261316728183377,
+    "tasso_top_quartile_pct": 35.79922527335881,
+    "percentile_medio": 50.11896209517132,
+    "tasso_boom70_pct": 14.77766587377271,
+    "tasso_boom90_pct": 3.666238156820667,
+    "distribuzione_punteggio_scelto": {
+     "min": 30.766666666666666,
+     "Q1": 46.23333333333333,
+     "mediana": 50.88333333333333,
+     "Q3": 55.0925,
+     "max": 77.23333333333333
+    }
+   }
+  },
+  "confronti_bootstrap": {
+   "tasso_migliore": {
+    "combinato_meno_atteso": {
+     "media_diff": 0.1086989247311828,
+     "pct_positivo": 0.998,
+     "IC95": [
+      0.043010752688172005,
+      0.18279569892473121
+     ]
+    },
+    "combinato_meno_grade": {
+     "media_diff": 0.044182795698924734,
+     "pct_positivo": 0.813,
+     "IC95": [
+      -0.03225806451612906,
+      0.12903225806451613
+     ]
+    },
+    "grade_meno_atteso": {
+     "media_diff": 0.06207526881720429,
+     "pct_positivo": 0.865,
+     "IC95": [
+      -0.04301075268817203,
+      0.17204301075268816
+     ]
+    }
+   },
+   "tasso_top_quartile": {
+    "combinato_meno_atteso": {
+     "media_diff": 0.05138709677419354,
+     "pct_positivo": 0.86,
+     "IC95": [
+      -0.032258064516129004,
+      0.13978494623655913
+     ]
+    },
+    "combinato_meno_grade": {
+     "media_diff": 0.05432258064516129,
+     "pct_positivo": 0.845,
+     "IC95": [
+      -0.043010752688172005,
+      0.15053763440860213
+     ]
+    },
+    "grade_meno_atteso": {
+     "media_diff": -0.0007741935483870971,
+     "pct_positivo": 0.473,
+     "IC95": [
+      -0.13978494623655913,
+      0.11827956989247307
+     ]
+    }
+   },
+   "percentile_medio": {
+    "combinato_meno_atteso": {
+     "media_diff": 5.820982505375015,
+     "pct_positivo": 0.969,
+     "IC95": [
+      -0.08445269846301784,
+      12.237325814596097
+     ]
+    },
+    "combinato_meno_grade": {
+     "media_diff": 3.5709526914883374,
+     "pct_positivo": 0.884,
+     "IC95": [
+      -2.776354729590416,
+      9.782628055994927
+     ]
+    },
+    "grade_meno_atteso": {
+     "media_diff": 2.0759585348748644,
+     "pct_positivo": 0.684,
+     "IC95": [
+      -6.56977744683639,
+      11.064070591658897
+     ]
+    }
+   },
+   "tasso_boom70": {
+    "combinato_meno_atteso": {
+     "media_diff": 0.0735268817204301,
+     "pct_positivo": 0.98,
+     "IC95": [
+      0.010752688172043001,
+      0.13978494623655915
+     ]
+    },
+    "combinato_meno_grade": {
+     "media_diff": 0.012225806451612902,
+     "pct_positivo": 0.568,
+     "IC95": [
+      -0.053763440860215034,
+      0.08602150537634407
+     ]
+    },
+    "grade_meno_atteso": {
+     "media_diff": 0.06486021505376344,
+     "pct_positivo": 0.92,
+     "IC95": [
+      -0.010752688172043029,
+      0.15053763440860213
+     ]
+    }
+   },
+   "tasso_boom90": {
+    "combinato_meno_atteso": {
+     "media_diff": 0.043301075268817206,
+     "pct_positivo": 0.978,
+     "IC95": [
+      0.010752688172043008,
+      0.08602150537634409
+     ]
+    },
+    "combinato_meno_grade": {
+     "media_diff": -3.2258064516128966e-05,
+     "pct_positivo": 0.337,
+     "IC95": [
+      -0.03225806451612903,
+      0.03225806451612903
+     ]
+    },
+    "grade_meno_atteso": {
+     "media_diff": 0.042516129032258064,
+     "pct_positivo": 0.978,
+     "IC95": [
+      0.010752688172043008,
+      0.08602150537634409
+     ]
+    }
+   }
+  }
+ },
+ "Defender": {
+  "ruolo": "Defender",
+  "n_giornate": 94,
+  "n_scartate": 50,
+  "tabella_medie": {
+   "atteso": {
+    "tasso_migliore_pct": 22.340425531914892,
+    "tasso_top_quartile_pct": 38.297872340425535,
+    "percentile_medio": 50.65766756389758,
+    "tasso_boom70_pct": 22.340425531914892,
+    "tasso_boom90_pct": 7.446808510638298,
+    "distribuzione_punteggio_scelto": {
+     "min": 9.86,
+     "Q1": 36.4,
+     "mediana": 47.98,
+     "Q3": 68.62,
+     "max": 100.0
+    }
+   },
+   "grade": {
+    "tasso_migliore_pct": 25.53191489361702,
+    "tasso_top_quartile_pct": 45.744680851063826,
+    "percentile_medio": 59.13302281748309,
+    "tasso_boom70_pct": 23.404255319148938,
+    "tasso_boom90_pct": 6.382978723404255,
+    "distribuzione_punteggio_scelto": {
+     "min": 9.86,
+     "Q1": 40.88,
+     "mediana": 53.4,
+     "Q3": 69.24,
+     "max": 100.0
+    }
+   },
+   "combinato": {
+    "tasso_migliore_pct": 26.595744680851062,
+    "tasso_top_quartile_pct": 44.680851063829785,
+    "percentile_medio": 57.30707439695503,
+    "tasso_boom70_pct": 24.46808510638298,
+    "tasso_boom90_pct": 8.51063829787234,
+    "distribuzione_punteggio_scelto": {
+     "min": 9.18,
+     "Q1": 38.32,
+     "mediana": 53.94,
+     "Q3": 69.52,
+     "max": 100.0
+    }
+   },
+   "casuale": {
+    "tasso_migliore_pct": 17.240363117365536,
+    "tasso_top_quartile_pct": 35.49062127489921,
+    "percentile_medio": 50.01992766727667,
+    "tasso_boom70_pct": 15.287379482158965,
+    "tasso_boom90_pct": 3.3054999741184714,
+    "distribuzione_punteggio_scelto": {
+     "min": 28.2425,
+     "Q1": 45.756,
+     "mediana": 49.632,
+     "Q3": 54.14166666666666,
+     "max": 75.08285714285715
+    }
+   }
+  },
+  "confronti_bootstrap": {
+   "tasso_migliore": {
+    "combinato_meno_atteso": {
+     "media_diff": 0.04196808510638298,
+     "pct_positivo": 0.849,
+     "IC95": [
+      -0.03191489361702127,
+      0.11702127659574466
+     ]
+    },
+    "combinato_meno_grade": {
+     "media_diff": 0.01022340425531915,
+     "pct_positivo": 0.58,
+     "IC95": [
+      -0.04255319148936171,
+      0.06382978723404256
+     ]
+    },
+    "grade_meno_atteso": {
+     "media_diff": 0.030404255319148938,
+     "pct_positivo": 0.714,
+     "IC95": [
+      -0.05319148936170215,
+      0.12765957446808512
+     ]
+    }
+   },
+   "tasso_top_quartile": {
+    "combinato_meno_atteso": {
+     "media_diff": 0.06386170212765957,
+     "pct_positivo": 0.89,
+     "IC95": [
+      -0.03191489361702127,
+      0.17021276595744678
+     ]
+    },
+    "combinato_meno_grade": {
+     "media_diff": -0.011319148936170214,
+     "pct_positivo": 0.345,
+     "IC95": [
+      -0.0957446808510638,
+      0.06382978723404259
+     ]
+    },
+    "grade_meno_atteso": {
+     "media_diff": 0.07279787234042553,
+     "pct_positivo": 0.864,
+     "IC95": [
+      -0.04255319148936171,
+      0.2021276595744681
+     ]
+    }
+   },
+   "percentile_medio": {
+    "combinato_meno_atteso": {
+     "media_diff": 6.7097593914111275,
+     "pct_positivo": 0.978,
+     "IC95": [
+      0.24647512497456603,
+      13.818648689869299
+     ]
+    },
+    "combinato_meno_grade": {
+     "media_diff": -1.718441405807712,
+     "pct_positivo": 0.28,
+     "IC95": [
+      -7.684294483356645,
+      4.188114025270565
+     ]
+    },
+    "grade_meno_atteso": {
+     "media_diff": 8.363330555079266,
+     "pct_positivo": 0.978,
+     "IC95": [
+      0.2511634579803612,
+      16.98184583045103
+     ]
+    }
+   },
+   "tasso_boom70": {
+    "combinato_meno_atteso": {
+     "media_diff": 0.0225,
+     "pct_positivo": 0.681,
+     "IC95": [
+      -0.05319148936170212,
+      0.09574468085106383
+     ]
+    },
+    "combinato_meno_grade": {
+     "media_diff": 0.010648936170212765,
+     "pct_positivo": 0.583,
+     "IC95": [
+      -0.03191489361702127,
+      0.06382978723404253
+     ]
+    },
+    "grade_meno_atteso": {
+     "media_diff": 0.013382978723404255,
+     "pct_positivo": 0.581,
+     "IC95": [
+      -0.07446808510638298,
+      0.10638297872340424
+     ]
+    }
+   },
+   "tasso_boom90": {
+    "combinato_meno_atteso": {
+     "media_diff": 0.010074468085106383,
+     "pct_positivo": 0.627,
+     "IC95": [
+      0.0,
+      0.03191489361702128
+     ]
+    },
+    "combinato_meno_grade": {
+     "media_diff": 0.021787234042553193,
+     "pct_positivo": 0.79,
+     "IC95": [
+      -0.021276595744680847,
+      0.06382978723404256
+     ]
+    },
+    "grade_meno_atteso": {
+     "media_diff": -0.009648936170212766,
+     "pct_positivo": 0.247,
+     "IC95": [
+      -0.053191489361702135,
+      0.03191489361702128
+     ]
+    }
+   }
+  }
+ },
+ "Forward": {
+  "ruolo": "Forward",
+  "n_giornate": 38,
+  "n_scartate": 74,
+  "tabella_medie": {
+   "atteso": {
+    "tasso_migliore_pct": 36.8421052631579,
+    "tasso_top_quartile_pct": 55.26315789473684,
+    "percentile_medio": 69.96953167231804,
+    "tasso_boom70_pct": 31.57894736842105,
+    "tasso_boom90_pct": 10.526315789473685,
+    "distribuzione_punteggio_scelto": {
+     "min": 32.7,
+     "Q1": 42.3,
+     "mediana": 56.6,
+     "Q3": 74.0,
+     "max": 100.0
+    }
+   },
+   "grade": {
+    "tasso_migliore_pct": 34.21052631578947,
+    "tasso_top_quartile_pct": 52.63157894736842,
+    "percentile_medio": 68.00831736203254,
+    "tasso_boom70_pct": 39.473684210526315,
+    "tasso_boom90_pct": 5.2631578947368425,
+    "distribuzione_punteggio_scelto": {
+     "min": 28.1,
+     "Q1": 40.9,
+     "mediana": 56.6,
+     "Q3": 76.4,
+     "max": 100.0
+    }
+   },
+   "combinato": {
+    "tasso_migliore_pct": 36.8421052631579,
+    "tasso_top_quartile_pct": 60.526315789473685,
+    "percentile_medio": 74.3063541205956,
+    "tasso_boom70_pct": 42.10526315789474,
+    "tasso_boom90_pct": 7.894736842105263,
+    "distribuzione_punteggio_scelto": {
+     "min": 32.7,
+     "Q1": 44.2,
+     "mediana": 56.6,
+     "Q3": 79.2,
+     "max": 96.8
+    }
+   },
+   "casuale": {
+    "tasso_migliore_pct": 19.864144012343456,
+    "tasso_top_quartile_pct": 35.775873095817694,
+    "percentile_medio": 50.09579709076613,
+    "tasso_boom70_pct": 18.362058455548762,
+    "tasso_boom90_pct": 2.9597568482610033,
+    "distribuzione_punteggio_scelto": {
+     "min": 31.833333333333332,
+     "Q1": 48.54,
+     "mediana": 51.42,
+     "Q3": 56.15,
+     "max": 72.3
+    }
+   }
+  },
+  "confronti_bootstrap": {
+   "tasso_migliore": {
+    "combinato_meno_atteso": {
+     "media_diff": -0.0008157894736842104,
+     "pct_positivo": 0.411,
+     "IC95": [
+      -0.10526315789473684,
+      0.10526315789473684
+     ]
+    },
+    "combinato_meno_grade": {
+     "media_diff": 0.0265,
+     "pct_positivo": 0.581,
+     "IC95": [
+      -0.10526315789473684,
+      0.15789473684210528
+     ]
+    },
+    "grade_meno_atteso": {
+     "media_diff": -0.02355263157894737,
+     "pct_positivo": 0.33,
+     "IC95": [
+      -0.1842105263157895,
+      0.13157894736842113
+     ]
+    }
+   },
+   "tasso_top_quartile": {
+    "combinato_meno_atteso": {
+     "media_diff": 0.054289473684210526,
+     "pct_positivo": 0.804,
+     "IC95": [
+      -0.026315789473684292,
+      0.1578947368421053
+     ]
+    },
+    "combinato_meno_grade": {
+     "media_diff": 0.07628947368421053,
+     "pct_positivo": 0.782,
+     "IC95": [
+      -0.07894736842105254,
+      0.23684210526315796
+     ]
+    },
+    "grade_meno_atteso": {
+     "media_diff": -0.022263157894736846,
+     "pct_positivo": 0.352,
+     "IC95": [
+      -0.21052631578947367,
+      0.1578947368421053
+     ]
+    }
+   },
+   "percentile_medio": {
+    "combinato_meno_atteso": {
+     "media_diff": 4.368331367634773,
+     "pct_positivo": 0.904,
+     "IC95": [
+      -1.4484741264926981,
+      12.085360459973458
+     ]
+    },
+    "combinato_meno_grade": {
+     "media_diff": 6.061103801169591,
+     "pct_positivo": 0.907,
+     "IC95": [
+      -2.2911445279866314,
+      15.701754385964911
+     ]
+    },
+    "grade_meno_atteso": {
+     "media_diff": -1.6675813307779257,
+     "pct_positivo": 0.389,
+     "IC95": [
+      -13.19763870460465,
+      10.027089783281731
+     ]
+    }
+   },
+   "tasso_boom70": {
+    "combinato_meno_atteso": {
+     "media_diff": 0.10521052631578948,
+     "pct_positivo": 0.986,
+     "IC95": [
+      0.02631578947368418,
+      0.21052631578947367
+     ]
+    },
+    "combinato_meno_grade": {
+     "media_diff": 0.022605263157894736,
+     "pct_positivo": 0.557,
+     "IC95": [
+      -0.10526315789473684,
+      0.13157894736842107
+     ]
+    },
+    "grade_meno_atteso": {
+     "media_diff": 0.07594736842105262,
+     "pct_positivo": 0.8,
+     "IC95": [
+      -0.0789473684210526,
+      0.23684210526315788
+     ]
+    }
+   },
+   "tasso_boom90": {
+    "combinato_meno_atteso": {
+     "media_diff": -0.027684210526315787,
+     "pct_positivo": 0.0,
+     "IC95": [
+      -0.07894736842105263,
+      0.0
+     ]
+    },
+    "combinato_meno_grade": {
+     "media_diff": 0.023973684210526314,
+     "pct_positivo": 0.593,
+     "IC95": [
+      -0.05263157894736842,
+      0.10526315789473684
+     ]
+    },
+    "grade_meno_atteso": {
+     "media_diff": -0.05289473684210526,
+     "pct_positivo": 0.085,
+     "IC95": [
+      -0.15789473684210525,
+      0.05263157894736842
+     ]
+    }
+   }
+  }
+ }
+}

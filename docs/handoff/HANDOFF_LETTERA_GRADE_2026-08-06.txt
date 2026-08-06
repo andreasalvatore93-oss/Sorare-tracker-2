@@ -12,6 +12,14 @@ dall'utente in chat per questa sessione (SORARE_COOKIE in env locale, non
 salvato su disco, non committato). Nessuna run GitHub lanciata.
 
 ===============================================================================
+1-BIS. FATTI ACCERTATI (per datare correttamente ogni cattura futura)
+===============================================================================
+Le formazioni ufficiali escono ~60 minuti prima del calcio d'inizio; Sorare
+riporta sulle carte i dati Opta basati su queste formazioni ufficiali.
+Conseguenza pratica: una cattura fatta a kickoff-60min e' gia' "dopo lo
+stacco" (formazione nota), non prima.
+
+===============================================================================
 2. PERCHE' ESISTE QUESTO FILONE
 ===============================================================================
 La lettera A-F ("potenziale della GW", campo So5Score.projection.grade,
@@ -1357,4 +1365,124 @@ arena->scouting.
 File aggiunti: analisi_manager/p12_briefA_def_out.json,
 analisi_manager/p12_briefA_fwd_out.json (script riusato: p12_briefA_mid.py,
 generalizzato con ruolo+file in ingresso, stesso file di prima).
+
+===============================================================================
+19. SESSIONE 06/08/2026 pomeriggio Roma (16:50 CEST, ora letta da sistema) --
+    CAMBIO DI METRO: PIAZZAMENTO NEL POOL, NON PUNTI MEDI (richiesta utente)
+    (Sonnet, no modifica produzione, commit+push a fine sezione)
+===============================================================================
+Le sez.16/17 misuravano i PUNTI MEDI del giocatore scelto. Metrica sbagliata
+per l'arena, dove il MAE (15-20pt) rende la previsione assoluta rumore e
+conta solo l'ordinamento: chi fa boom, non quanti punti in media. Rifatto
+tutto sulle STESSE 93/94/38 giornate di sez.16/17 (stesse righe V2, stesso
+requisito atteso+grade+score, stesso min 3 candidati/giornata), zero query,
+script analisi_manager/p12_briefA_arena_metrics.py (riusa
+p12_briefA_mid.py per caricamento dati e costruzione V2).
+
+METODO (dichiarato):
+1. tasso "migliore del pool" = quota di giornate in cui lo score del
+   selezionato eguaglia il massimo del pool.
+2. tasso "quartile alto" = quota di giornate in cui lo score del selezionato
+   e' >= alla soglia del 75-esimo percentile del pool (metodo nearest-rank).
+3. percentile medio = percentile del selezionato dentro il proprio pool
+   (0=peggiore, 100=migliore, normalizzato per la dimensione del pool: media
+   dei confronti "score<=il mio" sui membri diversi da se stesso), mediato
+   su tutte le giornate.
+4. boom: due soglie dichiarate, 70 e 90 punti So5, quota di giornate in cui
+   il selezionato le supera.
+5. distribuzione (min/Q1/mediana/Q3/max) dello score del selezionato sulle
+   giornate, non solo la media.
+"a caso" = valore ATTESO di un sorteggio uniforme sul pool (media sui
+membri di ogni indicatore quella giornata, stesso principio gia' corretto
+in sez.16/17 per i punti medi -- mai un singolo sorteggio rumoroso).
+Bootstrap sulle GIORNATE (1000 resample, IC95) per ogni differenza
+combinato-vs-atteso, combinato-vs-grade_solo, grade-vs-atteso.
+
+--- MIDFIELDER (93 giornate) ---
+  strategia    migliore%  top_quartile%  percentile_medio  boom70%  boom90%
+  atteso          22.6         47.3           61.1           18.3     3.2
+  grade           29.0         47.3           63.2           24.7     7.5
+  combinato       33.3         52.7           66.9           25.8     7.5
+  a caso          18.3         35.8           50.1           14.8     3.7
+
+  bootstrap combinato - atteso (IC95):
+    migliore%       : +10.9pp  [+4.3, +18.3]   SOLIDO (98.0%... 99.8% pos)
+    top_quartile%    : +5.1pp  [-3.2, +14.0]   debole (86.0% pos)
+    percentile_medio : +5.82pt [-0.08, +12.24]  quasi solido (96.9% pos)
+    boom70%          : +7.4pp  [+1.1, +14.0]   SOLIDO (98.0% pos)
+    boom90%          : +4.3pp  [+1.1, +8.6]    SOLIDO (97.8% pos)
+
+--- DEFENDER (94 giornate) ---
+  strategia    migliore%  top_quartile%  percentile_medio  boom70%  boom90%
+  atteso          22.3         38.3           50.7           22.3     7.4
+  grade           25.5         45.7           59.1           23.4     6.4
+  combinato       26.6         44.7           57.3           24.5     8.5
+  a caso          17.2         35.5           50.0           15.3     3.3
+
+  bootstrap combinato - atteso (IC95):
+    migliore%       : +4.2pp  [-3.2, +11.7]   debole (84.9% pos)
+    top_quartile%    : +6.4pp  [-3.2, +17.0]   debole (89.0% pos)
+    percentile_medio : +6.71pt [+0.25, +13.82] SOLIDO (97.8% pos)
+    boom70%          : +2.3pp  [-5.3, +9.6]    nullo (68.1% pos)
+    boom90%          : +1.0pp  [0.0, +3.2]     debole/marginale (62.7% pos)
+
+--- FORWARD (38 giornate, CAMPIONE PICCOLO -- tenuto ma con avviso, meno di
+    meta' giornate di MID/DEF) ---
+  strategia    migliore%  top_quartile%  percentile_medio  boom70%  boom90%
+  atteso          36.8         55.3           70.0           31.6    10.5
+  grade           34.2         52.6           68.0           39.5     5.3
+  combinato       36.8         60.5           74.3           42.1     7.9
+  a caso          19.9         35.8           50.1           18.4     3.0
+
+  bootstrap combinato - atteso (IC95):
+    migliore%       : -0.1pp  [-10.5, +10.5]  nullo (41.1% pos)
+    top_quartile%    : +5.4pp  [-2.6, +15.8]   debole (80.4% pos)
+    percentile_medio : +4.37pt [-1.45, +12.09] debole (90.4% pos)
+    boom70%          : +10.5pp [+2.6, +21.1]   SOLIDO (98.6% pos)
+    boom90%           : -2.8pp  [-7.9, 0.0]     NEGATIVO (0.0% pos -- combinato
+                                                 fa PEGGIO di atteso sul boom da
+                                                 90, ma su appena 3-4 eventi
+                                                 totali su 38 giornate: troppo
+                                                 pochi per fidarsi del segno)
+
+--- LETTURA DELL'IPOTESI: "il vantaggio sul percentile medio sara' modesto,
+    il vantaggio su 'quante volte becco il migliore' sara' proporzionalmente
+    piu' grande" ---
+CONFERMATA SOLO SU MID, SMENTITA SU DEF, MISTA SU FWD -- non generalizza,
+onestamente il contrario di uno sconto uniforme:
+  - MID: "migliore del pool" sale del 48% relativo (22.6%->33.3%, IC95
+    ESCLUDE lo zero, il piu' solido dei due) mentre il percentile medio sale
+    del 9% relativo (61.1->66.9, IC95 SFIORA lo zero) -- qui l'ipotesi
+    dell'utente e' esattamente giusta, "scontala" era la mossa corretta.
+  - DEF: ROVESCIATA. "Migliore del pool" e' DEBOLE (IC95 comprende lo zero,
+    84.9%) mentre il percentile medio e' IL PIU' SOLIDO dei cinque indicatori
+    su questo ruolo (IC95 esclude lo zero, [+0.25,+13.82]). Su DEF il grade
+    aiuta a spostare la QUALITA' MEDIA del piazzamento, non a becca-re il
+    migliore assoluto.
+  - FWD: NESSUNO dei due e' solido ("migliore" sostanzialmente zero, 41.1%;
+    percentile debole, 90.4% ma IC95 sfiora lo zero). L'unico indicatore
+    solido su FWD e' il boom70 (+10.5pp, IC95 esclude lo zero) -- diverso
+    ancora da entrambi gli altri ruoli.
+LETTURA GENERALE: il segnale piu' stabile attraverso i 3 ruoli non e' ne'
+"migliore del pool" ne' "percentile medio" da soli, ma IL BOOM A 70 PUNTI:
+solido su MID (+7.4pp) e FWD (+10.5pp), presente ma debole su DEF (+2.3pp,
+non significativo). Il boom a 90 e' troppo raro (3-10% delle giornate) per
+dare stime affidabili su un campione di 38-94 giornate -- dichiarato, non
+nascosto: su FWD il segno e' perfino negativo, ma il conteggio di eventi
+sottostante e' troppo piccolo (poche unita') per significare qualcosa.
+
+===============================================================================
+VERDETTO SEZIONE 19
+===============================================================================
+Cambiare metro da "punti medi" a "piazzamento nel pool" NON smentisce il
+quadro delle sez.16/17 (il grade combinato con lo score_atteso aiuta ancora,
+soprattutto su MID) ma lo rende PIU' SPECIFICO: l'aiuto non e' uniforme su
+tutti gli indicatori di piazzamento, cambia forma per ruolo. Su MID aiuta
+soprattutto a beccare il migliore assoluto e i boom; su DEF aiuta soprattutto
+a spostare la qualita' media (percentile) senza spostare il tasso di "primo
+posto"; su FWD (campione debole, 38 giornate) il segnale piu' solido e' solo
+il boom da 70. Nessuna decisione su produzione presa qui.
+
+File aggiunti: analisi_manager/p12_briefA_arena_metrics.py,
+analisi_manager/p12_arena_metrics_out.json.
 
