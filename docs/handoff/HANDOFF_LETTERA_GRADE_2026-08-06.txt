@@ -1486,3 +1486,181 @@ il boom da 70. Nessuna decisione su produzione presa qui.
 File aggiunti: analisi_manager/p12_briefA_arena_metrics.py,
 analisi_manager/p12_arena_metrics_out.json.
 
+===============================================================================
+19-BIS. SESSIONE 06/08/2026 pomeriggio Roma (16:55 CEST, ora letta da
+        sistema) -- VERIFICA INCOERENZA DEF (richiesta utente): NON E' UN
+        BUG, E' REALE. Numeri vecchi NON cancellati, spiegati qui.
+===============================================================================
+Segnalazione utente: su DEF (sez.19), score_atteso becca il migliore il
+22.3% delle volte (contro 17.2% del caso) ma il suo percentile medio (50.7)
+e' quasi uguale a quello del caso (50.0). Chiesto se e' un errore di
+calcolo (pareggi, pool piccoli, esclusione di se stesso) o un fatto vero.
+
+--- VERIFICA 1: la formula di percentile e' corretta? ---
+Test esplicito su un pool di controllo [10, 20, 30]: percentile(10)=0.0,
+percentile(20)=50.0, percentile(30)=100.0 -- esatto, nessun bug nella
+formula ne' nell'esclusione di se stesso dal confronto.
+
+--- VERIFICA 2: pareggi nel massimo del pool ---
+DEF: 1/94 giornate con pareggio nel massimo. MID: 0/93. FWD: 0/38.
+Trascurabile ovunque, non spiega niente.
+
+--- VERIFICA 3: NON E' UN'INCOERENZA MATEMATICA -- e' una scomposizione
+    aritmetica corretta, verificata riga per riga ---
+Non e' vero in generale che "batte il caso sul tasso di primo posto"
+implichi "batte il caso sul percentile medio": una strategia puo' vincere
+piu' spesso il primo posto e, nelle volte in cui perde, scegliere pero'
+qualcuno SOTTO la media -- il percentile medio e' la somma pesata delle due
+cose, non e' vincolato dalla sola quota di vittorie. Verificato sui dati
+veri, decomponendo ogni strategia in "quando vince" (percentile sempre 100,
+per definizione) e "quando perde" (percentile medio del pool quando NON e'
+il migliore):
+
+  ruolo       strategia   best%   perc.medio  n_vince perc.se_vince  n_perde perc.se_perde
+  Defender    atteso      22.3%      50.7       21        100.0        73        36.5
+  Defender    grade       25.5%      59.1       24        100.0        70        45.1
+  Defender    combinato   26.6%      57.3       25        100.0        69        41.8
+  Midfielder  atteso      22.6%      61.1       21        100.0        72        49.7
+  Midfielder  grade       29.0%      63.2       27        100.0        66        48.1
+  Midfielder  combinato   33.3%      66.9       31        100.0        62        50.4
+  Forward     atteso      36.8%      70.0       14        100.0        24        52.5
+  Forward     grade       34.2%      68.0       13        100.0        25        51.4
+  Forward     combinato   36.8%      74.3       14        100.0        24        59.3
+
+  Conto di verifica per Defender/atteso: 0.223*100 + 0.777*36.5 = 22.3 +
+  28.4 = 50.7 -- torna esatto col numero riportato in sez.19.
+
+LETTURA -- IL FATTO E' REALE, NON UN BUG: su DEF, quando score_atteso NON
+azzecca il migliore del pool (73/94 volte), il giocatore scelto e' in media
+SOTTO la mediana del pool (percentile 36.5, contro 50.0 atteso dal caso) --
+score_atteso su DEF non e' "quasi sempre il secondo/terzo migliore quando
+sbaglia", e' "quando sbaglia, spesso sbaglia verso il basso". Su MID e FWD
+questo effetto NON c'e' (percentile-quando-perde vicino a 50, quasi neutro):
+la' un miss e' un miss neutro, non un miss verso il fondo. Questa e' una
+differenza REALE fra ruoli, non vista prima: score_atteso sul DEF ha un
+comportamento un po' "tutto o niente" (bene quando indovina, sotto media
+quando sbaglia) che sui centrocampisti/attaccanti non si vede.
+
+--- POOL: DIMENSIONE MEDIA E DISTRIBUZIONE, PER RUOLO (richiesto) ---
+  ruolo       n_giornate  media  min  Q1  mediana  Q3  max  quota pool=3
+  Defender        94       10.14   3   4     6      13   56    18/94 = 19.1%
+  Midfielder       93       10.31   3   4     6      12   47    23/93 = 24.7%
+  Forward          38        7.16   3   3     6      10   19    12/38 = 31.6%
+
+AVVISO ONESTO: fra il 19% e il 32% delle giornate (a seconda del ruolo) ha
+solo 3 candidati disponibili. Con pool=3 il percentile puo' assumere SOLO i
+valori {0, 50, 100} (nessuna sfumatura), e il tasso "migliore del pool" ha
+baseline casuale 33.3% invece del 14-20% medio -- questi indicatori si
+muovono A SCATTI su quasi un quarto delle giornate, in particolare su FWD
+dove il fenomeno e' piu' marcato (quasi un terzo). Non invalida i numeri di
+sez.19 (le medie/bootstrap gia' tengono conto di tutte le giornate, pool
+piccoli inclusi, pesati uguali), ma va tenuto a mente leggendo differenze
+piccole: su un pool di 3, un singolo risultato sposta il percentile di quel
+giorno di 50 punti interi.
+
+VERDETTO: nessun errore di calcolo trovato (formula percentile, pareggi,
+pool piccoli tutti verificati). I numeri di sez.19 restano validi cosi'
+come sono. L'apparente incoerenza su DEF e' un fatto vero sul comportamento
+di score_atteso su quel ruolo (asimmetria "vince bene, perde peggio della
+media"), non presente allo stesso modo su MID/FWD -- un'osservazione in
+piu', non una correzione.
+
+File aggiunti: nessuno (verifica fatta interattivamente, numeri riportati
+qui in coda; nessun nuovo script salvato perche' e' stato un controllo
+diagnostico, non una nuova misura da riprodurre).
+NOTA: vedi sez.19-TER per il seguito di questo controllo (test di coerenza
+su campione ampio, con script salvato).
+
+===============================================================================
+19-TER. SESSIONE 06/08/2026 pomeriggio Roma (17:00 CEST, ora letta da
+        sistema) -- TEST DI COERENZA DEL CODICE + RICERCA PRECEDENTE SU DEF
+        (richiesta utente, due ipotesi trattate alla pari)
+===============================================================================
+Ipotesi (A) errore nel conto del percentile, (B) e' reale (score_atteso su
+DEF prevede bene ma ordina male, gia' emerso in una sessione precedente e
+mai portato in produzione). Trattate alla pari, come richiesto, non presa
+per buona nessuna delle due prima di verificare.
+
+--- VERIFICA IPOTESI (A): test di coerenza su campione INDIPENDENTE e PIU'
+    AMPIO ---
+Segnalazione dell'utente: REPORT_PASSAGGIO_2_OPUS_P3_2026-08-05.txt misura
+per Defender lift 18.6% (n=5531, walk-forward, backtest_arene_previsioni --
+lo stesso motore usato qui). Un modello con quel lift non puo' avere
+percentile medio = caso: se il MIO conto del percentile e' giusto, applicato
+a un campione ampio di DEF deve riprodurre un vantaggio sopra il caso.
+
+Costruito un campione INDIPENDENTE dal 175-giocatori Haiku di sez.16-19:
+250 DEF campionati a caso dai 1590 distinti nei roster reali
+(dati_globali/manager_*.json, stessa fonte gia' usata in R5/sez.11), storia
+INTERA dalla cache locale (zero query), NESSUN filtro su grade (qui non
+serve: si misura solo score_atteso vs realizzato, come nel backtest P3).
+Script: analisi_manager/p12_percentile_sanity_check.py.
+
+  n_giornate=270 (101 scartate per pool<3), 4343 righe, 171 DEF distinti con
+  almeno una riga utile
+
+  indicatore                    score_atteso     caso (baseline)
+  tasso "migliore del pool"        20.7%             13.7%
+  percentile medio                 58.9              50.0
+
+VERDETTO IPOTESI (A): RESPINTA. Sullo stesso identico codice (stessa
+funzione percentile_rank, stessa costruzione giornate, stesso principio "a
+caso" = media sul pool), su un campione 3 volte piu' grande (270 vs 94
+giornate) e completamente indipendente (171 DEF a caso, non i 175 Haiku
+filtrati per grade), il percentile medio SALE chiaramente sopra il caso
+(58.9 vs 50.0) e il tasso di primo posto pure (20.7% vs 13.7% baseline) --
+in linea con il lift 18.6% del report P3. Se ci fosse un bug nel conto del
+percentile (pareggi, pool piccoli, auto-confronto), si vedrebbe anche qui:
+non si vede. Il codice e' corretto.
+
+--- VERIFICA IPOTESI (B): ricerca nel repo di una traccia precedente ---
+Trovato in docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md, punto 30:
+"Ordinamento senza shrinkage (score_ordinamento) -- REVERTITO 30/07". Filone
+CORRELATO ma NON IDENTICO a quanto sospettato dall'utente:
+  - 27-29/07 era stata implementata una separazione fra il numero MOSTRATO
+    (con shrinkage, minimizza il MAE) e l'ordine usato per selezionare
+    (shrink_k=0, pensato per minimizzare il lift), specificamente per DEF e
+    FWD, su un campione piccolo (123-140 giornate, 1 lega).
+  - Ritestato 30/07 su un campione molto piu' ampio (DEF 328 giornate/16
+    leghe/491 giocatori): IL VERDETTO SI E' INVERTITO. Lo score MOSTRATO
+    (con shrinkage, quello di produzione oggi) vince sull'ordinamento senza
+    shrinkage: DEF 20.4% vs 19.5% di lift. Lo score_ordinamento e' stato
+    RIMOSSO come criterio di scelta -- si ordina sempre per score_atteso di
+    produzione, come GK/MID.
+  - Il 20.4% di lift misurato li' e' vicino al 20.7% di tasso-migliore
+    trovato qui nella verifica (A): CONFERMA INCROCIATA fra due sessioni
+    diverse, due metodi diversi, sullo stesso fatto -- lo score_atteso di
+    produzione su DEF ordina bene su campioni ampi, non ha un problema di
+    ordinamento strutturale non risolto.
+
+LETTURA -- LA COSA GIA' NOTA NON E' "DEF prevede bene ma ordina male e non
+e' mai stato risolto": E' L'OPPOSTO. Un tentativo di MIGLIORARE
+l'ordinamento (score_ordinamento) fu provato, sembro' funzionare su
+campione piccolo, e venne SMENTITO su campione grande -- lo score attuale
+DI PRODUZIONE (con shrinkage) gia' ordina bene, confermato due volte (P3 e
+qui). Non stiamo riscoprendo un problema noto: stiamo confermando, con un
+terzo metodo indipendente (percentile), una cosa gia' sistemata il 30/07.
+
+--- QUINDI COSA SPIEGA IL 50.7 DI SEZ.19? ---
+Non un bug (verificato sopra), non un problema strutturale noto di DEF
+(verificato sopra: il contrario e' vero). Resta l'ipotesi piu' semplice, gia'
+proposta in 19-bis ma ora meglio circoscritta: il campione di sez.19 e'
+PICCOLO (94 giornate) e RISTRETTO all'intersezione "giocatore con grade
+disponibile E score_atteso calcolabile" -- un sottoinsieme molto piu' stretto
+dei 1590 DEF usati qui. Su un campione 3 volte piu' piccolo e diversamente
+selezionato, un risultato vicino al caso e' compatibile col rumore
+campionario, non e' la prova che lo score_atteso "su questo sottoinsieme"
+ordini davvero peggio -- ne' e' escluso che lo faccia: con 94 giornate non e'
+distinguibile. Il fenomeno "quando sbaglia, sbaglia verso il basso"
+(19-bis) resta un'osservazione vera SU QUEI DATI, ma non generalizza al DEF
+nel suo complesso, che la verifica qui sopra mostra ordinare bene.
+
+VERDETTO FINALE: ipotesi (A) respinta con verifica diretta; ipotesi (B) nella
+formulazione "problema mai risolto" e' SMENTITA dal repo (fu risolto il
+30/07, in senso opposto a quanto temuto); resta valida una versione piu'
+debole di (B), circoscritta al piccolo campione di sez.19 (rumore/selezione,
+non un difetto del modello DEF in generale).
+
+File aggiunti: analisi_manager/p12_percentile_sanity_check.py,
+analisi_manager/p12_percentile_sanity_check_out.json.
+
