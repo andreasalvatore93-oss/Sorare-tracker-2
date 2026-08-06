@@ -297,3 +297,82 @@ analisi_manager/p13_backtest_gw_crowss.py              la suite dei 3 test
 analisi_manager/dati/DUMP_p13_crowss_*                 i dump ispezionabili
 generatore_formazioni/build_formazione_globale.py      soglie, costi ingresso, generatore
 ricostruisci_manager.py                                estrazione manager (fix D1)
+
+
+===============================================================================
+10. ESTRAZIONE 5 MANAGER NUOVI (Sonnet, 07/08 sera, GitHub down, in locale)
+===============================================================================
+OBIETTIVO: allargare il campione oltre crowss/forever-young. Solo estrazione
+dati grezzi, NESSUN backtest lanciato in questo passaggio.
+
+MANAGER RICHIESTI: majinboooh, matteoogg, chuchochavez,
+angioletto33-26bf317c-4d50-431d-90f7-8b6fc37a9bbc, john942.
+
+majinboooh: slug INESISTENTE su Sorare ("User(slug=majinboooh) not found",
+NOT_FOUND su tutte e 5 le GW). Nessun file creato (le giornate con indice
+incompleto non si salvano, per costruzione dello script). Da chiedere
+all'utente lo slug corretto se vuole comunque questo manager nel campione.
+
+GW usate (le 5 chiuse piu' recenti, verificate con query so5Fixtures al
+calendario reale, non dal file locale; football-4-7-aug-2026 e' 'started',
+esclusa a ragione):
+  football-31-jul-4-aug-2026, football-28-31-jul-2026, football-24-28-jul-2026,
+  football-21-24-jul-2026, football-15-20-jul-2026
+
+Comando (per ciascuno, IDENTICO a crowss in 5quinquies): SORARE_COOKIE
+fornito dall'utente in chat, `python ricostruisci_manager.py <slug>
+--giornate <le 5 GW>` -- SENZA --solo-arene (pool completo, D2 rispettato).
+
+CAP 30 arene/GW: MAI superato, nessun manager si e' avvicinato (massimo
+osservato 5 arene in una GW, angioletto33 il 24-28-jul).
+
+--- CONTROLLI PER MANAGER/GW (righe_tot / senza_carte / arene / pool / slot / retry / falliti_def) ---
+
+matteoogg:
+  football-31-jul-4-aug-2026  righe=7   senza_carte=0  arene=3  pool=41   slot=15  pool>slot=SI  retry=0  falliti=0
+  football-28-31-jul-2026     righe=2   senza_carte=0  arene=0  pool=14   slot=0   pool>slot=SI  retry=0  falliti=0
+  football-24-28-jul-2026     righe=4   senza_carte=0  arene=1  pool=26   slot=5   pool>slot=SI  retry=0  falliti=0
+  football-21-24-jul-2026     righe=2   senza_carte=0  arene=0  pool=14   slot=0   pool>slot=SI  retry=0  falliti=0
+  football-15-20-jul-2026     righe=2   senza_carte=0  arene=2  pool=10   slot=10  pool>slot=NO  retry=0  falliti=0
+    ATTENZIONE: pool==slot su questa GW (0 carte di scorta). Test1/selezione
+    nullo per costruzione su QUESTA sola GW per matteoogg; le altre 4 GW sono
+    utilizzabili (dove arene>0: 31jul-4aug e 24-28jul).
+
+chuchochavez:
+  football-31-jul-4-aug-2026  righe=5   senza_carte=0  arene=1  pool=31   slot=5   pool>slot=SI  retry=0  falliti=0
+  football-28-31-jul-2026     righe=1   senza_carte=0  arene=0  pool=7    slot=0   pool>slot=SI  retry=0  falliti=0
+  football-24-28-jul-2026     righe=0   senza_carte=0  arene=0  pool=0    slot=0   n/a           retry=0  falliti=0
+  football-21-24-jul-2026     righe=4   senza_carte=0  arene=0  pool=28   slot=0   pool>slot=SI  retry=0  falliti=0
+  football-15-20-jul-2026     righe=2   senza_carte=0  arene=0  pool=14   slot=0   pool>slot=SI  retry=0  falliti=0
+    Solo 1 GW con arene giocate (31jul-4aug, 1 arena). Manager che gioca poche
+    arene: campione minimo per la suite p13 su questo mazzo.
+
+angioletto33-26bf317c-4d50-431d-90f7-8b6fc37a9bbc:
+  football-31-jul-4-aug-2026  righe=16  senza_carte=0  arene=1  pool=98   slot=5   pool>slot=SI  retry=0  falliti=0
+  football-28-31-jul-2026     righe=7   senza_carte=0  arene=0  pool=49   slot=0   pool>slot=SI  retry=0  falliti=0
+  football-24-28-jul-2026     righe=20  senza_carte=0  arene=5  pool=118  slot=25  pool>slot=SI  retry=0  falliti=0
+  football-21-24-jul-2026     righe=16  senza_carte=0  arene=1  pool=98   slot=5   pool>slot=SI  retry=0  falliti=0
+  football-15-20-jul-2026     righe=12  senza_carte=0  arene=1  pool=80   slot=5   pool>slot=SI  retry=0  falliti=0
+    Manager molto attivo (71 formazioni totali su 5 GW, 8 competizioni
+    diverse): buon candidato per allargare il campione.
+
+john942:
+  football-31-jul-4-aug-2026  righe=18  senza_carte=0  arene=1  pool=104  slot=5   pool>slot=SI  retry=0  falliti=0
+  football-28-31-jul-2026     righe=3   senza_carte=0  arene=0  pool=21   slot=0   pool>slot=SI  retry=0  falliti=0
+  football-24-28-jul-2026     righe=21  senza_carte=0  arene=2  pool=123  slot=10  pool>slot=SI  retry=0  falliti=0
+  football-21-24-jul-2026     righe=18  senza_carte=0  arene=0  pool=108  slot=0   pool>slot=SI  retry=0  falliti=0
+  football-15-20-jul-2026     righe=16  senza_carte=0  arene=2  pool=88   slot=10  pool>slot=SI  retry=0  falliti=0
+    Manager molto attivo (76 formazioni totali su 5 GW): buon candidato.
+
+RIEPILOGO CONTROLLI: 0 righe senza 'carte' su tutti i manager/GW (fix D1
+tiene), 0 retry pendenti, 0 falliti definitivi, nessun manager sopra il cap
+30. Un solo caso pool==slot (matteoogg, 15-20-jul): segnalato sopra, non
+bloccante per gli altri dati dello stesso manager.
+
+COMMIT: dati puliti (a parte l'unica riga pool==slot gia' segnalata, che non
+e' un errore ma una GW con zero scorte per quel manager), committato
+dati_globali/manager_{matteoogg,chuchochavez,
+angioletto33-26bf317c-4d50-431d-90f7-8b6fc37a9bbc,john942}.json.
+
+NESSUN BACKTEST LANCIATO. Nessuna run GitHub (down). Nessuna modifica a
+CLAUDE.md/soglie di produzione. majinboooh resta da chiarire con l'utente.
