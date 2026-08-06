@@ -619,11 +619,29 @@ def esegui_test3(args, righe, arene, reale_per_arena, d_start, d_end, conta, leg
         matrice['G'][cella_G] += 1
         matrice_soglia_nuda['A'][esito_cella(conviene, dec_A_nuda)] += 1
         matrice_soglia_nuda['G'][esito_cella(conviene, dec_G_nuda)] += 1
+
+        # COMPITO 2 (brief 07/08 notte, parere Opus sez.1): bilancio essenze
+        # SIMMETRICO. Se il modello salta (con soglia_decisione): risparmio
+        # se l'arena era davvero sotto pareggio, PERDITA se era sopra (arena
+        # buona persa). Se entra, nessun conteggio (si guarda il punteggio,
+        # non le essenze -- l'ingresso e' gia' pagato).
+        ess = {'A': {'salvate_prop': 0.0, 'perse_prop': 0.0, 'salvate_flat': 0.0, 'perse_flat': 0.0},
+               'G': {'salvate_prop': 0.0, 'perse_prop': 0.0, 'salvate_flat': 0.0, 'perse_flat': 0.0}}
+        for label, dec in (('A', dec_A), ('G', dec_G)):
+            if dec:
+                continue  # entra: nessun conteggio essenze
+            if real_points < soglia:
+                ess[label]['salvate_prop'] = min((soglia - real_points) * guad_punto, costo)
+                ess[label]['salvate_flat'] = costo
+            else:
+                ess[label]['perse_prop'] = (real_points - soglia) * guad_punto
+                ess[label]['perse_flat'] = costo
+
         righe_report.append({'competizione': comp, 'soglia': soglia, 'soglia_decisione': soglia_decisione,
                              'costo': costo, 'guad_punto': guad_punto, 'real_points': real_points,
                              'conviene': conviene, 'atteso_A': atteso_A, 'dec_A': dec_A, 'cella_A': cella_A,
                              'atteso_G': atteso_G, 'dec_G': dec_G, 'cella_G': cella_G,
-                             'dec_A_nuda': dec_A_nuda, 'dec_G_nuda': dec_G_nuda})
+                             'dec_A_nuda': dec_A_nuda, 'dec_G_nuda': dec_G_nuda, 'ess': ess})
 
     if saltate_dati_mancanti:
         print(f'ATTENZIONE: {saltate_dati_mancanti} arene REALI escluse dalla matrice '
@@ -656,6 +674,25 @@ def esegui_test3(args, righe, arene, reale_per_arena, d_start, d_end, conta, leg
               f"(matrice soglia nuda: giusto={mn['giusto']} ERRORE={mn['ERRORE (persa arena buona)']} "
               f"GIUSTO={mn['GIUSTO (batte REALE)']} errore={mn['errore (come REALE)']})")
 
+    print('\nBILANCIO ESSENZE SIMMETRICO (compito 2, solo dove il modello SALTA con soglia_decisione):')
+    for label in ('A', 'G'):
+        salvate_prop = sum(r['ess'][label]['salvate_prop'] for r in righe_report)
+        perse_prop = sum(r['ess'][label]['perse_prop'] for r in righe_report)
+        salvate_flat = sum(r['ess'][label]['salvate_flat'] for r in righe_report)
+        perse_flat = sum(r['ess'][label]['perse_flat'] for r in righe_report)
+        n_salvate = sum(1 for r in righe_report if r['ess'][label]['salvate_prop'] > 0 or r['ess'][label]['salvate_flat'] > 0)
+        n_perse = sum(1 for r in righe_report if r['ess'][label]['perse_prop'] > 0 or r['ess'][label]['perse_flat'] > 0)
+        print(f"  {label}: proporzionale (guad_punto) -> salvate={salvate_prop:.0f} ({n_salvate}) "
+              f"perse={perse_prop:.0f} ({n_perse})  NETTO={salvate_prop - perse_prop:+.0f}")
+        print(f"     flat (costo fisso/salto)         -> salvate={salvate_flat:.0f} ({n_salvate}) "
+              f"perse={perse_flat:.0f} ({n_perse})  NETTO={salvate_flat - perse_flat:+.0f}")
+        estrapolati = [r for r in righe_report if r['ess'][label]['perse_prop'] > 0
+                       and abs(r['real_points'] - r['soglia']) > 5]
+        if estrapolati:
+            print(f"     ATTENZIONE: {len(estrapolati)} arene perse con margine oltre +-5 punti dal "
+                  "pareggio (finestra di taratura di GUADAGNO_PER_PUNTO, vedi commento nel codice): "
+                  "la cifra proporzionale per QUESTE arene e' un'estrapolazione, non una misura.")
+
     if args.dump:
         with open(args.dump, 'w', encoding='utf-8') as fh:
             fh.write(f'DUMP {args.gw} -- {args.manager}  -- TEST3 decisione entra/salta\n')
@@ -684,16 +721,32 @@ def esegui_test3(args, righe, arene, reale_per_arena, d_start, d_end, conta, leg
                              f"{'ENTRA' if match['dec_A'] else 'SALTA'} -> {match['cella_A']}\n")
                     fh.write(f"    G: atteso={match['atteso_G']:.2f} "
                              f"{'ENTRA' if match['dec_G'] else 'SALTA'} -> {match['cella_G']}\n")
+                    if not match['dec_A']:
+                        fh.write(f"    A essenze: prop salvate={match['ess']['A']['salvate_prop']:.0f} "
+                                 f"perse={match['ess']['A']['perse_prop']:.0f} | flat salvate="
+                                 f"{match['ess']['A']['salvate_flat']:.0f} perse={match['ess']['A']['perse_flat']:.0f}\n")
+                    if not match['dec_G']:
+                        fh.write(f"    G essenze: prop salvate={match['ess']['G']['salvate_prop']:.0f} "
+                                 f"perse={match['ess']['G']['perse_prop']:.0f} | flat salvate="
+                                 f"{match['ess']['G']['salvate_flat']:.0f} perse={match['ess']['G']['perse_flat']:.0f}\n")
                 else:
                     fh.write('    (esclusa dalla matrice: atteso non disponibile per una carta)\n')
                 fh.write('\n')
-            fh.write('\nMATRICE FINALE:\n')
+            fh.write('\nMATRICE FINALE (soglia_decisione, regola vera del tool):\n')
             for label in ('A', 'G'):
                 m = matrice[label]
                 fh.write(f'  {label}: giusto={m["giusto"]}  '
                         f'ERRORE_persa_buona={m["ERRORE (persa arena buona)"]}  '
                         f'GIUSTO_batte_reale={m["GIUSTO (batte REALE)"]}  '
                         f'errore_come_reale={m["errore (come REALE)"]}\n')
+                salvate_prop = sum(r['ess'][label]['salvate_prop'] for r in righe_report)
+                perse_prop = sum(r['ess'][label]['perse_prop'] for r in righe_report)
+                salvate_flat = sum(r['ess'][label]['salvate_flat'] for r in righe_report)
+                perse_flat = sum(r['ess'][label]['perse_flat'] for r in righe_report)
+                fh.write(f'     essenze prop: salvate={salvate_prop:.0f} perse={perse_prop:.0f} '
+                        f'NETTO={salvate_prop - perse_prop:+.0f}  |  '
+                        f'flat: salvate={salvate_flat:.0f} perse={perse_flat:.0f} '
+                        f'NETTO={salvate_flat - perse_flat:+.0f}\n')
         print(f'\ndump scritto in {args.dump}')
     return {'righe_report': righe_report, 'matrice': matrice}
 
