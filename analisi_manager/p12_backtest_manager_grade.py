@@ -184,10 +184,19 @@ def main():
                             proxy[slug] = c  # dedup per slug (ultima occorrenza vista)
 
                 for f in forms_target:
-                    schierate = [c['slug'] for c in f['carte'] if c.get('slug')]
-                    mancanti = [s for s in schierate if s not in proxy]
-                    if len(proxy) < 15 or mancanti:
-                        scarti[f'pool<15 o manca schierata ({nome_gruppo})'] += 1
+                    # 23-bis: le 5 carte EFFETTIVAMENTE schierate quella GW sono un
+                    # fatto osservato (il manager le possedeva con certezza), non
+                    # una previsione -- vanno aggiunte al pool per definizione,
+                    # nessun look-ahead (non stiamo guardando il loro atteso/reale
+                    # futuro, solo il fatto che esistevano nel mazzo quella GW).
+                    pool_completo = dict(proxy)
+                    for c in f.get('carte') or []:
+                        slug = c.get('slug')
+                        if slug and slug not in pool_completo:
+                            pool_completo[slug] = {'ruolo': c.get('ruolo')}
+
+                    if len(pool_completo) < 15:
+                        scarti[f'pool<15 ({nome_gruppo})'] += 1
                         continue
 
                     tipo, tipo_bfg, l10cap = COMP_TO_TIPO[f['competizione']]
@@ -195,7 +204,7 @@ def main():
 
                     pool_rows = []
                     ruoli_presenti = collections.Counter()
-                    for slug, card in proxy.items():
+                    for slug, card in pool_completo.items():
                         ruolo_full = card.get('ruolo')
                         cod = ROLE_CODE.get(ruolo_full)
                         if cod is None:
@@ -327,12 +336,12 @@ def main():
     print(f'  bootstrap (coppie manager-GW, n={n}, 4000 resample): '
           f'IC95 [{lo:+.3f}, {hi:+.3f}]  positivo nel {100*pos:.1f}% dei casi')
 
-    with open('analisi_manager/p12_backtest_manager_grade_out.json', 'w', encoding='utf-8') as fh:
+    with open('analisi_manager/p12_backtest_manager_grade_bis_out.json', 'w', encoding='utf-8') as fh:
         json.dump({'gruppo_a': GRUPPO_A, 'gruppo_b': GRUPPO_B, 'scarti': dict(scarti),
                    'righe': righe, 'delta_punti_medio': d_punti,
                    'bootstrap_IC95': [lo, hi], 'bootstrap_pct_positivo': pos},
                   fh, ensure_ascii=False, indent=1)
-    print('\nsalvato analisi_manager/p12_backtest_manager_grade_out.json')
+    print('\nsalvato analisi_manager/p12_backtest_manager_grade_bis_out.json')
 
 
 if __name__ == '__main__':

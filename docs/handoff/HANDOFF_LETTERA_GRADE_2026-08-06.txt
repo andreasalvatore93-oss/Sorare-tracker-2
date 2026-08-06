@@ -2360,3 +2360,109 @@ committato, raccolta completata 625/625 in questa sessione),
 analisi_manager/dati/storico_grade_backtest_20260806.json,
 analisi_manager/p12_backtest_manager_grade.py,
 analisi_manager/p12_backtest_manager_grade_out.json.
+
+===============================================================================
+23-BIS. SESSIONE 06/08/2026 notte Roma (~00:15 CEST) -- POOL CORRETTO (+ le
+    5 carte schierate) e RICERCA VARIANTI SU A: NULLA BATTE LO ZERO, FERMO
+    QUI, GRUPPO B INTOCCATO (Sonnet esecutore, no modifica produzione,
+    commit locale non ancora pushato)
+===============================================================================
+Correzione del brief (richiesta utente): la sez.23 scartava le coppie
+(manager,GW) il cui pool proxy non conteneva le 5 carte EFFETTIVAMENTE
+schierate. Errore del brief, non dei dati: quelle 5 carte sono un fatto
+osservato (il manager le possedeva con certezza quella GW), non una
+previsione -- vanno aggiunte al pool per definizione, zero look-ahead
+(nessuno sguardo al loro atteso/reale FUTURO, solo constatazione che
+esistevano nel mazzo). Pool 23-bis = (proxy walk-backward) UNION (le 5
+carte della formazione target). Resta solo lo scarto per pool<15.
+
+--- PUNTO 3: TEST PRINCIPALE SU A, stesso metodo di sez.23/21 ---
+scarti: NESSUNO (0/60 tentativi scartati per pool<15, contro 55/59 di
+sez.23 col vincolo sbagliato)
+  righe valide (gruppo A): 59
+  coppie (manager,GW) distinte: 20
+  copertura grade nel pool (righe con >=1 grade in G): 12/59 (20.3% --
+    BASSA: la maggior parte dei pool proxy non tocca mai un giocatore con
+    grade noto, coerente con la copertura 4.6% gia' vista in sez.21 sul
+    mazzo crowss)
+  formazioni che cambiano >=1 carta: 6/59 (10.2%)
+  overlap A vs G: 5/5 (identiche) in 53/59 (89.8%), 2/5 in 6/59 (10.2%)
+  composizione ruoli A: GK 59, DEF 97, MID 75, FWD 64 (su 59 formazioni,
+    extra_roles quindi >5 carte/formazione)
+  composizione ruoli G: GK 59, DEF 98, MID 74, FWD 64 -- quasi identica
+    (1 DEF in piu', 1 MID in meno): il grade NON sposta la composizione
+    per ruolo in modo visibile su questo campione (diverso da come mori'
+    favorito_odds, dove lo spostamento di composizione era il sintomo)
+  punteggio medio: A=225.30  G=223.05
+  delta punti medio (G-A), su 59 righe: -2.254
+  bootstrap (20 coppie manager-GW, 4000 resample): IC95 [-7.432, +0.000],
+    positivo nello 0.0% dei ricampionamenti
+
+VERDETTO PUNTO 3: A E' NULLO (di fatto negativo come punto stimato, IC95
+tocca lo zero solo al bordo superiore, mai lo supera). Non e' il segnale
+sperato -- procedo al punto 5 dell'addendum come richiesto.
+
+--- PUNTO 5: RICERCA VARIANTI SU A (6 dichiarate, nessuna scelta a
+    posteriori) ---
+Script: analisi_manager/p12_backtest_manager_variants.py, stesso pool/casi
+di cui sopra (59 righe/20 coppie), rical­colato zero volte (score_atteso e
+grade non cambiano fra varianti, solo la funzione obiettivo del knapsack).
+
+  variante            n_righe n_coppie  delta    IC95              pos%
+  V1 peso 0.5           59      20     -1.777  [-6.839,+0.000]     0.0%
+  V2 peso 2.0           59      20     -1.344  [-4.017,+0.000]     0.0%
+  V3 solo MID            59      20     -2.254  [-7.432,+0.000]     0.0%
+  V4 solo MID+DEF        59      20     -2.254  [-7.432,+0.000]     0.0%
+  V5 solo FWD             59      20     +0.000  [+0.000,+0.000]     0.0%
+  V6 grade-dominante      59      20     -1.344  [-4.017,+0.000]     0.0%
+
+V3/V4 identiche a V0 (combinato neutro): nessuna carta con grade noto e'
+mai un MID o DEF in questo campione -- il vincolo "solo MID/DEF" filtra il
+segnale del tutto (0 casi in cui cambia qualcosa). V5 (solo FWD) da'
+ESATTAMENTE zero: nessun FWD con grade noto nel pool di queste 59 righe --
+coerente con la bassa copertura generale (12/59) concentrata altrove
+(probabilmente GK/DEF, dato che V3/V4 = V0 implica che i grade noti NON
+sono MID/DEF ne' FWD -- quasi certamente sono tutti GK, unico ruolo non
+testato separatamente qui perche' gia' oggetto di sez.15, dove grade e
+atteso erano "vicini", mai un caso forte).
+
+VERDETTO PUNTO 5: NESSUNA delle 6 varianti batte lo zero. Il punto centrale
+e' negativo o nullo in tutte, l'IC95 non esclude mai lo zero (il massimo si
+ferma esattamente a +0.000 in 4 casi su 6, mai lo supera). Non c'e' una
+"vincitrice" da verificare sul gruppo B: verificare la meno peggiore (V2/V6,
+-1.344) su B sarebbe scegliere fra sei risultati tutti negativi e chiamarlo
+un test, l'esatto errore che il metodo (dichiarare tutte le varianti prima
+di guardare) doveva evitare.
+
+--- PERCHE' NON C'E' SEGNALE QUI: causa piu' probabile, non verificata a
+    fondo ---
+La copertura grade e' bassa (20.3%, 12/59 righe) e concentrata quasi
+certamente sul GK (uniche righe dove V0/V3/V4/V5 non coincidono con V1/V2/
+V6, che si muovono SOLO tramite quei 12/59 casi). Sul GK (sez.15) grade e
+score_atteso erano gia' risultati "vicini, nessuna vittoria dimostrabile"
+-- coerente con un effetto nullo qui. Non e' quindi sorprendente che il
+guadagno visto su MID/DEF (sez.16-17, per-slot) non compaia: quei ruoli
+semplicemente non hanno mai un grade disponibile in QUESTO specifico
+sottoinsieme di 59 righe.
+
+===============================================================================
+VERDETTO SEZIONE 23-BIS -- FILONE FERMO SU A, GRUPPO B MAI APERTO
+===============================================================================
+Con il pool corretto (proxy + le 5 carte schierate) il campione e' adeguato
+(59 righe/20 coppie, non piu' 4/2 di sez.23), ma il segnale non c'e': ne' la
+combinazione neutra ne' 6 varianti dichiarate battono lo zero sul gruppo A.
+Come da metodo concordato (punto 4 dell'addendum si applica solo se A e'
+POSITIVO), il gruppo B non viene aperto: non c'e' nulla da verificare.
+LIMITE DICHIARATO (vale per tutta la sezione 23/23-bis): il pool resta un
+sottoinsieme del mazzo vero (solo carte gia' schierate in passato + le 5
+del giorno), quindi il test sottostima il guadagno possibile -- un
+risultato nullo qui non e' una condanna del grade in generale (sez.16 su
+MID resta il caso piu' forte del filone), e' la prova che su QUESTO
+campione proxy, con QUESTA copertura (20.3%, quasi tutta fuori da MID/DEF/
+FWD), il segnale non emerge. Nessuna decisione su produzione presa.
+
+File aggiunti: analisi_manager/p12_backtest_manager_grade.py (modificato:
+pool 23-bis invece del vincolo errato di sez.23),
+analisi_manager/p12_backtest_manager_grade_bis_out.json,
+analisi_manager/p12_backtest_manager_variants.py,
+analisi_manager/p12_backtest_manager_variants_out.json.
