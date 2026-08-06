@@ -24,6 +24,7 @@ query PlayerPastGrade($slug: String!) {
     playerGameScores(last: 15) {
       id
       score
+      scoreStatus
       anyGame { date }
       projection { grade reliabilityBasisPoints }
     }
@@ -71,8 +72,12 @@ def build_comparison(rows, cache):
             out.append({'slug': slug, 'stato': 'non confrontabile (partita non finita o non matchata)'})
             continue
         score = past.get('score')
+        score_status = past.get('scoreStatus')
         if score is None:
             out.append({'slug': slug, 'stato': 'non confrontabile (score nullo, partita non davvero chiusa)'})
+            continue
+        if score_status != 'FINAL':
+            out.append({'slug': slug, 'scoreStatus': score_status, 'stato': 'non ancora definitiva (scoreStatus != FINAL)'})
             continue
         proj = past.get('projection') or {}
         grade_pre = row.get('grade')
@@ -82,6 +87,7 @@ def build_comparison(rows, cache):
             'ruolo': row.get('ruolo'),
             'grade_pre': grade_pre,
             'grade_post': grade_post,
+            'scoreStatus': score_status,
             'identico': grade_pre == grade_post,
             'score_realizzato': score,
             'grade_pre_num': GRADE_NUM.get(grade_pre),
@@ -94,13 +100,15 @@ def summarize(tag, rows):
     confr = [r for r in rows if 'identico' in r]
     ident = [r for r in confr if r['identico']]
     divers = [r for r in confr if not r['identico']]
+    non_definitive = [r for r in rows if r.get('stato') == 'non ancora definitiva (scoreStatus != FINAL)']
+    non_disp = [r for r in rows if 'stato' in r and r.get('stato') != 'non ancora definitiva (scoreStatus != FINAL)']
     print(f'--- {tag} ---')
-    print(f'  righe totali: {len(rows)}  confrontabili: {len(confr)}  identici: {len(ident)}  diversi: {len(divers)}')
+    print(f'  righe totali: {len(rows)}  confrontabili(FINAL): {len(confr)}  identici: {len(ident)}  diversi: {len(divers)}  non_ancora_definitive: {len(non_definitive)}  non_disponibili_altro: {len(non_disp)}')
     per_ruolo = Counter(r.get('ruolo') for r in confr)
     per_ruolo_ident = Counter(r.get('ruolo') for r in ident)
     for ruolo, n in per_ruolo.items():
         print(f'    {ruolo}: confrontabili={n} identici={per_ruolo_ident.get(ruolo,0)}')
-    return confr, ident, divers
+    return confr, ident, divers, non_definitive, non_disp
 
 
 def corr(xs, ys):
@@ -127,11 +135,11 @@ def main():
 
     # S3.1
     cmp32, scarti32 = build_comparison(rows32, cache)
-    confr32, ident32, divers32 = summarize('S3.1 baseline (32 righe di partenza)', cmp32)
+    confr32, ident32, divers32, nondef32, nondisp32 = summarize('S3.1 baseline (32 righe di partenza)', cmp32)
 
     # S3.2
     cmp174, scarti174 = build_comparison(rows174, cache)
-    confr174, ident174, divers174 = summarize('S3.2 esteso (174 righe di partenza)', cmp174)
+    confr174, ident174, divers174, nondef174, nondisp174 = summarize('S3.2 esteso (174 righe di partenza)', cmp174)
 
     # S3.3 -- solo se ci sono righe diverse in S3.1+S3.2
     s33 = None
@@ -184,7 +192,9 @@ def main():
 
     out = {
         's3_1_baseline_32': cmp32,
+        's3_1_tally': {'totali': len(cmp32), 'confrontabili_final': len(confr32), 'identici': len(ident32), 'diversi': len(divers32), 'non_ancora_definitive': len(nondef32), 'non_disponibili_altro': len(nondisp32)},
         's3_2_esteso_174': cmp174,
+        's3_2_tally': {'totali': len(cmp174), 'confrontabili_final': len(confr174), 'identici': len(ident174), 'diversi': len(divers174), 'non_ancora_definitive': len(nondef174), 'non_disponibili_altro': len(nondisp174)},
         's3_3_discriminante': s33,
         's3_4_due_catture_pre_partita': {
             'n_intersezione': len(intersez),

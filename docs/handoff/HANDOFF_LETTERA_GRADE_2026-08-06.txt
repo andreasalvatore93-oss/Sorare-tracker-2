@@ -2772,3 +2772,62 @@ analisi_manager/p12_backtest_manager_full_B_out.json,
 analisi_manager/p12_backtest_manager_perarena_B.py,
 analisi_manager/p12_slug_mancanti_sez26_B.json (0 mancanti, nessuna
 raccolta eseguita).
+
+===============================================================================
+12. SESSIONE 06/08/2026 23:30 Roma (~21:30 UTC) -- S3 RILANCIO, ANCORA
+    TROPPO PRESTO. 0 RIGHE CONFRONTABILI DEFINITIVE (Sonnet esecutore, no
+    modifica produzione, commit + push da fare)
+===============================================================================
+Eseguito seguendo docs/handoff/BRIEF_SONNET_S3_LEAKAGE_2026-08-06.txt,
+ADDENDUM incluso. Cookie/csrftoken freschi forniti dall'utente in chat.
+S3.0: currentUser.slug -> "crowss" confermato prima di procedere.
+
+Script usato: analisi_manager/p12_s3_esteso.py, MODIFICATO rispetto al
+run precedente per aggiungere il controllo obbligatorio dell'ADDENDUM:
+aggiunto `scoreStatus` alla query playerGameScores, e una riga e'
+accettata come confrontabile SOLO se scoreStatus == 'FINAL'. Per coerenza
+con questo controllo, S3.1 e' stato eseguito con lo stesso script esteso
+(non con p12_verifica_leakage_grade.py "cosi' com'e'", che non legge
+scoreStatus e avrebbe potuto contare come "identiche" righe con punteggio
+ancora provvisorio): la scelta e' dettata dal punto 3 dell'ADDENDUM, che
+impedisce di trattare score non definitivi come confrontabili.
+
+--- S3.1 (32 righe di partenza, mattina) ---
+  totali=32  confrontabili(FINAL)=0  identici=0  diversi=0
+  non_ancora_definitive=23  non_disponibili_o_non_matchate=9
+
+--- S3.2 (174 righe di partenza, 13:24) ---
+  totali=174  confrontabili(FINAL)=0  identici=0  diversi=0
+  non_ancora_definitive=89  non_disponibili_o_non_matchate=85
+  Distribuzione scoreStatus fra le 89 "non ancora definitive":
+    REVIEWING=59, DID_NOT_PLAY=30 (nessuna FINAL).
+  Le 85 "non disponibili": partita non ancora trovata nella rotta storica
+  (probabile: non ancora iniziata/conclusa) o slug con piu' match sulla
+  stessa data (0 casi di questo tipo, vedi S3.5).
+
+--- S3.3: SALTATO ---
+  Nessuna riga confrontabile FINAL in S3.1+S3.2 (0 diverse per
+  definizione), quindi il discriminante non e' calcolabile. Non e' un
+  esito "rumore" ne' "riscrittura": e' assenza di dato.
+
+--- S3.4: gia' chiuso in precedenza, non rilanciato ---
+  32/32 identici fra le due catture pre-partita (10:39 vs 13:24), confermato
+  di nuovo per coerenza nello stesso file di output (nessuna query nuova).
+
+--- S3.5: sanity check matching ---
+  0 righe scartate per doppia partita nella stessa data.
+
+VERDETTO DI QUESTO RILANCIO: nessun verdetto su S3, perche' 0 righe sono
+utilizzabili (soglia minima dichiarata nel brief: 20). Le partite di
+football-4-7-aug-2026 non hanno ancora punteggio scoreStatus=FINAL alle
+23:30 Roma del 06/08 -- risultano REVIEWING (score presente ma non
+consolidato) o DID_NOT_PLAY, mai FINAL. Da rilanciare non prima del
+pomeriggio del 07/08 dopo le 15:30 Roma (ultima partita GW finisce alle
+13:35 Roma del 07/08, poi serve tempo perche' Sorare passi da REVIEWING a
+FINAL).
+
+Nota per il prossimo rilancio: usare SEMPRE p12_s3_esteso.py aggiornato
+(con scoreStatus), non lo script p12_verifica_leakage_grade.py originale.
+
+File di output: analisi_manager/p12_s3_esteso_out.json (sovrascritto).
+File toccato: analisi_manager/p12_s3_esteso.py (aggiunto scoreStatus).
