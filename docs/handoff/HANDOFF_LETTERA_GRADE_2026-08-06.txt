@@ -1941,3 +1941,157 @@ analisi_manager/dati/grade_snapshot_football-4-7-aug-2026_20260806_1607.json
 (presumibilmente giocatori usciti dal pool eleggibile perche' la partita
 Rapid Vienna e' iniziata). Solo raccolta per il confronto ondate, nessuna
 analisi qui.
+
+===============================================================================
+21. SESSIONE 06/08/2026 pomeriggio Roma (18:07 CEST, ora letta da sistema) --
+    BACKTEST A LIVELLO DI FORMAZIONE INTERA: produzione vs produzione+grade
+    (richiesta utente diretta -- da misurare a costruire, decide se andare
+    in produzione). Nessuna modifica alla produzione: e' un backtest.
+===============================================================================
+Obiettivo: non piu' correlazioni/percentile per singolo slot (sez.16-20), ma
+il numero che decide davvero: sulle arene REALI dell'utente (crowss), la
+formazione scelta con produzione+grade fa piu' punti/premio/rank della
+formazione scelta con la sola produzione? Rischio principale dichiarato dal
+brief e gia' visto in questo stesso repo (HANDOFF_favorito_odds_taratura_
+2026-08-05.txt): un guadagno per-slot solido puo' sparire a livello di
+formazione perche' sposta la composizione senza portare punti.
+
+--- INFRASTRUTTURA RIUSATA (zero codice nuovo di knapsack/economia) ---
+p11_pool.json (mazzo ricostruito walk-forward + score_atteso grezzo + reale,
+per ogni giornata reale di crowss, gia' in repo da P11), backtest_arene_
+economia.py (soglie/premi/rank VERI delle arene, non stimati), bfg/bff (lo
+STESSO knapsack di produzione). La formula di score_atteso non e' toccata:
+cambia solo il valore usato per la SELEZIONE all'interno del knapsack, i
+punti realizzati sono sempre quelli VERI. Script:
+analisi_manager/p12_backtest_formazione_grade.py.
+
+Policy G (l'unica variante testata, come da istruzione): per ogni (lega,
+ruolo) dentro una giornata, fra i candidati con reale disponibile,
+atteso_combinato = atteso_calibrato + SD_gruppo(atteso_calibrato) * z(grade)
+-- algebricamente lo stesso z-score(atteso)+z-score(grade) di sez.16,
+riportato pero' alla scala originale di score_atteso (necessario qui perche'
+il criterio compete anche FRA RUOLI DIVERSI nello stesso knapsack a 5 slot,
+non solo dentro un pool di un solo ruolo come in sez.16). Grade mancante ->
+contributo neutro (z=0): il candidato resta esattamente come in produzione.
+
+--- PRIMO GIRO (0.3% di copertura, SCARTATO come campione, riportato per
+    trasparenza sul percorso) ---
+Un primo giro sull'indice grade gia' raccolto (GK/DEF/MID/FWD, campionati a
+caso da roster di ALTRI manager, sez.13-20) copriva solo 5/1967 candidati
+(0.3%) del pool REALE di crowss: 232/232 formazioni IDENTICHE, delta zero
+esatto. Non e' una prova che il grade non aiuti: e' la prova che il
+campione raccolto finora non toccava quasi mai le carte specifiche di
+crowss (le raccolte precedenti erano su roster di ALTRI manager). Da qui la
+richiesta di una raccolta MIRATA.
+
+--- RACCOLTA MIRATA (punti 1-2 del brief) ---
+1. Giocatori DISTINTI nel pool disponibile delle 232 arene: 717 (da 1952
+   righe candidato totali, alcuni ripetuti su piu' giornate). File target:
+   analisi_manager/p12_crowss_slug_target.json.
+2. Query playerGameScores(last:15) su ciascuno, stessi campi delle altre
+   raccolte, pausa 1s, backoff esponenziale sul 429.
+   BUG TROVATO E CORRETTO PRIMA DI SPRECARE IL BUDGET: la prima query aveva
+   due campi inesistenti sullo schema (position su AnyPlayerInterface,
+   minsPlayed su AnyPlayerGameStatsInterface) -- individuato dopo 500/717
+   query GIA' SPRECATE (0 risultati, solo errori di schema; nessun dato
+   perso, ma l'errore consuma comunque una chiamata, quindi il rate-limit
+   corre a vuoto). Corretto seguendo lo schema gia' validato in
+   analisi_manager/raccolta_grade_storico.py (Haiku), verificato su un
+   giocatore vero PRIMA di rilanciare tutto. Rilancio pulito: 717/717 OK,
+   0 errori, 814s (~13.5 min), 0 429 incontrati.
+   File: analisi_manager/dati/storico_grade_crowss_20260806.json (717
+   giocatori, playerGameScores completo per ciascuno).
+
+--- PUNTO 3: LA FINESTRA EFFETTIVAMENTE COPERTA (dichiarata PRIMA di
+    rifare il backtest, come richiesto) ---
+Data minima con grade nel file crowss-mirato: 2025-12-06. Le 232 arene del
+backtest (27 giornate) ricadono TUTTE fra il 30/01/2026 e il 28/07/2026 --
+gia' dentro la finestra dei ~5 mesi coperti dalle ultime 15 partite. NESSUNA
+arena esclusa dal filtro finestra: 232/232 (non 71 fixture totali di P11 --
+le altre 44, quelle piu' vecchie di gennaio 2026 o senza pool cap260/220
+completo, erano gia' fuori dal campione per altri motivi, prima ancora di
+arrivare al vincolo del grade). Il campione reale del backtest resta quindi
+232 arene su 27 giornate, non ridotto da questo controllo.
+
+--- PUNTO 4: RISULTATO CON LA COPERTURA REALE (crowss-mirata) ---
+Copertura grade nel pool candidati (crowss): 91/1967 (4.6%) -- 15 volte
+superiore a prima (0.3%), ma resta bassa: la maggior parte del mazzo di
+crowss non e' mai stata vista dalle nostre query storiche (giocatori con
+meno di 15 partite recenti, o le cui ultime 15 cadono fuori dalla
+finestra). 41/232 arene hanno ALMENO UN candidato con grade noto nella
+formazione G.
+
+FORMAZIONI CHE CAMBIANO DAVVERO ALMENO UNA CARTA (il numero da guardare
+PRIMA di leggere il delta medio, come richiesto): 53/232 (22.8%) -- NON
+identiche a produzione. Distribuzione della sovrapposizione:
+  5/5 (identiche)     179 arene (77.2%)
+  3/5                  10 arene (4.3%)
+  2/5                  16 arene (6.9%)
+  1/5                  18 arene (7.8%)
+  0/5 (tutto diverso)   9 arene (3.9%)
+Alcune delle 53 arene cambiate sono cambiate MOLTO (9 arene con 0 carte in
+comune su 5): quando il grade sposta la scelta, a volte la sposta parecchio,
+non e' un aggiustamento fine.
+
+RISULTATI, produzione (A) vs produzione+grade (G), 232 arene/27 giornate:
+  indicatore               utente    A (produzione)   G (produzione+grade)
+  punteggio medio           268.45        273.02            273.27
+  rank medio (basso=meglio)   4.780         4.612              4.603
+  a premio (rank<=3)         38.8%         41.8%              42.7%
+  netto medio essenze         87.1          94.8               99.1
+
+  delta G-A, bootstrap appaiato su 27 GIORNATE (mazzo fisso), IC95:
+    punteggio            +0.248   IC95 [-0.848, +1.168]   attraversa zero
+    rank (neg=G meglio)  -0.009   IC95 [-0.145, +0.134]   attraversa zero
+    podio (rank<=3, %)   +0.9pp   IC95 [-2.8pp, +3.8pp]   attraversa zero
+    netto essenze         +4.31   IC95 [-18.55, +25.11]   attraversa zero
+
+VERDETTO NUMERICO: NESSUN guadagno statisticamente distinguibile dal
+rumore su nessuno dei quattro indicatori -- tutti gli IC95 attraversano lo
+zero. Il punto centrale e' positivo su tutti e quattro (coerente in
+direzione con sez.16-20), ma con questa copertura (4.6%) e questo numero di
+giornate (27, cluster per il bootstrap) il segnale non e' abbastanza forte
+da essere dimostrato a livello di formazione. NON e' lo stesso esito del
+filone favorito_odds (dove il guadagno per-ruolo TOTALMENTE spariva,
+overlap quasi 5/5): qui il 22.8% delle formazioni cambia davvero, alcune di
+molto -- il meccanismo di selezione E' vivo e reattivo al grade, solo il
+campione (27 giornate, 4.6% di copertura) non basta a dimostrare un
+guadagno netto in punti.
+
+--- LIMITE NOTO, DA LEGGERE PRIMA DI USARE QUESTO NUMERO (dichiarato dal
+    brief, non verificato in questa sessione) ---
+Il grade storico letto qui (playerGameScores) potrebbe essere il valore
+AGGIORNATO dopo l'uscita delle formazioni ufficiali, mentre al momento
+reale di consegnare la formazione (prima del fischio d'inizio) si vedrebbe
+il valore PRECEDENTE (rotta compose). La misura che scioglie questo dubbio
+(S3, confronto diretto pre/post partita sulle stesse righe) e' in corso
+questa notte e non ancora conclusa in questa sessione. FINCHE' S3 non da'
+un verdetto, QUESTO BACKTEST A LIVELLO DI FORMAZIONE VA LETTO COME TETTO
+MASSIMO del guadagno possibile, non come una stima realistica: se il grade
+storico fosse anche solo in parte "aggiornato dopo" (S4/S4-bis suggeriscono
+di no per il segnale fine, ma non e' una prova diretta), il guadagno vero
+disponibile al momento di scegliere la formazione sarebbe uguale o MINORE
+di quanto misurato qui, mai maggiore.
+
+--- LETTURA D'INSIEME E DECISIONE APERTA ---
+Il segnale non e' spento (53/232 formazioni cambiano, 41/232 con grade noto
+nella scelta finale) ma non e' ancora dimostrato in punti su questo
+campione (27 giornate cluster, IC95 ampi ovunque). Prima di decidere se
+integrare il grade in produzione servono, in ordine di priorita':
+  1. S3 concluso (il tetto massimo/stima realistica si sciolgono solo li').
+  2. Piu' copertura sul mazzo REALE (4.6% e' ancora basso: servirebbe una
+     raccolta ricorrente, non un giro solo, per tenere il passo del mazzo
+     che cambia).
+  3. Se S3 conferma genuino E la copertura cresce, ripetere ESATTAMENTE
+     questo backtest (stesso script, stesso metodo) su un campione piu'
+     ampio prima di qualunque modifica a produzione -- la catena valori->
+     soglie arena->scouting (CLAUDE.md) resta da ripercorrere per intero
+     solo SE si decide di procedere.
+Nessuna modifica alla produzione fatta o proposta in questa sessione.
+
+File aggiunti: analisi_manager/p12_backtest_formazione_grade.py,
+analisi_manager/p12_backtest_formazione_grade_out.json,
+analisi_manager/p12_raccolta_grade_crowss.py,
+analisi_manager/dati/storico_grade_crowss_20260806.json,
+analisi_manager/p12_crowss_slug_target.json,
+analisi_manager/p12_crowss_grade_index_meta.json.

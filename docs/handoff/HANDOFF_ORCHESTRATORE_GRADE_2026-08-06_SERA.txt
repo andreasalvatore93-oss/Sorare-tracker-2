@@ -1,0 +1,473 @@
+PASSAGGIO DI CONSEGNE FRA ORCHESTRATORI -- FILONE LETTERA/GRADE
+Scritto da Opus (orchestratore uscente), 06/08/2026 sera Roma (CEST).
+Destinatario: il PROSSIMO ORCHESTRATORE, che riprendera' il filone da un
+ALTRO ACCOUNT. Leggere per intero prima di scrivere qualunque cosa.
+
+Sostituisce docs/handoff/HANDOFF_ORCHESTRATORE_GRADE_2026-08-06.txt (quello
+del mattino): tutto cio' che serve e' qui. Il diario tecnico con i numeri
+grezzi resta docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt, sezioni 1-21.
+
+NOTA SULLA VERSIONE: scritto mentre tre brief sono ancora in esecuzione
+(vedi §8). Se in coda a questo file trovi una sezione "AGGIORNAMENTO", quella
+e' piu' recente e prevale.
+
+
+===============================================================================
+1. LEGGI PRIMA QUESTI, IN QUEST'ORDINE
+===============================================================================
+1. CLAUDE.md (radice repo) -- regole di lavoro, valgono TUTTE. In particolare
+   la regola "Aspettare non e' mai la risposta completa", aggiunta oggi.
+2. Questo file.
+3. docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt sezioni 12-21 (i numeri).
+4. docs/handoff/HANDOFF_favorito_odds_taratura_2026-08-05.txt -- il precedente
+   che spiega il rischio principale (§6, R3).
+
+
+===============================================================================
+2. LA DOMANDA DEL FILONE, IN CINQUE RIGHE
+===============================================================================
+Sorare mostra per ogni giocatore e ogni partita futura una lettera A-F
+("potenziale della GW", campo So5Score.projection.grade). Domanda: e'
+informazione nuova che non abbiamo, o e' la ripetizione di cose che gia'
+usiamo (forma recente L10, quote di titolarita', quote 1X2)? Se e' nuova,
+entra nel modello predittivo. Antefatti: i filoni favorito_odds e quote 1X2
+sono stati chiusi perche' correlavano col risultato ma non aggiungevano nulla
+sopra il resto.
+
+RISPOSTA AD OGGI: sembra informazione reale e in parte nuova, forte sul
+centrocampista, media sul difensore, ignota sull'attaccante, marginale sul
+portiere. Ma la prova decisiva (S3) NON e' stata completata e c'e' un rischio
+serio di gonfiaggio (§6). Nessuna modifica alla produzione e' stata fatta.
+
+
+===============================================================================
+3. STATO DEL REPO
+===============================================================================
+Branch main. Molti commit oggi, tutti pushati.
+NESSUNA MODIFICA ALLA PRODUZIONE. Nessuna soglia arena toccata
+(PAREGGIO_ARENA, GUADAGNO_PER_PUNTO in generatore_formazioni/ sono intatte).
+NESSUNA run GitHub Actions lanciata.
+
+File del filone (tutti in repo):
+  analisi_manager/p12_lettera_grade.py          query compose + CSRF
+  analisi_manager/grade_snapshot.py             cattura snapshot GW
+  analisi_manager/p12_verifica_leakage_grade.py S3 base (32 righe)
+  analisi_manager/p12_s3_esteso.py              S3 esteso (174 righe)
+  analisi_manager/p12_s4_vicini.py              test S4/S4-bis
+  analisi_manager/p12_briefA.py                 valore grade su GK
+  analisi_manager/p12_briefA_mid.py             valore grade su MID
+  analisi_manager/p12_briefA_arena_metrics.py   metriche di piazzamento
+  analisi_manager/p12_selezione_grade_check.py  controllo effetto selezione
+  analisi_manager/p14_storico_grade_4ruoli.py   S4-bis sui 4 ruoli
+  analisi_manager/dati/grade_snapshot_*.json    catture pre/post formazioni
+  analisi_manager/dati/storico_grade_<ruolo>_20260806.json  campioni Haiku
+  docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt         sezioni 1-21
+
+
+===============================================================================
+4. FATTI ACCERTATI -- NON RITESTARLI
+===============================================================================
+F1  La query compose funziona solo con Cookie E header X-CSRF-Token insieme.
+    Col solo Cookie currentUser torna null e le query "my*" tornano 0 nodi
+    SENZA errore. Trappola silenziosa: verificare sempre currentUser{slug}
+    = "crowss" prima di fidarsi di un risultato vuoto.
+F2  La lettera NON cambia col semplice passare del tempo prima delle
+    formazioni ufficiali: 32/32 identici fra le 10:39 e le 13:24 (test S3.4).
+F3  La lettera sparisce dall'interfaccia al fischio d'inizio DEL SINGOLO
+    giocatore, non a fine GW. Il pool utile si erode ora per ora.
+F4  La lettera e' identica in ogni leaderboard: e' proprieta' di (giocatore,
+    partita), non del campo di avversari.
+F5  Le 8 leaderboard Limited pescano dallo stesso mazzo: dedup 171 righe
+    contro 174 di una sola. Sommare leaderboard NON allarga il pool.
+F6  ESISTE UNO STORICO: anyPlayer(slug).playerGameScores(last:15)
+    .projection.grade. Funziona su QUALSIASI slug, non solo carte possedute.
+    Cap server-side a 15 partite, profondita' ~5 mesi, copertura 100%.
+F7  Lo storico mostra SOLO partite gia' concluse. Nessuna riga in attesa.
+F8  Il grade VARIA partita per partita nello storico. Non e' il valore
+    attuale ristampato all'indietro.
+F9  Le formazioni ufficiali escono ~60 minuti prima del calcio d'inizio.
+    Sorare rispecchia i dati Opta.
+F10 LA LETTERA SI AGGIORNA CON LE FORMAZIONI UFFICIALI. Verificato oggi su
+    stessa (giocatore, partita), confronto file 11:24 vs 17:18:
+      raux-yao    E->D   quote titolarita' 7000->10000
+      cvetkovic   F->D   4000->10000
+      scholler    E->F   7000->0
+    MA solo per salti grossi di quota: Hedl 9000->10000 NON ha cambiato
+    lettera. Su 174 righe, 7 hanno cambiato quota e 3 anche lettera; zero
+    hanno cambiato lettera senza che si muovesse la quota.
+F11 La lettera NON e' un travestimento delle quote di titolarita'. Prova a
+    occhio: Hedl, stesso istante, ha D per la partita di oggi (quota 100%) e
+    B per quella della GW successiva (quota 90%) -- lettera migliore dove la
+    quota e' piu' bassa. Inoltre fra i portieri all'80% le lettere vanno da
+    B a D.
+F12 LEAGUE_DIR contiene 49 leghe con pipeline (comprese le europee maggiori).
+    Il campione MID usato nelle analisi ne copre 30+, 400 squadre distinte.
+
+
+===============================================================================
+5. I NUMERI CHE CONTANO (integrali, compresi quelli scomodi)
+===============================================================================
+Tutti filtrati ai giocatori che hanno GIOCATO (minuti > 0) salvo dove detto.
+Ogni riga dichiara su quali righe e' calcolata: NON accostare numeri di
+tabelle diverse.
+
+--- Correlazione col punteggio realizzato, campione Haiku 175 giocatori per
+    ruolo (sez.14), stesse righe per le tre variabili ---
+  ruolo  n_righe  n_gioc  grade  starter_odds  L10   boot grade>odds  >L10
+  GK      1451     153    0.083     0.014     0.022      99.3%       98.0%
+  DEF     1739     172    0.249     0.220     0.082      95.9%      100.0%
+  MID     1893     175    0.352     0.268     0.200     100.0%      100.0%
+  FWD      730      72    0.353     0.287     0.225      99.2%      100.0%
+
+--- PORTIERE, analisi completa (sez.15), 433 righe / 55 portieri ---
+  grade 0.136, starter_odds 0.070, L10 0.105
+  grade>odds 89.1%, grade>L10 71.6%, grade>zero 99.2% (bootstrap per
+  giocatore, 1000 ricampionamenti)
+  V2 (stesse righe, 292 righe / 33 giocatori): score_atteso di produzione
+  0.111 contro grade 0.140 -- bootstrap 68.2%, NESSUNA vittoria dimostrabile.
+  V3 punti per giornata (34 giornate): grade 57.79, atteso 58.49, L10 55.64,
+  caso 52.06. grade-caso +5.78 [+0.05,+11.46]; atteso-caso +6.32
+  [+1.13,+11.78]; grade-atteso -0.68 [-6.64,+5.53] -> sul portiere il nostro
+  modello e' semmai leggermente MEGLIO del grade.
+  V4 (in-sample, quindi non affidabile, vedi E7): R2 0.0130 -> 0.0203.
+
+--- CENTROCAMPISTA, il caso forte (sez.16), 1546 righe -> V2 1043 righe /
+    116 giocatori ---
+  score_atteso di produzione 0.223, grade 0.381, bootstrap grade>atteso
+  100.0%.
+  CONTROLLO IMPORTANTE: quel 0.223 e' praticamente identico allo 0.2265 che
+  il nostro modello ottiene nel backtest di produzione vero (report P3,
+  n=1486). Vuol dire che la ricostruzione storica NON ha azzoppato il nostro
+  modello: il confronto era leale.
+  COMBINAZIONE (93 giornate, z-score dentro la giornata, NESSUN peso tarato):
+    atteso da solo 55.69, atteso+grade 59.07, caso 51.14
+    combinato-atteso +3.36 pt/giornata [+0.60,+6.34], positivo nel 99.1%
+  R2 FUORI CAMPIONE (20 ripetizioni, split 80/20 per GIOCATORE, beta stimato
+  solo sul train): base 0.1076 -> esteso 0.1330, delta +0.0254, cioe' l'86%
+  del guadagno in-sample (+0.0296), positivo in 17/20 ripetizioni.
+
+--- DIFENSORE E ATTACCANTE (sez.17) ---
+  DEF: vantaggio reale ma piu' piccolo (+0.079 contro +0.158 del MID).
+  FWD: campione crollato a 372 righe, IC95 comprende lo zero -> NON e' "non
+  funziona", e' "non lo sappiamo". La correlazione grezza (0.353) era
+  identica a quella del MID.
+  Il grade DA SOLO perde sempre contro la combinazione come stima, su tutti
+  e tre i ruoli, ma mai in modo statisticamente certo.
+
+--- METRICHE DI PIAZZAMENTO, il metro giusto per l'arena (sez.19) ---
+Il MAE del modello e' 15-20 punti, quindi la previsione assoluta e' rumore:
+conta l'ordinamento. Percentuale di giornate in cui il giocatore scelto e' il
+migliore del pool:
+  MID: atteso 22.6% -> combinato 33.3%   (+10.9pp [+4.3,+18.3])
+       boom oltre 70 punti +7.4pp [+1.1,+14.0]; oltre 90 +4.3pp [+1.1,+8.6]
+  DEF: percentile medio +6.71 [+0.25,+13.82]; il resto debole
+  FWD: solo boom70 +10.5pp [+2.6,+21.1]; il resto nullo (38 giornate)
+LETTURA ONESTA: stiamo guardando 5 indicatori per 3 ruoli, cioe' 15 numeri, e
+citiamo quelli che escludono lo zero. L'argomento solido non e' il singolo
+indicatore significativo: e' che 13 numeri su 15 si muovono nella stessa
+direzione.
+
+--- CONTROLLI SUL DEF (sez.19-bis/ter/quater) ---
+Il percentile 50.7 del DEF in sez.19 NON e' un bug: su campione ampio (270
+giornate, 171 DEF) lo stesso codice da' 58.9, coerente col lift 18.6% noto
+dal report P3. Il controllo sull'effetto di selezione poggia pero' su 9-15
+giornate e 4-5 giocatori distinti: NON e' conclusivo, rende solo meno
+probabile l'ipotesi. Il sospetto riguardava comunque il DEF; su MID non c'e'
+anomalia (61.1 in sez.19 contro 57.8 nel campione ampio).
+
+--- CAMPIONE FORWARD MIRATO: INVALIDO (sez.20) ---
+Haiku ha letto le leghe dallo slug delle leaderboard e ha raccolto solo MLS e
+K League, 2 leghe su 49. Il file
+analisi_manager/dati/storico_grade_Forward_mirato_20260806.json NON va usato.
+
+
+===============================================================================
+6. I QUATTRO RISCHI APERTI -- LEGGERE PRIMA DI DECIDERE QUALUNQUE COSA
+===============================================================================
+R1. S3 NON E' MAI STATO COMPLETATO, ED E' IL GIUDICE.
+    Cosa fa: confronta il grade catturato PRIMA delle formazioni ufficiali
+    (file grade_snapshot_..._1124.json, 174 righe, ore 11:24 Roma) con il
+    valore che la rotta storica restituisce a partite concluse, sulle stesse
+    (giocatore, partita).
+    Esito IDENTICI -> lo storico e' il valore pre-formazioni: tutto quanto
+      misurato in sez.14-19 resta valido cosi' com'e'.
+    Esito DIVERSI -> lo storico e' il valore post-formazioni: i guadagni sono
+      gonfiati e vanno rimisurati con catture pre-formazioni, che
+      storicamente NON abbiamo (andrebbero registrate in avanti, settimane).
+    Script pronti: p12_verifica_leakage_grade.py e p12_s3_esteso.py.
+    Va lanciato quando le partite di football-4-7-aug-2026 sono concluse
+    (l'ultima finisce alle 13:35 Roma del 07/08). Un tentativo alle 16:xx del
+    06/08 ha dato 0/206 confrontabili perche' le partite non erano iniziate:
+    non e' un fallimento, era troppo presto.
+    ATTENZIONE: accettare come confrontabile solo chi ha lo score in stato
+    definitivo (scoreStatus), mai provvisorio.
+
+R2. IL GONFIAGGIO DA FORMAZIONI UFFICIALI (scoperto oggi, vedi F10).
+    Al momento di consegnare la formazione su Sorare, le formazioni ufficiali
+    sono uscite solo per la prima partita della giornata: per tutte le altre
+    si vede la lettera PRE-formazioni. Se lo storico contiene invece quella
+    POST, abbiamo giudicato un pronosticatore sulle previsioni pubblicate
+    dopo aver visto le distinte.
+    Perche' e' grave: dopo le formazioni la lettera conosce i MINUTI attesi,
+    che sono la variabile che pesa di piu' sul punteggio So5.
+    Perche' potrebbe non essere grave: si muove solo per salti grossi di
+    quota, 3 righe su 174 oggi.
+    MISURA DIRETTA POSSIBILE, non serve dedurla: sulle stesse righe si hanno
+    la lettera delle 11:24 (pre), quella delle catture serali (post) e il
+    punteggio realizzato. Correlare entrambe col punteggio e confrontare. Se
+    la pre-formazioni correla quasi quanto la post, il gonfiaggio e' piccolo.
+    Le catture serali sono in analisi_manager/dati/grade_snapshot_*.json.
+
+R3. TUTTO CIO' CHE E' STATO MISURATO E' PER-SLOT, NON PER FORMAZIONE.
+    "Scegli il miglior centrocampista da questo gruppo" non e' "fai piu'
+    punti con la formazione". Precedente diretto in questo repo, di ieri:
+    docs/handoff/HANDOFF_favorito_odds_taratura_2026-08-05.txt -- guadagno
+    per-ruolo solido sui difensori che SPARIVA a livello di formazione,
+    perche' spostava la composizione verso i DEF senza portare punti. Per
+    questo non ando' in produzione. E' lo stesso rischio che corriamo ora.
+    Il backtest a livello di formazione intera e' l'unica prova che conta.
+
+R4. WINNER'S CURSE, DUE VOLTE.
+    Il MID e' il migliore di 4 ruoli guardati, e gli indicatori citati sono i
+    migliori di 15. Una parte del +3.36 e' bravura e una parte e' sorteggio:
+    aspettarsi che in produzione renda MENO. Non e' un motivo per fermarsi,
+    e' un motivo per non promettere il numero pieno.
+
+
+===============================================================================
+7. ERRORI GIA' COMMESSI -- NON RIFARLI
+===============================================================================
+E1  CONFRONTO FRA CAMPIONI DIVERSI. Due numeri si confrontano solo se
+    calcolati sulle STESSE RIGHE nello STESSO RUN. Successo tre volte in
+    questo filone. Chiedere SEMPRE all'esecutore: "su quali righe e'
+    calcolato ciascun numero di questa riga?".
+E2  SOGLIE INVENTATE. Nessuna soglia a priori ("sopra 0.7 e' sospetto"). Il
+    metro e' sempre un numero misurato in casa sullo stesso campione.
+E3  RIGHE SCAMBIATE PER CASI. 550 righe su 55 portieri non sono 550 casi.
+    L'incertezza si calcola ricampionando i GIOCATORI, o le GIORNATE quando
+    l'unita' e' la giornata.
+E4  CAMPIONE SELEZIONATO. Campionare largo e dichiarare come si e'
+    campionato. Vedi il disastro del Forward mirato (2 leghe su 49).
+E5  GUARDARE NEL FUTURO. Per una partita passata, L10 e ogni feature vanno
+    calcolate con le sole partite PRECEDENTI.
+E6  PERCENTUALI RELATIVE SU BASI MINUSCOLE. "+47%" su un R2 che va da 0.014 a
+    0.021 e' vero e fuorviante. Riportare sempre il valore assoluto.
+E7  R2 IN-SAMPLE. Aggiungendo una colonna qualsiasi, anche di numeri casuali,
+    l'R2 sale sempre. Serve la verifica fuori campione con split per
+    GIOCATORE (mai per riga: lo stesso giocatore in train e test gonfia
+    tutto).
+E8  PRE-FILTRI CHE COSTANO QUERY. Chiedere "scarta chi ha meno di 10 partite"
+    obbliga a interrogare per contare: 1222 query sprecate e rate limit
+    esaurito. Raccogliere e scartare DOPO. E il filtro di lega applicato a
+    monte ha prodotto un campione a 2 leghe: applicarlo in analisi.
+E9  GLI ESECUTORI INVENTANO L'ORA. Hanno scritto negli handoff orari
+    sbagliati di sei ore, poi ci hanno ragionato sopra. Imporre sempre:
+    l'ora si ottiene eseguendo `date`, mai stimandola o deducendola da un
+    file.
+E10 COMBINAZIONI CON PESI TARATI SUGLI STESSI DATI SU CUI SI MISURA. La
+    combinazione usata (z-score dentro la giornata, sommati, nessun peso) e'
+    corretta proprio perche' non tara niente. Se qualcuno propone di
+    ottimizzare i pesi, quei pesi vanno scelti su dati che non partecipano
+    alla misura.
+
+
+===============================================================================
+8. I TRE BRIEF IN VOLO AL MOMENTO DELLA SCRITTURA
+===============================================================================
+Se sono finiti, i risultati stanno in coda a
+docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt.
+
+B1 -- HAIKU: 500 Forward a caso dai roster, nessun filtro. FATTO E PUSHATO
+   (commit 355579ac2d). File:
+   analisi_manager/dati/storico_grade_Forward_ampio_20260806.json
+   500 giocatori distinti, 7497 righe, 291 squadre distinte (contro le 50 del
+   campione invalido di sez.20), 5775 righe FINAL, 1617 DID_NOT_PLAY, 105
+   REVIEWING, 19 grade nulli. Campione ora ampio e multi-lega.
+   DA FARE: rifare su questo file tutta la catena FWD di sez.16 e sez.19
+   (V2 contro score_atteso, combinazione z-score, R2 fuori campione con split
+   per giocatore, metriche di piazzamento). Prima erano 372 righe e l'IC95
+   comprendeva lo zero: ora ce ne sono ~15 volte tante. L'attaccante e'
+   l'unico ruolo ancora senza risposta.
+
+B2 -- HAIKU (in coda a B1): grade per tutti i giocatori distinti che
+   compaiono nelle 8 giornate di arene di manager reali gia' in repo
+   (analisi_manager/dati/righe_*.json, da football-1-4-jul-2026 a
+   football-31-jul-4-aug-2026, 42 manager). Una query per giocatore copre
+   tutte e otto le giornate.
+   File atteso: analisi_manager/dati/storico_grade_backtest_20260806.json
+   E' IL PEZZO PIU' IMPORTANTE: abilita il backtest largo a livello di
+   formazione, senza run GitHub e senza usare le arene dell'utente.
+
+B3 -- SONNET: raccolta mirata sul roster dell'utente (crowss) e backtest a
+   livello di formazione sulle sue 232 arene. Primo tentativo fallito con
+   232/232 formazioni identiche e delta zero esatto, perche' il grade non era
+   mai stato raccolto sulle SUE carte (i campioni venivano da roster di altri
+   manager).
+   ATTENZIONE: l'utente ha detto, correttamente, che quelle 232 arene sono un
+   campione piccolo e sporco (sono arene gia' scremate dalle beginner, dove
+   ha sempre avuto un ROI alto). Vale come prova che la macchina gira e per
+   vedere se la composizione si sposta, NON come verdetto.
+   Da chiedere sempre: quante arene cadono nella finestra dove il grade
+   esiste davvero (5 mesi), e quante formazioni cambiano almeno una carta.
+   Un delta medio calcolato su formazioni per lo piu' identiche non
+   significa niente.
+
+
+===============================================================================
+8-BIS. BRIEF GIA' PRONTO DA SPEDIRE (copiare e incollare a Sonnet)
+===============================================================================
+Scritto ma non consegnato per fine sessione. Va a un Sonnet libero. Non
+riscriverlo se non hai un motivo.
+
+--- ATTACCANTI, il ruolo ancora senza risposta ---
+"E' arrivato il campione attaccanti buono:
+analisi_manager/dati/storico_grade_Forward_ampio_20260806.json -- 500
+giocatori, 7497 righe, 291 squadre, multi-lega. Sostituisce quello invalido
+di sez.20 (2 leghe soltanto), che va ignorato.
+
+Rifai per i Forward tutta la catena, identica al metodo di sez.16 e sez.19:
+1. V2: score_atteso di produzione walk-forward contro grade, stesse righe,
+   bootstrap per giocatore.
+2. Combinazione atteso+grade con z-score dentro la giornata, nessun peso
+   tarato, bootstrap sulle giornate.
+3. R2 fuori campione con split per GIOCATORE.
+4. Metriche di piazzamento: migliore del pool, quartile alto, percentile
+   medio, boom a 70 e a 90.
+
+Prima erano 38 giornate e l'IC95 comprendeva sempre lo zero: adesso
+dovrebbero essere abbastanza per dire qualcosa.
+
+Ipotesi dell'orchestratore: l'attaccante somigliera' al centrocampo piu' che
+al difensore, e il boom a 70 restera' l'indicatore piu' solido. Ma
+l'orchestratore uscente ha sbagliato tutte le previsioni sul centrocampo,
+sempre sottostimando: scontala.
+
+Sezione 22."
+
+
+===============================================================================
+9. ORDINE DELLE OPERAZIONI PER CHI SUBENTRA
+===============================================================================
+PASSO 1. Completare S3 (R1). E' l'unica cosa che puo' invalidare tutto in un
+   colpo. Le partite di football-4-7-aug-2026 finiscono entro le 13:35 Roma
+   del 07/08.
+PASSO 2. Misurare il gonfiaggio da formazioni (R2), stesso giro di dati di
+   S3: correlazione della lettera pre-formazioni e di quella post con il
+   punteggio realizzato, sulle stesse righe.
+PASSO 3. Backtest a livello di FORMAZIONE sulle 8 giornate di manager reali,
+   appena B2 ha consegnato. Confronto produzione attuale contro
+   produzione+grade, stesse arene, stesso run, bootstrap sulle arene.
+   Riportare anche quante formazioni cambiano almeno una carta e come si
+   sposta la composizione per ruolo (e' il modo in cui mori' favorito_odds).
+PASSO 4. Solo se il PASSO 3 e' positivo: decidere con l'utente se si va in
+   produzione, e ripercorrere TUTTA la catena obbligatoria di CLAUDE.md:
+   valori di produzione -> soglie arena (PAREGGIO_ARENA, GUADAGNO_PER_PUNTO
+   in generatore_formazioni/) -> tool di scouting. Nessuna modifica si
+   considera chiusa prima.
+
+Nota sullo scouting: il grade e' utilizzabile anche li'. Per gli acquisti non
+serve la lettera della prossima partita (visibile solo sulle proprie carte
+idonee): serve la media storica delle lettere, che si legge per QUALUNQUE
+giocatore via anyPlayer. Non e' ancora stato misurato.
+
+
+===============================================================================
+10. COSE CHE SCADONO E PROBLEMA DI ACCOUNT -- LEGGERE SUBITO
+===============================================================================
+- Sull'account uscente erano programmati un promemoria per S3 alle 23:30 e
+  una serie di catture ogni 45 minuti fino alle 21:15. SUL NUOVO ACCOUNT
+  QUESTE NON ARRIVERANNO. Chi subentra deve ricordarsele da solo.
+- Le catture pre/post formazioni si possono fare SOLO nella finestra fra
+  l'uscita delle formazioni ufficiali (60 minuti prima del calcio d'inizio) e
+  il fischio d'inizio del singolo giocatore. Fuori da quella finestra la
+  lettera non e' piu' visibile e l'occasione torna solo alla giornata
+  successiva.
+- Servono cookie Sorare + csrftoken freschi ad ogni sessione: li da' l'utente
+  in chat, sono anche secrets GitHub (SORARE_COOKIE, SORARE_CSRF). Non
+  salvarli su disco, non committarli.
+
+
+===============================================================================
+11. COME SI LAVORA -- E COSA HO SBAGLIATO IO
+===============================================================================
+Modello: un orchestratore (Opus) che non esegue mai, Sonnet per tutto cio'
+che contiene un "decidi se", Haiku per il volume meccanico. L'utente fa da
+navetta fra le chat: gli agenti non si parlano. Dirgli SEMPRE a chi va dato
+un brief.
+
+REGOLE DI COMUNICAZIONE CHE L'UTENTE HA CHIESTO ESPLICITAMENTE OGGI:
+- I brief si scrivono IN CHAT, non su file. Gli servono per capire cosa stai
+  facendo fare, e il copia-incolla e' piu' rapido.
+- Brief CORTI: obiettivo e compiti numerati. Niente contorno che gli
+  esecutori gia' sanno (non committare la produzione, quali file leggere,
+  eccetera).
+- Tenere sempre e solo due cose: dichiarare le ipotesi PRIMA dei numeri, e
+  chiedere su quali righe e' calcolato ogni numero. Sono le due che hanno
+  beccato errori veri.
+- In chat pochissime righe. Analisi e tabelle nei file, mai in chat.
+- L'utente e' laureato in legge, non in statistica: ogni numero che conta va
+  spiegato PRIMA con un esempio banale (monete, diete, bilance, medicine) e
+  POI col numero vero. Se dice "non ho capito", riformulare piu' STUPIDO,
+  non piu' preciso.
+
+I MIEI ERRORI, perche' non li ripeta chi subentra:
+1. SONO STATO SISTEMATICAMENTE TROPPO PESSIMISTA, sempre nella stessa
+   direzione. Causa precisa: ho preso il PORTIERE -- l'unico ruolo dove il
+   nostro modello e' cieco e il grade e' debole -- e l'ho usato come metro
+   per tutti gli altri. Sul centrocampista tutte le mie ipotesi sono state
+   smentite, tutte verso "il grade e' piu' forte del previsto".
+2. HO RISPOSTO "ASPETTIAMO" quando esisteva un test indiretto eseguibile
+   subito con i dati gia' in repo (il test S4). Ci sono arrivato solo perche'
+   l'utente ha insistito. E' costato ore. Regola aggiunta a CLAUDE.md:
+   "Aspettare non e' mai la risposta completa".
+3. HO CHIESTO PRE-FILTRI CHE COSTANO QUERY (E8), bruciando il rate limit di
+   Haiku e producendo un campione invalido.
+4. L'UTENTE E' IRRITATO, e ha ragione: sono tre giorni che il filone gira
+   senza che si tocchi la produzione. Chi subentra deve spingere verso il
+   backtest di formazione e la decisione, NON aggiungere altri micro-
+   controlli. La cautela ha gia' dato quello che doveva dare.
+   Corollario dalla regola in CLAUDE.md: quando l'utente dice "sono
+   abbastanza certo che X", il suo ISTINTO va assecondato muovendosi, il suo
+   ARGOMENTO va comunque verificato col test piu' rapido disponibile. Le due
+   cose non si confondono.
+
+
+===============================================================================
+12. DECISIONE APERTA (non presa)
+===============================================================================
+Tre strade, da scegliere con l'utente:
+ (a) portare il grade in produzione come RIORDINAMENTO a valle della scelta
+     (z-score sommato allo score_atteso dentro il pool disponibile), sui soli
+     ruoli dove regge -- oggi il centrocampista, forse il difensore. Non
+     tocca la formula dello score_atteso. E' la strada meno invasiva ed e'
+     l'unica finora misurata.
+ (b) farlo entrare DENTRO lo score_atteso come termine aggiuntivo. Piu'
+     invasiva, mai misurata, richiede taratura -- e la taratura va fatta su
+     dati che non partecipano alla verifica (E10).
+ (c) chiudere il filone, se S3 rivela che lo storico e' il valore
+     post-formazioni e il gonfiaggio (R2) si mangia il guadagno.
+L'utente ha detto esplicitamente che "vedremo quale aiuta di piu'" fra (a) e
+(b): attenzione, provarne due e tenere la migliore sugli stessi dati fabbrica
+un vincitore finto. Il vincitore va riverificato su arene che non hanno
+partecipato alla scelta.
+
+ASPETTATIVA REALISTICA DA COMUNICARE ALL'UTENTE, se la chiede: il guadagno
+per-slot misurato e' +3.36 punti a giornata sul centrocampista, con margine
+da +0.6 a +6.3, e va scontato per il winner's curse (R4). A livello di
+formazione intera non e' ancora misurato e il precedente favorito_odds dice
+che puo' ridursi molto. Non e' una svolta, e' una spinta: su una formazione
+da 250-280 punti si parla dell'1-2%. Se quella spinta paghi dipende da quanto
+e' ripida la curva dei premi nel punto in cui l'utente arriva di solito, e
+quello si guarda nelle soglie arena.
+
+
+===============================================================================
+13. FILE DI RIFERIMENTO
+===============================================================================
+CLAUDE.md
+docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt          sezioni 1-21
+docs/handoff/HANDOFF_favorito_odds_taratura_2026-08-05.txt il precedente R3
+docs/handoff/REPORT_PASSAGGIO_2_OPUS_P3_2026-08-05.txt     metro produzione
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md                 stato dell'arte
+analisi_manager/METODOLOGIA.md                             filone manager
+analisi_manager/dati/righe_*.json                          8 GW arene reali
