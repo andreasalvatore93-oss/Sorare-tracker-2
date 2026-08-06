@@ -1,0 +1,57 @@
+DUMP football-21-24-jul-2026 -- nivenzg  -- TEST3 decisione entra/salta
+Formazione FISSA = quella di REALE in ogni arena (stesse 5 carte, stesso
+capitano). Il modello decide solo se schierarla, confrontando l'atteso
+(A/G) con PAREGGIO_ARENA. carta = ID carta specifica.
+
+--- ARENA 1: Cap 260  REALE 222.44 ---
+    Goalkeeper  Ivan Filipović             carta=ivan-filipovic-2025-limited-12 uff=  34.00 grezzo=  34.00 [cache]
+    Defender    Bruno Goda                 carta=bruno-goda-2023-limited-201 uff=  83.14 grezzo=  83.14 [cache]
+    Midfielder  Mateusz Bogusz             carta=mateusz-bogusz-2022-limited-122 uff=  50.40 grezzo=  42.00 [cache]  [CAPITANO]
+    Forward     Bruno Damiani              carta=bruno-damiani-2025-limited-92 uff=  54.90 grezzo=  54.90 [cache]
+    Midfielder  Djordje Mihailovic         carta=djordje-mihailovic-2021-limited-261 uff=   0.00 grezzo=   0.00 [ricostruito]
+    soglia=259.50  conviene=False
+    A: atteso=259.32 SALTA -> GIUSTO (batte REALE)
+    G: atteso=252.87 SALTA -> GIUSTO (batte REALE)
+
+--- ARENA 2: Cap 260  REALE 213.68 ---
+    Goalkeeper  Yohei Takaoka              carta=yohei-takaoka-2024-limited-680 uff=  23.70 grezzo=  23.70 [cache]
+    Defender    Nouhou Tolo                carta=nouhou-tolo-2024-limited-212 uff=  64.74 grezzo=  64.74 [cache]
+    Midfielder  Albert Rusnák              carta=albert-rusnak-2024-limited-115 uff=  53.04 grezzo=  44.20 [cache]  [CAPITANO]
+    Forward     Brian White                carta=brian-white-2023-limited-534 uff=  29.70 grezzo=  29.70 [cache]
+    Forward     Tomás Chancalay            carta=tomas-alejandro-chancalay-2024-limited-534 uff=  42.50 grezzo=  42.50 [cache]
+    soglia=259.50  conviene=False
+    A: atteso=265.48 ENTRA -> errore (come REALE)
+    G: atteso=270.24 ENTRA -> errore (come REALE)
+
+--- ARENA 3: Cap 260  REALE 215.82 ---
+    Goalkeeper  Patrick Schulte            carta=patrick-schulte-2025-limited-516 uff=  43.30 grezzo=  43.30 [cache]
+    Defender    Felipe Andrade             carta=felipe-de-andrade-vieira-2026-limited-411 uff=  47.16 grezzo=  47.16 [cache]
+    Midfielder  Onni Valakari              carta=onni-valakari-2025-limited-483 uff=  55.56 grezzo=  46.30 [cache]  [CAPITANO]
+    Forward     Petar Musa                 carta=petar-musa-2025-limited-79 uff=  69.80 grezzo=  69.80 [cache]
+    Midfielder  Martín Ojeda               carta=martin-exequiel-ojeda-2023-limited-413 uff=   0.00 grezzo=   0.00 [ricostruito]
+    soglia=259.50  conviene=False
+    A: atteso=268.56 ENTRA -> errore (come REALE)
+    G: atteso=252.36 SALTA -> GIUSTO (batte REALE)
+
+--- ARENA 4: Cap 260  REALE 285.02 ---
+    Goalkeeper  Kim Jeong-Hoon             carta=jeong-hoon-kim-2001-04-20-2023-limited-345 uff=  35.00 grezzo=  35.00 [cache]
+    Defender    Byeon Jun-Soo              carta=jun-soo-byeon-2025-limited-518 uff=  62.56 grezzo=  62.56 [cache]
+    Midfielder  Otar Kiteishvili           carta=otar-kiteishvili-2021-limited-312 uff=  92.76 grezzo=  77.30 [cache]  [CAPITANO]
+    Forward     Daan Rots                  carta=daan-rots-2025-limited-285 uff=  65.20 grezzo=  65.20 [cache]
+    Defender    Caio Henrique              carta=caio-henrique-oliveira-silva-2021-limited-511 uff=  29.50 grezzo=  29.50 [cache]
+    soglia=259.50  conviene=True
+    A: atteso=264.04 ENTRA -> giusto
+    G: atteso=265.35 ENTRA -> giusto
+
+--- ARENA 5: Cap 220  REALE 241.10 ---
+    Goalkeeper  Alexander Nübel            carta=alexander-nubel-2025-limited-646 uff=  71.40 grezzo=  71.40 [cache]
+    Defender    Moris Valinčić             carta=moris-valincic-2025-limited-679 uff=  34.34 grezzo=  34.34 [ricostruito]
+    Midfielder  Agustín Palavecino         carta=agustin-palavecino-2024-limited-700 uff=  38.50 grezzo=  38.50 [cache]
+    Forward     Cho Young-Wook             carta=young-wook-cho-2025-limited-37 uff=  38.30 grezzo=  38.30 [cache]
+    Midfielder  Ramiz Zerrouki             carta=ramiz-larbi-zerrouki-2024-limited-171 uff=  58.56 grezzo=  48.80 [cache]  [CAPITANO]
+    (esclusa dalla matrice: atteso non disponibile per una carta)
+
+
+MATRICE FINALE:
+  A: giusto=1  ERRORE_persa_buona=0  GIUSTO_batte_reale=1  errore_come_reale=2
+  G: giusto=1  ERRORE_persa_buona=0  GIUSTO_batte_reale=2  errore_come_reale=1

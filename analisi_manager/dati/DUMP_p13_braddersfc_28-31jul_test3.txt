@@ -1,0 +1,19 @@
+DUMP football-28-31-jul-2026 -- braddersfc  -- TEST3 decisione entra/salta
+Formazione FISSA = quella di REALE in ogni arena (stesse 5 carte, stesso
+capitano). Il modello decide solo se schierarla, confrontando l'atteso
+(A/G) con PAREGGIO_ARENA. carta = ID carta specifica.
+
+--- ARENA 1: Cap 260  REALE 216.96 ---
+    Goalkeeper  Ederson                    carta=ederson-santana-de-moraes-2025-limited-658 uff=   0.00 grezzo=   0.00 [ricostruito]
+    Defender    Scott McKenna              carta=scott-mckenna-2025-limited-318 uff=  62.72 grezzo=  38.04 [cache]
+    Midfielder  Miha Zajc                  carta=miha-zajc-2026-limited-30 uff=  77.04 grezzo=  62.10 [cache]  [CAPITANO]
+    Forward     Gabriel Vidović            carta=gabriel-vidovic-2025-limited-86 uff=  38.00 grezzo=  37.80 [cache]
+    Forward     Mislav Oršić               carta=mislav-orsic-2026-limited-32 uff=  39.20 grezzo=  39.20 [cache]
+    soglia=259.50  conviene=False
+    A: atteso=277.00 ENTRA -> errore (come REALE)
+    G: atteso=277.00 ENTRA -> errore (come REALE)
+
+
+MATRICE FINALE:
+  A: giusto=0  ERRORE_persa_buona=0  GIUSTO_batte_reale=0  errore_come_reale=1
+  G: giusto=0  ERRORE_persa_buona=0  GIUSTO_batte_reale=0  errore_come_reale=1

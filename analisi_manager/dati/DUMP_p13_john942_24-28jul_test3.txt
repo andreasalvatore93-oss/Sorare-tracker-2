@@ -1,0 +1,27 @@
+DUMP football-24-28-jul-2026 -- john942  -- TEST3 decisione entra/salta
+Formazione FISSA = quella di REALE in ogni arena (stesse 5 carte, stesso
+capitano). Il modello decide solo se schierarla, confrontando l'atteso
+(A/G) con PAREGGIO_ARENA. carta = ID carta specifica.
+
+--- ARENA 1: Cap 260  REALE 251.44 ---
+    Goalkeeper  Stefan Cleveland           carta=stefan-cleveland-2025-limited-313 uff=  21.70 grezzo=  21.70 [cache]
+    Defender    Timo Baumgartl             carta=timo-baumgartl-2024-limited-38 uff=  70.30 grezzo=  70.30 [cache]
+    Midfielder  Mateusz Bogusz             carta=mateusz-bogusz-2026-limited-392 uff=  87.84 grezzo=  73.20 [cache]  [CAPITANO]
+    Forward     Simon Becher               carta=simon-becher-2025-limited-276 uff=  36.30 grezzo=  36.30 [cache]
+    Forward     Kelvin Yeboah              carta=kelvin-yeboah-2025-limited-291 uff=  35.30 grezzo=  35.30 [cache]
+    soglia=259.50  conviene=False
+    A: atteso=248.62 SALTA -> GIUSTO (batte REALE)
+    G: atteso=245.57 SALTA -> GIUSTO (batte REALE)
+
+--- ARENA 2: Cap 260  REALE 219.16 ---
+    Goalkeeper  Stefan Cleveland           carta=stefan-cleveland-2025-limited-310 uff=  21.70 grezzo=  21.70 [cache]
+    Defender    Fredrik André Bjørkan      carta=fredrik-andre-bjorkan-2022-limited-74 uff=  47.56 grezzo=  47.56 [ricostruito]
+    Midfielder  Cole Bassett               carta=cole-bassett-2025-limited-272 uff=  30.40 grezzo=  30.40 [cache]
+    Forward     Felipe Mora                carta=felipe-andres-mora-aliaga-2026-limited-182 uff=  84.00 grezzo=  70.00 [cache]  [CAPITANO]
+    Midfielder  Manu García                carta=manuel-garcia-alonso-2026-limited-70 uff=  35.50 grezzo=  35.50 [cache]
+    (esclusa dalla matrice: atteso non disponibile per una carta)
+
+
+MATRICE FINALE:
+  A: giusto=0  ERRORE_persa_buona=0  GIUSTO_batte_reale=1  errore_come_reale=0
+  G: giusto=0  ERRORE_persa_buona=0  GIUSTO_batte_reale=1  errore_come_reale=0

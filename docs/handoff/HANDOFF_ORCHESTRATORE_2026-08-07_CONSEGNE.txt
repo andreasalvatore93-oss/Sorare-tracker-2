@@ -500,6 +500,239 @@ CLAUDE.md/soglie di produzione.
 
 
 ===============================================================================
+14. SUITE P13 (TEST1+TEST3) SU TUTTI I 16 MANAGER NUOVI (Sonnet, 07/08 notte)
+===============================================================================
+Girato analisi_manager/p13_backtest_gw_crowss.py, invariato, su tutti i 16
+manager di sez.11+13, per ogni GW dove quel manager ha arene AMMESSE (Cap
+260/220/Uncapped -- p13 esclude SEMPRE le beginner e le dedicate a
+campionato, stesso filtro gia' usato su crowss). Test1 saltato dove
+pool<=slot (nullo per costruzione, dichiarato riga per riga). NESSUNA
+MODIFICA a p13 ne' alla produzione. Script driver non versionato (girato in
+scratchpad, chiama solo le funzioni esistenti di p13, nessun knapsack nuovo).
+
+5 MANAGER SENZA ARENE TESTABILI DA QUESTA SUITE (0 GW valutate):
+  chuchochavez, snoerre: avevano SOLO arene Beginner (competizione
+    'Beginner'), escluse dal filtro p13 -- stessa regola gia' vista su
+    crowss/lettera-grade (soglia beginner mai tarata, copiata dalla Cap 260).
+  matangel716, destroyerstorm, roucash: zero arene di qualunque tipo in
+    tutta la finestra (verificato sez.11/13, confermato qui).
+Questi 5 manager restano nel dataset grezzo per un futuro allargamento
+(altre GW, o se l'utente vuole tarare anche la soglia beginner) ma non
+contribuiscono a questa suite.
+
+--- COPERTURA CACHE GAME-LOG (addendum obbligatorio) ---
+Aggregata su tutte le GW valutate di tutti i 16 manager: 3842/4055 carte con
+game-log trovato in cache = 94.7%. Nessun giocatore fuori pipeline
+incontrato (tutte le leghe toccate hanno gia' game-log in cache o fallback
+dichiarato; nessuna lega senza pipeline rilevata in questo giro -- se ce ne
+fossero, p13 le avrebbe scartate come "no_atteso" e contate negli scarti
+stampati per GW, verificato nel log verboso). Il restante 5.3% usa il
+fallback per divisione (dichiarato, marcato "ricostruito" nei dump, mai
+spacciato per grezzo vero). Copertura per manager/GW nella tabella sotto
+(colonna cache).
+
+--- TABELLE PER MANAGER (GW / arene / pool / slot / Test1 REALE-A-G / Test3 matrice A-G / essenze A-G / cache) ---
+(mA/mG = matrice test3: giusto, ERRORE=persa arena buona, GIUSTO=batte REALE,
+errore=come REALE. "NULLO" = Test1 non lanciato, pool<=slot.)
+
+matteoogg (2 GW):
+  15-20jul  arene=1 pool=10 slot=5   Test1 REALE=316.2 A=0.0(0/1) G=0.0(0/1)
+            Test3 n_val=0 (nessuna cella: modello ha rinunciato anche a
+            leggere, atteso mancante non applicabile qui -- in realta' la
+            formazione REALE su questa arena non e' passata dal filtro
+            arena_ammessa/soglia, vedi dump) cache=14/16 (87%)
+  10-13jul  arene=1 pool=5 slot=5 NULLO(pool==slot)  Test3 n_val=1 mA={GIUSTO:1}
+            mG={GIUSTO:1} essA=300 essG=300 cache=5/5 (100%)
+
+angioletto33 (3 GW):
+  24-28jul  arene=4 pool=118 slot=20  Test1 REALE=1187.2 A=1159.2(4/4)
+            G=1110.1(4/4)  Test3 n_val=3 mA={giusto:3} mG={giusto:3} essA=0
+            essG=0  cache=216/220 (98%)
+  21-24jul  arene=1 pool=98 slot=5  Test1 REALE=282.6 A=295.0(1/1) G=298.8(1/1)
+            Test3 n_val=1 mA={giusto:1} mG={giusto:1}  cache=180/182 (99%)
+  15-20jul  arene=1 pool=80 slot=5  Test1 REALE=250.9 A=215.4(1/1) G=278.9(1/1)
+            Test3 n_val=1 mA={giusto:1} mG={giusto:1}  cache=136/146 (93%)
+
+john942 (3 GW):
+  24-28jul  arene=2 pool=123 slot=10  Test1 REALE=470.6 A=555.5(2/2)
+            G=587.8(2/2)  Test3 n_val=1 mA={GIUSTO:1} mG={GIUSTO:1} essA=300
+            essG=300  cache=238/244 (98%)
+  15-20jul  arene=2 pool=88 slot=10  Test1 REALE=649.7 A=276.0(1/2)
+            G=276.0(1/2)  Test3 n_val=1 mA={giusto:1} mG={giusto:1}
+            cache=128/146 (88%)
+  5-11jun   arene=1 pool=33 slot=5  Test1 REALE=254.7 A=0.0(0/1) G=0.0(0/1)
+            (rinuncia totale, sotto soglia)  Test3 n_val=0  cache=56/56 (100%)
+
+tijmenmaaktpap (4 GW):
+  31jul-4aug  arene=3 pool=79 slot=15  Test1 REALE=696.1 A=1067.0(3/3)
+              G=962.1(3/3)  Test3 n_val=3 mA={giusto:1,GIUSTO:2}
+              mG={giusto:1,GIUSTO:2} essA=600 essG=600  cache=144/148 (97%)
+  28-31jul    arene=3 pool=25 slot=15  Test1 REALE=944.3 A=652.7(2/3)
+              G=620.2(2/3)  Test3 n_val=3 mA={giusto:2,ERRORE:1}
+              mG={giusto:2,ERRORE:1} essA=0 essG=0  cache=48/48 (100%)
+  24-28jul    arene=3 pool=55 slot=15  Test1 REALE=728.0 A=956.1(3/3)
+              G=995.7(3/3)  Test3 n_val=3 mA={giusto:1,GIUSTO:2}
+              mG={ERRORE:1,GIUSTO:2} essA=600 essG=600  cache=108/108 (100%)
+  21-24jul    arene=7 pool=75 slot=35  Test1 REALE=1929.0 A=2082.1(7/7)
+              G=1866.8(6/7)  Test3 n_val=7
+              mA={giusto:3,GIUSTO:1,errore:3} mG={giusto:3,GIUSTO:2,errore:2}
+              essA=300 essG=600  cache=150/150 (100%)
+  Manager con il campione piu' ricco per Test1 fra i nuovi (18 arene
+  testabili su 4 GW), A batte REALE su 3/4 GW nel totale punti.
+
+lafindubal (6 GW):
+  31jul-4aug  arene=3 pool=143 slot=15  Test1 REALE=763.6 A=683.8(3/3)
+              G=721.0(3/3)  Test3 n_val=2 mA={GIUSTO:1,errore:1}
+              mG={GIUSTO:1,errore:1} essA=200 essG=200  cache=188/198 (95%)
+  21-24jul    arene=3 pool=106 slot=15  Test1 REALE=783.4 A=890.3(3/3)
+              G=919.6(3/3)  Test3 n_val=2 mA={errore:2} mG={GIUSTO:2}
+              essA=0 essG=400  cache=200/208 (96%)
+  15-20jul    arene=1 pool=86 slot=5  Test1 REALE=176.7 A=344.4(1/1)
+              G=408.6(1/1)  Test3 n_val=1 mA={GIUSTO:1} mG={GIUSTO:1}
+              essA=300 essG=300  cache=124/136 (91%)
+  24-28jun    arene=4 pool=43 slot=20  Test1 REALE=1311.9 A=1017.2(4/4)
+              G=1027.3(4/4)  Test3 n_val=2 mA={giusto:1,errore:1}
+              mG={giusto:1,errore:1}  cache=68/76 (89%)
+  5-11jun     arene=1 pool=87 slot=5  Test1 REALE=206.7 A=256.6(1/1)
+              G=262.3(1/1)  Test3 n_val=0  cache=144/148 (97%)
+  2-5jun      arene=1 pool=31 slot=5  Test1 REALE=283.4 A=231.1(1/1)
+              G=336.0(1/1)  Test3 n_val=0  cache=42/54 (78%)
+  Manager con piu' arene testabili in assoluto fra i nuovi (13 GW-arene su 6
+  GW). Segno misto: A batte REALE su 3/6 GW, G su 3/6.
+
+joulos_ (2 GW, campione minimo):
+  24-28jun  arene=1 pool=5 slot=5 NULLO(pool==slot)  Test3 n_val=0
+            cache=4/4 (100%)
+  5-11jun   arene=1 pool=12 slot=5  Test1 REALE=227.3 A=0.0(0/1) G=0.0(0/1)
+            (rinuncia)  Test3 n_val=0  cache=14/16 (88%)
+
+nivenzg (4 GW):
+  31jul-4aug  arene=3 pool=131 slot=15  Test1 REALE=741.4 A=891.8(3/3)
+              G=848.2(3/3)  Test3 n_val=0  cache=204/218 (94%)
+  28-31jul    arene=2 pool=52 slot=10  Test1 REALE=422.1 A=528.3(2/2)
+              G=562.5(2/2)  Test3 n_val=1 mA={errore:1} mG={errore:1}
+              cache=84/84 (100%)
+  21-24jul    arene=5 pool=134 slot=25  Test1 REALE=1178.1 A=1331.3(5/5)
+              G=1536.0(5/5)  Test3 n_val=4 mA={GIUSTO:1,errore:2,giusto:1}
+              mG={GIUSTO:2,errore:1,giusto:1} essA=300 essG=600
+              cache=242/254 (95%)
+  24-28jun    arene=3 pool=43 slot=15  Test1 REALE=663.4 A=239.1(1/3)
+              G=213.7(1/3)  Test3 n_val=2 mA={giusto:1,errore:1}
+              mG={giusto:1,errore:1}  cache=68/78 (87%)
+  Segno costante: A e G battono sempre REALE nel totale punti su tutte e 4
+  le GW (unico manager con questa regolarita', da NON generalizzare: 4 GW
+  sole).
+
+braddersfc (1 GW, campione minimo):
+  28-31jul  arene=1 pool=5 slot=5 NULLO(pool==slot)  Test3 n_val=1
+            mA={errore:1} mG={errore:1}  cache=4/5 (80%)
+
+fins49 (7 GW, TUTTE pool==slot come gia' segnalato in sez.13):
+  31jul-4aug  arene=18 pool=90 slot=90 NULLO  Test3 n_val=16
+              mA={ERRORE:3,giusto:4,GIUSTO:3,errore:6}
+              mG={ERRORE:3,giusto:4,GIUSTO:4,errore:5} essA=900 essG=1200
+              cache=81/88 (92%)
+  24-28jul    arene=7 pool=35 slot=35 NULLO  Test3 n_val=7
+              mA={giusto:4,ERRORE:2,errore:1} mG={giusto:4,ERRORE:2,errore:1}
+              cache=35/35 (100%)
+  15-20jul    arene=4 pool=20 slot=20 NULLO  Test3 n_val=3
+              mA={giusto:1,GIUSTO:1,errore:1} mG={giusto:1,GIUSTO:1,errore:1}
+              essA=300 essG=300  cache=19/19 (100%)
+  10-13jul    arene=2 pool=10 slot=10 NULLO  Test3 n_val=2 mA={GIUSTO:2}
+              mG={GIUSTO:2} essA=600 essG=600  cache=10/10 (100%)
+  5-8jul      arene=5 pool=25 slot=25 NULLO  Test3 n_val=5
+              mA={GIUSTO:2,errore:3} mG={GIUSTO:2,errore:3} essA=500
+              essG=500  cache=18/25 (72%)
+  1-4jul      arene=1 pool=5 slot=5 NULLO  Test3 n_val=1 mA={GIUSTO:1}
+              mG={GIUSTO:1} essA=200 essG=200  cache=3/5 (60%)
+  24-28jun    arene=2 pool=10 slot=10 NULLO  Test3 n_val=1 mA={GIUSTO:1}
+              mG={GIUSTO:1} essA=200 essG=200  cache=7/8 (88%)
+  Test1 MAI utilizzabile su fins49: 0 scorte su tutte le sue GW con arene
+  (confermato quanto gia' segnalato in sez.13). Solo Test3, che pero'
+  contribuisce il campione piu' grande della suite (36 arene valutate,
+  quasi meta' delle 83 totali).
+
+keano88 (4 GW):
+  31jul-4aug  arene=1 pool=55 slot=5  Test1 REALE=230.6 A=385.3(1/1)
+              G=283.0(1/1)  Test3 n_val=0  cache=98/102 (96%)
+  24-28jul    arene=1 pool=37 slot=5  Test1 REALE=183.2 A=275.5(1/1)
+              G=275.5(1/1)  Test3 n_val=0  cache=72/72 (100%)
+  15-20jul    arene=1 pool=5 slot=5 NULLO  Test3 n_val=0  cache=4/4 (100%)
+  5-11jun     arene=1 pool=28 slot=5  Test1 REALE=423.6 A=382.9(1/1)
+              G=382.9(1/1)  Test3 n_val=1 mA={giusto:1} mG={giusto:1}
+              cache=48/50 (96%)
+
+cedric9093-...-3500 (9 GW):
+  31jul-4aug  arene=4 pool=113 slot=20  Test1 REALE=844.1 A=662.5(2/4)
+              G=667.2(2/4)  Test3 n_val=1 mA={giusto:1} mG={giusto:1}
+              cache=186/196 (95%)
+  28-31jul    arene=2 pool=17 slot=10  Test1 REALE=482.3 A=0.0(0/2)
+              G=0.0(0/2) (rinuncia totale)  Test3 n_val=0  cache=26/28 (93%)
+  24-28jul    arene=3 pool=93 slot=15  Test1 REALE=771.5 A=813.0(3/3)
+              G=860.2(3/3)  Test3 n_val=2 mA={errore:1,GIUSTO:1}
+              mG={GIUSTO:2} essA=300 essG=500  cache=174/182 (96%)
+  21-24jul    arene=4 pool=83 slot=20  Test1 REALE=678.0 A=869.6(3/4)
+              G=975.5(3/4)  Test3 n_val=3 mA={errore:2,GIUSTO:1}
+              mG={errore:2,GIUSTO:1} essA=300 essG=300  cache=144/162 (89%)
+  15-20jul    arene=2 pool=49 slot=10  Test1 REALE=560.1 A=543.6(2/2)
+              G=596.0(2/2)  Test3 n_val=2 mA={giusto:1,GIUSTO:1}
+              mG={giusto:1,GIUSTO:1} essA=300 essG=300  cache=60/70 (86%)
+  10-13jul    arene=1 pool=5 slot=5 NULLO  Test3 n_val=0  cache=3/3 (100%)
+  5-8jul      arene=1 pool=5 slot=5 NULLO  Test3 n_val=0  cache=4/4 (100%)
+  1-4jul      arene=1 pool=5 slot=5 NULLO  Test3 n_val=0  cache=3/4 (75%)
+  5-11jun     arene=1 pool=26 slot=5  Test1 REALE=259.9 A=248.3(1/1)
+              G=248.3(1/1)  Test3 n_val=0  cache=38/40 (95%)
+
+--- DUMP LEGGIBILI GENERATI (1+ per manager, GW con piu' arene) ---
+analisi_manager/dati/DUMP_p13_{matteoogg_15-20jul,angioletto33_24-28jul,
+john942_24-28jul,tijmenmaaktpap_21-24jul,lafindubal_24-28jun,joulos__24-28jun,
+nivenzg_21-24jul,braddersfc_28-31jul,fins49_31jul-4aug,keano88_31jul-4aug,
+cedric9093_31jul-4aug}_test{1,3}.txt (test1 assente dove NULLO: joulos_,
+braddersfc, fins49). Ogni dump contiene nomi, ruoli, ID carta, punteggio
+grezzo con fonte (cache/ricostruito), e il pool completo per ruolo.
+
+--- TOTALE FINALE, TUTTI I MANAGER NUOVI INSIEME (crowss TENUTO SEPARATO) ---
+TEST1 (dove pool>slot, 27 GW-manager su 47 valutate):
+  REALE = 18900.58   A = 17853.89   G = 18120.10   (su 74 arene/slot totali)
+  A batte REALE nel totale punti (aggregato su tutte le arene insieme):
+  NO (A e G sotto REALE nel totale aggregato). Da leggere con cautela: e' la
+  somma di arene molto diverse (alcune 0/n = rinuncia totale che azzera i
+  punti A/G ma NON i punti REALE), non un confronto a parita' di schierate.
+
+TEST3 (decisione entra/salta, 83 arene valutate sui 16 manager nuovi):
+  A: giusto=28  ERRORE(persa buona)=6  GIUSTO(batte REALE)=23  errore=26
+  G: giusto=27  ERRORE(persa buona)=7  GIUSTO(batte REALE)=29  errore=20
+  Essenze risparmiate: A=6.500  G=8.000
+  Confronto diretto (batte REALE - ERRORE persa buona): A = 23-6 = +17
+                                                          G = 29-7 = +22
+  Segno POSITIVO per entrambe le varianti, G piu' netto di A -- STESSO SEGNO
+  gia' visto su crowss (sez. HANDOFF 06/08, 5septies: A +3, G +8 sullo stesso
+  confronto). Coerente in direzione, non ancora in soglia (vedi sotto).
+
+CONFRONTO CON CROWSS (tenuto separato come richiesto, dati di
+HANDOFF_ORCHESTRATORE_2026-08-06_NOTTE.txt sez.5septies):
+  crowss da solo:     204 arene valutate*, A giusto=97 ERRORE=19 GIUSTO=22
+                       errore=66, essenze A=6.400 G=10.100
+                       (*204 = somma "val" della tabella 5septies)
+  16 manager nuovi:    83 arene valutate, essenze A=6.500 G=8.000
+  TOTALE GENERALE:    287 arene valutate su 17 manager (crowss + 16 nuovi),
+                       essenze risparmiate totali A=12.900  G=18.100
+
+NESSUN VERDETTO NUOVO SI PUO' SCRIVERE DA QUESTI NUMERI: la soglia fissata
+in sez.3 dell'handoff del 06/08 (segno concorde in >=75% delle GW, margine
+>=3x l'oscillazione) e' definita per GW, non per manager, e va ricalcolata
+sull'INSIEME crowss+nuovi manager per essere confrontabile -- non fatto in
+questo brief (fuori scope, solo esecuzione test + raccolta numeri). Il dato
+onesto: il segno del confronto diretto (batte REALE - persa buona) e'
+POSITIVO e coerente fra crowss e i 16 manager nuovi, con G sempre piu'
+netto di A. Il campione per manager singolo resta quasi ovunque piccolo
+(1-9 GW), quindi nessun manager preso da solo e' conclusivo.
+
+NESSUNA MODIFICA ALLA PRODUZIONE. Nessuna run GitHub. Nessun commit di
+codice (solo dump nuovi in analisi_manager/dati/, da versionare).
+
+
+===============================================================================
 13. ESTRAZIONE 8 MANAGER NUOVI (Sonnet, 07/08 sera, in locale, GitHub down)
 ===============================================================================
 OBIETTIVO: allargare ulteriormente il campione. Stessa finestra 15 GW di
