@@ -1614,6 +1614,13 @@ percentile (pareggi, pool piccoli, auto-confronto), si vedrebbe anche qui:
 non si vede. Il codice e' corretto.
 
 --- VERIFICA IPOTESI (B): ricerca nel repo di una traccia precedente ---
+CORREZIONE (segnalata dall'utente, l'aggancio sotto era SBAGLIATO): la
+prima traccia trovata qui (docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md,
+punto 30, "score_ordinamento") NON e' quella a cui l'utente si riferiva.
+Lasciata sotto per trasparenza (non cancellata), ma non usarla per la
+lettura: vedi la traccia CORRETTA subito dopo.
+
+[AGGANCIO ERRATO, non usare per la lettura -- lasciato per trasparenza]
 Trovato in docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md, punto 30:
 "Ordinamento senza shrinkage (score_ordinamento) -- REVERTITO 30/07". Filone
 CORRELATO ma NON IDENTICO a quanto sospettato dall'utente:
@@ -1627,19 +1634,54 @@ CORRELATO ma NON IDENTICO a quanto sospettato dall'utente:
     shrinkage: DEF 20.4% vs 19.5% di lift. Lo score_ordinamento e' stato
     RIMOSSO come criterio di scelta -- si ordina sempre per score_atteso di
     produzione, come GK/MID.
-  - Il 20.4% di lift misurato li' e' vicino al 20.7% di tasso-migliore
-    trovato qui nella verifica (A): CONFERMA INCROCIATA fra due sessioni
-    diverse, due metodi diversi, sullo stesso fatto -- lo score_atteso di
-    produzione su DEF ordina bene su campioni ampi, non ha un problema di
-    ordinamento strutturale non risolto.
+[FINE aggancio errato]
 
-LETTURA -- LA COSA GIA' NOTA NON E' "DEF prevede bene ma ordina male e non
-e' mai stato risolto": E' L'OPPOSTO. Un tentativo di MIGLIORARE
-l'ordinamento (score_ordinamento) fu provato, sembro' funzionare su
-campione piccolo, e venne SMENTITO su campione grande -- lo score attuale
-DI PRODUZIONE (con shrinkage) gia' ordina bene, confermato due volte (P3 e
-qui). Non stiamo riscoprendo un problema noto: stiamo confermando, con un
-terzo metodo indipendente (percentile), una cosa gia' sistemata il 30/07.
+--- TRACCIA CORRETTA (indicata dall'utente): docs/handoff/
+    HANDOFF_favorito_odds_taratura_2026-08-05.txt, sessione 05/08 ---
+Filone favorito_odds (quote 1X2 come correttivo sui DEF), non score_ordinamento.
+Storia riassunta, letta per intero:
+  - IL SEGNALE PER-RUOLO E' SOLIDO: sul campione pieno DEF (1.515 slug ->
+    14.230 righe con odds, 148 giornate), la variante migliore (favorito_odds
+    add k=6-12) mostra dMAE negativo e dcorr positivo con IC95 che esclude
+    lo zero (es. add k=6: dcorr +0.047 [+0.040,+0.055]), e lift base di
+    produzione gia' misurato al 18.10% su questo stesso campione pieno --
+    il numero preciso che l'utente aveva in mente (vicino al 18.6% di
+    REPORT_PASSAGGIO_2_OPUS_P3, altra sessione, altro giorno, stesso ordine
+    di grandezza).
+  - MA IL GUADAGNO SI PERDE A LIVELLO DI FORMAZIONE: in piu' backtest
+    indipendenti (Brief 0/D/E su 227 arene crowss + 653 forever-young,
+    P11 su 227 arene reali/27 giornate), applicare il correttivo DEF sposta
+    la COMPOSIZIONE in modo reale e misurabile (piu' DEF selezionati, es.
+    1.44->1.51->1.53 su 5 slot) ma questo spostamento NON si traduce in un
+    guadagno di PUNTI o RANK distinguibile dal rumore -- gli IC95 di punti e
+    rank attraversano ampiamente lo zero in quasi tutti gli spezzoni testati
+    (es. P11: B DEF k0.2 punti +0.80 IC95[-1.90,+3.55], rank -0.026
+    IC95[-0.234,+0.171]). Solo isolando la selezione DENTRO il ruolo (Brief 1,
+    composizione bloccata) o su pool sintetici indipendenti dal bias del
+    mazzo singolo (Brief 2, 2.800 pool) il guadagno di punti RIEMERGE ed
+    e' significativo -- ma su mazzi reali, a composizione libera, si perde.
+  - VERDETTO DI QUEL FILONE (05/08): nessuna adozione giustificata allo
+    stato dei dati: il segnale per-ruolo e' vero e forte, ma non e' provato
+    che si traduca in punti quando i ruoli competono liberamente per lo
+    slot in una formazione vera.
+
+LETTURA CORRETTA -- LA COSA GIA' NOTA E': "il segnale DEF per-ruolo e' reale
+e forte (lift 18-24%, IC95 solidi), ma si perde/diluisce quando si guarda
+alla formazione COMPLETA invece che al singolo ruolo isolato" -- un problema
+di COMPOSIZIONE (competizione fra ruoli per lo slot), non di CALCOLO del
+percentile/ordinamento dentro il ruolo. E' un parallelo utile ma non
+identico al problema di sez.19: qui (Brief A/sez.16-19) si misura la
+selezione DENTRO un singolo ruolo, esattamente come il segnale per-ruolo di
+favorito_odds che risultava solido -- la verifica (A) sopra (percentile che
+sale a 58.9 su campione ampio, coerente col 18-24% di lift del filone
+favorito_odds) conferma che il modello DEF, guardato ruolo per ruolo, ORDINA
+bene. Il "si perde a livello di formazione" e' un problema A VALLE
+(competizione multi-ruolo nel knapsack), che sez.19 non tocca affatto (misura
+solo la scelta dentro un pool di soli DEF, mai la formazione completa) --
+quindi non e' la spiegazione diretta del 50.7 di sez.19, ma conferma la
+stessa lezione di fondo gia' vista il 05/08: un segnale forte dentro il
+ruolo puo' apparire debole/nullo appena si cambia l'unita' di misura o si
+allarga il contesto (li' la formazione, qui il campione piccolo/ristretto).
 
 --- QUINDI COSA SPIEGA IL 50.7 DI SEZ.19? ---
 Non un bug (verificato sopra), non un problema strutturale noto di DEF
@@ -1664,3 +1706,93 @@ non un difetto del modello DEF in generale).
 File aggiunti: analisi_manager/p12_percentile_sanity_check.py,
 analisi_manager/p12_percentile_sanity_check_out.json.
 
+===============================================================================
+19-QUATER. SESSIONE 06/08/2026 pomeriggio Roma (17:06 CEST, ora letta da
+           sistema) -- ULTIMO CONTROLLO: RUMORE O EFFETTO DI SELEZIONE?
+           (richiesta utente, DEF + MID, poi si chiude il filone)
+===============================================================================
+Domanda: le righe con grade disponibile (quelle usate per i confronti
+grade-vs-modello in sez.16-19) sono proprio quelle dove score_atteso ordina
+peggio (effetto di selezione), oppure il 50.7 di sez.19 e' solo rumore da
+campione piccolo (gia' l'ipotesi principale di 19-bis/19-ter)?
+
+METODO (corretto in corsa -- primo tentativo SBAGLIATO, dichiarato): il
+primo giro calcolava il percentile medio di TUTTE le righe del pool ampio
+(19-ter), diviso per disponibilita' di grade. Errore concettuale: il
+percentile medio di TUTTI i membri di un pool e' per costruzione ~50 (e' la
+definizione stessa di percentile, rank uniformi 0..100) -- confrontare due
+sottoinsiemi di "tutte le righe" da sempre ~50 contro ~50, test inutile,
+non misura nulla sulla qualita' di score_atteso. CORRETTO: si guarda solo
+il percentile del giocatore SCELTO da score_atteso (argmax atteso) in
+ciascuna giornata del campione ampio di 19-ter (270 giornate DEF/279 MID),
+esattamente come in sez.19. Ogni giornata classificata "CON grade" se il
+GIOCATORE SCELTO quel giorno ha un grade non nullo nel file storico Haiku
+per quella data, "SENZA grade" altrimenti. Script:
+analisi_manager/p12_selezione_grade_check.py.
+
+RISULTATO:
+  ruolo       gruppo        n_giornate/righe  n_giocatori_distinti  percentile_medio
+  Defender    CON grade            15                  4                66.1
+  Defender    SENZA grade         255                 66                58.5
+  Midfielder  CON grade             9                  5                73.4
+  Midfielder  SENZA grade         270                 61                57.8
+
+LETTURA: NESSUN EFFETTO DI SELEZIONE NELLA DIREZIONE TEMUTA. Se le righe
+con grade disponibile fossero sistematicamente quelle dove il modello
+ordina peggio, il gruppo "CON grade" dovrebbe avere percentile PIU' BASSO
+del gruppo "SENZA grade" (o vicino al 50 del caso). Qui succede l'OPPOSTO
+sul punto centrale: CON grade e' PIU' ALTO (66.1 vs 58.5 su DEF, 73.4 vs
+57.8 su MID) -- il piccolissimo campione di giornate dove abbiamo sia
+score_atteso sia grade e' se mai leggermente FAVOREVOLE al modello, non
+sfavorevole.
+AVVISO ONESTO SUL CAMPIONE: il gruppo "CON grade" e' minuscolo (9-15
+giornate, 4-5 giocatori distinti) -- l'overlap fra i 250 slug campionati a
+caso per il test ampio e i 175 slug campionati da Haiku per il grade e'
+naturalmente piccolo (l'intersezione attesa fra due campionamenti casuali
+indipendenti da ~1500-1600 slug e' dell'ordine di 25-30). Il punto centrale
+piu' alto NON e' una prova di un effetto positivo (n troppo piccolo per
+qualunque bootstrap sensato), ma esclude con ragionevole sicurezza la
+direzione NEGATIVA che l'ipotesi di selezione temeva: se ci fosse un
+effetto di selezione forte e sistematico, un campione di 9-15 giornate
+dovrebbe comunque mostrare un segno visibile verso il basso, non verso
+l'alto.
+
+VERDETTO FINALE DEL FILONE (chiude la verifica DEF/MID aperta da sez.19):
+Tre controlli indipendenti (19-bis: formula corretta; 19-ter: campione ampio
+mostra vantaggio reale, coerente col lift noto; 19-quater: nessun effetto
+di selezione nella direzione temuta) convergono sulla stessa conclusione: il
+50.7 di sez.19 per il DEF (e per estensione i numeri analoghi su MID/FWD)
+sono spiegati dal CAMPIONE PICCOLO E RISTRETTO usato per il confronto
+grade-vs-modello, non da un bug di calcolo ne' da una selezione avversa dei
+dati. I risultati principali di sez.16-19 (il grade aggiunge valore reale
+al modello, soprattutto su MID) restano validi cosi' come riportati.
+
+File aggiunti: analisi_manager/p12_selezione_grade_check.py,
+analisi_manager/p12_selezione_grade_check_out.json.
+
+
+===============================================================================
+14. SESSIONE 06/08/2026 sera Roma (~22:40 CEST) -- RACCOLTA FORWARD MIRATO
+    (Haiku, no modifica produzione, commit+push fatto)
+===============================================================================
+Compito: raccogli Forward dalle leghe con pipeline, senza pre-filtro (costa
+query), con backoff 429 e checkpoint.
+
+--- FILTRO LEGA PRE-QUERY ---
+Letto dal leaderboard slug dei manager (pattern "seasonal-LEGA-..."): 117
+Forward distinti dalle leghe con pipeline:
+  MLS (us): 77
+  K League (korea): 40
+
+--- RACCOLTA ---
+117 query eseguite, playerGameScores(last: 15), rotta anyPlayer(slug).
+Scartati automaticamente chi aveva <10 partite (nessuno risultato scartato,
+tutti i 117 hanno avuto >=10).
+
+--- RISULTATI ---
+1.755 righe (media ~15 partite per giocatore)
+0 errori
+0 429 (backoff esponenziale + 20 min di attesa ha evitato rate limit)
+Checkpoint salvato ogni 25 giocatori, non necessario per il recupero.
+
+File salvato: analisi_manager/dati/storico_grade_Forward_mirato_20260806.json
