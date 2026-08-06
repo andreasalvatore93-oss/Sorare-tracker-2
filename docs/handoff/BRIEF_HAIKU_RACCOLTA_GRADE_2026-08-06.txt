@@ -1,0 +1,108 @@
+BRIEF PER HAIKU -- RACCOLTA STORICO GRADE SU LARGA SCALA
+Scritto dall'orchestratore (Opus), 06/08/2026 sera Roma (CEST).
+Compito PURAMENTE ESECUTIVO: raccogliere dati. Nessuna analisi, nessuna
+correlazione, nessuna conclusione. Se ti viene voglia di interpretare i
+numeri, non farlo: li interpreta un altro.
+
+LEGGI PRIMA:
+  1. CLAUDE.md (radice repo)
+  2. docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt sezioni 9-11
+  3. analisi_manager/p12_sonda_storico_grade.json  (formato di riferimento)
+  4. analisi_manager/p12_lettera_grade.py          (come si autentica)
+
+
+===============================================================================
+CREDENZIALI
+===============================================================================
+L'utente ti da' in chat un file di testo con la stringa cookie Sorare
+completa. SORARE_COOKIE = l'intera stringa. SORARE_CSRF = il valore del cookie
+`csrftoken` contenuto dentro la stessa stringa. Passali come variabili
+d'ambiente, non salvarli su disco, non committarli mai.
+La rotta che usi (anyPlayer) funziona anche col solo Cookie, ma passa
+entrambi.
+
+
+===============================================================================
+COSA FARE
+===============================================================================
+Usa la rotta storica gia' verificata, funziona su QUALSIASI slug giocatore,
+non solo sulle carte possedute:
+
+  query { anyPlayer(slug: $slug) {
+      playerGameScores(last: 15) {
+        id score anyGame { date }
+        projection { grade reliabilityBasisPoints } } } }
+
+I campi aggiuntivi (minuti, quote) sono gia' recuperati nel filone: guarda
+p12_lettera_grade.py e i file p12_r1_minuti.json / p12_r5_gk_ampio.json per i
+nomi esatti dei campi e riusa lo stesso codice invece di riscriverlo.
+
+OBIETTIVO: 150-200 giocatori DISTINTI per ruolo, tutti e 4 i ruoli
+(Goalkeeper, Defender, Midfielder, Forward), 15 partite ciascuno.
+
+COME SCEGLIERLI -- REGOLA IMPORTANTE:
+NON prendere i piu' forti, i piu' popolari o i piu' titolari. Se il campione
+contiene solo giocatori simili fra loro, ogni numero calcolato sopra esce
+sbagliato. La lista di partenza esiste gia' e non costa query: i roster di
+manager reali in dati_globali/manager_*.json (e' il metodo gia' usato per
+estrarre 535 portieri distinti, vedi sezione 11 dell'handoff, punto R5).
+Da li' estrai tutti i giocatori per ruolo e, se sono troppi, campiona A CASO
+con un seed fisso. Scrivi nell'handoff da quale elenco sei partito, quanti
+erano in totale e come hai campionato.
+Raccogli solo giocatori di leghe con pipeline completa; se ne incontri di
+altre leghe, NON ignorarli in silenzio: contali e segnalali.
+
+CAMPI PER OGNI RIGA (giocatore, partita):
+  player slug, nome, ruolo, squadra, lega
+  projection.grade, reliabilityBasisPoints
+  punteggio So5 realizzato, scoreStatus, minsPlayed
+  starterOddsBasisPoints e la sua reliability
+  data partita, squadra casa e trasferta con i rispettivi winOddsBasisPoints
+
+
+===============================================================================
+COSA CONSEGNARE
+===============================================================================
+- Un file per ruolo:
+  analisi_manager/dati/storico_grade_<ruolo>_20260806.json
+- Committa e pusha su main.
+- Nell'handoff (in coda a docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt)
+  scrivi SOLO: quanti giocatori e quante righe per ruolo, quante leghe
+  coperte, come hai campionato, l'elenco degli errori e dei giocatori saltati
+  col motivo. Niente altro.
+- In chat all'utente: due righe, i conteggi e il percorso dei file.
+
+
+===============================================================================
+COSA NON FARE
+===============================================================================
+- Nessun calcolo di correlazioni, regressioni, medie interpretative. Le fa
+  Sonnet.
+- Nessuno score_atteso, nessuna predizione, nessuna run GitHub Actions.
+- Nessuna modifica alla produzione, nessuna soglia toccata.
+- Non toccare i file p12_* esistenti (sono di un altro esecutore che sta
+  lavorando in parallelo sulla stessa working tree). Committa SOLO i tuoi
+  file: se vedi modifiche altrui non committate, lasciale stare e segnalale.
+- Non riprovare l'introspezione GraphQL (`__type`/`__schema`): e' disabilitata
+  su Sorare.
+
+
+===============================================================================
+SEGNALA SE
+===============================================================================
+- il cap di 15 partite per giocatore non regge su qualcuno (piu' o meno di 15)
+- qualche lega non torna dati
+- compaiono grade nulli (finora la copertura era 100%, un buco sarebbe una
+  notizia)
+- il ritmo delle query fa scattare rallentamenti o errori dal server: in quel
+  caso fermati, riporta quanti giocatori hai completato, e non insistere.
+
+
+===============================================================================
+NOTA DI CONTESTO (non e' un compito tuo, e' per capire l'urgenza)
+===============================================================================
+In parallelo si sta verificando se questo grade storico sia genuino o
+riscritto da Sorare dopo il risultato. Se risultasse riscritto, i dati che
+raccogli non servirebbero al filone. Raccoglili lo stesso come chiesto: la
+verifica finisce prima di te, e i campi diversi dal grade (punteggi, minuti,
+quote) restano comunque utili.

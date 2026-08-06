@@ -1,3 +1,56 @@
+SESSIONE 06/08/2026 ~08:35 Roma (CET) -- BRIEF 1 SU TUTTI I MAZZI (39): la maggioranza e' NEGATIVA
+
+Ampliamento del campione manager: Haiku ha estratto 20 mazzi nuovi dai
+partecipanti reali delle arene dell'utente (dati_globali/manager_*.json),
+per un totale di 39 file (esclusi manager_crowss.json = l'utente stesso,
+gia' nel campione P11 "utente" separato, e
+manager_foreveryoware_predizioni_gw2.json = non e' un mazzo). Attenzione
+dichiarata: i 20 nuovi hanno solo ~4-5 giornate ciascuno (le fixture da
+cui erano stati pescati), mazzo ricostruito quindi molto piu' povero di
+forever-young (35 giornate) -- estrazione ancora in corso in parallelo,
+questo e' un primo giro con cio' che c'era disponibile.
+
+Rifatto Brief 1 (composizione bloccata, B'=favorito_odds mult k=0.2 sui
+DEF con composizione per ruolo forzata identica ad A) su OGNI mazzo
+separatamente. Metrica che decide: il SEGNO, non l'IC (con 2-10 giornate
+per mazzo l'intervallo di confidenza del singolo mazzo e' troppo largo per
+dire qualcosa da solo). Mazzi con sovrapposizione media >=4.5/5 (il
+knapsack non ha scelta reale) dichiarati MUTI ed esclusi dal conteggio.
+
+RISULTATO: 37 mazzi processati (3 senza giornate idonee: badamt,
+braddersfc, matangel716), 2 MUTI esclusi (bryanmid overlap 4.50/5,
+ninoshooter overlap 4.71/5), 35 mazzi UTILI nel conteggio.
+
+  delta POSITIVO: 14/35 (40.0%)
+  delta NEGATIVO: 21/35 (60.0%)
+  delta zero:      0/35
+  TEST DEL SEGNO (binomiale, bilaterale): 21/35 nella direzione
+  maggioritaria (negativa), p-value=0.3105 -- NON significativo a 0.05.
+  delta medio sui mazzi utili (1 mazzo = 1 voto, non pesato per arene):
+  +0.115 (quasi nullo, la media e' vicina a zero perche' pochi mazzi con
+  delta grande in positivo -- es. lairdinho +9.37, s-g-51d7... +6.57 --
+  compensano la maggioranza negativa piu' diffusa ma piu' piccola).
+
+VERDETTO: la direzione MAGGIORITARIA e' NEGATIVA (60% dei mazzi), non
+positiva. Il test del segno non e' statisticamente significativo (p=0.31,
+serve un campione piu' grande o piu' equilibrato per concludere), ma
+QUESTO ridimensiona molto la lettura precedente basata solo su
+forever-young (+2.98, che risulta uno dei mazzi PIU' favorevoli fra i 35,
+non rappresentativo della media). Con un solo mazzo indipendente a
+disposizione la sessione precedente non poteva vedere questo: il segno
+positivo di forever-young era un caso, non la norma.
+
+Nota metodologica sul campione attuale: 20 dei 35 mazzi utili hanno solo
+2-5 giornate (pool ricostruito su una finestra corta, spesso povero:
+alcuni con pool_medio <30 carte, es. ericeinicke 11.3, serji0 20.8) --
+piu' rumore per mazzo, ma il test del segno e' comunque la metrica
+giusta per questo tipo di campione (tanti mazzi rumorosi, non pochi mazzi
+precisi). Quando Haiku completa l'estrazione con piu' giornate per i 20
+mazzi nuovi, il test va RIPETUTO: sia il numero di mazzi utili (oggi 2
+esclusi come muti per pool troppo piccolo) sia la stima per mazzo
+miglioreranno.
+
+-----------------------------------------------------------------------------
 SESSIONE 06/08/2026 ~03:45 Roma (CET) -- POOL CONCENTRATI vs SPARSI (ipotesi NON confermata, risultato misto -- CHIUSO)
 
 Terza e ultima ipotesi strutturale dichiarata prima dei numeri: il guadagno

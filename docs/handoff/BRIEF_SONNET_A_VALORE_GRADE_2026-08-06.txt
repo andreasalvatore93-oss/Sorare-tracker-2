@@ -1,0 +1,164 @@
+BRIEF A PER SONNET -- QUANTO VALE DAVVERO IL GRADE SUL PORTIERE
+Scritto dall'orchestratore (Opus), 06/08/2026 ore 21:15 Roma (CEST).
+Sostituisce e AGGIORNA il "Brief A" della sezione 8 di
+docs/handoff/HANDOFF_ORCHESTRATORE_GRADE_2026-08-06.txt: quello era scritto
+prima di S4/S4-bis. Usa questo, non quello.
+
+LEGGI PRIMA:
+  1. CLAUDE.md (radice repo)
+  2. docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt sezioni 11, 12, 12-bis
+  3. docs/handoff/HANDOFF_ORCHESTRATORE_GRADE_2026-08-06.txt sezioni 4 e 5
+     (i numeri e gli errori gia' commessi)
+
+
+===============================================================================
+DOVE SIAMO, IN QUATTRO RIGHE
+===============================================================================
+S4/S4-bis hanno escluso il sospetto di riscrittura post-risultato: filtrando
+per minuti giocati, il grade somiglia al risultato della partita PRECEDENTE
+piu' che alla propria, e le starter_odds (dato pre-partita fidato) fanno
+esattamente lo stesso. S3 (prova diretta) resta da completare stanotte, ma
+non blocca piu' questo brief.
+
+Il numero su cui poggia tutto il filone e' UNO SOLO: sul portiere, sulle
+righe di chi ha davvero giocato, corr(grade, punteggio) = 0.111-0.119, contro
+corr(starter_odds, punteggio) = 0.056-0.060 e contro corr(score_atteso,
+punteggio) del nostro modello = 0.035 (quest'ultimo pero' misurato su un
+ALTRO campione, quindi non ancora confrontabile). Questo brief serve a
+stabilire se quel numero e' vero, se e' meglio delle alternative sullo STESSO
+campione, e se si traduce in punti guadagnati.
+
+
+===============================================================================
+UN FATTO NUOVO DA S4-BIS CHE CAMBIA LA DOMANDA
+===============================================================================
+Nella tabella filtrata (GK ampio, filtro "k", 476 righe, 55 portieri):
+  grade:  A(partita stessa) 0.111   C(partita successiva) 0.116
+Cioe' il grade assegnato alla partita k predice la partita SUCCESSIVA
+esattamente quanto predice la propria. Un dato che riguardasse davvero
+quella partita (l'avversario, il momento, il contesto) dovrebbe fare meglio
+sulla propria che su quella dopo. Qui non lo fa.
+
+Conseguenza: il grade NON e' informazione sulla singola partita, e' un indice
+lento di qualita'/forma del giocatore. Non e' una brutta notizia -- il nostro
+modello sul portiere ordina quasi a caso (0.035), quindi anche un buon indice
+di qualita' del portiere sarebbe utile -- ma cambia il modo in cui va
+misurato e usato: va giudicato come "aiuta a scegliere QUALE portiere
+schierare", non come "aiuta a capire come andra' questa partita".
+Verifica anche tu questa lettura e dimmi se regge o se la sto forzando.
+
+
+===============================================================================
+COSA FARE
+===============================================================================
+
+V0 -- IL CONFRONTO CHE NESSUNO HA ANCORA FATTO (fallo per primo)
+  Tutto il filone si regge sull'affermazione "0.111 batte 0.056". Quella
+  differenza non e' mai stata messa alla prova: sappiamo solo che i due
+  numeri sono diversi, non se la differenza sopravvive al caso.
+  Sulle STESSE 476 righe, nello STESSO run, con bootstrap per GIOCATORE
+  (estrai 55 portieri con reimmissione, 1000 volte, seed fisso):
+    (a) distribuzione di corr(grade) - corr(starter_odds); quante volte su
+        1000 la differenza e' positiva;
+    (b) stessa cosa per corr(grade) - corr(L10), con L10 calcolata usando le
+        SOLE partite precedenti (mai la partita stessa, mai le successive:
+        e' l'errore E5, gia' commesso in passato nel repo);
+    (c) corr(grade) da solo, con la stessa distribuzione bootstrap: quante
+        volte su 1000 esce positiva. Serve a dire se 0.111 e' distinguibile
+        da zero su 55 portieri, che e' il numero vero di casi indipendenti.
+  Questo assorbe e sostituisce il vecchio V1 (mezze meta'): il bootstrap per
+  giocatore e' la versione buona della stessa domanda. Se vuoi fare anche la
+  divisione in due meta' come controllo visivo, fallo, ma il numero che
+  riporto all'utente e' questo.
+
+V2 -- IL NOSTRO MODELLO SULLO STESSO CAMPIONE
+  Calcola lo score_atteso di produzione per le STESSE righe GK usate in V0,
+  usando SOLO dati disponibili prima di ciascuna partita, e correla su quelle
+  righe identiche. E' l'unico confronto lecito contro lo 0.035 (che viene da
+  un altro backtest e finora e' stato accostato illecitamente: e' l'errore
+  E1, gia' commesso due volte in questo filone).
+  Se far girare la pipeline su 476 righe costa troppo tempo, riduci il
+  numero di portieri ma tieni il sottoinsieme IDENTICO per tutte le
+  variabili confrontate, e dichiara n righe e n giocatori.
+  Riporta anche qui la differenza grade - score_atteso col bootstrap per
+  giocatore.
+  Se non riesci a far girare la pipeline su dati storici senza contaminare
+  con informazioni successive, FERMATI e dillo invece di approssimare: un
+  confronto sporco e' peggio di nessun confronto.
+
+V3 -- IL METRO CHE DECIDE DAVVERO: I PUNTI
+  Domanda in italiano: se ogni giornata dovessi scegliere un portiere fra
+  quelli disponibili, quanti punti farei in media scegliendolo col grade,
+  quanti scegliendolo col nostro score_atteso, quanti scegliendo il migliore
+  per L10, e quanti a caso?
+  Costruisci le "giornate" raggruppando le righe per finestra temporale
+  ravvicinata (dichiara come le hai definite). Per ogni giornata servono
+  almeno 3-4 portieri disponibili, altrimenti scartala e di' quante ne hai
+  scartate.
+  Riporta: punti medi per strategia, differenza rispetto alla scelta casuale,
+  e incertezza calcolata ricampionando le GIORNATE (non le righe).
+  Riporta anche il MAE, cosi' abbiamo i tre criteri di CLAUDE.md insieme
+  (MAE + correlazione + lift). Ricorda la regola: un parametro si adotta solo
+  se tutti e tre si muovono nello stesso verso.
+
+V4 -- IL GRADE AGGIUNGE QUALCOSA A L10, O E' L10 CON UN'ALTRA FACCIA?
+  R6 (sez.11) aveva trovato R2 da 0.0141 a 0.0209 aggiungendo il grade a
+  starter_odds+L10, con il coefficiente di L10 che si dimezzava. Rifallo
+  sulle righe di V0 e riporta, oltre all'R2, la correlazione fra grade_num e
+  L10 sulle stesse righe. Se quella correlazione e' alta, il grade e' in
+  buona parte L10 ridetta, e il guadagno va letto di conseguenza.
+  Non riportare mai l'aumento in percentuale relativa senza il valore
+  assoluto accanto (errore E6: "+47%" su un R2 che va da 0.014 a 0.021 e'
+  vero e fuorviante insieme).
+
+
+===============================================================================
+IPOTESI DELL'ORCHESTRATORE, PRIMA DEI NUMERI
+===============================================================================
+H1. V0(c): 0.111 risultera' positivo in oltre il 90% dei ricampionamenti,
+    quindi distinguibile da zero, ma di poco.
+H2. V0(a): il grade battera' le starter_odds in modo abbastanza netto, perche'
+    fra i portieri che giocano le starter_odds sono quasi tutte uguali (in
+    S4-bis, filtro "all3", avevano varianza ZERO: non distinguono nessuno).
+H3. V0(b): il grade battera' L10 di poco, e la correlazione grade-L10 sara'
+    intermedia (0.3-0.6): in parte la stessa informazione, in parte no.
+H4. V2: il nostro score_atteso sul campione nuovo uscira' sopra 0.035 ma
+    sotto il grade.
+H5. V3: il vantaggio in punti sara' piccolo, dell'ordine di pochi punti per
+    giornata, e con incertezza ampia.
+Se i numeri smentiscono queste ipotesi, scrivilo chiaro. In particolare se V3
+non mostra alcun guadagno in punti, quello vale piu' di tutte le correlazioni
+messe insieme.
+
+
+===============================================================================
+COSA NON FARE
+===============================================================================
+- Nessuna modifica alla produzione. Nessuna soglia arena toccata (PAREGGIO_
+  ARENA, GUADAGNO_PER_PUNTO in generatore_formazioni/). Nessuna run GitHub.
+- Non confrontare mai due numeri calcolati su righe diverse. Ogni riga di
+  ogni tabella deve dichiarare n righe e n giocatori distinti.
+- Non trattare le righe come casi indipendenti: l'incertezza si calcola
+  ricampionando i GIOCATORI (o le GIORNATE in V3).
+- Non usare informazioni successive alla partita da prevedere in nessuna
+  feature.
+- Non estendere le conclusioni a DEF/MID/FWD: i loro campioni li sta
+  raccogliendo Haiku in parallelo. Non toccare i file
+  analisi_manager/dati/storico_grade_*.json e, se vedi modifiche non tue non
+  committate, lasciale stare e segnalale.
+- Non correggere al rialzo la sezione 12-bis dove dice che R4 e S4-bis sono
+  "due metodi indipendenti": non lo sono, sono lo stesso dato con un filtro
+  leggermente diverso. E' una conferma di coerenza interna, non una conferma
+  indipendente. Correggi quella frase.
+
+
+===============================================================================
+OUTPUT
+===============================================================================
+- File dati: analisi_manager/p12_briefA_out.json
+- Testo: sezione 13 in coda a
+  docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt, datata Roma, con tutti i
+  numeri compresi quelli negativi.
+- Commit dei soli tuoi file + handoff, push su main.
+- In chat all'utente: pochissime righe, percorso del file e il verdetto in una
+  riga. Niente tabelle in chat.

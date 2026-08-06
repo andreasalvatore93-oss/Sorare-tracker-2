@@ -165,3 +165,590 @@ taratura_calib_per_ruolo.py
 analisi_manager/dati/calib_fit_max0803.json
 analisi_manager/dati/calib_fit_attuale_82282.json
 docs/handoff/REPORT_PASSAGGIO_2_SONNET_P10_2026-08-05.txt (diagnosi precedente)
+
+===============================================================================
+9. SESSIONE 06/08/2026 sera Roma -- CHIUSURA DIAGNOSI (Sonnet, nessuna
+   modifica alla produzione, nessun commit)
+===============================================================================
+Completati i due punti mancanti del brief precedente.
+
+TEST TRIM PROGRESSIVO (punto 2): ordinate le 19.140 coppie FWD per data,
+rifittato togliendo le piu' recenti fino a scendere verso n~18.992 (il
+conteggio di produzione) e oltre:
+
+  n       fino a         a        b
+  19140   2026-07-31   -11.06   1.172
+  19000   2026-07-25   -11.09   1.173
+  15000   2026-04-30   -13.07   1.213
+  10000   2026-03-08   -16.80   1.288
+   5000   2025-12-20   -16.37   1.280
+
+Il fit NON torna verso 8.40/0.789 togliendo dati recenti: si allontana
+ANCORA DI PIU' (a scende fino a -16.8 sui dati piu' vecchi). Quindi NON e'
+un problema di "poche righe recenti ad alta leva che spostano il fit":
+l'ipotesi di composizione del campione e' esclusa nel senso previsto dal
+brief.
+
+GIT LOG (punto 4): `git log --since=2026-08-01 -- formazione_mls/` mostra
+commit reali dopo il 03/08 che toccano il modello (P1 rimuove
+fattore_forza_avversario morto su TUTTI e 4 i ruoli; P4 fix aritmetica L10
+nel knapsack; P5 tie-break odds; P6/P9/P10 blend portiere -- solo GK).
+Nessuno di questi e' specifico di FWD, e P1 tocca un fattore gia'
+documentato come inerte (vedi [[project_diagnosi_piattezza_0408]] in
+memoria). Non trovato nessun commit che spieghi una deriva di ~10 sigma
+solo sul ruolo FWD.
+
+VERDETTO FINALE: la colonna 'previsto' per FWD non e' spiegata ne' da
+ricomposizione del campione (il trim la allontana, non l'avvicina) ne' da
+un commit noto post-03/08 specifico di FWD. Resta la lettura gia' scritta
+al punto 4: il valore hardcoded 8.40+0.789x per FWD NON e' riproducibile
+col metodo OLS-diretto-per-ruolo, su NESSUNO snapshot disponibile (ne'
+04/08, ne' 05/08+9%, ne' filtrando per data). O il numero di produzione
+viene da un metodo diverso da quello documentato nel commento (filtri,
+esclusione outlier, altro storico), o il commento a
+build_formazione_globale.py:360-372 riporta un calcolo mai davvero
+eseguito con quei dati esatti. Non e' un problema di dati che invecchiano:
+e' un problema di provenienza del numero.
+
+Impatto pratico invariato rispetto al punto 5: sui punti resta piccolo
+(media +0.37, coda +10.31 su singolo giocatore FWD, sotto i 15pt di soglia
+arena). Decisione aperta invariata (opzioni a/b/c al punto 7).
+
+===============================================================================
+10. SESSIONE 06/08/2026 sera Roma -- BIAS DI LIVELLO PER RUOLO, PROD VS
+    REFIT (Sonnet, nessuna modifica produzione, nessun commit)
+===============================================================================
+Domanda: la calibrazione di produzione sotto-segna sistematicamente i FWD
+rispetto agli altri ruoli (media reale - media calibrata)?
+
+  ruolo   n       media_reale  media_prev  cal_prod  bias_prod  cal_refit  bias_refit
+  GK     6118        48.82       49.39      48.82     +0.00      48.82      +0.00
+  DEF   25738        49.44       50.71      49.42     +0.02      49.44      +0.00
+  MID   24478        49.45       51.13      49.45     +0.00      49.45      +0.00
+  FWD   19140        49.29       51.47      49.01     +0.28      49.29      -0.00
+
+VERDETTO PARTE 1 (bias medio): NO, l'ipotesi di partenza e' smentita. Il
+bias di produzione su FWD e' +0.28 (leggermente POSITIVO, non negativo:
+produzione se mai sovrastima leggermente il realizzato medio FWD), ed e'
+comunque piccolo e in linea con gli altri ruoli (tutti entro +-0.28). Non
+c'e' un sotto-segno sistematico a livello di MEDIA del ruolo. Questo e'
+atteso per costruzione: qualunque retta OLS a+b*x fittata sugli stessi
+dati ha bias medio ~0 quasi per definizione (minimizza i residui al
+quadrato, il residuo medio tende a zero). Il refit infatti da' bias
+~0.00 ovunque, come deve.
+
+PARTE 2 -- dove serve guardare davvero: il knapsack non pesca dalla MEDIA
+dei FWD, pesca dalla CODA ALTA (i migliori candidati per slot). La
+domanda utile e': prod e refit, quando applicati agli stessi giocatori
+FWD forti, danno lo STESSO livello assoluto o no? Le due rette sono
+monotone (danno lo stesso ordinamento) ma NON sono parallele (b diverso:
+0.789 prod vs 1.172 refit), quindi ai valori alti di 'previsto' divergono:
+
+  FWD p50 previsto=50.97   prod_cal=48.62   refit_cal=48.70   (delta +0.08)
+  FWD p90 previsto=56.33   prod_cal=52.84   refit_cal=54.99   (delta +2.15)
+
+VERDETTO PARTE 2: al 50° percentile le due calibrazioni quasi coincidono
+(+0.08). Al 90° percentile (i FWD che contano per lo slot, quelli che il
+knapsack considera) il refit dà +2.15 punti IN PIU' del valore di
+produzione. Quindi il sospetto originale sul knapsack va riformulato: non
+e' un bias di LIVELLO MEDIO (quello e' ~0 su tutti i ruoli, ipotesi
+originale smentita), e' che la retta di produzione ha una pendenza (b)
+piu' piatta di quella misurabile oggi e quindi COMPRIME i FWD migliori
+verso il centro rispetto agli altri ruoli, proprio nella zona di 'previsto'
+alta dove il knapsack sceglie. +2.15pt su un giocatore non e' enorme da
+solo, ma se sistematico su piu' slot FWD in una formazione da 5 puo'
+avvicinarsi alla soglia di ±15pt gia' nota. Non misurato qui quanto
+sistematico sia l'effetto sull'ESITO del knapsack (quanti FWD in piu'
+verrebbero schierati): serve un secondo passo, non un backtest completo,
+ma un confronto diretto delle scelte del knapsack con le due calibrazioni
+sugli stessi identici candidati di una GW reale.
+
+Trappola verificata come richiesto: NON ho usato MAE/correlazione per
+scegliere fra le rette (sono monotone, ordinano uguale); ho confrontato il
+LIVELLO assoluto ai percentili alti, che e' cio' che conta per
+l'allocazione discreta del knapsack.
+
+===============================================================================
+11. SESSIONE 06/08/2026 sera Roma -- CURVA DI CALIBRAZIONE FWD PER DECILI
+    (Sonnet, nessuna modifica produzione, nessun commit)
+===============================================================================
+19.140 coppie FWD divise in 10 decili di 'previsto' (1914 righe/bin, nessun
+bin sotto la soglia di rumore rilevante):
+
+  bin   n     media_prev  media_reale  cal_prod  cal_refit  d_prod  d_refit  piu_vicino
+   1  1914      46.01        43.48      44.71      42.87    -1.23    +0.61   refit
+   2  1914      47.77        45.27      46.09      44.92    -0.82    +0.35   refit
+   3  1914      48.82        46.29      46.92      46.16    -0.63    +0.13   refit
+   4  1914      49.71        47.63      47.62      47.21    +0.01    +0.43   prod
+   5  1914      50.53        47.79      48.27      48.17    -0.48    -0.37   refit
+   6  1914      51.42        48.81      48.97      49.21    -0.16    -0.39   prod
+   7  1914      52.41        50.22      49.75      50.37    +0.47    -0.14   refit
+   8  1914      53.58        50.99      50.68      51.74    +0.31    -0.75   prod
+   9  1914      55.21        53.22      51.96      53.65    +1.26    -0.42   refit
+  10  1914      59.22        59.17      55.13      58.35    +4.04    +0.82   refit
+
+VERDETTO PARTE 3 (p80-p100, bin 9-10, il range di selezione del knapsack):
+refit e' sistematicamente piu' vicino al realizzato. Bin 9: prod sbaglia
++1.26, refit +0.42 (3x meglio). Bin 10 (top): prod sbaglia +4.04 (sotto-
+segna il realizzato di 4 punti pieni), refit +0.82 (5x meglio). Nel range
+dove pesca davvero il knapsack, produzione comprime i FWD migliori in modo
+sostanziale e non e' rumore da n piccolo (1914 righe nel bin peggiore).
+
+VERDETTO PARTE 4 (forma -- linearita'): NO, non e' lineare. Gli incrementi
+di media_reale bin-su-bin sono: +1.79, +1.02, +1.34, +0.16, +1.02, +1.41,
++0.77, +2.23, +5.95. L'ultimo salto (bin 9->10, +5.95) e' 3-8 volte piu'
+grande di tutti gli altri: la coda del realizzato FWD accelera bruscamente
+in cima, non sale a incrementi costanti. Questo e' esattamente il tipo di
+curvatura che una retta con b>1 (il refit, 1.172) approssima meglio di una
+piu' piatta (prod, 0.789) SOLO perche' "in media" pende di piu' -- ma
+nessuna delle due retta cattura la vera forma (concava-poi-convessa/hockey
+stick), che ha un salto quasi discreto nell'ultimo decile.
+
+VERDETTO COMPLESSIVO (dei tre esiti previsti dal brief): misto (a)+(c).
+(a) e' vero nel senso stretto chiesto: nel range di selezione refit batte
+prod di un fattore 3-5x sul livello assoluto, quindi il sospetto di
+compressione NON e' sovra-estrapolazione, e' reale e misurabile. MA (c) e'
+altrettanto vero: la relazione non e' lineare, quindi "refit" non e' la
+risposta giusta in assoluto -- e' solo una retta MENO SBAGLIATA di quella
+di produzione in quel range, non la retta corretta. Un fit lineare (di
+qualunque tipo) sottostimera' sempre l'ultimo decile per costruzione, dato
+il salto che non e' spiegabile da un'unica pendenza su tutto il range.
+
+CONSEGUENZA OPERATIVA: procedere col confronto knapsack prod-vs-refit su
+GW reale (autorizzato dal caso (a)) ma con l'aspettativa scritta PRIMA che
+anche il refit sotto-segnera' i top-FWD veri, solo meno di prod. Se si
+volesse chiudere il problema alla radice (non solo attenuarlo) servirebbe
+una calibrazione non-lineare per FWD (es. spline o piecewise sopra un
+certo 'previsto'), non un secondo numero fisso da hardcodare -- ma questo
+e' un terzo passo, non ancora deciso, da valutare insieme dopo il test sul
+knapsack.
+
+===============================================================================
+12. SESSIONE 06/08/2026 sera Roma -- KNAPSACK PROD VS REFIT SUI FWD,
+    COMPOSIZIONE (Sonnet, nessuna modifica produzione, nessun commit)
+===============================================================================
+Script nuovo: analisi_manager/p11_calib_fwd_confronto.py. Stesso impianto P11
+(mazzo ricostruito +/-30gg, walk-forward, carte non clonate, stessa regola
+capitano) su TUTTI i mazzi in dati_globali/manager_*.json (38 mazzi, stessi
+esclusi del giro precedente). Policy A e R IDENTICHE tranne
+bfg.CALIB_PER_RUOLO['FWD']: A=(8.40,0.789) produzione, R=(-11.06,1.172)
+refit. GK/DEF/MID invariati. Scambio fatto mutando in-place il dict globale
+fra le due chiamate a gioca() sullo STESSO base_pool (stesso atteso grezzo),
+non via env (piu' affidabile dentro lo stesso processo).
+
+TEST A/A SULL'INTERRUTTORE (fatto per primo, come da regola): sulla GW
+football-28-30-jan-2026 di forever-young (pool=396):
+  default (prod)     -> GK1/DEF2/MID1/FWD1
+  FWD assurdo (1e6,1) -> GK1/DEF1/MID1/FWD2   (si muove: SI)
+  ridefault           -> GK1/DEF2/MID1/FWD1   (riproduce l'originale: SI)
+Interruttore verificato PRIMA di misurare. (Nota: il tentativo automatico nel
+main() dello script ha scelto una GW con pool insufficiente e si e' auto-
+saltato con warning esplicito, non silenzioso; il test e' stato rifatto a
+mano su una GW valida con lo stesso codice del modulo, esito sopra.)
+
+RISULTATO COMPOSIZIONE (38 mazzi, 37 utili dopo l'esclusione overlap>=4.5/5,
+5083 arene totali):
+
+  LETTURA 1 -- segno per mazzo: FWD sale in 32/37 mazzi, scende in 3,
+  invariato in 2. Test del segno p<0.0001. Media dFWD per mazzo = +0.129.
+
+  LETTURA 2 -- composizione media pesata per arena (n=5083):
+    ruolo   A       R       delta
+    GK    1.000   1.000   +0.000
+    DEF   1.446   1.394   -0.051
+    MID   1.472   1.360   -0.112
+    FWD   1.082   1.246   +0.164
+  I FWD guadagnano spazio soprattutto a scapito dei MID (-0.112), un po' dei
+  DEF (-0.051), il GK resta 1 fisso (slot obbligato) come atteso.
+
+  LETTURA 3 -- punti, delta R-A pesato per arena, bootstrap cluster
+  (manager,gw), B=2000: +1.250  IC95 [+0.392, +2.126]. L'IC95 NON comprende
+  lo zero: a differenza del giro P11 precedente (favorito_odds DEF, IC95
+  [-0.637,+0.737] su misura simile), qui il segnale sui punti e' positivo e
+  fuori dal rumore anche sul campione attuale.
+
+VERDETTO: composizione SI muove, nella direzione prevista dall'ipotesi
+(refit schiera piu' FWD, principalmente scalzando MID). Sospetto confermato
+a livello di composizione, non solo di curva di calibrazione isolata. I
+punti seguono nella stessa direzione ed escono positivi con IC95 che non
+tocca lo zero -- ma resta il limite dichiarato nella sessione 11: anche R
+(refit) sotto-segna il vero top-FWD (curva non lineare), quindi questo
+delta e' probabilmente un LIMITE INFERIORE dell'effetto reale, non la sua
+misura esatta.
+
+COSA NON E' STATO FATTO QUI (fuori scope di questo brief): nessuna verifica
+della catena a valle (soglie arena PAREGGIO_ARENA/GUADAGNO_PER_PUNTO,
+scouting). Per regola del repo, un cambio alla calibrazione FWD di
+produzione NON si considera pronto finche' non si ripercorre l'intera
+catena (predizione -> soglie arena -> scouting). Questo resta un risultato
+di sola composizione/punti sull'arena, propedeutico ma non sufficiente a
+decidere un cambio in produzione.
+
+Decisione aperta: si procede a valutare un cambio vero di CALIB_A_FWD/
+CALIB_B_FWD in produzione (sessione dedicata, tocca la catena completa)? O
+si preferisce prima esplorare la calibrazione non-lineare (sessione 11,
+punto 4) prima di scegliere quale retta sostituire?
+
+File aggiunti: analisi_manager/p11_calib_fwd_confronto.py,
+analisi_manager/p11_calib_fwd_out.txt, analisi_manager/p11_calib_fwd_righe.json,
+analisi_manager/p11_calib_fwd_run.log.
+
+===============================================================================
+13. SESSIONE 06/08/2026 sera Roma -- IL +1.25 E' REALE O ARTEFATTO?
+    (Sonnet, nessuna modifica produzione, nessun commit)
+===============================================================================
+Ipotesi PRIMA: se reale, il +1.25 sopravvive allo sconto per rischio-
+panchina e al togliere forever-young, e il segno sui punti e' forte su
+tutti i mazzi. Se artefatto, crolla e i segni-punti sono ~50/50 nonostante
+la composizione 32/37.
+
+ITEM 1+2 -- RISCHIO-PANCHINA (script nuovo: p11_calib_fwd_rischio.py,
+stesso impianto, in piu' traccia slug+reale di ogni carta schierata in A e
+R, 38 mazzi, 5087 arene):
+
+  carte AGGIUNTE da R (in R non in A), tasso reale==0 per ruolo:
+    GK  n=2929  zero=2.3%   DEF n=5305  zero=3.2%
+    MID n=5062  zero=2.5%   FWD n=5342  zero=2.0%
+  carte SFRATTATE (in A non in R), tasso reale==0 per ruolo:
+    GK  n=2929  zero=2.2%   DEF n=5567  zero=3.1%
+    MID n=5633  zero=2.6%   FWD n=4509  zero=2.1%
+
+  GAP: FWD aggiunti tasso_zero=2.0% vs MID sfrattati tasso_zero=2.6% ->
+  gap=-0.6pt. L'ipotesi e' SMENTITA nella direzione temuta: i FWD che R
+  aggiunge NON hanno un rischio-panchina piu' alto dei MID che toglie --
+  ce l'hanno leggermente PIU' BASSO. In piu' la media_reale (tutte le
+  carte, zeri inclusi) dei FWD aggiunti e' 57.40 contro 55.35 dei MID
+  sfrattati: il vantaggio non nasce da zeri nascosti, i FWD aggiunti
+  segnano di piu' in media anche includendo i loro DNP.
+
+  Delta penalizzato (item 2): dato che 'reale' nel backtest e' GIA' il
+  punteggio realmente ottenuto (zero incluso quando il giocatore non ha
+  giocato -- non e' una previsione, e' cronaca), il +1.25 GIA' contiene
+  per intero il costo dei DNP osservati. Non c'e' un ulteriore sconto da
+  applicare: semmai, applicando ai FWD aggiunti lo stesso tasso-zero (piu'
+  alto) dei MID sfrattati, come stress test avverso, il gap si chiuderebbe
+  (i FWD diventerebbero anche piu' "rischiosi" sulla carta) ma partendo da
+  un vantaggio di media_reale di +2.05 pt a carta gia' netto di zeri: la
+  stress non basta a mangiarsi il segnale a livello di singola carta.
+
+ITEM 3 -- ROBUSTEZZA:
+  a) SENZA forever-young: arene=4432 mazzi=36 delta=+0.899 IC95=
+     [+0.095, +1.711]. Resta POSITIVO e fuori dallo zero, ma il centro
+     scende da +1.250 a +0.899 (forever-young, ~650 arene, pesava per
+     circa un terzo del segnale) e l'IC si avvicina di piu' allo zero.
+  b) SEGNO DEL DELTA PUNTI (non composizione) mazzo per mazzo: su 37
+     mazzi utili, 22 positivi / 15 negativi, test del segno p=0.3240.
+     NON significativo. Questo e' il punto piu' importante della sessione:
+     la composizione si muove in modo fortissimo e coerente (32/37,
+     p<0.0001), ma il segno dei PUNTI per mazzo e' debole, quasi 50/50 --
+     esattamente il pattern "quote 15/22" gia' visto e chiuso in un altro
+     filone. Il segnale medio pesato (+1.25, poi +0.90 senza forever-young)
+     e' trainato da pochi mazzi con effetto grande e IC ampio (vedi tabella
+     sessione 12: s-g-51d741...+5.49, mattross +3.47, mad-bunny +3.66,
+     bryanmid +5.14 vs toschi -7.19, el_pepito -3.65, eoghankelly -2.42),
+     non da un miglioramento diffuso e uniforme.
+
+ITEM 4 -- IL SALTO DELL'ULTIMO DECILE E' ROBUSTO O POCHI OUTLIER?
+  Bin 10 (top decile FWD, n=1914): media=59.17, sd=19.91 (rumore alto ma
+  campione grande, non piccolo). Togliendo l'1% piu' estremo (19 casi, TUTTI
+  a reale=100.0, il tetto del punteggio Sorare) la media scende appena a
+  58.76 (-0.41). NON e' trainato da poche partite mostruose: il salto verso
+  il decile 10 e' un fenomeno diffuso su quasi 1900 casi, non un artefatto
+  di outlier estremi.
+
+VERDETTO COMPLESSIVO: misto, non un secco "reale" ne' un secco "artefatto".
+  - Il rischio-panchina NON e' un problema: gap a sfavore dell'ipotesi
+    (-0.6pt, i FWD aggiunti sono anzi leggermente piu' affidabili).
+  - La forma della curva (item 4, gia' item 11) e' un fenomeno reale e
+    diffuso, non rumore da outlier.
+  - MA il segnale sui PUNTI a livello di composizione della decisione
+    (mazzo per mazzo) e' debole (22/15, p=0.32) mentre quello sulla
+    COMPOSIZIONE resta fortissimo (32/37, p<0.0001) e togliendo
+    forever-young il delta medio si dimezza (+1.25 -> +0.90) restando
+    comunque fuori dallo zero. Il segnale c'e', ma e' piu' debole e meno
+    uniforme di quanto la sola composizione suggerisse, e concentrato in
+    un sottoinsieme di mazzi/arene piuttosto che diffuso ovunque.
+
+CONSEGUENZA OPERATIVA: non e' ancora una base solida per un cambio di
+produzione (serve piu' uniformita' del segno sui punti, non solo sulla
+composizione, prima di aprire la sessione dedicata catena-completa). La
+domanda aperta e' la stessa della sessione 12: procedere comunque, o prima
+la calibrazione non lineare (sessione 11 punto 4) che potrebbe rendere il
+segnale sui punti piu' uniforme perche' fitta meglio proprio il decile 10
+dove il vantaggio FWD si concentra.
+
+File aggiunti: analisi_manager/p11_calib_fwd_rischio.py,
+analisi_manager/p11_calib_fwd_rischio_out.txt,
+analisi_manager/p11_calib_fwd_rischio_run.log.
+
+===============================================================================
+14. SESSIONE 06/08/2026 sera Roma -- REFIT FWD SUL MAZZO REALE crowss
+    (Sonnet, nessuna modifica produzione, nessun commit)
+===============================================================================
+Stesso impianto (riuso diretto di p11_calib_fwd_confronto.py, nessuna
+esclusione per crowss), campione = dati_globali/manager_crowss.json (il
+mazzo reale posseduto dall'utente).
+
+TEST A/A SULL'INTERRUTTORE (fatto per primo): GW football-28-30-jan-2026,
+pool=382. default->GK1/DEF2/MID1/FWD1, FWD assurdo (1e6,1)->GK1/DEF1/MID1/
+FWD2 (si muove: SI), ridefault->GK1/DEF2/MID1/FWD1 (riproduce: SI).
+Interruttore verificato.
+
+DISCREPANZA DA SEGNALARE SUBITO (item 3, prima dei numeri): il brief
+si aspettava ~227 arene / 71 giornate; la pipeline (stesso filtro
+TIPI_VALIDI = arena_limited/arena_limited_beginner/arena_limited_uncapped
+usato in TUTTE le misure P11 precedenti, sessioni 12 e 13 incluse) ne
+trova 373 arene / 30 giornate. Il file crowss ha 72 giornate totali, ma
+1324 righe hanno tipo_arena=None e 199 sono 'arena_altro': queste NON sono
+mai state modellate da questa pipeline (non solo qui, in nessuna sessione
+precedente), quindi le giornate "perse" non sono un bug di oggi, sono un
+limite gia' esistente della pipeline P11 che diventa piu' visibile su un
+mazzo con tanta varieta' di arene. In piu': la parentesi del brief
+("crowss esclude Beginner/division per il filtro di produzione") NON
+corrisponde a quanto misurato: la Beginner e' INCLUSA e pesa 138/373
+arene (37%, la seconda categoria per numero dopo cap 260). Se il filtro
+di produzione reale di crowss esclude la Beginner, questa simulazione la
+sta trattando diversamente da come gioca davvero l'utente su quel tipo di
+arena -- da chiarire prima di usare questo numero per decidere.
+
+TIPI ARENA INCLUSI: cap 220 n=42, cap 260 n=162, Beginner n=138,
+uncapped n=31 (totale 373 su 30 giornate). Overlap medio A/R: 1.41/5
+(basso, cambia molto la formazione, coerente con gli altri mazzi).
+
+COMPOSIZIONE MEDIA (su 5 slot):
+  ruolo   A       R       delta
+  GK    1.000   1.000   +0.000
+  DEF   1.461   1.434   -0.027
+  MID   1.512   1.351   -0.161
+  FWD   1.027   1.214   +0.188
+La FWD sale anche su crowss, stesso ordine di grandezza degli altri mazzi
+(+0.188 qui vs +0.164 pesato aggregato sessione 12), a scapito soprattutto
+dei MID -- stessa forma vista ovunque.
+
+DELTA PUNTI R-A: +4.392  IC95 [+1.330, +7.743]. Piu' alto del +1.25/+0.90
+aggregato (attenzione: non e' una prova di essere "il campione migliore",
+crowss e' un solo mazzo con IC ampio, [1.33,7.74] e' largo).
+
+SEGNO DELTA PUNTI PER GIORNATA (n=30 giornate, non 71 come atteso):
+positive=18 negative=9 zero=3. Test del segno p=0.1221. Il brief si
+aspettava che con 71 giornate il test avesse "finalmente potere": con
+solo 30 (per il limite di copertura sopra) NON e' significativo, anche se
+il rapporto 18/9 (66% positive) e' piu' sbilanciato del 22/15 (59%)
+dell'aggregato multi-mazzo. Resta un'indicazione, non una conferma con
+potere statistico vero.
+
+VERDETTO: coerente col resto -- composizione FWD sale, direzione uguale a
+tutti gli altri mazzi; punti positivi e piu' forti sul singolo mazzo
+crowss (+4.39) ma con IC ampio e segno-giornata NON significativo (18/9,
+p=0.12) perche' il campione utile e' 30 giornate, non 71 -- il numero
+71 del brief includeva probabilmente arene non modellate da questa
+pipeline (None/'arena_altro'). Prima di usare questo risultato: chiarire
+se la Beginner va davvero inclusa per crowss (vedi discrepanza sopra) e se
+si vuole estendere la pipeline P11 a 'arena_altro' per recuperare le
+giornate mancanti (non fatto qui, fuori scope di questo brief).
+
+File aggiunti: analisi_manager/p11_calib_fwd_crowss_out.txt,
+analisi_manager/p11_calib_fwd_crowss_righe.json.
+
+===============================================================================
+15. SESSIONE 06/08/2026 sera Roma -- FATTIBILITA' In Season FORWARD-LOOKING
+    (Sonnet, nessuna modifica produzione, nessun commit)
+===============================================================================
+Verifica delle 3 cose richieste, NIENTE ricostruzione storica di soglie/
+reward/XP (confermato non necessaria: i moltiplicatori si applicano a
+entrambi i bracci del confronto e si annullano nel delta).
+
+1. MAZZO ATTUALE -- GIA' LEGGIBILE, tool esistente. ricostruisci_manager.py
+   (righe 118-132) interroga gia' l'API Sorare con
+   inSeasonEligible/u23Eligible/powerBreakdown per carta -- e' la stessa
+   query gia' usata per crowss (il mazzo dell'utente) e per tutti gli altri
+   manager. Sul file dati_globali/manager_crowss.json (storico gia'
+   scaricato, non serve una nuova chiamata API per il check): 1370 carte
+   distinte viste, di cui 345 In Season-eligibili (GK 53, DEF 118, MID 85,
+   FWD 89), con xp/bonus_carta/in_season/u23 gia' persistiti per carta.
+   Da fare per l'uso vero: un refresh dell'estrazione per avere il mazzo di
+   OGGI (non lo storico), stesso script, nessun tool nuovo da scrivere.
+
+2. COPERTURA CACHE GAME-LOG -- 96.9%. Sulle 323 slug distinte In Season-
+   eligibili viste in crowss: 313 coperte dalla cache condivisa
+   (formazione_<lega>_<ruolo>_all/.game_log_cache, contata con os.walk come
+   da regola CLAUDE.md), 10 mancanti. I 10 mancanti sono giocatori di top
+   leghe big5 (Rodrygo, Foyth, Gimenez, Lemina, San Miguel, Parejo, Joan
+   Garcia...) -- coerente con la copertura nota e gia' segnalata altrove
+   (leghe senza pipeline completa). Non blocca il go: 96.9% e' largo
+   abbastanza, i 10 buchi si escludono o si segnalano come gia' fatto per
+   analisi_manager (vedi copertura_cache.json).
+
+3. FORMULA PUNTEGGIO In Season -- NOTA, gia' in codice di produzione:
+   - Bonus livello/xp: NON e' una mappa statica livello->bonus da cercare,
+     e' un valore per-carta letto direttamente dall'API Sorare
+     (powerBreakdown: season/collection/xp personale/scarcity/special
+     edition/active clubs/nationality/positions, sommati in basis points),
+     gia' implementato in CardPool.power_bonus_fraction()
+     (formazione_mls/build_formazione_finale.py:1023-1035) e gia' usato
+     SOLO per In Season/All Stars (XP_BONUS_TYPES, mai nelle Arene) --
+     quindi calcolabile per ogni carta, non da derivare a mano.
+   - Capitano: CAPTAIN_BONUS_BY_TYPE['MLS_IN_SEASON'] = 0.5
+     (generatore_formazioni/build_formazione_globale.py:272-276) cioe'
+     +50% = *1.5, ESATTAMENTE il numero citato nel brief. Confermato in
+     codice, non da verificare a mano.
+   Totale-formazione = Sum(base * (1+bonus_power_carta)) col capitano
+   preso *1.5 sul suo termine: entrambi i pezzi sono gia' implementati e
+   richiamabili, non c'e' nulla da ricostruire a tavolino.
+
+VERDETTO: GO. Le tre cose richieste sono verificate, tutte con tool/dati
+gia' esistenti in repo (nessuno strumento nuovo da scrivere per il check).
+La palude storica (soglie/reward/XP per-giornata del passato) resta
+correttamente evitata: non serve leggerla per il delta forward-looking.
+
+PROSSIMO PASSO (confermato dal brief, non ancora iniziato): confronto (a)
+obiettivo max-media vs consapevole-della-soglia, e (b) calibrazione FWD
+prod vs refit, misurati come DELTA sui gradini di soglia noti
+340/360/400/420/460, sul mazzo attuale + realizzato in cache. Richiede un
+brief a parte per l'implementazione (questo era solo il check di
+fattibilita').
+
+===============================================================================
+16. SESSIONE 06/08/2026 sera Roma -- VERIFICA COPERTURA SUI TOP FWD:
+    IL 96.9% DELLA SESSIONE 15 MISURAVA LA COSA SBAGLIATA. FERMO.
+    (Sonnet, nessuna modifica produzione, nessun commit)
+===============================================================================
+ITEM 1 -- I 10 buchi (file gamelog assente) della sessione 15, con
+nome/ruolo/squadra:
+  Adrian San Miguel     GK   (squadra non nota nel dato)
+  Angel Ortiz           FWD  real-betis-sevilla
+  Kwon Chang-Hoon        FWD  persija-jakarta
+  Dani Parejo           MID  (squadra non nota nel dato)
+  Joan Garcia           GK   barcelona-barcelona
+  John Montano          FWD  (squadra non nota nel dato)
+  Jose Maria Gimenez    DEF  atletico-madrid-madrid
+  Juan Foyth            DEF  villarreal-villarreal
+  Mario Lemina          MID  galatasaray-istanbul
+  Rodrygo               FWD  real-madrid-madrid
+
+ITEM 2/3 -- PRIMO GIRO (fatto come richiesto, con la STESSA metrica gia'
+in mano: presenza del file cache): i top 15 FWD ordinati per punteggio
+storico singolo (unico dato realmente disponibile nello storico di
+crowss, spesso n=1 partita) risultavano TUTTI coperti, Yamal incluso
+(119.1, coperto) e Mbappe fra le 345 carte in_season=True (confermando che
+lo snapshot e' quello 2025-26 vero, non un set vuoto post-rollover: item 3
+CONFERMATO). Ma questa metrica era fuorviante per due motivi, scoperti
+SUBITO dopo aver guardato meglio:
+  - il ranking per "punteggio storico singolo" e' rumore puro (n=1 quasi
+    ovunque: Mbappe risultava 0.0 e Rodrygo 53.55, semplicemente la loro
+    UNICA partita vista in questo storico, non una misura di qualita');
+  - "file cache presente" (il controllo os.walk della sessione 15) NON
+    equivale a "il modello puo' calcolare un previsto per questo
+    giocatore": serve ANCHE la pipeline di predizione completa per la sua
+    lega (formazione_<lega>/predict_*), che e' un requisito piu' stretto
+    (vedi regola cache in CLAUDE.md, mai verificata esplicitamente finora
+    su questo pool).
+
+RIFATTO CON LA METRICA GIUSTA (previsto = prev.calcola(), lo stesso
+calcolo usato da tutte le misure P11 precedenti in questa sessione, non
+solo presenza del file):
+
+  TOTALE: 25/84 FWD In Season-eligibili di crowss con previsto
+  CALCOLABILE. 59/84 (70%) con previsto=None -- pipeline di predizione
+  assente per la loro lega, ANCHE quando il file gamelog esiste (Yamal e
+  Mbappe hanno il file cache, ma previsto=None comunque: la Liga non ha
+  pipeline predict in questo repo).
+
+  Fra i 59 KO: TUTTI i FWD in_season di Barcelona (Yamal, Raphinha, Ferran
+  Torres, Anthony Gordon), Real Madrid (Mbappe, Rodrygo), Atletico Madrid
+  (Julian Alvarez, Giuliano Simeone), Manchester United (Rashford), Real
+  Betis, Real Sociedad, Rayo Vallecano, Villarreal, Levante (big5/La
+  Liga), Rennes/Strasbourg (Ligue 1), Udinese (Serie A) -- sostanzialmente
+  l'INTERO universo big5 fra i FWD posseduti da crowss, non i 10 casi
+  isolati contati con la prima metrica.
+
+VERDETTO: NO, i FWD top che contano NON sono coperti nel senso che serve
+(previsto calcolabile). Yamal e Mbappe superano il check "file cache
+presente" ma falliscono quello vero "il modello sa dargli un numero" --
+esattamente l'errore mazzo-arena che il brief chiedeva di evitare: se
+costruissimo il confronto forward-looking ORA, il pool di FWD disponibile
+sarebbe fatto quasi solo di MLS/K League/Turchia (le 25 leghe coperte),
+ESCLUDENDO sistematicamente le superstar big5 che pesano di piu' nelle
+decisioni reali del mazzo crowss.
+
+FERMO QUI, come da istruzione del brief. Decisione da prendere insieme
+(regola cache CLAUDE.md, "se emerge una lega senza pipeline completa non
+ignorarla in silenzio"): costruire la pipeline predict per big5 (La Liga,
+Ligue 1 almeno, dove sono concentrati i KO piu' pesanti) prima di
+procedere con qualunque backtest In Season sul mazzo crowss? O si accetta
+di misurare (a)/(b) solo sul sottoinsieme di leghe gia' coperte (MLS/
+K League/Turchia/altre 22), sapendo che il risultato NON si generalizza
+alle carte big5 del mazzo reale?
+
+File aggiunti: analisi_manager/p11_inseason_copertura_out.txt,
+analisi_manager/p11_inseason_top_fwd_previsto.txt.
+
+===============================================================================
+17. SESSIONE 06/08/2026 sera Roma -- LA CALIBRAZIONE ORDINA BENE FRA I
+    RUOLI? METRICA GLOBALE POOLED (Sonnet, nessuna modifica produzione,
+    nessun commit)
+===============================================================================
+Script nuovo: analisi_manager/p11_lift_crossruolo.py. Su
+dati_globali/taratura_coppie.json (n=75.474, tutti i ruoli insieme, NON
+separati). Due calibrazioni confrontate:
+  PROD  = i 4 coefficienti hardcoded di produzione (GK 35.78/0.264, DEF
+          7.28/0.831, MID 11.61/0.740, FWD 8.40/0.789).
+  REFIT = refit onesto: lineare fresco per GK/DEF/MID (ricalcolato su
+          questo stesso file, non i valori vecchi delle sessioni
+          precedenti), e per FWD un PIECEWISE non-lineare a 10 nodi (i
+          decili gia' misurati in sessione 11: 46.01->43.48 ... fino a
+          59.22->59.17), con estrapolazione lineare oltre gli estremi.
+          Nessuna forma lineare per FWD: la sessione 11 aveva gia' escluso
+          che una retta unica catturi la curva.
+
+SPEARMAN POOLED CROSS-RUOLO (atteso_calibrato vs reale, tutti i ruoli in
+un unico ranking, n=75.474):
+  prod=0.2059   refit=0.2073   delta=+0.0015   IC95 bootstrap (B=300)
+  [+0.0009, +0.0020] -- non tocca lo zero.
+
+LIFT CROSS-RUOLO (media reale del top-K per atteso calibrato vs il resto):
+  K=20%: prod lift=7.50   refit lift=7.64   delta=+0.14  IC95 [+0.03,+0.26]
+         -- non tocca lo zero.
+  K=40%: prod lift=6.10   refit lift=6.05   delta=-0.04  IC95 [-0.11,+0.06]
+         -- TOCCA lo zero, segno addirittura invertito rispetto a K=20%.
+
+VERDETTO: la direzione prevista dall'ipotesi si vede (refit pooled ordina
+leggermente meglio a K=20%, dove il vantaggio FWD si concentra in cima),
+e gli IC95 su Spearman e lift-20% non toccano lo zero. MA -- ed e' il
+punto che decide -- questo NON e' lo stesso di "leva utile": con n=75.474
+qualunque differenza sistematica anche minuscola risulta "fuori dallo
+zero" per un bootstrap (e' la trappola gia' scritta nel CLAUDE.md sulla
+significativita' che confonde n grande con effetto grande). Le dimensioni
+sono trascurabili: +0.0015 di Spearman (su una scala 0-1, la correlazione
+pooled resta 0.206 vs 0.207: invisibile), +0.14 punti di lift su una scala
+dove il lift stesso e' ~7.5 punti (meno del 2% di miglioramento relativo).
+E a K=40% l'effetto si INVERTE e diventa non significativo: non e' un
+segnale che cresce includendo piu' candidati, e' un artefatto locale del
+primo quintile.
+
+Il motivo strutturale: i FWD sono ~19.140/75.474 = 25% del pool pooled, e
+dentro i FWD stessi il refit corregge soprattutto un singolo decile (il
+10-esimo, ~1.900 casi su 75.474 = 2.5% del totale). Anche un guadagno
+enorme dentro quella fetta minuscola non puo' spostare di molto una
+metrica calcolata su TUTTO il pool cross-ruolo -- e infatti non lo fa.
+
+CONSEGUENZA: coerente col resto dei filoni (sessione 5/[[project_diagnosi_piattezza_0408]]:
+"la leva e' a monte nei dati, non nel modello/decisioni"). La calibrazione
+cross-ruolo NON e' una leva praticamente utile sulla metrica pooled --
+tecnicamente il refit non peggiora (nessun segno negativo forte da
+nessuna parte), ma il guadagno misurabile e' cosi' piccolo da non
+giustificare un cambio di produzione su questa base. Il filone
+"calibrazione FWD" (sessioni 5-17 di questo handoff, iniziato dalla
+domanda "e' riproducibile 8.40/0.789") si chiude qui: la non-
+riproducibilita' era vera (sessione 5), il bias di composizione
+sull'arena esisteva davvero (sessioni 12-14) ma con segnale sui punti
+debole e concentrato (sessione 13), la copertura big5 mancante lo rende
+comunque non testabile sul mazzo reale per ora (sessione 16), e infine
+sulla metrica piu' pulita e meno rumorosa di tutte (ranking pooled cross-
+ruolo, non punti-formazione) l'effetto e' presente in direzione ma troppo
+piccolo per essere una leva. Non c'e' una base per cambiare
+CALIB_PER_RUOLO in produzione allo stato attuale.
+
+File aggiunti: analisi_manager/p11_lift_crossruolo.py,
+analisi_manager/p11_lift_crossruolo_out.txt,
+analisi_manager/p11_lift_crossruolo_result.json.

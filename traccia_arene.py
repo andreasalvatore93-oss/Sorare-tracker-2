@@ -127,7 +127,7 @@ query Classifica($slug: String!, $page: Int) {
     so5Leaderboard(slug: $slug) {
       so5RankingsPaginated(page: $page) {
         pages
-        nodes { ranking score user { nickname } }
+        nodes { ranking score user { slug nickname } }
       }
     }
   }
@@ -299,10 +299,16 @@ def main():
             if not nodi:
                 print(f'  {nome:10s} classifica vuota (serve il cookie)')
                 continue
-            punteggi = sorted((n['score'] for n in nodi), reverse=True)
+            nodi_ord = sorted(nodi, key=lambda n: n['score'], reverse=True)
+            punteggi = [n['score'] for n in nodi_ord]
+            partecipanti_dett = [{'punteggio': n['score'],
+                                  'nickname': (n.get('user') or {}).get('nickname'),
+                                  'slug': (n.get('user') or {}).get('slug')}
+                                 for n in nodi_ord]
             mia = next((n for n in nodi
                         if (n.get('user') or {}).get('nickname', '').lower() == io), None)
-            rank_premio, essenze = premi.get(slug, (None, 0))
+            premi_lista = premi.get(slug, [])
+            rank_premio, essenze = premi_lista[0] if premi_lista else (None, 0)
             riga = {'fixture': fx, 'fine': fine, 'slug': slug, 'tipo': nome,
                     # la mediana e' il numero che serve al consigliere
                     # d'ingresso: e' il campo da battere in quella arena
@@ -311,6 +317,7 @@ def main():
                     'costo': costo, 'partecipanti': len(nodi),
                     'premio_essenze': essenze, 'rank_premiato': rank_premio,
                     'punteggi': punteggi,
+                    'partecipanti_dett': partecipanti_dett,
                     'mio_rank': mia.get('ranking') if mia else None,
                     'mio_score': mia.get('score') if mia else None}
             raccolta.append(riga)

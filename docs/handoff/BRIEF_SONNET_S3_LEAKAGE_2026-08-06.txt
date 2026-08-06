@@ -1,0 +1,218 @@
+BRIEF PER SONNET -- TEST S3 (ANTI-RISCRITTURA DEL GRADE)
+Scritto dall'orchestratore (Opus), 06/08/2026 sera Roma (CEST).
+Questo brief e' autosufficiente: presumo che tu sia in una chat pulita che non
+sa nulla del filone.
+
+LEGGI PRIMA, IN QUEST'ORDINE:
+  1. CLAUDE.md (radice repo) -- regole di lavoro, valgono tutte
+  2. docs/handoff/HANDOFF_ORCHESTRATORE_GRADE_2026-08-06.txt -- sezioni 3, 4, 5
+     (fatti accertati, numeri, errori gia' commessi da non rifare)
+  3. docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt -- sezioni 8-11
+
+NON eseguire i brief A e B della sezione 8 dell'handoff orchestratore: sono
+congelati finche' S3 non ha dato un esito. Questo brief e' l'unico attivo.
+
+
+===============================================================================
+OBIETTIVO IN UNA RIGA
+===============================================================================
+Stabilire se il grade (lettera A-F) che leggiamo per una partita PASSATA e' lo
+stesso che era visibile PRIMA di quella partita, o se Sorare lo riscrive dopo
+aver visto il risultato. Se e' riscritto, ogni numero raccolto finora sul
+filone e' informazione che arriva dal risultato stesso, non previsione, e va
+buttato.
+
+
+===============================================================================
+IPOTESI DELL'ORCHESTRATORE, DICHIARATE PRIMA DI VEDERE I NUMERI
+===============================================================================
+H1. S3.2 dara' una quota di "identici" alta (>90%) sulle partite concluse.
+H2. Le poche righe diverse NON saranno correlate col risultato realizzato
+    (S3.3), cioe' saranno rumore di rotta, non riscrittura.
+H3. S3.4 (due catture pre-partita dalla stessa rotta a orari diversi) dara'
+    100% identici, coerente col fatto accertato F2.
+Se i numeri smentiscono queste ipotesi, scrivilo a chiare lettere: le ipotesi
+sono li' apposta per poter essere smentite, non per essere confermate.
+
+
+===============================================================================
+CONTESTO MINIMO: LE DUE ROTTE
+===============================================================================
+ROTTA COMPOSE (pre-partita): so5Leaderboard.myFilteredBench -> ...
+  eligiblePlayerGameScores.projection.grade. Vede solo le carte dell'utente e
+  solo le GW aperte. Con questa abbiamo catturato oggi, PRIMA del calcio
+  d'inizio, i grade della GW football-4-7-aug-2026 in due momenti:
+    analisi_manager/p12_step3_righe.json                    (32 righe, ~10:39 Roma)
+    analisi_manager/dati/grade_snapshot_football-4-7-aug-2026_20260806_1124.json
+                                                            (174 righe, 13:24 Roma)
+    analisi_manager/dati/grade_snapshot_ALL_LIMITED_football-4-7-aug-2026_20260806_1127.json
+                                                            (171 righe dedup, 13:27 Roma)
+ROTTA STORICA (post-partita): anyPlayer(slug).playerGameScores(last:N)
+  .projection.grade. Funziona su qualunque giocatore, mostra SOLO partite gia'
+  concluse (fatto accertato F7), cap server-side a 15 partite.
+
+S3 confronta le stesse coppie (giocatore, partita) fra le due rotte.
+
+ATTENZIONE ALL'ASIMMETRIA (e' il motivo per cui questo brief non finisce con
+lo script gia' pronto): il confronto cambia DUE cose insieme, il momento
+(prima/dopo) e la rotta (compose/storica). Se esce "identici", la conclusione
+"genuino" e' solida: due strade diverse danno lo stesso valore. Se esce
+"diversi", NON e' dimostrata la riscrittura, perche' la differenza potrebbe
+venire dalla rotta e non dal risultato. I punti S3.3 e S3.4 servono proprio a
+sciogliere questo nodo dentro la stessa sessione, senza un altro giro.
+
+
+===============================================================================
+COSA FARE
+===============================================================================
+
+S3.0 -- PREREQUISITO
+  Ti servono cookie Sorare + csrftoken freschi: te li da' l'utente in chat
+  (file di testo con la stringa cookie completa).
+  SORARE_COOKIE = l'intera stringa. SORARE_CSRF = il valore del cookie
+  `csrftoken` contenuto dentro quella stessa stringa (c'e', verificato).
+  Non salvare il cookie su disco e non committarlo mai: passalo solo come
+  variabile d'ambiente della sessione.
+  Vanno passati come variabili d'ambiente SORARE_COOKIE e SORARE_CSRF. Senza
+  ENTRAMBI le query "my*" tornano 0 nodi SENZA errore (trappola gia'
+  documentata, fatto F1). Prima di qualunque altra cosa verifica che
+  currentUser{slug} torni "crowss": se torna null, fermati e dillo.
+  Per la rotta storica (anyPlayer) il CSRF non e' necessario, ma passalo lo
+  stesso.
+
+  Verifica anche l'ora: le partite della GW football-4-7-aug-2026 iniziano
+  alle 18:00 Roma del 06/08 e l'ultima finisce alle 13:35 Roma del 07/08.
+  Se lanci la sera del 06/08 il test e' PARZIALE: copre solo le partite gia'
+  concluse. Va benissimo, ma DEVI dichiarare quante righe hai potuto
+  confrontare e quante no, e non spacciare il parziale per totale.
+
+S3.1 -- BASELINE, LO SCRIPT COSI' COM'E'
+  Lancia analisi_manager/p12_verifica_leakage_grade.py senza modificarlo.
+  Riporta: n confrontati, n identici, n diversi, su 32 righe di partenza.
+  Se una riga non e' confrontabile perche' la partita non e' finita, deve
+  finire nel conteggio "non confrontabili", mai fra gli identici.
+
+S3.2 -- STESSO TEST SU CAMPIONE 5 VOLTE PIU' GRANDE
+  Ripeti la stessa logica partendo dallo snapshot da 174 righe
+  (grade_snapshot_football-4-7-aug-2026_20260806_1124.json) invece che dalle
+  32. Sono giocatori gia' catturati pre-partita: non costa nulla in piu' se
+  non le query, e porta il campione da ~30 a ~170.
+  Accetta la riga come confrontabile SOLO se la rotta storica restituisce la
+  partita con quella data E con uno score non nullo (partita davvero chiusa).
+  Riporta la tabella per ruolo: n confrontabili, n identici, n diversi.
+  NON fondere questi numeri con quelli di S3.1: sono righe diverse. Tienili in
+  due tabelle separate e di' esplicitamente su quali righe e' calcolato
+  ciascun numero (l'errore piu' grave gia' commesso due volte in questo
+  filone e' stato accostare numeri di campioni diversi).
+
+S3.3 -- IL DISCRIMINANTE (esegui SOLO se in S3.1+S3.2 ci sono righe diverse)
+  Serve a distinguere "differenza di rotta" da "riscrittura dopo il
+  risultato". Sulle STESSE righe confrontabili, nello STESSO run:
+    (a) corr(grade_pre, score_realizzato)
+    (b) corr(grade_post, score_realizzato)
+    (c) corr(grade_post - grade_pre, score_realizzato)   <- il numero chiave
+    (d) fra le righe diverse: quante sono salite di lettera e quante scese, e
+        il punteggio medio realizzato dei due gruppi.
+  Lettura (scrivila anche tu nell'handoff, per l'utente):
+    - se (c) e' vicino a zero e le salite/discese sono bilanciate e non legate
+      al punteggio -> la differenza e' rumore fra le due rotte, NON
+      riscrittura. Il filone sopravvive.
+    - se (c) e' chiaramente positivo, cioe' il grade viene alzato proprio a chi
+      poi ha fatto un buon punteggio -> riscrittura post-risultato. Il filone
+      si chiude e i numeri della sezione 4 dell'handoff orchestratore vanno
+      buttati.
+  Codifica il grade in numero nel modo gia' usato nel filone (A=6 ... F=1).
+
+S3.4 -- CONTROLLO A COSTO ZERO, NESSUNA QUERY
+  Confronta fra loro le DUE catture pre-partita fatte con la STESSA rotta a
+  orari diversi: p12_step3_righe.json (~10:39) contro lo snapshot delle 13:24,
+  sull'intersezione dei giocatori. Stessa rotta, momenti diversi, entrambe
+  prima del calcio d'inizio.
+  Serve come metro: dice quanto rumore c'e' gia' senza cambiare rotta. Se qui
+  esce 100% identici, allora ogni differenza trovata in S3.2 viene dalla rotta
+  o dal risultato, non dal semplice passare del tempo. Riporta n confrontati e
+  n identici.
+
+S3.5 -- SANITY CHECK SUL MATCHING
+  Lo script accoppia le partite per prefisso di data (primi 10 caratteri).
+  Verifica che nessun giocatore del campione abbia DUE partite nella stessa
+  data: se capita, quella riga va scartata, non accoppiata a caso. Riporta
+  quante righe hai scartato per questo motivo (probabilmente zero).
+
+
+===============================================================================
+COSA NON FARE
+===============================================================================
+- Nessuna modifica alla produzione. Nessuna soglia arena toccata.
+- Nessuna run GitHub Actions.
+- Non eseguire i brief A e B della sezione 8 dell'handoff orchestratore.
+- Non allargare il campione a nuovi giocatori/ruoli: qui si misura solo la
+  genuinita' del dato storico. La raccolta larga e' un altro brief, congelato.
+- Non usare la soglia "+0.7 = sospetto riscrittura" letta in vecchi brief: era
+  inventata, e' stata annullata.
+- Non trattare 550 righe come 550 casi: lo stesso giocatore misurato piu'
+  volte resta un giocatore solo. Dove serve un'incertezza, raggruppa per
+  giocatore.
+- Non concludere "sporco" solo perche' S3.2 da' qualche riga diversa: senza
+  S3.3 quella conclusione non e' sostenuta.
+
+
+===============================================================================
+OUTPUT
+===============================================================================
+- File dati: analisi_manager/p12_verifica_leakage_out.json (S3.1) e
+  analisi_manager/p12_s3_esteso_out.json (S3.2/S3.3/S3.4). Non toccare altri
+  file p12_*.
+- Testo: una nuova sezione 12 in coda a
+  docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt, intestata con data e ora
+  di Roma. Dentro ci vanno tutti i numeri, anche quelli nulli o scomodi, ogni
+  tabella con l'indicazione esplicita di SU QUALI RIGHE e' calcolata e con n
+  di giocatori distinti oltre a n di righe.
+- Commit: solo i file di output e l'handoff. Push su main.
+- In chat all'utente scrivi pochissimo: percorso del file, il verdetto in una
+  riga, e le domande che ti bloccano. Niente tabelle in chat.
+
+
+===============================================================================
+COME SI LEGGE IL RISULTATO (mettilo nell'handoff, serve all'utente)
+===============================================================================
+Esempio banale per spiegare cosa stiamo controllando: un amico ti dice, prima
+della partita, "secondo me Tizio gioca bene stasera". Se il giorno dopo lo
+richiami e lui ripete la stessa previsione anche se Tizio ha fatto schifo,
+allora la sua previsione e' vera previsione e possiamo giudicarla. Se invece
+il giorno dopo ti dice "avevo detto che faceva schifo", allora non stava
+prevedendo: stava copiando il risultato. S3 serve a capire in quale dei due
+casi siamo.
+
+
+===============================================================================
+ADDENDUM 06/08/2026 ore 20:00 Roma -- ISTRUZIONI PER IL RILANCIO
+===============================================================================
+Il primo tentativo (06/08 sera, prima del fischio d'inizio) ha dato:
+  S3.4  32/32 identici  -> fatto, NON va rifatto.
+  S3.1  0/32 confrontabili
+  S3.2  0/206 confrontabili   -> nessuna partita ancora conclusa.
+Non e' un fallimento, e' solo troppo presto. La rotta storica mostra una
+partita solo dopo la fine.
+
+AL RILANCIO:
+1. NON rifare S3.4: e' gia' chiuso, 32/32 identici. Riportalo solo come
+   contesto, senza rilanciare query.
+2. Esegui S3.1, S3.2, e S3.3 (quest'ultimo solo se ci sono righe diverse).
+3. AGGIUNTA OBBLIGATORIA -- CONTROLLO SUL PUNTEGGIO NON DEFINITIVO. Il rischio
+   di lanciare a poche ore dal fischio finale e' di leggere righe con il
+   punteggio So5 ancora provvisorio. Per ogni riga registra `scoreStatus` e
+   accetta come confrontabile SOLO chi ha lo score in stato definitivo. Le
+   righe con score provvisorio vanno in una terza colonna "non ancora
+   definitive", mai fra gli identici e mai fra i diversi. Riporta i tre
+   conteggi separati.
+4. Se anche stavolta i confrontabili sono 0 o pochissimi (< 20 righe), NON
+   insistere e non allargare a caso: scrivi il conteggio, ferma le query e
+   segnala all'utente che serve un altro giro piu' tardi. Ogni query in piu'
+   a vuoto e' token e carico API sprecati.
+5. Le partite della GW si chiudono in momenti diversi (dalle ~20:00 Roma del
+   06/08 alle ~15:30 Roma del 07/08): un rilancio parziale e' normale. Dichiara
+   sempre quante righe su 206 hai potuto usare. Un parziale su un numero
+   decente di righe vale come verdetto; un parziale su 5 righe no.
+6. Cookie e csrftoken: usa quelli NUOVI che ti da' l'utente al rilancio, non
+   quelli della sessione precedente.

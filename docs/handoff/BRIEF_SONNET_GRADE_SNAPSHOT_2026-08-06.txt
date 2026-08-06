@@ -1,0 +1,281 @@
+BRIEF PER SONNET -- CATTURA GRADE GW CORRENTE (urgente) + infrastruttura
+Scritto dall'orchestratore Opus, sessione 06/08/2026 13:20 Roma (11:20 UTC).
+Sostituisce il brief precedente "il grade e' ridondante con L10+matchup?".
+
+
+===============================================================================
+PARTE 1 -- PERCHE' HO CAMBIATO IL BRIEF (per l'utente, non per Sonnet)
+===============================================================================
+
+Il brief precedente chiedeva: pool ampio (100-200/ruolo), regressione
+grade ~ L10 + favorito_odds, R2 per ruolo, piu' confronto con score_atteso.
+Cinque problemi, in ordine di gravita'.
+
+
+--- 1. L'URGENZA: la finestra si chiude oggi alle 18:00 Roma ---
+
+Dati verificati adesso in p12_step3_righe.json: le partite della GW
+football-4-7-aug-2026 iniziano alle 16:00 UTC di oggi (18:00 Roma) e finiscono
+domani 7/8 alle 11:35 UTC (13:35 Roma). Adesso sono le 11:20 UTC (13:20 Roma).
+Restano circa 4 ore e 40 minuti prima del primo fischio d'inizio.
+
+Lo STEP 2 ha gia' dimostrato (test diretto su 3 leaderboard passate) che il
+grade NON e' recuperabile a ritroso: a GW chiusa myFilteredBench torna 0 nodi,
+l'intera leaderboard sparisce in blocco. Quindi:
+
+  - la regressione di ridondanza si puo' fare oggi, domani o fra un mese: il
+    dato per farla e' gia' su disco (32 righe) o si ricattura quando si vuole;
+  - la cattura del grade pre-partita di QUESTA GW si puo' fare SOLO OGGI,
+    entro le 18:00 Roma. Dopo, e' persa per sempre.
+
+Il brief precedente spendeva l'unica finestra deperibile per fare l'analisi
+non deperibile. Va invertito l'ordine.
+
+
+--- 2. IL POOL NON PUO' ARRIVARE A 100-200 PER RUOLO ---
+
+myFilteredBench = "MY" = SOLO le carte possedute dall'utente. Il tetto non e'
+"quanti giocatori esistono", e' "quante carte ha in mazzo l'utente per quel
+ruolo". Il target 100-200/ruolo e' probabilmente irraggiungibile e nessuno ha
+ancora misurato il tetto vero. Va misurato PRIMA di progettare l'analisi
+sopra, non dopo.
+
+
+--- 3. IL CAMPIONE NON E' CASUALE, E QUESTO ROVINA LA REGRESSIONE ---
+
+Lo script attuale ordina con sortType POPULAR_STARTERS DESC e prende i primi
+N. Quindi il campione e': (a) solo le carte dell'utente, (b) fra queste, le
+piu' popolari/titolari. Due filtri che tolgono varieta'.
+
+Esempio banale. Voglio sapere se l'altezza aiuta a prevedere quanti canestri
+segni. Se misuro la cosa su tutta la popolazione, l'altezza spiega parecchio.
+Ma se la misuro SOLO fra giocatori NBA -- che sono tutti alti fra 1.95 e 2.15
+-- l'altezza sembra non contare piu' niente, perche' fra loro l'altezza quasi
+non varia. Non e' che l'altezza non conti: e' che ho tolto io la varieta'
+guardando solo un pezzetto stretto della popolazione.
+
+Qui succede lo stesso: le carte dell'utente, per giunta le piu' titolari,
+sono tutte giocatori abbastanza simili fra loro. Su un campione cosi', le
+correlazioni escono SEMPRE piu' basse del vero, e la parte di grade "non
+spiegata da L10 e quote" esce SEMPRE piu' alta del vero.
+
+Conseguenza diretta sulla regola di verdetto del brief: "residuo alto ->
+candidato" scatterebbe per artefatto del campione, anche se il grade fosse
+pura ridondanza. E' esattamente il tipo di "guadagno gratis che non esiste"
+che CLAUDE.md dice di non produrre.
+
+
+--- 4. LA REGOLA DI VERDETTO PUO' SOLO CHIUDERE, MAI APRIRE ---
+
+  R2 alto (grade spiegato da cio' che gia' abbiamo) -> ridondante -> chiuso.
+  Questa direzione e' valida.
+
+  R2 basso (resta residuo) -> "candidato". Questa direzione NON e' valida: il
+  residuo e' rumore + bias di campionamento + eventuale segnale, e i tre non
+  si distinguono. Il brief lo scriveva in una riga in fondo, ma poi costruiva
+  tutta la corsa intorno a questo criterio.
+
+Non e' un motivo per non farla -- chiudere un filone costa poco ed e' utile,
+visto quanti buchi nell'acqua abbiamo collezionato. E' un motivo per non
+farla AL POSTO della cattura, e per non spenderci sopra query costose.
+
+
+--- 5. "grade vs score_atteso" NON e' a costo query basso, ed e' mal posto ---
+
+Costo: avere score_atteso per 100-200 giocatori significa far girare la
+pipeline di predizione (cache game-log + i 4 script predict per ogni lega).
+E' l'operazione piu' cara del repo, non un'aggiunta gratis a una query.
+
+Mal posto: sul GK il termine di forza-avversario e' stato RIMOSSO da
+score_atteso il 26/07 perche' peggiorava il MAE (gia' scritto nel punto 4
+dell'handoff). Quindi "il nostro modello matchup-aware contro il grade" per
+il portiere confronta il grade con un modello che il matchup non lo guarda
+affatto. Prima di rifare quel confronto su DEF/MID/FWD va verificato ruolo
+per ruolo se score_atteso contiene davvero un termine di matchup ATTIVO --
+regola CLAUDE.md: prima dimostro che l'interruttore esiste e funziona, poi
+misuro. Questo pezzo esce dal brief adesso e torna dopo, gratis, sui soli
+giocatori gia' in cache.
+
+
+--- Nota minore ma da verificare: reliability ---
+
+Sul campione n=32 gia' catturato, reliabilityBasisPoints e' 10000 (=100%) per
+TUTTI e 32. La trappola del brief ("pesare o filtrare per reliability") e'
+quindi probabilmente inerte: se la variabile non varia, pesare per essa non
+fa niente. Test A/A sull'interruttore prima di usarlo.
+
+
+===============================================================================
+PARTE 2 -- BRIEF DA INVIARE A SONNET (copiare da qui in giu')
+===============================================================================
+
+Sei l'esecutore. Sei in una chat pulita: leggi prima questi file, in ordine.
+
+  1. CLAUDE.md (radice repo) -- regole di lavoro, valgono tutte.
+  2. docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt -- l'intero filone,
+     in particolare la sezione 7 (la query vera, gia' risolta e funzionante).
+  3. analisi_manager/p12_lettera_grade.py -- lo script che gia' fa la query.
+
+OBIETTIVO: la lettera A-F (So5Score.projection.grade) NON e' recuperabile a
+ritroso -- a GW chiusa la leaderboard sparisce in blocco (gia' verificato,
+non ritestarlo). L'unico modo per giudicarla e' registrarla in avanti, GW
+dopo GW. Le partite di questa GW iniziano alle 18:00 di oggi ora di Roma:
+tutto cio' che non e' catturato prima di allora e' perso per sempre. La
+priorita' assoluta di questo brief e' la CATTURA, non l'analisi.
+
+IPOTESI DICHIARATE PRIMA DEI NUMERI (per non adattarle dopo):
+  - mi aspetto che il tetto del pool sia dell'ordine di poche decine di carte
+    per ruolo, non centinaia: myFilteredBench sono le carte possedute
+    dall'utente, non tutti i giocatori;
+  - mi aspetto che reliabilityBasisPoints sia 10000 per quasi tutti;
+  - sull'analisi (task C) mi aspetto correlazioni deboli e disomogenee per
+    ruolo, come gia' visto a n=8, e NON considerero' un R2 basso come prova
+    che il grade porti segnale nuovo (vedi avvertenza nel task C).
+
+--- TASK A -- CATTURA MASSIMA, PRIMA DELLE 17:30 ROMA (PRIORITA' 1) ---
+
+Sulla leaderboard della GW corrente
+(football-4-7-aug-2026-seasonal-all_star-all_seasons_all_star_arena_limited,
+ma verifica che sia ancora quella attiva):
+
+A1. Misura il TETTO reale del pool, per ruolo. Alza pageSize (prova 100) e
+    conta quanti nodi tornano DAVVERO per ciascuno dei 4 ruoli. Se il numero
+    tornato e' esattamente uguale al pageSize richiesto, stai probabilmente
+    sbattendo contro un limite: verifica se la connection espone pageInfo /
+    endCursor / hasNextPage e, se si', pagina fino a esaurimento. Riporta il
+    tetto per ruolo.
+
+A2. Cattura TUTTO il pool disponibile, non un campione. Non usare filtri
+    restrittivi: rarities [], includeUsed true, includeNoGame false,
+    includeUnavailablePlayers true, teamMode ALL. L'ordinamento
+    POPULAR_STARTERS va bene solo se prendi comunque tutto; se devi
+    troncare, dillo esplicitamente perche' rende il campione non casuale.
+
+A3. Salva in analisi_manager/dati/grade_snapshot_<gw_slug>_<AAAAMMGG_HHMM>.json
+    un record per coppia (carta, partita), con TUTTI questi campi:
+      player slug e displayName, squadra, ruolo, rarity se disponibile,
+      grade, reliabilityBasisPoints, scoreStatus,
+      starterOddsBasisPoints e la sua reliability,
+      game_date, homeTeam, awayTeam, own/opp winOddsBasisPoints,
+      l10 (lastTenPlayedSo5AverageScore) e l5 se il campo esiste,
+      leaderboard slug,
+      timestamp di cattura in UTC E in ora di Roma,
+      minuti mancanti al calcio d'inizio di quella partita.
+    Il timestamp e i minuti-al-fischio servono per capire, in futuro, se il
+    grade e' stato letto abbastanza presto (e se cambia avvicinandosi alla
+    partita).
+
+A4. Se avanza tempo prima delle 18:00 Roma: rifai la stessa cattura una
+    seconda volta a ridosso del primo fischio (es. 17:45 Roma) in un secondo
+    file con timestamp diverso. Due catture della stessa GW a orari diversi
+    dicono gratis se il grade si muove nelle ore prima della partita --
+    informazione che altrimenti costa settimane.
+
+--- TASK B -- SCRIPT RIUTILIZZABILE (PRIORITA' 2) ---
+
+Estrai la cattura in analisi_manager/grade_snapshot.py: prende lo slug
+leaderboard come argomento da riga di comando, scrive il file datato del
+task A3, e' idempotente (rilanciarlo crea un nuovo file, non sovrascrive),
+legge le credenziali da env SORARE_COOKIE e SORARE_CSRF come gli altri
+script del repo (NON hardcodare il CSRF come fa p12_lettera_grade.py: quello
+e' un valore di sessione che scadra'). Fallisce con messaggio chiaro se
+currentUser torna null (= credenziali scadute), non in silenzio con 0 nodi:
+quella e' la trappola gia' documentata nella sezione 7 dell'handoff.
+
+NON creare il workflow GitHub. La schedulazione la decide l'utente dopo.
+
+--- TASK C -- ANALISI, SOLO SE A E B SONO CHIUSI (PRIORITA' 3) ---
+
+Sul campione catturato, per ruolo separatamente (mai in pool):
+  C1. distribuzione dei grade e n per ruolo;
+  C2. test A/A su reliability: VARIA o e' costante a 10000? Se e' costante,
+      scrivilo e non pesare per essa (pesare per una costante non fa niente);
+  C3. correlazione grade_num vs l10 e grade_num vs favorito_odds;
+  C4. regressione grade_num ~ l10 + favorito_odds, R2 per ruolo.
+
+AVVERTENZA OBBLIGATORIA da riportare accanto ai numeri: il campione sono le
+carte possedute dall'utente, ordinate per popolarita' -- non un campione
+casuale di giocatori. Su un campione cosi' ristretto le correlazioni escono
+sottostimate e il residuo sovrastimato. Quindi: un R2 ALTO permette di
+concludere "ridondante"; un R2 BASSO NON permette di concludere "c'e'
+segnale nuovo". Non scrivere la seconda conclusione in nessuna forma.
+
+--- COSA NON DEVE FARE ---
+
+- Nessuna modifica alla produzione.
+- Nessun calcolo di score_atteso, nessuna pipeline di predizione, nessuna
+  cache game-log da riempire: costa troppo e serve dopo, non ora.
+- Nessuna run su GitHub Actions.
+- Nessun nuovo tentativo di recupero a ritroso del grade: gia' chiuso, e' NO.
+- Non toccare file di altre sessioni.
+
+--- COMMIT ---
+
+Deroga esplicita alla regola "solo misura, nessun commit": il dato di questo
+snapshot e' DEPERIBILE e non riproducibile. Quindi committa e pusha SOLO i
+tuoi file (il/i json di snapshot, grade_snapshot.py, l'handoff aggiornato),
+appena la cattura e' a posto -- non aspettare la fine dell'analisi. Se trovi
+commit locali non pushati di altre sessioni, segnalali all'utente senza
+toccarli.
+
+--- OUTPUT ---
+
+In coda a docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt, come nuova
+sezione 8 datata (giorno + ora di Roma). Riporta: tetto del pool per ruolo,
+quante righe catturate, orario esatto delle catture, e i numeri del task C
+con la loro n. Anche i risultati nulli. In chat all'utente: solo il percorso
+del file e cosa ti blocca.
+
+
+===============================================================================
+PARTE 2-BIS -- FATTI ACCERTATI DALL'UTENTE (06/08 pomeriggio Roma)
+Non vanno riverificati con query: costerebbero token per sapere cio' che gia'
+sappiamo. Vanno pero' trattati come premesse da smentire se un numero le
+contraddice.
+===============================================================================
+
+F1. La lettera NON cambia avvicinandosi al calcio d'inizio. (Quindi niente
+    doppia cattura a orari diversi; un solo snapshot per GW basta.)
+
+F2. La lettera sparisce al FISCHIO D'INIZIO DEL SINGOLO GIOCATORE, non a fine
+    GW. Nella stessa GW aperta, chi ha gia' giocato non ha piu' la lettera,
+    chi deve ancora giocare ce l'ha. Conseguenza operativa: il pool utile di
+    una GW si erode ora per ora, va catturato presto.
+
+F3. La lettera e' una proprieta' di (giocatore, partita), IDENTICA in ogni
+    leaderboard: stesso giocatore in Under 23, in arena o in In Season ->
+    stessa lettera. Quindi le leaderboard servono SOLO a coprire piu' carte,
+    non portano informazione diversa, e le lettere si possono analizzare
+    insieme senza controllare per leaderboard. (Il rischio "grade relativo al
+    campo della leaderboard" e' escluso: non serve testarlo.)
+
+F4. L'utente ha SOLO carte Limited. Nella GW corrente NON esistono
+    competizioni In Season. Ha schierato 7 leaderboard su 8 (4 All Star da 7,
+    3 Under 23 da 7; la quarta Under 23 e' saltata per mancanza di portieri
+    U23 in mazzo).
+
+F5. Conseguenza da tenere presente quando si legge la n finale: il tetto vero
+    del campione NON e' il numero di leaderboard, e' "carte Limited del mazzo
+    il cui giocatore non ha ancora iniziato la partita". Le leaderboard sono
+    solo finestre diverse sullo stesso mazzo. Se dopo la deduplica per
+    (player, game) l'aggiunta di nuove leaderboard porta ~0 righe nuove, ci
+    si ferma: query in piu' senza dato in piu'.
+
+===============================================================================
+PARTE 3 -- COSA VIENE DOPO (non in questo brief)
+===============================================================================
+
+1. Dopo l'8/8 (GW chiusa): join dello snapshot con i punteggi realizzati, che
+   sono recuperabili (a differenza del grade). Da li' nasce la prima riga di
+   "grade vs realizzato", l'unico giudice vero.
+2. Solo se il join funziona: workflow GitHub schedulato che cattura ogni GW
+   in automatico. SORARE_COOKIE e SORARE_CSRF sono GIA' secrets del repo
+   (verificato in .github/workflows/analisi_manager.yml), quindi non c'e'
+   blocco operativo -- resta il rischio scadenza cookie, che lo script del
+   task B deve segnalare rumorosamente.
+3. Aspettativa onesta sui tempi, da mettere in conto prima di investirci: con
+   poche decine di righe per ruolo per GW, per dire qualcosa di solido su
+   "il grade aggiunge oltre L10+quote" servono diverse GW, cioe' settimane.
+   Il costo settimanale pero' e' vicino a zero (una query). E' un filone da
+   lasciar sedimentare in background, non da cui aspettarsi una risposta a
+   breve.

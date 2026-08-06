@@ -1,0 +1,30 @@
+=== TEST A/A SULL'INTERRUTTORE (crowss) ===
+GW test: football-28-30-jan-2026 pool= 382
+default : [{'GK': 1, 'DEF': 2, 'MID': 1, 'FWD': 1}]
+assurdo : [{'GK': 1, 'DEF': 1, 'MID': 1, 'FWD': 2}]
+ridefault: [{'GK': 1, 'DEF': 2, 'MID': 1, 'FWD': 1}]
+si_muove= True riproduce= True
+interruttore verificato: procedo.
+
+arene valide: 373 giornate: 30
+scartate atteso=1699 reale=3876
+
+TIPI ARENA INCLUSI (tipo_bfg valido, TIPI_VALIDI=('arena_limited', 'arena_limited_beginner', 'arena_limited_uncapped')):
+  cap 220      n=42
+  cap 260      n=162
+  Beginner     n=138
+  uncapped     n=31
+
+overlap medio A/R: 1.41/5
+
+COMPOSIZIONE MEDIA (su 5 slot):
+  ruolo         A        R    delta
+  GK        1.000    1.000   +0.000
+  DEF       1.461    1.434   -0.027
+  MID       1.512    1.351   -0.161
+  FWD       1.027    1.214   +0.188
+
+DELTA PUNTI R-A: +4.392  IC95 [+1.330, +7.743]
+
+SEGNO DELTA PUNTI PER GIORNATA (n giornate=30): positive=18 negative=9 zero=3
+test del segno bilaterale p=0.1221

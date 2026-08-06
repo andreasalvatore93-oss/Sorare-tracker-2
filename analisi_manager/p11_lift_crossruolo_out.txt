@@ -1,0 +1,31 @@
+refit lineare per ruolo (fresco): {'GK': (29.720224504389133, 0.38676538945445676), 'DEF': (7.426750975875564, 0.8285170120557963), 'MID': (11.514487851396652, 0.7419350212747416), 'FWD': (-11.059246553746185, 1.1724858320603342)}
+nodi piecewise FWD (previsto->reale):
+  46.01 -> 43.48
+  47.77 -> 45.27
+  48.82 -> 46.29
+  49.71 -> 47.63
+  50.53 -> 47.79
+  51.42 -> 48.81
+  52.41 -> 50.22
+  53.58 -> 50.99
+  55.21 -> 53.22
+  59.22 -> 59.17
+
+SPEARMAN POOLED CROSS-RUOLO (n=75474): prod=0.2059  refit=0.2073  delta=+0.0015
+
+LIFT CROSS-RUOLO (top-K per atteso calibrato vs resto, media reale):
+  K=20%: prod top=55.35 resto=47.85 lift=7.50  |  refit top=55.47 resto=47.83 lift=7.64  |  delta_lift=+0.14
+  K=40%: prod top=53.01 resto=46.92 lift=6.10  |  refit top=52.99 resto=46.93 lift=6.05  |  delta_lift=-0.04
+
+(bootstrap in corso, B=300 righe...)
+  50/300
+  100/300
+  150/300
+  200/300
+  250/300
+  300/300
+
+IC95 bootstrap (B=300, per riga, non clusterizzato):
+  delta Spearman pooled: +0.0015  IC95 [+0.0009, +0.0020]
+  delta lift K=20%:      IC95 [+0.03, +0.26]
+  delta lift K=40%:      IC95 [-0.11, +0.06]

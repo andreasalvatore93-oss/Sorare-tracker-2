@@ -1,0 +1,221 @@
+BRIEF PER SONNET -- TEST S4 "IL CONFRONTO COI VICINI"
+Scritto dall'orchestratore (Opus), 06/08/2026 sera Roma (CEST).
+Brief autosufficiente: presumo tu sia in una chat pulita che non sa nulla.
+
+LEGGI PRIMA, IN QUEST'ORDINE:
+  1. CLAUDE.md (radice repo)
+  2. docs/handoff/HANDOFF_ORCHESTRATORE_GRADE_2026-08-06.txt sezioni 3, 4, 5
+  3. docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt sezioni 9-11
+
+COSTO: ZERO QUERY. Tutti i dati sono gia' in repo. Se ti viene voglia di
+interrogare l'API per questo test, ti sei perso qualcosa: rileggi.
+
+
+===============================================================================
+PERCHE' ESISTE QUESTO TEST
+===============================================================================
+Domanda del filone: il "grade" (lettera A-F) che leggiamo per una partita
+PASSATA e' quello che era visibile PRIMA di quella partita, o Sorare lo
+ricalcola usando anche il risultato di quella partita?
+
+Il test S3 risponde in modo diretto ma deve aspettare che le partite di oggi
+finiscano. S4 risponde in modo indiretto ma SUBITO, sui dati storici gia'
+raccolti, e non richiede nessuna cattura pre-partita.
+
+Due ipotesi gia' ESCLUSE, non ritestarle:
+  - "il grade storico e' il valore di oggi ristampato su tutte le righe
+    passate" -> escluso da U1: il grade varia partita per partita.
+  - "se fosse riscritto col risultato, la corrispondenza col punteggio
+    sarebbe perfetta" -> questa non e' una prova. Una riscrittura PARZIALE
+    (il grade ricalcolato su una finestra di forma che INCLUDE la partita
+    stessa) produce una correlazione media, non 1.0. E' proprio il caso
+    intermedio, il piu' plausibile, quello che nessun test ha ancora escluso.
+S4 attacca esattamente quel caso intermedio.
+
+
+===============================================================================
+L'IDEA, IN UNA RIGA
+===============================================================================
+Il grade di una partita e' costruito su cose che cambiano LENTAMENTE (la forma
+del giocatore, il livello della squadra, l'avversario). Il punteggio di una
+singola partita e' invece per gran parte fortuna.
+Quindi un grade GENUINO, assegnato alla partita k, deve "azzeccare" la partita
+k piu' o meno come azzecca le partite VICINE (k-1 e k+1): non ha nessuno
+strumento per distinguere una settimana dall'altra con precisione chirurgica.
+Se invece scopriamo che il grade della partita k somiglia al risultato della
+partita k MOLTO piu' di quanto somigli ai risultati delle partite subito prima
+e subito dopo, allora quel grade ha visto proprio quella partita.
+
+
+===============================================================================
+COSA FARE
+===============================================================================
+
+DATI DA USARE (gia' in repo, nessuna query):
+  analisi_manager/p12_r5_gk_ampio.json      55 portieri distinti x 15 partite
+  analisi_manager/p12_sonda_storico_grade.json  12 giocatori (3 per ruolo) x 15
+  analisi_manager/p12_r1_minuti.json        stesse righe con minsPlayed e
+                                            starterOddsBasisPoints
+Se i campi necessari sono sparsi su piu' file, ricomponili per (slug, data
+partita). Ordina le partite di ciascun giocatore per data crescente.
+
+S4.1 -- LA TABELLA DEI VICINI (il cuore del test)
+  Per ogni giocatore, ogni partita k con grade non nullo, costruisci le coppie:
+     (grade_k, score_k)      la partita stessa
+     (grade_k, score_k-1)    la partita PRECEDENTE
+     (grade_k, score_k+1)    la partita SUCCESSIVA
+  Poi calcola le tre correlazioni sull'insieme di tutte le righe utilizzabili.
+  REGOLA FERREA: le tre correlazioni vanno calcolate sulle STESSE identiche
+  righe. Una riga entra nel calcolo solo se ha TUTTI E TRE i punteggi
+  disponibili (quindi niente prima e ultima partita di ciascun giocatore).
+  Se scarti righe, dillo e di' quante. Non confrontare mai un numero calcolato
+  su 500 righe con uno calcolato su 480.
+  Codifica grade A=6 ... F=1, come nel resto del filone.
+
+  Fallo separatamente per:
+    (a) il campione GK ampio (55 portieri) -- questo e' il campione vero;
+    (b) il campione piccolo 12 giocatori, per ruolo, dichiarando che e' debole.
+
+S4.2 -- COME SI LEGGE (scrivilo anche tu nell'handoff)
+  Chiama A = corr(grade_k, score_k), B = corr(grade_k, score_k-1),
+          C = corr(grade_k, score_k+1).
+  - Se A, B e C sono dello stesso ordine di grandezza (nessuna che stacca le
+    altre in modo netto) -> il grade non ha uno sguardo privilegiato sulla
+    propria partita: compatibile con un valore genuino pre-partita.
+  - Se A e' NETTAMENTE piu' grande sia di B sia di C -> il grade sa qualcosa
+    della propria partita che non sa delle vicine: e' il segno della
+    riscrittura post-risultato. Filone da chiudere.
+  - Se B e' la piu' grande delle tre -> coerente con un grade costruito sulla
+    forma passata, cioe' genuino ma in buona parte ridondante con L10, che
+    gia' abbiamo.
+  Non inventare soglie numeriche per "nettamente": misura invece l'incertezza
+  (punto S4.3) e di' se le differenze sono distinguibili dal rumore.
+
+S4.3 -- L'INCERTEZZA, CALCOLATA SUI GIOCATORI NON SULLE RIGHE
+  550 righe su 55 portieri NON sono 550 casi indipendenti: lo stesso portiere
+  misurato 10 volte resta un portiere solo. Per dire se A e' davvero piu'
+  grande di C, ricampiona per GIOCATORE (estrai 55 portieri con reimmissione,
+  ricalcola A, B, C sull'estrazione, ripeti ~1000 volte) e riporta la
+  distribuzione della DIFFERENZA A - C. Il numero che serve: quante volte su
+  1000 la differenza A - C e' risultata positiva.
+  Riporta anche A - B con lo stesso metodo.
+
+S4.4 -- CONTROLLO DI SANITA' SULL'ORDINAMENTO
+  Verifica che le partite di ciascun giocatore siano davvero in ordine di data
+  e che non ci siano due partite con la stessa data per lo stesso giocatore.
+  Riporta quante righe hai scartato per questo motivo.
+
+S4.5 -- LO STESSO TEST SU UNA COSA CHE SAPPIAMO GENUINA (metro di paragone)
+  Ripeti ESATTAMENTE S4.1 mettendo al posto del grade le starter_odds
+  (starterOddsBasisPoints), che sono un dato pre-partita di cui ci fidiamo,
+  sulle STESSE righe. Serve come termine di paragone: ci dice che forma ha la
+  tripletta A/B/C quando il dato e' sicuramente genuino.
+  Se la tripletta del grade ha la stessa forma di quella delle starter_odds,
+  e' un argomento forte a favore della genuinita'. Se il grade ha un picco su
+  A che le starter_odds non hanno, e' un argomento forte contro.
+  Questo e' il confronto piu' informativo di tutto il brief: falla bene, sulle
+  stesse righe, nello stesso run.
+
+
+===============================================================================
+IPOTESI DELL'ORCHESTRATORE, DICHIARATE PRIMA DEI NUMERI
+===============================================================================
+H1. Sul campione GK: B sara' la piu' grande delle tre (il grade guarda
+    soprattutto la forma passata), A intermedia, C la piu' piccola ma non di
+    molto rispetto ad A.
+H2. La differenza A - C sara' positiva ma piccola, e sul ricampionamento per
+    giocatore risultera' a malapena distinguibile da zero.
+H3. Le starter_odds mostreranno una tripletta di forma simile.
+Se i numeri smentiscono queste ipotesi scrivilo chiaramente. In particolare,
+se A stacca nettamente B e C, dillo subito e senza addolcire: significa che
+il filone e' compromesso.
+
+
+===============================================================================
+COSA NON FARE
+===============================================================================
+- Nessuna query all'API Sorare. Nessun cookie serve per questo brief.
+- Nessuna modifica alla produzione, nessuna soglia arena toccata, nessuna run
+  GitHub.
+- Non toccare i file p12_* esistenti: creane di nuovi.
+- Non fondere in una tabella sola numeri calcolati su righe diverse. Ogni
+  numero deve dichiarare su quali righe e' calcolato e con quanti giocatori
+  distinti.
+- Non concludere "genuino" da S4 da solo: S4 e' un forte indizio, S3 resta la
+  prova diretta. S4 puo' pero' SMENTIRE (se trova il picco) in modo molto
+  convincente.
+
+
+===============================================================================
+OUTPUT
+===============================================================================
+- File dati: analisi_manager/p12_s4_vicini_out.json
+- Testo: nuova sezione 12 in coda a
+  docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt, con data e ora di Roma,
+  tutti i numeri compresi quelli scomodi, ogni tabella con n righe e n
+  giocatori distinti.
+- Commit dei soli file di output + handoff, push su main.
+- In chat all'utente: pochissime righe, il percorso del file e il verdetto in
+  una riga. Niente tabelle in chat.
+
+ADDENDUM 06/08/2026 ore 20:30 Roma -- S4-BIS, DA FARE SUBITO
+===============================================================================
+S4 e' stato eseguito bene e il confronto grade/starter_odds sulle stesse 777
+righe e' esattamente quello che serviva. Ma il test e' cieco proprio dove ci
+interessa, per un motivo che va corretto prima di considerarlo chiuso.
+
+IL PROBLEMA: le 777 righe NON sono filtrate per minuti giocati. Con A=0.768
+per il grade e A=0.833 per starter_odds, quelle correlazioni sono quasi
+interamente il canale "gioca / non gioca" -- il campione GK ampio viene da un
+campionamento casuale di portieri dai roster dei manager, quindi e' pieno di
+riserve che non scendono in campo. Per confronto, sulle stesse famiglie di
+dati ma filtrando min>0, R4 aveva trovato grade 0.119 e starter_odds 0.060.
+Cioe': il 90% di quello che S4 ha misurato e' "il portiere e' titolare o no",
+informazione che possediamo gia' e che non e' in discussione.
+Una riscrittura del grade che includa il risultato della partita k si
+manifesterebbe nella parte FINE del segnale, fra i giocatori che hanno
+davvero giocato. In un test dominato dal canale gioca/non-gioca quella parte
+fine e' invisibile.
+
+COSA FARE -- S4-BIS:
+1. Rifai ESATTAMENTE S4.1, S4.3 e S4.5 (grade e starter_odds, stesse righe,
+   stesso run, bootstrap per giocatore) filtrando alle sole righe con
+   minsPlayed > 0 per la partita k.
+   Decidi e DICHIARA come tratti k-1 e k+1: la scelta pulita e' richiedere
+   min>0 anche per le partite vicine, cosi' le tre correlazioni A, B, C sono
+   calcolate sullo stesso identico insieme di righe. Se questo riduce troppo
+   n, riporta ENTRAMBE le versioni (solo k filtrata / tutte e tre filtrate)
+   dichiarando n di righe e n di giocatori distinti per ciascuna.
+2. Riporta la tabella nello stesso formato di S4, accanto a quella non
+   filtrata, senza sostituirla: le due dicono cose diverse e vanno lette
+   insieme.
+3. LETTURA: la domanda e' sempre la stessa, ma ora sul segnale fine. Se sul
+   campione filtrato il gap A-B del grade resta MINORE O UGUALE a quello di
+   starter_odds, la conclusione di genuinita' regge e si rafforza. Se invece
+   sul filtrato il grade sviluppa un gap A-B nettamente PIU' GRANDE di quello
+   di starter_odds, e' il segnale che il grade sa qualcosa della propria
+   partita che un dato pre-partita fidato non sa: allarme, fermarsi e
+   avvisare.
+4. Aggiungi una riga di contesto utile: sul campione filtrato riporta anche
+   quante righe e quanti giocatori restano, e la quota di righe perse.
+
+NOTA su un risultato gia' interessante da verificare in S4-bis: non filtrato
+starter_odds batte il grade (0.833 vs 0.768), mentre filtrato R4 dava il
+contrario (grade 0.119 vs odds 0.060). Se S4-bis conferma questo ribaltamento
+sulle stesse righe, e' un argomento a favore del fatto che il grade porti
+qualcosa oltre al semplice "gioca o non gioca". Riportalo esplicitamente.
+
+Output: aggiungi a analisi_manager/p12_s4_vicini_out.json (o un file
+affiancato) e una sottosezione 12-bis in coda all'handoff, datata. Commit+push
+dei soli file di output e handoff.
+
+DOPO S4-BIS: se il gap A-B del grade resta <= a quello di starter_odds anche
+sul filtrato, procedi con il BRIEF A (V1/V2/V3). Altrimenti fermati.
+
+
+===============================================================================
+DOPO S4: se e solo se S4 non trova il picco su A, procedi con il BRIEF A
+(V1/V2/V3) che trovi nella sezione 8 di
+docs/handoff/HANDOFF_ORCHESTRATORE_GRADE_2026-08-06.txt. Se S4 trova il picco,
+FERMATI e avvisa l'utente: non ha senso misurare il valore di un dato
+contaminato.

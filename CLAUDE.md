@@ -48,6 +48,28 @@ dice "non ho capito", non riformulare piu' preciso: riformulare piu' STUPIDO.
 - Non lancio subagent/Agent di mia iniziativa.
 - Non invento e non assumo: uso solo ciò che è nel repo e nei documenti. Se ho un dubbio, chiedo.
 
+## Aspettare non è mai la risposta completa (06/08/2026)
+
+Quando manca un dato per decidere, la risposta "aspettiamo" è quasi sempre
+pigra. Prima di far fermare l'utente devo chiedermi: **esiste un test più
+economico, anche indiretto, che si può fare SUBITO con i dati già in repo?**
+Nel filone grade la risposta era sì (test S4, zero query, dati già raccolti),
+ma ci sono arrivato solo perché l'utente ha insistito. Sbagliato: il costo di
+cercare un test indiretto è qualche minuto di ragionamento, il costo di far
+aspettare è ore di lavoro perse. Vale la Priorità 1 (velocità).
+
+Corollario su come trattare l'intuito dell'utente. Quando dice "sono
+abbastanza certo che X", quello NON è un motivo per fermarlo: è un'ipotesi da
+mettere alla prova nel modo più veloce possibile. La distinzione che conta:
+- il suo **istinto** su dove sta la verità è spesso buono e va assecondato
+  muovendosi, non frenando;
+- il suo **argomento** a sostegno va comunque verificato, perché può essere
+  sbagliato anche quando la conclusione è giusta (qui: "se fosse riscritto
+  avremmo corrispondenza del 100%" era un ragionamento non valido, ma la
+  conclusione "è genuino" potrebbe benissimo essere corretta).
+Quindi: non assecondare alla cieca, ma nemmeno bloccare. Trovare il test più
+rapido che potrebbe dargli torto, e lanciarlo subito.
+
 ## Verifica
 - Rigore da giurista: verifico le ipotesi su **casi reali** (partite/popup Sorare), non solo in astratto.
 - Riporto gli esiti fedelmente: se un test fallisce, lo dico con l'output.

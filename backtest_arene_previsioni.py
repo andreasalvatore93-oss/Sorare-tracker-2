@@ -528,9 +528,42 @@ def delta_favorito_odds(ctx):
     return ora - (sum(storici) / len(storici))
 
 
+def _p_draw_odds(squadra, avversario, quando):
+    """p_draw dalle stesse quote 1X2 (10000 - home - away nell'indice, gia'
+    salvato come p_home/p_away che sommano a <1: il resto e' il pareggio).
+    None con le stesse condizioni di _p_own_opp_odds."""
+    v = _p_own_opp_odds(squadra, avversario, quando)
+    if v is None:
+        return None
+    return 1.0 - v[0] - v[1]
+
+
+def delta_p_draw(ctx):
+    """Come `delta_favorito_odds` (scarto dalla media storica del giocatore)
+    ma su p_draw invece del differenziale p_win_own-p_win_opp. Ipotesi 06/08:
+    favorito_odds scarta il pareggio (40-35-25 e 50-10-40 hanno differenziale
+    simile ma sono partite opposte, chiusa vs aperta): p_draw alta e' il
+    proxy di "partita bloccata", potenzialmente favorevole ai DEF/GK e
+    sfavorevole ai FWD. INTERRUTTORE SPENTO di default (p_draw_k/
+    p_draw_mult_k=None)."""
+    squadra, opp, cutoff = ctx.get('squadra'), ctx.get('opp_slug'), ctx.get('cutoff')
+    ora = _p_draw_odds(squadra, opp, cutoff)
+    if ora is None:
+        return None
+    storici = []
+    for opp_h, data_h in zip(ctx['s'].get('opp_slug') or [], ctx['s'].get('date') or []):
+        v = _p_draw_odds(squadra, opp_h, data_h)
+        if v is not None:
+            storici.append(v)
+    if len(storici) < 5:
+        return None
+    return ora - (sum(storici) / len(storici))
+
+
 def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None,
             usa_avversario=False, favorito_k=None, ranking_k=None, casa_k=None,
             favorito_odds_k=None, favorito_odds_mult_k=None,
+            p_draw_k=None, p_draw_mult_k=None,
             avversario_lambda=True, avversario_stadio_d=True, sensitivity_by_role=None):
     """La previsione di produzione dagli ingressi di `contesto`.
 
@@ -585,6 +618,14 @@ def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None,
         delta = delta_favorito_odds(ctx)
         if delta is not None:
             base = base * (1.0 + favorito_odds_mult_k * delta)
+    if p_draw_k:
+        delta = delta_p_draw(ctx)
+        if delta is not None:
+            base = base + p_draw_k * delta
+    if p_draw_mult_k:
+        delta = delta_p_draw(ctx)
+        if delta is not None:
+            base = base * (1.0 + p_draw_mult_k * delta)
     return base
 
 

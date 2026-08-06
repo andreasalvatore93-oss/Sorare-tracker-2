@@ -84,11 +84,23 @@ def main():
         print('SESSIONE NON VALIDA (currentUser.slug nullo) -- mi fermo.')
         return
 
-    slugs = extract_slugs_from_righe()
-    print(f'giocatori distinti estratti: {len(slugs)}', flush=True)
+    # Carica i risultati precedenti se esiste
+    output_file = 'analisi_manager/dati/storico_grade_backtest_20260806.json'
+    if os.path.exists(output_file):
+        prev = json.load(open(output_file, encoding='utf-8'))
+        risultati = prev.get('giocatori', [])
+        errori = prev.get('errori', [])
+        slug_gia_fatti = set(p['slug'] for p in risultati) | set(e['slug'] for e in errori)
+        print(f'RIPRESA: {len(risultati)} giocatori gia\' raccolti, {len(errori)} errori', flush=True)
+    else:
+        risultati = []
+        errori = []
+        slug_gia_fatti = set()
 
-    risultati = []
-    errori = []
+    # Estrai tutti gli slug e filtra quelli gia' fatti
+    all_slugs = extract_slugs_from_righe()
+    slugs = [s for s in all_slugs if s not in slug_gia_fatti]
+    print(f'giocatori distinti da raccogliere: {len(all_slugs)} totali, {len(slug_gia_fatti)} gia\' fatti, {len(slugs)} restanti', flush=True)
     t0 = time.time()
     for i, slug in enumerate(slugs, 1):
         player, err = query_slug(slug)

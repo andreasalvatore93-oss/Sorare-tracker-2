@@ -1,0 +1,47 @@
+ruolo       nome                   grade     L10  starter%  fav_odds
+Goalkeeper  Niklas Hedl            D        49.9       90%     +0.72
+Goalkeeper  Andreas Hansen         D        56.6       90%     +0.71
+Goalkeeper  Elías Ólafsson         D        44.6       90%     +0.56
+Goalkeeper  Anatolii Trubin        B        52.1       80%     +0.80
+Goalkeeper  Lars Unnerstall        D        44.1       80%     +0.72
+Goalkeeper  Dominik Kotarski       B        50.3       80%     +0.35
+Goalkeeper  Matt Freese            B        41.8       70%     +0.44
+Goalkeeper  Chris Brady            E        40.5       60%     +0.43
+Defender    Bart van Rooij         C        60.2       90%     +0.72
+Defender    Clément Lenglet        D        48.3       90%     -0.80
+Defender    Naomichi Ueda          A        60.2       90%     +0.24
+Defender    Jeison Quiñónes        C        51.5       90%     -0.24
+Defender    Mads Bech Sørensen     D        52.1       90%     +0.56
+Defender    Ryotaro Tsunoda        D        51.0       90%     -0.24
+Defender    Peter Ankersen         E        57.8       90%     +0.71
+Defender    Brandon Bye            D        48.1       90%     -0.34
+Midfielder  Orkun Kökçü            D        63.4       90%     +0.24
+Midfielder  Matheus Savio          C        51.6       90%     -0.09
+Midfielder  Manfred Fischer        D        52.2       90%     -0.10
+Midfielder  Darío Osorio           D        53.3       90%     +0.56
+Midfielder  Dawhan                 B        55.8       90%     -0.54
+Midfielder  Carlo Boukhalfa        D        40.7       90%     +0.23
+Midfielder  Oscar Gloukh           B        51.4       80%     +0.83
+Midfielder  Matthias Seidl         D        67.2       80%     +0.72
+Forward     Johannes Eggestein     D        40.3       90%     -0.10
+Forward     Franculino Djú         E        42.7       90%     +0.56
+Forward     Yuma Suzuki            C        52.9       90%     +0.24
+Forward     Vangelis Pavlidis      C        48.3       80%     +0.80
+Forward     Steven Berghuis        C        58.8       80%     +0.83
+Forward     Daan Rots              C        53.4       80%     +0.72
+Forward     Cláudio Braga          D        44.3       80%     -0.80
+Forward     Wout Weghorst          D        53.5       80%     -0.72
+
+=== CORRELAZIONE grade (numerico A=6..F=1) vs L10 e vs favorito_odds, PER RUOLO ===
+  Goalkeeper  n_L10= 8 corr(grade,L10)=+0.23   n_fav= 8 corr(grade,favorito_odds)=-0.15
+  Defender    n_L10= 8 corr(grade,L10)=+0.47   n_fav= 8 corr(grade,favorito_odds)=+0.04
+  Midfielder  n_L10= 8 corr(grade,L10)=-0.12   n_fav= 8 corr(grade,favorito_odds)=-0.22
+  Forward     n_L10= 8 corr(grade,L10)=+0.68   n_fav= 8 corr(grade,favorito_odds)=+0.42
+
+=== CASI DI DIVERGENZA (L10 vs mediana, grade vs mediana, direzioni opposte) ===
+  Goalkeeper  Dominik Kotarski       grade=B L10=50.3 (mediana=51.6) favorito_odds=+0.35
+  Goalkeeper  Matt Freese            grade=B L10=41.8 (mediana=51.6) favorito_odds=+0.44
+  Defender    Jeison Quiñónes        grade=C L10=51.5 (mediana=51.6) favorito_odds=-0.24
+  Defender    Peter Ankersen         grade=E L10=57.8 (mediana=51.6) favorito_odds=+0.71
+  Midfielder  Oscar Gloukh           grade=B L10=51.4 (mediana=51.6) favorito_odds=+0.83
+  Forward     Vangelis Pavlidis      grade=C L10=48.3 (mediana=51.6) favorito_odds=+0.80

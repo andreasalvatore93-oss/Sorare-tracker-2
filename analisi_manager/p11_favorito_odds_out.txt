@@ -1,0 +1,219 @@
+P11 -- policy A/B/C/D/E sul mazzo REALE dell utente (227 arene)
+mazzo fisso, arene division escluse, walk-forward as-of pre-GW
+giornate totali nel pool: 71, saltate (pool incompleto): 3
+arene valutate: 357
+
+========================================================================================
+TOTALE (Beginner+cap220+cap260+uncapped)
+========================================================================================
+  arene valutate: 357   giornate: 40
+
+  COMPOSIZIONE MEDIA PER RUOLO (su 5 slot):
+  policy             GK    DEF    MID    FWD
+  A produzione     1.00   1.36   1.44   1.20
+  B DEF k0.2       1.00   1.40   1.41   1.19
+  C DEF+FWD        1.00   1.41   1.39   1.20
+  D ogni ruolo     1.00   1.41   1.38   1.22
+  E D centrata     1.00   1.38   1.41   1.20
+
+  PUNTI E RANK:
+  policy         punti medi rank medio
+  A produzione       269.96      5.025
+  B DEF k0.2         270.28      4.930
+  C DEF+FWD          271.91      4.950
+  D ogni ruolo       271.22      4.989
+  E D centrata       271.08      5.000
+
+  DELTA vs A (bootstrap appaiato su GIORNATE, IC95, B=2000):
+    B DEF k0.2     punti +0.32  IC95 [-1.21, +1.87]
+    B DEF k0.2     rank  -0.095  IC95 [-0.224, +0.056]  (neg = meglio)
+    C DEF+FWD      punti +1.95  IC95 [+0.31, +3.92]
+    C DEF+FWD      rank  -0.076  IC95 [-0.247, +0.100]  (neg = meglio)
+    D ogni ruolo   punti +1.26  IC95 [-0.98, +3.56]
+    D ogni ruolo   rank  -0.036  IC95 [-0.232, +0.146]  (neg = meglio)
+    E D centrata   punti +1.12  IC95 [-0.75, +3.23]
+    E D centrata   rank  -0.025  IC95 [-0.202, +0.144]  (neg = meglio)
+
+  SOVRAPPOSIZIONE (carte su 5 in comune con A):
+    B vs A     media 2.13/5  distribuzione: 0/5=62, 1/5=85, 2/5=87, 3/5=47, 4/5=18, 5/5=58
+    C vs A     media 1.79/5  distribuzione: 0/5=80, 1/5=103, 2/5=79, 3/5=43, 4/5=10, 5/5=42
+    D vs A     media 1.47/5  distribuzione: 0/5=97, 1/5=109, 2/5=87, 3/5=35, 4/5=9, 5/5=20
+    E vs A     media 1.46/5  distribuzione: 0/5=91, 1/5=127, 2/5=72, 3/5=39, 4/5=6, 5/5=22
+
+  CONTROLLO DI SANITA E: la composizione media deve restare uguale ad A entro il rumore
+    GK   A=1.00  E=1.00  diff=+0.000
+    DEF  A=1.36  E=1.38  diff=+0.017
+    MID  A=1.44  E=1.41  diff=-0.025
+    FWD  A=1.20  E=1.20  diff=+0.008
+
+========================================================================================
+SOLO Beginner (n=173)
+========================================================================================
+  arene valutate: 173   giornate: 25
+
+  COMPOSIZIONE MEDIA PER RUOLO (su 5 slot):
+  policy             GK    DEF    MID    FWD
+  A produzione     1.00   1.40   1.53   1.06
+  B DEF k0.2       1.00   1.52   1.45   1.03
+  C DEF+FWD        1.00   1.50   1.42   1.08
+  D ogni ruolo     1.00   1.46   1.44   1.10
+  E D centrata     1.00   1.42   1.50   1.09
+
+  PUNTI E RANK:
+  policy         punti medi rank medio
+  A produzione       272.32      4.775
+  B DEF k0.2         273.86      4.618
+  C DEF+FWD          274.97      4.584
+  D ogni ruolo       275.97      4.584
+  E D centrata       276.21      4.561
+
+  DELTA vs A (bootstrap appaiato su GIORNATE, IC95, B=2000):
+    B DEF k0.2     punti +1.54  IC95 [-1.35, +5.22]
+    B DEF k0.2     rank  -0.156  IC95 [-0.338, +0.005]  (neg = meglio)
+    C DEF+FWD      punti +2.65  IC95 [-0.25, +5.64]
+    C DEF+FWD      rank  -0.191  IC95 [-0.381, +0.000]  (neg = meglio)
+    D ogni ruolo   punti +3.65  IC95 [+1.07, +6.91]
+    D ogni ruolo   rank  -0.191  IC95 [-0.433, +0.011]  (neg = meglio)
+    E D centrata   punti +3.89  IC95 [+1.03, +7.18]
+    E D centrata   rank  -0.214  IC95 [-0.432, -0.037]  (neg = meglio)
+
+  SOVRAPPOSIZIONE (carte su 5 in comune con A):
+    B vs A     media 1.89/5  distribuzione: 0/5=42, 1/5=46, 2/5=32, 3/5=19, 4/5=10, 5/5=24
+    C vs A     media 1.62/5  distribuzione: 0/5=46, 1/5=51, 2/5=38, 3/5=16, 4/5=4, 5/5=18
+    D vs A     media 1.27/5  distribuzione: 0/5=49, 1/5=62, 2/5=40, 3/5=14, 4/5=5, 5/5=3
+    E vs A     media 1.29/5  distribuzione: 0/5=44, 1/5=69, 2/5=38, 3/5=14, 4/5=3, 5/5=5
+
+  CONTROLLO DI SANITA E: la composizione media deve restare uguale ad A entro il rumore
+    GK   A=1.00  E=1.00  diff=+0.000
+    DEF  A=1.40  E=1.42  diff=+0.012
+    MID  A=1.53  E=1.50  diff=-0.035
+    FWD  A=1.06  E=1.09  diff=+0.023
+
+========================================================================================
+SOLO cap 220 (n=26)
+========================================================================================
+  arene valutate: 26   giornate: 16
+
+  COMPOSIZIONE MEDIA PER RUOLO (su 5 slot):
+  policy             GK    DEF    MID    FWD
+  A produzione     1.00   1.35   1.27   1.38
+  B DEF k0.2       1.00   1.46   1.15   1.38
+  C DEF+FWD        1.00   1.50   1.15   1.35
+  D ogni ruolo     1.00   1.38   1.38   1.23
+  E D centrata     1.00   1.38   1.38   1.23
+
+  PUNTI E RANK:
+  policy         punti medi rank medio
+  A produzione       258.03      4.462
+  B DEF k0.2         249.62      5.192
+  C DEF+FWD          257.87      4.885
+  D ogni ruolo       253.61      5.115
+  E D centrata       247.21      5.115
+
+  DELTA vs A (bootstrap appaiato su GIORNATE, IC95, B=2000):
+    B DEF k0.2     punti -8.41  IC95 [-23.52, +4.89]
+    B DEF k0.2     rank  +0.731  IC95 [+0.000, +1.448]  (neg = meglio)
+    C DEF+FWD      punti -0.16  IC95 [-15.07, +13.87]
+    C DEF+FWD      rank  +0.423  IC95 [-0.483, +1.346]  (neg = meglio)
+    D ogni ruolo   punti -4.43  IC95 [-20.02, +12.36]
+    D ogni ruolo   rank  +0.654  IC95 [-0.333, +1.586]  (neg = meglio)
+    E D centrata   punti -10.83  IC95 [-23.60, +2.55]
+    E D centrata   rank  +0.654  IC95 [-0.080, +1.348]  (neg = meglio)
+
+  SOVRAPPOSIZIONE (carte su 5 in comune con A):
+    B vs A     media 3.00/5  distribuzione: 1/5=2, 2/5=10, 3/5=6, 4/5=2, 5/5=6
+    C vs A     media 1.92/5  distribuzione: 0/5=1, 1/5=10, 2/5=7, 3/5=7, 5/5=1
+    D vs A     media 1.92/5  distribuzione: 0/5=2, 1/5=8, 2/5=9, 3/5=5, 4/5=1, 5/5=1
+    E vs A     media 1.69/5  distribuzione: 0/5=3, 1/5=10, 2/5=7, 3/5=5, 5/5=1
+
+  CONTROLLO DI SANITA E: la composizione media deve restare uguale ad A entro il rumore
+    GK   A=1.00  E=1.00  diff=+0.000
+    DEF  A=1.35  E=1.38  diff=+0.038
+    MID  A=1.27  E=1.38  diff=+0.115  <- si sposta, la normalizzazione NON isola solo l ordinamento
+    FWD  A=1.38  E=1.23  diff=-0.154  <- si sposta, la normalizzazione NON isola solo l ordinamento
+
+========================================================================================
+SOLO cap 260 (n=111)
+========================================================================================
+  arene valutate: 111   giornate: 23
+
+  COMPOSIZIONE MEDIA PER RUOLO (su 5 slot):
+  policy             GK    DEF    MID    FWD
+  A produzione     1.00   1.34   1.32   1.33
+  B DEF k0.2       1.00   1.18   1.43   1.39
+  C DEF+FWD        1.00   1.23   1.40   1.37
+  D ogni ruolo     1.00   1.31   1.28   1.41
+  E D centrata     1.00   1.33   1.27   1.40
+
+  PUNTI E RANK:
+  policy         punti medi rank medio
+  A produzione       264.45      5.306
+  B DEF k0.2         267.01      5.036
+  C DEF+FWD          266.81      5.198
+  D ogni ruolo       265.06      5.144
+  E D centrata       265.10      5.243
+
+  DELTA vs A (bootstrap appaiato su GIORNATE, IC95, B=2000):
+    B DEF k0.2     punti +2.55  IC95 [-4.31, +9.81]
+    B DEF k0.2     rank  -0.270  IC95 [-0.806, +0.188]  (neg = meglio)
+    C DEF+FWD      punti +2.36  IC95 [-4.30, +8.41]
+    C DEF+FWD      rank  -0.108  IC95 [-0.500, +0.340]  (neg = meglio)
+    D ogni ruolo   punti +0.60  IC95 [-6.57, +7.03]
+    D ogni ruolo   rank  -0.162  IC95 [-0.522, +0.235]  (neg = meglio)
+    E D centrata   punti +0.65  IC95 [-5.24, +6.17]
+    E D centrata   rank  -0.063  IC95 [-0.376, +0.236]  (neg = meglio)
+
+  SOVRAPPOSIZIONE (carte su 5 in comune con A):
+    B vs A     media 1.82/5  distribuzione: 0/5=15, 1/5=33, 2/5=39, 3/5=13, 4/5=3, 5/5=8
+    C vs A     media 1.50/5  distribuzione: 0/5=30, 1/5=36, 2/5=24, 3/5=10, 4/5=3, 5/5=8
+    D vs A     media 1.15/5  distribuzione: 0/5=40, 1/5=33, 2/5=27, 3/5=6, 4/5=2, 5/5=3
+    E vs A     media 1.09/5  distribuzione: 0/5=38, 1/5=45, 2/5=16, 3/5=7, 4/5=2, 5/5=3
+
+  CONTROLLO DI SANITA E: la composizione media deve restare uguale ad A entro il rumore
+    GK   A=1.00  E=1.00  diff=+0.000
+    DEF  A=1.34  E=1.33  diff=-0.009
+    MID  A=1.32  E=1.27  diff=-0.054  <- si sposta, la normalizzazione NON isola solo l ordinamento
+    FWD  A=1.33  E=1.40  diff=+0.063  <- si sposta, la normalizzazione NON isola solo l ordinamento
+
+========================================================================================
+SOLO uncapped (n=47)
+========================================================================================
+  arene valutate: 47   giornate: 25
+
+  COMPOSIZIONE MEDIA PER RUOLO (su 5 slot):
+  policy             GK    DEF    MID    FWD
+  A produzione     1.00   1.28   1.47   1.26
+  B DEF k0.2       1.00   1.43   1.40   1.17
+  C DEF+FWD        1.00   1.40   1.45   1.15
+  D ogni ruolo     1.00   1.45   1.38   1.17
+  E D centrata     1.00   1.36   1.47   1.17
+
+  PUNTI E RANK:
+  policy         punti medi rank medio
+  A produzione       280.87      5.596
+  B DEF k0.2         276.25      5.681
+  C DEF+FWD          280.41      5.745
+  D ogni ruolo       278.01      6.043
+  E D centrata       279.53      5.979
+
+  DELTA vs A (bootstrap appaiato su GIORNATE, IC95, B=2000):
+    B DEF k0.2     punti -4.61  IC95 [-15.73, +4.07]
+    B DEF k0.2     rank  +0.085  IC95 [-0.635, +0.900]  (neg = meglio)
+    C DEF+FWD      punti -0.45  IC95 [-10.28, +8.75]
+    C DEF+FWD      rank  +0.149  IC95 [-0.349, +0.698]  (neg = meglio)
+    D ogni ruolo   punti -2.85  IC95 [-9.90, +4.92]
+    D ogni ruolo   rank  +0.447  IC95 [-0.070, +1.000]  (neg = meglio)
+    E D centrata   punti -1.33  IC95 [-9.87, +8.19]
+    E D centrata   rank  +0.383  IC95 [-0.256, +1.000]  (neg = meglio)
+
+  SOVRAPPOSIZIONE (carte su 5 in comune con A):
+    B vs A     media 3.30/5  distribuzione: 0/5=5, 1/5=4, 2/5=6, 3/5=9, 4/5=3, 5/5=20
+    C vs A     media 3.04/5  distribuzione: 0/5=3, 1/5=6, 2/5=10, 3/5=10, 4/5=3, 5/5=15
+    D vs A     media 2.70/5  distribuzione: 0/5=6, 1/5=6, 2/5=11, 3/5=10, 4/5=1, 5/5=13
+    E vs A     media 2.83/5  distribuzione: 0/5=6, 1/5=3, 2/5=11, 3/5=13, 4/5=1, 5/5=13
+
+  CONTROLLO DI SANITA E: la composizione media deve restare uguale ad A entro il rumore
+    GK   A=1.00  E=1.00  diff=+0.000
+    DEF  A=1.28  E=1.36  diff=+0.085  <- si sposta, la normalizzazione NON isola solo l ordinamento
+    MID  A=1.47  E=1.47  diff=+0.000
+    FWD  A=1.26  E=1.17  diff=-0.085  <- si sposta, la normalizzazione NON isola solo l ordinamento
