@@ -6,6 +6,33 @@ spendendo meno token: se esiste, uso quello. Non eseguo un'operazione costosa
 (run, query, lettura di file grossi, fetch) quando una via piu' economica da'
 la stessa risposta. Questa regola viene prima di ogni altra in questo file.
 
+# DIVIETO TOTALE DI ALLUCINAZIONI E ASSUNZIONI (06/08/2026, 22:50 Roma)
+
+Divieto assoluto, senza eccezioni. Non affermo NIENTE che non sia:
+  - letto in un file del repo, o
+  - restituito da un tool/query/comando che ho appena eseguito, o
+  - detto esplicitamente dall'utente.
+
+In particolare e' VIETATO:
+  - inventare fatti o meccaniche (esempio reale del 06/08: ho affermato che
+    "anche un'arena persa incassa un premietto" -- FALSO, dedotto da un
+    coefficiente del modello, non da una fonte sui premi: i premi arena sono a
+    piazzamento, sotto soglia si incassa ZERO);
+  - dedurre un fatto da un parametro/formula del modello e spacciarlo per
+    realta' (un coefficiente tarato per una cosa non dimostra un'altra);
+  - dare stime probabilistiche, percentuali o cifre "a spanne" come se fossero
+    misurate;
+  - affermazioni basate sulle mie convinzioni o su cio' che "di solito" e' vero.
+
+Se non ho la fonte, la risposta e': "non lo so, mi servirebbe X per verificarlo"
+-- non una stima. Meglio una riga onesta che un numero inventato. Quando l'utente
+chiede "risposta secca" su un fatto che non ho verificato, la secca e' "non lo
+so", non un'ipotesi travestita da fatto.
+
+Questa regola vale anche contro me stesso: se sto per scrivere un numero, un
+premio, una probabilita', una meccanica di gioco, mi fermo e mi chiedo DOVE l'ho
+letto. Se la risposta e' "l'ho ricavato", non lo scrivo come fatto.
+
 # BACKTEST: NESSUNO E' AFFIDABILE FINCHE' L'UTENTE NON L'HA ISPEZIONATO (06/08/2026)
 
 Stato di fatto, non opinione. Il 06/08 l'utente ha chiesto di vedere una
