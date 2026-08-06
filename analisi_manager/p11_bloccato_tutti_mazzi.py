@@ -145,13 +145,22 @@ def prepara_gw_base(giornate, gw_target):
     base_pool = []
     n_scartate_atteso = 0
     n_scartate_reale = 0
+    n_reale_fallback_raw = 0
     for (slug, ruolo_full), info in carte_per_slug.items():
         cod = RUOLO_COD.get(ruolo_full)
         if cod is None:
             continue
-        reale = reale_target.get((slug, ruolo_full))
+        # Fix D6/G6 (06-07/08): il punteggio 'reale' va letto SEMPRE dalla
+        # cache game-log grezza per prima cosa, a prescindere dal tipo di
+        # riga (arena o no). Il campo c['punteggio'] del file manager ha
+        # xp+capitano dentro per le righe NON-arena (regola D4) e gonfia il
+        # 77% delle carte su crowss se usato come fonte primaria. Il valore
+        # raw del file manager resta SOLO come ripiego, contato.
+        reale = reale_da_cache(slug, gw_data)
         if reale is None:
-            reale = reale_da_cache(slug, gw_data)
+            reale = reale_target.get((slug, ruolo_full))
+            if reale is not None:
+                n_reale_fallback_raw += 1
         if reale is None:
             n_scartate_reale += 1
             continue
@@ -167,7 +176,7 @@ def prepara_gw_base(giornate, gw_target):
         base_pool.append({'slug': slug, 'ruolo_full': ruolo_full, 'codice': cod,
                           'base': base, 'ctx': ctx, 'reale': reale, 'lega': lega,
                           'copie': len(info['ids']), 'l10': l10_reale})
-    return base_pool, n_scartate_atteso, n_scartate_reale
+    return base_pool, n_scartate_atteso, n_scartate_reale, n_reale_fallback_raw
 
 
 def applica_policy(base_pool, policy):
@@ -311,7 +320,7 @@ def gioca_bloccato(pool, tipo_bfg_list, formazioni_a):
 def esegui(manager_file):
     manager, giornate = carica_manager(manager_file)
     righe_out = []
-    scartate_atteso_tot = scartate_reale_tot = 0
+    scartate_atteso_tot = scartate_reale_tot = fallback_raw_tot = 0
     pool_sizes = []
     for gw_target, info in sorted(giornate.items(), key=lambda kv: kv[1]['data']):
         slots_righe = [r for r in info['righe'] if r.get('tipo_arena') in TIPI_VALIDI]
@@ -327,8 +336,8 @@ def esegui(manager_file):
         if not tipo_bfg_list:
             continue
 
-        base_pool, sa, sr = prepara_gw_base(giornate, gw_target)
-        scartate_atteso_tot += sa; scartate_reale_tot += sr
+        base_pool, sa, sr, fr = prepara_gw_base(giornate, gw_target)
+        scartate_atteso_tot += sa; scartate_reale_tot += sr; fallback_raw_tot += fr
         pool_sizes.append(len(base_pool))
         if len(base_pool) < 5:
             continue
@@ -351,7 +360,7 @@ def esegui(manager_file):
                                'A_punti': pa, 'A_comp': dict(comp_a),
                                'B_punti': pb_, 'B_comp': dict(comp_b),
                                'overlap': len(sa_ & sb_)})
-    return manager, righe_out, scartate_atteso_tot, scartate_reale_tot, pool_sizes
+    return manager, righe_out, scartate_atteso_tot, scartate_reale_tot, fallback_raw_tot, pool_sizes
 
 
 def media(v):
@@ -411,7 +420,7 @@ def main():
     for i, fname in enumerate(tutti):
         p('\n[%d/%d] %s ...' % (i + 1, len(tutti), fname))
         try:
-            manager, righe, sa, sr, pool_sizes = esegui(fname)
+            manager, righe, sa, sr, fr, pool_sizes = esegui(fname)
         except Exception as ex:
             p('  ERRORE: %r -- saltato' % ex)
             continue
@@ -427,9 +436,9 @@ def main():
         muto = overlap_medio >= 4.5
         p('  arene=%d giornate=%d pool_medio=%.1f overlap_medio=%.2f/5%s'
           % (n_arene, n_gw, pool_medio, overlap_medio, '  <- MUTO (escluso)' if muto else ''))
-        p('  delta B\'-A punti = %+.2f  IC95 [%s, %s]  (scartate: atteso=%d reale=%d)'
+        p('  delta B\'-A punti = %+.2f  IC95 [%s, %s]  (scartate: atteso=%d reale=%d, reale-da-raw-manager=%d)'
           % (d_medio, ('%+.2f' % lo) if lo is not None else 'n/a',
-             ('%+.2f' % hi) if hi is not None else 'n/a', sa, sr))
+             ('%+.2f' % hi) if hi is not None else 'n/a', sa, sr, fr))
         risultati.append({'file': fname, 'manager': manager, 'righe': righe,
                            'n_arene': n_arene, 'n_gw': n_gw, 'pool_medio': pool_medio,
                            'overlap_medio': overlap_medio, 'd_medio': d_medio,
