@@ -816,3 +816,46 @@ diretta) va comunque completato appena le partite di stasera finiscono.
 File aggiunti: nessuno nuovo, aggiornato analisi_manager/p12_s4_vicini.py
 (aggiunta logica filtro minuti) e analisi_manager/p12_s4_vicini_out.json
 (aggiunte le 4 nuove chiavi s4_bis_*).
+
+===============================================================================
+13. SESSIONE 06/08/2026 sera Roma (~20:50 CEST) -- RACCOLTA STORICO GRADE
+    LARGA SCALA (Haiku, no modifica produzione, commit+push fatto)
+===============================================================================
+Compito: raccogliere storico grade su 150-200 giocatori per ruolo (4 ruoli),
+15 partite ciascuno, da roster di manager reali in dati_globali/manager_*.json.
+Cookie/CSRF ricevuti dall'utente in chat (non salvati su disco, embedded in
+script solo per questa sessione, non committati).
+
+--- CAMPIONAMENTO ---
+Letti 42 manager_*.json, estratti 66.143 giocatori unici:
+  Goalkeeper: 535
+  Defender: 1.590
+  Midfielder: 1.444
+  Forward: 1.214
+
+Campionati 175 giocatori per ruolo (seed=42, casuale):
+  Goalkeeper: 175 campionati da 535
+  Defender: 175 campionati da 1.590
+  Midfielder: 175 campionati da 1.444
+  Forward: 175 campionati da 1.214
+
+--- QUERY ---
+700 query eseguite (175 × 4 ruoli), playerGameScores(last: 15), rotta
+anyPlayer(slug). Alcuni giocatori hanno meno di 15 partite (carriera giovane).
+
+--- RISULTATI ---
+  Goalkeeper: 2.611 righe (175 giocatori, media ~14.9 partite)
+  Defender: 2.615 righe (175 giocatori, media ~14.9 partite)
+  Midfielder: 2.625 righe (175 giocatori, media ~15.0 partite)
+  Forward: 1.107 righe (175 giocatori, media ~6.3 partite - molti junior)
+  TOTALE: 8.958 righe
+
+Errori (104): prevalentemente Forward con carriera giovane (1-12 partite
+anziche' 15), alcuni con query fallita (likelihood network).
+
+Leghe coperte: non calcolate, derivabili da activeClub nel response (tutte
+le leghe della piattaforma Sorare, no filtro di pipeline).
+
+File salvati: analisi_manager/dati/storico_grade_{Goalkeeper,Defender,
+Midfielder,Forward}_20260806.json (JSON compatto, array di
+giocatore×partita).
