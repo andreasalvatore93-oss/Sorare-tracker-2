@@ -736,3 +736,83 @@ aperta) dell'handoff orchestratore. Segnalato in chat, non deciso qui.
 File aggiunti: analisi_manager/p12_s4_vicini.py,
 analisi_manager/p12_s4_vicini_out.json, analisi_manager/p12_s3_esteso.py,
 analisi_manager/p12_s3_esteso_out.json, analisi_manager/p12_verifica_leakage_out.json.
+
+===============================================================================
+12-BIS. SESSIONE 06/08/2026 sera Roma (~20:45 CEST) -- S4-BIS, filtro
+        minuti giocati sull'addendum di S4 (Sonnet, no modifica produzione)
+===============================================================================
+Correzione dell'orchestratore: S4 (sez.12) non era filtrato per minuti
+giocati, quindi A/B/C erano dominate al ~90% dal canale "gioca/non gioca"
+(coerente con R4/R1a che avevano gia' mostrato il crollo delle correlazioni
+grezze filtrando min>0). Una riscrittura del grade sul RISULTATO si vedrebbe
+solo nella parte fine del segnale, fra chi ha davvero giocato -- invisibile
+nel test non filtrato.
+
+Rifatto S4.1/S4.3/S4.5 con due varianti dichiarate separatamente:
+  - filtro "k": richiede minsPlayed>0 SOLO sulla partita k (A,B,C sempre
+    sulle stesse righe fra loro, ma B/C usano game vicini anche se il
+    giocatore quel giorno non ha giocato);
+  - filtro "all3": richiede minsPlayed>0 su k, k-1 E k+1 insieme (piu'
+    severo, n piu' basso).
+
+TABELLA -- campione GK ampio (55 portieri), filtro "k":
+  variabile      n_righe  n_giocatori  A       B       C       A-C>0/1000  A-B>0/1000
+  grade          476      55           0.111   0.316   0.116   46.7%       0.1%
+  starter_odds   476      55           0.056   0.235   0.007   77.2%       0.0%
+
+TABELLA -- campione GK ampio (55 portieri), filtro "all3" (piu' severo):
+  variabile      n_righe  n_giocatori  A       B       C
+  grade          397      47           0.106   0.239   0.110
+  starter_odds   397      47           NULLO (varianza zero: nel
+    sottoinsieme dove TUTTE E TRE le partite hanno min>0, gli starter_odds
+    del portiere risultano quasi tutti identici, verosimilmente 10000 --
+    limite del dato disponibile, non un errore di calcolo. Segnalato senza
+    inventare un numero.)
+  (A-C, A-B non calcolabili per starter_odds su questa variante)
+
+TABELLA -- campione piccolo 12 giocatori/4 ruoli, filtro "k":
+  variabile      n_righe  n_giocatori  A      B      C      A-C>0/1000  A-B>0/1000
+  grade          139      12           0.293  0.406  0.250  71.5%       8.6%
+  starter_odds   139      12           0.185  0.268  0.168  56.0%       15.9%
+
+TABELLA -- campione piccolo, filtro "all3":
+  variabile      n_righe  n_giocatori  A      B      C
+  grade          123      12           0.232  0.372  0.172
+  starter_odds   123      12           0.108  0.164  0.112
+
+LETTURA S4-BIS -- RISULTATO CHIARO E RASSICURANTE:
+1. Filtrando per minuti giocati, il picco su A SPARISCE per entrambe le
+   variabili: diventa B (la partita PRECEDENTE) la piu' alta delle tre, sia
+   per il grade sia per starter_odds, in ogni combinazione di campione e
+   filtro. Bootstrap conferma: A-B>0 solo nello 0.1%-16% dei 1000
+   ricampionamenti (cioe' B batte A quasi sempre, non e' rumore).
+   Questo e' l'opposto esatto del pattern che avrebbe segnalato riscrittura
+   (A che stacca nettamente B e C): qui e' B a staccare A.
+2. Il gap A-B del grade NON e' mai nettamente piu' grande (nel senso
+   "sospetto") di quello di starter_odds: entrambi vanno nella stessa
+   direzione (B>A), con margini paragonabili. Il criterio del brief ("gap
+   grade <= gap starter_odds") e' soddisfatto: nessun allarme.
+3. CONFERMA INCROCIATA CON R4 (sez.11): il valore A filtrato per il grade
+   sul GK ampio (0.111, filtro "k") e' quasi identico a quello gia' trovato
+   in R4 con metodo diverso (0.119, corr(grade,realizzato) su min>0). Due
+   metodi indipendenti sullo stesso campione danno lo stesso numero --
+   rafforza la fiducia che 0.11-0.12 sia il valore vero del segnale grade
+   sul GK, non un artefatto di calcolo.
+4. IL RIBALTAMENTO ANTICIPATO DALL'ORCHESTRATORE E' CONFERMATO: non
+   filtrato, starter_odds batte il grade (0.833 vs 0.768, sez.12); filtrato
+   "k", il grade batte le starter_odds (0.111 vs 0.056) -- coerente con
+   R4 (grade 0.119 vs odds 0.060). E' un argomento a favore del fatto che il
+   grade porti qualcosa oltre al semplice "gioca o non gioca", quando si
+   guarda solo a chi ha davvero giocato.
+
+VERDETTO S4-BIS: nessun segnale di riscrittura anche guardando dentro il
+canale "gioca/non gioca". Anzi, il pattern B>A (la partita precedente conta
+piu' della partita stessa) e' l'opposto di cio' che una riscrittura
+produrrebbe, ed e' identico per il dato fidato (starter_odds). Condizione
+del brief soddisfatta: si procede col BRIEF A (V1/V2/V3, sezione 8 di
+HANDOFF_ORCHESTRATORE_GRADE_2026-08-06.txt), fermo restando che S3 (prova
+diretta) va comunque completato appena le partite di stasera finiscono.
+
+File aggiunti: nessuno nuovo, aggiornato analisi_manager/p12_s4_vicini.py
+(aggiunta logica filtro minuti) e analisi_manager/p12_s4_vicini_out.json
+(aggiunte le 4 nuove chiavi s4_bis_*).

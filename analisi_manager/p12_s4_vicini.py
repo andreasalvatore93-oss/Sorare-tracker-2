@@ -27,9 +27,10 @@ def load_player_rows(path, is_r5=False):
             stats = s.get('anyPlayerGameStats') or {}
             odds = (stats.get('footballPlayingStatusOdds') or {})
             starter_odds = odds.get('starterOddsBasisPoints')
+            mins = stats.get('minsPlayed')
             if not date or score is None:
                 continue
-            rows.append({'date': date, 'grade': grade, 'score': score, 'starter_odds': starter_odds})
+            rows.append({'date': date, 'grade': grade, 'score': score, 'starter_odds': starter_odds, 'mins': mins})
         players.append({'slug': slug, 'ruolo': ruolo, 'rows': rows})
     return players
 
@@ -53,9 +54,10 @@ def sanity_sort_and_dedup(players):
     return cleaned, scartate
 
 
-def build_triples(players, value_field):
+def build_triples(players, value_field, min_filter='none'):
     """Ritorna lista di (player_slug, value_k, score_k, score_km1, score_kp1)
-    solo per righe con tutti e 3 gli score disponibili e value_k non nullo."""
+    solo per righe con tutti e 3 gli score disponibili e value_k non nullo.
+    min_filter: 'none' | 'k' (solo minsPlayed_k>0) | 'all3' (min>0 su k,k-1,k+1)."""
     triples = []
     for p in players:
         rows = p['rows']
@@ -70,6 +72,12 @@ def build_triples(players, value_field):
                 continue
             if k['score'] is None or km1['score'] is None or kp1['score'] is None:
                 continue
+            if min_filter == 'k':
+                if not (k.get('mins') or 0) > 0:
+                    continue
+            elif min_filter == 'all3':
+                if not ((k.get('mins') or 0) > 0 and (km1.get('mins') or 0) > 0 and (kp1.get('mins') or 0) > 0):
+                    continue
             triples.append((p['slug'], val, k['score'], km1['score'], kp1['score']))
     return triples
 
@@ -134,14 +142,14 @@ def bootstrap_by_player(triples, n_boot=1000):
     }
 
 
-def run_sample(tag, players):
+def run_sample(tag, players, min_filter='none'):
     out = {}
     players_clean, scartate = sanity_sort_and_dedup(players)
     out['scartate_doppia_data'] = scartate
     out['n_giocatori'] = len(players_clean)
 
     for value_field, label in [('grade', 'grade'), ('starter_odds', 'starter_odds')]:
-        triples = build_triples(players_clean, value_field)
+        triples = build_triples(players_clean, value_field, min_filter=min_filter)
         A, B, C, n = compute_abc(triples)
         n_players_used = len(set(t[0] for t in triples))
         boot = bootstrap_by_player(triples)
@@ -153,7 +161,7 @@ def run_sample(tag, players):
             'C_corr_grade_k_score_kp1': C,
             'bootstrap': boot,
         }
-        print(f'--- {tag} / {label} ---')
+        print(f'--- {tag} / {label} (filtro={min_filter}) ---')
         print(f'  n_righe={n} n_giocatori={n_players_used}')
         print(f'  A={A}  B={B}  C={C}')
         if boot:
@@ -175,6 +183,12 @@ def main():
     for ruolo in ruoli:
         sub = [p for p in small12 if p['ruolo'] == ruolo]
         results['b_campione_piccolo_per_ruolo'][ruolo] = run_sample(f'S4 (b) {ruolo} (3 giocatori)', sub)
+
+    # S4-BIS: filtrato per minuti giocati (addendum 06/08 20:30 Roma)
+    results['s4_bis_a_gk_ampio_filtro_k'] = run_sample('S4-BIS (a) GK ampio, filtro min>0 su k', gk55, min_filter='k')
+    results['s4_bis_a_gk_ampio_filtro_all3'] = run_sample('S4-BIS (a) GK ampio, filtro min>0 su k,k-1,k+1', gk55, min_filter='all3')
+    results['s4_bis_b_piccolo_filtro_k'] = run_sample('S4-BIS (b) piccolo 12, filtro min>0 su k', small12, min_filter='k')
+    results['s4_bis_b_piccolo_filtro_all3'] = run_sample('S4-BIS (b) piccolo 12, filtro min>0 su k,k-1,k+1', small12, min_filter='all3')
 
     with open('analisi_manager/p12_s4_vicini_out.json', 'w', encoding='utf-8') as fh:
         json.dump(results, fh, ensure_ascii=False, indent=1)
