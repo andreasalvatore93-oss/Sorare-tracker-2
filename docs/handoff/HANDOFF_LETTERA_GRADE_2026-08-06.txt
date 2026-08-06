@@ -2095,3 +2095,139 @@ analisi_manager/p12_raccolta_grade_crowss.py,
 analisi_manager/dati/storico_grade_crowss_20260806.json,
 analisi_manager/p12_crowss_slug_target.json,
 analisi_manager/p12_crowss_grade_index_meta.json.
+
+===============================================================================
+22. SESSIONE 06/08/2026 sera Roma (~23:00 CEST) -- FORWARD CAMPIONE AMPIO:
+    catena sez.16/19 rifatta sul campione corretto (Sonnet esecutore, no
+    modifica produzione, zero query rete)
+===============================================================================
+Rifatta la catena di sez.16/17/19 (V2, test2 combinato, V4 OOS, metriche di
+piazzamento) sul campione buono dichiarato dall'utente:
+analisi_manager/dati/storico_grade_Forward_ampio_20260806.json (500
+giocatori, 7497 righe, 291 squadre, multi-lega) -- SOSTITUISCE il campione
+"Forward mirato" di sez.20 (scartato: solo 2 leghe, MLS+K League). Script:
+analisi_manager/p12_forward_ampio.py, riusa p12_briefA_mid.py e
+p12_briefA_arena_metrics.py senza modificarli.
+
+IPOTESI ORCHESTRATORE (dichiarata prima dei numeri): l'attaccante somigliera'
+piu' al centrocampo (MID) che al difensore (DEF), boom70 l'indicatore piu'
+solido; sconto le mie stime perche' le ipotesi precedenti su MID erano state
+tutte sottostimate.
+
+--- COSTRUZIONE CAMPIONE ---
+500 giocatori, 4308 righe utilizzabili (2 dup scartate). Scarti: 1720
+non-FINAL, 1463 L10 insufficiente, 4 grade/odds mancanti.
+V0 riferimento (in-sample, tutte le 4308 righe): corr(grade)=0.320
+corr(odds)=0.247 corr(L10)=0.193.
+
+--- PUNTO 1: V2 -- score_atteso produzione walk-forward vs grade, STESSE
+    righe ---
+n_righe=2831 n_giocatori=320 (1477 scartate per score_atteso non
+disponibile, stesso scarto dichiarato di sez.16/17).
+  corr(score_atteso produzione) = 0.210
+  corr(grade, stesse righe)     = 0.321
+  bootstrap (per giocatore, 1000 resample) grade > atteso: 100.0%
+Il grade batte nettamente lo score_atteso, come su MID/DEF/FWD-piccolo (mai
+in dubbio, bootstrap 100%).
+
+--- PUNTO 2: TEST DECISIVO -- atteso da solo vs atteso+grade combinati
+    (z-score sommati, nessun peso tarato) ---
+133 giornate valide (29 scartate per pool<3) -- quasi 3.5 volte le 38
+giornate del vecchio campione FWD piccolo (sez.17).
+  strategia                  punti medi/giornata
+  score_atteso da solo              57.59
+  grade da solo                     59.65
+  atteso + grade combinati          58.45
+  a caso (media pool)               49.20
+
+  bootstrap (133 giornate, 1000, IC95):
+  combinato - atteso_solo  : +0.86 pt  [-0.75, +2.48]   positivo nell'84.9% dei casi (debole, IC95 comprende lo zero)
+  combinato - grade_solo   : -1.17 pt  [-3.55, +1.24]   positivo solo nel 17.5% dei casi (comb. peggio del grade solo)
+  grade_solo - atteso_solo : +2.01 pt  [-0.89, +5.06]   positivo nel 91.0% dei casi
+
+NOVITA' RISPETTO A MID/DEF/FWD-piccolo: qui il GRADE DA SOLO batte la
+combinazione come punto stimato (59.65 vs 58.45), e il segno regge quasi
+sempre nel bootstrap (comb-grade_solo positivo solo 17.5% delle volte --
+l'opposto di MID/DEF dove il punto stimato era sempre combinato>=grade_solo,
+seppure mai dimostrato con certezza). Su questo campione ampio di FWD,
+sommare score_atteso al grade non aiuta e puo' persino diluire il segnale
+del grade puro. Nessuno dei tre confronti ha pero' l'IC95 che esclude lo
+zero in modo netto tranne grade_solo-atteso che ci si avvicina (91.0%, non
+95%).
+
+--- PUNTO 3: V4 FUORI CAMPIONE -- split per GIOCATORE (mai per riga), 20
+    ripetizioni, beta stimato solo su train ---
+  R2 IN-SAMPLE (rif. V0/regressione, non ricalcolato qui separatamente)
+  R2 FUORI CAMPIONE (media 20/20 ripetizioni valide):
+    base OOS medio (odds+L10):    0.0650
+    esteso OOS medio (+grade):    0.0917
+    delta OOS medio:             +0.0267  (positivo in 20/20 ripetizioni, 100%)
+Il guadagno di R2 regge fuori campione su TUTTE le 20 ripetizioni (100%,
+piu' netto persino del MID 85% e del vecchio FWD 95%) -- il segnale del
+grade sul FWD, quando dentro il campione giusto, non e' un artefatto di
+overfitting.
+
+--- PUNTO 4: METRICHE DI PIAZZAMENTO (stesse 133 giornate del punto 2) ---
+  strategia    migliore%  top_quartile%  percentile_medio  boom70%  boom90%
+  atteso          22.6         59.4           68.2           30.8     6.0
+  grade           25.6         60.9           70.9           35.3     7.5
+  combinato       23.3         60.2           69.6           33.8     6.0
+  a caso          11.6         32.9           50.2           17.1     2.4
+
+  bootstrap combinato - atteso (IC95):
+    migliore%       : +0.7pp  [-3.0, +4.5]    nullo (55.7% pos)
+    top_quartile%    : +0.8pp  [-4.5, +6.8]    nullo (55.3% pos)
+    percentile_medio : +1.39pt [-1.84, +4.77]  debole (79.0% pos)
+    boom70%          : +3.1pp  [0.0, +6.8]     quasi solido, IC95 tocca lo zero al bordo (93.7% pos)
+    boom90%          : 0.0pp   [0.0, 0.0]      nullo, combinato=atteso su boom90 in questo campione
+
+  bootstrap grade - atteso (IC95, per confronto):
+    migliore%       : +2.9pp  [-3.8, +9.8]    debole (77.6% pos)
+    top_quartile%    : +1.4pp  [-8.3, +10.5]   debole (58.6% pos)
+    percentile_medio : +2.65pt [-2.53, +8.24]  debole (82.1% pos)
+    boom70%          : +4.5pp  [-3.0, +12.8]   debole (84.0% pos)
+    boom90%          : +1.5pp  [-2.3, +5.3]    debole (73.6% pos)
+
+--- VERIFICA IPOTESI ORCHESTRATORE ---
+"L'attaccante somigliera' piu' al MID che al DEF": PARZIALMENTE CONFERMATA
+sul segnale grezzo (corr(grade)-corr(atteso)=+0.111, tra il DEF +0.079 e il
+MID +0.158, piu' vicino al vecchio FWD piccolo +0.109 che al MID) MA
+SMENTITA sulla forza del guadagno in punti: il test decisivo (punto 2) NON
+e' solido come su MID (dove IC95 escludeva lo zero, qui lo comprende
+largamente, 84.9% non 99.1%), e la combinazione qui non batte nemmeno il
+grade da solo -- un comportamento visto su NESSUNO degli altri 3 ruoli. Il
+campione piu' ampio (133 vs 38 giornate) non ha reso il segnale piu' forte,
+lo ha reso piu' PRECISO ma anche piu' MODESTO: il punto centrale +0.86 (vs
++2.34 del vecchio campione piccolo) e' meno della meta', segno che il numero
+di sez.17 su FWD era probabilmente gonfiato dal rumore di un campione
+piccolo (38 giornate), non un segnale sottostimato come l'utente temeva per
+il MID.
+"boom70 l'indicatore piu' solido": CONFERMATA COME DIREZIONE ma NON con la
+stessa forza del vecchio campione piccolo (allora +10.5pp IC95 escludeva lo
+zero nettamente; qui +3.1pp con IC95 che tocca lo zero al bordo inferiore,
+93.7% positivo non 98.6%) -- resta l'indicatore di piazzamento piu' vicino
+alla solidita' fra i cinque misurati, ma "sconta la tua stima" era la
+lezione giusta da applicare anche qui, nella direzione opposta al MID:
+l'utente aveva chiesto di scontare le proprie ipotesi perche' sul MID erano
+state sottostimate, ma su questo FWD ampio l'effetto osservato e' che il
+campione piccolo di sez.17 SOVRAstimava il segnale, non lo sottostimava.
+
+===============================================================================
+VERDETTO SEZIONE 22
+===============================================================================
+Sul campione FWD corretto (500 giocatori/291 squadre/multi-lega, non piu'
+MLS+K League soltanto), il grade continua a battere nettamente score_atteso
+di produzione da solo (corr +0.111, bootstrap 100%) e il guadagno di R2 fuori
+campione regge al 100% delle ripetizioni -- il segnale di base e' reale e
+non un artefatto. MA il guadagno IN PUNTI/PIAZZAMENTO della combinazione
+atteso+grade, che su MID era il caso piu' forte del filone, su questo FWD
+ampio e' DEBOLE (IC95 sempre ampi, mai esclude lo zero in modo netto) e per
+la prima volta nel filone la combinazione NON batte il grade da solo. Il
+FWD non e' il "MID numero due" sperato dall'ipotesi orchestratore: e' un
+ruolo dove il grade aiuta a ORDINARE (corr, R2 OOS) ma non produce un
+guadagno di punti dimostrabile con la stessa combinazione neutra usata per
+gli altri ruoli. Nessuna decisione su produzione presa qui.
+
+File aggiunti: analisi_manager/p12_forward_ampio.py,
+analisi_manager/p12_forward_ampio_out.json,
+analisi_manager/p12_forward_ampio_placement_out.json.

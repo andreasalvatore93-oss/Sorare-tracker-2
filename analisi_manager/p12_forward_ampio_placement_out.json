@@ -1,0 +1,195 @@
+{
+ "ruolo": "Forward",
+ "n_giornate": 133,
+ "n_scartate": 29,
+ "tabella_medie": {
+  "atteso": {
+   "tasso_migliore_pct": 22.55639097744361,
+   "tasso_top_quartile_pct": 59.3984962406015,
+   "percentile_medio": 68.164491333099,
+   "tasso_boom70_pct": 30.827067669172934,
+   "tasso_boom90_pct": 6.015037593984962,
+   "distribuzione_punteggio_scelto": {
+    "min": 23.5,
+    "Q1": 42.0,
+    "mediana": 51.0,
+    "Q3": 71.8,
+    "max": 100.0
+   }
+  },
+  "grade": {
+   "tasso_migliore_pct": 25.56390977443609,
+   "tasso_top_quartile_pct": 60.902255639097746,
+   "percentile_medio": 70.898329828308,
+   "tasso_boom70_pct": 35.338345864661655,
+   "tasso_boom90_pct": 7.518796992481203,
+   "distribuzione_punteggio_scelto": {
+    "min": 27.3,
+    "Q1": 42.5,
+    "mediana": 60.0,
+    "Q3": 75.8,
+    "max": 100.0
+   }
+  },
+  "combinato": {
+   "tasso_migliore_pct": 23.30827067669173,
+   "tasso_top_quartile_pct": 60.150375939849624,
+   "percentile_medio": 69.58387105323268,
+   "tasso_boom70_pct": 33.83458646616541,
+   "tasso_boom90_pct": 6.015037593984962,
+   "distribuzione_punteggio_scelto": {
+    "min": 23.5,
+    "Q1": 42.0,
+    "mediana": 53.7,
+    "Q3": 72.7,
+    "max": 100.0
+   }
+  },
+  "casuale": {
+   "tasso_migliore_pct": 11.606374465089456,
+   "tasso_top_quartile_pct": 32.86613402784451,
+   "percentile_medio": 50.238502944119006,
+   "tasso_boom70_pct": 17.064918884475563,
+   "tasso_boom90_pct": 2.4479068382941414,
+   "distribuzione_punteggio_scelto": {
+    "min": 34.825,
+    "Q1": 45.25833333333333,
+    "mediana": 48.68571428571429,
+    "Q3": 53.481818181818184,
+    "max": 72.46666666666667
+   }
+  }
+ },
+ "confronti_bootstrap": {
+  "tasso_migliore": {
+   "combinato_meno_atteso": {
+    "media_diff": 0.0068947368421052625,
+    "pct_positivo": 0.557,
+    "IC95": [
+     -0.03007518796992481,
+     0.045112781954887216
+    ]
+   },
+   "combinato_meno_grade": {
+    "media_diff": -0.021977443609022554,
+    "pct_positivo": 0.213,
+    "IC95": [
+     -0.09022556390977443,
+     0.03759398496240601
+    ]
+   },
+   "grade_meno_atteso": {
+    "media_diff": 0.029406015037593984,
+    "pct_positivo": 0.776,
+    "IC95": [
+     -0.03759398496240601,
+     0.09774436090225563
+    ]
+   }
+  },
+  "tasso_top_quartile": {
+   "combinato_meno_atteso": {
+    "media_diff": 0.008052631578947369,
+    "pct_positivo": 0.553,
+    "IC95": [
+     -0.045112781954887216,
+     0.06766917293233077
+    ]
+   },
+   "combinato_meno_grade": {
+    "media_diff": -0.00606015037593985,
+    "pct_positivo": 0.395,
+    "IC95": [
+     -0.08270676691729317,
+     0.06766917293233077
+    ]
+   },
+   "grade_meno_atteso": {
+    "media_diff": 0.01412781954887218,
+    "pct_positivo": 0.586,
+    "IC95": [
+     -0.08270676691729328,
+     0.10526315789473684
+    ]
+   }
+  },
+  "percentile_medio": {
+   "combinato_meno_atteso": {
+    "media_diff": 1.390459911816076,
+    "pct_positivo": 0.79,
+    "IC95": [
+     -1.8369802739758399,
+     4.767454262664074
+    ]
+   },
+   "combinato_meno_grade": {
+    "media_diff": -1.3220462849232957,
+    "pct_positivo": 0.263,
+    "IC95": [
+     -5.734089148416416,
+     3.070815353049724
+    ]
+   },
+   "grade_meno_atteso": {
+    "media_diff": 2.648045738332885,
+    "pct_positivo": 0.821,
+    "IC95": [
+     -2.531324293398214,
+     8.236410379998006
+    ]
+   }
+  },
+  "tasso_boom70": {
+   "combinato_meno_atteso": {
+    "media_diff": 0.030609022556390975,
+    "pct_positivo": 0.937,
+    "IC95": [
+     0.0,
+     0.06766917293233082
+    ]
+   },
+   "combinato_meno_grade": {
+    "media_diff": -0.015285714285714284,
+    "pct_positivo": 0.318,
+    "IC95": [
+     -0.09022556390977443,
+     0.06015037593984962
+    ]
+   },
+   "grade_meno_atteso": {
+    "media_diff": 0.045255639097744355,
+    "pct_positivo": 0.84,
+    "IC95": [
+     -0.03007518796992481,
+     0.12781954887218044
+    ]
+   }
+  },
+  "tasso_boom90": {
+   "combinato_meno_atteso": {
+    "media_diff": 0.0,
+    "pct_positivo": 0.0,
+    "IC95": [
+     0.0,
+     0.0
+    ]
+   },
+   "combinato_meno_grade": {
+    "media_diff": -0.014015037593984963,
+    "pct_positivo": 0.171,
+    "IC95": [
+     -0.05263157894736842,
+     0.022556390977443608
+    ]
+   },
+   "grade_meno_atteso": {
+    "media_diff": 0.014812030075187969,
+    "pct_positivo": 0.736,
+    "IC95": [
+     -0.022556390977443608,
+     0.05263157894736842
+    ]
+   }
+  }
+ }
+}
