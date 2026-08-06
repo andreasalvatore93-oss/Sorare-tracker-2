@@ -57,7 +57,7 @@ def costruisci(gw, obiettivo):
         row = {'slug': c['slug'], 'atteso': obiettivo(c), 'low': 0, 'high': 0,
                'team_slug': c['squadra'], 'opponent_team_slug': c['opp_slug'],
                'ordinamento': None, 'kickoff': None, 'opp_factor': None,
-               'league': c['lega'], 'role_key': cod,
+               'league': c['lega'], 'role_key': cod, 'carta': c.get('carta'),
                'reale': c['reale'], 'atteso_cal': c['_cal'], '_grade': c.get('_grade')}
         role_data[c['lega']][cod].append(row)
         counts[cod][c['slug']] = {'in_season': c['copie'], 'classic': 0, 'l10': c['l10']}

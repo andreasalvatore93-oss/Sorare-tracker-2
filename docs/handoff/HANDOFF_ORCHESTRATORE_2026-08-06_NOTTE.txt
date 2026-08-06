@@ -282,6 +282,73 @@ non produzione e l'orchestratore potrebbe voler rivedere prima).
 
 
 ===============================================================================
+5ter. ESITO SUITE 3 TEST (Sonnet, 06/08 notte, dopo 5bis)
+===============================================================================
+Riscritto p13_backtest_gw_crowss.py: da 2 a 3 test, ognuno sulle 2 varianti
+A/G. GW football-21-24-jul-2026, crowss. CLI: --test {1,2,3} --dump <file>.
+
+CAMBI STRUTTURALI (tutti e 3 i test):
+- BEGINNER ESCLUSA: tolta arena_limited_beginner da ARENE_AMMESSE_TIPO.
+  Motivo: la soglia beginner nel generatore non esiste, e' copiata di peso
+  dalla Cap 260 e non e' mai stata tarata; crowss non le gioca piu'. Stesso
+  universo di arene (Cap 220/260/Uncapped) per i 3 test.
+  CONSEGUENZA IMPORTANTE: su questa GW crowss aveva SOLO 6 arene non-beginner
+  (4 Cap 260 + 2 Cap 220), non piu' 17. I numeri di sez.4/5bis (17 arene,
+  beginner incluse) NON sono confrontabili con questi: universi diversi.
+- ID CARTA in tutti i dump (REALE e scelte A/G): campo 'carta' aggiunto anche
+  dentro S21.costruisci() in p12_backtest_formazione_grade.py (mancava, la
+  riga costruita per bfg non portava l'ID). Additivo, non tocca produzione.
+- BUG TROVATO E FIXATO IN CORSA: costruisci_pool(modo='arena') filtrava con
+  `bool(f.get('tipo_arena'))`, quindi includeva ANCHE le carte delle arene
+  beginner (ora escluse dagli slot): pool 85 carte contro 30 slot, 55 scorte
+  fantasma che avrebbero rotto la proprieta' "pool~slot" del TEST2. Corretto
+  filtrando su ARENE_AMMESSE_TIPO; il bonus captain/xp (in_arena per
+  grezzo_carta) resta invece "qualunque tipo di arena", perche' quello e'
+  un fatto vero indipendente dal filtro slot.
+
+TEST 1 -- FULL POOL (selezione), --pool globale (invariato):
+  pool 187 carte, slot 30 (6 arene), scorte 157.
+  REALE 1250.93 (6/6) | A 1595.32 (6/6) | G 1685.37 (6/6)
+  Per tipo: Cap260 REALE 834.24 vs A 1140.26 vs G 1119.13
+            Cap220 REALE 416.69 vs A  455.06 vs G  566.24
+  Dump: analisi_manager/dati/DUMP_p13_crowss_21-24jul_test1.txt
+
+TEST 2 -- RISTRETTO + metrica k (allocazione), --pool arena:
+  pool 30 carte, slot 30 -> CARTE DI SCORTA = 0, confermato. NON misura
+  selezione, solo come il modello alloca le stesse carte fra le arene.
+  REALE 1250.93 | A 1045.02 (5/6, 1 rinuncia) | G 822.06 (4/6, 2 rinunce)
+  Metrica k (media modello sulle sue k arene VS media delle k migliori REALI
+  dello stesso tipo):
+    A: Cap260 k=4  modello=209.16  REALE-best-4=208.56  delta=+0.60
+       Cap220 k=1  modello=208.38  REALE-best-1=222.45  delta=-14.07
+    G: Cap260 k=3  modello=200.89  REALE-best-3=219.11  delta=-18.22
+       Cap220 k=1  modello=219.38  REALE-best-1=222.45  delta= -3.07
+  LETTURA: a parita' di carte e di numero di arene giocate, il modello NON
+  batte le arene migliori che REALE ha davvero fatto. Descrittivo, 1 GW sola.
+  Dump: analisi_manager/dati/DUMP_p13_crowss_21-24jul_test2.txt
+
+TEST 3 -- DECISIONE (entra/salta, formazione fissa = quella di REALE):
+  6/6 arene valutate (nessun dato mancante). Su QUESTA GW (le 6 non-beginner)
+  crowss non ha mai superato la soglia PAREGGIO_ARENA in nessuna arena:
+  conviene=False per tutte e 6 (soglie Cap260=259.5, Cap220=244.1, punteggi
+  REALE 176-228 su Cap260 e 194-222 su Cap220, tutti sotto soglia).
+  MATRICE A: giusto=0, ERRORE(persa buona)=0, GIUSTO(batte REALE)=1, errore=5
+    -> batte REALE saltando 1/6, sbaglia entrando in 5/6 arene sotto soglia
+  MATRICE G: giusto=0, ERRORE(persa buona)=0, GIUSTO(batte REALE)=3, errore=3
+    -> batte REALE saltando 3/6, sbaglia entrando in 3/6
+  LETTURA: con formazione fissa (REALE), G scarta piu' arene sotto soglia di
+  A (3 vs 1): decisione piu' prudente. Nessuna arena "buona" (conviene=True)
+  in questa GW per le arene non-beginner: la matrice non testa mai la casella
+  "conviene+salta" (ERRORE). Serve un'altra GW/manager con arene sopra soglia
+  per vedere quella casella popolata.
+  Dump: analisi_manager/dati/DUMP_p13_crowss_21-24jul_test3.txt
+
+Tutti e 3 i test: nessuna modifica alla produzione, nessuna run GitHub,
+girati e verificati in locale. Non committato da questa sessione esecutore:
+in attesa di conferma come da 5bis.
+
+
+===============================================================================
 6. DA DOVE RIPARTIRE, IN ORDINE
 ===============================================================================
 PASSO 0 (se l'utente lo chiede): tutto cio' che gli serve per schierare
