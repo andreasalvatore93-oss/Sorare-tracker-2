@@ -59,6 +59,34 @@ dice "non ho capito", non riformulare piu' preciso: riformulare piu' STUPIDO.
 ## Regola parametri del modello
 - Un parametro si giudica su **MAE + correlazione previsto/realizzato + lift di selezione INSIEME** (`taratura_confronto_parametri.py`). Si applica solo se si muovono tutte e tre nello stesso verso. Il MAE da solo premia i modelli che non ordinano niente.
 
+## Come si lavora: un orchestratore, piu' esecutori
+
+Modello di lavoro consolidato (dalla sessione 05-06/08). Vale sempre.
+
+- **Opus = orchestratore.** Non esegue: ragiona, decide cosa misurare, scrive
+  i brief, legge i risultati, decide se un numero regge. Tiene la memoria del
+  filone e aggiorna gli handoff.
+- **Sonnet = esecutore con giudizio.** Query mirate, lettura di codice,
+  script di misura, backtest. Riceve un brief scritto e riporta numeri.
+- **Haiku = volume meccanico.** Estrazioni massive, popolamento cache,
+  conteggi, verifiche noiose. Regola pratica: se il compito si scrive come
+  "fai questa cosa N volte e riporta gli errori" e' Haiku; se contiene un
+  "decidi se", non lo e'.
+- **L'utente fa da navetta**: copia i brief dall'orchestratore agli esecutori
+  e riporta indietro gli esiti. Gli agenti non si parlano fra loro.
+
+Conseguenze operative per l'orchestratore:
+1. Ogni brief deve essere **autosufficiente**: l'esecutore puo' essere in una
+   chat pulita che non sa nulla. Aprire sempre dicendo quali file leggere
+   (`CLAUDE.md`, il riassunto unificato, l'handoff del filone).
+2. Ogni brief dichiara: obiettivo, ipotesi PRIMA dei numeri, cosa NON toccare,
+   e "nessuna modifica alla produzione, nessun commit" se e' solo misura.
+3. L'esito va sempre scritto **in coda all'handoff del filone**, mai in un
+   file nuovo: le chat non condividono memoria, il repo si'.
+4. Quando piu' esecutori lavorano in parallelo sulla stessa working tree,
+   ciascuno committa SOLO i propri file e segnala gli altri senza toccarli.
+5. Dire sempre all'utente **a chi** va passato un brief (Opus/Sonnet/Haiku).
+
 ## Sincronizzazione fra sessioni e fra account
 
 L'utente lavora con piu' account e piu' sessioni sullo stesso repo. Il repo e'

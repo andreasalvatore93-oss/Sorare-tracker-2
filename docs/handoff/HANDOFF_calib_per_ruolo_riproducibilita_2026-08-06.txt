@@ -1,0 +1,167 @@
+SESSIONE 06/08/2026, ~pomeriggio Roma (CEST). Sonnet, nessuna modifica alla
+produzione, nessun commit.
+
+===============================================================================
+1. STATO DEL REPO
+===============================================================================
+Branch main, ultimo commit b8ebc841c9 (invariato, non toccato).
+Nuovo file creato (non committato): taratura_calib_per_ruolo.py (repo root).
+Nuovi file dati creati (non committati, piccoli, non gitignored):
+  analisi_manager/dati/calib_fit_max0803.json
+  analisi_manager/dati/calib_fit_attuale_82282.json
+dati_globali/taratura_coppie.json: rigenerato temporaneamente (82.282 coppie)
+per il fit "attuale", poi RIPRISTINATO al file originale (75.474 coppie,
+snapshot 04/08) da un backup in scratchpad. git status pulito su questo file
+(e' comunque gitignored). Nessun file di produzione toccato.
+
+===============================================================================
+2. PERCHE'
+===============================================================================
+Due sessioni precedenti (P10 05/08, diagnosi CALIB_PER_RUOLO 06/08) avevano
+trovato che i 4 coefficienti per-ruolo in
+generatore_formazioni/build_formazione_globale.py:394-399 non hanno uno
+script che li rigeneri nel repo. Obiettivo di questa sessione: scrivere quello
+script, verificare se riproduce i valori in produzione, e SOLO come
+informazione misurare quanto si sposterebbero score_atteso se si rifittasse
+oggi. Nessuna applicazione.
+
+===============================================================================
+3. COSA HO COSTRUITO
+===============================================================================
+taratura_calib_per_ruolo.py: fitta reale = a + b*previsto per ruolo (OLS,
+stessa formula di taratura_giocatore.py) su dati_globali/taratura_coppie.json,
+con bootstrap opzionale per l'incertezza, e confronta coi valori hardcoded
+(letti col regex dal file di produzione, non ricopiati a mano).
+
+Uso:
+  python taratura_calib_per_ruolo.py --bootstrap --json out.json
+  python taratura_calib_per_ruolo.py --max-data 2026-08-03 --bootstrap ...
+
+Rigenerazione dati (se serve dataset piu' fresco):
+  python taratura_giocatore.py     # ~4 min, nessuna rete, sovrascrive
+                                    # dati_globali/taratura_coppie.json
+
+===============================================================================
+4. PROVA DI RIPRODUCIBILITA' (punto 2 della richiesta)
+===============================================================================
+Limite scoperto SUBITO: non esiste in repo/disco uno snapshot storico di
+taratura_coppie.json datato 03/08 (file gitignored, mai versionato). Lo
+snapshot piu' vicino disponibile e' quello attuale su disco (75.474 coppie,
+range date 2023-02-25 -> 2026-07-31, probabilmente il file "vecchio" gia'
+misurato da P10 il 05/08). Il filtro --max-data 2026-08-03 non lo riduce
+(tutte le date sono gia' <= quella soglia): la "prova di riproducibilita'"
+e' quindi un fit sui dati disponibili oggi, NON una vera ricostruzione del
+03/08. In piu' (limite gia' noto da P10, confermato): 'previsto' in
+taratura_coppie.json e' sempre calcolato col modello ATTUALE anche per le
+partite vecchie, quindi anche potendo filtrare per data non si isolerebbe
+il modello del 03/08.
+
+Fit ottenuto (75.474 coppie, con bootstrap 200 resample):
+
+  ruolo     n       a       b     a_prod  b_prod   delta_a   delta_b   esito
+  GK      6118   29.72   0.387    35.78   0.264     -6.06    +0.123   entro 2 sigma (sd_a=3.33, sd_b=0.068)
+  DEF    25738    7.43   0.829     7.28   0.831     +0.15    -0.002   entro 2 sigma (sd_a=1.33, sd_b=0.026)
+  MID    24478   11.51   0.742    11.61   0.740     -0.10    +0.002   entro 2 sigma (sd_a=0.99, sd_b=0.020)
+  FWD    19140  -11.06   1.172     8.40   0.789    -19.46    +0.383   FUORI 2 sigma (sd_a=1.95, sd_b=0.038)
+
+VERDETTO:
+- DEF e MID: coincidono entro il rumore. Per questi due ruoli la pendenza e'
+  chiusa nel senso della richiesta: il metodo "OLS per ruolo su
+  taratura_coppie.json" riproduce i valori in produzione, ammesso che il
+  dataset sottostante non sia cambiato di molto (non verificabile con
+  certezza, vedi limite sopra).
+- GK: delta_a=-6.06 e' grande in valore assoluto ma resta (di poco) dentro
+  2 sigma bootstrap per l'ampiezza del rumore su questo ruolo (n piu' basso,
+  6118, e portiere gia' documentato come "il modello non distingue" nel
+  commento a build_formazione_globale.py:359-364). Non e' una conferma forte.
+- FWD: FUORI dal rumore, e di molto (quasi 10 sigma sull'intercetta). Il
+  fit riprodotto (-11.06 + 1.172x) non e' lo stesso oggetto del valore in
+  produzione (8.40 + 0.789x). O il dataset e' cambiato sostanzialmente da
+  quando e' stato calcolato il valore FWD di produzione, o il valore di
+  produzione per FWD non viene dallo stesso metodo (OLS diretto su tutte le
+  coppie del ruolo) che ho ricostruito qui. Non correggo nulla: riporto la
+  differenza, come richiesto.
+
+===============================================================================
+5. RIFIT SUI DATI ATTUALI (punto 3, solo informazione, NON applicato)
+===============================================================================
+Rigenerato dati_globali/taratura_coppie.json (82.282 coppie, +9% vs le
+75.474 sopra; poi ripristinato il file originale a fine sessione).
+
+  ruolo     n       a       b     a_prod  b_prod   delta_a   delta_b   esito
+  GK      6973   31.50   0.352    35.78   0.264     -4.28    +0.088   entro 2 sigma
+  DEF    28060    6.81   0.840     7.28   0.831     -0.47    +0.009   entro 2 sigma
+  MID    26166   11.39   0.747    11.61   0.740     -0.22    +0.007   entro 2 sigma
+  FWD    21083  -10.09   1.155     8.40   0.789    -18.49    +0.366   FUORI 2 sigma
+
+Stessa forma del fit precedente: DEF/MID stabili, GK dentro il rumore (ma
+spostato), FWD sistematicamente fuori scala in entrambi gli snapshot (04/08
+e 05/08+9%) -- quindi NON e' un caso isolato di un singolo dataset, il
+disallineamento FWD e' riproducibile.
+
+IMPATTO SU score_atteso (nuovo fit vs produzione, applicato alla
+distribuzione REALE di 'previsto' osservata per ruolo, non a un range
+teorico):
+
+  ruolo   media    p95     max     (n)
+  GK     +0.07   +0.67   +1.33   (6973)
+  DEF    -0.01   +0.05   +0.14  (28060)
+  MID    +0.14   +0.21   +0.31  (26166)
+  FWD    +0.37   +2.86  +10.31  (21083)
+
+Confrontato con l'incertezza nota sulla soglia arena (+-15 pt, a livello di
+FORMAZIONE da 5 giocatori): questi delta sono a livello di SINGOLO
+giocatore. GK/DEF/MID sono trascurabili anche sommando 5 slot (max
+sommato < 2 pt). FWD e' l'unico ruolo dove il rifit conterebbe qualcosa:
+un caso di coda (+10.31 su un singolo giocatore) e' comunque molto sotto i
+15 pt di soglia, ma il fatto che FWD sia sistematicamente disallineato (non
+rumore, si ripete su due snapshot) e' un segnale che vale la pena
+approfondire PRIMA di guardare la dimensione dell'effetto -- il problema qui
+non e' "quanto sposta i punti", e' "perche' il valore di produzione per FWD
+non torna col metodo piu' diretto disponibile".
+
+Nota di scala: NON ho confrontato nulla con la retta di formazione-totale
+di valida_soglie.py (63.43+0.736x) -- resta un oggetto diverso, come gia'
+diagnosticato nella sessione precedente, e non e' entrata in questo
+confronto.
+
+===============================================================================
+6. COSE DA SAPERE PRIMA DI DECIDERE
+===============================================================================
+- Lo script esiste ora nel repo (taratura_calib_per_ruolo.py), quindi la
+  "riproducibilita'" e' risolta nel senso di "abbiamo di nuovo un modo per
+  rigenerare i coefficienti": ma questo NON significa che il valore FWD
+  hardcoded sia stato validato -- anzi, e' l'opposto: con questo script non
+  torna, due volte su due dataset diversi.
+- Nessuno snapshot storico di taratura_coppie.json e' mai stato conservato:
+  se si vuole davvero capire come e' stato calcolato il valore FWD in
+  produzione, serve trovare il metodo (magari non era OLS diretto: filtri
+  diversi, esclusione outlier, walk-forward con MIN_STORICO diverso), non
+  solo i dati.
+- Ho rigenerato e poi ripristinato dati_globali/taratura_coppie.json durante
+  la sessione: nessuna modifica visibile in git status a fine sessione
+  (verificato), ma se un'altra sessione in parallelo ha letto quel file nel
+  frattempo ha visto temporaneamente gli 82.282 record.
+
+===============================================================================
+7. DECISIONE APERTA
+===============================================================================
+Il valore FWD di CALIB_PER_RUOLO (8.40 + 0.789x) non e' riproducibile col
+metodo OLS-diretto-per-ruolo su due snapshot diversi di taratura_coppie.json.
+Opzioni, da scegliere insieme:
+  a) Accettarlo comunque (l'impatto misurato in punti e' piccolo tranne
+     qualche coda) e chiudere qui.
+  b) Investigare il metodo originale di FWD (non urgente in punti, ma e'
+     l'unico ruolo dove "non sappiamo da dove viene il numero in produzione"
+     resta vero anche dopo questa sessione).
+  c) Rifittare FWD (e possibilmente GK) sui dati attuali e sostituire in
+     produzione -- NON fatto qui, richiede una sessione dedicata con la
+     catena di produzione completa (soglie arena + scouting) riverificata.
+
+===============================================================================
+8. FILE DI RIFERIMENTO
+===============================================================================
+taratura_calib_per_ruolo.py
+analisi_manager/dati/calib_fit_max0803.json
+analisi_manager/dati/calib_fit_attuale_82282.json
+docs/handoff/REPORT_PASSAGGIO_2_SONNET_P10_2026-08-05.txt (diagnosi precedente)
