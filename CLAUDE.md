@@ -6,6 +6,116 @@ spendendo meno token: se esiste, uso quello. Non eseguo un'operazione costosa
 (run, query, lettura di file grossi, fetch) quando una via piu' economica da'
 la stessa risposta. Questa regola viene prima di ogni altra in questo file.
 
+# BACKTEST: NESSUNO E' AFFIDABILE FINCHE' L'UTENTE NON L'HA ISPEZIONATO (06/08/2026)
+
+Stato di fatto, non opinione. Il 06/08 l'utente ha chiesto di vedere una
+giornata vera con i nomi dei giocatori dentro, invece dei soli numeri di
+sintesi. Sul PRIMO e UNICO backtest ispezionato sono emersi errori
+strutturali che stavano per far chiudere il filone piu' promettente in corso
+(lettera/grade):
+  - il pool di carte era esattamente 5 x numero di arene in 22 casi su 22:
+    il modello non aveva NESSUNA carta di scorta, quindi non poteva
+    selezionare niente. Si misurava l'allocazione, non la scelta.
+Era visibile contando due colonne del file di output. Nessun esecutore e
+nessun orchestratore l'aveva notato, perche' tutti leggevano i verdetti e i
+bootstrap invece dei dati.
+
+NOTA DI RETTIFICA (06/08, stessa sessione): l'orchestratore aveva anche
+scritto qui che il vincolo "ogni carta si usa una volta sola" fosse falso,
+perche' nel dump lo stesso GIOCATORE compariva in piu' arene. Verificato
+dopo: erano CARTE DIVERSE dello stesso giocatore (Ros 2 carte, Lee
+Dong-Gyeong 3, Tiago Dantas 2). Il vincolo e' CORRETTO e va mantenuto: una
+carta si usa una volta sola per giornata; lo stesso giocatore puo' comparire
+in piu' arene solo con carte diverse, e mai due volte nella stessa
+formazione (vedi D7).
+
+Conseguenze vincolanti:
+1. L'utente non puo' sapere quanti altri backtest siano sbagliati e dove.
+   Su quello controllato, gli errori erano colossali. Da adesso PRETENDE di
+   ispezionarli uno per uno, nel dettaglio, compresi quelli gia' conclusi.
+2. Nessun backtest, passato o futuro, vale come prova finche' l'utente non
+   ne ha ispezionato l'esito grezzo. Un verdetto non ispezionato non si
+   scrive negli handoff come fatto acquisito, non chiude un filone e non
+   apre la strada alla produzione.
+3. PRIMA di consegnare qualunque backtest si produce un DUMP LEGGIBILE di
+   almeno un caso completo (un manager, una giornata): nomi dei giocatori,
+   ruolo, punteggio, arena per arena, piu' l'elenco delle carte fra cui il
+   modello poteva scegliere e quelle che ha effettivamente scelto. Il dump
+   si consegna INSIEME ai numeri, non su richiesta.
+4. Controllo obbligatorio prima di ogni backtest, da riportare in chiaro:
+   quante carte contiene il pool contro quanti slot vanno riempiti. Se il
+   pool non e' piu' grande degli slot, non c'e' selezione da misurare e il
+   test e' nullo per costruzione: fermarsi e dirlo.
+5. TUTTI I FILONI CHIUSI PER BACKTEST NEGATIVO VANNO RIAPERTI, dal piu'
+   promettente. Per primo il difensore, che passava tutti e tre i gate
+   (lift, correlazione, MAE) ed e' stato escluso solo per un backtest
+   fallito. Un filone chiuso da un backtest non ispezionato e' un filone
+   aperto.
+6. Le regole gia' presenti piu' avanti in questo file ("prima di misurare
+   l'effetto di un componente dimostro che l'interruttore funziona") non
+   sono state applicate ai backtest. Valgono anche li': il pool e' un
+   interruttore, e va verificato che sia acceso prima di misurare.
+
+## DIFETTI APERTI SULLA FONTE DATI MANAGER (prioritari, 06/08/2026)
+
+Trovati ispezionando una sola giornata. Finche' non sono chiusi, ogni
+analisi che legge dati_globali/manager_*.json parte da dati mutilati.
+
+D1. RICOSTRUISCI_MANAGER SALVA RIGHE VUOTE IN SILENZIO. Se formazione()
+    fallisce, la riga resta nel file senza il campo 'carte' e nessuno se ne
+    accorge mai: il pool risulta piu' piccolo e basta. Erano 133 righe su
+    crowss e 26 su forever-young. RECUPERATE il 06/08 con
+    ripesca_formazioni_vuote.py (0 residue), ma IL DIFETTO A MONTE E'
+    ANCORA LI': la prossima estrazione ne produrra' altre. Da sistemare in
+    ricostruisci_manager.py (non salvare la giornata, o marcare la riga
+    come incompleta e riprovarla al giro dopo).
+D2. 37 MANAGER SU 39 SONO TRONCATI ALLE SOLE ARENE (estratti con
+    --solo-arene). Solo crowss e forever-young hanno anche le competizioni
+    non-arena. Conseguenza: per quei 37 il pool coincide con gli slot e non
+    c'e' selezione da misurare. Riestrazione da decidere (costa query).
+D3. TIPI_ARENA_ESCLUSI scarta SEMPRE arena_rare e arena_altro, anche
+    quando le arene servono tutte.
+D4. IL PUNTEGGIO NEI FILE MANAGER E' COL BONUS DENTRO. In arena l'xp non
+    conta e il capitano vale +20%; fuori dall'arena xp e capitano si
+    SOMMANO e il capitano vale +50% (costanti di produzione in
+    build_formazione_globale.CAPTAIN_BONUS_BY_TYPE). Ricostruire il grezzo
+    dividendo NON e' affidabile: bonus_carta sottostima il bonus vero e
+    l'errore e' dell'1-3%, sistematico e piu' grande sulle carte pregiate.
+    Il punteggio grezzo si LEGGE dalla cache game-log condivisa, non si
+    ricostruisce. Copertura misurata: 179 carte su 187.
+D6. GLI SCRIPT p11_* NON TOLGONO NESSUN BONUS. p11_manager_confronto.py,
+    p11_bloccato_tutti_mazzi.py e p11_calib_fwd_confronto.py prendono
+    `c['punteggio']` da TUTTE le righe (comprese le non-arena) senza
+    togliere ne' xp ne' capitano: sul mazzo crowss sono 876 giocatori su
+    1136 col punteggio gonfiato (77%), fino al 69% sulle carte capitano
+    fuori dall'arena. Il filtro TIPI_VALIDI arriva dopo, quando i punteggi
+    sono gia' stati presi. analizza_gw.py invece e' CORRETTO (filtra le
+    arene e toglie il capitano). Da rifare leggendo il grezzo dalla cache,
+    come p13_backtest_gw_crowss.py. E' su questi script che poggia il
+    verdetto negativo che ha chiuso il DIFENSORE: quel verdetto e' nullo.
+
+D7. IL RUOLO E' UNA PROPRIETA' DELLA CARTA, NON DEL GIOCATORE. Sorare puo'
+    cambiare ruolo a un giocatore lasciando alle carte gia' emesse quello
+    vecchio (casi reali nella GW 21-24 lug: Lee Dong-Gyeong MID+FWD, Ros
+    MID+DEF). Nei file manager lo stesso slug compare quindi con ruoli
+    diversi. Due conseguenze, gia' segnalate dall'utente settimane fa e
+    gia' corrette NEL GENERATORE (§47.B del riassunto: conteggi per
+    (slug, ruolo), e divieto di usare lo stesso giocatore due volte nella
+    stessa formazione anche con carte di ruolo diverso -- regola Sorare):
+      - chi legge dati_globali/manager_*.json senza passare dal generatore
+        NON ha nessuna di queste due protezioni e puo' schierare un
+        giocatore due volte o nel ruolo sbagliato;
+      - percio' ogni backtest deve costruire le formazioni con
+        build_one_lineup_with_growth (il generatore vero), mai con un
+        knapsack scritto per l'occasione. Verificato il 06/08 su
+        p13_backtest_gw_crowss.py: 34 formazioni prodotte, zero giocatori
+        ripetuti.
+
+D5. LE GOLDEN ARENA sono identiche alle normali (stesse regole d'ingresso,
+    stessa shape, stessi cap): cambia solo il moltiplicatore dei premi, e
+    una golden puo' essere 220, 260, uncapped o beginner. Non sono un tipo
+    a parte e non vanno trattate come tale.
+
 # Regole di interazione (valgono per ogni sessione)
 
 Riguardano SOLO come mi rapporto all'utente. Nessuna istruzione operativa sui tool qui dentro.

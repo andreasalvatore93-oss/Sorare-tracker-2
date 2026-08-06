@@ -1,0 +1,351 @@
+PASSAGGIO DI CONSEGNE FRA ORCHESTRATORI
+Scritto da Opus (orchestratore uscente), 06/08/2026 sera-notte, ora di Roma.
+Destinatario: il PROSSIMO ORCHESTRATORE, che riprende da un'altra sessione.
+Leggere per intero PRIMA di scrivere qualunque cosa o far girare qualunque
+script.
+
+Sostituisce docs/handoff/HANDOFF_ORCHESTRATORE_GRADE_2026-08-06_SERA.txt, che
+resta valido SOLO per la storia del filone lettera/grade (sezioni 1-13) ma i
+cui verdetti sui backtest sono NULLI: vedi §2 qui sotto.
+
+
+===============================================================================
+0. LEGGI PRIMA QUESTI, IN QUEST'ORDINE
+===============================================================================
+1. CLAUDE.md (radice repo). E' cambiato oggi: in cima c'e' una sezione nuova
+   "BACKTEST: NESSUNO E' AFFIDABILE FINCHE' L'UTENTE NON L'HA ISPEZIONATO" e
+   subito dopo "DIFETTI APERTI SULLA FONTE DATI MANAGER" (D1-D7). Sono
+   vincolanti, non consigli.
+2. Questo file.
+3. docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt (sezioni 1-26) solo per
+   sapere cosa e' stato provato, NON per i verdetti.
+
+
+===============================================================================
+1. LA COSA PIU' IMPORTANTE: L'UTENTE DEVE SCHIERARE DOMANI
+===============================================================================
+L'utente gioca a Sorare sul serio, con soldi suoi, e DOMANI (07/08) deve
+schierare le formazioni. Ha perso DUE GIORNI dietro a backtest che erano
+sbagliati per bug nostri, non per la difficolta' del problema. E' irritato, ha
+ragione, e non ha piu' tempo da perdere.
+
+Conseguenza operativa, non negoziabile: la priorita' e' FIXARE, e in fretta.
+Non aprire filoni nuovi, non proporre altre misure "per sicurezza", non
+chiedere di aspettare. Se serve una decisione, presentagliela con le opzioni
+gia' pronte.
+
+Se l'utente chiede qualcosa per la giornata di domani (formazioni, scouting,
+soglie), quello viene PRIMA di qualunque analisi.
+
+
+===============================================================================
+2. COSA E' SUCCESSO OGGI: SETTE DIFETTI, TUTTI SULLA STESSA FONTE DATI
+===============================================================================
+Tutto e' emerso perche' l'utente ha chiesto una cosa sola: vedere UNA giornata
+vera con i nomi dei giocatori dentro, invece dei soliti numeri di sintesi. In
+un'ora sono usciti sette difetti che tre giorni di lavoro e tre modelli non
+avevano visto. Nessuno era nascosto: erano contabili in due colonne del file
+di output.
+
+G1. IL POOL ERA 5 x NUMERO DI ARENE, IN 22 CASI SU 22.
+    In p12_backtest_manager_full.py (sez.24) il pool veniva costruito SOLO
+    dalle carte gia' schierate nelle arene, quindi il modello riceveva
+    esattamente le carte che servivano a riempire gli slot: zero scorte.
+    Non poteva scegliere NIENTE. Si misurava l'allocazione fra arene, non la
+    selezione delle carte.
+    -> I VERDETTI DELLE SEZIONI 24, 25 E 26 SONO NULLI. Sia il "+9.18 pt/arena
+       su Cap 260" del gruppo A, sia il "non regge su B" che aveva chiuso il
+       filone. Non sono risultati, sono artefatti. NON citarli come fatti.
+
+G2. 37 MANAGER SU 39 SONO TRONCATI ALLE SOLE ARENE.
+    ricostruisci_manager.py con --solo-arene butta tutte le competizioni non
+    arena. Solo crowss e forever-young hanno il dato completo. Verificato
+    dall'utente su Sorare: shirimimi ha molte piu' formazioni di quelle che
+    abbiamo. (CLAUDE.md D2)
+
+G3. LE ARENE RARE VENGONO SCARTATE SEMPRE.
+    TIPI_ARENA_ESCLUSI = ('arena_rare','arena_altro') filtra anche quando le
+    arene servono tutte. (CLAUDE.md D3)
+
+G4. RIGHE SALVATE SENZA CARTE, IN SILENZIO.
+    Se formazione() fallisce, la riga resta nel file senza il campo 'carte' e
+    il pool risulta piu' piccolo senza che nessuno lo sappia. Erano 133 righe
+    su crowss e 26 su forever-young.
+    STATO: RECUPERATE tutte (159) il 06/08 con ripesca_formazioni_vuote.py,
+    zero righe vuote residue su tutti i manager. IL DIFETTO A MONTE E' ANCORA
+    LI': la prossima estrazione ne produrra' altre. (CLAUDE.md D1)
+
+G5. I PUNTEGGI NEI FILE MANAGER HANNO I BONUS DENTRO.
+    In arena l'xp non conta e il capitano vale +20%. Fuori dall'arena xp e
+    capitano si SOMMANO e il capitano vale +50% (costanti di produzione in
+    build_formazione_globale.CAPTAIN_BONUS_BY_TYPE). Ricostruire il grezzo
+    dividendo NON e' affidabile perche' bonus_carta sottostima il bonus vero:
+    errore dell'1-3%, sistematico, e piu' grande sulle carte pregiate, cioe'
+    proprio quelle che il modello sceglie. Misurato: scarto medio 0.82 punti
+    per carta contro la cache, massimo 5.78, 79 carte su 179 oltre mezzo
+    punto.
+    SOLUZIONE ADOTTATA: il grezzo si LEGGE dalla cache game-log condivisa, non
+    si ricostruisce. Copertura sulla GW93: 179 carte su 187. (CLAUDE.md D4)
+
+G6. GLI SCRIPT p11_* NON TOLGONO NESSUN BONUS, NE' XP NE' CAPITANO.
+    p11_manager_confronto.py, p11_bloccato_tutti_mazzi.py e
+    p11_calib_fwd_confronto.py prendono c['punteggio'] da TUTTE le righe,
+    comprese le non-arena. Sul mazzo crowss sono 876 giocatori su 1136 col
+    punteggio gonfiato (77%), fino al 69% sulle carte capitano fuori
+    dall'arena. Il filtro TIPI_VALIDI arriva dopo, quando i punteggi sono
+    gia' stati presi.
+    -> IL VERDETTO NEGATIVO CHE HA CHIUSO IL DIFENSORE POGGIA SU
+       p11_bloccato_tutti_mazzi.py (HANDOFF_FAVORITO_ODDS_2026-08-06.txt
+       §5ter). QUEL VERDETTO E' NULLO. Il difensore passava tutti e tre i
+       gate (lift, correlazione, MAE) ed e' stato escluso solo per quel
+       backtest. Va riaperto.
+    analizza_gw.py invece E' CORRETTO: filtra le arene e toglie il capitano.
+    (CLAUDE.md D6)
+
+G7. IL RUOLO E' UNA PROPRIETA' DELLA CARTA, NON DEL GIOCATORE.
+    Casi reali nella GW 21-24 lug: Ros ha una carta MID e una DEF, Lee
+    Dong-Gyeong una MID e due FWD. Gia' segnalato dall'utente SETTIMANE FA e
+    gia' corretto NEL GENERATORE (§47.B del riassunto: conteggi per
+    (slug,ruolo) e divieto di usare lo stesso giocatore due volte nella stessa
+    formazione). Chi pero' legge dati_globali/manager_*.json senza passare dal
+    generatore non ha nessuna delle due protezioni. (CLAUDE.md D7)
+
+RETTIFICA IMPORTANTE, da non ripetere: l'orchestratore uscente aveva scritto
+in CLAUDE.md che il vincolo "ogni carta si usa una volta sola" fosse falso,
+perche' nel dump lo stesso GIOCATORE compariva in piu' arene. E' SBAGLIATO:
+erano carte diverse dello stesso giocatore. Il vincolo e' corretto e va
+mantenuto. La riga in CLAUDE.md e' gia' stata corretta.
+
+
+===============================================================================
+3. COSA E' STATO COSTRUITO OGGI CHE FUNZIONA
+===============================================================================
+ripesca_formazioni_vuote.py (radice repo)
+  Recupera le righe salvate senza carte. Tocca solo quelle, non riscarica
+  nulla di gia' presente, formazioni pubbliche quindi niente cookie.
+  Uso: python ripesca_formazioni_vuote.py [--manager X] [--gw Y] [--dry-run]
+  Gia' girato: 133 crowss + 26 forever-young, zero residue.
+
+analisi_manager/p13_backtest_gw_crowss.py
+  Il primo backtest costruito bene. Cosa fa di diverso dai precedenti:
+   - pool da TUTTE le competizioni della giornata, non solo dalle arene;
+   - punteggio grezzo LETTO dalla cache game-log, divisione solo come
+     ripiego, contata e marcata riga per riga nel dump;
+   - stampa il controllo pool contro slot PRIMA di ogni numero e SI FERMA DA
+     SOLO se il pool non e' piu' grande degli slot;
+   - avvisa se restano formazioni senza carte;
+   - costruisce le formazioni con build_one_lineup_with_growth, cioe' il
+     generatore vero, quindi eredita il divieto "stesso giocatore due volte";
+   - scrive un dump leggibile con arene, nomi, punteggi e pool per ruolo.
+  Uso:
+    python analisi_manager/p13_backtest_gw_crowss.py --gw football-21-24-jul-2026 \
+        --dump analisi_manager/dati/DUMP_p13_crowss_21-24jul.txt
+
+analisi_manager/dati/DUMP_p13_crowss_21-24jul.txt
+  Il dump della GW93, gia' ispezionato dall'utente: le SUE arene sono giuste.
+
+
+===============================================================================
+4. IL PRIMO BACKTEST PULITO: RISULTATI INTEGRALI (GW 21-24 lug 2026, crowss)
+===============================================================================
+Campione: 17 arene reali (11 Beginner, 4 Cap 260, 2 Cap 220), pool 187 carte
+distinte contro 85 slot da riempire, quindi 102 carte di scorta. Punteggi
+letti dalla cache per 179 carte su 187.
+Tre contendenti sulle STESSE arene con lo STESSO pool:
+  REALE = quello che ha schierato l'utente
+  A     = modello di produzione (score_atteso calibrato)
+  G     = modello + grade (z-score dentro il gruppo lega/ruolo, nessun peso)
+
+  #   tipo        REALE        A        G
+   1  Beginner   294.71   260.60   279.90
+   2  Beginner   338.82   310.90   258.08
+   3  Beginner   258.84   265.42   360.75
+   4  Beginner   270.00   271.98   325.14
+   5  Beginner   291.94   200.94   269.24
+   6  Beginner   261.94   268.42   283.50
+   7  Beginner   268.26   247.94   343.72
+   8  Beginner   251.76   237.66   253.40
+   9  Beginner   222.18   338.48   281.68
+  10  Cap 260    212.62   302.70   307.13
+  11  Beginner   208.78   281.68   199.82
+  12  Cap 220    194.24   190.66   220.34
+  13  Cap 260    176.90   213.18   296.16
+  14  Cap 260    227.96   286.68   211.06
+  15  Beginner   257.65   325.58   289.67
+  16  Cap 260    216.76   359.17   323.18
+  17  Cap 220    222.45   177.08   160.26
+  ------------------------------------------
+  TOTALE        4175.81  4539.07  4663.03
+  MEDIA          245.64   267.00   274.30
+
+  A batte REALE in 10 arene su 17. G batte A in 10 su 17.
+  A - REALE = +363.26 (+8.7%).  G - A = +123.96 (+2.7%).
+
+COME VA LETTO, ONESTAMENTE:
+ - E' UNA SOLA GIORNATA. Nessun bootstrap, nessun intervallo: e' una
+   descrizione, non una prova. Non scriverlo da nessuna parte come verdetto.
+ - Il totale e' confrontabile, il singolo abbinamento arena-per-arena molto
+   meno: il modello riempie le arene in un certo ordine e le prime si prendono
+   le carte migliori. "Arena 5: utente 291, modello 200" non vuol dire che
+   avrebbe giocato peggio quella, vuol dire che quelle carte le ha spese
+   altrove.
+ - L'utente ha ispezionato e confermato le SUE formazioni. Dei calcoli del
+   modello si e' dovuto fidare: non e' una verifica, e lui lo sa e lo ha
+   detto.
+
+CONTROLLI GIA' FATTI SU QUESTO BACKTEST (non rifarli):
+ - totali coerenti col capitano: arena 1, i cinque grezzi fanno 276.90, +20%
+   sul capitano Palacios = 294.71, identico all'ufficiale;
+ - zero giocatori ripetuti nelle 34 formazioni prodotte (17 arene x 2
+   varianti);
+ - i nomi che sembravano ripetuti (Ros, Lee Dong-Gyeong) sono carte diverse
+   dello stesso giocatore: legittimo;
+ - i 6 giocatori senza score FINAL in cache sono DID_NOT_PLAY, punteggio 0
+   sia in cache sia nel file manager: non inquinano niente.
+
+DIFETTI COSMETICI ANCORA APERTI IN QUESTO SCRIPT (non urgenti):
+ - il contatore "ammissibili nel pool: 185" e' identico per tutte le arene,
+   comprese Cap 220 e Cap 260, perche' conta le carte sotto cap una per una
+   mentre il cap Sorare vale sulla SOMMA L10 dei cinque. Numero inutile che
+   sembra dire qualcosa: toglierlo o sostituirlo con quante formazioni valide
+   esistono sotto quel cap;
+ - i giocatori DID_NOT_PLAY sono marcati "ricostruito" come se fossero un
+   ripiego: andrebbero marcati "non ha giocato".
+
+
+===============================================================================
+5. LA RICHIESTA APERTA DELL'UTENTE: LA VERSIONE RISTRETTA DEL TEST
+===============================================================================
+L'utente vuole, OLTRE al test appena fatto, una seconda versione in cui il
+modello puo' pescare SOLO fra le carte che lui ha effettivamente schierato IN
+ARENA quella giornata, non nel pool complessivo. Ragione sua: nel test
+globale il modello attinge anche alle carte usate nelle competizioni non
+arena, e questo lo avvantaggia sulla carta.
+
+Il test probante resta quello GLOBALE. La versione ristretta serve come
+controllo aggiuntivo, e va consegnata sempre insieme all'altra.
+
+AVVERTENZA DA DIRGLI, NON DA NASCONDERE: nella versione ristretta il pool
+coincide quasi esattamente con gli slot (85 carte per 85 slot nella GW93).
+Quindi quel test NON misura la selezione delle carte -- e' esattamente la
+condizione che ha reso nulle le sezioni 24-26. Misura due cose sole, che
+comunque non sono zero:
+  - come il modello ALLOCA le stesse carte fra le arene;
+  - se rinuncia a schierare qualche arena, e chi sceglie come capitano.
+Va detto in chiaro nel report, altrimenti fra una settimana qualcuno lo
+riprende come se misurasse la stessa cosa dell'altro. Il controllo pool
+contro slot in p13 lo bloccherebbe: va aggiunto un flag esplicito per
+autorizzare il caso pool == slot SOLO in questa modalita', mai in silenzio.
+
+
+===============================================================================
+6. DA DOVE RIPARTIRE, IN ORDINE
+===============================================================================
+PASSO 0 (se l'utente lo chiede): tutto cio' che gli serve per schierare
+  domani. Viene prima di ogni analisi.
+
+PASSO 1. Versione ristretta del backtest (§5), su p13_backtest_gw_crowss.py,
+  con il flag esplicito e l'avvertenza scritta nel report. Consegnare i due
+  test affiancati, con il dump.
+
+PASSO 2. FIX DEL DIFETTO A MONTE in ricostruisci_manager.py (D1): quando
+  formazione() fallisce, non salvare la riga muta -- o marcarla incompleta e
+  riprovarla al giro dopo. Senza questo, ogni riestrazione futura ricomincia
+  a perdere formazioni in silenzio.
+
+PASSO 3. RIAPERTURA DEL DIFENSORE (G6). Gli script p11_* vanno corretti
+  leggendo il grezzo dalla cache, come fa p13, e p11_bloccato_tutti_mazzi.py
+  va rilanciato sugli stessi 37 mazzi. Solo allora si sapra' se il verdetto
+  negativo reggeva o no. E' il filone piu' promettente fra quelli chiusi:
+  passava lift, correlazione e MAE.
+
+PASSO 4. Decidere con l'utente se riestrarre i 37 manager troncati (D2, D3):
+  costa query, va su GitHub Actions (ricostruisci_manager.yml), e prima va
+  verificato che i punteggi delle competizioni non-arena arrivino corretti.
+  Finche' non e' fatto, NESSUN backtest sui manager diversi da crowss e
+  forever-young ha un pool vero.
+
+PASSO 5. Solo dopo: riprendere il filone lettera/grade, che NON e' ne'
+  confermato ne' chiuso. Cio' che regge di quel filone e' solo la parte che
+  non dipendeva dal pool: il grade correla col punteggio meglio del nostro
+  score_atteso e il guadagno regge fuori campione su MID e FWD. Tutto cio'
+  che riguarda i punti a livello di formazione e' da rifare.
+
+
+===============================================================================
+7. COME SI LAVORA CON QUESTO UTENTE
+===============================================================================
+Sta tutto in CLAUDE.md e va letto davvero. I punti che oggi hanno fatto la
+differenza:
+
+- MOSTRA I DATI, NON I RIASSUNTI DEI DATI. Prima di consegnare un backtest,
+  produci un dump leggibile di almeno un caso completo: nomi, ruolo,
+  punteggio, arena per arena, piu' le carte fra cui il modello poteva
+  scegliere e quelle che ha scelto. Si consegna INSIEME ai numeri, non su
+  richiesta. Tutti gli errori di oggi sono usciti da li'.
+- CONTA IL POOL CONTRO GLI SLOT PRIMA DI OGNI TEST, e riportalo in chiaro. Se
+  il pool non e' piu' grande degli slot, il test e' nullo per costruzione:
+  fermati e dillo.
+- OGNI BACKTEST COSTRUISCE LE FORMAZIONI CON IL GENERATORE VERO
+  (build_one_lineup_with_growth), mai con un knapsack scritto per
+  l'occasione: e' l'unico modo di ereditare i vincoli Sorare gia' corretti.
+- BREVITA' IN CHAT. Massimo 5 righe. Analisi, tabelle e numeri nei file di
+  docs/handoff/, mai in chat. L'utente paga a token.
+- ITALIANO, ora di Roma.
+- L'utente e' laureato in legge, non in statistica. Ogni numero che conta va
+  spiegato PRIMA con un esempio banale (monete, scontrini, diete) e POI col
+  numero vero. Se dice "non ho capito", riformula piu' STUPIDO, non piu'
+  preciso.
+- HA UNA FORMA GRAVE DI ADHD. Un tema alla volta, niente divagazioni, niente
+  opzioni che non seguirai.
+- QUANDO SEGNALA UN ERRORE, HA QUASI SEMPRE RAGIONE. Oggi ha avuto ragione
+  sette volte su sette. Se la sua obiezione sembra sbagliata, verificala sui
+  dati prima di rispondere: due volte oggi l'orchestratore ha lasciato cadere
+  un'obiezione giusta e ha perso ore.
+- MODELLO DI LAVORO: un orchestratore (Opus) che non esegue mai, Sonnet per
+  tutto cio' che contiene un "decidi se", Haiku per il volume meccanico.
+  L'utente fa da navetta fra le chat: gli agenti non si parlano. Digli SEMPRE
+  a chi va dato un brief. I brief si scrivono IN CHAT, corti, con obiettivo e
+  compiti numerati.
+- NEI BRIEF: dichiarare le ipotesi PRIMA dei numeri, e chiedere sempre su
+  quali righe e' calcolato ogni numero. Sono le due regole che hanno beccato
+  errori veri.
+- Se un esecutore si ferma e segnala un'incongruenza invece di correggerla a
+  occhio, ha fatto la cosa giusta: diglielo. Oggi Sonnet lo ha fatto due
+  volte e in un caso aveva ragione lui contro l'orchestratore.
+
+
+===============================================================================
+8. STATO DEL REPO
+===============================================================================
+Branch main. Ultimi commit rilevanti di oggi:
+  ba201fd6a0  completa p13_backtest_gw_crowss.py (A/G sulle 17 arene reali)
+  f0c9a2fa07  recupera 159 formazioni salvate senza carte
+  be21e8dcf4  sez.23 (pool proxy, disegno sbagliato: ignorare)
+  5131077d8b  sez.21 backtest formazione su crowss (pool vero ma copertura
+              grade 4.6%: metodo valido, risultato debole)
+
+NON COMMITTATI al momento della scrittura: le modifiche a CLAUDE.md (sezioni
+nuove BACKTEST e DIFETTI APERTI D1-D7, piu' la rettifica del §2), questo
+handoff, e ripesca_formazioni_vuote.py se non e' entrato nel commit f0c9a2fa07.
+Vanno committati e pushati.
+
+NESSUNA MODIFICA ALLA PRODUZIONE E' STATA FATTA OGGI. Le soglie arena
+(PAREGGIO_ARENA, GUADAGNO_PER_PUNTO in generatore_formazioni/) sono intatte.
+Nessuna run GitHub Actions lanciata.
+
+
+===============================================================================
+9. FILE DI RIFERIMENTO
+===============================================================================
+CLAUDE.md                                              regole + difetti D1-D7
+docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt      sezioni 1-26 (verdetti
+                                                       24-26 NULLI)
+docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt      §5ter, il backtest che
+                                                       ha chiuso il difensore
+                                                       (nullo, vedi G6)
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md             stato dell'arte
+docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md        §47.B, il doppio ruolo
+analisi_manager/p13_backtest_gw_crowss.py              il backtest pulito
+analisi_manager/dati/DUMP_p13_crowss_21-24jul.txt      il dump ispezionato
+ripesca_formazioni_vuote.py                            recupero righe vuote
