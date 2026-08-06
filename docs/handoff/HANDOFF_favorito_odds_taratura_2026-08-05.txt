@@ -1,3 +1,325 @@
+SESSIONE 06/08/2026 ~03:45 Roma (CET) -- POOL CONCENTRATI vs SPARSI (ipotesi NON confermata, risultato misto -- CHIUSO)
+
+Terza e ultima ipotesi strutturale dichiarata prima dei numeri: il guadagno
+crolla MONOTONAMENTE passando da un pool sparso a uno concentrato (poche
+leghe/squadre, qualita' simile). Generate 4 condizioni sullo stesso motore
+di Brief 2 (1.600 pool sparso, 1.600 concentrato_lega, 1.600
+concentrato_squadra, 1.200 concentrato_qualita' -- quest'ultima piu' piccola
+perche' il vincolo L10 in [45,60] scarta piu' tentativi).
+
+CONTROLLO DI SANITA' (la manipolazione ha funzionato?): si', ciascuna
+condizione ha spostato la dimensione giusta senza toccare le altre --
+concentrato_lega: leghe 7.06->2.32 (squadre/L10 quasi invariati);
+concentrato_squadra: squadre 17.52->3.69 (leghe scendono di riflesso a
+2.31, L10 invariato); concentrato_qualita': SD(L10) 7.38->3.92 (leghe/
+squadre invariati). I test non sono muti.
+
+RISULTATO -- delta B-A TOTALE per condizione:
+  sparso                +3.75  IC95[+1.91,+5.59]
+  concentrato_lega      +3.63  IC95[+1.55,+5.62]   (quasi identico a sparso)
+  concentrato_squadra   +1.00  IC95[-1.24,+3.41]   (crolla, ma IC attraversa zero)
+  concentrato_qualita'  +5.28  IC95[+2.69,+7.99]   (SALE, direzione OPPOSTA)
+NON monotono: concentrare per LEGA non cambia quasi nulla; concentrare per
+SQUADRA riduce molto il guadagno (unico segnale nella direzione prevista,
+ma non statisticamente significativo da solo); concentrare per QUALITA'
+simile lo AUMENTA, l'opposto della previsione.
+
+CONCENTRAZIONE DEI CAMPIONI REALI (dove si collocano davvero):
+  campione          leghe/GW    squadre/GW   SD(L10)   pool_size medio
+  sparso (sintetico)   7.06        17.52       7.38         30.1
+  crowss               8.82        27.89       6.12         44.3
+  forever-young       17.29       105.93       9.02        319.9
+FALSA anche qui la premessa "i mazzi reali sono concentrati": crowss e
+forever-young sono PIU' diversificati per leghe/squadre del pool sintetico
+sparso, non meno -- il confronto e' pero' viziato dalla scala (il pool
+reale aggrega TUTTE le arene di una GW, non una sola arena), quindi non e'
+una prova pulita quanto le condizioni sintetiche controllate sopra.
+
+VERDETTO: IPOTESI NON CONFERMATA nella forma monotona dichiarata --
+terza bocciatura consecutiva del filone strutturale (dopo dimensione del
+pool e dispersione di favorito_odds). Resta un residuo interessante ma
+NON significativo (concentrazione per squadra riduce il punto centrale a
++1.00 da +3.75) che potrebbe meritare attenzione in futuro con un campione
+piu' grande, ma non giustifica una quarta ipotesi su questi stessi dati
+(come da istruzione esplicita). La differenza fra sintetiche e mazzi reali
+resta SENZA una spiegazione strutturale isolata: dimensione, dispersione e
+concentrazione sono state tutte testate e bocciate come spiegazione unica.
+
+FILONE STRUTTURALE CHIUSO. Stato finale della sessione: favorito_odds
+regge da solo su DEF (misura per-ruolo, campione pieno); il guadagno a
+livello di formazione completa e' incoerente fra campioni (forte e
+significativo sulle sintetiche/Brief 2, presente ma piu' debole quando si
+blocca la composizione su un solo campione reale su due, assente o
+opposto altrove) e NESSUNA delle spiegazioni strutturali provate (pool
+piccolo, favorito_odds poco disperso, pool concentrato) spiega la
+differenza in modo pulito. Nessuna adozione, nessun commit su tutta la
+sessione riguardante favorito_odds.
+
+-----------------------------------------------------------------------------
+SESSIONE 06/08/2026 ~03:20 Roma (CET) -- LA DISPERSIONE, NON LA DIMENSIONE (ipotesi BOCCIATA su ENTRAMBI i fronti)
+
+Ipotesi dichiarata PRIMA dei numeri: il guadagno cresce con la dispersione
+(SD e range) di favorito_odds fra i DEF disponibili nel pool, E i mazzi
+reali hanno dispersione sistematicamente PIU' BASSA dei pool sintetici
+(spiegherebbe perche' le sintetiche mostrano il guadagno e i mazzi reali
+no). Calcolata SD e range di favorito_odds fra i DEF di ogni pool, sui tre
+campioni.
+
+RISULTATO -- correlazione dispersione vs delta B-A:
+  campione          corr(SD,delta)              corr(range,delta)
+  sintetiche        +0.043 [-0.016,+0.100]       +0.059 [+0.002,+0.112] (al limite)
+  crowss            -0.002 [-0.028,+0.018]       --
+  forever-young     -0.022 [-0.061,+0.013]       --
+Nessuna correlazione solida in nessun campione. I quartili NON sono
+monotoni: sintetiche Q1=+2.39, Q2=+3.87, Q3=+1.76(!), Q4=+5.33 -- un
+tuffo a Q3 che smentisce un trend pulito. Su crowss il quartile piu' alto
+e' addirittura NEGATIVO (-0.597, seppur IC ampio). Su forever-young il
+quartile piu' alto e' vicino a zero (-0.104), non il piu' favorevole.
+
+RISULTATO -- confronto distribuzioni (la premessa "mazzi reali piu'
+concentrati" e' vera?):
+  campione          n      media    p10     mediana   p90
+  sintetiche        2.799  0.246    0.147    0.238     0.359
+  crowss              345  0.210    0.154    0.202     0.289
+  forever-young       648  0.269    0.217    0.268     0.334
+FALSA la premessa per forever-young: ha dispersione PIU' ALTA delle
+sintetiche (0.269 vs 0.246), non piu' bassa. Solo crowss e' leggermente
+piu' basso (0.210). Le distribuzioni si SOVRAPPONGONO ampiamente in tutti
+e tre i confronti (i range p10-p90 si intersecano quasi per intero).
+
+VERDETTO: IPOTESI BOCCIATA su entrambi i fronti dichiarati.
+(1) Il guadagno NON cresce con la dispersione in modo pulito in nessun
+campione: correlazioni deboli/nulle, quartili non monotoni.
+(2) I mazzi reali NON hanno sistematicamente meno dispersione delle
+sintetiche -- anzi forever-young ne ha di piu'.
+La differenza fra sintetiche (segnale forte) e mazzi reali (segnale
+debole/incoerente) NON e' spiegata ne' dalla dimensione del pool (gia'
+bocciato) ne' dalla dispersione di favorito_odds fra i DEF disponibili.
+Resta aperta la spiegazione piu' probabile gia' scritta nei limiti di
+Brief 2: la CORRELAZIONE fra le carte di un mazzo vero (comprate insieme,
+concentrate su squadre/leghe/momenti simili) rispetto all'indipendenza
+delle carte in un pool campionato a caso -- ma questa e' un'ipotesi
+ancora da isolare direttamente, non ancora testata di per se'.
+
+Implicazione pratica: NON risulta che un mazzo "variegato su piu'
+campionati" valga sistematicamente di piu' per questo segnale -- l'ipotesi
+esplicita del brief (dispersione = valore operativo) non regge ai dati.
+
+-----------------------------------------------------------------------------
+SESSIONE 06/08/2026 ~03:05 Roma (CET) -- IL GUADAGNO CRESCE COL POOL? (ipotesi BOCCIATA, piatto)
+
+Domanda: la differenza fra il segnale forte di Brief 2 (sintetiche) e quello
+debole/incoerente dei mazzi reali (crowss/forever-young) e' dovuta alla
+PROFONDITA' del mazzo (piu' opzioni = piu' guadagno, specie piu' DEF)?
+Ipotesi dichiarata PRIMA dei numeri: si', il guadagno cresce col pool.
+
+Prima di leggere i numeri, verificata la fonte del pool sintetico (dubbio
+legittimo: leaderboard pubblica selezionata per bravura?). NO: viene da
+`backtest_arene_cache.py`, indice locale dei game-log delle ~30 leghe che
+la pipeline di PRODUZIONE segue (`<lega>/output/*/.game_log_cache/`),
+nessuna chiamata di rete, nessuna leaderboard. 4.311 slug (GK 370, DEF
+1.515, MID 1.310, FWD 1.116): rappresentativo dei roster di quelle leghe,
+non filtrato per bravura individuale (limite reale: solo leghe TRACCIATE,
+non tutti i giocatori del mondo -- gia' scritto nei limiti di Brief 2).
+
+RISULTATO -- sintetiche, fasce per dimensione pool (n_DEF = disponibili,
+non schierati):
+  20-25 carte: n=743  delta=+3.79 IC95[+1.87,+5.72]  n_DEF medio=7.8
+  26-30 carte: n=626  delta=+3.88 IC95[+0.64,+7.28]  n_DEF medio=9.6
+  31-35 carte: n=646  delta=+3.42 IC95[+1.10,+5.77]  n_DEF medio=11.4
+  36-40 carte: n=613  delta=+3.76 IC95[+1.12,+6.42]  n_DEF medio=13.3
+PIATTO: tutte e 4 le fasce danno lo stesso delta (+3.4/+3.9) entro il
+rumore, nessun trend crescente nonostante n_DEF disponibile raddoppi (7.8
+-> 13.3).
+
+Correlazione pool-per-pool (non a fasce), tutti e tre i campioni:
+  campione         corr(pool_size,delta)      corr(n_DEF,delta)
+  sintetiche        +0.024 [-0.012,+0.061]     +0.040 [-0.006,+0.084]
+  crowss            -0.012 [-0.037,+0.012]     -0.011 [-0.035,+0.013]
+  forever-young     -0.005 [-0.046,+0.034]     -0.008 [-0.050,+0.034]
+Tutte le correlazioni sono sostanzialmente ZERO, IC95 attraversa zero in
+ogni caso, su tutti e tre i campioni indipendenti.
+
+VERDETTO: IPOTESI BOCCIATA in modo netto e coerente su tre campioni.
+Il guadagno NON cresce con la profondita' del mazzo ne' col numero di DEF
+disponibili. La differenza fra il segnale forte delle sintetiche e quello
+debole/incoerente dei mazzi reali NON e' una questione di quante carte
+hai sottomano -- ha un'ALTRA causa, quasi certamente quella gia' scritta
+nei limiti di Brief 2: i pool sintetici sono campionati A CASO fra
+giocatori indipendenti, mentre un mazzo vero e' CORRELATO (le carte di un
+manager tendono a essere scelte insieme, per squadra/lega/qualita' medie
+simili) -- e' la STRUTTURA del pool (casuale vs correlato), non la sua
+DIMENSIONE, a spiegare la differenza.
+
+Implicazione pratica diretta: comprare piu' difensori NON aumenta il
+guadagno di favorito_odds -- l'ipotesi "conviene approfondire il mazzo"
+e' respinta dai dati.
+
+-----------------------------------------------------------------------------
+SESSIONE 06/08/2026 ~02:45 Roma (CET) -- CAPITANO CON QUOTE 1X2 (ipotesi BOCCIATA)
+
+Filone capitano interno era chiuso (8 ipotesi bocciate su 3.130 formazioni,
+solo "favorito/sfavorita" restava aperta: IC95 [-0.0015,+0.14], riprovabile
+solo con altro campione). Ora misura migliore (p_win di mercato) e campioni
+nuovi (227+653+2.800). Ipotesi PRINCIPALE dichiarata prima dei numeri:
+
+  CAP-B = fascia al non-GK della sua squadra con p_win piu' alta (mercato).
+  CAP-A = pick_captain() di produzione (baseline).
+  Formazione IDENTICA fra le due, score_atteso di produzione, favorito_odds
+  SPENTO (una variabile alla volta). Capitano +20% (CAP_MULT=1.2, arena non
+  In Season). Trappola 8.1 rispettata: realizzato = somma reale grezza dei 5
+  + (1.2-1)*reale del capitano, nessun doppio conteggio.
+
+RISULTATO -- IPOTESI PRINCIPALE:
+  campione              n      delta CAP-B vs CAP-A     IC95                    fascia cambiata
+  crowss (227 arene)    377    +0.203                    [-0.038,+0.483]         6.6% (basso)
+  forever-young          653   -1.091                    [-1.530,-0.616] *       60.3%
+  sintetiche (Brief 2) 2.800   -0.129                    [-0.364,+0.097]         65.5%
+  (* = IC95 esclude zero)
+
+VERDETTO: IPOTESI PRINCIPALE BOCCIATA. Sul campione con piu' potere e piu'
+cambio di fascia (forever-young, 60% delle formazioni cambiano capitano),
+CAP-B PEGGIORA in modo statisticamente significativo (-1.09 pt, IC95 non
+attraversa zero). Il campione piu' grande e pulito (sintetiche, n=2.800,
+65.5% cambio) da' un punto centrale coerentemente NEGATIVO, non
+significativo ma nella STESSA direzione di forever-young. Solo crowss va
+nella direzione opposta (+0.203) ma con potere bassissimo (6.6% di cambio
+sul totale, 3.9%/4.3% "quasi muto" su cap 260/uncapped) -- non basta a
+contraddire gli altri due campioni piu' potenti.
+
+Per costruzione, NON si e' ripiegato sulle esplorazioni secondarie per
+cercare qualcosa che passasse (istruzione esplicita). Riportate comunque,
+etichettate come tali: soglie (51/60/70%) e vincoli di ruolo (solo DEF/
+MID/FWD) restano prevalentemente NEGATIVI su forever-young e sintetiche
+(es. "solo DEF" sintetiche: -0.880 IC95[-1.147,-0.628], solidamente sotto
+zero) -- coerenti col fallimento dell'ipotesi principale, non
+un'alternativa migliore. Su crowss le esplorazioni sono positive ma con
+lo stesso problema di basso potere del test principale.
+
+LETTURA: la p_win di mercato NON e' un buon criterio per il capitano,
+almeno cosi' applicata (valore assoluto della probabilita' di vittoria
+della squadra, senza pesare l'atteso del giocatore). Coerente con la
+chiusura precedente del filone capitano: cambiare la fonte del segnale
+"favorito/sfavorita" (da interno a mercato) non lo salva. Il filone
+capitano resta CHIUSO, ora con base piu' solida (tre campioni, non uno).
+
+-----------------------------------------------------------------------------
+SESSIONE 06/08/2026 ~02:20 Roma (CET) -- BRIEF 2: ARENE SINTETICHE (segnale piu' forte e coerente)
+
+Obiettivo: campione di ordini di grandezza piu' grande, senza il bias del
+mazzo di una singola persona. NON si simulano i voti: si campionano pool
+CASUALI di carte REALMENTE giocate quel giorno (giocatore,partita,atteso
+di produzione,realizzato vero,L10,ruolo), 20-40 carte a pool, rispettando
+la shape delle arene (260/220/uncapped/Beginner), e si fa scegliere le 5
+allo stesso knapsack sotto policy A (produzione) e B (favorito_odds mult
+k=0.2 sui DEF). Finestra 18/11/2025+, eliteserien esclusa (via
+disponibilita' quote, stesso filtro di tutta la sessione).
+
+SCALA DICHIARATA (non nascosta): il brief chiedeva ~10.000 pool; per
+vincoli di tempo generati 2.800 (700 per tipo). Il calcolo di potenza
+sotto dice che bastavano gia' circa 700/tipo, quindi la scala usata e'
+AL LIMITE GIUSTO, non sotto-potenziata in modo grave.
+
+Dati di partenza: 41.188 righe (giocatore,partita) con quote disponibili
+su 4 ruoli, 204 giornate distinte, 178 con pool sufficiente (>=1 GK, >=6
+tra DEF/MID/FWD) per costruire pool sintetici.
+
+RISULTATO -- TUTTI E QUATTRO I TIPI hanno IC95 che ESCLUDE ZERO, stesso
+segno positivo, nessuna eccezione:
+  tipo       n     punti A    punti B    delta B-A            sd_diff  overlap medio
+  TOTALE    2.800   272.48     275.81    +3.33 [+1.92,+4.87]   27.4    3.97/5
+  Beginner    700   272.58     275.40    +2.82 [+0.04,+5.54]   31.0    3.68/5
+  cap 220     700   251.41     254.59    +3.18 [+1.17,+5.08]   23.8    4.16/5
+  cap 260     700   276.31     280.05    +3.74 [+1.11,+6.56]   31.9    3.64/5
+  uncapped    700   289.63     293.21    +3.58 [+1.85,+5.55]   21.2    4.41/5
+Composizione: B sposta sempre verso piu' DEF (es. TOTALE 1.48->1.59) e
+meno MID (1.41->1.31), coerente con tutti i test precedenti -- ma qui,
+A DIFFERENZA di Brief 1/D/E, la sovrapposizione non e' mai vicina a 5/5
+di sistema (3.6-4.4/5): il test resta informativo, non muto.
+
+CALCOLO DI POTENZA (richiesto esplicitamente):
+  SD dichiarata nel brief (punteggio-formazione grezzo) = 50pt -> servirebbero
+  ~2.401 pool indipendenti per un IC di +/-2pt.
+  SD EMPIRICA del DELTA appaiato (la quantita' giusta per un test appaiato,
+  visto che A e B condividono lo stesso pool e sono quindi correlate) = 27pt
+  -> ne servono solo ~698. La differenza (50 vs 27) e' l'effetto
+  dell'appaiamento: conferma che il disegno "stesso pool sotto entrambe le
+  policy" e' quello giusto, non un dettaglio tecnico. Con 700/tipo (2.800
+  totali) la scala usata era gia' della grandezza giusta.
+
+VERDETTO: QUESTO E' IL SEGNALE PIU' FORTE E PIU' COERENTE di tutta la
+sessione -- 4 tipi su 4, stesso segno, tutti significativi, su un campione
+enormemente piu' grande (2.800 vs le 227+652 dei test precedenti) e privo
+del bias di un singolo mazzo/manager. Concorda in direzione con Brief 1
+(dove isolare la selezione dentro il ruolo faceva riemergere un guadagno,
+almeno su un campione) e va OLTRE: qui il guadagno c'e' ovunque.
+
+LIMITE DA NON PERDERE (dichiarato esplicitamente, non un dettaglio):
+i pool sono campionati A CASO fra TUTTE le carte realmente giocate quel
+giorno da QUALSIASI giocatore nel database -- non sono il mazzo coerente
+di un manager vero (che compra giocatori forti, concentrati su certe
+leghe/squadre, correlati fra loro). Un pool sintetico ha piu' varieta' di
+qualita' di quanta un manager vero abbia mai sottomano. QUESTO TEST MISURA
+IL GUADAGNO DELLA REGOLA DI SCELTA A PARITA' DI OPZIONI DISPONIBILI, NON
+LA PERFORMANCE ATTESA DI UN MANAGER REALE. E' il motivo per cui puo'
+mostrare un effetto piu' pulito di Brief 1/P11 (mazzo vero, piccolo,
+correlato) senza che i due risultati si contraddicano: misurano cose
+imparentate ma diverse.
+
+DECISIONE APERTA: il quadro complessivo della sessione ora e' -- segnale
+per-ruolo solido su DEF (taratura piena), guadagno che si perde quando i
+ruoli competono liberamente per lo slot (Brief 0/D/E), guadagno che
+RIEMERGE quando si isola la selezione dentro il ruolo (Brief 1, parziale)
+o quando si amplia il campione eliminando il bias del mazzo singolo
+(Brief 2, netto). Nessun commit fatto. La prossima domanda aperta e' se
+la differenza Brief1-vs-Brief2 e' dovuta alla scala campionaria o al bias
+del mazzo reale -- servirebbe un Brief 1 con campione ampliato allo stesso
+ordine di grandezza di Brief 2 per scioglierla, non fatto qui.
+
+-----------------------------------------------------------------------------
+SESSIONE 06/08/2026 ~02:00 Roma (CET) -- BRIEF 1: COMPOSIZIONE BLOCCATA (primo segnale pulito)
+
+Ipotesi: D/E non mostravano guadagno perche' misurano l'effetto ATTRAVERSO
+la ricomposizione dei ruoli (che si annulla nel rumore). Isolato il
+guadagno di SELEZIONE dentro il ruolo: policy B' = favorito_odds mult
+k=0.2 sui DEF, ma con la composizione per ruolo VINCOLATA a essere
+IDENTICA a quella scelta da A nella stessa arena (stesso shape trick:
+role_slots canonico 4 fisso, extra_roles ristretto al singolo ruolo che
+in A ha preso lo slot bonus -- forza il conteggio, lascia libere solo le
+carte). Bug in corso d'opera (corretto prima di riportare): la prima
+versione metteva 5 ruoli diretti in role_slots, ma il motore tratta
+SEMPRE il 5o slot via extra_roles (mai letteralmente "conta i ruoli in
+role_slots") -- dava "nessun candidato" ovunque finche' non l'ho isolato.
+
+CONTROLLO DI SANITA: composizione B' identica ad A in 100% delle arene,
+su ENTRAMBI i campioni, TOTALE e ogni spezzatura per tipo (372/372 crowss,
+652/652 forever-young). Nessun caso infattibile per L10.
+Sovrapposizione carte 1.4-3.9/5 a seconda dello spezzone (mai vicina a
+5/5 tranne uncapped ~3.8-3.9, comunque non muto): il test e' informativo.
+
+RISULTATO:
+  campione            TOTALE                  Beginner                cap 220              cap 260               uncapped
+  crowss (n=372)       -0.10 [-1.33,+1.17]     +1.93 [-0.49,+5.02]     -8.20 [-22.29,+5.98]  -0.86 [-6.51,+4.54]   -0.76 [-9.18,+5.76]
+  forever-young(n=652) +2.98 [+0.33,+6.12] *   +6.21 [+0.38,+13.28] *  -2.59 [-13.10,+6.39]  +3.19 [-3.12,+10.61]  -1.15 [-13.76,+8.87]
+  (* = IC95 esclude zero)
+
+VERDETTO: PRIMO segnale positivo pulito della sessione, ma SOLO su un
+campione. forever-young TOTALE (+2.98, IC95 esclude zero) e forever-young
+Beginner (+6.21, IC95 esclude zero) mostrano un guadagno di punti reale
+quando si isola la selezione dentro il ruolo dalla competizione fra ruoli.
+crowss (campione piu' piccolo, n=372 vs 652) NON conferma sul TOTALE
+(-0.10, sostanzialmente zero) ne' su Beginner (+1.93, non significativo
+ma segno concorde). Nessuno dei due campioni mostra nulla su cap 220/260/
+uncapped (IC ampi, punti centrali discordanti in segno fra i due campioni
+su cap 220 e uncapped).
+
+LETTURA: coerente con l'ipotesi di partenza -- bloccando la composizione,
+il segnale isolato dentro il ruolo TORNA a essere misurabile (non piu'
+schiacciato dalla ricomposizione), almeno sul campione piu' grande.
+Prudenza: un solo campione su due lo conferma, e cap 220/uncapped (n
+piccoli, 28-47 arene) restano troppo rumorosi per dire qualcosa.
+
+-----------------------------------------------------------------------------
 SESSIONE 06/08/2026 ~01:35 Roma (CET) -- POLICY D (ogni ruolo al suo ottimo) ed E (D centrata)
 
 Ipotesi: B/C spostano la composizione verso DEF senza guadagno di punti
