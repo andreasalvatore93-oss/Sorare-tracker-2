@@ -73,6 +73,11 @@ PAUSA = float(os.environ.get('MANAGER_PAUSA', '0.4'))
 # ingressi utente) ma sono punteggi reali di carte limited.
 TIPI_ARENA_ESCLUSI = ('arena_rare', 'arena_altro')
 
+# D1 (CLAUDE.md, 06/08/2026): quante volte riprovare un contender la cui
+# formazione() fallisce prima di arrenderci e marcarlo fallito-definitivo,
+# per non riciclarlo all'infinito (es. contender cancellato da Sorare).
+MAX_TENTATIVI_CONTENDER = 3
+
 INDICE_QUERY = """
 query Partecipazioni($fixture: String!, $manager: String!, $after: String) {
   so5 {
@@ -395,34 +400,82 @@ def main():
         giornate = [g for g in giornate if g in gia_fatte] + nuove[:args.max_giornate]
 
     for i, giornata in enumerate(giornate, 1):
-        if giornata in (dati.get('giornate') or {}):
+        completate = (dati.get('giornate') or {}).get(giornata)
+        retry_rows = (dati.get('retry') or {}).get(giornata)
+
+        # D1: una giornata e' "fatta" solo se e' gia' stata salvata E non ha
+        # contender pendenti da riprovare. Prima bastava la presenza della
+        # chiave in dati['giornate'] anche se conteneva righe senza 'carte':
+        # cosi' non venivano mai piu' ritentate (133 righe crowss, 26
+        # forever-young trovate mute il 06/08).
+        if completate is not None and not retry_rows:
             log(f"[{i}/{len(giornate)}] {giornata}: gia' fatta, salto.")
             continue
-        righe, ok = partecipazioni(args.manager, giornata)
-        if not ok:
-            log(f"[{i}/{len(giornate)}] {giornata}: indice incompleto, NON salvo "
-                "(si riprova al prossimo giro).")
-            continue
-        arene = [r for r in righe if r.get('tipo_arena')
-                 and r['tipo_arena'] not in TIPI_ARENA_ESCLUSI]
-        log(f"[{i}/{len(giornate)}] {giornata}: {len(righe)} partecipazioni, "
-            f"{len(arene)} arene utili")
 
-        da_scaricare = arene if args.solo_arene else righe
-        for r in da_scaricare:
-            if r.get('tipo_arena') in TIPI_ARENA_ESCLUSI:
+        if retry_rows:
+            # giornata gia' iniziata: riprovo SOLO i contender falliti,
+            # niente nuova query indice (le righe pendenti portano gia'
+            # tutto il necessario, comprese quelle di --solo-arene).
+            da_scaricare = retry_rows
+            log(f"[{i}/{len(giornate)}] {giornata}: riprovo {len(da_scaricare)} "
+                "contender falliti in precedenza")
+        else:
+            righe, ok = partecipazioni(args.manager, giornata)
+            if not ok:
+                log(f"[{i}/{len(giornate)}] {giornata}: indice incompleto, NON salvo "
+                    "(si riprova al prossimo giro).")
                 continue
+            arene = [r for r in righe if r.get('tipo_arena')
+                     and r['tipo_arena'] not in TIPI_ARENA_ESCLUSI]
+            log(f"[{i}/{len(giornate)}] {giornata}: {len(righe)} partecipazioni, "
+                f"{len(arene)} arene utili")
+            da_scaricare = arene if args.solo_arene else righe
+            da_scaricare = [r for r in da_scaricare
+                            if r.get('tipo_arena') not in TIPI_ARENA_ESCLUSI]
+
+        nuovi_completati, nuovi_pendenti, falliti_def = [], [], []
+        for r in da_scaricare:
             carte, chi, piazzamento = formazione(r['contender'])
             if carte is None:
+                tentativi = r.get('_tentativi', 0) + 1
+                if tentativi >= MAX_TENTATIVI_CONTENDER:
+                    log(f"  FALLITO DEFINITIVO dopo {tentativi} tentativi: "
+                        f"{r['contender'][:60]} (non ritentato piu')")
+                    falliti_def.append(r['contender'])
+                else:
+                    r['_tentativi'] = tentativi
+                    nuovi_pendenti.append(r)
                 continue
             if chi and chi != args.manager:
                 # Non dovrebbe succedere: se succede, meglio saperlo che
-                # mescolare le formazioni di un altro nel campione.
-                log(f"  ATTENZIONE: {r['contender'][:50]} appartiene a {chi}, saltata.")
+                # mescolare le formazioni di un altro nel campione. Non e'
+                # un guasto di rete: ritentare non cambierebbe il dato,
+                # quindi va dritto fra i falliti definitivi.
+                log(f"  ATTENZIONE: {r['contender'][:50]} appartiene a {chi}, "
+                    "saltata (fallito definitivo, non ritentata).")
+                falliti_def.append(r['contender'])
                 continue
+            r.pop('_tentativi', None)
             r['carte'] = carte
             r['piazzamento'] = piazzamento
-        dati.setdefault('giornate', {})[giornata] = da_scaricare
+            nuovi_completati.append(r)
+
+        dati.setdefault('giornate', {})[giornata] = (completate or []) + nuovi_completati
+        if nuovi_pendenti:
+            dati.setdefault('retry', {})[giornata] = nuovi_pendenti
+        elif giornata in (dati.get('retry') or {}):
+            del dati['retry'][giornata]
+        if falliti_def:
+            lista = dati.setdefault('falliti_definitivi', {}).setdefault(giornata, [])
+            for cs in falliti_def:
+                if cs not in lista:
+                    lista.append(cs)
+
+        n_falliti = len(nuovi_pendenti) + len(falliti_def)
+        if n_falliti:
+            log(f"  {n_falliti} righe non ricostruite su {len(da_scaricare)} in "
+                f"{giornata} ({len(nuovi_pendenti)} da riprovare, "
+                f"{len(falliti_def)} falliti definitivi)")
         salva(dati, dest)
 
     log(f"Scritto {dest}")
