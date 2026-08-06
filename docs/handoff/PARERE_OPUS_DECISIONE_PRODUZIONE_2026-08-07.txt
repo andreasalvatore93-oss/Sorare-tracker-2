@@ -1,0 +1,255 @@
+PARERE OPUS SULLA DECISIONE PRODUZIONE
+Risposta al BRIEF_OPUS_DECISIONE_PRODUZIONE_2026-08-07.txt
+Scritto 07/08/2026, notte, ora di Roma. Orchestratore Opus.
+
+Ho letto: CLAUDE.md, HANDOFF_ORCHESTRATORE_2026-08-07_CONSEGNE.txt (tutto),
+HANDOFF_ORCHESTRATORE_2026-08-06_NOTTE.txt sez.5septies,
+HANDOFF_FAVORITO_ODDS_2026-08-06.txt sez.7 (la sez.8 NON esiste ancora: il
+Sonnet sulle 25 GW non e' rientrato), analisi_manager/p13_backtest_gw_crowss.py
+(corpo del Test3), generatore_formazioni/build_formazione_globale.py (costanti
+arena), e i 18 dump DUMP_p13_*_test3.txt.
+
+Non mi sono fermato alle tabelle: ho rifatto due conti sui dati grezzi. Sono
+quelli che cambiano la risposta.
+
+
+===============================================================================
+0. VERDETTO SECCO
+===============================================================================
+SI', si va in produzione oggi, ma solo il punto (a): DARE RETTA AL VERDETTO
+D'INGRESSO ARENA gia' stampato dal tool. Zero righe di codice, beneficio
+misurato positivo, rischio nullo.
+
+NO al punto (b) oggi: mettere il grade (variante G) dentro il modello e' la
+cosa che vale davvero (7 volte tanto, numeri sotto), ma tocca la produzione e
+fa scattare la catena obbligatoria. Non e' roba da 16 ore fatta bene. Si fa
+questa settimana, con la catena intera.
+
+Priorita' fra i tre filoni: 1) chain per portare G in produzione;
+2) fix del bug clonato in p11_calib_fwd_confronto.py (il verdetto FWD
++1.25/+0.90 oggi e' NULLO e non deve toccare niente); 3) difensore, che non
+blocca nulla e puo' aspettare i dati piu' profondi.
+
+
+===============================================================================
+1. IL CONTO CHE MANCAVA: LE ARENE BUONE PERSE NON ERANO CONTATE
+===============================================================================
+Questo e' il punto piu' importante di tutto il brief, e non era nel brief.
+
+Le "essenze risparmiate" (6.400, 10.100, 6.500, 8.000, totale 12.900/18.100)
+sono un conto A SENSO UNICO: contano 300 essenze di ingresso risparmiate ogni
+volta che il modello salta bene un'arena (casella GIUSTO), e contano ZERO ogni
+volta che il modello salta un'arena che invece rendeva (casella ERRORE). Ma
+un'arena buona persa e' una perdita vera, e puo' valere molto piu' di 300.
+
+Verificato: p13_backtest_gw_crowss.py NON calcola nessuna essenza (grep: zero
+occorrenze). Quei numeri escono dallo script driver non versionato. Quindi la
+cifra piu' citata di tutto il filone non e' riproducibile da nessuno.
+
+HO RIFATTO IL CONTO IN MODO SIMMETRICO sui 18 dump test3 disponibili (dedup:
+due file crowss sono lo stesso identico contenuto, md5 uguale -- segnalato,
+uno dei due va cancellato), usando le costanti VERE di produzione
+(GUADAGNO_PER_PUNTO 7.9/6.3/8.0, COSTO_INGRESSO 300/200/300):
+
+  - arena saltata bene  -> si risparmia min((soglia-reale)*guad_punto, costo)
+  - arena buona persa   -> si perde (reale-soglia)*guad_punto
+
+  61 arene coperte (su ~287 totali, cioe' il 21% del campione):
+
+    A: 7 GIUSTO salvati 1.450   4 ERRORE persi 1.223  -> NETTO  +226 essenze
+    G: 12 GIUSTO salvati 2.664  4 ERRORE persi 1.033  -> NETTO +1.631 essenze
+
+  (con la convenzione flat 300/salto usata dall'esecutore: A +777, G +2.467)
+
+LE QUATTRO ARENE PERSE DA A, IN CHIARO:
+    fins49 31jul-4aug  Cap 260   REALE 346.64  soglia 259.50  (+87.1 pt) -> -688
+    fins49 31jul-4aug  Cap 260   REALE 321.48  soglia 259.50  (+62.0 pt) -> -490
+    crowss 24-28jun    Uncapped  REALE 292.08  soglia 288.30  (+ 3.8 pt) -> - 30
+    fins49 31jul-4aug  Uncapped  REALE 290.18  soglia 288.30  (+ 1.9 pt) -> - 15
+
+COSA CAMBIA:
+ 1. Il segno resta POSITIVO per entrambe le varianti anche contando le
+    perdite. Il risultato regge. Questo e' il fatto principale.
+ 2. Ma il vantaggio di A e' molto piu' piccolo di come e' stato presentato:
+    due sole arene mancate a fins49 si mangiano quasi tutto il risparmio.
+ 3. G non e' "un po' meglio di A" (+22 contro +17 nella conta): in essenze e'
+    SETTE VOLTE A (+1.631 contro +226). La conta delle caselle nasconde
+    questa differenza perche' tratta un ingresso risparmiato da 300 e
+    un'arena persa da 688 come se pesassero uguale. Non pesano uguale.
+
+CAUTELA OBBLIGATORIA SU QUESTI NUMERI (non li spaccio per esatti):
+GUADAGNO_PER_PUNTO e' stato misurato come pendenza dell'incasso NELL'INTORNO
+del pareggio (+-5 punti): lo dice il commento nel codice. Le due arene fins49
+sono a +87 e +62 punti dalla soglia, molto fuori da quella finestra: 688 e 490
+sono estrapolazioni, non misure. La DIREZIONE e' certa (una formazione 87
+punti sopra il pareggio ha quasi certamente incassato un premio vero), la
+CIFRA no. Per averla esatta serve il rank, che c'e' nei file manager (575
+arene valorizzate su crowss) e che finora e' stato scartato.
+
+
+===============================================================================
+2. IL BACKTEST PRINCIPALE: COSA REGGE E COSA NO
+===============================================================================
+REGGE, ed e' piu' forte di come l'ha presentato il brief: ho scomposto il
++17/+22 dei 16 manager nuovi manager per manager, ricontando dalle matrici:
+
+  variante A -> tijmenmaaktpap +4, fins49 +5, cedric9093 +3, lafindubal +2,
+                matteoogg +1, john942 +1, nivenzg +1,
+                angioletto33 0, braddersfc 0, keano88 0, joulos_ 0
+  variante G -> fins49 +6, tijmenmaaktpap +4, lafindubal +4, cedric9093 +4,
+                nivenzg +2, matteoogg +1, john942 +1, gli altri 0
+
+SETTE manager positivi, ZERO negativi, per entrambe le varianti. Non e' "un
+totale positivo trainato da fins49": fins49 pesa 36 arene su 83 ma contribuisce
+solo 5 dei 17. Il segno e' coerente MAZZO PER MAZZO, non solo in aggregato.
+Questo e' un dato migliore della "coerenza fra due campioni" scritta nel brief,
+ed e' esattamente il tipo di stabilita' che la regola del delta chiede.
+
+NON REGGE, e va detto: il confronto con crowss. Ho isolato le GW di crowss
+nella STESSA finestra temporale dei manager nuovi (24-28jun -> 31jul-4aug,
+26 arene): A = 1 GIUSTO - 1 ERRORE = 0. G = 3 - 1 = +2. Cioe' sullo stesso
+periodo, sul mazzo dell'UTENTE, il vantaggio quasi sparisce, mentre sugli
+altri 16 manager e' netto.
+Lettura onesta: il modello batte i manager mediocri sulla decisione
+d'ingresso; contro crowss (l'utente) pareggia. Non e' una brutta notizia --
+vuol dire che l'utente decide gia' bene -- ma vuol dire anche che il guadagno
+atteso sul SUO mazzo e' piu' vicino a 0/+2 che a +17. Non promettergli i
+numeri degli altri.
+
+
+===============================================================================
+3. IL TEST1 AGGREGATO NEGATIVO: L'ESECUTORE HA RAGIONE, VERIFICATO
+===============================================================================
+Il brief chiedeva di scrutinare l'interpretazione "e' un artefatto della
+rinuncia". E' CORRETTA, e si dimostra con l'aritmetica, non con l'opinione:
+
+  deficit aggregato REALE - A = 18.900,58 - 17.853,89 = 1.046,69 punti
+  punti REALE sulle sole arene dove A ha rinunciato del tutto:
+    john942 5-11jun 254,7 + cedric 28-31jul 482,3 + joulos_ 5-11jun 227,3
+    + matteoogg 15-20jul 316,2 = 1.280,50 punti
+
+Le sole rinunce totali valgono PIU' dell'intero deficit (1.280 > 1.047), e
+non ho nemmeno contato le rinunce parziali (john942 15-20jul 1 arena su 2,
+tijmen 28-31jul 2 su 3, nivenzg 24-28jun 1 su 3, cedric 21-24jul e 31jul-4aug
+3 su 4). Quindi: SULLE ARENE CHE HA GIOCATO, A STA SOPRA REALE di almeno 234
+punti. Il Test1 aggregato non dice che il modello perde: dice che rinuncia, e
+la rinuncia e' il comportamento che il Test3 conta come giusto.
+Il numero "REALE sopra A e G" e' fuorviante e non va ripetuto senza questa
+riga accanto.
+
+
+===============================================================================
+4. IL BUCO CHE NESSUNO HA VISTO: IL BACKTEST PROVA UNA REGOLA DIVERSA DA
+   QUELLA CHE IL TOOL STAMPA
+===============================================================================
+Questo va sistemato prima di dire "il tool e' validato", perche' e' un caso
+da manuale della regola "prima di misurare l'effetto di un componente
+dimostro che l'interruttore e' quello giusto".
+
+  p13 Test3 (riga 589):   dec = atteso >= PAREGGIO_ARENA
+  produzione (riga 600):  SCHIERA se (atteso - soglia)*GUAD_PUNTO >= costo*0,10
+
+Per la Cap 260: 300 * 0,10 = 30 essenze, cioe' servono 30/7,9 = +3,80 punti
+SOPRA il pareggio per avere "SCHIERA". Fra pareggio e +3,80 punti il tool
+stampa "MARGINALE", non "SCHIERA".
+
+Quindi il backtest ha validato la regola "entra appena sei sopra il pareggio",
+che e' PIU' PERMISSIVA di quella che il tool consiglia. Se l'utente da' retta
+alla scritta "SCHIERA" salta piu' arene di quelle che il backtest ha simulato,
+e il risultato misurato non e' quello che otterra'.
+
+Non e' grave e non e' un bug: e' un disallineamento fra misura e condotta. Si
+chiude con una riga in p13 (soglia_decisione = soglia + costo*QUOTA_MINIMA/
+guad_punto) e un rilancio sui dati gia' in repo, zero query. VA FATTO PRIMA di
+dichiarare validata la condotta (a).
+
+
+===============================================================================
+5. RISPOSTA AI CINQUE DUBBI DEL BRIEF
+===============================================================================
+(a) TRE SCRIPT CON LO STESSO BUG -> SI', il controllo sistematico va fatto, e
+    l'ho gia' fatto io adesso perche' costava un grep, non un brief. Esito:
+
+      p11_manager_confronto.py:88       reale_in_target = c['punteggio']  BUG (origine)
+      p11_calib_fwd_confronto.py:96     reale_in_target = c['punteggio']  BUG (confermato)
+      p11_bloccato_tutti_mazzi.py:98    stessa riga, ma FIXATO (cache primaria, 144708a1a6)
+      p12_backtest_manager_full.py:127  raw = c['punteggio'] poi raw/1.2 se capitano
+                                        -> BUG DI FORMA DIVERSA: divide per 1,2 anche
+                                        FUORI dall'arena, dove il capitano vale +50%
+                                        e l'xp si somma (D4). Ricostruire dividendo
+                                        e' proprio cio' che D4 vieta.
+      p12_diagnosi_grade_sez25.py:79    raw = c['punteggio'] ma usato solo come filtro
+                                        "esiste/non esiste", non entra nei conti: innocuo.
+      analizza_gw.py:134                CORRETTO (filtra arene e toglie il capitano)
+
+    Sono QUATTRO script sporchi, non tre. Il quarto (p12_backtest_manager_full)
+    non era stato notato da nessuno perche' il pattern e' diverso.
+    Non serve un altro brief di ricerca: serve un fix mirato ai tre file,
+    stesso identico intervento gia' validato su p11_bloccato.
+
+(b) CAMPIONE ETEROGENEO -> vedi sez.2: scomposto per manager, 7 positivi e 0
+    negativi. Sul peso da dare a ciascun manager, la risposta e': NON pesarli
+    per numero di arene, contare quanti MAZZI hanno segno positivo. E' la
+    lettura piu' robusta quando le n per mazzo sono minuscole, ed e' anche
+    quella che rende inutile la discussione su fins49.
+
+(c) NESSUN DUMP ISPEZIONATO -> giusto sollevarlo. Adesso i dump sono stati
+    letti (da me, sez.1: le quattro arene perse sono in chiaro con nomi di
+    manager, soglia e punti). Resta che li ispezioni L'UTENTE, come da regola.
+    Un dump concreto da cui partire: DUMP_p13_fins49_31jul-4aug_test3.txt,
+    arena 1 -- e' l'arena da 688 essenze perse, la piu' costosa di tutte.
+
+(d) COERENZA DI SEGNO != SOGLIA FISSATA -> hai ragione al 100%, e va detto
+    esattamente come l'hai scritto. La soglia 75%/3x NON e' stata raggiunta e
+    NON e' stata ricalcolata. Quello che c'e' e' un'altra cosa: segno positivo
+    su 7 mazzi indipendenti su 7, piu' un bilancio netto in essenze positivo
+    per entrambe le varianti. E' un criterio DIVERSO da quello fissato, e va
+    presentato come cambio di criterio dichiarato, non come soglia raggiunta.
+    Io lo accetto per la condotta (a), che e' reversibile e a costo zero. Non
+    lo accetterei per una modifica al modello.
+
+(e) TEMPO -> non serve altro per decidere (a). Serve altro per (b).
+
+
+===============================================================================
+6. COSA FARE, IN ORDINE
+===============================================================================
+OGGI, subito e senza altre misure:
+  1. L'utente segue il verdetto d'ingresso arena del tool. Nessun codice.
+     Aspettativa onesta sul SUO mazzo: piccola (sez.2), non i +17 degli altri.
+
+OGGI, se resta tempo (tutto su dati gia' in repo, zero query, zero rete):
+  2. Allineare p13 alla regola vera del tool (sez.4) e rilanciare. Un
+     Sonnet, mezz'ora.
+  3. Portare il bilancio in essenze SIMMETRICO dentro p13 (sez.1), cosi' il
+     numero smette di vivere in uno script non versionato. Stesso Sonnet.
+  4. Fix del pattern D6 sui tre file sporchi (sez.5a), con il controllo A/B
+     obbligatorio prima di fidarsi, come e' stato fatto bene su p11_bloccato.
+     Finche' non e' fatto, il verdetto FWD +1.25/+0.90 resta NULLO.
+
+QUESTA SETTIMANA, non oggi:
+  5. Grade in produzione (variante G), con la catena intera:
+     valori -> soglie arena -> scouting. G vale 7 volte A: merita di essere
+     fatto bene, non di fretta.
+
+NON PRIORITARIO:
+  6. Difensore. Il fix ha spostato il segno verso il positivo, ma l'IC
+     include ancora lo zero in 3 letture su 4. Non blocca niente e non entra
+     in produzione ne' oggi ne' questa settimana. Quando torna il Sonnet
+     delle 25 GW si legge il numero e si decide, senza fretta.
+
+DA CANCELLARE (segnalato, non fatto da me):
+  analisi_manager/dati/DUMP_p13_crowss_21-24jul_test3.txt e
+  DUMP_p13_crowss_football-21-24-jul-2026_test3.txt hanno md5 identico: uno
+  dei due e' un doppione che gonfia qualunque conteggio fatto con glob.
+
+
+===============================================================================
+7. RIPRODUCIBILITA' DI QUESTO PARERE
+===============================================================================
+I conti della sez.1 e 2 sono stati fatti con uno script di parsing dei dump,
+girato in scratchpad e NON versionato (coerente col fatto che e' una lettura,
+non uno strumento). Chiunque puo' rifarlo: legge i blocchi "--- ARENA n:" dei
+DUMP_p13_*_test3.txt, prende tipo/REALE/soglia/esito, applica
+GUADAGNO_PER_PUNTO e COSTO_INGRESSO di build_formazione_globale.py. Se serve
+stabile, va messo dentro p13 (punto 3 della sez.6), non riscritto ogni volta.

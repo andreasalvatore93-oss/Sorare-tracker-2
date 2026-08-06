@@ -1,0 +1,183 @@
+BRIEF PER OPUS -- RICHIESTA DI PARERE SECCO SULLA DECISIONE PRODUZIONE
+Scritto da un orchestratore TEMPORANEO (sessione Sonnet, non Opus), 07/08/2026
+notte, ora di Roma. L'utente ha chiesto esplicitamente che sia tu a dare un
+parere secco su questi dati, perche' se confermati vanno in produzione oggi.
+
+Hai gia' accesso al repo. File da leggere per contesto, IN QUEST'ORDINE:
+1. CLAUDE.md (radice) -- per intero, non a salti. Regole vincolanti, non
+   consigli. In particolare la sezione "BACKTEST: NESSUNO E' AFFIDABILE
+   FINCHE' L'UTENTE NON L'HA ISPEZIONATO" e "DIFETTI APERTI" D1-D7.
+2. docs/handoff/HANDOFF_ORCHESTRATORE_2026-08-07_CONSEGNE.txt -- per intero.
+   Sezioni 3-4 sono il quadro della decisione come lo avevi lasciato tu
+   stanotte. Sezioni 10-11-13-14-15 sono il lavoro fatto DOPO la tua
+   consegna (questo brief riguarda soprattutto quelle).
+3. docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt, sezione 7 (e sezione 8
+   se nel frattempo e' arrivato un secondo aggiornamento -- verifica tu,
+   c'e' un esecutore ancora al lavoro su quel fronte in questo momento).
+
+
+===============================================================================
+1. COSA E' CAMBIATO DA STANOTTE, IN SINTESI
+===============================================================================
+Stanotte avevi lasciato la decisione bloccata su un campione di UN SOLO
+manager (crowss, 27 GW, 204 arene valutate in Test3), con la soglia fissata
+prima dei risultati (75% GW concordi, margine 3x oscillazione) NON raggiunta
+sulla conta-GW (59% e 63%), ma il segno positivo per entrambe le varianti sul
+confronto diretto.
+
+Nella sessione di oggi (io, orchestratore temporaneo, con l'utente che ha
+fatto da navetta verso due Sonnet in parallelo) sono successe tre cose:
+
+A) ALLARGATO IL CAMPIONE a 16 manager nuovi oltre crowss (94+95=189 arene
+   estratte in dati grezzi, di cui 83 arene effettivamente valutabili in
+   Test3 dopo i filtri). Vedi sez.14.
+B) TROVATO E CORRETTO UN SECONDO BUG D6, sullo stesso pattern del primo
+   (punteggio 'reale' letto da c['punteggio'] del file manager invece che
+   dalla cache game-log, gonfiato da xp+capitano su righe non-arena). Questa
+   volta in p11_bloccato_tutti_mazzi.py, lo script del Brief 1 che aveva
+   CHIUSO IL FILONE DIFENSORE il 06/08. Fix applicato, verdetto riaperto.
+   Vedi sez.15 e HANDOFF_FAVORITO_ODDS sez.7.
+C) SCOPERTO (io, leggendo il codice, non ancora verificato da nessun
+   esecutore con un fix) che LO STESSO BUG e' presente in un TERZO script,
+   p11_calib_fwd_confronto.py, che sostiene il filone "calibrazione FWD"
+   (HANDOFF_calib_per_ruolo_riproducibilita_2026-08-06.txt, sessioni 12-14,
+   verdetto +1.25 poi +0.90 punti). NON ANCORA TOCCATO: l'utente ha detto
+   esplicitamente di non sovrapporre lavori con due Sonnet gia' occupati,
+   quindi resta in coda.
+
+
+===============================================================================
+2. IL NUMERO NUOVO SUL BACKTEST PRINCIPALE (A vs G vs REALE)
+===============================================================================
+TEST3 aggregato, crowss + 16 manager nuovi = 287 arene valutate su 17 manager
+(sez.14 del file di consegna):
+
+  crowss da solo:      204 arene, confronto diretto (batte REALE - persa
+                        buona): A = 22-19 = +3, G = 36-28 = +8
+                        essenze risparmiate: A=6.400, G=10.100
+  16 manager nuovi:     83 arene, confronto diretto: A = 23-6 = +17,
+                        G = 29-7 = +22
+                        essenze risparmiate: A=6.500, G=8.000
+  TOTALE:              287 arene, essenze risparmiate totali A=12.900,
+                        G=18.100
+
+Il segno e' POSITIVO e COERENTE sui due campioni (crowss da solo e i 16
+manager nuovi separatamente), con G sempre piu' netto di A in entrambi.
+
+NON FATTO in questo giro (dichiarato esplicitamente dall'esecutore, non
+nascosto): ricalcolare la soglia 75%/margine-3x SULL'INSIEME dei 17 manager
+messi assieme. La soglia di stanotte era definita per GW su un solo manager;
+non e' stata ancora riformulata per un campione multi-manager. Quindi,
+testualmente dal report dell'esecutore: "nessun verdetto nuovo si puo'
+scrivere da questi numeri" nel senso stretto della soglia formale -- il dato
+onesto disponibile e' la coerenza di segno fra due campioni indipendenti.
+
+DETTAGLIO CHE MI HA SORPRESO E CHE SEGNALO A PARTE (non un problema, ma va
+letto): il Test1 aggregato (somma dei punti totali su tutte le arene) mostra
+REALE sopra sia A che G. L'esecutore lo attribuisce correttamente a un
+artefatto: sommando arene dove il modello rinuncia del tutto (0 punti A/G, ma
+REALE ha comunque schierato e preso punti), la somma aggregata penalizza il
+modello per un comportamento (la rinuncia) che nel Test3 e' contato
+CORRETTAMENTE come "giusto" quando l'arena era sotto soglia. Mi sembra
+un'interpretazione corretta ma voglio che tu la scrutini: e' esattamente il
+tipo di errore di lettura che ha causato problemi in passato (vedi CLAUDE.md,
+"conta GW" vs "confronto diretto" gia' una volta scambiati).
+
+
+===============================================================================
+3. IL DIFENSORE: RIAPERTO, NON ANCORA DECISO
+===============================================================================
+Fix D6 applicato su p11_bloccato_tutti_mazzi.py (commit 144708a1a6). Controllo
+A/B fatto PRIMA di fidarsi (su forever-young: 57/94 carte differivano di oltre
+0.05 punti fra raw-manager e cache, sempre raw>cache, fino a +63 punti). Il
+fix e' quindi verificato, non solo applicato a occhio.
+
+Verdetto NUOVO (47 mazzi, 43 utili) vs VECCHIO (37 mazzi, campione non
+identico ma sovrapposto):
+  segno pieno:      vecchio 15+/22-  (p=0.32)  ->  nuovo 22+/21- (p=1.00)
+  delta pesato +fy: vecchio +0.002 [-0.637,+0.737] -> nuovo +0.557 [-0.007,+1.132]
+  delta pesato -fy: vecchio -0.456 [-1.042,+0.166] -> nuovo +0.364 [-0.175,+0.918]
+
+Il segno si sposta chiaramente verso favorevole al difensore in ENTRAMBE le
+letture, e un IC95 sfiora escludere lo zero (limite inferiore -0.007). MA
+nessuno dei due (vecchio o nuovo) e' oggi significativo in senso stretto.
+
+E' IN CORSO IN QUESTO MOMENTO (Sonnet, non ancora tornato mentre scrivo
+questo brief) un allargamento a 25 GW su forever-young/lafindubal/
+tijmenmaaktpap per dare piu' profondita' (il collo di bottiglia diagnosticato
+e' la profondita' temporale per mazzo, non il numero di mazzi: quasi nessun
+manager supera le 16 giornate). NON HO IL RISULTATO. Se e' arrivato quando
+leggi questo, controlla HANDOFF_FAVORITO_ODDS_2026-08-06.txt sezione 8.
+
+
+===============================================================================
+4. FWD/CALIBRAZIONE: BUG TROVATO, NON ANCORA CORRETTO NE' RIVALUTATO
+===============================================================================
+Solo per completezza, NON ancora lavorato: il verdetto +1.25/+0.90 punti del
+filone calibrazione-FWD (HANDOFF_calib_per_ruolo_riproducibilita_2026-08-06.txt,
+sessioni 12-14) poggia sullo stesso identico bug (verificato da me leggendo il
+codice riga per riga: p11_calib_fwd_confronto.py, riga 96, stesso pattern
+c['punteggio'] non filtrato). Non e' stato ancora corretto ne' rilanciato:
+resta un filone da riaprire con la stessa procedura del difensore, in coda per
+non sovrapporre lavoro ai due esecutori gia' occupati.
+
+
+===============================================================================
+5. I MIEI DUBBI, SENZA VOLERTI CONDIZIONARE
+===============================================================================
+Te li scrivo cosi' come sono, anche quelli che potrebbero risultare infondati
+dopo un tuo controllo. Non li ho risolti io stesso perche' l'utente ha chiesto
+esplicitamente il TUO parere secco, non il mio.
+
+(a) TRE SCRIPT CON LO STESSO BUG CLONATO, TROVATI IN UN GIORNO. Non e' solo
+    "un bug e' stato corretto": e' il terzo caso dello stesso pattern esatto
+    (c['punteggio'] preso senza passare dalla cache) in tre script diversi
+    che condividono un impianto comune (p11_manager_confronto.py sembra
+    essere l'origine, riusato dagli altri due). Mi chiedo se valga la pena,
+    prima di fidarsi di QUALUNQUE verdetto P11 passato o futuro, fare un
+    controllo sistematico di TUTTI gli script che leggono
+    dati_globali/manager_*.json invece di scoprirli uno alla volta quando
+    qualcuno se ne accorge. Non l'ho proposto come brief perche' non e' chiaro
+    se rientri nella priorita' di oggi o vada rimandato.
+
+(b) IL CAMPIONE NUOVO (16 manager) E' MOLTO ETEROGENEO E IN PARTE MINIMO. Per
+    tijmenmaaktpap e lafindubal si arriva a 4-6 GW testabili; per braddersfc,
+    joulos_, keano88 il campione e' 1-2 GW. Sommare tutto in "83 arene" da'
+    un numero grande ma e' la somma di pezzi molto disomogenei per
+    affidabilita' del singolo manager. Non so se la soglia formale (75%/3x),
+    quando verra' ricalcolata sull'insieme, debba pesare ogni manager allo
+    stesso modo o no -- e' una scelta metodologica che non ho preso da solo.
+
+(c) NON HO VERIFICATO IO STESSO NESSUN DUMP GREZZO DI QUESTO GIRO. La regola
+    CLAUDE.md e' che nessun backtest vale come prova finche' L'UTENTE non ha
+    ispezionato l'esito grezzo con i nomi dentro. Io ho letto solo le tabelle
+    di sintesi nell'handoff, non i dump (esistono, elencati in sez.14,
+    analisi_manager/dati/DUMP_p13_*). Prima di chiamare "confermato" qualunque
+    cosa, quella regola va rispettata anche su questo giro, non solo su
+    crowss.
+
+(d) LA COERENZA DI SEGNO SU DUE CAMPIONI NON E' LA STESSA COSA DELLA SOGLIA
+    FISSATA. Mi sembra un segnale onesto e non trascurabile, ma la soglia
+    75%/margine-3x era stata fissata apposta PRIMA di vedere risultati, per
+    non spostare i pali. Se ora si decide di accontentarsi della "coerenza di
+    segno su due campioni indipendenti" invece della soglia originale, e'
+    una decisione legittima ma e' un cambio di criterio, e andrebbe detto
+    esplicitamente come tale, non presentato come se la soglia originale
+    fosse stata raggiunta.
+
+(e) TEMPO: l'utente ha detto che oggi (07/08) ha 16 ore di margine, quindi
+    non c'e' fretta di decidere in questo preciso momento. Ma sta aspettando
+    un parere secco da te per sapere se muoversi su un'altra pista (piu'
+    profondita' sul difensore, piu' manager, o chiudere e passare a
+    produzione con quello che c'e').
+
+
+===============================================================================
+6. LA DOMANDA CHE L'UTENTE VUOLE TU RISPONDA
+===============================================================================
+Con questi dati (backtest principale su 287 arene/17 manager, segno coerente
+ma soglia formale non ricalcolata; difensore riaperto ma non ancora
+significativo; FWD sospetto ma non ancora riverificato): la roba e' matura
+per andare in produzione oggi, o serve ancora altro? Se si', cosa esattamente
+e con quale priorita' fra i tre filoni (backtest principale A/G, difensore,
+FWD)? L'utente vuole un parere secco, non un elenco di opzioni pari-merito.
