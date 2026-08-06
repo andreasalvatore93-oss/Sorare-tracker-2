@@ -1770,6 +1770,21 @@ al modello, soprattutto su MID) restano validi cosi' come riportati.
 File aggiunti: analisi_manager/p12_selezione_grade_check.py,
 analisi_manager/p12_selezione_grade_check_out.json.
 
+AVVISO ONESTO SUL PESO DI QUESTO CONTROLLO (aggiunto 06/08, richiesta
+utente -- non riformulare come "acquisito" leggendo questa sezione fra un
+mese): il test poggia su 9-15 giornate e 4-5 giocatori distinti per gruppo.
+Un campione cosi' piccolo NON esclude un effetto di selezione -- lo rende
+solo MENO PROBABILE. "Nessun effetto nella direzione temuta" e' la lettura
+corretta del punto centrale osservato, non una prova statistica che
+l'effetto non esista. Il sospetto originale riguardava specificamente il
+DEF; su MID lo stesso identico controllo non era nemmeno necessario per
+notare l'assenza di anomalia, perche' il numero di sez.19 (61.1, percentile
+medio atteso su MID) e quello del campione ampio (57.8) sono GIA' vicini fra
+loro (a differenza del DEF, 50.7 vs 58.9) -- il "problema" che ha fatto
+scattare questo controllo non si presentava su MID fin dall'inizio. Non
+serve rifare il test su MID con un campione piu' grande: non c'era
+un'anomalia da spiegare li'.
+
 
 ===============================================================================
 14. SESSIONE 06/08/2026 sera Roma (~22:40 CEST) -- RACCOLTA FORWARD MIRATO
@@ -1807,3 +1822,85 @@ di grade_snapshot_football-4-7-aug-2026_20260806_1124.json, spostata a 17:05
 salvate in analisi_manager/dati/grade_snapshot_football-4-7-aug-2026_20260806_1506.json
 (Goalkeeper 28, Defender 50, Midfielder 50, Forward 46). Serve solo come
 copia di riserva se S3 stanotte torna a vuoto: se S3 funziona, non si apre.
+
+
+===============================================================================
+20. SESSIONE 06/08/2026 pomeriggio Roma (17:16 CEST, ora letta da sistema) --
+    VERIFICA CAMPIONE FORWARD MIRATO: NON COINCIDE, FILONE FERMATO
+    (richiesta utente, prima di analizzare qualunque numero)
+===============================================================================
+Richiesta: rifare su Forward tutta la catena di sez.16/19 usando
+analisi_manager/dati/storico_grade_Forward_mirato_20260806.json (117
+giocatori, 1755 righe), MA prima verificare che il campione sia comparabile
+a quello usato per MID, perche' il file Forward copre ~50 squadre quasi
+tutte MLS/K League/Sudamerica mentre quello MID ne copre ~140, molte
+europee.
+
+--- VERIFICA (zero query, solo dati e codice gia' in repo) ---
+1. LEGHE IN LEAGUE_DIR (leghe con pipeline, mappa competizione->cartella
+   lega usata da backtest_arene_produzione): 49 leghe, incluse gran parte
+   delle europee maggiori e minori (arabia, argentina, austria, belgio,
+   belgio2, brasile, cechia, cile, cina, colombia, croazia, danimarca,
+   francia, francia2, germania, germania2, germania3, giappone, giappone100,
+   giappone2, grecia, inghilterra, inghilterra2, israele, italia, italia2,
+   kleague, kleague2, messico, mls, norvegia, olanda, olanda2, polonia,
+   portogallo, romania, russia, scozia, serbia, slovacchia, spagna, spagna2,
+   svezia, svizzera, turchia, ucraina, venezuela).
+
+2. LEGHE DELLE 1043 RIGHE MID SOPRAVVISSUTE AL FILTRO PIPELINE IN SEZ.16
+   (ricostruite via prev.partita_target su ciascuna riga di rows_v2,
+   competition->LEAGUE_DIR, stesso codice del resto del filone):
+     mls 126, italia 77, belgio 71, inghilterra 61, spagna 57, germania 53,
+     messico 50, kleague 49, francia 46, inghilterra2 40, germania2 35,
+     austria 27, giappone100 21, turchia 18, cina 16, olanda 15, scozia 15,
+     portogallo 13, russia 11, brasile 11, cile 10, norvegia 9, croazia 8,
+     spagna2 8, (+ resto competizioni internazionali/coppe non mappate a
+     una lega, minoritarie: global-cup, friendlies, coppe UEFA, ecc.)
+   30+ leghe rappresentate, 400 squadre distinte coinvolte. Il campione MID
+   che regge la sez.16/19/16 e' MULTI-LEGA e PREVALENTEMENTE EUROPEO
+   (italia+belgio+inghilterra+spagna+germania+francia da sole = 365/1043,
+   35% del campione).
+
+3. CONFRONTO CON IL FILE FORWARD MIRATO: nel file stesso (sez. precedente
+   dell'handoff, "FILTRO LEGA PRE-QUERY"), Haiku dichiara esplicitamente il
+   proprio criterio: "Letto dal leaderboard slug dei manager (pattern
+   seasonal-LEGA-...): 117 Forward distinti dalle leghe con pipeline: MLS
+   (us) 77, K League (korea) 40". SOLO 2 leghe, non 30+.
+
+--- VERDETTO: NON COINCIDONO. IL FILTRO DI HAIKU HA RISTRETTO PER ERRORE ---
+Il campione Forward mirato copre SOLO MLS+K League (2 leghe su 49 con
+pipeline reale, come dimostra il campione MID che ne usa 30+ con successo).
+Non e' un problema di "leghe senza pipeline": la pipeline esiste ed e'
+USATA con successo per italia/belgio/inghilterra/spagna/germania/ecc. nello
+stesso identico filone, sulle stesse identiche righe di sez.16. Il brief o
+lo script di raccolta Forward ha applicato un criterio di selezione delle
+leghe troppo stretto (forse leggendo "leghe con pipeline" da una lista
+sbagliata o obsoleta, forse un filtro pensato per un altro scopo riusato
+qui per errore) -- non e' chiaro da qui QUALE criterio esatto abbia
+prodotto solo 2 leghe, ma il fatto che ne escano solo 2 su 49 note e'
+sufficiente a dire che il campione NON e' comparabile a quello di
+MID/DEF (che pescano liberamente su tutte le leghe disponibili).
+
+CONSEGUENZA: analizzare storico_grade_Forward_mirato_20260806.json con lo
+stesso metodo di sez.16/19 produrrebbe numeri non confrontabili con MID/DEF
+-- un FWD di MLS/K League non e' rappresentativo del pool FWD europeo che
+domina invece il campione degli altri due ruoli. Il rischio concreto:
+attribuire al "ruolo Forward" una differenza che e' in realta' un effetto
+di lega/competizione (qualita' del campionato, livello dei portieri
+avversari, ecc.), esattamente il tipo di confondimento che questo filone ha
+gia' evitato con cura sugli altri ruoli.
+
+NON ESEGUITA l'analisi richiesta (V2/combinazione/R2 fuori campione/metriche
+di piazzamento su Forward). FERMO QUI come da istruzione esplicita.
+
+DA FARE PRIMA DI RIPROVARE (non fatto qui, decisione dell'utente): capire
+la causa del filtro sbagliato nello script/brief di raccolta Forward
+mirato, e rilanciare la raccolta senza quella restrizione (idealmente con
+lo stesso criterio gia' usato per Defender/Midfielder: campionamento
+casuale sui roster reali, non filtrato per lega). Il file
+storico_grade_Forward_mirato_20260806.json resta in repo ma NON va usato
+per confronti di ruolo finche' non e' risolto.
+
+File aggiunti: nessuno (verifica interattiva, nessun nuovo script -- i
+numeri sopra vengono da una query one-off su rows_v2 di sez.16, riusando
+p12_briefA_mid.py senza modificarlo).
