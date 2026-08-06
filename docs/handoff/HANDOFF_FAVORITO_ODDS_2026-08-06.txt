@@ -784,3 +784,78 @@ DEF/GK/MID (nessun passaggio, segno spesso opposto all'atteso). Per FWD
 l'ipotesi (p_draw fa male, quindi sottrarlo aiuta) e' CONFERMATA ma solo in
 una finestra stretta di k, non su tutta la griglia. Nessuna modifica alla
 produzione, nessun commit: puro risultato di misura.
+
+
+================================================================================
+7. FIX BUG D6 SU p11_bloccato_tutti_mazzi.py: DIFENSORE RIAPERTO
+   (Sonnet esecutore, 07/08 mattina Roma)
+================================================================================
+DIAGNOSI (gia' scritta in CLAUDE.md D6 e HANDOFF_ORCHESTRATORE G6, qui solo
+la verifica e il fix): in prepara_gw_base(), il campo 'reale' di ogni carta
+veniva preso PRIMA da reale_target.get((slug,ruolo)) = c['punteggio'] grezzo
+del file manager (righe ~152-153 vecchie), e la cache game-log
+(reale_da_cache) era usata SOLO come fallback quando quel valore mancava.
+Siccome reale_target viene popolato per QUALSIASI riga della GW target
+(arena o no, costruisci_pool_gw non filtra per tipo_arena), il punteggio
+'reale' includeva xp+capitano non tolti per le carte schierate fuori arena
+(regola D4): la cache non veniva quasi mai consultata per quelle carte.
+
+CONTROLLO A/B (obbligatorio prima di fidarsi, CLAUDE.md): su forever-young,
+GW football-25-29-jul-2025, confrontati raw-manager vs cache per le 94
+carte della finestra target: 57/94 differiscono di oltre 0.05 punti, SEMPRE
+con raw(manager) > cache (bonus capitano/xp che si sommano fuori arena),
+delta fino a +63.00 (valeri-qazaishvili) e +51.98 (jose-joaquim-de-carvalho).
+Movimento nel verso atteso, confermato prima di applicare il fix.
+
+FIX APPLICATO (commit 144708a1a6): invertito l'ordine, reale_da_cache() e'
+ora SEMPRE la fonte primaria per ogni carta della GW target, a prescindere
+dal tipo di riga; c['punteggio'] raw resta SOLO come ripiego se la carta
+non e' in cache (contato in un nuovo campo 'reale-da-raw-manager' stampato
+per ogni mazzo). Nessun'altra modifica: policy A/B', shape, generatore
+intoccati.
+
+RILANCIO su tutti i mazzi non esclusi (crowss/badamt/matangel716/
+foreveryoung_predizioni_gw2, come da script). Nota: rispetto al giro
+vecchio (37 mazzi) il pool di dati_globali/ e' cresciuto nel frattempo
+(nuovi mazzi estratti da altre sessioni): il nuovo giro ne processa 47,
+43 utili (4 muti, overlap>=4.5/5) contro i 37 vecchi. Non e' quindi un A/B
+sullo STESSO campione al 100%, ma la direzione del confronto resta
+informativa (vedi sotto).
+
+CONFRONTO VERDETTO VECCHIO (bug non corretto, 37 mazzi) vs NUOVO (fix, 47
+mazzi, 43 utili):
+
+  LETTURA 1 (segno pieno):
+    VECCHIO: positivi 15, negativi 22, zero 0 -- p=0.3240 (non signif.)
+    NUOVO  : positivi 22, negativi 21, zero 0 -- p=1.0000 (non signif.)
+    Il segno passa da negativo-leaning a quasi pari (50/50). Nessuno dei
+    due e' significativo, ma il fix sposta la direzione verso il centro,
+    non verso il negativo.
+
+  LETTURA 3 (delta pesato per arene, bootstrap su cluster manager+giornata):
+    VECCHIO con forever-young   : +0.002  IC95 [-0.637, +0.737]
+    NUOVO   con forever-young   : +0.557  IC95 [-0.007, +1.132]
+    VECCHIO senza forever-young : -0.456  IC95 [-1.042, +0.166]
+    NUOVO   senza forever-young : +0.364  IC95 [-0.175, +0.918]
+    In ENTRAMBE le versioni (con/senza forever-young) il delta pesato si
+    sposta da vicino-zero/negativo a POSITIVO, e nel caso "con forever-
+    young" l'IC95 sfiora escludere lo zero (limite inferiore -0.007).
+
+LETTURA ONESTA: il segno si sposta nella direzione favorevole al
+difensore (favorito_odds su DEF), ma nessuna delle due letture (vecchia o
+nuova) e' oggi statisticamente significativa in senso stretto (IC che
+include ancora zero in 3 casi su 4, sign test non significativo). Il fix
+NON prova che il difensore funzioni: prova che il verdetto negativo che lo
+aveva escluso il 06/08 era costruito su dati sporchi, e che ripulendoli il
+segno cambia verso, non che regge. Il campione resta limitato in profondita'
+temporale per mazzo (stesso limite gia' segnalato al punto 5ter: pochi
+mazzi superano le 16 giornate).
+
+DECISIONE APERTA: il difensore torna in gioco (non piu' chiuso da un
+backtest nullo), ma serve piu' profondita' temporale per mazzo prima di
+poter dire "supera" o "non supera" questo backtest. Non deciso da questo
+esecutore.
+
+File aggiornati: analisi_manager/p11_bloccato_tutti_mazzi.py,
+analisi_manager/p11_bloccato_out.txt, analisi_manager/p11_bloccato_righe.json
+(commit 144708a1a6, non pushato).
