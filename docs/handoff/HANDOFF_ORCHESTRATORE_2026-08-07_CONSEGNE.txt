@@ -1,0 +1,299 @@
+PASSAGGIO DI CONSEGNE FRA ORCHESTRATORI
+Scritto dall'orchestratore uscente (Opus), 07/08/2026 notte, ora di Roma.
+Destinatario: il PROSSIMO ORCHESTRATORE, che riprende da un altro account e da
+una sessione pulita, senza memoria di questa.
+Leggere per intero PRIMA di scrivere qualunque cosa o far girare qualunque
+script.
+
+Affianca (non sostituisce) docs/handoff/HANDOFF_ORCHESTRATORE_2026-08-06_NOTTE.txt,
+che resta la fonte dei numeri per GW nelle sezioni 5bis-5septies.
+
+
+===============================================================================
+0. LEGGI PRIMA QUESTI, IN QUEST'ORDINE
+===============================================================================
+1. CLAUDE.md (radice repo), TUTTO, non a salti. In cima ci sono tre sezioni
+   vincolanti e recenti:
+     - "DIVIETO TOTALE DI ALLUCINAZIONI E ASSUNZIONI" (scritta il 06/08 dopo
+       un errore reale dell'orchestratore uscente: vedi §6 qui sotto);
+     - "BACKTEST: NESSUNO E' AFFIDABILE FINCHE' L'UTENTE NON L'HA ISPEZIONATO";
+     - "DIFETTI APERTI SULLA FONTE DATI MANAGER" (D1-D7).
+   Sono regole, non consigli.
+2. Questo file.
+3. docs/handoff/HANDOFF_ORCHESTRATORE_2026-08-06_NOTTE.txt, sezioni 5bis-5septies
+   (i numeri per GW) e §7 (come si lavora con questo utente).
+4. git pull PRIMA di tutto. Il repo e' l'unico canale di memoria fra sessioni e
+   fra account.
+
+
+===============================================================================
+1. LA COSA PIU' IMPORTANTE: SI DECIDE OGGI SULLA PRODUZIONE
+===============================================================================
+L'utente gioca a Sorare con soldi suoi e OGGI (07/08) deve schierare. Vuole una
+decisione: il modello va in produzione o no. Ha gia' perso una settimana per bug
+nostri, non per la difficolta' del problema.
+
+Due regole di condotta, entrambe esplicite dall'utente:
+ - NON illuderlo: niente numeri gonfiati, niente "promettente" al posto di un
+   dato. Se un risultato non regge, si dice.
+ - NON demoralizzarlo: se c'e' un guadagno misurato, lui LO VUOLE in produzione.
+   Non nascondere un vantaggio dietro cautele metodologiche.
+
+Se chiede qualcosa per schierare oggi (formazioni, scouting, soglie), quello
+viene PRIMA di ogni analisi.
+
+
+===============================================================================
+2. STATO DEI FATTI: COSA E' VERIFICATO E COSA NO
+===============================================================================
+VERIFICATO (ispezionato sui dati, non sui riassunti):
+ - Fix D1 chiuso e testato: ricostruisci_manager.py non salva piu' righe senza
+   'carte'; i falliti vanno in dati['retry'] e si ritentano solo loro; guardia
+   anti-loop a 3 tentativi; chi!=manager e' fallito definitivo. Commit 37b739e043.
+   L'utente ha controllato il test di persona.
+ - Suite 3 test in analisi_manager/p13_backtest_gw_crowss.py, con: beginner
+   escluse, arene dedicate a campionato escluse E CONTATE, ID carta in tutti i
+   dump, controllo pool-vs-slot che ferma il test se il pool non supera gli slot,
+   formazioni costruite col generatore vero (build_one_lineup_with_growth).
+ - Vincoli Sorare rispettati: verificato in automatico sui dump che nessun
+   giocatore compare due volte nella stessa formazione, nessuna carta e' usata in
+   piu' arene, ogni scelta del test ristretto sta nel pool consentito, un solo
+   capitano per formazione.
+ - Le carte dello stesso giocatore sono trattate come distinte (regola
+   fondamentale, D7). Con gli ID carta ora e' dimostrabile, non solo dichiarato.
+ - I premi arena sono a PIAZZAMENTO: sotto la soglia di piazzamento si incassa
+   ZERO. Non esiste nessun "premio di consolazione" (vedi §6, errore corretto).
+ - Le arene sono identiche da due anni (fonte: utente). Quindi applicare le
+   soglie attuali anche alle GW vecchie e' legittimo.
+ - I piazzamenti (rank) SONO presenti nei file manager: 575 arene con rank
+   valorizzato su crowss. Non usati: si e' scelto di usare le soglie tarate,
+   piu' stabili del rank (decisione dell'utente).
+
+NON VERIFICATO, da non spacciare per fatto:
+ - Se il vantaggio del modello regga su altri manager: misurato solo su crowss.
+ - Quanto valgano in euro le essenze risparmiate: l'utente ha una sua stima
+   (~6-10 euro per GW), noi non l'abbiamo misurata. Non ripeterla come nostra.
+ - Se la variante G (grade) regga sulle GW dove la copertura grade e' bassa.
+
+
+===============================================================================
+3. IL NUMERO CHE DECIDE, E COME VA LETTO
+===============================================================================
+Il metro primario concordato con l'utente e' il TEST 3 (decisione entra/salta),
+perche' e' l'unica cosa misurabile in modo pulito: stesse carte, stessa arena,
+unica liberta' entrare o rinunciare.
+
+CONFRONTO DIRETTO CON L'UTENTE, su 27 GW di crowss (le arene dove hanno deciso
+uguale sono pareggi e non contano):
+    A (modello di produzione):  batte l'utente 22 volte, perde 19
+    G (modello + grade):        batte l'utente 36 volte, perde 28
+    Essenze d'ingresso risparmiate: A 6.400, G 10.100
+
+CONTA DELLE GW (metro secondario, "quante giornate vince"):
+    A avanti in 16/27, G avanti in 17/27.
+
+ATTENZIONE A NON RIPETERE UN ERRORE DELL'ORCHESTRATORE USCENTE: la conta
+"corrette vs sbagliate" include la casella "errore come REALE", cioe' il modello
+entra in un'arena che non conveniva ESATTAMENTE COME HA FATTO L'UTENTE. Quello
+non e' una sconfitta contro l'utente, e' un pareggio, ma abbassa la percentuale.
+Quindi 16/27 e 17/27 misurano la bravura assoluta, NON il vantaggio sull'utente.
+Il confronto diretto (22 vs 19, 36 vs 28) e' il numero giusto.
+
+SOGLIA FISSATA PRIMA DEI RISULTATI (per non spostare i pali dopo): il modello
+passa se e' avanti con lo STESSO SEGNO in almeno il 75% delle GW (9 su 12) e il
+margine medio e' almeno 3 volte l'oscillazione fra una GW e l'altra (regola del
+delta, CLAUDE.md). Sulla conta GW quella soglia NON e' raggiunta (59% e 63%).
+Sul confronto diretto il segno e' positivo per entrambe le varianti, con G piu'
+netto di A.
+
+LIMITE ONESTO DEL CAMPIONE: un solo manager (crowss). La copertura grade scende
+sotto il 30% nelle GW di febbraio-marzo, quindi li' la variante G e' debole; e'
+90-100% nelle GW recenti. La variante A non dipende dal grade.
+
+
+===============================================================================
+4. LA DECISIONE SULLA PRODUZIONE: COME IMPOSTARLA
+===============================================================================
+Prima di proporre qualunque cosa, chiarire con l'utente COSA vuol dire "andare
+in produzione", perche' sono due cose diverse e vanno decise separatamente:
+
+ (a) SEGUIRE IL CONSIGLIO SULLE ARENE gia' presente nel tool. Il generatore
+     stampa gia' "CONVIENE PAGARE L'INGRESSO?" confrontando l'atteso con
+     PAREGGIO_ARENA. Non e' una modifica al codice: e' una scelta di condotta
+     dell'utente (dare retta al verdetto invece di schierare comunque).
+     E' su questo che poggiano le essenze risparmiate misurate.
+
+ (b) METTERE IL GRADE (variante G) DENTRO IL MODELLO. Questa SI' e' una modifica
+     alla produzione, e fa scattare la catena obbligatoria di CLAUDE.md:
+        valori di produzione -> soglie arena (PAREGGIO_ARENA, GUADAGNO_PER_PUNTO)
+        -> tool di scouting (Ess/GW, EUR/EssGW)
+     Se si muove lo score_atteso, le soglie vanno RIVERIFICATE e lo scouting con
+     loro. Nessuna modifica si considera chiusa prima di aver ripercorso tutta
+     la catena. Non basta il primo anello.
+
+Nota utile per la decisione: (a) e' a costo zero e il beneficio misurato e' gia'
+li'. (b) ha il beneficio piu' grande nei dati (G batte A) ma tocca la produzione
+e richiede la catena completa.
+
+
+===============================================================================
+5. FILONI APERTI, IN ORDINE DI PRIORITA'
+===============================================================================
+P1. DECISIONE PRODUZIONE (oggi). Vedi §4. Presentare all'utente le opzioni gia'
+    pronte, non chiedergli di ragionarci da zero.
+
+P2. PILOTA SU 2-3 MANAGER TRONCATI. Scoperta da verificare, non ancora
+    confermata: i 37 manager estratti con --solo-arene (difetto D2) hanno solo
+    le carte-arena, quindi il TEST 1 (full pool) e' impossibile su di loro, ma
+    TEST 2 e TEST 3 usano SOLO carte-arena e sarebbero girabili SENZA
+    riestrarre nulla. Se e' vero, il campione si allarga quasi gratis ed e' la
+    via piu' rapida alla soglia. VERIFICARLO prima di lanciarlo, e partire da
+    2-3 manager soltanto: tutti gli errori finora sono emersi guardando pochi
+    casi in dettaglio, mai dai numeri aggregati.
+    Costo probabile: riempire la cache game-log per i giocatori mancanti. La
+    cache e' gia' corposa; quante query servano NON e' stato contato.
+
+P3. FOREVER-YOUNG. E' l'unico altro manager con dati completi (non troncato).
+    Decisione dell'utente ancora aperta: girarci la suite completa o no.
+
+P4. RIAPERTURA DEL DIFENSORE (difetto D6). Il verdetto negativo che ha chiuso
+    il filone difensore poggia su p11_bloccato_tutti_mazzi.py, che NON toglie
+    ne' xp ne' capitano dai punteggi (876 giocatori su 1136 gonfiati sul mazzo
+    crowss). QUEL VERDETTO E' NULLO. Il difensore passava tutti e tre i gate
+    (lift, correlazione, MAE) ed e' stato escluso solo per quel backtest. Gli
+    script p11_* vanno corretti leggendo il grezzo dalla cache, come fa p13, e
+    rilanciati. E' il filone piu' promettente fra quelli chiusi.
+
+P5. RIESTRAZIONE DEI 37 MANAGER TRONCATI (D2) e delle arene rare/altro sempre
+    scartate (D3). Costa query, va su GitHub Actions, e va decisa con l'utente.
+    Solo se P2 non basta.
+
+P6. FILONE LETTERA/GRADE. Non e' ne' confermato ne' chiuso. Regge solo la parte
+    che non dipendeva dal pool: il grade correla col punteggio meglio dello
+    score_atteso e il guadagno regge fuori campione su MID e FWD. Tutto cio' che
+    riguardava i punti a livello di formazione e' da rifare.
+
+DIFETTI TECNICI APERTI (non bloccanti ma da sistemare):
+ - 21 script in analisi_manager/ hanno ROOT scritto a mano come percorso Windows
+   (r'C:\Users\Andrea\Documents\GitHub\Sorare-tracker-2'): girano SOLO sulla
+   macchina dell'utente. Va sostituito con un percorso relativo calcolato dal
+   file. E' il motivo per cui l'orchestratore uscente non ha potuto girare
+   nulla da solo.
+ - Freschezza cache: partita_target() cerca la partita entro 6 giorni dalla fine
+   giornata. Se la cache non e' aggiornata, la carta viene esclusa dal Test 3
+   per "atteso mancante". Sulla GW 31-lug-4-ago sono state escluse 8 arene su
+   16. Non e' un bug del modello, ma riduce il campione in silenzio: va sempre
+   riportato per GW, non solo nel totale.
+ - Chi legge dati_globali/manager_*.json senza guardare il campo 'retry' puo'
+   credere completa una giornata che ha ancora contender pendenti.
+ - Difetto cosmetico in p13: il contatore "ammissibili nel pool" e' identico per
+   tutte le arene perche' conta le carte una per una mentre il cap Sorare vale
+   sulla somma L10 dei cinque. Numero inutile che sembra dire qualcosa.
+
+
+===============================================================================
+6. GLI ERRORI DELL'ORCHESTRATORE USCENTE, PER NON RIPETERLI
+===============================================================================
+Scritti qui perche' sono costati tempo all'utente e perche' CLAUDE.md ora li
+vieta esplicitamente.
+
+E1. HO INVENTATO UNA MECCANICA DI GIOCO. Ho affermato che "anche un'arena persa
+    incassa un premietto", deducendolo da un coefficiente del modello
+    (GUADAGNO_PER_PUNTO) invece che da una fonte sui premi. E' FALSO: i premi
+    sono a piazzamento, sotto soglia si incassa zero. Ho cosi' ridimensionato
+    per sbaglio un risparmio che era corretto com'era. La regola in CLAUDE.md
+    nasce da qui.
+
+E2. HO COSTRUITO UNA STRATEGIA SU UN'ASSUNZIONE. Ho scritto che il verdetto era
+    bloccato perche' "PAREGGIO_ARENA non esisteva prima del 27/07", trattando la
+    data di calcolo della soglia come se invalidasse le GW precedenti. Non
+    l'avevo verificato. L'utente ha chiarito che le arene sono identiche da due
+    anni, quindi le 27 GW valgono. Prima di dire che qualcosa "blocca", va
+    verificato.
+
+E3. HO INSISTITO IN SILENZIO SU UN TENTATIVO CHE NON POTEVA FUNZIONARE. Ho
+    provato cinque volte a far girare gli script nel mio ambiente, che non puo'
+    eseguirli per via dei percorsi Windows hardcoded, senza dire all'utente cosa
+    stava succedendo. Regola: se un tentativo fallisce due volte, si dice subito
+    e si propone l'alternativa.
+
+E4. HO COMPLICATO SPIEGAZIONI SEMPLICI. All'utente serve il confronto diretto
+    (quante volte il modello lo batte, quante volte perde, quante essenze),
+    non tre metriche affiancate con i distinguo. Una tabella chiara, riga per
+    riga, vale piu' di qualunque aggregato.
+
+
+===============================================================================
+7. COME SI LAVORA CON QUESTO UTENTE
+===============================================================================
+Sta in CLAUDE.md §7 e va letto davvero. I punti che oggi hanno fatto la
+differenza:
+
+- MOSTRA I DATI, NON I RIASSUNTI DEI DATI. Ogni backtest si consegna con un dump
+  leggibile di almeno un caso completo: nomi, ruolo, ID carta, punteggio, arena
+  per arena, piu' le carte fra cui il modello poteva scegliere e quelle che ha
+  scelto. Insieme ai numeri, non su richiesta.
+- CONTA IL POOL CONTRO GLI SLOT PRIMA DI OGNI TEST e riportalo in chiaro. Se il
+  pool non supera gli slot, non c'e' selezione da misurare: fermarsi e dirlo.
+- OGNI BACKTEST USA IL GENERATORE VERO (build_one_lineup_with_growth), mai un
+  knapsack scritto per l'occasione.
+- BREVITA': massimo 5 righe in chat. Analisi, tabelle e numeri nei file di
+  docs/handoff/, mai in chat. L'utente paga a token.
+- ITALIANO, ora di Roma.
+- L'utente e' laureato in legge, non in statistica. Non usare intervallo di
+  confidenza, bootstrap, R2, lift come se fossero noti. In questa sessione ha
+  pero' chiesto ESPLICITAMENTE di NON usare esempi banali: spiegare in modo
+  semplice e diretto, e se un termine non e' chiaro lo chiede lui.
+- HA UNA FORMA GRAVE DI ADHD. Un tema alla volta, niente divagazioni, niente
+  opzioni che non seguirai.
+- QUANDO SEGNALA UN ERRORE, HA QUASI SEMPRE RAGIONE. In questa sessione ha avuto
+  ragione ogni volta. Se la sua obiezione sembra sbagliata, verificala sui dati
+  PRIMA di rispondere.
+- MODELLO DI LAVORO: un orchestratore che non esegue mai, Sonnet per tutto cio'
+  che contiene un "decidi se", Haiku per il volume meccanico. L'utente fa da
+  navetta fra le chat: gli agenti non si parlano. Digli SEMPRE a chi va dato un
+  brief. I brief si scrivono IN CHAT, corti, autosufficienti (l'esecutore puo'
+  essere in una chat pulita), con obiettivo, ipotesi PRIMA dei numeri, cosa non
+  toccare, e "nessuna modifica alla produzione" se e' solo misura.
+- Se un esecutore si ferma e segnala un'incongruenza invece di correggerla a
+  occhio, ha fatto la cosa giusta: diglielo. In questa sessione Sonnet ha
+  trovato da solo due bug reali (arene dedicate scartate in silenzio, totale G
+  sbagliato) e ha corretto un'ipotesi dell'orchestratore sul limite delle 15 GW,
+  che si e' rivelato uno scivolo graduale e non un muro.
+
+
+===============================================================================
+8. STATO DEL REPO
+===============================================================================
+Branch main. Commit rilevanti di questa sessione, dal piu' recente:
+  10230dd558  p13: escludi esplicitamente le arene dedicate a campionato
+  5212fa4720  S3 rilancio 23:30 (controllo scoreStatus)
+  45618be572  suite 3 test su 6 GW crowss: dump, log, tabella in handoff
+  fbd9ba63a4  CLAUDE.md regola divieto allucinazioni + rettifica grade
+  37b739e043  fix D1 (righe mute, retry, guardia anti-loop)
+  4eb18b9b12  p13 suite 3 test (beginner escluse, ID carta)
+  a4603ebb13  p13 modalita pool ristretta ad arena
+
+Da verificare a inizio sessione: che il dump chiaro della GW football-24-28-apr-2026
+(Test 3, 22 arene) prodotto da Sonnet sia stato committato e pushato, insieme a
+questo file.
+
+NESSUNA MODIFICA ALLA PRODUZIONE E' STATA FATTA. Le soglie arena
+(PAREGGIO_ARENA, GUADAGNO_PER_PUNTO in generatore_formazioni/) sono intatte.
+GitHub Actions e' risultato giu' (502/500) durante la sessione: le estrazioni
+sono state fatte in locale.
+
+
+===============================================================================
+9. FILE DI RIFERIMENTO
+===============================================================================
+CLAUDE.md                                              regole + difetti D1-D7
+docs/handoff/HANDOFF_ORCHESTRATORE_2026-08-06_NOTTE.txt  numeri per GW (5bis-5septies)
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md             stato dell'arte modello+scouting
+docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt      filone grade (verdetti 24-26 NULLI)
+docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt      §5ter, backtest che chiuse il
+                                                       difensore (nullo, vedi D6)
+analisi_manager/p13_backtest_gw_crowss.py              la suite dei 3 test
+analisi_manager/dati/DUMP_p13_crowss_*                 i dump ispezionabili
+generatore_formazioni/build_formazione_globale.py      soglie, costi ingresso, generatore
+ricostruisci_manager.py                                estrazione manager (fix D1)
