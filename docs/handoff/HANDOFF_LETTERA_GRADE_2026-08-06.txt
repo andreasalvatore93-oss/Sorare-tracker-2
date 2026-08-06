@@ -450,3 +450,99 @@ possibilita' a priori solo perche' "sembra troppo bello", ma trattarla con
 sospetto rafforzato e cercare un secondo campione prima di fidarsene.
 
 File aggiunto: analisi_manager/p12_sonda_storico_grade.json.
+
+===============================================================================
+10. SESSIONE 06/08/2026 pomeriggio Roma (~14:00) -- CORREZIONE DI ROTTA:
+    la soglia +0.7 era inventata, U1/U2/R1/R2 (Sonnet)
+===============================================================================
+L'utente/orchestratore ha corretto la sezione 9: la soglia "+0.7 = sospetto"
+del brief precedente NON aveva base, andava sostituita col metro vero (la
+correlazione del NOSTRO modello) e con la spiegazione alternativa "gioca/non
+gioca" prima di gridare al leakage.
+
+--- U1: IL GRADE E' STATICO O VARIA PER PARTITA? -- VARIA (buona notizia) ---
+Su 3 giocatori con forma variabile (orkun-kokcu, clement-lenglet,
+manfred-fischer), i grade delle 15 partite storiche NON sono tutti uguali:
+es. kokcu ['A','A','A','E','A','A','A','A','E','A','A','A','A','A','E'].
+Esclude l'ipotesi "valore attuale ristampato su ogni riga passata" (che
+avrebbe dato correlazioni positive ugualmente ma inutilizzabili). Il grade
+storico e' per-partita, non un placeholder costante.
+
+--- U2: RILETTURA IMMEDIATA DELLE PARTITE DI STASERA VIA ROTTA STORICA ---
+0/32 giocatori di p12_step3_righe.json compaiono in playerGameScores PRIMA
+del fischio d'inizio: la rotta storica mostra solo partite gia' giocate,
+non ha righe "vuote" in attesa per le partite future. Nessuna contraddizione
+tra le due rotte da segnalare -- comportamento atteso, non anomalo.
+
+--- R1: SEPARARE "GIOCA/NON GIOCA" DAL RESTO (campione 12 giocatori, 180
+    righe, stesso di ieri, con minsPlayed e starterOddsBasisPoints) ---
+
+R1a - corr(grade, realizzato) filtrando per minuti giocati:
+  ruolo        tutti(n=45)   solo giocati(min>0)   solo >=60min
+  Goalkeeper   +0.285        -0.062 (n=43)          -0.062 (n=43)
+  Defender     +0.638        +0.327 (n=40)          +0.200 (n=38)
+  Midfielder   +0.490        +0.432 (n=44)           +0.387 (n=37)
+  Forward      +0.648        +0.247 (n=34)           +0.167 (n=24)
+
+Conferma l'ipotesi dell'utente: su DEF e FWD la correlazione crolla
+pesantemente togliendo il canale "gioca/non gioca" (DEF 0.64->0.20, FWD
+0.65->0.17) -- gran parte del segnale "alto" era proprio quello, non
+lettura fine della partita. Il MID scende meno (0.49->0.39): il canale
+gioca/non-gioca pesa meno per questo ruolo nel nostro campione. Il GK, che
+gioca quasi sempre, non cambia sostanzialmente (leggermente negativo, ma
+n quasi identico 43 vs 45 -- rumore su campione piccolo, non un pattern).
+
+R1b - corr(starter_odds, realizzato), stesso campione:
+  Goalkeeper 0.515, Defender 0.685, Midfielder 0.354, Forward 0.634
+
+Le sole quote di titolarita' (starter_odds, gia' in produzione, non e' il
+grade) danno correlazioni ALTE quanto o piu' del grade grezzo su DEF/FWD/GK.
+Cioe': un +0.64 su DEF non e' nulla di anomalo per un ruolo dove SOLO sapere
+se gioca da' gia' 0.685 di correlazione col realizzato.
+
+--- R2: IL METRO DI PARAGONE VERO -- corr(score_atteso, realizzato)
+    NOSTRO MODELLO IN PRODUZIONE ---
+Trovato in docs/handoff/REPORT_PASSAGGIO_2_OPUS_P3_2026-08-05.txt (misura
+walk-forward su migliaia di partite, produzione attuale):
+  Goalkeeper  n=6973  corr 0.0347
+  Defender    n=5531  corr 0.1833
+  Midfielder  n=1486  corr 0.2265
+  Forward     n=1228  corr 0.2064
+
+QUESTO E' IL NUMERO CHE CONTA. Il nostro modello in produzione ha
+correlazione con il realizzato FRA 0.03 e 0.23 per ruolo -- molto piu' bassa
+del grade grezzo (0.29-0.65) e anche piu' bassa del grade filtrato per soli
+giocati (DEF 0.20-0.33, MID 0.39-0.43, FWD 0.17-0.25). Su MID e DEF
+(filtrati), il grade e' nello stesso ordine di grandezza o leggermente
+superiore al nostro modello; su FWD filtrato (0.17-0.25) e' comparabile.
+Su nessun ruolo il grade grezzo o filtrato esce cosi' fuori scala da urlare
+riscrittura -- alla luce del vero metro, +0.64 su DEF (grezzo, con canale
+gioca/non-gioca dentro) e' semplicemente cio' che ci si aspetta da un
+segnale che include starter-status, non un'anomalia.
+
+--- LETTURA D'INSIEME (non ancora un verdetto: S3 resta il giudice) ---
+Le due correzioni dell'utente reggono entrambe ai numeri:
+1) niente soglia magica: il nostro modello stesso naviga a corr 0.03-0.23,
+   quindi anche un grade a 0.64 grezzo non e' automaticamente sospetto;
+2) l'ordine dei ruoli (GK piu' basso, DEF/FWD piu' alti) e' spiegato dal
+   canale gioca/non-gioca (R1a/R1b), non necessariamente da riscrittura.
+Resta comunque vero, indipendentemente da leakage o meno, che il grade
+grezzo su DEF/FWD sembra portare poco PIU' del solo starter_odds gia' in
+produzione (corr 0.685/0.634 quasi uguali a 0.638/0.648) -- quindi anche se
+S3 confermera' "genuino", il valore aggiunto marginale rispetto a quello che
+sappiamo gia' (starter_odds) potrebbe essere piccolo. Da verificare con S3
++ eventualmente un confronto diretto grade vs (starter_odds + score_atteso)
+sui residui, non prima.
+
+--- PROSSIMO PASSO ---
+S3 resta il test decisivo, da lanciare quando le partite di football-4-7-
+aug-2026 sono concluse (p12_verifica_leakage_grade.py gia' pronto). Con
+U1/U2/R1/R2 in mano, il risultato di S3 va letto cosi':
+  - se "identici": genuino, e i numeri di R1/R2 dicono che il segnale extra
+    oltre starter_odds e' probabilmente modesto ma misurabile su DEF/MID,
+    trascurabile su GK;
+  - se "diversi": riscritto, si chiude, indipendentemente da quanto le
+    correlazioni sembrassero "normali" con questa lettura.
+
+File aggiunti: analisi_manager/p12_u2_storica_pre_partita.json,
+analisi_manager/p12_r1_minuti.json.
