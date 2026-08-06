@@ -2618,3 +2618,88 @@ all'utente.
 
 File aggiunti: analisi_manager/p12_backtest_manager_full.py,
 analisi_manager/p12_backtest_manager_full_out.json.
+
+===============================================================================
+25. SESSIONE 06/08/2026 notte Roma (~01:30 CEST) -- COPERTURA GRADE
+    COMPLETATA (678/678), DIAGNOSI E UNITA' DI MISURA CORRETTA (arena
+    singola, bootstrap cluster-manager): CAP 260 SOLIDO, IL RESTO NO
+    (Sonnet esecutore, no modifica produzione, commit locale non ancora
+    pushato)
+===============================================================================
+IPOTESI utente PRIMA dei numeri: la copertura grade non e' il problema (F6
+copre qualunque slug al 100%), il buco era solo nella raccolta; e l'IC95
+largo di sez.24 e' un artefatto dell'unita' di misura (coppia manager-GW
+invece di arena singola), non del segnale debole.
+
+--- RACCOLTA COMPLETATA ---
+Pool P-tutte gruppo A (10 manager reali, 8 GW, qualunque competizione
+arena_limited/beginner/uncapped): 678 slug distinti (non 1079 -- numero
+dell'utente basato sui "42 manager", corretto qui agli 678 dei 10 manager
+realmente presenti, gia' dichiarato in sez.23/24). Mancanti rispetto ai 625
+gia' raccolti: 53 (non 454, stessa correzione). Raccolti in 59s, 0 errori:
+678/678 (100%). Script: analisi_manager/p12_raccolta_grade_backtest_extra.py
+(riusa query_slug di p12_raccolta_grade_backtest.py, stesso file di output,
+resume-safe).
+
+--- DIAGNOSI (numeri dell'utente, verificati non ricalcolati qui) ---
+Copertura grade nella finestra della GW: 82% delle righe pool, ben
+distribuita per ruolo (GK 88%, DEF 80%, MID 81%, FWD 82%) -- NON e' un
+buco di copertura ne' un effetto "quasi solo GK" come in sez.23-bis.
+VERDETTO SUL PUNTO: la copertura grade NON e' la causa dell'IC95 largo di
+sez.24. Confermato, caccia alla copertura chiusa.
+
+--- UNITA' DI MISURA CORRETTA: ARENA SINGOLA, bootstrap CLUSTER PER
+    MANAGER ---
+Sez.24 sommava i punti di TUTTE le arene di una coppia (manager,GW) e
+ricampionava sulle 22 coppie -- ma il numero di arene per coppia varia da 1
+a molte (max osservato piu' alto della mediana), quindi la somma pesa i
+manager/GW con piu' arene in modo sproporzionato e allarga l'IC95 senza che
+sia il segnale a muoversi. Corretto: delta G-A per ARENA (non per coppia),
+bootstrap che ricampiona i MANAGER (non le arene singole, che non sono
+indipendenti fra loro se dello stesso manager/mazzo), prendendo per ogni
+manager ricampionato TUTTE le sue arene. Script:
+analisi_manager/p12_backtest_manager_perarena.py, legge lo stesso JSON di
+sez.24 (p12_backtest_manager_full_out.json, gia' con la copertura 678/678
+aggiornata: i numeri di sez.24 sono rimasti IDENTICI dopo la raccolta dei
+53 slug mancanti -- nessuno di quei 53 cadeva nella finestra di una GW
+target, coerente col fatto che la copertura non era il problema).
+
+  TUTTE LE ARENE DEL CHOICE-SET (67 arene, 5 manager):
+    delta medio per arena: +3.245  IC95 [-2.465, +11.703]  positivo 76.6%
+    (ancora non solido nell'aggregato, ma piu' stretto del +9.88 IC95
+    [-31,+54] di sez.24 -- l'unita' di misura contava, come sospettato)
+
+  PER TIPO ARENA:
+    Cap 260  (37 arene, 5 manager): +9.175  IC95 [+2.256, +14.255]  positivo 98.9%  SOLIDO
+    Cap 220  (22 arene, 3 manager): +10.087 IC95 [+0.000, +11.096]  positivo 69.6%  debole (pochi manager)
+    Beginner  (5 arene, 2 manager): -68.790 IC95 [-114.651, +0.000] positivo 0.0%   NEGATIVO ma n minuscolo
+    Uncapped  (3 arene, 1 manager): delta 0.000, bootstrap non calcolabile (<2 manager)
+
+===============================================================================
+VERDETTO SEZIONE 25 -- CAP 260 E' SOLIDO, L'AGGREGATO NO: IL SEGNALE C'E'
+MA E' CONCENTRATO SU UN TIPO DI ARENA
+===============================================================================
+L'ipotesi dell'utente su ENTRAMBI i punti e' confermata: la copertura grade
+non era il problema (82%, ben distribuita), e l'unita' di misura per
+coppia gonfiava l'IC95 (aggregato ora 76.6% invece di 68.6%, IC95 piu'
+stretto). Ma la correzione rivela un quadro piu' preciso, non uniforme:
+CAP 260, il tipo con piu' massa (37/67 arene, tutti e 5 i manager), mostra
+un vantaggio SOLIDO del grade (+9.18 pt/arena, IC95 esclude lo zero,
+98.9% positivo) -- il primo risultato solido dell'intero filone sui
+manager reali (sez.21 su crowss era nullo, sez.23/23-bis erano nulli).
+CAP 220 e' nella stessa direzione ma non dimostrato (solo 3 manager
+distinti nel campione, IC95 tocca lo zero). BEGINNER e' negativo ma su un
+campione minuscolo (5 arene, 2 manager) -- non abbastanza per dire se e'
+un fatto vero o rumore, ne' per mettere in dubbio Cap 260 (tipo diverso,
+soglia riusata da Cap 260 per assunzione dichiarata in sez.24, meccanismo
+non necessariamente identico). UNCAPPED non misurabile (1 solo manager).
+Nessuna decisione su produzione o su apertura del gruppo B presa qui:
+CAP 260 da solo potrebbe giustificare una verifica su B limitata a quel
+tipo, ma e' una scelta dell'utente, non presa d'iniziativa.
+
+File aggiunti: analisi_manager/p12_raccolta_grade_backtest_extra.py,
+analisi_manager/p12_diagnosi_grade_sez25.py (diagnosi interrotta su
+richiesta utente, numeri poi forniti direttamente da lui),
+analisi_manager/p12_backtest_manager_perarena.py,
+analisi_manager/p12_slug_mancanti_sez25.json,
+analisi_manager/dati/storico_grade_backtest_20260806.json (678/678).
