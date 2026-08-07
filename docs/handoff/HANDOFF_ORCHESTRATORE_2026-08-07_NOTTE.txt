@@ -1,0 +1,260 @@
+PASSAGGIO DI CONSEGNE FRA ORCHESTRATORI
+Scritto dall'orchestratore uscente, 07/08/2026, sera/notte, ora di Roma.
+AGGIORNATO 07/08/2026, tardo pomeriggio (run delle 17:01 Roma / 15:01 UTC):
+vedi §2 e §5bis -- il bug dei "0 nodi grade" e' stato TROVATO e CHIUSO, e la
+spiegazione scritta qui sotto al punto 5.3 era SBAGLIATA. §6 (aperti) invariato.
+Destinatario: il PROSSIMO ORCHESTRATORE, sessione pulita, senza memoria di
+questa. Leggere per intero PRIMA di scrivere o far girare qualunque cosa.
+
+Questo file AGGIORNA e ha priorita' su HANDOFF_ORCHESTRATORE_2026-08-07_SERA.txt
+e _CONSEGNE.txt (restano per la storia, ma i loro numeri di decisione su G sono
+stati CORRETTI oggi -- vedi §3, erano una trascrizione errata).
+
+===============================================================================
+0. LEGGI PRIMA QUESTI, IN QUEST'ORDINE
+===============================================================================
+1. git pull. Il repo e' l'unico canale di memoria fra sessioni/account.
+2. CLAUDE.md (radice), TUTTO. Regole vincolanti.
+3. Questo file.
+4. docs/handoff/ELENCO_APERTI_2026-08-07.txt: mappa di tutto l'aperto.
+5. docs/handoff/DOC_SONNET_G_IN_PRODUZIONE_2026-08-07.txt: come G e' entrato in
+   produzione, la fetch, il fix join, la nota CSRF.
+6. docs/handoff/BRIEF_SONNET_CATENA_G_2026-08-07.txt: in coda i due ESITI
+   (catena + backtest copertura piena).
+
+===============================================================================
+1. LA COSA PIU' IMPORTANTE: G E' IN PRODUZIONE SU MAIN (default ON)
+===============================================================================
+Il GRADE (variante G) e' stato portato in produzione OGGI. Stato:
+ - main = bc9c08f0cf (pushato). GRADE_ENABLED default '1' in
+   build_formazione_globale.py (riga ~431). Rollback immediato: GRADE_ENABLED=0.
+ - Come funziona G: per ogni gruppo (lega, ruolo), atteso_combinato =
+   atteso_calibrato + sd_gruppo * z_grade. Il grade sposta la SELEZIONE, non e'
+   un tie-break (le odds invece sono solo tie-break). Formula in
+   analisi_manager/p12_backtest_formazione_grade.py, NON reinventarla.
+ - Fonte grade in produzione: discovery_fixture.py::fetch_grade_live() fa la
+   fetch DOPO il filtro starter-odds, sui soli kept_slugs, sulla leaderboard
+   APERTA della GW, e scrive il grade in player_card_counts.json. Il generatore
+   legge da li' (come gia' fa per starter_odds).
+ - FLUSSO CORRETTO per schierare con G: discovery_fixture.py PRIMA, poi
+   build_formazione_globale.py. Il grade e' volatile (pre-partita); la discovery
+   lo prende fresco a ogni run. NON esiste "discovery vecchia": il tool
+   dell'utente rifa' la discovery ogni volta, tutto sincronizzato.
+ - Fetch verificata funzionante: fetch_grade_live -> 877 slug con grade
+   (1000+1000+168 nodi bench, 3 leaderboard). Formazione K League generata con
+   GRADE_ENABLED=1: 5/5 righe grade non-null, score mosso (Dong-kyung Lee
+   59.0->65.3 grade A), nessun fallback.
+
+CAUTELA ONESTA: G NON ha ancora prova statistica dura. Vedi §3. E' stato messo
+in produzione su decisione dell'utente (segno positivo ovunque, downside
+misurato nullo), non perche' un IC escludesse zero. Il consolidamento e' aperto.
+
+===============================================================================
+2. LA GIORNATA DI SCHIERAMENTO (GW3, football-7-11-aug-2026)
+===============================================================================
+ESITO REALE (risponde a G2 di §6, che resta scritto li' com'era): G NON aveva
+morso. Tutte le run della GW3 hanno dato 0 nodi su tutte e 3 le leaderboard e
+sono girate in fallback A. Causa trovata e chiusa: vedi §5bis.
+ - Il deadline della GW3 e' passato durante la diagnosi (fixture da 'opened' a
+   'started' alle 16:00 Roma). Nota di meccanica, corretta dall'utente: lo stato
+   'started' NON chiude niente -- le arene non sono legate alla GW, si schiera
+   finche' la partita di quel giocatore non e' iniziata, e il grade resta
+   leggibile. Le uniche lineup che si bloccano al primo kickoff sono All Stars
+   da 7 e All Stars Under 23 da 7. NON dedurre mai "leaderboard chiusa" dallo
+   stato 'started'.
+ - Verificato dal vivo dopo il deadline: il bench rispondeva ancora 50 nodi/
+   pagina e la fetch completa dava 877 slug con grade.
+
+===============================================================================
+3. I NUMERI VERI DI G (corretti oggi -- prima erano SBAGLIATI)
+===============================================================================
+Due errori grossi scoperti e corretti oggi:
+
+A. TRASCRIZIONE ERRATA (handoff SERA sez.3, gia' corretta oggi da Sonnet in
+   SERA + ELENCO_APERTI + BRIEF_TEST_DIFF). Il "premio-vero +18.900 vs +14.300"
+   che aveva DECISO G in produzione era falso: 18.900 era il REALE (incasso dei
+   manager veri), non G. I numeri veri (CONSEGNE riga 696, 74 arene):
+   REALE=18.900, A=17.853, G=18.120. Delta G-A vero = +266, non +4.600.
+
+B. BUG DI JOIN nel backtest (scoperto e corretto da Sonnet oggi). Tutti i
+   backtest storici di G giravano su copertura ~4.6% -> G quasi spento ->
+   sembrava nullo/negativo. Causa: carica_indice_grade cercava il grade alla
+   data ESATTA di fine fixture, ma le partite cadono in un giorno qualunque
+   della finestra (match esatto 3.4%). FIX: finestra +/-6gg
+   (grade_in_finestra, GRADE_WINDOW_GIORNI=6). Corretto in
+   p12_backtest_formazione_grade.py E p12_backtest_manager_grade.py (il secondo
+   era SILENZIOSAMENTE rotto: dict->None senza errore).
+
+NUMERI VERI DOPO IL FIX (copertura 77-100%, misurata):
+   crowss (230 arene, 77.4%):  punti A=273.07 G=275.88 (+2.8, IC[-1.1,+6.6])
+                               netto essenze A=96.1 G=103.0 (+7.0, IC include 0)
+                               rank G migliore, formazioni identiche 11.7%
+                               (era 77% a bassa copertura -> ora G sceglie davvero)
+   16-manager gruppo A (59 righe, 100%): punti A=225.97 G=234.13 (+8.15,
+                               era -0.476 col bug). GRUPPO B MAI GUARDATO
+                               (protocollo split A/B, e' la prossima verifica).
+VERDETTO: segno POSITIVO per G su tutti i metri e campioni, ma NESSUN IC
+esclude zero. Direzione buona, significativita' non ancora raggiunta.
+
+===============================================================================
+4. LA CATENA (soglie + scouting) -- GIA' VERIFICATA, NON SI TOCCA
+===============================================================================
+Sonnet ha fatto la catena (BRIEF_SONNET_CATENA_G, ESITO in coda):
+ - SIGMA calibrazione A vs G: A=48.13, G=49.32, delta +1.18, IC sovrapposti ->
+   NON cambia in modo stabile.
+ - SOGLIE (PAREGGIO_ARENA, GUADAGNO_PER_PUNTO): rigirato consiglio_arena.py,
+   delta <1.1 pt (<0.4%), sotto il tremolio fra campioni -> NON si toccano.
+   build_formazione_globale.py soglie restano quelle di produzione.
+ - SCOUTING: legge le soglie dal generatore (getattr), non ha copia propria ->
+   soglie invariate = scouting invariato. Dimostrato sul codice.
+La catena e' CHIUSA: G non muove soglie ne' scouting. Non rifarla.
+
+===============================================================================
+5. LEZIONE OPERATIVA DI OGGI (leggila, e' costata ore)
+===============================================================================
+Oggi un dato "mancante" e' stato scambiato TRE volte per un limite della
+fonte, quando era sempre un BUG DI ESTRAZIONE/JOIN:
+ 1. "copertura grade 32%" -> era Sonnet che interrogava 3 leaderboard invece
+    di tutte. Copertura vera ~93-95%.
+ 2. "grade non recuperabile a ritroso" -> FALSO. Via playerGameScores(last:15)
+    si recuperano 15 partite (~5-9 mesi), copertura ~100%. Solo myFilteredBench
+    (la leaderboard) chiude a GW conclusa; l'altra query no.
+ 3. "0 nodi = leaderboard chiusa" -> NON era la leaderboard. ATTENZIONE: anche
+    la spiegazione scritta qui ("il CSRF perso nel quoting bash") era SBAGLIATA,
+    o meglio curava un sintomo diverso. La causa vera e' in §5bis. Il quoting
+    bash fragile resta un consiglio valido (passare le env var da Python), ma
+    NON era la causa dei 0 nodi su GitHub.
+REGOLA PER IL PROSSIMO: quando un dato manca, SOSPETTA PRIMA LO SCRIPT CHE LO
+PRENDE, non la realta'. Verifica il join/il quoting/la query su un caso reale
+prima di concludere "il dato non c'e'". L'orchestratore uscente ci e' cascato
+tre volte partendo in quarta su ipotesi non verificate -- non ripetere.
+NOTA CSRF: passare le env var costruite in Python (subprocess env=...), MAI via
+pipeline bash fragili. Registrato in DOC_SONNET_G_IN_PRODUZIONE.
+
+===============================================================================
+5bis. IL BUG DEI "0 NODI GRADE": CAUSA VERA, E LE 5 IPOTESI SBAGLIATE PRIMA
+===============================================================================
+Costato mezza giornata e il deadline della GW3. Va letto per intero: l'errore
+di metodo e' piu' istruttivo del bug.
+
+CAUSA VERA (misurata):
+  bench su sessione HTTP pulita        -> 50 nodi
+  bench dopo UNA query senza CSRF      ->  0 nodi
+  (e nel barattolo cookie compare _sorare_session_id)
+base.graphql_query (= formazione_turchia/discovery/turchia_gk_discovery.py,
+importato come 'base' da discovery_fixture.py e altri 3 script) mandava il
+Cookie ma NON il CSRF. Sorare tratta quelle richieste come non autenticate e
+risponde con un Set-Cookie che assegna una sessione ANONIMA; curl_cffi la
+salva nella sessione condivisa e da quel momento quel cookie VINCE
+silenziosamente sull'header Cookie autenticato passato a mano. Risultato:
+currentUser=null e myFilteredBench 0 nodi, con HTTP 200 e nessun errore
+GraphQL -- cioe' identico a "leaderboard chiusa".
+
+PERCHE' SEMBRAVA UN PROBLEMA DI GITHUB: la discovery esegue decine di query
+pubbliche (giornata, partite, carte, odds) PRIMA del grade, quindi arrivava al
+grade sempre con la sessione gia' anonima. I test isolati in locale facevano
+solo la query del bench su sessione pulita, e riuscivano sempre. Il difetto
+era latente da sempre ed e' diventato visibile solo con la PRIMA query
+autenticata della pipeline, il grade (aggiunto il 06-07/08). Ecco perche'
+"non si era mai verificato prima".
+
+PROVA SUL CAMPO, stessa run, stesso commit, shard diversi:
+  shard def,3:9 -> 0 giocatori, nessuna query odds -> currentUser='crowss', 877 grade
+  shard def,0:9 -> 57 giocatori, molte query odds  -> currentUser=None,     0 grade
+Fallisce esattamente chi passa da graphql_query, e solo lui.
+
+FIX (in main):
+ - discovery_fixture.py::_grade_http(): sessione dedicata al grade, barattolo
+   cookie svuotato prima di ogni richiesta.
+ - turchia_gk_discovery.py::graphql_query(): manda x-csrf-token su OGNI
+   richiesta e svuota il barattolo prima di ognuna.
+ - Restano ~381 copie della stessa funzione senza CSRF in giro per il repo:
+   NON toccate di proposito, fanno solo query pubbliche. Se una dovesse
+   servire autenticata, va portata a questo standard o ricadra' nel bug.
+ - Diagnostica lasciata apposta: probe "{ currentUser { slug } }" prima del
+   grade, e log della risposta HTTP grezza quando torna 0 nodi. Distinguono a
+   colpo d'occhio "sessione morta" da "giornata chiusa".
+
+LE 5 IPOTESI SBAGLIATE, in ordine, tutte smentite da una misura:
+ 1. "finestra leaderboard chiusa"      -> falsa: bench dava 50 nodi dal vivo.
+ 2. "secret COOKIE/CSRF scaduti"       -> falsa: impronte sha256 di cookie e
+    csrf IDENTICHE fra GitHub e PC (25b14c8020b8 / abaaf6ea5965).
+ 3. "mancano header Origin/Referer"    -> falsa: aggiunti, nessun effetto.
+ 4. "mancano gli header di client Web" (sorare-client/version/build/
+    device_fingerprint, come bot_definitivo) -> falsa: aggiunti, nessun effetto.
+ 5. "Sorare non autentica dagli IP datacenter US/Azure dei runner" -> FALSA, ed
+    e' l'errore peggiore perche' fu scritta come CONCLUSIONE MISURATA. Era una
+    correlazione spuria: i test locali riuscivano perche' erano isolati, non
+    perche' partivano da un IP residenziale. Su questa ipotesi e' stato anche
+    installato un runner self-hosted (C:\actions-runner, servizio Windows,
+    etichetta 'casa') e costruita un'impalcatura job+artifact, poi smontata.
+    IL RUNNER RESTA INSTALLATO MA NON SERVE: si puo' rimuovere con
+    "cd C:\actions-runner; .\config.cmd remove" oppure lasciare, e' innocuo.
+    Nota collaterale utile: il repo e' PUBBLICO, e in quell'occasione e' stato
+    impostato "Require approval for all outside collaborators" sui workflow da
+    fork -- impostazione sensata, tenerla.
+
+REGOLA CHE NE ESCE (rafforza §5): quando una query "my" torna vuota, la PRIMA
+cosa da chiedere non e' "il dato esiste?" ma "questa sessione e' autenticata?"
+-> "{ currentUser { slug } }". Costa una query e distingue subito il guasto
+dalla realta'. E: non chiamare "confermato/misurato" cio' che e' solo
+correlato; se due ambienti differiscono, isolare UNA variabile alla volta
+invece di dedurre dalla differenza piu' vistosa.
+
+===============================================================================
+6. COSA RESTA APERTO (per il prossimo, in ordine)
+===============================================================================
+G1. CONSOLIDARE G (il piu' importante): nessun IC esclude zero. Prossimi passi:
+    (a) guardare il GRUPPO B dei manager (mai visto, protocollo pre-registrato):
+        se conferma il +8, G ha prova piu' solida; (b) misurare G sulla GW3 LIVE
+        a partita giocata (realizzato vero, non atteso). Se il segno regge, G
+        passa da "in produzione per decisione" a "in produzione dimostrato".
+G2. VERIFICARE I LOG DELLA RUN GW3 (§2): G ha morso o fallback ad A? Non ancora
+    ispezionato alla chiusura.
+G3. BACKLOG COPERTURA (DOC_SONNET_G_IN_PRODUZIONE, in coda): 6 leghe (turchia,
+    danimarca, polonia, cechia, francia, grecia) a 0% grade -- NON giocavano
+    questa GW. Quando tornano a giocare, verificare che la fetch le includa;
+    se restano a 0% con partite aperte, girano G in fallback=A (buco vero).
+D3 (freschezza cache): FIX SCRITTO E TESTATO oggi da me
+    (diagnostica_staleness_cache in backtest_arene_previsioni.py, funzione nuova
+    e isolata, zero rischio). DA COMMITTARE ANCORA se non l'ha fatto l'utente.
+D1 (crowss=utente): CHIUSO NEGATIVO oggi (verificato sui grezzi: crowss escluso
+    da capitano e smart-money ovunque contasse). Vedi ELENCO_APERTI D1.
+ODDS+4RUOLI: campione profondo NON allargato (solo zinomalte 10gw trovato oggi,
+    gli altri corti). Filone in pausa, GW storiche non scadono. Vedi
+    HANDOFF_FAVORITO_ODDS.
+D2 (21 script path Windows hardcoded): aperto, meccanico.
+
+===============================================================================
+7. STATO DEL REPO / BRANCH
+===============================================================================
+ - main = bc9c08f0cf al momento della stesura; dopo i fix del 07/08 pomeriggio
+   main include anche: 5ae6f434f0 (_grade_http, sessione dedicata al grade) e
+   e69c66e279 (graphql_query con CSRF + barattolo cookie svuotato). G in
+   produzione (GRADE_ENABLED default 1).
+ - Non piu' vero per questa sessione: l'orchestratore ha avuto accesso git e
+   rete, e ha committato/pushato da se' i fix di §5bis.
+ - branch grade-g-produzione: il lavoro G (test + fetch + fix join). Rebased
+   pulito da un commit estraneo di un'altra sessione prima del merge.
+ - ATTENZIONE COLLISIONE NOMI: esiste un origin/test-grade-g-gw3 di UN'ALTRA
+   sessione (estrazione manager), contenuto diverso. Non confonderlo col lavoro
+   G. Il lavoro G e' su grade-g-produzione / gia' in main.
+ - Il sandbox dell'orchestratore NON committa (permessi git) e NON fetcha
+   (403 proxy): tutti i commit/push li fa l'utente o gli esecutori.
+
+===============================================================================
+8. COME SI LAVORA CON QUESTO UTENTE (vale ogni volta)
+===============================================================================
+ - Utente = crowss (il mazzo crowss E' lui). Fa da navetta fra chat.
+   Orchestratore ragiona/decide/legge grezzi; esecutori (Sonnet/Haiku) fanno.
+ - VERIFICA I DATI GREZZI, non i commenti degli esecutori (regola 6). Oggi ha
+   evitato piu' disastri: il "+30" gonfiato, il "G negativo", il "32%".
+ - QUANDO L'UTENTE SEGNALA UN ERRORE HA QUASI SEMPRE RAGIONE. Oggi ha corretto
+   l'orchestratore 3 volte (grade su tutti gli eligibili; 15 a ritroso;
+   leaderboard aperta). Verifica la sua obiezione sui grezzi PRIMA di rispondere.
+ - BREVITA' assoluta in chat, ADHD: un tema alla volta, niente wall of text,
+   niente ipotesi travestite da fatti. Se non hai la fonte: "non lo so, mi
+   serve X". Italiano, ora di Roma.
+ - Il metro di qualita' di G e' il REALIZZATO (backtest premio-vero), MAI
+   l'atteso_combinato (gonfiato dal boost). Sulla GW non giocata non c'e'
+   realizzato -> nessun verdetto di qualita' possibile prima della partita.
