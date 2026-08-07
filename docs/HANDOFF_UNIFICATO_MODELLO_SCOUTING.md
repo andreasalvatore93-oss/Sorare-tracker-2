@@ -1007,8 +1007,12 @@ se la GW le rendeva schierabili. Commit `ee4c2deec2`.
 
 ## 10bis. COSE DA FARE — in ordine di priorità (08/08/2026)
 
-1. **Consolidare G (gruppo B)**: G è in produzione senza IC che escluda zero.
-   Aprire il gruppo B dello split A/B pre-registrato (unica verifica non
+1. **Consolidare G sul lato ARENA (gruppo B)**: sul NON-arena G ha già prova
+   solida (base pulita, n=864 All Star+U23 delta +5,98 IC95[+2,43,+9,68]
+   esclude zero; n=310 MLS Hot Streak IC quasi escludente) — quel lato è
+   forte, non serve altro lavoro a breve. Sul lato ARENA invece il campione
+   resta piccolo (59 righe gruppo A, 16 manager) e IC non esclude zero:
+   lì va aperto il gruppo B dello split pre-registrato (unica verifica non
    contaminata, si spende una volta) — §8bis.
 2. **Buco dati `arene_storico.json`**: da 673 a 160 arene fra l'1 e il 6/08,
    solo 191 spiegate (division tolte a richiesta); 322 arene + il campo
