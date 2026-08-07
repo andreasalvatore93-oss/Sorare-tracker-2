@@ -1141,3 +1141,104 @@ alla finestra 18/11/2025+ per questi 4 ruoli, la cache non e' cresciuta in
 modo da spostare la griglia. VERDETTO STORICO CONFERMATO SENZA RISERVE:
 DEF passa forte (7/9), GK e MID non passano mai (0/9), FWD passa solo al
 limite (1/9). Nessuna sorpresa rispetto all'ipotesi dichiarata.
+
+--- FASE 3: BACKTEST DI FORMAZIONE PULITO, RUOLI E COMBINAZIONI ---
+
+Script nuovo: analisi_manager/p11_ruoli_combinati_tutti_mazzi.py. Riusa
+TUTTE le funzioni di p11_bloccato_tutti_mazzi.py (gia' fixato D6) via
+import: nessuna riga di pool/reale/knapsack riscritta, solo nuove
+combinazioni di policy sopra applica_policy()/gioca()/gioca_bloccato()
+gia' esistenti. k presi dalla griglia pulita FASE 2 (stesso file, appena
+riconfermata identica).
+
+Policy testate: A produzione | B = DEF mult k=0.2 composizione LIBERA
+(i ruoli competono) | B_lock = B con composizione bloccata identica ad A
+(isola la selezione dentro il ruolo) | GK = GK add k=3 (mai passa il
+criterio severo, misurato comunque) | MID = MID mult k=0.2 (mai passa) |
+FWD = FWD mult k=0.1 (l'unica variante FWD che passa, al limite) | D =
+tutti e 4 insieme al proprio ottimo, composizione libera.
+Policy E (ricentrata) NON implementata in questo giro (limite dichiarato
+nel brief, priorita' data a GK/MID/FWD singoli mai misurati puliti).
+
+CAMPIONE: 51 mazzi disponibili (esclusi crowss/badamt/matangel716/
+foreveryoung_predizioni_gw2), 49 processati (2 senza arene valide), 4
+muti (overlap_B_lock>=4.5/5), 45 utili, 6.769 arene totali. E' il
+campione PIU' GRANDE mai usato su questo test (vs 37-38 del giro storico,
+vs 2 del giro originale sez.4.2).
+
+DUMP CASO ISPEZIONABILE (obbligatorio CLAUDE.md, salvato integrale in
+analisi_manager/p11_ruoli_combinati_dump.json): manager 140spb34, GW
+football-3-7-apr-2026, pool 64 carte per 5 slot (selezione vera, non
+degenere). Arena 1 (cap 260), formazione A:
+  dayne-st-clair GK atteso=48.0 reale=37.2
+  auston-trusty DEF atteso=52.6 reale=49.18
+  dario-esteban-osorio-osorio MID atteso=55.0 reale=91.2
+  robert-lewandowski FWD atteso=50.1 reale=45.5
+  kieran-tierney DEF atteso=57.2 reale=65.22 CAPITANO -> 301.34 punti
+Formazione MID (stesso pool, MID al suo ottimo): sostituisce
+robert-lewandowski con evangelos-pavlidis (FWD, atteso simile 49.5) e
+dayne-st-clair con alexander-schlager (GK), aggiunge agustin-cardozo
+(secondo MID, sostituendo il DEF auston-trusty) -> 305.66 punti, +4.32.
+Composizione A: GK1 DEF2 MID1 FWD1. Composizione MID: GK1 DEF1 MID2 FWD1
+(lo slot extra passa da DEF a MID). Formazione D identica a MID in questo
+caso (stesso identico esito, +4.32): il DEF non ha vinto lo slot extra
+nemmeno nella combinazione.
+
+RISULTATO AGGREGATO (45 mazzi utili, 6.769 arene, bootstrap su cluster
+manager+giornata):
+
+  policy   segno (mazzi)         p-value   delta pesato/arena   IC95
+  B        +23/-22/=0            1.0000    +0.038               [-0.517,+0.731]
+  B_lock   +22/-23/=0            1.0000    +0.447               [-0.034,+1.115]
+  GK       +21/-19/=5            0.8746    -0.072               [-0.409,+0.259]
+  MID      +27/-17/=1            0.1742    +0.764               [+0.069,+1.547]  ESCLUDE ZERO
+  FWD      +18/-25/=2            0.3604    -0.192               [-0.974,+0.574]
+  D        +27/-18/=0            0.2327    +0.871               [+0.079,+1.861]  ESCLUDE ZERO
+
+LETTURA, ipotesi dichiarata PRIMA (dal brief: "il DEF dovrebbe riemergere
+con la composizione bloccata, GK/MID/FWD non dovrebbero muovere nulla in
+formazione visto che nemmeno passano la griglia") -- PARZIALMENTE
+SMENTITA, da indagare, non da prendere come scoperta:
+
+- B (DEF libero): IC95 include zero, come nel giro storico. Nessuna
+  sorpresa.
+- B_lock (DEF bloccato): IC95 [-0.034,+1.115] SFIORA escludere zero (il
+  limite inferiore e' a -0.034, quasi zero) ma non ce la fa. Coerente in
+  direzione con "isolando la selezione il guadagno riemerge" del giro
+  storico (sez.5bis A), ma qui piu' debole e non conclusivo: il campione
+  e' 10x piu' grande (6769 vs 652+372 arene) e il segnale non e' cresciuto
+  in proporzione -> indebolisce l'ipotesi che fosse solo questione di
+  potenza statistica.
+- GK: nullo come atteso, nessuna sorpresa.
+- FWD: nullo, anche se la griglia per-ruolo (FASE 2) aveva 1/9 varianti
+  PASSA. Coerente col giro storico (in formazione il segnale per-riga non
+  sempre arriva ai punti).
+- MID e D ESCLUDONO ZERO, ma su ENTRAMBI il limite inferiore dell'IC e'
+  vicinissimo a zero (+0.069 e +0.079): sono "appena significativi", non
+  un segnale forte. Il test del segno per MID (p=0.17) e D (p=0.23) NON e'
+  significativo -- SOLO il delta pesato per arena lo e'. QUESTA E' UNA
+  DISCREPANZA GIA' PREVISTA DAL BRIEF ("problema di test multipli... 1 su
+  20 significativo per caso e' atteso"): su 6 policy testate al 95%, 1-2
+  "significativi" per puro caso NON sorprendono. MID in particolare NON
+  aveva MAI passato il criterio severo sulla griglia per-singolo-giocatore
+  (0/9 in FASE 2, corr passa quasi ovunque ma il lift mai): vedere un
+  guadagno "significativo" in formazione mentre il segnale per-carta non
+  regge e' un segnale di ATTENZIONE, non di conferma -- va trattato come
+  ipotesi da NON adottare senza replica su un campione indipendente, non
+  come scoperta. D eredita in parte questo perche' include MID al suo
+  ottimo.
+
+NON DIMOSTRATO ne' SMENTITO in modo pulito: il quadro FASE 3 e' piu'
+ambiguo del previsto. B_lock (il test piu' motivato teoricamente, quello
+che nel giro storico faceva riemergere il DEF) resta a un soffio dal
+significativo ma non ce la fa nemmeno con 45 mazzi. MID/D "passano" ma
+con margini risicati e senza sostegno dal segno per mazzo, in una
+situazione di test multipli dichiarata. NESSUNA di queste policy va
+proposta per la produzione su questi numeri. Il prossimo passo utile,
+se si vuole insistere, e' REPLICARE MID e D su un secondo campione
+indipendente (es. split temporale) prima di crederci, non allargare
+ancora lo stesso pool di mazzi.
+
+File: analisi_manager/p11_ruoli_combinati_tutti_mazzi.py (nuovo),
+p11_ruoli_combinati_out.txt, p11_ruoli_combinati_righe.json,
+p11_ruoli_combinati_dump.json.
