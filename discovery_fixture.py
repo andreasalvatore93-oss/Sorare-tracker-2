@@ -150,6 +150,18 @@ def _grade_bench_page(so5_slug, position, after):
         b = (lb.get('myFilteredBench') or {})
         nodes = b.get('nodes') or []
         pinfo = b.get('pageInfo') or {}
+        if not nodes and after is None:
+            # DEBUG (07/08/2026 notte): la risposta grezza non era mai stata
+            # ispezionata su GH Actions, solo il conteggio nodi riassunto dal
+            # nostro stesso log -- vietato dedurre senza vedere il dato
+            # grezzo. Stampa status/header/body reali una volta per
+            # leaderboard/posizione quando torna vuota, per vedere SE e COSA
+            # sta filtrando (WAF/cache/risposta genuina).
+            hdrs_utili = {k: v for k, v in r.headers.items()
+                          if k.lower() in ('cf-ray', 'cf-cache-status', 'server',
+                                           'content-type', 'x-request-id')}
+            log(f"  [grade][DEBUG] {so5_slug}/{position}: HTTP {r.status_code}, "
+                f"headers={hdrs_utili}, body[:500]={r.text[:500]!r}")
         return nodes, pinfo.get('hasNextPage'), pinfo.get('endCursor')
     return [], False, None
 
