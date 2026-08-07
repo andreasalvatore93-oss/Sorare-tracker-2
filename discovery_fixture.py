@@ -88,6 +88,42 @@ FETCH_GRADE = os.environ.get('FETCH_GRADE', '1') == '1'
 SORARE_CSRF = os.environ.get('SORARE_CSRF', '')
 
 
+_grade_session = None
+
+
+def _grade_http():
+    """Sessione HTTP DEDICATA al grade, con il barattolo dei cookie sempre
+    vuoto.
+
+    CAUSA VERA DEL BUG DEI '0 NODI' (07/08/2026, misurata):
+        bench su sessione pulita              -> 50 nodi
+        bench dopo UNA query senza CSRF       ->  0 nodi
+    base.graphql_query manda il Cookie ma NON il CSRF; a quelle richieste
+    Sorare risponde con un Set-Cookie che assegna un _sorare_session_id
+    ANONIMO. curl_cffi lo salva nel barattolo della sessione condivisa e da
+    quel momento il cookie del barattolo vince su quello che passiamo a mano
+    nell'header: la sessione e' anonima, currentUser diventa null e
+    myFilteredBench torna 0 nodi con HTTP 200 e nessun errore GraphQL.
+
+    Su GitHub Actions la discovery esegue decine di query (giornata, partite,
+    carte, odds) PRIMA del grade, quindi arrivava al grade sempre con la
+    sessione gia' anonima -- ecco perche' li' non ha mai funzionato, mentre in
+    locale i test isolati facevano solo la query del bench e riuscivano. Non
+    c'entravano ne' l'IP dei runner, ne' gli header di client Web, ne' la
+    versione di curl_cffi, ne' la scadenza dei secret: tutte ipotesi provate e
+    smentite prima di arrivare alla misura qui sopra."""
+    global _grade_session
+    if _grade_session is None:
+        if getattr(base, '_HAS_CURL_CFFI', False):
+            from curl_cffi import requests as _cr
+            _grade_session = _cr.Session(impersonate="chrome")
+        else:
+            import requests as _rq
+            _grade_session = _rq.Session()
+    _grade_session.cookies.clear()
+    return _grade_session
+
+
 def _headers_client_web():
     """Header di un client Web Sorare legittimo -- gli stessi che manda
     bots/bot_definitivo.py (riga ~1245), che opera autenticato da GitHub
@@ -165,9 +201,9 @@ def _grade_bench_page(so5_slug, position, after):
     backoff = 1.0
     for attempt in range(4):
         try:
-            r = base._http_session.post(base.GRAPHQL_URL,
-                                        json={'query': GRADE_BENCH_QUERY, 'variables': variables},
-                                        headers=headers, timeout=20)
+            r = _grade_http().post(base.GRAPHQL_URL,
+                                   json={'query': GRADE_BENCH_QUERY, 'variables': variables},
+                                   headers=headers, timeout=20)
             if r.status_code == 429:
                 time.sleep(backoff)
                 backoff *= 2
@@ -212,11 +248,6 @@ def fetch_grade_live(fixture_slug):
     if not FETCH_GRADE:
         log("[grade] FETCH_GRADE=0, salto il fetch (G restera' in fallback z=0).")
         return {}, {}
-    # NESSUNA CACHE SU FILE, PER SCELTA (07/08/2026, decisione dell'utente).
-    # I grade cambiano dentro la giornata (formazioni, infortuni), quindi un
-    # file committato invecchia; e soprattutto un fallback silenzioso su file
-    # nasconderebbe il guasto invece di mostrarlo. Il live deve funzionare:
-    # se non funziona, si deve vedere subito nel log (probe qui sotto).
     if not SORARE_CSRF:
         log("[grade] SORARE_CSRF assente: la query bench potrebbe fallire o "
             "tornare vuota senza CSRF. Procedo comunque, verifica copertura.")
@@ -228,25 +259,8 @@ def fetch_grade_live(fixture_slug):
     # cookie morto: non sono una prova che l'auth regga. Qui si chiede
     # currentUser, che e' null se e solo se la sessione non autentica.
     _probe_h = _headers_client_web()
-    # Impronta del cookie (NON il cookie: solo un hash troncato, non e' un
-    # segreto) per stabilire se il secret su GitHub e' BYTE-IDENTICO a quello
-    # che autentica dal PC. La sola lunghezza uguale non lo dimostra.
-    # Insieme: che libreria HTTP sta davvero girando e da che rete esce il
-    # runner -- le uniche variabili rimaste dopo aver escluso cookie, CSRF,
-    # versione di curl_cffi (0.16.0 provata), header minimi e header completi.
-    import hashlib
-    _fp_cookie = hashlib.sha256(base.COOKIES.encode()).hexdigest()[:12]
-    _fp_csrf = hashlib.sha256(SORARE_CSRF.encode()).hexdigest()[:12]
-    log(f"[grade] IMPRONTE: cookie sha256[:12]={_fp_cookie} csrf={_fp_csrf} "
-        f"curl_cffi={getattr(base, '_HAS_CURL_CFFI', '?')}")
     try:
-        _ip = base._http_session.get('https://ipinfo.io/json', timeout=10).json()
-        log(f"[grade] RETE runner: ip={_ip.get('ip')} paese={_ip.get('country')} "
-            f"org={_ip.get('org')}")
-    except Exception as _e:
-        log(f"[grade] RETE runner non determinabile: {_e}")
-    try:
-        _pr = base._http_session.post(
+        _pr = _grade_http().post(
             base.GRAPHQL_URL, json={'query': '{ currentUser { slug } }'},
             headers=_probe_h, timeout=20)
         _pd = _pr.json()
