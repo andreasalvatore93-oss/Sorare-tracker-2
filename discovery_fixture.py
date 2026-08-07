@@ -573,6 +573,10 @@ query FixtureCards($userSlug: String!, $page: Int!, $pageSize: Int!,
         anyPlayer {
           slug
           displayName
+          # L10 QUI (07/08/2026): stesso campo di L10_ONLY_QUERY, ma dentro una
+          # query che stiamo gia' facendo -- zero richieste in piu'. Prima si
+          # chiedeva una per giocatore sopravvissuto (308 a run, a 0.7s l'una).
+          lastTenPlayedAvgScore: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
           activeClub { slug domesticLeague { slug } }
         }
       }
@@ -1017,6 +1021,7 @@ def main():
 
     for position, role in ROLE_BY_POSITION.items():
         visti = set()
+        l10_di = {}   # slug -> L10, arriva gratis dalla CARDS_QUERY
         u23_di = {}
         power_di = {}
         club_di = {}  # slug -> club attuale (activeClub), vedi sotto
@@ -1085,6 +1090,8 @@ def main():
                 # trasferito e non ha ancora esordito.
                 if club.get('slug'):
                     club_di[p['slug']] = club['slug']
+                if p.get('lastTenPlayedAvgScore') is not None:
+                    l10_di[p['slug']] = p['lastTenPlayedAvgScore']
                 if h.get('inSeasonEligible'):
                     copie_di[p['slug']]['in_season'] += 1
                 else:
@@ -1172,15 +1179,18 @@ def main():
                              if odds_bulk.get(sl) is not None
                              and (MIN_ODDS <= 0 or odds_bulk[sl] >= MIN_ODDS)]
             log(f"  {position}: odds in bulk -> {len(sopravvissuti)}/{len(elenco)} "
-                f"sopra soglia, chiedo la L10 solo a loro")
+                f"sopra soglia (L10 gia' presa con le carte, zero query)")
             for sl in elenco:
-                o = odds_bulk.get(sl)
-                risultati[sl] = (o, inizio if o is not None else None, None)
-            for sl in sopravvissuti:
-                l10 = l10_da_api(sl)
-                o, data, _ = risultati[sl]
-                risultati[sl] = (o, data, l10)
-                time.sleep(ODDS_L10_SLEEP)
+                # data SEMPRE valorizzata: chi e' in 'elenco' ha gia' superato
+                # il pre-filtro sulle squadre in campo, quindi la partita in
+                # questa giornata ce l'ha per costruzione. Lasciarla a None
+                # quando mancano le odds sarebbe una regressione silenziosa:
+                # con MIN_ODDS=0 (nessun filtro richiesto) quei giocatori
+                # devono restare INCLUSI -- regola gia' corretta una volta in
+                # questa pipeline, vedi il commento su MIN_ODDS piu' sotto.
+                # Misurato: con data=None diventavano 5 "senza partita", con
+                # data valorizzata tornano 0 come nel percorso vecchio.
+                risultati[sl] = (odds_bulk.get(sl), inizio, l10_di.get(sl))
         else:
             # Odds di giornata non disponibili (non ancora pubblicate o query
             # a vuoto): si torna al percorso vecchio, giocatore per giocatore.

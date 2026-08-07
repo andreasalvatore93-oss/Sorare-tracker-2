@@ -62,7 +62,7 @@ jobs:
   # NB: gira su runner GitHub normali. Il problema che sembrava di rete (0
   # nodi solo da GitHub) era la sessione resa anonima dalle query senza CSRF,
   # gia' corretta: nessun runner self-hosted serve.
-  grade:
+  pool:
     name: pool (odds + grade, una volta per tutta la run)
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -89,48 +89,31 @@ jobs:
           path: pool_gw.json
           retention-days: 1
 
-  # TEST 28/07 v4 (vedi 30.M): 24 job discovery paralleli (v3 a 12 confermato
-  # funzionante, 30.L). GK/FWD x4 quote, DEF/MID x8 quote. Se il test
-  # fallisce/non porta benefici, vedi 30.I per il rollback.
-  # UN job a matrice da 20 voci al posto dei 36 job discovery separati
-  # (29/07 notte). Il tetto dell'account e' 20 job CONCORRENTI, quindi 36 job
-  # giravano in DUE ondate: 120s di wall per 1738 job-secondi, di cui solo
-  # 1150 di lavoro vero. Raggruppati in 20 gruppi con LPT sui tempi misurati
-  # di discovery_fixture.py (bin piu' pesante 71s) girano in UNA ondata e
-  # pagano il costo fisso di checkout+setup+pip una volta per gruppo invece
-  # che 36 volte. Gli shard sono gli STESSI di prima, uno per uno: cambia
-  # solo su quale runner girano e che alcuni girano in sequenza. Meno
-  # connessioni concorrenti verso Sorare, non piu'.
+  # 4 JOB, UNO PER RUOLO (07/08/2026). Prima erano 20, e la ragione erano le
+  # odds: si interrogava un giocatore alla volta, quindi conveniva spezzare il
+  # lavoro. Da quando le odds arrivano in bulk dal job 'pool' quel costo non
+  # esiste piu', e i 20 shard erano rimasti a fare danno: ognuno RI-PAGINAVA
+  # tutte le carte del suo ruolo (DEF diviso in 9 shard = le stesse 561 carte
+  # scaricate 9 volte). Misurato sulla run 31194330176: 1705 risposte 429,
+  # tutte dalla paginazione carte, con attese da 289s -- discovery 7.7 min.
+  # Ora ogni ruolo pagina le sue carte UNA volta e chiede la L10 solo ai
+  # sopravvissuti: 308 in tutto, il ruolo piu' carico (DEF) ne ha 113.
+  # Lo shard vuoto ('def,,') significa nessun filtro lega: il job prende tutte
+  # le leghe del ruolo, comprese mls/kleague.
   discovery:
     name: discovery ${{ matrix.gruppo.nome }}
-    needs: grade
+    needs: pool
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       fail-fast: false
-      max-parallel: 20
+      max-parallel: 4
       matrix:
         gruppo:
-          - { nome: "01 def5", cfg: "def,5:9," }
-          - { nome: "02 mid5", cfg: "mid,5:9," }
-          - { nome: "03 fwd2", cfg: "fwd,2:5," }
-          - { nome: "04 def0", cfg: "def,0:9," }
-          - { nome: "05 def3", cfg: "def,3:9," }
-          - { nome: "06 mid0 def4", cfg: "mid,0:9,|def,4:9," }
-          - { nome: "07 fwd0 gk4h1", cfg: "fwd,0:5,|gk,4:5,1:2" }
-          - { nome: "08 def7h1 def6", cfg: "def,7:9,1:2|def,6:9," }
-          - { nome: "09 def7h0 gk4h0", cfg: "def,7:9,0:2|gk,4:5,0:2" }
-          - { nome: "10 gk0 gk3h1", cfg: "gk,0:5,|gk,3:5,1:2" }
-          - { nome: "11 def8h0 mid2", cfg: "def,8:9,0:2|mid,2:9," }
-          - { nome: "12 fwd1 mid6", cfg: "fwd,1:5,|mid,6:9," }
-          - { nome: "13 def8h1 def2", cfg: "def,8:9,1:2|def,2:9," }
-          - { nome: "14 mid7h0 gk1", cfg: "mid,7:9,0:2|gk,1:5," }
-          - { nome: "15 mid7h1 gk3h0", cfg: "mid,7:9,1:2|gk,3:5,0:2" }
-          - { nome: "16 gk2 def1", cfg: "gk,2:5,|def,1:9," }
-          - { nome: "17 mid3 mid1", cfg: "mid,3:9,|mid,1:9," }
-          - { nome: "18 mid8h1 fwd4h0", cfg: "mid,8:9,1:2|fwd,4:5,0:2" }
-          - { nome: "19 fwd3h1 mid8h0 mid4", cfg: "fwd,3:5,1:2|mid,8:9,0:2|mid,4:9," }
-          - { nome: "20 fwd4h1 fwd3h0", cfg: "fwd,4:5,1:2|fwd,3:5,0:2" }
+          - { nome: "gk",  cfg: "gk,," }
+          - { nome: "def", cfg: "def,," }
+          - { nome: "mid", cfg: "mid,," }
+          - { nome: "fwd", cfg: "fwd,," }
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
