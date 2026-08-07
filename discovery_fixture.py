@@ -119,7 +119,8 @@ def _grade_bench_page(so5_slug, position, after):
         },
         "pageSize": 50, "so5LeaderboardSlug": so5_slug, "after": after,
     }
-    headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+    headers = {'Content-Type': 'application/json', 'Accept': 'application/json',
+               'Origin': 'https://sorare.com', 'Referer': 'https://sorare.com/'}
     if base.COOKIES:
         headers['Cookie'] = base.COOKIES
     if SORARE_CSRF:
