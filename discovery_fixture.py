@@ -481,6 +481,155 @@ def fetch_grade_live(fixture_slug):
 ROLE_BY_POSITION = {'Goalkeeper': 'gk', 'Defender': 'def',
                     'Midfielder': 'mid', 'Forward': 'fwd'}
 
+# L10 DELLA CARTA, NON DEL GIOCATORE (08/08/2026) -- causa vera delle arene
+# che sforavano il cap.
+#
+# COSA SUCCEDEVA: si e' sempre letta l'L10 da `anyPlayer.averageScore(...)`,
+# cioe' quella del GIOCATORE. Sorare invece capa sulla CARTA
+# (`ComposeTeamBenchCard.averageScore(...)`), che pesa i punteggi col ruolo
+# con cui la carta e' stata EMESSA. E' lo stesso D7 gia' noto sul ruolo: se
+# Sorare cambia ruolo a un giocatore, le carte gia' emesse tengono il ruolo
+# vecchio, e la loro L10 resta calcolata su quello.
+#
+# MISURATO su 400 carte vere del mazzo dell'utente (leaderboard all_star
+# arena, 08/08):
+#   - ruolo carta == ruolo giocatore: 373 carte, 362 identiche (97%),
+#     11 diverse e tutte entro +-2 (rumore di arrotondamento);
+#   - ruolo carta DIVERSO:             27 carte,  11 identiche,
+#     16 DIVERSE, fino a +-5 punti.
+# Casi reali: jeppe-erenbjerg carta Forward / player Midfielder 62 -> 66;
+# melle-meulensteen carta Defender 47 -> 52; anders-dreyer carta Midfielder /
+# player Forward 66 -> 61. NB: va in ENTRAMBE le direzioni, quindi non si
+# aggiusta con un margine di sicurezza sul cap -- serve il campo giusto.
+# Verificato anche che il valore NON dipende dalla leaderboard (arena e
+# non-arena danno lo stesso numero) e che due carte dello stesso giocatore
+# nello stesso ruolo danno lo stesso valore.
+CARD_L10_BENCH_QUERY = """
+query FootballComposeBenchQuery($so5LeaderboardSlug: String!, $filters: BenchFilterInput!, $pageSize: Int, $after: String) {
+  so5 {
+    so5Leaderboard(slug: $so5LeaderboardSlug) {
+      myFilteredBench(filters: $filters, first: $pageSize, after: $after) {
+        nodes {
+          ... on ComposeTeamBenchCard {
+            position
+            anyPlayer { slug }
+            cardL10: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE)
+          }
+        }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  }
+}
+"""
+
+
+def l10_carte_da_bench(fixture_slug, max_pagine=80):
+    """Map (slug_giocatore, ruolo) -> L10 DELLA CARTA, per tutto il mazzo.
+
+    Una pagina da 50 carte per richiesta: ~23 richieste per un mazzo da ~1100
+    carte, pochi secondi. Usa la sessione dedicata del grade (_grade_http +
+    _headers_client_web): e' una query "my", quindi SENZA cookie+CSRF validi
+    Sorare risponde 200 con nodes vuoti (sessione anonima, vedi il bug gia'
+    documentato in fetch_grade_live) -- in quel caso si ritorna {} e il
+    chiamante resta sull'L10 del giocatore, come prima.
+
+    Il ruolo tornato e' gia' nella nostra convenzione (gk/def/mid/fwd) via
+    ROLE_BY_POSITION. Se due carte dello stesso giocatore hanno lo stesso
+    ruolo ma L10 diverse si tiene la PIU' ALTA: sul cap e' la scelta prudente
+    (mai sottostimare cio' che Sorare sommera')."""
+    if not base.COOKIES:
+        log("[cardL10] nessun SORARE_COOKIE: salto, si usa l'L10 del giocatore.")
+        return {}
+    lb = f'{fixture_slug}-seasonal-all_star-all_seasons_all_star_arena_limited'
+    out = {}
+    # UNA PAGINAZIONE PER POSIZIONE, come gia' fa il grade (_grade_bench_page).
+    # NON si usa positions: [] sperando che valga "tutte": misurato l'08/08 che
+    # con la lista vuota tornano def/mid/fwd ma ZERO portieri (293/240/210/0),
+    # cioe' un buco intero e silenzioso -- esattamente il tipo di dato parziale
+    # indistinguibile da uno completo gia' pagato col grade.
+    for _pos in ('Goalkeeper', 'Defender', 'Midfielder', 'Forward'):
+        out.update(_l10_carte_una_posizione(lb, _pos, max_pagine))
+    log(f"[cardL10] L10 di CARTA raccolte: {len(out)} coppie (slug,ruolo).")
+    return out
+
+
+def _l10_carte_una_posizione(lb, position, max_pagine):
+    """Pagina il bench per UNA posizione. Vedi l10_carte_da_bench."""
+    out, after, pagine = {}, None, 0
+    while pagine < max_pagine:
+        variables = {
+            "filters": {
+                "query": "", "rarities": [], "includeUsed": True,
+                "includeNoGame": False, "inSeasonEligible": False,
+                "includeUnavailablePlayers": True, "positions": [position],
+                "selectedObjectIds": [],
+                "sortType": {"type": "LAST_TEN_PLAYED_SO5_AVERAGE_SCORE",
+                             "direction": "DESC"},
+                "teamMode": "ALL",
+            },
+            "pageSize": 50, "so5LeaderboardSlug": lb, "after": after,
+        }
+        backoff = 2.0
+        nodes = pinfo = None
+        for tentativo in range(6):
+            try:
+                r = _grade_http().post(
+                    base.GRAPHQL_URL,
+                    json={'query': CARD_L10_BENCH_QUERY, 'variables': variables},
+                    headers=_headers_client_web(), timeout=20)
+                if r.status_code == 429:
+                    attesa = min(backoff, 60.0)
+                    log(f"  [cardL10] 429 pagina {pagine + 1}, attendo {attesa:.0f}s")
+                    time.sleep(attesa)
+                    backoff *= 2
+                    continue
+                d = r.json()
+            except Exception as e:
+                log(f"  [cardL10] eccezione pagina {pagine + 1}: {e}")
+                time.sleep(backoff)
+                backoff *= 2
+                continue
+            if d.get('errors'):
+                log(f"  [cardL10] GraphQL errors: {str(d['errors'])[:200]}")
+                return out
+            b = ((((d.get('data') or {}).get('so5') or {})
+                  .get('so5Leaderboard') or {}).get('myFilteredBench') or {})
+            nodes, pinfo = b.get('nodes') or [], b.get('pageInfo') or {}
+            break
+        if nodes is None:
+            # Tentativi esauriti: NON si finge che il mazzo finisca qui (un
+            # troncamento silenzioso e' il difetto gia' pagato col grade).
+            log(f"  [cardL10] ATTENZIONE: pagina {pagine + 1} fallita dopo 6 "
+                f"tentativi, la mappa e' PARZIALE ({len(out)} carte finora).")
+            return out
+        for n in nodes:
+            slug = ((n.get('anyPlayer') or {}).get('slug'))
+            role = ROLE_BY_POSITION.get(n.get('position'))
+            val = n.get('cardL10')
+            if not slug or not role or val is None:
+                continue
+            k = (slug, role)
+            if k not in out or val > out[k]:
+                out[k] = val
+        pagine += 1
+        if not pinfo.get('hasNextPage'):
+            break
+        after = pinfo.get('endCursor')
+    log(f"  [cardL10] {position}: {len(out)} carte in {pagine} pagine.")
+    return out
+
+
+_cardl10_cache = {}
+
+
+def cardl10_condivise(fixture_slug):
+    """l10_carte_da_bench una volta sola per processo (i 4 ruoli della stessa
+    discovery la riuserebbero identica)."""
+    if fixture_slug not in _cardl10_cache:
+        _cardl10_cache[fixture_slug] = l10_carte_da_bench(fixture_slug)
+    return _cardl10_cache[fixture_slug]
+
 # DISCOVERY_ROLES (28/07, TEST richiesto esplicitamente dall'utente -- vedi
 # sezione 30.I del riassunto -- per spezzare la discovery in piu' job
 # paralleli di GitHub Actions, uno per sottoinsieme di ruoli, per ridurre il
@@ -1422,7 +1571,15 @@ def main():
             # copie_di (non dovrebbe succedere, e' popolato per lo stesso
             # slug qui sopra nello stesso ciclo).
             entry = dict(copie_di.get(slug) or {'in_season': 1, 'classic': 0})
-            if l10 is not None:
+            # L10: prima quella della CARTA per QUESTO ruolo (e' il numero su
+            # cui Sorare capa davvero, vedi l10_carte_da_bench), poi come
+            # ripiego quella del giocatore presa con le odds. Il ripiego
+            # scatta quando manca il cookie, quando la carta non e' nel bench
+            # di quella leaderboard, o se la fetch e' andata parziale.
+            _card_l10 = cardl10_condivise(fx.get('slug')).get((slug, role))
+            if _card_l10 is not None:
+                entry['l10'] = _card_l10
+            elif l10 is not None:
                 entry['l10'] = l10
             # starterOdds PERSISTITE (31/07, richiesta esplicita utente): fin
             # qui le odds servivano solo a filtrare e poi venivano buttate,

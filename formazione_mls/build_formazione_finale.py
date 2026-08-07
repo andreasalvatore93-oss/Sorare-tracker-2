@@ -960,7 +960,22 @@ class CardPool:
                 cur['classic'] = max(cur['classic'], breakdown.get('classic', 0))
                 l10 = breakdown.get('l10')
                 if l10 is not None:
-                    self._l10[slug] = l10
+                    # L'L10 e' una proprieta' della CARTA (quindi della coppia
+                    # slug+ruolo), non del giocatore: stesso D7 del ruolo qui
+                    # sopra. Misurato l'08/08 su 400 carte vere: quando il
+                    # ruolo della carta differisce da quello attuale del
+                    # giocatore l'L10 cambia fino a 5 punti, in entrambe le
+                    # direzioni (jeppe-erenbjerg 62->66, anders-dreyer 66->61).
+                    # Qui la chiave resta lo slug, perche' i ~180 chiamanti di
+                    # card_pool.l10() in 25 leghe passano solo quello; ma per
+                    # uno slug con carte in RUOLI diversi si tiene il valore
+                    # PIU' ALTO invece dell'ultimo letto (che era arbitrario,
+                    # dipendeva dall'ordine dei ruoli): sul cap arena e' la
+                    # scelta prudente, non si sottostima cio' che Sorare
+                    # sommera'. Per gli slug a ruolo unico -- la larghissima
+                    # maggioranza -- non cambia niente.
+                    if slug not in self._l10 or l10 > self._l10[slug]:
+                        self._l10[slug] = l10
                 power = breakdown.get('power')
                 if power is not None:
                     self._power[slug] = power
