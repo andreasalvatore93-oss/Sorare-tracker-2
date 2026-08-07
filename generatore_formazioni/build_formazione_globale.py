@@ -433,18 +433,31 @@ if GRADE_DATA_PATH and os.path.exists(GRADE_DATA_PATH):
         _GRADE_MAP = json.load(_f)
 
 
+def _grade_per_riga(row):
+    """Fonte del grade per una riga: PRIMA quello letto da
+    player_card_counts.json (produzione, scritto da discovery_fixture.py
+    dopo il filtro starter-odds -- vedi entry['grade'] in DOC_SONNET_G_IN_
+    PRODUZIONE sez.2.A), altrimenti _GRADE_MAP da GRADE_DATA_PATH (percorso
+    usato dal test isolato GW3, tenuto per compatibilita' con quei dump)."""
+    g = row.get('_grade_from_counts')
+    if g:
+        return g
+    return _GRADE_MAP.get(row['slug'])
+
+
 def _apply_grade_group(rows):
     """Annota su ogni row _grade/_grade_num/atteso_combinato. Se GRADE_ENABLED
     e' True, sovrascrive anche 'atteso' e 'sort_score' con atteso_combinato
-    (cio' che _sort_ordinamento e il knapsack leggono). Se _GRADE_MAP e' vuota
-    (nessun fetch fatto), ogni riga ha _grade=None -> z_grade=0 -> atteso
-    invariato: fallback esplicito, gia' previsto dalla formula."""
+    (cio' che _sort_ordinamento e il knapsack leggono). Se nessuna riga ha
+    grade (ne' da counts ne' da _GRADE_MAP), ogni riga ha _grade=None ->
+    z_grade=0 -> atteso invariato: fallback esplicito, gia' previsto dalla
+    formula."""
     if not rows:
         return
     vals = [r['atteso'] for r in rows if r.get('atteso') is not None]
     if len(vals) < 2:
         for r in rows:
-            r['_grade'] = _GRADE_MAP.get(r['slug'])
+            r['_grade'] = _grade_per_riga(r)
             r['atteso_cal'] = r.get('atteso')
             r['atteso_combinato'] = r.get('atteso')
         return
@@ -452,7 +465,7 @@ def _apply_grade_group(rows):
     sd = (sum((v - m) ** 2 for v in vals) / len(vals)) ** 0.5
     grade_members = []
     for r in rows:
-        g = _GRADE_MAP.get(r['slug'])
+        g = _grade_per_riga(r)
         gn = GRADE_NUM.get(g) if g else None
         r['_grade'] = g
         r['_grade_num'] = gn
@@ -915,6 +928,9 @@ def load_league_role_data():
                 odds = (counts.get(row['slug']) or {}).get('starter_odds')
                 if odds is not None:
                     row['starter_odds'] = odds
+                grade = (counts.get(row['slug']) or {}).get('grade')
+                if grade:
+                    row['_grade_from_counts'] = grade
             # Grade (test isolato, sez. sopra): gruppo = (league, role) = questo
             # stesso 'rows', DOPO calibra_riga (agisce sul valore calibrato) e
             # DOPO starter_odds (non serve starter_odds per il grade, ma cosi'
