@@ -269,7 +269,7 @@ def fetch_grade_live(fixture_slug):
     # run, non e' committato e non puo' invecchiare; se la giornata dentro non
     # e' quella che stiamo processando lo si scarta, perche' un artifact di
     # un'altra giornata sarebbe il fallback silenzioso da evitare.
-    p = 'grade_gw.json'
+    p = 'pool_gw.json'
     if os.path.exists(p):
         try:
             with open(p, encoding='utf-8') as f:
@@ -733,6 +733,50 @@ def odds_per_giornata(fixture_slug, worker=6):
     return odds
 
 
+_odds_giornata_cache = {}
+
+
+def _odds_giornata_condivise(fixture_slug):
+    """Odds di tutta la giornata: dall'artifact della run se c'e', altrimenti
+    prese in bulk dalle partite UNA volta sola per processo.
+
+    Tre livelli, dal piu' economico al piu' caro:
+      1. pool_gw.json, scritto dal job 'grade' e scaricato come artifact:
+         ZERO query, e la fetch e' stata fatta una volta per tutta la run
+         invece che una volta per shard;
+      2. odds_per_giornata(): ~183 query (una per partita) che coprono TUTTI
+         i giocatori, memorizzate qui cosi' i 4 ruoli dello stesso processo
+         non le rifanno;
+      3. {} -> chi chiama ripiega sulle chiamate per giocatore.
+    """
+    if fixture_slug in _odds_giornata_cache:
+        return _odds_giornata_cache[fixture_slug]
+    odds = {}
+    p = 'pool_gw.json'
+    if os.path.exists(p):
+        try:
+            with open(p, encoding='utf-8') as f:
+                d = json.load(f)
+            if d.get('fixture') == fixture_slug:
+                odds = d.get('odds') or {}
+                if odds:
+                    log(f"[odds] da artifact {p}: {len(odds)} giocatori con odds "
+                        f"(nessuna query: fetch fatta una volta sola in questa run).")
+            else:
+                log(f"[odds] {p} e' della giornata {d.get('fixture')!r}, non "
+                    f"{fixture_slug!r}: lo IGNORO.")
+        except Exception as e:
+            log(f"[odds] {p} illeggibile ({e}).")
+    if not odds:
+        try:
+            odds = odds_per_giornata(fixture_slug) or {}
+        except Exception as e:
+            log(f"[odds] fetch in bulk fallita ({e}): si ripiega per giocatore.")
+            odds = {}
+    _odds_giornata_cache[fixture_slug] = odds
+    return odds
+
+
 def log(msg):
     print(f"[discovery_fixture] {msg}", flush=True)
 
@@ -1103,13 +1147,48 @@ def main():
             elenco = [sl for i, sl in enumerate(elenco) if i % _hn == _hidx]
         log(f"  {position}: {len(elenco)} giocatori di squadre che giocano "
             f"(su {s.get('nbHits')} carte possedute) -> interrogo le odds")
-        # odds + L10 in UNA chiamata per giocatore (28/07, vedi
-        # odds_e_l10_singola) invece di due passaggi separati -- dimezza il
-        # numero di round-trip verso Sorare rispetto a prima, stesso dato.
+        # ODDS IN BULK, POI L10 SOLO AI SOPRAVVISSUTI (07/08/2026).
+        # Prima: una chiamata odds+L10 per OGNI giocatore di squadra in campo,
+        # in sequenza con 0.7s di pausa. Misurato sulla run 31190547919: la
+        # fase odds prendeva 308-609s per shard, quasi tutto attesa da 429
+        # (Retry-After a 152s), perche' 20 shard in parallelo chiedevano
+        # centinaia di volte quello che si puo' chiedere una volta sola.
+        # Ora: odds di TUTTA la giornata dalle sue partite (odds_per_giornata,
+        # ~183 query per l'intera run, non per shard, e in piu' condivise via
+        # artifact) e L10 chiesta SOLO a chi supera la soglia -- in uno shard
+        # tipico 9 giocatori invece di 57.
+        # E' la regola gia' scritta in CLAUDE.md ("valuto se si puo' fare in
+        # bulk: odds di tutta la giornata dalle partite invece di una query a
+        # giocatore"): la funzione bulk esisteva dal 03/08 ed era gia' usata
+        # dallo scouting, ma qui non era mai stata collegata.
+        odds_bulk = _odds_giornata_condivise(fx.get('slug'))
         risultati = {}
-        for sl in elenco:
-            risultati[sl] = odds_e_l10_singola(sl, inizio, fine)
-            time.sleep(ODDS_L10_SLEEP)
+        if odds_bulk:
+            # Presente nella mappa = la partita e' di questa giornata, quindi
+            # dentro la finestra per costruzione (la mappa nasce dalle partite
+            # della fixture). Assente = odds non pubblicate: stesso esito di
+            # prima, escluso se la soglia e' attiva.
+            sopravvissuti = [sl for sl in elenco
+                             if odds_bulk.get(sl) is not None
+                             and (MIN_ODDS <= 0 or odds_bulk[sl] >= MIN_ODDS)]
+            log(f"  {position}: odds in bulk -> {len(sopravvissuti)}/{len(elenco)} "
+                f"sopra soglia, chiedo la L10 solo a loro")
+            for sl in elenco:
+                o = odds_bulk.get(sl)
+                risultati[sl] = (o, inizio if o is not None else None, None)
+            for sl in sopravvissuti:
+                l10 = l10_da_api(sl)
+                o, data, _ = risultati[sl]
+                risultati[sl] = (o, data, l10)
+                time.sleep(ODDS_L10_SLEEP)
+        else:
+            # Odds di giornata non disponibili (non ancora pubblicate o query
+            # a vuoto): si torna al percorso vecchio, giocatore per giocatore.
+            log(f"  {position}: odds di giornata non disponibili, "
+                f"ripiego sulle chiamate per giocatore")
+            for sl in elenco:
+                risultati[sl] = odds_e_l10_singola(sl, inizio, fine)
+                time.sleep(ODDS_L10_SLEEP)
         # le odds si salvano QUI, prima del filtro MIN_ODDS sotto: sono il
         # valore vivo pre-deadline, l'unico non contaminato (vedi ODDS_STORICO)
         salva_odds_storico(fx.get('slug'), risultati)

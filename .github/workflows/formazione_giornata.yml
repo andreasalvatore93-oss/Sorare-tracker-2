@@ -63,7 +63,7 @@ jobs:
   # nodi solo da GitHub) era la sessione resa anonima dalle query senza CSRF,
   # gia' corretta: nessun runner self-hosted serve.
   grade:
-    name: grade (una fetch per tutta la run)
+    name: pool (odds + grade, una volta per tutta la run)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -85,8 +85,8 @@ jobs:
         run: python fetch_grade_gw.py
       - uses: actions/upload-artifact@v4
         with:
-          name: grade_gw
-          path: grade_gw.json
+          name: pool_gw
+          path: pool_gw.json
           retention-days: 1
 
   # TEST 28/07 v4 (vedi 30.M): 24 job discovery paralleli (v3 a 12 confermato
@@ -143,7 +143,7 @@ jobs:
       # Il grade arriva dal job 'grade' di questa stessa run: qui nessuno shard
       # rifa' la fetch (era la causa dei 429, vedi commento sul job 'grade').
       - uses: actions/download-artifact@v4
-        with: { name: grade_gw }
+        with: { name: pool_gw }
       - name: Discovery
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
