@@ -282,3 +282,80 @@ PROSSIMO PASSO NATURALE (non ancora fatto): dump leggibile di un caso Under 23
 (la famiglia che pesa di piu'), controllo delta-per-manager per escludere un
 singolo manager dominante, poi PASSO 4 (gruppo B) su questo stesso campione
 non-arena prima di toccare le arene.
+
+===============================================================================
+VERBALE ORCHESTRATORE -- 07/08/2026 notte, base ricostruita con l'utente
+===============================================================================
+L'utente ha rifatto la selezione del campione DA CAPO, criterio per criterio,
+verificando ogni passaggio sui dati prima di accettarlo. Il risultato del
+Passo 1 di Sonnet e' SUPERATO da questo: girava su una base sporca.
+
+DIFETTO DI FONDO TROVATO QUI, e vale per tutto il repo:
+  il campo 'in_season' nei file manager e' letto AL MOMENTO DELL'ESTRAZIONE
+  (ricostruisci_manager.py:279, carta.get('inSeasonEligible')). Dice se la
+  carta e' in season OGGI, non se lo era quando la formazione fu schierata.
+  Su formazioni storiche e' quindi inutilizzabile: nelle "Challenger" del 2026
+  risultano in media 4 carte classic su 5, impossibile per una competizione
+  4+1. CONSEGUENZA: tutte le competizioni il cui vincolo dipende da
+  'in_season' non sono ricostruibili a ritroso, TRANNE quelle che non hanno
+  quel vincolo (All Star, Under 23: max_classic=None) e quelle in cui il
+  vincolo si puo' applicare come filtro di scarto (MLS Hot Streak: si tengono
+  solo le formazioni con <=1 classic, che e' la regola stessa).
+
+CRITERI DELLA BASE PULITA (dettati dall'utente, verificati uno per uno):
+ 1. niente arene;
+ 2. TUTTE le carte di rarita' 'limited'. Nelle rare il bonus xp e' amplificato
+    (+20% a carta), nelle super rare +50%, nelle unique +100%: i punteggi non
+    sarebbero confrontabili. Il filtro va fatto sulla RARITA' DELLE CARTE, non
+    sull'etichetta: 37 "All Star - Limited" e 29 "In-Season" contengono carte
+    rare nonostante il nome;
+ 3. somma dei punteggi delle carte = punteggio UFFICIALE di Sorare
+    (piazzamento.punteggio) entro 0.5. E' la verifica che non dipende da
+    nessuna teoria sui bonus: se coincide, il dato e' quello vero. Su 1186
+    formazioni 7-carte ne tornavano 1150 al centesimo (mediana 0.005);
+ 4. leaderboard con 'division-N' per All Star/U23: le formazioni senza
+    division non corrispondono a competizioni reali (confermato dall'utente).
+    Le Hot Streak invece NON hanno division: unica leaderboard
+    seasonal-us-in_season_us_limited_pve;
+ 5. All Star e Under 23 si analizzano INSIEME: stessa forma da 7, stesso
+    bonus capitano +50%, stesse regole. Cambia solo chi e' eleggibile. Erano
+    state separate solo perche' hanno etichette diverse, non per un motivo
+    metodologico. Conseguenza importante: il +9.63 delle sole Under 23 trovato
+    nel Passo 1 NON e' un risultato, e' un'osservazione post-hoc.
+
+RISULTATI SULLA BASE PULITA (script analisi_manager/p16_* e p17_*)
+
+  A) 7 CARTE, All Star + Under 23 insieme (nessun vincolo di composizione)
+     base 1004 (658 All Star + 346 U23) -> 864 valutate (140 cadute per
+     pool<=slot, cioe' nessuna carta di scorta: niente da selezionare)
+        n=864   A=424.57  G=430.55  delta=+5.98  IC95 [+2.43, +9.68]
+        All Star  n=534  +5.82  [+1.45,+10.46]
+        Under 23  n=330  +6.24  [+0.47,+12.30]
+        formazioni identiche fra A e G: 40.2%
+     LE DUE FAMIGLIE ORA CONCORDANO. Nel Passo 1 su base sporca le All Star
+     davano +1.74 con IC che includeva lo zero: ripulendo, il segnale e'
+     cresciuto e si e' allineato. Non e' piu' un sottogruppo che traina.
+
+  B) 5 CARTE, MLS Hot Streak (competizione molto vincolata)
+     base 314 -> 310 valutate
+        n=310   A=314.49  G=320.93  delta=+6.43  IC95 [-0.09, +12.85]
+        formazioni identiche fra A e G: 6.5%
+     L'IC tocca lo zero per un soffio. Segno positivo e ampiezza dell'effetto
+     uguale al caso 7 carte.
+     LETTURA DELL'UTENTE, condivisa: qui si possono schierare SOLO carte MLS e
+     almeno 4 in season -- il modello ha pochissima scelta (identiche solo il
+     6.5%, contro il 40% delle 7 carte: G riscrive quasi sempre la formazione,
+     ma dentro un recinto stretto). Che l'effetto REGGA in queste condizioni
+     e' un buon segnale, non una debolezza.
+
+DIFETTO NOTO E NON CORRETTO (l'utente ha deciso che non vale la pena):
+  il 6.4% dei punteggi grezzi (1866 su 29008 nel caso A, 583 su 14425 nel
+  caso B) e' RICOSTRUITO invece che letto dalla cache game-log. E' proprio la
+  ricostruzione che D4 di CLAUDE.md vieta. Va tenuto presente se un domani il
+  numero dovesse decidere qualcosa di piu' grosso.
+
+STATO: il filone resta APERTO per ulteriori validazioni. Cosa NON e' stato
+fatto: il gruppo B dello split A/B (Passo 4) resta INTATTO e mai guardato --
+e' ancora la sola verifica non contaminata disponibile; le competizioni da 5
+diverse da MLS Hot Streak non sono state toccate; le arene non sono state
+rimisurate su base pulita.
