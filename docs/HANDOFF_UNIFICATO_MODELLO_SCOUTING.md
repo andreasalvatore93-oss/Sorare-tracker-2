@@ -757,14 +757,28 @@ Nessuna modifica applicata: è un elenco di cose da decidere.
    userebbe la lista dello scouting.
 
 **Decisione APERTA, da prendere con l'utente: il grade nello scouting.**
-La parola `grade` non compare in `scouting_gw.py`. Non è una dimenticanza, c'è
-una ragione strutturale: il grade di produzione arriva da `myFilteredBench`,
-cioè dalle carte **che si possiedono** — per una carta che si sta valutando di
-comprare quella strada non esiste. Esiste `anyPlayer.playerGameScores(last:15)
-.projection.grade` (vedi `raccolta_grade_crowss.py`) ma dà il grade **storico**
-delle partite passate, non una proiezione per la giornata da giocare. Non è
-ovvio che un segnale per-giornata debba entrare in una decisione d'acquisto
-pluri-giornata: da discutere prima di implementare qualunque cosa.
+La parola `grade` non compare in `scouting_gw.py`.
+
+RETTIFICA (07/08, sera). In una prima stesura di questa sezione avevo scritto
+che il grade «arriva dalle carte che si possiedono, quindi per una carta da
+comprare non esiste». **È FALSO, e l'utente l'ha corretto: il grade è legato
+alle odds della partita, non al possesso della carta.** Verificato subito
+dopo, su giocatori NON posseduti:
+    Charly Nouck   (non posseduto) -> D, D, D, D  (incluso il 2026-08-07)
+    Matthew Hoppe  (non posseduto) -> D, D, D, D  (incluso il 2026-08-07)
+    Hans Vanaken   (posseduto)     -> C, E, B, A
+Si leggono con `anyPlayer(slug).playerGameScores.projection.grade`, query
+pubblica. `myFilteredBench` è soltanto la query che abbiamo scelto NOI per la
+produzione, e filtra alle carte possedute perché al generatore servono solo
+quelle: non è un limite del dato.
+
+Quindi **niente ostacolo strutturale**: il grade per un candidato d'acquisto è
+ottenibile. Il vincolo vero è di TEMPO, non di possesso: per una partita
+futura il grade compare solo quando Sorare lo pubblica (misurato lo stesso
+giorno: `None` per le partite del 14 e 17 agosto, valorizzato per quelle del
+7). Resta quindi da decidere, con l'utente, se e come un segnale che esiste
+solo a ridosso della partita debba pesare su una decisione d'acquisto che vale
+per più giornate. Da discutere prima di scrivere codice.
 
 ---
 

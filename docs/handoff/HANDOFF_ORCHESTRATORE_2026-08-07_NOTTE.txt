@@ -298,6 +298,45 @@ discovery a essere indietro (vedi §5ter). La catena di CLAUDE.md era stata
 verificata sulle SOGLIE (§4) e resta valida: G non le muove.
 
 ===============================================================================
+5quinquies. ESCLUDI_LOCKATE -- CARTE GIA' IMPEGNATE FUORI DAL POOL (nuovo)
+===============================================================================
+Problema reale della GW3: a giornata iniziata alcune formazioni sono BLOCCATE
+e le loro carte non si spostano piu'. Rilanciando il generatore lui non lo
+sapeva, ci rimetteva dentro quelle carte, e le arene che proponeva non erano
+piu' schierabili.
+
+QUERY (scoperta sondando i messaggi d'errore, l'introspezione e' disabilitata):
+  so5Fixture(slug) -> so5LeaderboardGroups(groupType)
+    -> mySo5LeaderboardContenders -> so5Lineup { canEdit,
+         so5Appearances { anyCard { slug } } }
+ - anyCard.slug e' lo slug della CARTA, non del giocatore: indispensabile,
+   perche' il vincolo Sorare e' una carta = un uso per giornata. Chi ha 3
+   carte dello stesso giocatore e ne blocca una puo' schierare le altre due.
+ - canEdit distingue bloccata da modificabile (e' lo stesso stato che sul sito
+   mostra i tasti Modifica/Cancella formazione). SOLO canEdit=false esclude:
+   una formazione inviata ma ancora modificabile NON blocca le sue carte,
+   decisione esplicita dell'utente.
+ - groupType validi: RARITY, COMPETITION, ARENA, COMPETITION_WITH_ARENA,
+   ARENA_CLASSIC, ARENA_IN_SEASON.
+
+USO: input 'escludi_lockate' nel workflow, default 0 (spento). A 1 il job
+'pool' raccoglie le carte bloccate e le passa agli shard con l'artifact.
+Se la lettura fallisce il job FALLISCE apposta: una tutela che si spegne da
+sola in silenzio non tutela niente. Se non trova nessuna carta bloccata lo
+dice a chiare lettere, perche' con formazioni gia' schierate quello sarebbe
+un difetto, non una buona notizia.
+
+VERIFICATO su run vera (31202308164, 5.9 min, success), e i conti chiudono:
+   carte saltate per ruolo: DEF 21 + MID 23 + FWD 16 + GK 11 = 71
+   che sono ESATTAMENTE le 71 carte delle 11 formazioni bloccate (4 All Stars
+   da 7 + 4 Under 23 da 7 + 3 arene). Nessuna persa, nessuna contata due
+   volte. Le 5 K League modificabili (25 carte) restano disponibili.
+Test dell'interruttore in locale sul ruolo DEF: spento 143 copie/124
+giocatori, acceso 129/113, e chan-yong-park 2->1, dong-jin-kim 2->1,
+moon-hwan-kim 3->2 restano nel pool con una copia in meno -- la prova che si
+scala la CARTA e non si butta il giocatore.
+
+===============================================================================
 6. COSA RESTA APERTO (per il prossimo, in ordine)
 ===============================================================================
 G1. CONSOLIDARE G (il piu' importante): nessun IC esclude zero. Prossimi passi:
