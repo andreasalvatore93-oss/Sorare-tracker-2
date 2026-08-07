@@ -3,6 +3,21 @@ Scritto dall'orchestratore, 07/08/2026, ora di Roma.
 Destinatario: SONNET (esecutore con giudizio). Chat pulita: leggi prima i file
 indicati, non assumere nulla.
 
+NOTA VINCOLANTE (07/08 sera, correzione dell'utente): per fetchare/usare il
+grade NON chiamare fetch_grade_live()/grade_snapshot.py a mano in uno
+script diagnostico a parte. USA IL FLUSSO VERO: `python discovery_fixture.py`
+(che chiama fetch_grade_live() internamente, dopo il filtro odds, e scrive
+il grade in player_card_counts.json) e SUBITO DOPO
+`python generatore_formazioni/build_formazione_globale.py` (GRADE_ENABLED=1
+di default) per generare la formazione VERA con G. Un "0 nodi" NON significa
+automaticamente leaderboard chiusa: puo' essere un bug di ambiente (es. CSRF
+perso in un'estrazione bash sbagliata) -- verificare SEMPRE prima currentUser
+(cookie valido?), poi rifare la query con una query minima, prima di
+concludere "chiuso". Se le env var (SORARE_COOKIE/SORARE_CSRF) vengono
+passate, farlo in modo affidabile (es. costruite in Python), non con
+pipeline bash fragili (grep/cut su un cookie multilinea/con caratteri
+speciali puo' troncare silenziosamente il CSRF).
+
 Questo TOCCA LA PRODUZIONE. Vale in pieno CLAUDE.md "La catena di produzione --
 mai saltare un anello" e "prima di implementare, valida la catena". Nessuna
 riga entra nel default di main finche' l'utente non ha ispezionato i grezzi.
