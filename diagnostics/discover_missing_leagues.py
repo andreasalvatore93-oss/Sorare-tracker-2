@@ -353,6 +353,73 @@ def print_report(rows):
     print("\n" + "=" * 78)
 
 
+UNKNOWN_PLAYERS_OUTPUT_PATH = os.path.join(OUTPUT_DIR, 'unknown_players.json')
+
+
+def _resolve_via_cache(player_slugs, repo_root=REPO_ROOT):
+    """Per ogni player slug, cerca un hit nella cache game-log CONDIVISA di
+    PRODUZIONE (formazione_<dir>/output/<prefix>_<ruolo>_all/.game_log_cache/
+    <slug>_gamelog.json, MAI _calibration). Se un giocatore e' li' dentro,
+    e' stato predetto in quella lega -- quindi la lega ESISTE ed E' COPERTA,
+    anche se questo scan non e' riuscito a leggerne il domesticLeague (dato
+    mancante lato Sorare, non assenza di pipeline). Ritorna slug -> set di
+    dirname lega trovati."""
+    wanted = set(player_slugs)
+    hits = {}
+    for root, _dirs, files in os.walk(repo_root):
+        rn = root.replace(os.sep, '/')
+        if '.game_log_cache' not in rn or 'formazione_' not in rn or '_calibration' in rn:
+            continue
+        parts = rn.split('/')
+        league_dir = None
+        for p in parts:
+            if p.startswith('formazione_'):
+                league_dir = p[len('formazione_'):]
+                break
+        if league_dir is None:
+            continue
+        for f in files:
+            if not f.endswith('_gamelog.json'):
+                continue
+            pslug = f[:-len('_gamelog.json')]
+            if pslug in wanted:
+                hits.setdefault(pslug, set()).add(league_dir)
+    return hits
+
+
+def resolve_unknown_players(leagues, known_slugs=KNOWN_LEAGUE_SLUGS):
+    """Costruisce la lista COMPLETA dei giocatori finiti in __unknown__ (non
+    solo i 3 esempi del report), con: activeClub gia' letto dallo scan,
+    lega risolta dalla cache game-log condivisa (se un hit esiste), e flag
+    'coperta' SI/NO -- SI se la lega risolta ha gia' una pipeline dedicata.
+    Questi sono i potenziali PERSI VERI (dato mancante su lega tracciata,
+    non lega davvero scoperta): vedi caso Jefferson Galego, 07/08/2026."""
+    unk = leagues.get('__unknown__')
+    if not unk:
+        return []
+    players = sorted(unk['players'].values(), key=lambda p: (-p['count'], p['name']))
+    cache_hits = _resolve_via_cache([p['slug'] for p in players])
+
+    # LEAGUE_DIR usato al contrario: dirname coperto -> slug lega (solo per
+    # un'etichetta leggibile; il flag 'coperta' guarda solo se il dirname e'
+    # fra quelli con pipeline completa, stesso criterio di KNOWN_LEAGUE_SLUGS).
+    league_dir = _load_league_dir()
+    covered_dirnames = {d for d in set(league_dir.values()) if _pipeline_completa(d)}
+
+    out = []
+    for p in players:
+        dirnames = sorted(cache_hits.get(p['slug'], []))
+        coperta = any(d in covered_dirnames for d in dirnames)
+        out.append({
+            'slug': p['slug'],
+            'name': p['name'],
+            'n_cards': p['count'],
+            'lega_risolta_da_cache': dirnames or None,
+            'coperta': 'SI' if coperta else ('NO' if dirnames else 'sconosciuta'),
+        })
+    return out
+
+
 def main():
     if not COOKIES:
         log("SORARE_COOKIE non impostato in ambiente. Interrompo senza eseguire query.")
@@ -382,6 +449,18 @@ def main():
         json.dump(report_payload, f, ensure_ascii=False, indent=2)
 
     log(f"Report scritto in {OUTPUT_PATH} ({len(rows)} leghe mancanti trovate)")
+
+    unknown_players = resolve_unknown_players(leagues)
+    with open(UNKNOWN_PLAYERS_OUTPUT_PATH, 'w', encoding='utf-8') as f:
+        json.dump({
+            'generated_at': datetime.datetime.utcnow().isoformat() + 'Z',
+            'user_slug': USER_SLUG,
+            'n_players': len(unknown_players),
+            'players': unknown_players,
+        }, f, ensure_ascii=False, indent=2)
+    n_persi_veri = sum(1 for p in unknown_players if p['coperta'] == 'SI')
+    log(f"Giocatori __unknown__ scritti in {UNKNOWN_PLAYERS_OUTPUT_PATH} "
+        f"({len(unknown_players)} totali, {n_persi_veri} in lega coperta = persi veri)")
 
 
 if __name__ == '__main__':
