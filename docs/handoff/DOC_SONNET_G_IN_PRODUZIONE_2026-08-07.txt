@@ -224,3 +224,17 @@ consiglio_arena.py                                  pareggio()/incasso_medio()
 analisi_manager/valida_soglie.py                    rifitta retta+sigma
 analisi_manager/p12_backtest_manager_grade.py       backtest ampio, metro realizzato
 docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md          catena + scouting
+
+===============================================================================
+BACKLOG (07/08, ora di Roma) -- COPERTURA LEGHE NON-GIOCANTI
+===============================================================================
+TAPPA 1 approvata dall'utente. A/A passato, copertura 94.8% sui kept_slugs.
+Le 6 leghe a 0% grade (turchia, danimarca, polonia, cechia, francia, grecia)
+NON giocano questa GW (per questo la fetch non le raggiunge: leaderboard non
+aperta -> nessun grade da prendere, non e' un bug). Messe IN BACKLOG:
+ - quando una di queste leghe torna a giocare in una GW, verificare che la
+   fetch grade la includa; se resta a 0% con partite aperte, ALLORA e' un buco
+   vero (girerebbe G in fallback=A sbilanciando) e va chiuso prima di fidarsi
+   di G su quella lega.
+ - non blocca la Tappa 2 di questa GW.
+DECISIONE UTENTE: procedere alla TAPPA 2 (catena D-E).
