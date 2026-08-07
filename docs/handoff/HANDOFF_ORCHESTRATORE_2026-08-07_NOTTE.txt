@@ -202,6 +202,48 @@ correlato; se due ambienti differiscono, isolare UNA variabile alla volta
 invece di dedurre dalla differenza piu' vistosa.
 
 ===============================================================================
+5ter. I 429, E LA FETCH GRADE MOLTIPLICATA PER 20
+===============================================================================
+Emerso subito dopo aver chiuso il bug di §5bis, misurato sulla run
+31190547919 (7 shard finiti, gia' col fix CSRF):
+   autenticati 6/7  (prima solo quelli che non facevano query odds)
+   429 totali 46    (4-11 per job)
+   grade raccolti: 877 su 4 shard, ma 200 e 381 su altri due
+I 200/381 NON erano dati mancanti: erano paginazioni TRONCATE dai 429, che si
+fermavano restituendo un parziale indistinguibile da un risultato completo.
+Questo e' il tipo di errore piu' pericoloso: un numero plausibile e sbagliato.
+
+CAUSA: ognuno dei 20 shard rifaceva per conto suo la fetch completa (3
+leaderboard x 4 ruoli x fino a 20 pagine = ~240 richieste per shard, ~4.800 a
+run) per ottenere esattamente lo stesso risultato.
+
+FIX (main 620f3545ba):
+ - job 'grade' unico nel workflow: una fetch sola (~240 richieste, x20 in
+   meno), passata agli shard come artifact della stessa run. Non e' una cache:
+   nasce e muore nella run, non e' committato, e viene scartato se la giornata
+   dentro non corrisponde (verificato, logga IGNORO). Su runner GitHub
+   normali: il self-hosted non serve.
+ - backoff 429 in paginazione: 6 tentativi 2/4/8/16/32/60s invece di 4
+   1/2/4/8; se finiscono, ora lo DICE invece di troncare in silenzio.
+ - PROBE auth con retry sui 429. Difetto trovato nello stesso log: senza retry
+   un 429 veniva stampato come "SESSIONE NON AUTENTICATA", cioe' una diagnosi
+   sbagliata proprio nella riga che serve a diagnosticare. Ora rate limit e
+   sessione morta hanno messaggi diversi. E' quasi certamente il caso dello
+   shard 03 fwd2 (nel suo log: 429 con attesa 152s).
+DA VERIFICARE sulla prossima run: 429 attesi in forte calo e grade a 877 su
+tutti gli shard. Se restano 429, la leva successiva e' il throttle delle odds
+(non toccato).
+
+NOTA sui 7 script committati il 07/08 (4faf9f33cf): erano rimasti non
+tracciati da un'altra sessione. Nessuno tocca la produzione. Committati DOVE
+STANNO (radice) per non rompere quella sessione, ma per CLAUDE.md il filone
+manager ha casa in analisi_manager/ e vanno consolidati li'. Valore molto
+diverso fra loro: raccolta_grade_crowss.py e' l'unico che serve davvero
+(grade ALL'INDIETRO via playerGameScores(last:15), utile per G1); i cinque
+estrai_* sono usa-e-getta con liste di slug a mano e il loro output e' gia' in
+repo (55 dati_globali/manager_*.json); analizza_manager_arene.py e' marginale.
+
+===============================================================================
 6. COSA RESTA APERTO (per il prossimo, in ordine)
 ===============================================================================
 G1. CONSOLIDARE G (il piu' importante): nessun IC esclude zero. Prossimi passi:
