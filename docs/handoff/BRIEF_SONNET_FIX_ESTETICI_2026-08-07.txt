@@ -83,6 +83,38 @@ Quindi:
 Riporta all'utente cosa hai visto in ognuno dei tre casi, non un "fatto".
 
 ===============================================================================
+1-bis. AGGIUNTA DEL 07/08 SERA -- SI COPIA ANCHE CLICCANDO IL CERCHIO
+===============================================================================
+STATO: il punto 1 e' CONFERMATO FUNZIONANTE dall'utente, con click reale del
+mouse, sulla versione con il ripiego sul rigetto. Il difetto diagnosticato era
+quello giusto.
+
+RICHIESTA NUOVA: la copia deve partire anche cliccando il CERCHIO con le
+iniziali sopra il nome (.pcard-avatar), non solo il nome. Motivo: il cerchio e'
+molto piu' grande e piu' facile da centrare quando si compongono decine di
+formazioni.
+
+COME (gia' provato dall'orchestratore su un report vero, 201 carte, e
+confermato dall'utente -- replicalo nel sorgente):
+ - il selettore del gestore diventa: ev.target.closest('.pcard-avatar, .pcard-name')
+   cosi' restano cliccabili ENTRAMBI, non si toglie niente a chi e' abituato
+   al nome;
+ - il testo da copiare resta card.dataset.name (invariato);
+ - il MESSAGGIO ('copiato!' / 'copia non riuscita') va mostrato sempre sul
+   NODO DEL NOME, non sul cerchio: nel cerchio ci stanno due lettere e il
+   messaggio non si leggerebbe. Quindi dal punto cliccato si risale alla
+   .pcard e si prende il suo .pcard-name;
+ - aggiungere il CSS che rende il cerchio visibilmente cliccabile, altrimenti
+   nessuno ci prova:
+       .pcard-avatar{cursor:copy}
+       .pcard-avatar:hover{outline:2px solid currentColor;outline-offset:2px}
+
+ATTENZIONE: il cerchio sta dentro la .pcard, che e' draggable per il
+drag&drop. Verifica che il click sul cerchio NON faccia partire un
+trascinamento e non rompa lo scambio di carte -- e' l'unico rischio di
+regressione di questa modifica.
+
+===============================================================================
 2. PUNTI SUCCESSIVI
 ===============================================================================
 L'utente ne ha altri, non ancora dettati. Quando arrivano, si aggiungono qui
