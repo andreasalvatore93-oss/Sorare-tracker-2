@@ -253,3 +253,76 @@ RACCOMANDAZIONE (decide l'utente):
    NON cambiare le soglie su questi numeri.
 3. Se in futuro le soglie cambiano: lo scouting le eredita via getattr,
    nessuna azione extra richiesta (regola CATENA, CLAUDE.md).
+
+===============================================================================
+SEGUITO DELL'ORCHESTRATORE -- 07/08/2026, notte
+===============================================================================
+Ripreso dopo l'esito di Sonnet. Tre sblocchi e una risposta.
+
+1. I PREMI SI POSSONO CHIEDERE PER QUALUNQUE ARENA. Era il collo di bottiglia
+   (30 premi osservati per cap260, 10 per cap220, solo quelli incassati
+   dall'utente). so5Leaderboard(slug).so5Rewards(first:20) restituisce la
+   tabella per rank anche di arene di ALTRI manager -- verificato. E i valori
+   combaciano con i premi davvero incassati in archivio (cap 220: 1000/500/300
+   letti dalla query, 1000/500/300 osservati).
+   Campionate 120 arene per tipo: la tabella base copre l'83%, il JACKPOT
+   compare nel 5-6% (cap220 2000/800/500, cap260 4000/1400/800) -- coerente
+   col "circa il 5%" della docstring di consiglio_arena.py.
+
+2. IL POOL DEI MANAGER NON E' SELEZIONATO. Il dubbio era che i 55 manager
+   estratti fossero piu' forti della media, il che avrebbe alzato il pareggio
+   e riprodotto il problema che stavamo indagando. Confronto con i campi
+   COMPLETI di arene_storico:
+       cap 260   manager 262.4 (n=2243)  vs campi veri 260.9 (n=612)   +1.5
+       Beginner  manager 256.5 (n=3495)  vs campi veri 254.0 (n=740)   +2.5
+       cap 220   manager 248.4 (n=863)   vs campi veri 239.5 (n=160)   +8.9
+   Sul confronto meglio alimentato lo scarto e' +1.5: nessuna traccia di
+   selezione. Il +8.9 della cap 220 e' ~2 errori standard su un campione vero
+   di sole 16 arene: da annotare, non da squalificare.
+
+3. I PUNTEGGI NON SONO GONFIATI DAL BUG XP/CAPITANO (D4/D6). Verificato sul
+   codice: traccia_arene.py riga 303 fa punteggi = [n['score'] for n in
+   nodi_ord], cioe' i punteggi UFFICIALI di so5RankingsPaginated. Non sono
+   somme di punteggi carta, quindi il difetto che ha reso nulli i verdetti
+   degli script p11_* non li tocca. Vale anche per piazzamento.punteggio nei
+   file manager.
+
+RISULTATO -- pareggio ricalcolato (40k prove, 3 semi, tabelle premi vere):
+   tipo      avversari      n     sigma43   sigma47   sigma51   produzione
+   cap 260   manager     2243      274.9     272.4     269.8      259.5
+   cap 260   campi veri   612      271.4     268.5     265.8      259.5
+   cap 220   manager      863      257.8     255.2     252.6      244.1
+   cap 220   campi veri   160      250.6     247.9     245.2      244.1
+
+LETTURA, ed e' la risposta al vincolo logico posto dall'utente ("o
+sovrastimiamo la 220, o sottostimiamo la 260: non possono essere vere
+entrambe"):
+   NESSUNA DELLE DUE. Prendendo per ogni tipo la SUA sigma (cap260 51,
+   cap220 43) e i campi veri:
+       cap 260   265.8 contro 259.5   ->  +6.3
+       cap 220   250.6 contro 244.1   ->  +6.5
+   Lo scarto e' lo STESSO su entrambi. La distanza fra i due tipi, che e'
+   l'unica cosa che decide quale arena viene scelta, e' 15.2 nel ricalcolo
+   contro 15.4 in produzione: coerente entro 0.2 punti.
+   Quindi la cap 220 NON e' esclusa da un difetto di taratura. Con questo
+   mazzo l'atteso delle cap 260 sta ~24 punti sopra quello delle cap 220,
+   mentre le soglie distano solo 15: le 260 vincono per merito del mazzo.
+
+RESTA APERTO: il +6.4 di scarto SISTEMATICO fra questo metodo e quello di
+produzione non e' spiegato. Non cambia la scelta FRA tipi (si sposta uguale su
+entrambi), ma sposta la decisione SE entrare: se fosse reale, si entra in
+qualche arena di troppo. Nota dell'utente, che va nella stessa direzione: lui
+gia' alza la soglia a mano e non entra sui margini bassi, anche quando il
+modello dice di entrare.
+
+DATI DELLA REGRESSIONE DELL'ARCHIVIO (verificati dall'orchestratore, a
+integrazione del passo 2 di Sonnet):
+   01/08: 673 arene, 673 con mio_score, 673 con punteggi, 235 con premio
+   06/08: 160 arene,   0 con mio_score, 160 con punteggi,  75 con premio
+   Le arene "division" (191) sono state tolte SU RICHIESTA DELL'UTENTE, non e'
+   un bug. Il resto no: 322 arene in meno anche escludendole, e il campo
+   mio_score sparito del tutto. 284 delle arene mancanti hanno pero' ancora la
+   FORMAZIONE in dati_globali/arene_formazioni.json (593 voci: fixture,
+   giocatori, mio_rank, mio_score, slug, tipo) -- quindi i dati non sono
+   distrutti, sono in due archivi con scopi diversi. Ma arene_formazioni NON
+   contiene punteggi del campo ne' premi, quindi per le soglie non basta.
