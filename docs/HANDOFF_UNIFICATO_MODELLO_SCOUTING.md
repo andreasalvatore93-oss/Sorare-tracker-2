@@ -741,16 +741,12 @@ Nessuna modifica applicata: è un elenco di cose da decidere.
 2. **429 fra 23 e 111 per run.** Stessa malattia della pipeline formazioni:
    `max-parallel: 20` sulla matrice predict. Qui però le run durano 2.7-3.8
    min, quindi il danno è piccolo — non è urgente, ma è lo stesso meccanismo.
-3. **Il commento in testa al workflow è STANTIO e fuorviante.** Righe 14-28 di
-   `scouting_gw.yml` dicono che «`max-parallel: 8` è il suo stesso valore,
-   tarato lì»; il codice usa **20** dalla riga 164, con una motivazione
-   misurata (a 8 la matrice era 2.5x più lenta, run `30814827740`). Chi legge
-   il commento crede a un valore che non è quello in uso. Da correggere.
-4. **`_gql` non manda il CSRF.** Lo scouting importa
-   `formazione_mls/discovery/mls_def_discovery_global.py`, una delle ~381
-   copie di `graphql_query` senza CSRF. Oggi è innocuo (query pubbliche), ma
-   il giorno che gli si aggiunge una query autenticata ricade esattamente nel
-   bug del 07/08. Rischio latente, da chiudere quando si tocca il file.
+3. ~~Commento stantio sul `max-parallel`~~ **CHIUSO 07/08** (`74b5bed89f`):
+   diceva che il valore tarato era 8, il codice usa 20 per un motivo misurato.
+4. ~~`_gql` senza CSRF~~ **CHIUSO 07/08** (`74b5bed89f`): ora manda
+   `x-csrf-token` e svuota il barattolo dei cookie, come la discovery. Chiuso
+   anche il job `consigli` del workflow, che passava il cookie ma non il CSRF
+   pur interrogando Sorare per i prezzi.
 5. **Il job `candidati` sovrascrive `player_slugs.json` di produzione** per le
    leghe toccate. È già scritto nel commento del workflow, ma vale ricordarlo:
    fino alla successiva run di `formazione_giornata` un predict manuale
