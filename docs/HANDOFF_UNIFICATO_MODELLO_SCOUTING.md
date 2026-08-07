@@ -251,6 +251,54 @@ riprende il filone backtest.
 
 ## 5. Lo stato dell'arte — cosa è CHIUSO (non riproporre)
 
+> **AGGIORNAMENTO 06–07/08/2026 (leggere prima del resto della sezione).**
+> Consolidamento parziale: i dettagli aperti stanno in
+> `docs/handoff/ELENCO_APERTI_2026-08-07.txt`, le consegne per il prossimo
+> orchestratore in `docs/handoff/HANDOFF_ORCHESTRATORE_2026-08-07_SERA.txt`.
+> Un rewrite completo di questo file è rimandato a quando il filone
+> odds+4ruoli sarà chiuso (FASI 3–4 ancora in corso), per non consolidare
+> uno stato parziale.
+>
+> 1. **BUG D6 — punteggi di formazione gonfiati.** Più script di backtest
+>    (`p11_manager_confronto`, `p11_bloccato_tutti_mazzi`,
+>    `p11_calib_fwd_confronto`) leggevano il punteggio realizzato dai file
+>    manager (`c['punteggio']`), che include xp+capitano sulle righe
+>    non-arena, invece che dalla cache game-log. Fino al 77% delle carte
+>    gonfiate su crowss. **Tutti e tre fixati** (leggono sempre la cache).
+>    Conseguenza: i verdetti di **formazione** su difensore e FWD costruiti
+>    su quegli script sono NULLI e vanno rifatti (la griglia per-ruolo 4.1,
+>    invece, era pulita — vedi punto 4). `p12_backtest_manager_full`
+>    verificato: NON era un bug. Regola nuova in CLAUDE.md: l'orchestratore
+>    verifica i dati grezzi di un commit esecutore, non solo il commento.
+> 2. **Metro premio-vero.** Il valore delle decisioni arena si misura ora dal
+>    RANK reale + tabella premi reale dell'utente
+>    (`backtest_arene_economia.tabella_premi`), non da stime proporzionali
+>    (che divergevano di segno). È la misura più affidabile: non stima nulla
+>    sopra soglia.
+> 3. **Decisione produzione.** Campione ampliato a 539 arene (crowss + 16
+>    manager + satonio). Premio-vero netto: **A (produzione) +14.300 essenze,
+>    G (produzione + grade) +18.900**, positivo per entrambe, G meglio. Oggi
+>    si schiera con A + condotta arene (costo zero). **G va in produzione come
+>    passo successivo, con la catena §1bis validata step per step** (non fatto
+>    ancora). Cautela: il vantaggio di G viene dai mazzi forti (crowss,
+>    satonio), non dai mediocri.
+> 4. **Griglia per-ruolo starter odds (favorito_odds) confermata PULITA** su
+>    tutti e 4 i ruoli (numeri identici allo storico, D6 non la toccava):
+>    **DEF passa forte** (7/9 varianti, dcorr +0.060, dlift +7.22), **GK e
+>    MID mai** (0/9), **FWD al limite** (1/9). Il segnale DEF è reale e grosso
+>    sull'ORDINAMENTO per-carta. In FORMAZIONE, però, il backtest FASE 3
+>    (45 mazzi) è risultato NON PROBANTE: DEF bloccato sfiora zero senza
+>    farcela, MID/D "significativi" solo nel delta pesato ma probabile
+>    artefatto — e soprattutto il campione non è probante in profondità (solo
+>    2 mazzi con ≥16 giornate; pablo0078 da solo pesa il 33% delle arene).
+>    APERTO (non chiuso): l'utente NON accetta di relegare il DEF (e gli altri
+>    ruoli) al solo scouting sulla base di 2 mazzi profondi. Prossimi passi:
+>    allargare il campione PROFONDO e rifare il backtest formazione; fare la
+>    FASE 4 scouting in parallelo (non come sostituto); verificare pablo0078.
+>    Dettaglio: `HANDOFF_FAVORITO_ODDS_2026-08-06.txt` (FASI 1-3) e
+>    `HANDOFF_ORCHESTRATORE_2026-08-07_SERA.txt` §4. Se le odds risultano
+>    usabili, entrano nella STESSA catena di G.
+
 - **Scomposizione degli all-around per categoria: CHIUSA (05/08, P8)**, anche
   con misura diretta walk-forward (39.594 partite, 26 leghe, bootstrap
   appaiato): nessuna forma soddisfa MAE+corr+lift insieme su nessun ruolo.

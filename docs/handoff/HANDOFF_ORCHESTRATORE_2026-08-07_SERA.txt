@@ -1,0 +1,263 @@
+PASSAGGIO DI CONSEGNE FRA ORCHESTRATORI
+Scritto dall'orchestratore uscente, 07/08/2026, tardo pomeriggio/sera, ora di
+Roma. Destinatario: il PROSSIMO ORCHESTRATORE, che riprende da una sessione
+pulita, senza memoria di questa.
+Leggere per intero PRIMA di scrivere o far girare qualunque cosa.
+
+Questo file AGGIORNA e ha priorita' su
+docs/handoff/HANDOFF_ORCHESTRATORE_2026-08-07_CONSEGNE.txt (che resta valido
+per la storia, ma i suoi numeri di decisione sono stati superati -- vedi §3).
+
+===============================================================================
+0. LEGGI PRIMA QUESTI, IN QUEST'ORDINE
+===============================================================================
+1. git pull. Il repo e' l'unico canale di memoria fra sessioni/account.
+2. CLAUDE.md (radice), TUTTO. Regole vincolanti. In cima: divieto
+   allucinazioni, "backtest non vale finche' l'utente non l'ha ispezionato",
+   difetti D1-D7, e (nuova, regola 6 sez. orchestratore) "verifica i DATI
+   GREZZI di un commit esecutore, non solo il suo commento".
+3. Questo file.
+4. docs/handoff/ELENCO_APERTI_2026-08-07.txt: la lista COMPLETA e ordinata di
+   tutto cio' che e' aperto, con stato e ordine consigliato. E' la tua mappa.
+5. docs/handoff/PARERE_OPUS_DECISIONE_PRODUZIONE_2026-08-07.txt: il parere che
+   fissa la decisione produzione (sez.0 verdetto, sez.10 numeri consolidati).
+6. docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt: il filone odds+4ruoli,
+   in coda le FASI 1-2 (fatte) e 3-4 (verifica se sono arrivate).
+
+===============================================================================
+1. LA COSA PIU' IMPORTANTE: SI DEVE PORTARE IL GRADE (G) IN PRODUZIONE, CON
+   LA CATENA VALIDATA STEP PER STEP
+===============================================================================
+La decisione e' presa e i numeri la reggono (vedi §3): la variante G (modello
++ grade) va in produzione. TEMPISTICA: va fatta OGGI STESSO, in QUESTA nuova
+sessione (tu, l'orchestratore che subentra) -- NON e' rimandata a domani. Non
+e' stata fatta nella sessione precedente solo perche' era vicina alla fine e
+la catena va fatta bene, non di fretta. E' il tuo compito n.1, adesso: previa
+catena validata step per step (a-f sotto), G passa in produzione in questa
+sessione.
+
+QUESTO TOCCA LA PRODUZIONE. Vale in pieno la regola di CLAUDE.md "La catena
+di produzione -- mai saltare un anello". Devi guidare l'utente attraverso
+TUTTI gli step, in ordine, senza trascurarne nessuno. La catena e':
+
+   VALORI DI PRODUZIONE (score_atteso: qui si inserisce il grade)
+        |
+        v
+   SOGLIE ARENA EFFICIENTI (PAREGGIO_ARENA, GUADAGNO_PER_PUNTO in
+   generatore_formazioni/build_formazione_globale.py): dipendono dai punti
+   attesi su cui sono tarate -> se lo score_atteso cambia, VANNO RIVERIFICATE.
+        |
+        v
+   TOOL SCOUTING (Ess/GW, EUR/EssGW, vedi docs/HANDOFF_UNIFICATO_MODELLO_
+   SCOUTING.md): consiglia gli acquisti sulla base dell'efficienza arena ->
+   se le soglie si muovono, lo scouting va RIVERIFICATO a valle.
+
+STEP OBBLIGATORI per implementare G (nessuno saltabile):
+ a. Definire ESATTAMENTE come il grade entra nello score_atteso. Nei test G
+    era lo z-score del grade dentro il gruppo (lega, ruolo), senza peso
+    aggiuntivo (vedi p13/backtest). Prima di toccare produzione, fissa la
+    formula e DOVE si applica (nel generatore / nei predict).
+ b. TEST A/A SULL'INTERRUTTORE (regola CLAUDE.md): spegni/accendi il grade e
+    verifica che lo score_atteso SI MUOVA come atteso, e che spento sia una
+    scelta esplicita nel codice, non l'assenza di un dato.
+ c. Applicare G in produzione.
+ d. RIVERIFICARE le soglie arena (PAREGGIO_ARENA, GUADAGNO_PER_PUNTO): con lo
+    score_atteso cambiato, i punti attesi su cui sono tarate sono diversi.
+ e. RIVERIFICARE lo scouting (Ess/GW, EUR/EssGW) a valle delle nuove soglie.
+ f. Backtest di conferma sul campione ampio (crowss+16+satonio, gia' pronto)
+    con dump ispezionabile, PRIMA di dire "chiuso".
+Non considerare la modifica chiusa finche' non hai ripercorso a-f per intero.
+
+ATTENZIONE (dipendenza con le odds): vedi §4. Se il filone odds+4ruoli
+(FASE 3-4) promuove le starter odds anche solo per lo scouting, quel cambio
+tocca lo STESSO score_atteso / la stessa catena. Conviene sapere l'esito di
+odds PRIMA di aprire la catena, per inserire G e odds in un colpo solo invece
+di validare la catena due volte. Per questo l'utente ha voluto chiudere
+odds+4ruoli prima di G.
+
+CRITERIO DI ACCETTAZIONE DEL BOOST DEF (starter odds sul difensore),
+CONCORDATO CON L'UTENTE IL 07/08, DA FISSARE PRIMA DEI NUMERI (regola del
+repo, non spostare i pali dopo). Il segnale DEF e' forte sull'ordinamento
+per-carta (griglia 4.1: dcorr +0.060, dlift +7.22, 7/9 varianti, ~18x il
+segnale su cui fu cambiato il blend GK), MA forte sull'ordinamento NON basta:
+non deve rovinare i punti di formazione. Regola dell'utente, testuale: "se e'
+forte ma rovina i punti formazione o fa schierare peggio, non va in
+produzione; ma se il modello schiera in maniera simile ad ora, con in piu' il
+boost sul difensore, in produzione lo voglio". I tre casi, gia' concordati:
+ 1. Boost DEF a COMPOSIZIONE LIBERA (il boost puo' cambiare quanti DEF si
+    schierano): se altera lo schieramento e i punti NON migliorano (o
+    peggiorano), SCARTATO in questa forma. E' il rischio noto -- correggendo
+    solo i DEF con un righello diverso, scavalcano MID/FWD (composizione
+    1.44->1.53) e possono abbassare i punti.
+ 2. Boost DEF a COMPOSIZIONE BLOCCATA (il boost sceglie QUALE difensore, NON
+    QUANTI: composizione per ruolo forzata identica ad A): se i punti restano
+    >= produzione attuale (non li rovina) su piu' mazzi con segno concorde, e
+    la selezione DEF migliora, VA IN PRODUZIONE COSI'. E' il compromesso equo
+    voluto dall'utente: schieramento come ora, ma coi difensori giusti dentro.
+    (Nei test storici -- contaminati D6 -- era proprio la composizione
+    bloccata a far RIEMERGERE il guadagno DEF, +2.98 su forever-young.)
+ 3. Se nemmeno la composizione bloccata mantiene i punti: il DEF resta SOLO
+    SCOUTING (dove il +7.22% vale comunque), FUORI dalla formazione.
+QUANDO applicare il criterio: alla consegna della FASE 3 di Sonnet (backtest
+formazione col fix D6, che include gia' la composizione bloccata). Confronta
+libera vs bloccata col criterio sopra e decidi in quale dei 3 casi cadiamo.
+Stesso identico ragionamento vale per il grade G in formazione, non solo per
+il DEF: G in produzione se schiera simile ad ora con guadagno, non se
+stravolge la composizione peggiorando.
+
+===============================================================================
+2. COME SI LAVORA CON QUESTO UTENTE (leggi davvero, fa la differenza)
+===============================================================================
+Tutto in CLAUDE.md, ma i punti che contano ogni volta:
+- L'UTENTE FA DA NAVETTA fra le chat. Tu (orchestratore) NON esegui: ragioni,
+  decidi cosa misurare, scrivi i brief, LEGGI I RISULTATI GREZZI, decidi se un
+  numero regge. Gli esecutori (Sonnet/Haiku) fanno il lavoro; non si parlano
+  fra loro, l'utente copia i brief avanti e indietro. Digli SEMPRE a chi va
+  dato un brief (Sonnet = "decidi se"; Haiku = volume meccanico).
+- VERIFICA I DATI GREZZI di ogni commit esecutore PRIMA di riportare l'esito
+  all'utente (regola 6 CLAUDE.md, nata oggi da un report pipeline che era
+  sbagliato ma sembrava a posto dal commento). Apri il file prodotto, conta un
+  caso, confronta con una fonte indipendente. In questa sessione questo ha
+  beccato piu' volte errori veri (report leghe con 8 vs 54 pipeline, criterio
+  sbagliato al secondo tentativo).
+- QUANDO SEGNALA UN ERRORE, HA QUASI SEMPRE RAGIONE. Verifica la sua obiezione
+  sui dati/casi reali PRIMA di rispondere. Oggi ha corretto piu' volte
+  l'orchestratore su casi concreti (es. Verschaeren: giusto che il generatore
+  non lo veda, ha lasciato la lega -- una mia deduzione affrettata era
+  sbagliata, il suo giudizio no).
+- BREVITA': in chat il minimo. Analisi/tabelle/numeri nei file di
+  docs/handoff/, mai in chat. Massimo poche righe per messaggio. Paga a token.
+- ITALIANO, ora di Roma sempre. NIENTE esempi banali in questa fase (l'utente
+  ha chiesto esplicitamente di spiegare semplice e diretto; se un termine non
+  e' chiaro lo chiede lui).
+- HA ADHD GRAVE: un tema alla volta, niente divagazioni, niente opzioni che
+  non seguirai. Quando decide "1 cosa alla volta", rispettalo.
+- NON INVENTARE, NON DEDURRE UN FATTO DA UN COEFFICIENTE. Se non hai la fonte
+  (file, tool appena girato, o parola dell'utente), la risposta e' "non lo
+  so, mi servirebbe X". Meglio una riga onesta di un numero inventato.
+- Ti chiede spesso di "armare il monitor" sui commit: controlli git log a
+  intervalli e riporti quando arriva un commit nuovo (i loop lunghi in bash
+  vanno in timeout: fai check singoli con `timeout 8 git log -1`).
+- IL TUO SANDBOX NON PUO' COMMITTARE (permessi .git: "operation not
+  permitted"). Le modifiche ai file le fai (Edit/Write), ma il commit lo fa
+  l'utente o un esecutore sulla sua macchina. Diglielo, non insistere.
+
+===============================================================================
+3. STATO DEI NUMERI (la base della decisione, gia' verificata)
+===============================================================================
+METRO: premio-vero in essenze, letto dal RANK reale delle arene + tabella
+premi reale dell'utente (backtest_arene_economia.tabella_premi). E' la misura
+piu' affidabile perche' non stima nulla sopra soglia (vedi PARERE sez.9-10).
+
+GRAND TOTALE, 539 arene, crowss(=l'utente) + 16 manager + satonio:
+  A (produzione attuale)      NETTO premio-vero  +14.300 essenze
+  G (produzione + grade)      NETTO premio-vero  +18.900 essenze
+Positivo per ENTRAMBE, G nettamente meglio. Segno coerente su piu' mazzi.
+
+CAUTELA (dilla al prossimo orch): il vantaggio di G NON e' uniforme -- viene
+da crowss(+4.000 G-A) e satonio(+1.100); sui 16 manager nuovi A pareggia o
+supera G (+3.600 vs +3.100). Ipotesi (non dimostrata): il grade aiuta i mazzi
+forti, meno i mediocri. Non promettere all'utente il guadagno degli altri sul
+SUO mazzo: su crowss A=+800, G=+4.800 (G vale ~5x A su di lui, ma A da solo
+e' modesto).
+
+Cosa e' gia' in produzione: SOLO A (il modello attuale). Per OGGI l'utente
+schiera con A + condotta "dai retta al consiglio arena del tool": validato,
+costo zero, nessuna catena. G e' il passo successivo (§1).
+
+===============================================================================
+4. FILONE ODDS + 4 RUOLI (in corso alla chiusura di questa sessione)
+===============================================================================
+Brief: docs/handoff/BRIEF_ODDS_4RUOLI_2026-08-07.txt. Esiti in coda a
+HANDOFF_FAVORITO_ODDS_2026-08-06.txt.
+STATO alla chiusura:
+ - FASE 1 (audit bug 4 ruoli): FATTA. Nessun contaminato nuovo oltre ai 4
+   gia' noti; il 4o (p11_calib_fwd) FIXATO; interruttore vivo su tutti e 4 i
+   ruoli; griglia per-ruolo confermata pulita.
+ - FASE 2 (griglia per-ruolo pulita): FATTA. Numeri IDENTICI allo storico
+   (D6 non la toccava). Verdetto: DEF passa forte (7/9), GK/MID mai (0/9),
+   FWD al limite (1/9). Il DEF e' il segnale vero e grosso.
+ - FASE 3 (backtest formazione col fix + combinazioni GK/DEF/MID/FWD): FATTA
+   (commit 5a88394771), 45 mazzi utili / 6.769 arene. Esito NON PROBANTE per
+   nessuna policy:
+     B (DEF libero): IC include zero. B_lock (DEF bloccato, il compromesso
+       equo del criterio caso 2): IC95 [-0.034,+1.115], SFIORA escludere zero
+       ma non ce la fa nemmeno con 45 mazzi. GK/FWD nulli. MID e D "escludono
+       zero" nel delta pesato ma con limite inferiore a un soffio da zero
+       (+0.069/+0.079), segno per mazzo NON significativo (p=0.17/0.23):
+       probabile ARTEFATTO da test multipli (6 policy al 95%), da NON adottare.
+   MA -- CONTROLLO DI PROBANZA DEL CAMPIONE (fatto dall'orchestratore sui
+   grezzi p11_ruoli_combinati_righe.json): i 45 mazzi NON sono probanti in
+   profondita'. Solo 2 mazzi hanno >=16 giornate valide (forever-young 35,
+   pablo0078 32); 30 mazzi hanno 4-7 giornate, 10 ne hanno 1-3. La conta
+   segno-per-mazzo e' quindi dominata da mazzi corti (rumore). E il delta
+   PESATO per arena e' dominato da pablo0078 DA SOLO (2.231 arene su 6.789 =
+   33%; con forever-young = 42%): il "significativo" pesato e' deciso da 1-2
+   mazzi, non da un effetto diffuso.
+ - FASE 4 (SCOUTING): NON ancora fatta. Il brief chiede APPROVAZIONE del
+   design prima di lanciarla. In formazione i ruoli competono e il segnale
+   DEF si annacqua; nello scouting no. Resta il test teoricamente giusto per
+   il DEF, ma vedi la precisazione dell'utente sotto: NON e' l'unica strada.
+
+   *** PRECISAZIONE DELL'UTENTE (07/08, fine sessione), VINCOLANTE ***
+   L'utente NON e' convinto che due soli mazzi profondi (forever-young,
+   pablo0078), per quanto profondi, siano un test probante per un criterio
+   cosi' importante. E NON e' convinto di relegare il DEF (e gli altri ruoli)
+   SOLO allo scouting. Conseguenza operativa per il nuovo orchestratore:
+   prima di chiudere "DEF fuori dalla formazione", serve ALLARGARE il
+   campione PROFONDO -- piu' manager con storico lungo (tipo forever-young/
+   pablo0078), non piu' manager corti -- e rifare il backtest formazione
+   (B_lock e combinazioni) su base davvero probante. Il criterio dei 3 casi
+   (§1) resta valido, ma va applicato su un campione profondo adeguato, non
+   su 2 mazzi. Lo scouting (FASE 4) va fatto in parallelo, non come
+   sostituto della formazione.
+   DA VERIFICARE ANCHE: pablo0078 (mai controllato, 2.231 arene, pesa il 33%
+   dei risultati): che profilo ha, e' cappato, ha pool ricco tipo satonio (nel
+   qual caso il suo vantaggio e' "piu' facile" e non va pesato come un mazzo
+   normale)? Sta determinando meta' dell'esito FASE 3.
+
+NB: il rilancio FWD-calibrazione dopo fix D6 (+1.09 IC[+0.40,+1.76]) e' un
+filone DISTINTO da favorito_odds (confronta due calibrazioni FWD, non le
+odds): regge dopo il fix, ma non e' materia di odds -- non confonderli.
+
+===============================================================================
+5. TUTTO IL RESTO CHE E' APERTO
+===============================================================================
+Sta in docs/handoff/ELENCO_APERTI_2026-08-07.txt, per intero e ordinato. In
+sintesi, oltre a G (§1) e odds (§4):
+ - Difensore: riaperto (fix D6), segno positivo ma non significativo. In coda.
+ - crowss=l'utente: DA VERIFICARE se ha inquinato filone capitano (1332
+   formazioni) e smart-money (mai fatto). Rilevante.
+ - 21 script analisi_manager con path Windows hardcoded (girano solo sulla
+   macchina utente).
+ - Freschezza cache game-log (esclude carte in silenzio dai test).
+ - Verifica "carte che il generatore non vede" per GW: CHIUSA per la GW3
+   (nessuna persa). Procedura riutilizzabile in ELENCO_APERTI F3 per le GW
+   future. Unica sorvegliata: Jefferson Galego (anomalia lato Sorare).
+ - Consolidamento handoff sparsi nel riassunto unificato (regola CLAUDE.md):
+   da fare a fine lavori.
+
+===============================================================================
+6. STATO DEL REPO
+===============================================================================
+Branch main. Molti commit oggi (fix D6 su 3 script, satonio, premio-vero,
+2 fix report leghe, FASI 1-2 odds). NESSUNA MODIFICA ALLA PRODUZIONE fatta:
+build_formazione_globale.py (soglie, calibrazioni) INTATTO. Le modifiche sono
+solo su script di misura/diagnostica. GitHub Actions e' stato giu' a tratti:
+le estrazioni sono girate in locale col cookie dell'utente.
+Un elemento non pushato dal sandbox dell'orchestratore: eventuali Edit fatti
+da me (es. ELENCO_APERTI, questo file) vanno committati dall'utente/esecutore
+(il mio sandbox non ha permessi git).
+
+===============================================================================
+7. FILE DI RIFERIMENTO
+===============================================================================
+CLAUDE.md                                             regole + D1-D7 + regola 6
+docs/handoff/ELENCO_APERTI_2026-08-07.txt             mappa di tutto l'aperto
+docs/handoff/PARERE_OPUS_DECISIONE_PRODUZIONE_2026-08-07.txt  decisione+numeri
+docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt     odds+4ruoli (FASI 1-4)
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md            modello+scouting (catena)
+analisi_manager/p13_backtest_gw_crowss.py             suite test (soglia vera,
+                                                      bilancio essenze dentro)
+backtest_arene_economia.py                            tabella premi da rank
+generatore_formazioni/build_formazione_globale.py     soglie arena, generatore

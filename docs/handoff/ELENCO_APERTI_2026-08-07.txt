@@ -1,0 +1,174 @@
+ELENCO COMPLETO DELLE COSE APERTE -- 07/08/2026, ora di Roma
+Preparato dall'orchestratore per se stesso o per il prossimo orchestratore.
+Fotografia a meta' giornata del 07/08. Aggiornare/spuntare man mano.
+
+Legenda stato: [IN CORSO] esecutore al lavoro | [DECISO] scelto, da eseguire |
+[APERTO] non ancora affrontato | [MINORE] debito tecnico non bloccante.
+
+===============================================================================
+A. IN CORSO ADESSO (esecutori al lavoro)
+===============================================================================
+A1. [FASI 1-3 FATTE, FASE 4 pendente] ODDS + 4 RUOLI. Brief:
+    docs/handoff/BRIEF_ODDS_4RUOLI_2026-08-07.txt. Esiti in coda a
+    HANDOFF_FAVORITO_ODDS. FASE 1 (audit bug): pulito, 4o script fixato.
+    FASE 2 (griglia per-ruolo): DEF forte (7/9), GK/MID mai, FWD limite.
+    FASE 3 (backtest formazione, 45 mazzi): NON PROBANTE -- DEF bloccato
+    sfiora zero senza farcela; MID/D "significativi" solo nel pesato ma
+    probabile artefatto (test multipli). E il campione NON e' probante in
+    profondita': solo 2 mazzi >=16 giornate (forever-young, pablo0078),
+    pablo0078 da solo pesa il 33% delle arene. FASE 4 (scouting) da
+    approvare/lanciare. PRECISAZIONE UTENTE (vincolante): 2 mazzi profondi
+    NON bastano per un criterio cosi' importante, e il DEF NON va relegato
+    solo allo scouting -> serve ALLARGARE il campione profondo (piu' manager
+    con storico lungo) e rifare il backtest formazione su base probante.
+    Dettaglio completo in HANDOFF_ORCHESTRATORE_2026-08-07_SERA.txt §4.
+    Verificare anche pablo0078 (profilo/cap, pesa troppo).
+
+A2. [CHIUSO] 59 CARTE __unknown__. Causa = dato mancante alla FONTE Sorare,
+    non bug nostro: 45/56 giocatori con activeClub=null (nessun club, non
+    scendono in campo), 11/56 con club di leghe minori non tracciate
+    (Cittadella, Volendam, Ibiza...). 0 in leghe coperte, 0 scoperte
+    classificabili, 0 giocano nella GW3. Nessun fix. Verifica GW3 chiusa
+    al 100%: nessuna carta persa per oggi.
+
+===============================================================================
+B. PRODUZIONE (la decisione grossa)
+===============================================================================
+B1. [DECISO] OGGI schierare con modello ATTUALE (A) + condotta "dai retta al
+    consiglio SCHIERA/NON SCHIERA del tool". Validato: premio-vero +14.300
+    essenze su 539 arene (crowss+16 manager+satonio), positivo su 3 gruppi
+    indipendenti. Zero codice, zero rischio, nessuna catena da validare.
+    Copre la giornata di oggi.
+
+B2. [DECISO/DA FARE] GRADE (variante G) IN PRODUZIONE, con la CATENA COMPLETA.
+    Vale di piu' (premio-vero +18.900 vs +14.300 di A, cioe' +4.600), ma
+    modifica lo score_atteso -> catena obbligatoria di CLAUDE.md:
+      valori di produzione -> soglie arena (PAREGGIO_ARENA/GUADAGNO_PER_PUNTO)
+      -> scouting (Ess/GW, EUR/EssGW).
+    Sessione dedicata, DOPO odds+4ruoli (se le odds risultano usabili anche
+    solo nello scouting, entrano nella STESSA catena: conviene saperlo prima).
+    CAUTELA onesta: il vantaggio di G NON e' uniforme -- viene da crowss(te)
+    e satonio; sui 16 manager nuovi A pareggia/supera G (A+3.600 vs G+3.100).
+    G aiuta i mazzi forti, meno i mediocri (ipotesi, da tenere presente).
+
+===============================================================================
+C. FILONI RIAPERTI (erano chiusi da backtest contaminati dal bug D6)
+===============================================================================
+C1. [APERTO/in coda] DIFENSORE. Fix D6 fatto, verdetto ribaltato di segno
+    (da -0.456 a +0.364/+0.557) ma IC ancora attraversa lo zero in 3 letture
+    su 4: riaperto, NON confermato. Serve profondita' temporale per mazzo
+    (satonio non l'ha data: pool ricco ma poche giornate distinte). Non
+    blocca nulla.
+C2. [IN CORSO dentro A1] FWD/CALIBRAZIONE. Verdetto +1.25/+0.90 NULLO finche'
+    p11_calib_fwd_confronto.py non e' fixato (D6) e rilanciato. Nel brief odds.
+C3. [IN CORSO dentro A1] MID. Mai riverificato dopo la scoperta di D6. Nel
+    brief odds (griglia per-ruolo + backtest).
+C4. [APERTO] VERDETTI STORICI DA RIFARE perche' contaminati:
+    - HANDOFF_favorito_odds_taratura_2026-08-05.txt (B DEF k0.2, IC vari):
+      calcolati col bug, il delta cambia segno col fix -> IC da rifare.
+    - HANDOFF_calib_per_ruolo_riproducibilita sessioni 12-14 (calib FWD):
+      nulli finche' non rifatti (coperti da A1).
+
+===============================================================================
+D. SCOPERTI IN QUESTI GIORNI, NON ANCORA IN NESSUN BRIEF
+===============================================================================
+D1. [APERTO -- il piu' rilevante] crowss E' L'UTENTE STESSO. Scritto in
+    HANDOFF_FAVORITO_ODDS sez.5: chiunque abbia fatto un confronto "pick dei
+    manager vs nostro atteso" includendo crowss ha confrontato l'utente con
+    se stesso. Segnalato "DA VERIFICARE se ha inquinato il filone CAPITANO
+    (1332 formazioni) e lo SMART-MONEY". Mai verificato. Tocca conclusioni
+    gia' tratte su due filoni.
+D2. [APERTO] 21 script in analisi_manager/ con ROOT hardcoded Windows
+    (r'C:\\Users\\Andrea\\...'): girano SOLO sulla macchina dell'utente. E'
+    il motivo per cui l'orchestratore e gli esecutori nel sandbox non possono
+    lanciarli. Sostituire con percorso relativo calcolato dal file.
+D3. [APERTO] FRESCHEZZA CACHE GAME-LOG. partita_target() cerca la partita
+    entro 6 giorni dalla fine GW; se la cache non e' aggiornata la carta e'
+    esclusa in silenzio dal test (8 arene su 16 su una GW). Riduce i campioni
+    senza dirlo: va riportato per GW, e/o aggiornata la cache prima dei test.
+D4. [APERTO] BUCO TABELLA PREMI. (Uncapped, rank 1) e (Uncapped, rank 3) non
+    hanno premio noto: 30 salti su 497 trattati come 0 nel premio-vero. Il
+    NETTO e' quindi un LIMITE INFERIORE. Per chiuderlo servono piu' arene
+    Uncapped rank1/3 nell'archivio dell'utente (arene_storico.json).
+
+===============================================================================
+E. DIFETTI DATI MANAGER RESIDUI (D1-D7 di CLAUDE.md)
+===============================================================================
+E1. [CHIUSO] D1 (righe mute): fix a monte in ricostruisci_manager.py, commit
+    37b739e043, verificato dall'utente. Non riaprire.
+E2. [APERTO/non bloccante] D2: 37 manager vecchi ancora troncati --solo-arene
+    (aggirati coi nuovi estratti senza il flag; i 37 restano parziali).
+E3. [APERTO/minore] D3: TIPI_ARENA_ESCLUSI scarta sempre arena_rare/arena_altro
+    anche quando servirebbero.
+E4. [GESTITO] D4/D6: il grezzo si legge dalla cache negli script chiave
+    (p13, p11 fixati). Resta solo p11_calib_fwd (in A1).
+
+===============================================================================
+F. LEGHE / PIPELINE
+===============================================================================
+F1. [CHIUSO per la GW3] 28 leghe senza pipeline, 117 carte (report corretto
+    dopo i due fix). Tutte marginali (1-11 carte), ZERO giocano nella GW3.
+    Se in futuro si vuole, estrarre i giocatori delle poche leghe con piu'
+    carte (serie-b-it 11, first-division-b 6, 2-liga 5). Costo basso.
+F2. [CHIUSO] 56/59 __unknown__ verificati dall'utente uno per uno: tutti
+    corretti (ritirati dal gioco o finiti in leghe non coperte -> giusto che
+    il generatore non li veda) TRANNE Jefferson Galego: titolare K-League
+    (lega COPERTA), ha le odds per la GW3, ma su Sorare NON e' schierabile
+    nemmeno manualmente -> anomalia LATO SORARE su quella carta, non un buco
+    nostro. Filone chiuso. Galego da ricontrollare la prossima GW.
+
+F3. [STRUMENTI -- procedura per ricontrollare "carte che il generatore non
+    vede" a OGNI nuova GW, ~10 min, richiede SORARE_COOKIE nell'ambiente]:
+    1. python diagnostics/discover_missing_leagues.py
+       -> scannerizza TUTTE le carte possedute, raggruppa per lega, e scrive
+       diagnostics/output/missing_leagues_report.json con le leghe SENZA
+       pipeline (criterio 'coperta' allineato al generatore vero:
+       formazione_<dir>/output/*_all esistente, vedi _build_known_league_slugs
+       gia' fixato). Scrive anche la lista dei giocatori a lega non risolta.
+    2. Campionati della nuova GW: query so5Fixtures (anyGames -> competition/
+       domesticLeague) sulla fixture della GW -> lista leghe che giocano.
+    3. Incrocio: le leghe 'missing' del passo 1 che compaiono nel passo 2 sono
+       le uniche che possono farti perdere carte quella GW. Se vuoto -> nessuna
+       carta persa.
+    4. Verificare se un singolo giocatore e' visto dal generatore:
+       grep -rl "<slug>" formazione_<lega>/output/*_all/  (mirato sulla sua
+       lega, il grep su tutte le output va in timeout). Vuoto = non lo vede.
+    5. Le __unknown__ (activeClub null / lega non tracciata) sono quasi sempre
+       giocatori ritirati o passati a leghe non coperte: giusto non vederli.
+       L'unica anomalia da sorvegliare e' il tipo-Galego (lega coperta ma
+       assente): ricontrollarlo GW per GW.
+
+===============================================================================
+G. DEBITO TECNICO MINORE (non urgente)
+===============================================================================
+G1. [MINORE] Contatore cosmetico p13 "ammissibili nel pool": identico per
+    tutte le arene, conta le carte una a una mentre il cap vale sulla somma
+    L10 dei cinque. Numero fuorviante, da togliere o sostituire.
+G2. [MINORE] DID_NOT_PLAY marcati "ricostruito" nei dump invece di "non ha
+    giocato".
+G3. [MINORE] Script driver non versionati (consolida_premio_vero.py,
+    run_satonio_suite.py, ecc.): se servono stabili, portarli dentro p13
+    come gia' fatto per soglia_decisione e bilancio essenze.
+
+===============================================================================
+H. FINALE (a chiusura di tutto)
+===============================================================================
+H1. [DA FARE A FINE SESSIONE] CONSOLIDAMENTO HANDOFF. In docs/handoff/ ci
+    sono 30+ file sparsi. Regola CLAUDE.md: per il tema modello+scouting
+    esiste UN SOLO riassunto, docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md,
+    da tenere snello e leggibile per intero a inizio sessione. Accorpare li'
+    le conclusioni vere di questi giorni (bug D6 e sue conseguenze, premio-
+    vero, stato G, stato odds+4ruoli, difensore) e archiviare/comprimere i
+    file datati. Non accumulare: quando una sezione e' superata, riscriverla
+    in due righe. (Task #11 nel gestore.)
+
+===============================================================================
+ORDINE CONSIGLIATO (se si continua oggi)
+===============================================================================
+1. Chiudere A1 (odds+4ruoli) e A2 (__unknown__): sono in corso.
+2. Con l'esito di A1: decidere se le odds entrano (formazione e/o scouting).
+3. Aprire la CATENA per G (B2), includendo le odds se A1 le promuove.
+4. Poi, con calma: D1 (crowss=utente, capitano/smart-money), D2 (path),
+   D3 (freschezza cache).
+5. A chiusura: H1 (consolidamento handoff).
+Difensore (C1) e leghe minori (F1) restano in coda, non bloccano.
