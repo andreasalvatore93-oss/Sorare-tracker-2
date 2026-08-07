@@ -1,0 +1,87 @@
+SESSIONE 07/08/2026, ~01:15 Roma (23:15 UTC 06/08 circa / 01:15 CEST)
+Branch: claude/predictive-pipeline-check-j08pc3, commit base 36ea9278
+Solo ricognizione, nessuna modifica alla produzione (nessuna calibrazione,
+nessuna taratura, build_formazione_globale.py non toccato).
+
+1. STATO DEL REPO
+Nessun file di produzione modificato in questa sessione. Il workflow GitHub
+"Discovery giornata (fixture)" (discovery_fixture.yml) e' stato lanciato
+manualmente (run 31135763772, workflow_dispatch, ref main) con GAMEWEEK=3.
+Questo file e' l'unico commit di questa sessione, sul branch sopra.
+
+2. PERCHE'
+L'utente voleva sapere quali campionati sono coinvolti nella GW3 (prevista
+venerdi'-martedi', 7-11 agosto) prima di andare a dormire, e se qualche
+pipeline lega manca rispetto a quella giornata.
+
+3. COSA HO FATTO
+Lanciato discovery_fixture.yml con GAMEWEEK=3 (via GitHub Actions
+workflow_dispatch). Il job ha girato per 26m34s (00:45:51 -> 01:12:29 UTC)
+e si e' CONCLUSO CON conclusion="cancelled" -- non l'ho cancellato io, e il
+log non dice chi/cosa l'ha cancellato (non c'e' evidenza nei log ne' nella
+UI accessibile da qui). Non lo invento: se serve la causa esatta va cercata
+nella UI GitHub (Actions -> run 31135763772 -> chi ha annullato).
+
+4. OUTPUT NUMERICO (dal log del job, fino al punto di cancellazione)
+
+Fixture risolta: football-7-11-aug-2026, gameweek 3, stato "opened"
+dal 2026-08-07T14:00:00Z al 2026-08-11T13:59:00Z.
+Partite nella giornata: 183 | squadre in campo: 366.
+
+Per confronto GW2 (football-4-7-aug-2026, dati gia' in repo,
+dati_globali/scouting_football-4-7-aug-2026.json): 50 partite, 100 club.
+GW3 e' quindi ~3,6x piu' grande di GW2, non "identica con data diversa"
+come ipotizzato in chat -- probabilmente perche' in questa finestra
+ripartono le stagioni di molti campionati insieme, non solo il turno
+settimanale dei soliti. Questo e' un FATTO misurato (dal log), non
+un'ipotesi.
+
+Avanzamento per ruolo (carte possedute eleggibili -> giocatori di club in
+campo -> odds interrogate) prima della cancellazione:
+  Goalkeeper: 254 carte eleggibili, 121 giocatori -> odds completate
+  Defender:   561 carte eleggibili, 303 giocatori -> odds completate
+  Midfielder: 472 carte eleggibili, 245 giocatori -> odds completate
+  Forward:    423 carte eleggibili, giocatori non ancora contati -> odds
+              MAI COMPLETATE (cancellato durante l'interrogazione)
+
+Il job non e' mai arrivato alla sezione finale che scrive
+"LEGHE DA PROCESSARE PER QUESTA GIORNATA" (quella e' l'ULTIMA cosa che fa
+main(), dopo tutti e 4 i ruoli). Quindi NON HO l'elenco leghe/campionati
+coinvolti nella GW3, e NON ho potuto confrontarlo con LEAGUE_DIN in
+discovery_fixture.py per capire quali pipeline mancano. Player_slugs.json
+non sono stati scritti (nessun commit dal bot su main per questa run).
+
+5. COSE DA SAPERE PRIMA DI DECIDERE
+- Il job ha impiegato 26m34s per arrivare solo a 3 ruoli su 4, contro i
+  tempi normali di pochi minuti visti su GW precedenti (vedi commenti in
+  discovery_fixture.py su run passate). Causa visibile nel log: raffiche di
+  errori 429 (rate limit Sorare) con attese di 100-200s ciascuna, piu' volte
+  per ruolo. Con 183 partite / 366 squadre il numero di candidati da
+  interrogare (odds+L10, uno per giocatore posseduto in campo) e' molto piu'
+  alto del solito (121+303+245+decine di Forward = quasi 900 query), e
+  questo sembra aver fatto scattare il rate limit molto piu' spesso.
+- Non so PERCHE' il run sia stato cancellato (non l'ho fatto io). Se si
+  ripete, vale la pena controllarlo prima di rilanciare alla cieca.
+- Il confronto GW3 vs GW2 (3,6x piu' grande) e' una scoperta nuova rispetto
+  a quanto ipotizzato in chat ("sara' identica ma 7-11 invece di 4-7"):
+  FALSO per numero di partite/squadre, quindi probabilmente falso anche per
+  l'elenco di campionati coinvolti (con piu' leghe che iniziano stagione).
+  Non ho pero' la controprova numerica (l'elenco leghe vero), solo l'indizio
+  del conteggio partite.
+
+6. DECISIONE APERTA
+Rilancio il workflow discovery_fixture (GAMEWEEK=3) per provare a
+completarlo e ottenere l'elenco leghe vero. Se fallisce/si cancella di
+nuovo, mi fermo e riporto senza inventare un esito. Alternativa se il
+rate-limit persiste: aumentare ODDS_L10_SLEEP o shardare i ruoli piu'
+pesanti (Defender/Midfielder) in job paralleli come gia' fatto per altre
+giornate pesanti (vedi DISCOVERY_LEAGUE_SHARD in discovery_fixture.py) --
+ma questa e' una modifica di script, da decidere insieme, non da fare in
+autonomia stanotte.
+
+7. FILE DI RIFERIMENTO
+- discovery_fixture.py (script lanciato, LEAGUE_DIR per le pipeline note)
+- .github/workflows/discovery_fixture.yml (workflow lanciato)
+- dati_globali/scouting_football-4-7-aug-2026.json (dati GW2 usati per il
+  confronto)
+- Run GitHub: 31135763772 (job 92734592796), conclusion "cancelled"
