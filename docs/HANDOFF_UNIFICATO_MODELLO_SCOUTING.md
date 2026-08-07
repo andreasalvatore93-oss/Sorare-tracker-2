@@ -1005,6 +1005,34 @@ se la GW le rendeva schierabili. Commit `ee4c2deec2`.
 
 ---
 
+## 10bis. COSE DA FARE — in ordine di priorità (08/08/2026)
+
+1. **Consolidare G (gruppo B)**: G è in produzione senza IC che escluda zero.
+   Aprire il gruppo B dello split A/B pre-registrato (unica verifica non
+   contaminata, si spende una volta) — §8bis.
+2. **Buco dati `arene_storico.json`**: da 673 a 160 arene fra l'1 e il 6/08,
+   solo 191 spiegate (division tolte a richiesta); 322 arene + il campo
+   `mio_score` spariti senza causa nota. Impatta ogni validazione soglie
+   futura — §8quater.
+3. **Correggere le 3 anomalie non-arena e ripetere il Passo 1 di G**: Hot
+   Streak potrebbe ammettere 2 classic fuori-lega, "Limited" mischia 7 e 5
+   carte, bonus XP non applicato nel backtest — §8bis.
+4. **Soglie arena cap 220**: scarto sistematico +6.4 fra ricalcolo e
+   produzione non spiegato; raccogliere più arene cap 220 prima di ritarare
+   — §8quater.
+5. **Decisione grade nello scouting**: usare il grade storico
+   (`playerGameScores(last:15)`) anche per candidati non posseduti, o
+   lasciare lo scouting senza grade? — §8ter.
+6. **Odds+4ruoli — allargare il campione profondo**: solo 2 mazzi con ≥16
+   giornate, pablo0078 pesa il 33%; il DEF non si può ancora relegare allo
+   scouting su questa base — §8quinquies.
+7. **Buco tabella premi Uncapped rank 1/3**: 30 casi su 497 trattati come 0
+   nel premio-vero, netto sottostimato — §8quinquies.
+8. **21 script con path Windows hardcoded** in `analisi_manager/`: girano
+   solo sulla macchina dell'utente, meccanico — §8quinquies.
+
+---
+
 ## 11. Come lavorare con l'utente (osservazioni ricorrenti)
 
 - Ha ragione spesso quando un numero "non torna" col suo senso pratico — le
