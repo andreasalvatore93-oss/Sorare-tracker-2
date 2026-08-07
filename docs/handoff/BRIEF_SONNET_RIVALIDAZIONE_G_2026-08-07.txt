@@ -1,0 +1,198 @@
+BRIEF PER SONNET -- RIVALIDARE IL GRADE G, CHE E' GIA' IN PRODUZIONE
+Scritto dall'orchestratore il 07/08/2026, notte (ora di Roma).
+Destinatario: Sonnet, chat pulita, che non sa nulla di questa sessione.
+
+===============================================================================
+0. LEGGI PRIMA QUESTI, IN QUEST'ORDINE
+===============================================================================
+1. git pull.
+2. CLAUDE.md in radice, TUTTO. In particolare, e sono le regole che questo
+   lavoro mette alla prova:
+   - "DIVIETO TOTALE DI ALLUCINAZIONI E ASSUNZIONI";
+   - "Checklist prima di affermare un fatto" (aggiunta il 07/08: ipotesi ->
+     riverifica; deduzione -> riverifica su casi reali; probabilita' ->
+     numero preciso, mai "di solito");
+   - "BACKTEST: NESSUNO E' AFFIDABILE FINCHE' L'UTENTE NON L'HA ISPEZIONATO",
+     compreso l'obbligo del DUMP LEGGIBILE e del controllo pool-vs-slot;
+   - i difetti aperti D1-D7 sulla fonte dati manager: D4 (i punteggi nei file
+     manager hanno il BONUS DENTRO), D6 (gli script p11_* non tolgono nessun
+     bonus e il loro verdetto e' nullo), D7 (il ruolo e' della CARTA).
+3. docs/handoff/HANDOFF_ORCHESTRATORE_2026-08-07_NOTTE.txt, sezioni 1 e 3.
+4. docs/handoff/DESIGN_GRADE_G_PRODUZIONE_2026-08-07.txt (la formula: NON
+   reinventarla).
+5. analisi_manager/p12_backtest_formazione_grade.py (implementazione di
+   riferimento, con grade_in_finestra e il fix del join).
+
+NON TOCCARE LA PRODUZIONE. Nessuna modifica a build_formazione_globale.py,
+nessun cambio di GRADE_ENABLED, nessuna run su GitHub. Si misura e si riporta.
+Decide l'utente.
+
+===============================================================================
+1. DA DOVE SI PARTE, ONESTAMENTE
+===============================================================================
+Il grade G e' IN PRODUZIONE (GRADE_ENABLED default '1'). Formula:
+    atteso_combinato = atteso_calibrato + sd_gruppo * z_grade
+Ci e' entrato per DECISIONE dell'utente, non perche' una prova statistica lo
+imponesse: il segno era positivo ovunque e il downside misurato nullo. Le
+analisi sono state fatte di fretta. Questi sono i numeri veri:
+
+  crowss, 230 arene, copertura 77.4%
+      punti      A=273.07  G=275.88   (+2.8, IC95 [-1.1, +6.6])
+      essenze    A=96.1    G=103.0    (+7.0, IC include lo zero)
+  16 manager, gruppo A, 59 righe, copertura 100%
+      punti      A=225.97  G=234.13   (+8.15)
+
+SEGNO POSITIVO SU TUTTO, NESSUN IC CHE ESCLUDA LO ZERO. E il campione e'
+piccolo: 59 righe nel caso "pulito".
+
+DUE COSE MAI FATTE, ed e' li' che si comincia:
+ a) IL GRUPPO B NON E' MAI STATO APERTO. C'e' uno split A/B pre-registrato
+    (HANDOFF_LETTERA_GRADE_2026-08-06.txt, righe ~2248-2253): manager ordinati
+    per slug, indici pari = A (ricerca), dispari = B (verifica). B non e' mai
+    stato guardato. E' l'unica verifica non contaminata che abbiamo: va usata
+    UNA volta sola, con l'analisi decisa PRIMA di guardare.
+ b) G e' stato validato SOLO SULLE ARENE. Non e' un errore -- e' li' che
+    serviva -- ma nelle arene conta il PIAZZAMENTO e c'e' una soglia
+    d'ingresso, mentre in In Season conta solo il punteggio piu' alto. Sono
+    due domande diverse e vanno separate (vedi §2).
+
+===============================================================================
+2. LA DOMANDA CENTRALE (e' questa che l'utente vuole sciolta)
+===============================================================================
+G puo' aiutare in DUE modi completamente diversi, e finora sono stati misurati
+insieme, quindi non sappiamo quale dei due stia funzionando:
+
+  (a) SELEZIONE -- G sceglie giocatori migliori a parita' di tutto il resto.
+      Si misura sul PUNTEGGIO REALIZZATO della formazione.
+  (b) DECISIONE D'INGRESSO -- G non sceglie meglio, ma segnala quando una
+      formazione e' debole, e quindi fa EVITARE arene che avrebbero perso
+      essenze. Si misura sulle ESSENZE NETTE, che includono il costo
+      d'ingresso e la soglia.
+
+Il test fatto finora misura soprattutto (b), perche' guarda le essenze in
+arena. Se G vale solo per (b) e' comunque utile, ma va detto: significa che
+NON migliora le formazioni, migliora la scelta di quando giocarle -- e allora
+in In Season, dove non c'e' soglia ne' piazzamento, G non dovrebbe servire a
+niente.
+
+DA QUI L'ESPERIMENTO PULITO, che e' il cuore di questo brief:
+  LE COMPETIZIONI SENZA SOGLIA (In Season, All Star da 7, Under 23, Hot
+  Streak, Challenger, Contender, Champion...) SONO IL BANCO DI PROVA DELLA
+  SOLA SELEZIONE. Li' non esiste decisione d'ingresso: si schiera e basta, e
+  vince chi fa piu' punti. Se G migliora il realizzato LI', allora migliora
+  davvero la selezione. Se non lo migliora, il valore di G (se c'e') sta tutto
+  nella decisione d'ingresso, e va scritto a chiare lettere.
+
+===============================================================================
+3. IL CAMPIONE: MOLTO PIU' GRANDE DI QUELLO USATO FINORA
+===============================================================================
+Inventario fatto dall'orchestratore su dati_globali/manager_*.json, e
+riproducibile (analisi_manager/inventario_arene_manager.py fa la parte arene):
+
+    55 manager, 81 giornate, 14.926 formazioni, 78.449 slot-carta
+      ARENA                      9.889 formazioni   49.440 slot
+      non-arena (senza soglia)  ~5.000 formazioni  ~29.000 slot
+         All Star - Limited 835 | Under 23 - Limited 392 | Limited 529
+         MLS Hot Streak 335 | Challenger 293 | Contender 285
+         LALIGA 271 | Champion 240 | K-League Hot Streak 217 | Jupiler 153
+
+Il grade storico sta in analisi_manager/dati/storico_grade_*.json (~18 MB) e
+si carica con carica_indice_grade() + grade_in_finestra() di
+p12_backtest_formazione_grade.py. NON usare il match sulla data esatta: e' il
+bug gia' trovato e corretto il 07/08 (copertura 3.4% -> 56.6% in finestra,
+crowss 4.6% -> 77.4%). Il verdetto "G stabilmente peggiore" scritto prima di
+quel fix era un artefatto: se ti esce un risultato molto negativo, sospetta
+prima il join.
+
+===============================================================================
+4. IL LAVORO, IN ORDINE
+===============================================================================
+
+PASSO 0 -- CONTROLLO DI SANITA' OBBLIGATORIO (CLAUDE.md). Prima di misurare
+qualunque cosa: quante carte contiene il pool contro quanti slot vanno
+riempiti? Se il pool non e' piu' grande degli slot NON C'E' SELEZIONE DA
+MISURARE e il test e' nullo per costruzione. E' successo davvero (22 casi su
+22 con pool = 5 x arene). Riportalo in chiaro, come numero, prima di tutto.
+
+PASSO 1 -- SELEZIONE PURA, sulle competizioni SENZA soglia. Per ogni
+formazione storica: ricostruisci il pool di candidati di quel manager in
+quella giornata, costruisci la formazione con A e con G, e confronta il
+PUNTEGGIO REALIZZATO. Vincoli: usa build_one_lineup_with_growth (il
+generatore vero), MAI un knapsack scritto per l'occasione -- D7 di CLAUDE.md,
+serve per il vincolo "stesso giocatore mai due volte" e per i ruoli di carta.
+Riporta: n, media A, media G, delta, IC95 bootstrap, e la quota di formazioni
+IDENTICHE fra A e G (se sono quasi tutte identiche, il delta non misura
+niente: dillo).
+
+PASSO 2 -- il PUNTEGGIO GREZZO. I punteggi nei file manager hanno il BONUS
+DENTRO (D4): in arena l'xp non conta e il capitano vale +20%, fuori arena si
+sommano e il capitano vale +50%. NON ricostruire il grezzo dividendo (errore
+1-3%, sistematico, piu' grande sulle carte pregiate): LEGGILO dalla cache
+game-log condivisa. E' esattamente l'errore che ha reso NULLO il verdetto
+degli script p11_* (D6). Se per qualche riga il grezzo non c'e', escludila e
+dichiara quante.
+
+PASSO 3 -- SEPARARE (a) DA (b) SULLE ARENE. Sulle arene misura DUE numeri
+distinti e riportali separati, mai sommati:
+   - punteggio realizzato (= selezione)
+   - essenze nette, col costo d'ingresso e la soglia (= decisione d'ingresso)
+Se il primo e' piatto e il secondo positivo, la risposta alla domanda
+dell'utente e' "G aiuta a NON entrare, non a schierare meglio".
+
+PASSO 4 -- IL GRUPPO B. Solo DOPO aver scritto cosa ti aspetti (ipotesi prima
+dei numeri, CLAUDE.md), apri il gruppo B e rifai la stessa misura. E' la sola
+verifica non contaminata: si spende una volta. Se il gruppo B non conferma il
+segno, G non e' dimostrato, e va detto chiaramente anche se e' gia' in
+produzione.
+
+===============================================================================
+5. TRAPPOLE -- SPECIFICHE DI QUESTO FILONE
+===============================================================================
+1. MAI usare atteso_combinato come metro di qualita'. E' il punteggio di
+   SELEZIONE, gonfiato dal boost del grade: con G acceso e' piu' alto per
+   costruzione, e sembrerebbe che G "migliori" quando non ha migliorato
+   niente. Il metro e' il REALIZZATO. (Rettifica gia' scritta nel test GW3.)
+2. Il totale mostrato dal generatore con G acceso puo' essere PIU' BASSO di
+   quello con G spento (misurato: 3946.7 contro 3977.6): e' atteso, non un
+   bug -- G accetta un atteso grezzo un po' piu' basso in cambio di un grade
+   migliore. Non e' ne' una prova a favore ne' contro.
+3. Il grade NON e' legato alle carte possedute (verificato il 07/08 su
+   giocatori non posseduti: Charly Nouck e Matthew Hoppe hanno grade). Se
+   trovi copertura bassa, e' un problema di join o di finestra, non un limite
+   della fonte.
+4. Leakage: il grade e' una proiezione PRE-partita. Verifica che l'indice
+   storico che usi non contenga grade emessi DOPO la partita che stai
+   valutando. Esiste gia' analisi_manager/p12_verifica_leakage_grade.py:
+   guardalo prima di scrivere il tuo.
+5. Copertura per lega/ruolo: se una lega ha 0% grade, li' G gira in fallback
+   (z=0) ed e' IDENTICO ad A. Quelle righe non misurano niente su G: contale
+   ed escludile dal confronto, o il delta si diluisce verso zero da solo.
+
+===============================================================================
+6. COSA CONSEGNARE
+===============================================================================
+ - Il numero del PASSO 0 (pool vs slot) prima di ogni altra cosa.
+ - Una tabella per famiglia di competizione: n | A | G | delta | IC95 |
+   % formazioni identiche | copertura grade.
+ - La risposta esplicita alla domanda di §2: G migliora la SELEZIONE, la
+   DECISIONE D'INGRESSO, entrambe, o nessuna delle due?
+ - Il DUMP LEGGIBILE di almeno un caso completo (un manager, una giornata):
+   nomi dei giocatori, ruolo, punteggio, il pool fra cui si poteva scegliere e
+   cosa ha scelto A e cosa G. CLAUDE.md lo pretende e senza non si consegna.
+ - Una raccomandazione: G resta in produzione, esce, o resta solo per certe
+   competizioni. NON applicarla.
+ - Se il campione non basta per una risposta, dillo. "Non lo so, servirebbe X"
+   e' una consegna valida; un IC che esclude lo zero ottenuto per stanchezza
+   no.
+
+===============================================================================
+7. QUANDO HAI FINITO
+===============================================================================
+ - Esito IN CODA A QUESTO FILE, non in un file nuovo.
+ - Aggiorna docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md (e' l'unico riassunto
+   di riferimento per modello e scouting) con lo stato di G in 10 righe.
+ - Committa solo i file tuoi: sulla stessa working tree lavorano altre
+   sessioni, e in parallelo a te un altro Sonnet sta lavorando alle soglie
+   arena (BRIEF_SONNET_SOGLIE_ARENA_2026-08-07.txt). Non toccare i suoi file.
+ - In chat: poche righe, il percorso del file, e le domande che ti bloccano.
+   L'utente ha l'ADHD e paga a token.
