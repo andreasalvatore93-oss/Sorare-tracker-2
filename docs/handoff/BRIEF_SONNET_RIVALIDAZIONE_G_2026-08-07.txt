@@ -196,3 +196,89 @@ produzione.
    arena (BRIEF_SONNET_SOGLIE_ARENA_2026-08-07.txt). Non toccare i suoi file.
  - In chat: poche righe, il percorso del file, e le domande che ti bloccano.
    L'utente ha l'ADHD e paga a token.
+
+===============================================================================
+ESITO PASSO 1 -- SELEZIONE PURA, COMPETIZIONI SENZA SOGLIA (Sonnet, 07/08 notte)
+===============================================================================
+Script: analisi_manager/p15_backtest_nonarena_selezione.py (nuovo).
+Output grezzo: analisi_manager/p15_backtest_nonarena_out.json.
+Dump leggibile di un caso completo: analisi_manager/p15_dump_esempio.txt.
+
+METODO: pool = tutte le carte possedute dal manager quel giorno (arene incluse,
+stesso pool di p13 Test1, nessun look-ahead: sono carte gia' possedute). Shape
+dedotta dal numero VERO di carte schierate da REALE in quella competizione
+(sempre 5 o 7 sui dati, verificato): 5 = stile In Season (GK+DEF+MID+FWD+1
+extra), 7 = stile All Star (GK+2DEF+2MID+1FWD+1 extra). Formazioni costruite
+SOLO con bfg.build_one_lineup_with_growth (D7), captain bonus fuori arena
++50% (CAPTAIN_BONUS_BY_TYPE produzione), grezzo da cache game-log (mai
+diviso, D4/D6), grade con la stessa finestra +/-6gg di p12/p13.
+Bug trovato e aggirato (non nel file, nel mio script): T13.prepara_righe_pool
+va in ValueError SEMPRE (unpacking sbagliato di carica_indice_grade_esteso());
+non l'ho toccato (file di un altro filone), l'ho ricostruito localmente.
+
+1) SOPRAVVIVENZA AL FILTRO POOL>SLOT (chiesto per primo, come le arene):
+   giornate totali (tutti i 55 manager)              : 738
+   giornate con almeno 1 formazione non-arena         : 301
+   formazioni non-arena totali (con carte salvate)    : 5.035
+   giornate ESCLUSE per pool<=slot (nessuna scorta)   : 154/301 (51.2%)
+   formazioni scartate per lega non deducibile        : 2
+   formazioni EFFETTIVAMENTE valutate (A e G costruite): 2.666/5.035 (52.9%)
+   Le 154 escluse sono quasi tutte di UN manager (angioletto33): pool=slot
+   quasi ovunque, coerente con D2 (manager estratti --solo-arene, 37/39).
+   Elenco completo delle 154 in p15_backtest_nonarena_out.json['escluse_pool'].
+
+2) QUOTA FORMAZIONI IDENTICHE fra A e G (prima dei numeri, come richiesto):
+   1.029/2.666 = 38.6% identiche. Il 61.4% cambia: il delta sotto NON e' un
+   artefatto di "quasi mai cambia niente".
+
+3) DELTA SUL REALIZZATO, IC95 bootstrap CLUSTERATO per (manager, giornata)
+   (144 cluster; il bootstrap per singola formazione, non clusterato, dava un
+   IC piu' largo e leggermente diverso -- uso quello giusto, appaiato):
+     n=2.666  A=345.51  G=346.92  delta=+1.41  IC95=[+0.73, +2.10]
+   L'IC95 ESCLUDE LO ZERO. E' il primo segnale su G, in tutta la storia del
+   filone, che non include lo zero.
+
+   Per famiglia (n>=50, le altre in p15_backtest_nonarena_out.json):
+     Under 23 - Limited     n=298  A=406.62 G=416.26  delta=+9.63  IC95[+3.04,+16.17]
+     All Star - Limited     n=458  A=409.06 G=410.80  delta=+1.74  IC95[-3.03,+6.62]
+     Champion - Limited     n=210  A=399.74 G=403.68  delta=+3.94  IC95[-3.66,+11.67]
+     Limited (in season)    n=207  A=350.99 G=349.80  delta=-1.19  IC95[-4.52,+2.11]
+     LALIGA - Limited       n=201  A=306.20 G=306.13  delta=-0.08  IC95[-4.53,+4.52]
+     MLS Hot Streak         n=234  A=295.38 G=291.57  delta=-3.82  IC95[-11.84,+4.42]
+     Bundesliga - Limited   n=116  A=309.15 G=306.90  delta=-2.25  IC95[-9.67,+5.18]
+     Premier League         n=114  A=299.35 G=299.83  delta=+0.48  IC95[-4.09,+4.63]
+     In-Season              n=112  A=314.39 G=317.60  delta=+3.20  IC95[-5.47,+12.18]
+     Challenger - Limited   n=110  A=306.78 G=306.02  delta=-0.76  IC95[-5.64,+3.95]
+     Contender - Limited    n=108  A=295.40 G=296.92  delta=+1.51  IC95[-4.04,+7.60]
+     K-League Hot Streak    n=99   A=279.28 G=279.20  delta=-0.09  IC95[-10.06,+10.31]
+   NESSUNA singola famiglia (tranne Under 23) ha da sola un IC che esclude lo
+   zero: il segnale aggregato positivo viene dal fatto che quasi tutte le
+   famiglie sono POSITIVE o piatte, e solo 2/12 (MLS Hot Streak, Bundesliga)
+   sono negative -- coerente, non un singolo outlier che traina la media.
+
+RISPOSTA ALLA DOMANDA DI SEZ.2: il segnale non e' piatto. G sembra migliorare
+anche la SELEZIONE pura (non solo la decisione d'ingresso), su un campione
+10 volte piu' grande di quello arena mai visto finora, con un IC che per la
+prima volta esclude lo zero sull'aggregato.
+
+CAUTELE, da NON saltare prima di dirlo "chiuso":
+ - Il campione non e' indipendente: 144 cluster (manager,giornata), non 2.666.
+   L'IC clusterato e' quello giusto, ed e' comunque stretto -- ma con 144
+   unita' un singolo manager/periodo pesante potrebbe dominare. Da controllare
+   (non fatto qui): delta per manager, per vedere se e' diffuso o concentrato.
+ - "Under 23 - Limited" trascina l'aggregato (+9.63 su 298 righe, l'unica
+   famiglia con IC ampiamente sopra zero da sola). Tolta quella, il segno
+   resta positivo ma va ricalcolato SENZA di lei per vedere se regge.
+ - Copertura grade nel pool non ancora riportata qui per-formazione (lo era
+   per le arene: 77.4%): da misurare separatamente prima di fidarsi del numero.
+ - Ancora NESSUN dump del PASSO 2 (grezzo, gia' usato qui) ne' del gruppo B
+   (Passo 4): il segnale sopra e' TUTTO gruppo indifferenziato (non split A/B).
+ - Sinergie/stack-guard/xp-bonus di produzione NON applicati nel mio script
+   (apply_positive_synergy=False, apply_stack_guard=False, come gia' fa p12/
+   p13): identico per A e G, quindi non dovrebbe biasare il DELTA, ma i valori
+   assoluti A/G qui sopra NON sono quelli che il generatore vero produrrebbe.
+
+PROSSIMO PASSO NATURALE (non ancora fatto): dump leggibile di un caso Under 23
+(la famiglia che pesa di piu'), controllo delta-per-manager per escludere un
+singolo manager dominante, poi PASSO 4 (gruppo B) su questo stesso campione
+non-arena prima di toccare le arene.

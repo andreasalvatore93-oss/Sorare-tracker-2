@@ -1,0 +1,184 @@
+BRIEF -- ANOMALIE TROVATE SULLA COMPOSIZIONE DELLE COMPETIZIONI NON-ARENA
+Scritto da Sonnet (esecutore), 07/08/2026 notte, ora di Roma.
+Destinatario: Opus (orchestratore). Nasce da un controllo chiesto a voce
+dall'utente durante la sessione sul PASSO 1 di
+docs/handoff/BRIEF_SONNET_RIVALIDAZIONE_G_2026-08-07.txt (selezione pura G
+sulle competizioni senza soglia). NON e' un verdetto su G: e' un controllo di
+qualita' dei DATI su cui il Passo 1 si appoggia, richiesto prima di fidarsi
+dei numeri gia' consegnati.
+
+===============================================================================
+0. CONTESTO -- perche' esiste questo file
+===============================================================================
+Nel Passo 1 (vedi esito in coda a BRIEF_SONNET_RIVALIDAZIONE_G_2026-08-07.txt)
+ho trattato ogni competizione non-arena come:
+  - 5 carte  -> shape "In Season" (GK+DEF+MID+FWD+1 extra, max_classic=1),
+    UNA lega sola (dedotta dalla lega maggioritaria delle carte REALI);
+  - 7 carte  -> shape "All Star" (GK+2DEF+2MID+FWD+1 extra), pool 'mixed'
+    (tutte le leghe insieme, come ALLSTARS/ALLSTARS_U23 di produzione).
+L'utente ha chiesto di validare questa assunzione competizione per
+competizione PRIMA di continuare. Il controllo ha trovato un'anomalia reale
+sui dati, non ancora spiegata.
+
+===============================================================================
+1. TABELLA VALIDATA (dati reali, dati_globali/manager_*.json, tutti i 55 manager)
+===============================================================================
+Colonne: n. formazioni con quella competizione, carte schierate, quante
+formazioni sono "tutte in_season" (campo Sorare inSeasonEligible=True su
+TUTTE le carte), quante hanno esattamente 1 carta classic (N-1 in season + 1
+classic), quante ne hanno 2 o piu' (miste), se il bonus XP e' presente sui
+dati (bonus_carta>0 osservato sulle carte), il bonus capitano.
+
+Competizione              | carte | tutte-IS | N-1+1cl | miste(>=2cl) | XP | cap.bonus
+All Star - Limited        |   7   |  3 (0.4%)|  4 (0.5%)| 828 (99.2%) | si | +50%
+Under 23 - Limited        |   7   |  1 (0.3%)|  8 (2.0%)| 383 (97.7%) | si | +50%
+Champion - Limited        |   7   |  4 (1.7%)|  7 (2.9%)| 229 (95.4%) | si | +50%
+MLS Hot Streak - Limited  |   5   | 18 (5.4%)|311(92.8%)|   6 (1.8%)  | si | +50% (vedi §2!)
+Challenger - Limited      |   5   |  5 (1.7%)| 19 (6.5%)| 269 (91.8%) | si | +50%
+Contender - Limited       |   5   |  0       |  7 (2.5%)| 278 (97.5%) | si | +50%
+LALIGA - Limited          |   5   | 56(20.7%)|157(57.9%)|  58 (21.4%) | si | +50%
+K-League Hot Streak       |   5   | 36(16.6%)|180(82.9%)|   1 (0.5%)  | si | +50% (vedi §2!)
+Jupiler Pro League        |   5   |  0       |  0       | 153 (100%)  | si | +50%
+In-Season                 |   5   |  8 (5.3%)|120(79.5%)|  23 (15.2%) | si | +50%
+Premier League            |   5   | 10 (6.7%)|133(89.3%)|   6 (4.0%)  | si | +50%
+Bundesliga                |   5   |  8 (5.6%)|108(75.0%)|  28 (19.4%) | si | +50%
+Eredivisie                |   5   |  0       |  0       | 124 (100%)  | si | +50%
+
+Bonus capitano +50% VERIFICATO empiricamente (non dal solo campo bonus_carta,
+che gia' sappiamo sottostimare -- difetto D6): confrontato punteggio REALE
+del capitano contro il grezzo letto dalla cache game-log su 12 capitani presi
+a caso in competizioni non-arena. Bonus osservato sempre >= 0.50 (range
+0.50-0.75, l'eccesso sopra 0.50 e' coerente col fatto gia' noto che
+bonus_carta sottostima il bonus vero di base, non con un capitano diverso da
++50%). NESSUNA arena in questa lista: tutte le righe hanno tipo_arena=None,
+verificato nello script.
+
+===============================================================================
+2. ANOMALIA APERTA -- MLS/K-LEAGUE HOT STREAK CON 2 CARTE CLASSIC
+===============================================================================
+L'utente ha fatto notare (giustamente, verificato) che "MLS Hot Streak" e "K
+League Hot Streak" dovrebbero avere AL MASSIMO 1 carta classic (come le
+altre competizioni In Season da 5 carte: 4 in_season + 1 flex). Ho ISOLATO le
+6 formazioni MLS Hot Streak con 2 classic e le ho GUARDATE CARTA PER CARTA
+(dump completo, non solo il conteggio):
+
+  cedric9093, football-21-24-jul-2026 (formazione 1): GK Andre Blake (IS),
+    DEF Nathan Harriel (IS), MID Hany Mukhtar (IS), FWD Antoine GRIEZMANN
+    (classic, carta 2025), MID Evander (classic, carta 2025)
+  cedric9093, football-21-24-jul-2026 (formazione 2): ... FWD Robert
+    LEWANDOWSKI (classic), FWD Guilherme (classic)
+  john942, football-31-jul-4-aug-2026: ... FWD Antoine GRIEZMANN (classic) +
+    GK Brian Schwake (classic)
+  john942, football-24-28-jul-2026: GK Yohei Takaoka (classic) + FWD Antoine
+    Griezmann (classic)
+  john942, football-21-24-jul-2026: GK Brian Schwake (classic) + FWD Antoine
+    Griezmann (classic)
+  keano88, football-21-24-jul-2026: DEF Kai Wagner (classic) + FWD Robert
+    LEWANDOWSKI (classic)
+
+FATTO GRAVE: Griezmann (Atletico Madrid/Barcellona), Lewandowski (Barcellona),
+Timo Werner (non-MLS) NON GIOCANO in MLS. Sono stelle di campionati europei,
+schierate dentro formazioni etichettate "MLS - Hot Streak - Limited" con carte
+CLASSIC (non in_season). Il campo 'in_season' viene letto direttamente dal
+campo Sorare inSeasonEligible in fase di estrazione (ricostruisci_manager.py
+riga 279), NON e' un'euristica nostra -- e' il dato Sorare vero.
+
+IPOTESI (NON VERIFICATE, da NON scrivere come fatto):
+  a) "Hot Streak" potrebbe essere una competizione che ammette carte CLASSIC
+     di QUALUNQUE lega come slot jolly (non solo della lega nominale), e il
+     limite "max 1 classic" e' un'assunzione mia presa da MLS_IN_SEASON in
+     produzione (bfg.FORMATION_SHAPES) che potrebbe NON essere la regola vera
+     di "Hot Streak" (competizione diversa da "In Season" semplice, nome
+     diverso, magari regole diverse mai codificate in produzione perche' la
+     produzione non gioca Hot Streak).
+  b) Il campo 'competizione' nei file manager potrebbe essere assegnato in
+     modo impreciso in fase di estrazione (es. tutte le formazioni classic
+     "extra" finiscono etichettate con lo slug della lega piu' vicina anche
+     se contengono giocatori di qualunque campionato).
+  c) Sorare permette davvero fino a 2 classic in Hot Streak (a differenza di
+     In Season semplice): la produzione non lo sa perche' non genera mai
+     formazioni Hot Streak.
+Sui dati K-League Hot Streak (1 caso su 217) i due giocatori classic (Hrvoje
+Babec, Wanderson Carvalho) POTREBBERO essere K-League: non controllato se
+giocano davvero in Korea -- da fare, non fatto qui.
+
+===============================================================================
+3. CONSEGUENZA SUL PASSO 1 GIA' CONSEGNATO (se l'ipotesi (a) o (c) fosse vera)
+===============================================================================
+Nel mio script (analisi_manager/p15_backtest_nonarena_selezione.py) le
+competizioni da 5 carte usano SHAPE_5 con max_classic=1 (presa da
+MLS_IN_SEASON di produzione) E pool_league = lega maggioritaria delle carte
+REALI (quindi UNA lega sola, incluso per lo slot classic). Se "Hot Streak"
+ammette davvero 2 classic di lega libera:
+  - il generatore che ho usato per A/G avrebbe COSTRUITO formazioni con un
+    grado di liberta' IN MENO di quello vero (mai 2 classic, mai
+    fuori-lega sullo slot classic) -- sottostimando quello che A e G
+    avrebbero potuto scegliere;
+  - MA lo fa IDENTICAMENTE per A e per G (stesso shape, stesso pool_league,
+    stessa infrastruttura): il DELTA fra A e G nella tabella del Passo 1 non
+    e' automaticamente invalidato, perche' entrambi giocano con lo stesso
+    vincolo (eventualmente troppo stretto).
+  - il VALORE ASSOLUTO (A=295.38, G=291.57 su MLS Hot Streak) e' pero'
+    probabilmente SOTTOSTIMATO rispetto al vero massimo ottenibile, se la
+    competizione ammette davvero piu' liberta' di scelta (incluse carte
+    fuori lega). Non e' quantificato quanto.
+Non ho toccato ne' ricalcolato il Passo 1 per questo: la richiesta esplicita
+dell'utente e' stata "prima fammi un brief, poi lo pusho e lo verifica Opus",
+NON di correggere subito. Nessuna modifica a p15 in questo commit.
+
+===============================================================================
+4. ALTRA ANOMALIA GIA' SEGNALATA IN CHAT (non ancora nel Passo 1 scritto)
+===============================================================================
+La competizione "Limited" (senza altro nome) NON e' una famiglia sola: sulle
+529 formazioni etichettate "Limited", 274 hanno 7 carte e 255 ne hanno 5 --
+sono DUE competizioni diverse (probabilmente diversi tornei/leghe minori)
+etichettate con lo stesso nome generico. Nella tabella del Passo 1 gia'
+consegnata, la riga "Limited" (n=207 dopo i filtri, delta -1.19,
+IC[-4.52,+2.11]) mescola le due. Da rifare separando per numero di carte,
+non solo per nome competizione, prima di fidarsi di quella riga specifica.
+
+===============================================================================
+5. BONUS XP -- LIMITE GIA' SEGNALATO IN CHAT, RIPORTATO QUI
+===============================================================================
+Nel mio script p15 il bonus XP (power_bonus_fraction) NON e' mai applicato:
+ne' nell'ordine di scelta dei candidati (apply_xp_bonus=False sempre) ne' nel
+punteggio finale (CardPool._power non viene mai popolato in questa pipeline
+di backtest -- il dato non e' raccolto). E' IDENTICO per A e per G (nessun
+bias sul segno del delta, quasi certamente), ma i valori assoluti A/G del
+Passo 1 sono piu' bassi di quello che il generatore vero produrrebbe, e se A
+e G scelgono carte diverse con XP diverso l'ampiezza del delta potrebbe
+essere leggermente distorta (non quantificato).
+
+===============================================================================
+6. COSA NON HO FATTO (di proposito, su richiesta esplicita)
+===============================================================================
+- Non ho corretto p15_backtest_nonarena_selezione.py.
+- Non ho rilanciato il Passo 1.
+- Non ho verificato se Hrvoje Babec/Wanderson Carvalho giocano davvero in
+  K-League (ipotesi (c) resta aperta anche li').
+- Non ho controllato le altre famiglie (Challenger/Contender/LALIGA/etc.) per
+  lo stesso tipo di anomalia (classic fuori lega): il controllo e' stato
+  fatto SOLO su MLS/K-League Hot Streak perche' e' li' che l'utente ha
+  notato lo scarto rispetto alla regola attesa. Andrebbe esteso.
+
+===============================================================================
+7. DOMANDE APERTE PER OPUS/UTENTE
+===============================================================================
+1. "Hot Streak" ammette davvero fino a 2 carte classic (anche fuori lega)?
+   Verificabile guardando le regole vere della competizione su Sorare (schema
+   GraphQL della lineup o osservazione diretta in-app), non deducibile dai
+   soli dati che abbiamo.
+2. Se si', va corretta la shape usata nel Passo 1 per Hot Streak (magari
+   max_classic=2, pool_league='mixed' anche per queste, non solo per le
+   7-carte) PRIMA di ripetere qualunque backtest su quella famiglia.
+3. La famiglia "Limited" va comunque splittata per numero di carte.
+4. Vale la pena estendere il controllo "classic fuori lega" a TUTTE le
+   famiglie da 5 carte prima di fidarsi della tabella del Passo 1?
+
+===============================================================================
+8. FILE DI RIFERIMENTO
+===============================================================================
+analisi_manager/p15_backtest_nonarena_selezione.py   script Passo 1 (invariato)
+analisi_manager/p15_backtest_nonarena_out.json       output grezzo Passo 1
+docs/handoff/BRIEF_SONNET_RIVALIDAZIONE_G_2026-08-07.txt  esito Passo 1 completo
+ricostruisci_manager.py:279                          origine campo 'in_season'
