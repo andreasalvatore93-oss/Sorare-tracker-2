@@ -772,9 +772,26 @@ G=275.88 (+2.8, IC[-1.1,+6.6]), netto essenze A=96.1 G=103.0 (+7.0, IC
 include zero), formazioni identiche 11.7% (era 77% col bug di copertura: ora
 G sceglie davvero); 16 manager gruppo A, 59 righe copertura 100% — punti
 A=225.97 G=234.13 (+8.15, IC[-16.5,+29.9] include zero ma positivo nel
-71.3% dei resample). **Gruppo B non aperto** (split A/B pre-registrato,
-`HANDOFF_LETTERA_GRADE_2026-08-06.txt` righe ~2248): unica verifica non
-contaminata, va spesa una volta sola.
+71.3% dei resample).
+
+**RETTIFICA 08/08 — il gruppo B NON è intatto, è già stato speso.** Tutti i
+documenti del 07/08 (brief G, backlog, questa sezione) dicevano "mai
+guardato": è FALSO, verificato sui grezzi. Lo split A/B è di 10 manager
+(5 A + 5 B, `HANDOFF_LETTERA_GRADE_2026-08-06.txt` righe ~2249-2253; il
+"16 manager" è il nome del dataset, non dei manager) e il gruppo B è stato
+aperto il **06/08 notte, sez.26** dello stesso file, con verdetto NEGATIVO:
+cap 260 su B, n=174 arene, delta +1,254 IC95 [−14,51, +10,38], 3/5 manager
+concordi, contro il +9,175 IC95 [+2,26, +14,26] del gruppo A. Su quel
+verdetto il filone era stato CHIUSO ("il grade non va in produzione").
+**Ma quel test girava PRIMA del fix del bug di join**: usa
+`p12_backtest_manager_grade.py::carica_indice_grade_esteso()`, la cui
+docstring data il fix al **07/08**, cioè il giorno DOPO — è lo stesso bug
+che aveva fatto sembrare G nullo/negativo ovunque e che, corretto, ha
+portato lo stesso campione gruppo A da −0,476 a +8,15. Quindi il verdetto
+negativo su B è **plausibilmente contaminato, ma questo NON è dimostrato**:
+va misurata la copertura effettiva di quel run prima di dire qualunque cosa.
+Stato onesto: non abbiamo più una verifica indipendente vergine sulle arene,
+e non sappiamo se quella spesa valga o no.
 
 **Catena soglie/scouting per G — VERIFICATA E CHIUSA, non si tocca**: σ
 calibrazione A=48.13 vs G=49.32 (IC sovrapposti), soglie arena delta <1.1pt
@@ -792,21 +809,15 @@ G "guadagna" o "peggiora": si può solo misurare quanto SPOSTA la selezione
 (es. test GW3: 6/7 formazioni cambiate quasi integralmente con copertura
 93%, composizione per ruolo invariata in tutte e 7).
 
-**Anomalie trovate misurando sulle competizioni senza soglia (base per il
-Passo 1 non-arena, da correggere prima di ripeterlo)**: (1) "Hot Streak"
-potrebbe ammettere fino a 2 carte classic anche fuori-lega, mentre lo script
-di backtest ne forza 1 e lega-singola — se vero, i valori assoluti A/G su
-MLS Hot Streak sono sottostimati (il DELTA A-vs-G resta comunque valido,
-stesso vincolo su entrambi i lati); da verificare sulle regole vere di
-Sorare, non deducibile dai soli dati. (2) La famiglia "Limited" mischia due
-competizioni diverse (274 formazioni da 7 carte + 255 da 5): va splittata
-per numero di carte prima di fidarsi di quella riga. (3) Bonus XP non
-applicato nello script di backtest (identico per A e G, non dovrebbe biasare
-il segno del delta, ma abbassa i valori assoluti). Dettaglio:
+**Le 3 anomalie non-arena** (Hot Streak con 1 classic e lega singola forzate,
+famiglia "Limited" che mischia formazioni da 7 e da 5 carte, bonus XP non
+applicato nel backtest) sono **CHIUSE l'08/08 su indicazione dell'utente**:
+facevano parte del consolidamento di G e sono state risolte lì. Non
+riaprirle. Storico:
 `docs/handoff/BRIEF_ANOMALIE_COMPETIZIONI_NONARENA_2026-08-07.txt`.
 
-Aperto: gruppo B dello split A/B mai guardato, le 3 anomalie sopra da
-correggere e Passo 1 da ripetere, arene non rimisurate su base pulita.
+Aperto: gruppo B dello split A/B mai guardato, arene non rimisurate su base
+pulita.
 Dettaglio completo in
 `docs/handoff/BRIEF_SONNET_RIVALIDAZIONE_G_2026-08-07.txt` (Passo 1 base
 pulita) e `docs/handoff/BRIEF_SONNET_CATENA_G_2026-08-07.txt` (catena +
@@ -923,11 +934,62 @@ muovono anche lo scouting). Dettaglio:
 **Minore**: fix estetico applicato (clic per copiare il nome carta ora
 funziona anche cliccando il cerchio avatar, non solo il nome — solo
 `formazione_mls`, le altre 25 leghe non hanno la feature). `arene_storico.json`
-è passato da 673 a 160 arene fra l'1 e il 6/08 (191 tolte su richiesta
-esplicita per le "division", il resto — 322 arene e il campo `mio_score` —
-ancora NON spiegato: le formazioni corrispondenti esistono ancora in
-`arene_formazioni.json` ma senza punteggi/premi, quindi non bastano per le
-soglie). Da investigare se si riprende il filone soglie.
+è passato da 673 a 160 arene fra l'1 e il 6/08 — **CHIUSO l'08/08: non è un
+bug.** Gli archivi sono DUE, con scopi diversi (uno grande e uno piccolo), e
+il confronto li aveva trattati come se fossero lo stesso file: era un
+disallineamento di lettura, non una perdita di dati. Le 191 "division" erano
+già state tolte su richiesta esplicita dell'utente. Non riaprire.
+
+---
+
+## 8sexies. Cap arena sforato — l'L10 è della CARTA, non del giocatore (08/08)
+
+**CHIUSO.** Sintomo: arene generate che Sorare rifiutava (`-4/260`), sempre,
+non ogni tanto. Prime due ipotesi **sbagliate**, entrambe smentite da una
+misura: (a) "cache stantia" — no, l'API interrogata dal vivo dava lo stesso
+identico valore del nostro `player_card_counts.json`, 0 differenze su 125
+carte; (b) "Sorare sfarfalla / mettiamo un margine di sicurezza sul cap" — no,
+lo scarto va in **entrambe** le direzioni, un margine non lo copre.
+
+Causa vera, trovata partendo dall'intuizione dell'utente sul ruolo: si leggeva
+`anyPlayer.averageScore(LAST_TEN_PLAYED)` = L10 del **giocatore**, mentre
+Sorare capa su `ComposeTeamBenchCard.averageScore` = L10 della **CARTA**, che
+pesa i punteggi col ruolo con cui la carta è stata EMESSA. È il **D7 già noto
+sul ruolo** (Sorare cambia ruolo a un giocatore, le carte già emesse tengono
+il vecchio) applicato a un campo su cui nessuno aveva mai guardato.
+
+Misurato su 400 carte vere del mazzo:
+
+| | carte | L10 identiche | L10 diverse |
+|---|---|---|---|
+| ruolo carta = ruolo giocatore | 373 | 362 (97%) | 11, tutte entro ±2 |
+| **ruolo carta ≠ ruolo giocatore** | 27 | 11 | **16, fino a ±5** |
+
+Casi: `jeppe-erenbjerg` (carta FWD / player MID) 62→66; `melle-meulensteen`
+(carta DEF) 47→52; `anders-dreyer` (carta MID / player FWD) 66→61. L'arena
+rifiutata risomma a **264 esatti** col campo giusto (57+53+41+61+52).
+Verificato anche che il valore **non dipende dalla leaderboard** (arena e
+non-arena danno lo stesso numero).
+
+Fix in `discovery_fixture.l10_carte_da_bench()` (commit `00d0b42f01`): mappa
+`(slug, ruolo) -> L10 di carta` da `myFilteredBench`, **862 coppie in 3.4s**,
+nessun 429; il valore entra in `player_card_counts.json` al posto di quello
+del giocatore, con ripiego su di esso se manca il cookie o la carta non è nel
+bench. In `CardPool` l'`_l10` resta indicizzata per slug (i ~180 chiamanti in
+25 leghe passano solo quello) ma per gli slug con carte in ruoli diversi
+(5 su 738) si tiene ora il **massimo** invece dell'ultimo letto, che dipendeva
+dall'ordine dei ruoli. Soglie NON toccate: cambia quali carte entrano in
+arena, non lo `score_atteso`.
+
+**Trappola da ricordare**: `positions: []` nel filtro bench NON vale "tutte" —
+tornano def/mid/fwd e **zero portieri** (293/240/210/0), buco intero e
+silenzioso. Si pagina **per posizione**, come fa già il grade.
+
+**Minore (08/08)**: il clic per copiare il nome nell'HTML non funzionava più
+— né sul cerchio né sul nome. Un apostrofo non escapato nel tooltip del tasto
+"fatta" (`gia' schierata`) chiudeva la stringa JS a metà e mandava in
+SyntaxError l'**intero** script: morti anche il tasto FATTA e l'avanzamento in
+localStorage. Commit `b1cbf53db6`.
 
 ---
 
@@ -1011,16 +1073,21 @@ se la GW le rendeva schierabili. Commit `ee4c2deec2`.
    solida (base pulita, n=864 All Star+U23 delta +5,98 IC95[+2,43,+9,68]
    esclude zero; n=310 MLS Hot Streak IC quasi escludente) — quel lato è
    forte, non serve altro lavoro a breve. Sul lato ARENA invece il campione
-   resta piccolo (59 righe gruppo A, 16 manager) e IC non esclude zero:
-   lì va aperto il gruppo B dello split pre-registrato (unica verifica non
-   contaminata, si spende una volta) — §8bis.
-2. **Buco dati `arene_storico.json`**: da 673 a 160 arene fra l'1 e il 6/08,
-   solo 191 spiegate (division tolte a richiesta); 322 arene + il campo
-   `mio_score` spariti senza causa nota. Impatta ogni validazione soglie
-   futura — §8quater.
-3. **Correggere le 3 anomalie non-arena e ripetere il Passo 1 di G**: Hot
-   Streak potrebbe ammettere 2 classic fuori-lega, "Limited" mischia 7 e 5
-   carte, bonus XP non applicato nel backtest — §8bis.
+   resta piccolo (59 righe, gruppo A = 5 manager) e IC non esclude zero.
+   **ATTENZIONE, rettifica 08/08: il gruppo B è GIÀ STATO SPESO** il 06/08
+   (sez.26 di `HANDOFF_LETTERA_GRADE_2026-08-06.txt`), con esito negativo
+   (+1,254, IC95 [−14,51,+10,38]) — ma prima del fix del bug di join, lo
+   stesso che ribaltò il gruppo A da −0,476 a +8,15. Primo passo quindi non
+   è "aprire B" ma **misurare la copertura grade di quel run del 06/08**:
+   se era bassa, il verdetto è nullo e B si può rifare; se era alta, il
+   verdetto negativo vale e G sull'arena non è dimostrato — §8bis.
+2. ~~Buco dati `arene_storico.json`~~ — **CHIUSO l'08/08 dall'utente**: non
+   era una perdita di dati ma un disallineamento fra DUE archivi diversi (uno
+   grande e uno piccolo, scopi diversi). Nessun bug da indagare, voce
+   eliminata dal backlog.
+3. ~~3 anomalie non-arena~~ — **CHIUSO l'08/08 dall'utente**: facevano parte
+   del consolidamento di G, già risolte lì. Voce eliminata dal backlog, non
+   riaprire.
 4. **Soglie arena cap 220**: scarto sistematico +6.4 fra ricalcolo e
    produzione non spiegato; raccogliere più arene cap 220 prima di ritarare
    — §8quater.
@@ -1030,7 +1097,16 @@ se la GW le rendeva schierabili. Commit `ee4c2deec2`.
 6. **Odds+4ruoli — allargare il campione profondo**: solo 2 mazzi con ≥16
    giornate, pablo0078 pesa il 33%; il DEF non si può ancora relegare allo
    scouting su questa base — §8quinquies.
-7. **Buco tabella premi Uncapped rank 1/3**: 30 casi su 497 trattati come 0
+7. **L10 incoerente lato SORARE (non nostro) — in attesa, non indagare**:
+   caso Jeppe Erenbjerg (run146, 07/08). L'utente ha contato a mano le ultime
+   dieci: media **66**. La schermata principale di Sorare mostra **62**; la
+   stessa carta schierata in ARENA torna a mostrare **66**. Il bot legge
+   `lastTenPlayedAvgScore` e prende 62, cioè copia fedelmente quello che
+   l'API espone: **non è un bug nostro**. Decisione dell'utente (08/08):
+   isolato, si tratta solo se ricapita. ATTENZIONE però se ricapita: se
+   l'arena di Sorare conta 66 dove noi contiamo 62, il cap L10 può sforare
+   davvero — le arene cap 260 del run146 erano riempite a 260 esatti.
+8. **Buco tabella premi Uncapped rank 1/3**: 30 casi su 497 trattati come 0
    nel premio-vero, netto sottostimato — §8quinquies.
 8. **21 script con path Windows hardcoded** in `analisi_manager/`: girano
    solo sulla macchina dell'utente, meccanico — §8quinquies.
