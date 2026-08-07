@@ -228,6 +228,23 @@ def fetch_grade_live(fixture_slug):
     # cookie morto: non sono una prova che l'auth regga. Qui si chiede
     # currentUser, che e' null se e solo se la sessione non autentica.
     _probe_h = _headers_client_web()
+    # Impronta del cookie (NON il cookie: solo un hash troncato, non e' un
+    # segreto) per stabilire se il secret su GitHub e' BYTE-IDENTICO a quello
+    # che autentica dal PC. La sola lunghezza uguale non lo dimostra.
+    # Insieme: che libreria HTTP sta davvero girando e da che rete esce il
+    # runner -- le uniche variabili rimaste dopo aver escluso cookie, CSRF,
+    # versione di curl_cffi (0.16.0 provata), header minimi e header completi.
+    import hashlib
+    _fp_cookie = hashlib.sha256(base.COOKIES.encode()).hexdigest()[:12]
+    _fp_csrf = hashlib.sha256(SORARE_CSRF.encode()).hexdigest()[:12]
+    log(f"[grade] IMPRONTE: cookie sha256[:12]={_fp_cookie} csrf={_fp_csrf} "
+        f"curl_cffi={getattr(base, '_HAS_CURL_CFFI', '?')}")
+    try:
+        _ip = base._http_session.get('https://ipinfo.io/json', timeout=10).json()
+        log(f"[grade] RETE runner: ip={_ip.get('ip')} paese={_ip.get('country')} "
+            f"org={_ip.get('org')}")
+    except Exception as _e:
+        log(f"[grade] RETE runner non determinabile: {_e}")
     try:
         _pr = base._http_session.post(
             base.GRAPHQL_URL, json={'query': '{ currentUser { slug } }'},
