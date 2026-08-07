@@ -1,0 +1,252 @@
+DESIGN -- INSERIMENTO DEL GRADE (variante G) IN PRODUZIONE
+Scritto dall'orchestratore, 07/08/2026, ora di Roma.
+Destinatario: SONNET (esecutore con giudizio). Chat pulita: leggi prima i file
+indicati, non assumere nulla. Questo tocca la PRODUZIONE: nessuna fretta,
+nessun anello saltato.
+
+===============================================================================
+0. LEGGI PRIMA, IN QUEST'ORDINE
+===============================================================================
+1. CLAUDE.md (radice), TUTTO. In particolare:
+   - divieto allucinazioni / non dedurre un fatto da un coefficiente;
+   - "La catena di produzione -- mai saltare un anello";
+   - "Prima di misurare l'effetto di un componente, dimostro che
+     l'interruttore funziona" (test A/A);
+   - "Cosa deve riprodursi: il delta, non il valore assoluto";
+   - regola parametri (MAE + correlazione + lift insieme).
+2. docs/handoff/HANDOFF_ORCHESTRATORE_2026-08-07_SERA.txt, sez.1 e sez.3
+   (decisione G, numeri, catena a-f, criterio dei 3 casi).
+3. docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md (la catena di produzione, sez.1bis).
+4. analisi_manager/p12_backtest_formazione_grade.py (la formula G di
+   riferimento: e' QUI che G e' definito e va replicato in produzione, non
+   reinventato).
+5. Questo file.
+
+===============================================================================
+1. COS'E' G, IN UNA FRASE (dalla fonte, non a memoria)
+===============================================================================
+G = il modello attuale (A) con una correzione allo score_atteso basata sul
+GRADE Sorare del giocatore (projection.grade: A..F). La formula esatta, da
+p12_backtest_formazione_grade.py (VERIFICATA nel codice, non parafrasata):
+
+  per ogni gruppo (lega, ruolo) dentro una giornata, sui candidati:
+    z_atteso  = zscore(atteso_calibrato) nel gruppo
+    z_grade   = zscore(grade_num) nel gruppo, calcolato SOLO sui membri che
+                hanno il grade; chi non ha grade -> z_grade = 0.0
+    sd_atteso = deviazione standard di atteso_calibrato nel gruppo
+    atteso_combinato = atteso_calibrato + sd_atteso * z_grade
+
+  dove grade_num = {A:6, B:5, C:4, D:3, E:2, F:1} (GRADE_NUM nel file).
+  Il moltiplicatore per sd_atteso serve a riportare lo z del grade sulla
+  scala dei punti, cosi' la correzione compete con l'atteso vero anche fra
+  ruoli diversi per lo stesso slot.
+
+NOTA ARCHITETTURALE (verificata in build_formazione_globale.py):
+  - A si applica DOPO calibra_riga(row, role) (riga ~847), sul campo 'atteso'.
+  - il grade modifica il PUNTEGGIO stesso (atteso_combinato), NON e' un
+    tie-break. Le starter_odds invece sono solo tie-break in _sort_ordinamento
+    (entro PREFERENZA_ODDS_TOLLERANZA). Sono due meccanismi diversi: G va
+    inserito sul valore che _sort_ordinamento legge (sort_score/atteso), a
+    valle di calibra_riga, PRIMA dell'ordinamento.
+
+===============================================================================
+2. IL NODO APERTO PIU' IMPORTANTE: DA DOVE VIENE IL GRADE IN PRODUZIONE
+===============================================================================
+VERIFICATO dall'orchestratore (07/08), da segnalare perche' e' il rischio n.1:
+  - la cache dettaglio (.cache/*_detail_cache.json) NON contiene il grade;
+  - i predict di produzione (formazione_<lega>/predict/*.py) NON estraggono
+    projection.grade;
+  - i test G leggono il grade da file storici raccolti apposta
+    (storico_grade_*.json, p12_r5_gk_ampio.json), NON da un flusso live.
+
+Quindi in produzione IL GRADE NON C'E' ANCORA. MA LA FONTE E' GIA' NEL REPO,
+trovata dall'orchestratore (07/08). Fatti verificati, da NON reinventare:
+
+  FONTE = query GraphQL FootballComposeBenchQuery in analisi_manager/
+  grade_snapshot.py. Percorso del campo:
+    so5.so5Leaderboard(slug).myFilteredBench.nodes
+      -> ComposeTeamBenchCard.eligiblePlayerGameScores
+        -> projection { grade reliabilityBasisPoints }
+  Richiede cookie + CSRF (SORARE_COOKIE / SORARE_CSRF). Legge dalla PROPRIA
+  bench della leaderboard, per carta.
+
+  VINCOLO DECISIVO (dalla docstring di grade_snapshot.py, testuale): "Il grade
+  NON e' recuperabile a ritroso: leaderboard chiusa torna 0 nodi. L'unico modo
+  di registrarlo e' in avanti." Cioe' il grade e' PRE-PARTITA e VOLATILE: si
+  legge SOLO per la GW corrente/aperta, non per GW passate. Per questo i test
+  hanno dovuto fare snapshot storici (storico_grade_*.json).
+
+  CONSEGUENZA (buona) per la produzione: G in produzione NON ha bisogno di
+  storico. Il generatore gira PRE-partita, cioe' proprio quando il grade e'
+  leggibile: legge il grade della GW corrente al momento della generazione, lo
+  applica, schiera. Il momento giusto coincide.
+
+  BONUS: la stessa query restituisce anche starterOddsBasisPoints (odds
+  giocatore) e winOddsBasisPoints (odds partita). Grade E odds in UNA chiamata:
+  se un domani si porta in produzione anche il filone odds, e' la stessa
+  fetch -- efficiente, coerente col fatto (HANDOFF sez.4) che odds e grade
+  toccano la stessa catena.
+
+DECISIONE DI DESIGN -- PRESA CON L'UTENTE (07/08): il grade si aggancia nella
+DISCOVERY, DOPO il filtro starter-odds, SOLO sui giocatori sopravvissuti.
+
+  MOTIVO (utente, testuale): "se un giocatore ha meno starting odds di quelle
+  richieste (es. 70%) non mi serve il grade, tanto quel giocatore non lo
+  schiero". Cioe' il grade e' informazione utile SOLO sui candidati che
+  potrebbero davvero entrare in formazione. Sotto soglia odds sono gia' fuori.
+
+  IMPIANTO GIA' ESISTENTE (verificato nel codice, riusare, non reinventare):
+  formazione_<lega>/discovery/*_discovery.py contiene gia'
+    filter_by_starter_odds(slugs, player_card_counts,
+                            min_starter_odds=MIN_STARTER_ODDS_DISCOVERY)
+  con MIN_STARTER_ODDS_DISCOVERY = float(os.environ.get('MIN_STARTER_ODDS',
+  '0.60')) -- default 60%, configurabile via env. La funzione ritorna
+  (kept_slugs, kept_counts): i giocatori SOTTO soglia (o senza dato odds) sono
+  gia' scartati qui, prima del generatore.
+
+  AGGANCIO DEL GRADE: chiedere projection.grade SOLO per kept_slugs, DOPO
+  filter_by_starter_odds, e scriverlo in player_card_counts.json accanto a
+  starter_odds (stessa entry, stesso file da cui il generatore gia' legge le
+  odds a build_formazione_globale.py:~853). Cosi' il generatore trova il grade
+  gia' pronto sulla row, come gia' fa per starter_odds.
+
+  DOPPIO RISPARMIO: (1) la query e' per-leaderboard/bench (bulk per GW), non
+  per-giocatore; (2) si chiede solo per i sopravvissuti al filtro odds, non per
+  tutto il roster. Verificare page_size/paginazione in grade_snapshot.py prima
+  di lanciare.
+
+  SOGLIA ODDS (utente, 07/08): in genere usa 0.70, safe 0.80. E' configurabile
+  APPOSTA via MIN_STARTER_ODDS. Per il test differenziale GW3 e la catena,
+  usare la soglia che l'utente indica per QUELLA GW (non assumere il 60%
+  default). Confermare con l'utente prima di lanciare.
+
+===============================================================================
+2bis. GATE NON AGGIRABILE: VALIDARE LA CATENA PRIMA DI IMPLEMENTARE
+===============================================================================
+Richiesta esplicita dell'utente (07/08), vincolante: "bisogna validare la
+catena PRIMA di implementare". Significa che l'ordine NON e' "scrivo G in
+produzione e poi verifico", ma il CONTRARIO:
+
+  1. PRIMA: test A/A sull'interruttore (sez.3b) + test differenziale GW3
+     (sez.4) + catena a-f (sez.3), tutto girato dietro un flag/branch, con
+     dump ispezionabili, SENZA cambiare i default di produzione.
+  2. L'UTENTE ISPEZIONA i dump grezzi (formazioni A vs G sulla GW3, soglie
+     riverificate, scouting a valle). Un backtest/verdetto non ispezionato
+     NON vale (regola CLAUDE.md sui backtest).
+  3. SOLO DOPO l'ok dell'utente sui dati: si rende G il default di produzione
+     e si committa.
+
+Finche' il punto 2 non e' passato, in produzione resta A (modello attuale) +
+condotta "dai retta al consiglio arena del tool". Nessun commit che cambia il
+default di produzione prima dell'ispezione. Questo e' il gate: Sonnet prepara
+e misura, l'utente decide sui grezzi, poi si implementa.
+
+FALLBACK (gia' nella formula): grade assente -> z_grade = 0 -> quella carta e'
+trattata esattamente come in A. Va bene come degradazione, MA va CONTATO e
+riportato quante carte non hanno grade: se e' un buco grosso, G in produzione
+diventa "A con qualche ritocco" e il guadagno misurato non si riproduce.
+
+===============================================================================
+3. LA CATENA COMPLETA (a-f) -- NESSUN ANELLO SALTABILE
+===============================================================================
+Da HANDOFF_ORCHESTRATORE sez.1. Ordine vincolante:
+
+ a. FISSARE la formula e DOVE si applica (sez.1 di questo file: a valle di
+    calibra_riga, sul gruppo lega/ruolo, prima di _sort_ordinamento). Scrivere
+    lo z_grade per gruppo esattamente come nel test (chi non ha grade -> 0).
+ b. TEST A/A SULL'INTERRUTTORE. Prima di misurare qualunque guadagno:
+    - con grade SPENTO (flag esplicito, NON assenza del dato) lo score_atteso
+      deve essere IDENTICO ad A oggi (bit-per-bit sulle stesse carte);
+    - con grade ACCESO su valori estremi lo score_atteso deve MUOVERSI.
+    Se spento non coincide con A, o acceso non si muove, FERMARSI: l'innesto
+    e' sbagliato. Spento = scelta scritta nel codice (es. GRADE_ENABLED=False),
+    mai un None che fa scattare un fallback silenzioso.
+ c. APPLICARE G in produzione (dietro il flag di b, default da decidere con
+    l'utente: probabilmente OFF finche' la catena non e' chiusa).
+ d. RIVERIFICARE le soglie arena (PAREGGIO_ARENA, GUADAGNO_PER_PUNTO in
+    build_formazione_globale.py): lo score_atteso cambia -> i punti attesi su
+    cui le soglie sono tarate cambiano. Non si spostano da sole ma il loro
+    valore giusto dipende da quei punti. Misurare, non assumere.
+ e. RIVERIFICARE lo scouting (Ess/GW, EUR/EssGW): consiglia gli acquisti sulla
+    base dell'efficienza arena -> se le soglie di d si muovono, i consigli
+    cambiano. Verificare a valle.
+ f. BACKTEST DI CONFERMA sul campione ampio (crowss+16+satonio, gia' pronto in
+    p12/p13) con DUMP ISPEZIONABILE di almeno un caso completo (regola
+    CLAUDE.md sui backtest), PRIMA di dire "chiuso".
+
+===============================================================================
+4. IL TEST CHE APRE TUTTO: DIFFERENZIALE SECCO SULLA GW3 REALE (oggi)
+===============================================================================
+Richiesta esplicita dell'utente (07/08), da fare PER PRIMO, subito dopo il
+punto 3.a-3.b, sulla giornata che l'utente deve schierare OGGI (GW3). E' il
+gate d'ingresso: se non passa, non si va avanti.
+
+STATO PRODUZIONE (verificato): consigli/discovery aggiornati al 05/08, la GW3
+e' predicibile ORA. Il generatore gira da build_formazione_globale.py.
+
+COSA FARE:
+ 1. Generare le formazioni di produzione della GW3 sul mazzo dell'utente,
+    con GRADE SPENTO = modello A (identico a produzione attuale). Salvare
+    l'output (formazioni per arena, carte schierate, capitano).
+ 2. Generare le stesse con GRADE ACCESO = modello G. Salvare uguale.
+ 3. Confrontare formazione per formazione. Produrre un DUMP LEGGIBILE (nomi
+    giocatori, ruolo, atteso_A, atteso_G, chi entra/esce, capitano), non solo
+    "sono diverse si/no".
+
+LETTURA DEL RISULTATO -- TRE ESITI, decisi PRIMA (non spostare i pali dopo):
+ - CAMBIA POCO (scambia qualche carta DENTRO lo stesso ruolo, composizione per
+   ruolo simile ad A): e' l'esito BUONO voluto dall'utente (HANDOFF sez.1:
+   "schiera simile ad ora, coi giocatori giusti dentro"). L'interruttore
+   funziona e non stravolge -> si prosegue con la catena d-e-f.
+ - CAMBIA MOLTO (stravolge la composizione, sposta quanti DEF/MID/FWD si
+   schierano): l'interruttore funziona MA e' il rischio noto (criterio dei 3
+   casi, HANDOFF sez.1). Non basta che cambi: bisogna guardare se i PUNTI
+   ATTESI di formazione migliorano o peggiorano. Se peggiorano, G in questa
+   forma NON va (o va in composizione bloccata). Riportare all'orchestratore.
+ - NON CAMBIA AFFATTO: l'interruttore NON e' collegato (grade non arriva alla
+   selezione, o e' tutto fallback z_grade=0 per grade assenti -- vedi sez.2).
+   Da DEBUGGARE prima di qualunque altra cosa: e' esattamente il tipo di
+   "misuro una cosa diversa da quella che credo" che CLAUDE.md vieta.
+
+ATTENZIONE (falso positivo/negativo): "cambia" e' informativo solo se il grade
+sta DAVVERO entrando. Prima del differenziale, verificare (punto 3.b) che su
+almeno una carta con grade noto lo score_atteso_G differisca da A del valore
+atteso dalla formula. Altrimenti un "non cambia" non distingue fra "grade
+inerte per costruzione del test" e "grade che non sposta la selezione".
+
+===============================================================================
+5. VINCOLI E CONFINI
+===============================================================================
+- Fino a quando la catena (a-f) non e' chiusa e ispezionata dall'utente, G in
+  produzione resta DIETRO FLAG, default OFF. Quello che l'utente schiera OGGI
+  resta A + condotta "dai retta al consiglio arena del tool" (gia' validato).
+- Il test differenziale GW3 e il test A/A NON modificano la produzione in modo
+  permanente: girano con un flag, producono dump, non cambiano i default.
+- NIENTE COMMIT di produzione senza che l'orchestratore/utente abbia
+  ispezionato i dump grezzi (regola CLAUDE.md sui backtest e sui commit
+  esecutore).
+- MAI ricostruire il punteggio "grezzo" dividendo per il bonus (difetto D4):
+  il reale si legge dalla cache game-log condivisa.
+- Costruire le formazioni SOLO con build_one_lineup_with_growth, mai con un
+  knapsack scritto per l'occasione (difetto D7: ruolo = proprieta' della
+  carta, e un giocatore non si schiera due volte).
+- Riportare gli esiti IN CODA a questo file, non in un file nuovo.
+
+===============================================================================
+6. COSA RIPORTARE ALL'ORCHESTRATORE
+===============================================================================
+ - esito test A/A (spento==A ? acceso si muove ?), con 1-2 carte di esempio;
+ - dump differenziale GW3 (A vs G) e in quale dei 3 esiti cadiamo;
+ - quante carte della GW3 NON hanno grade (copertura), da sez.2;
+ - se si prosegue: numeri di d (soglie) ed e (scouting), non solo "ok".
+Nessun verdetto "chiuso" senza dump ispezionabile.
+
+===============================================================================
+7. FILE DI RIFERIMENTO
+===============================================================================
+analisi_manager/p12_backtest_formazione_grade.py   formula G, GRADE_NUM
+generatore_formazioni/build_formazione_globale.py  calibra_riga(~847),
+                                                   _sort_ordinamento(~931),
+                                                   soglie PAREGGIO_ARENA/GUADAGNO
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md         catena, scouting
+docs/handoff/HANDOFF_ORCHESTRATORE_2026-08-07_SERA.txt  decisione, criterio 3 casi
