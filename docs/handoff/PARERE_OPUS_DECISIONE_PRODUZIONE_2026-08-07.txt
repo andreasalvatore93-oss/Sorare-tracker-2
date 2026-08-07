@@ -253,3 +253,186 @@ non uno strumento). Chiunque puo' rifarlo: legge i blocchi "--- ARENA n:" dei
 DUMP_p13_*_test3.txt, prende tipo/REALE/soglia/esito, applica
 GUADAGNO_PER_PUNTO e COSTO_INGRESSO di build_formazione_globale.py. Se serve
 stabile, va messo dentro p13 (punto 3 della sez.6), non riscritto ogni volta.
+
+
+===============================================================================
+8. ESITO DEI 3 COMPITI (Sonnet esecutore, 07/08 notte)
+===============================================================================
+Tre commit distinti (p13 diviso in due commit separati per compito 1 e 2,
+compito 3a un terzo commit). Nessuna modifica alla produzione
+(build_formazione_globale.py letto, mai toccato). Nessuna run GitHub.
+
+--- COMPITO 1: p13 allineato alla regola vera (soglia_decisione) -- FATTO ---
+Commit d7137d52d2. Aggiunta in esegui_test3(): soglia_decisione = soglia +
+costo*QUOTA_MINIMA/guad_punto (costanti importate da S21.bfg, non
+ridichiarate). La decisione (dec_A/dec_G) usa soglia_decisione; 'conviene'
+(verita' sul REALE) resta sulla soglia nuda, invariata -- sono due cose
+diverse: una e' la condotta simulata, l'altra e' il fatto.
+
+TEST A/A (crowss, football-21-24-jul-2026): SCHIERA A scende da 5 a 4 su 6
+arene, SI MUOVE come atteso. Interruttore verificato prima di fidarsi.
+
+RILANCIO Test3 su TUTTI i manager/GW gia' fatti (16 manager nuovi + crowss
+su tutte le GW di 5septies, non solo le ultime 15 -- 317 arene valutate in
+totale, contro le 287 del giro precedente perche' ora include anche le GW
+piu' vecchie di crowss). Matrice VECCHIA (soglia nuda) vs NUOVA
+(soglia_decisione), aggregata su tutti i 317:
+
+              SCHIERA (n)   giusto  errore(=REALE)  GIUSTO(batte)  ERRORE(persa)
+  A vecchia:      242         141        101              47            28
+  A nuova :       194         110         84              64            59
+  G vecchia:      206         128         78               70            41
+  G nuova :       161         101         60               88            68
+
+LETTURA: con la regola vera il modello schiera MOLTO meno (A: 242->194,
+-20%; G: 206->161, -22%). Di conseguenza sale sia il "batte REALE" (giusto,
+si salta piu' spesso e piu' spesso si salta bene) SIA le "arene buone
+perse" (ERRORE quasi raddoppia per entrambe: A 28->59, G 41->68). E' l'esito
+atteso di una condotta piu' prudente: piu' salti totali = piu' salti giusti
+E piu' salti sbagliati insieme. Il confronto diretto (batte REALE - persa
+buona): A vecchia +19, A nuova +5; G vecchia +29, G nuova +20. Il segno
+resta POSITIVO per entrambe le varianti con la regola vera, ma il margine
+di A si riduce parecchio (quasi si dimezza), quello di G meno.
+
+SCOMPOSTO crowss vs 16 manager nuovi (regola vera, soglia_decisione):
+  crowss (204 arene, tutta la storia nota):
+    A: giusto=75 errore=55 GIUSTO=33 ERRORE=41  -> batte-persa = 33-41 = -8
+    G: giusto=71 errore=39 GIUSTO=49 ERRORE=45  -> batte-persa = 49-45 = +4
+  16 manager nuovi (113 arene):
+    A: giusto=35 errore=29 GIUSTO=31 ERRORE=18  -> batte-persa = 31-18 = +13
+    G: giusto=30 errore=21 GIUSTO=39 ERRORE=23  -> batte-persa = 39-23 = +16
+
+ATTENZIONE, CAMBIA UNA CONCLUSIONE DEL PARERE: con la soglia nuda (sez.2 di
+questo file) il segno su crowss era gia' debole (A=0, G=+2 sulla finestra
+recente). Con la regola VERA, su TUTTA la storia crowss, A diventa
+NEGATIVO (-8). G resta positivo ma appena (+4). Il messaggio "sul mazzo
+dell'utente il modello pareggia" era gia' onesto; con la regola vera va
+corretto in "sul mazzo dell'utente A perde leggermente, G pareggia quasi".
+Sui 16 manager nuovi il segno resta chiaramente positivo per entrambe.
+NON e' un verdetto (crowss non e' 9-12 GW concordi, e' 1 mazzo su una
+storia eterogenea con soglie introdotte solo il 27/07), ma la cifra onesta
+oggi e' questa, non quella del brief precedente.
+
+--- COMPITO 2: bilancio essenze simmetrico dentro p13 -- FATTO ---
+Commit a9d9a0dc69. Aggiunto in esegui_test3(): per ogni arena dove il
+modello salta (con soglia_decisione), calcola salvate (arena sotto
+pareggio, min((soglia-reale)*guad_punto, costo)) o perse (arena sopra
+pareggio, (reale-soglia)*guad_punto), sia proporzionale sia flat (costo
+fisso). Se il modello entra: zero conteggio (si guarda il punteggio).
+Segnala esplicitamente le arene con margine oltre +-5 punti dal pareggio
+come estrapolazioni (limite noto di GUADAGNO_PER_PUNTO, tarato solo
+nell'intorno del pareggio).
+
+Test su fins49 31jul-4aug (16 arene, quella coi casi piu' estremi del
+parere): A proporzionale salvate=1594 perse=2108 NETTO=-514; flat
+salvate=1800 perse=1600 NETTO=+200. Le due convenzioni divergono di segno
+su questo singolo caso -- prova diretta che la convenzione conta, ed e'
+per questo che vanno riportate entrambe, mai una sola spacciata per "il"
+numero.
+
+BILANCIO GRAND TOTALE su tutti i 317 arene valutate (crowss intera storia +
+16 manager nuovi), regola vera soglia_decisione:
+  A proporzionale: salvate=13.951  perse=21.355  NETTO = -7.404
+  A flat:          salvate=18.300  perse=16.800  NETTO = +1.500
+  G proporzionale: salvate=17.379  perse=22.952  NETTO = -5.573
+  G flat:          salvate=23.800  perse=18.300  NETTO = +5.500
+
+QUESTO E' IL DATO PIU' IMPORTANTE CHE CAMBIA RISPETTO A TUTTO IL FILONE
+FINORA: in proporzionale (la formula che pesa la GRANDEZZA reale del
+guadagno/perdita, non solo se e' successo) il NETTO diventa NEGATIVO per
+ENTRAMBE le varianti su tutta la storia crowss+16 manager insieme. In flat
+(costo fisso, la convenzione usata finora in tutti gli handoff precedenti)
+resta positivo. Le due formule non sono d'accordo sul segno. Motivo
+probabile, verificabile nel log verboso: la storia crowss include ~24 GW
+precedenti al 27/07 (introduzione di PAREGGIO_ARENA) dove la soglia
+applicata retroattivamente puo' non essere rappresentativa, E include
+arene con margini molto oltre +-5 punti (proprio quelle segnalate come
+estrapolazione). NON PRENDERE NESSUNA delle due cifre come definitiva:
+la proporzionale e' piu' corretta in principio ma si appoggia su
+estrapolazioni fuori dalla finestra di taratura; la flat e' piu' stabile
+ma ignora quanto e' grande ogni perdita/guadagno. Serve il rank (gia'
+presente nei file manager, mai usato) per avere un numero esatto invece di
+un'estrapolazione -- stesso limite gia' segnalato in sez.1.
+
+--- COMPITO 3a: fix D6 su p11_manager_confronto.py -- FATTO ---
+Commit 39f72fe0bb. Stesso bug e stesso fix di p11_bloccato_tutti_mazzi.py
+(144708a1a6): reale_in_target = c['punteggio'] (riga 88, dentro
+costruisci_pool_gw) veniva letto come fonte primaria in prepara_gw_base
+(riga 167 vecchia), gonfiando le righe non-arena (D4). Ora reale_da_cache()
+e' sempre provato per primo; il raw manager resta ripiego, contato in
+n_reale_fallback_raw.
+
+CONTROLLO A/B su forever-young (unico mazzo usato da questo script):
+  PUNTI MEDI A produzione:  395.76 (PRIMA)  ->  325.70 (DOPO)  -- forte
+    deflazione, verso atteso (il raw gonfiato pesava parecchio)
+  DELTA B (DEF k0.2) vs A:  -3.35 (PRIMA)  ->  +1.56 (DOPO)  -- CAMBIA SEGNO
+  DELTA C (DEF+FWD) vs A:   -3.34 (PRIMA)  ->  +2.45 (DOPO)  -- CAMBIA SEGNO
+  1233 carte su fallback raw (cache assente per quello slug/data).
+
+VERDETTI STORICI DA RIVALUTARE (citano p11_manager_confronto.py o i suoi
+numeri, trovati con grep su docs/):
+  docs/handoff/HANDOFF_favorito_odds_taratura_2026-08-05.txt righe 403-589:
+    B DEF k0.2 punti +0.80 IC95[-1.90,+3.55] (attraversa zero), +0.32
+    IC95[-1.21,+1.87], +2.25 IC95[-0.52,+5.31] -- tutti calcolati col bug,
+    quindi NULLI. Il segno di B era gia' debole/attraversava zero anche col
+    dato gonfiato: col fix il DELTA CAMBIA SEGNO (-3.35 -> +1.56 sul run di
+    oggi), quindi questi IC95 vanno RIFATTI, non solo rimarcati come deboli.
+  docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt riga 1658: cita lo
+    stesso "P11: B DEF k0.2 punti +0.80" come riferimento -- stesso numero,
+    stessa nullita'.
+  Questi sono ESATTAMENTE i numeri che hanno contribuito a giudicare debole
+  il "difensore" (DEF k=0.2): il verdetto negativo/incerto sul difensore
+  poggiava anche su QUESTO bug, non solo su quello di p11_bloccato_tutti_
+  mazzi.py (D6, gia' segnalato) e p11_calib_fwd_confronto.py (non fixato in
+  questo brief, fuori scope). Rafforza ulteriormente CLAUDE.md: "TUTTI I
+  FILONI CHIUSI PER BACKTEST NEGATIVO VANNO RIAPERTI... il difensore, per
+  primo". Non rilanciato in questo brief (fuori scope): serve un giro
+  dedicato con lo stesso controllo A/B, PIU' bootstrap IC95 rifatto da capo.
+
+--- COMPITO 3b: p12_backtest_manager_full.py -- NESSUN BUG TROVATO, NESSUN
+    FIX APPLICATO ---
+Verificato riga per riga PRIMA di modificare (CLAUDE.md: non fidarsi di una
+diagnosi non verificata, nemmeno la mia). Il parere (sez.5a) dice: "raw =
+c['punteggio'] poi raw/1.2 se capitano, applicato anche FUORI arena dove il
+capitano vale +50% e l'xp si somma (D4)". NON REGGE per questo file:
+
+  riga 98: arene_reali = [f for f in giornate_gw if f.get('tipo_arena') in
+           ARENE_AMMESSE_TIPO]   <- filtro ESPLICITO, solo righe arena
+  riga 102: tutte_le_carte = [c for f in arene_reali for c in f['carte']]
+           <- il pool (pool_rows, righe 117-136) e' costruito SOLO da
+           arene_reali: OGNI carta che arriva a "raw = c.get('punteggio')"
+           (riga 127) viene SEMPRE da una riga arena, MAI da una riga
+           fuori arena. Non c'e' modo per una carta non-arena di entrare
+           in questo pool.
+
+In arena il capitano vale ESATTAMENTE +20% (nessuna componente variabile
+come xp o bonus_carta, a differenza del caso generale D4): raw/1.2 e'
+un'operazione ESATTA, non un'approssimazione. Il file stesso lo dichiara e
+lo verifica nel proprio docstring (righe 9-22): kevin-nisbet capitano,
+punteggio=91.08, cache=75.90, 75.90*1.20=91.08 ESATTO, zero scarto. Ho
+riverificato quel conto a mano: torna.
+
+Controllati anche i 4 file che importano da questo modulo
+(p12_backtest_manager_full_B.py -- solo re-import di elabora_coppia/
+costruisci_pool/COMP_TO_BUILD/ARENE_AMMESSE_TIPO, nessun codice nuovo;
+p12_backtest_manager_perarena.py e _B.py -- leggono SOLO l'output JSON gia'
+calcolato, mai dati_globali/manager_*.json direttamente; p13_backtest_gw_
+crowss.py -- usa solo F.trova_grade_finestra, mai elabora_coppia). Nessuno
+di questi rientra nel bug descritto.
+
+CONCLUSIONE SU 3b: la diagnosi del parere (sez.5a, riga "p12_backtest_
+manager_full.py:127") e' SBAGLIATA per questo file specifico -- probabile
+confusione con un altro script che *effettivamente* mescola arena e non-
+arena (es. p11_manager_confronto.py, appena fixato in 3a, che PRIMA di
+oggi leggeva c['punteggio'] da QUALUNQUE competizione, arena compresa,
+senza dividere affatto). Nessun fix applicato, nessun commit: il codice
+di p12_backtest_manager_full.py resta cosi' com'era. Le sezioni 24-26,
+gia' dichiarate NULLE (CLAUDE.md, docs/handoff/HANDOFF_ORCHESTRATORE_2026-
+08-06_NOTTE.txt G1), restano nulle SOLO per il motivo gia' noto (pool =
+5 x arene, zero scorte): NESSUN motivo ulteriore D4 le riguarda.
+
+--- RIEPILOGO COMMIT ---
+d7137d52d2  COMPITO 1: p13 Test3 usa soglia_decisione
+a9d9a0dc69  COMPITO 2: bilancio essenze simmetrico dentro p13
+39f72fe0bb  COMPITO 3a: fix D6 su p11_manager_confronto.py
+(Compito 3b: nessun commit, nessun bug confermato)
