@@ -1,0 +1,222 @@
+BRIEF PER HAIKU -- ESTRAZIONE MANAGER PROFONDI (arena)
+Scritto dall'orchestratore, 07/08/2026, ora di Roma.
+Destinatario: HAIKU (esecutore, volume meccanico). Chat pulita: leggi prima
+i file indicati, non assumere nulla.
+
+===============================================================================
+0. LEGGI PRIMA (in ordine)
+===============================================================================
+1. CLAUDE.md (radice), sezioni: divieto allucinazioni, "Sorare API"
+   (minimizza query, introspezione GraphQL disabilitata), cache game-log
+   condivisa, difetti D1-D7.
+2. Come si estrae un manager: ricostruisci_manager.py (lo script che scrive
+   dati_globali/manager_<slug>.json). Guarda come viene chiamato negli
+   handoff/workflow esistenti (predici_manager.yml, o l'invocazione locale
+   con cookie).
+3. Questo brief.
+
+===============================================================================
+1. OBIETTIVO (una frase)
+===============================================================================
+Estrarre nuovi manager Sorare con storico ARENA LUNGO, per allargare il
+campione PROFONDO del backtest formazione odds (oggi dominato da soli 3 mazzi:
+forever-young, pablo0078, crowss). Servono mazzi con >=16 giornate arena
+valide, di profilo diverso, per rompere quel dominio.
+
+===============================================================================
+2. COSA FARE, PASSO PASSO
+===============================================================================
+a. Estrai i manager della LISTA A (slug VERI, prioritari) in ordine, uno per
+   uno, con ricostruisci_manager.py. Poi, se non basta, la LISTA B.
+b. Per OGNI manager estratto, conta e riporta:
+   - gw_valide = numero di giornate con almeno 1 arena di tipo
+     arena_limited / arena_limited_beginner / arena_limited_uncapped che ha
+     carte dentro (sono i TIPI_VALIDI del backtest);
+   - arene_valide = totale arene di quei tipi;
+   - %beginner = quota di arene_limited_beginner sul totale arene_valide.
+   Come contare: apri il manager_<slug>.json prodotto, campo 'giornate', ogni
+   gw e' una lista di arene con chiave 'tipo_arena' e 'carte'. Salta le gw
+   vuote (lista []).
+c. UN MANAGER E' "PROFONDO" se gw_valide >= 16.
+d. CRITERIO DI STOP: fermati appena hai raccolto 5 (CINQUE) manager NUOVI
+   profondi (gw_valide >= 16). Non estrarre oltre: bastano. Se esaurisci la
+   LISTA A + LISTA B senza arrivare a 5, fermati comunque e riporta quanti ne
+   hai trovati.
+e. Gli slug che FALLISCONO l'estrazione (slug sbagliato, manager inesistente,
+   errore API) NON contano come mazzi "vuoti": segnalali a parte come
+   "slug non valido / non trovato". Sono attesi soprattutto nella LISTA B
+   (vedi nota sotto).
+
+===============================================================================
+3. CAP ANTI-WHALE (importante, richiesta dell'utente)
+===============================================================================
+Un mazzo enorme (tipo pablo0078, ~77 arene/gw) puo' dominare il campione. NON
+scartare i whale in estrazione, ma:
+ - RIPORTA arene/gw media di ogni mazzo estratto, cosi' l'orchestratore vede
+   subito se e' un whale;
+ - SEGNALA esplicitamente ogni manager con > 30 arene/gw come "possibile
+   whale, da cappare in analisi" (il cap vero -- ~15-20 arene/gw -- lo applica
+   il backtest a valle, NON tu; tu solo estrai e segnali).
+ - satonio e' un whale gia' noto e gia' in repo: se compare, SALTALO.
+
+===============================================================================
+4. COOKIE (nota dell'utente)
+===============================================================================
+Il cookie Sorare te lo fornisce l'utente ed E' FRESCO E FUNZIONANTE. Se
+l'estrazione si impalla sulla lettura del cookie, NON e' scaduto: prima di
+arrenderti, ESPANDI/controlla gli apici (a volte il cookie va incollato senza
+apici, o con apici singoli invece di doppi, o su una riga sola). Prova le
+varianti di quoting prima di dire "cookie non valido". Se dopo questo ancora
+fallisce, chiedi all'utente di reincollarlo.
+
+===============================================================================
+5. VINCOLI
+===============================================================================
+- NESSUNA modifica alla produzione, NESSUN commit di produzione. Solo
+  estrazione dati manager (dati_globali/manager_<slug>.json) + cache game-log
+  condivisa (si popola da sola durante l'estrazione: e' un bene, la cache e'
+  condivisa, vedi CLAUDE.md).
+- MINIMIZZA LE QUERY (regola Sorare in CLAUDE.md): se ricostruisci_manager ha
+  una modalita' bulk / --solo-arene, usala. NB: --solo-arene tronca il pool
+  (difetto D2); per il backtest formazione serve il pool di scorta, quindi
+  se possibile estrai SENZA --solo-arene (con le competizioni non-arena).
+  Se non sai, CHIEDI all'utente prima di lanciare 60 estrazioni.
+- Se emerge una lega SENZA pipeline (giocatori saltati), NON ignorarla in
+  silenzio: segnalala con quanti giocatori/quali manager la toccano.
+
+===============================================================================
+6. LISTA A -- slug VERI (dagli URL Sorare, prioritari, prova questi PRIMA)
+===============================================================================
+zinomalte-9d1f1e9a-6917-4352-b706-dfb26f3631c2
+ice013-open-for-good-trades
+edjeraketje
+boss_paran-9dd7e583-f098-4302-b898-bd0869dd2545
+reins
+freecer
+alain-salice-gmail-com
+ffthinker
+l-empreinte-du-crapaud
+perenjoy
+
+===============================================================================
+7. LISTA B -- slug ricavati dai NOMI visualizzati (NON verificati)
+===============================================================================
+ATTENZIONE: questi NON sono slug ufficiali, sono ricavati dai nomi mostrati
+nei leaderboard. Molti falliranno perche' lo slug reale dell'account e'
+diverso dal nome. E' atteso: prova, e quelli che falliscono segnalali come
+"slug non valido" (punto 2.e), non come mazzo vuoto. Usa questa lista SOLO se
+la LISTA A non ha dato 5 mazzi profondi.
+
+ruben-s-trophy-chasers  eugeneg  istvan-babos2001  tail-s  kadro-muhendisi
+kalatocha  poukinou  miro5  paultergeist  noisy-neighbour  mauri-89-fast-reply
+el11fiasco  velebit  akkinports  jdtrey22  hannes1401  madrush123  ether-united
+nopassaran  pepit-s  jeddyknight  private-joker  diego-dag  jakobs-xi  james168
+rosscowav  piinkman  haufen  juanbou11  vicvac  mr-pitbull  udivitelno  qcblues
+sdely63  jimraynor22  l8mp8rd  nicolaxvii  perviy  troitsky  garethgriffiths
+jrankin2413  lospietato  choupofc  nathern  pinozy  javisorare  giraf5  ryan7777
+gautier-pg  cai887  matclm
+
+(Gia' in repo, NON riestrarre: destroyerstorm, toschi, matteoogg,
+tijmenmaaktpap, mamatouniang, satonio, crowss.)
+
+===============================================================================
+8. COSA RIPORTARE ALLA FINE (tabella secca)
+===============================================================================
+Per ogni manager estratto: slug | gw_valide | arene_valide | arene/gw |
+%beginner | whale? (si/no) . Poi: elenco slug falliti/non validi. Poi: quanti
+mazzi profondi (>=16 gw) hai raccolto e se hai raggiunto lo stop a 5.
+Scrivi l'esito in coda a questo file, NON in un file nuovo. Non committare
+tu la produzione; i file manager estratti li committa l'utente.
+
+===============================================================================
+ADDENDUM (07/08/2026, ora di Roma) -- PROFONDITA' RIDOTTA
+===============================================================================
+I 5 mazzi della LISTA A estratti sono risultati tutti CORTI (misurato
+sull'orchestratore, grezzi): zinomalte 4 gw / ice013 1 / edjeraketje 0 /
+boss_paran 1 / reins 1. Il target di 16 gw e' irraggiungibile pescando a caso.
+Cambi vincolanti:
+
+1. TAGLIO "PROFONDO" abbassato da >=16 a >=10 gw arena valide.
+2. STOP rivisto: fermati quando hai 5 mazzi NUOVI con >=10 gw (non 16).
+3. RIPORTA ANCHE i mazzi 6-9 gw (non scartarli): se non arriviamo a 5 sopra
+   i 10, useremo i migliori disponibili. In tabella metti tutti quelli >=6 gw.
+4. CAP ESTRAZIONI: non provare piu' di 30 slug in totale (LISTA A + B). Se a
+   30 slug provati non hai 5 mazzi >=10 gw, FERMATI e riporta cosa hai.
+5. Continua dalla LISTA B (slug dai nomi): molti falliranno (slug non reale),
+   e' atteso, segnalali come "non valido" e vai avanti.
+6. Cookie: resta valido; se si impalla sulla lettura, espandi/controlla apici
+   prima di arrenderti.
+
+Riporta la tabella secca (slug | gw_valide | arene | %beginner | whale?) e a
+che punto ti sei fermato (quanti slug provati, quanti >=10 gw trovati).
+
+===============================================================================
+ADDENDUM 2 (07/08/2026, ora di Roma) -- CERCA NELLA FINESTRA GIUSTA (feb-mag)
+===============================================================================
+CAUSA VERA della scarsita' di gw trovate (intuizione utente, VERIFICATA sui
+grezzi dall'orchestratore). La profondita' dei mazzi NON e' nelle GW recenti:
+GIUGNO 2026 i campionati erano quasi fermi (forever-young, pablo0078 e crowss
+hanno UNA sola gw valida a giugno ciascuno). Il grosso dello storico e' a
+FEBBRAIO-MAGGIO 2026 (6-7 gw al mese per i mazzi profondi).
+
+Conseguenza: se ricostruisci_manager parte dalle GW attuali (luglio/agosto) o
+usa --dalle-mie-arene (le giornate di crowss, poche), trova pochissime gw. NON
+e' che i manager sono corti: e' che stai guardando il periodo sbagliato.
+
+FIX OPERATIVO: estrai i manager passando ESPLICITAMENTE le giornate feb-mag
+2026 con --giornate (NON --dalle-mie-arene). Elenco fixture-slug reali,
+disponibili (verificati in repo), da usare:
+
+  football-30-jan-3-feb-2026  football-6-10-feb-2026   football-13-17-feb-2026
+  football-17-20-feb-2026     football-20-24-feb-2026  football-24-27-feb-2026
+  football-3-6-mar-2026       football-6-10-mar-2026   football-10-13-mar-2026
+  football-13-17-mar-2026     football-17-20-mar-2026  football-20-24-mar-2026
+  football-27-31-mar-2026     football-31-mar-3-apr-2026
+  football-3-7-apr-2026       football-10-10-apr-2026  football-10-14-apr-2026
+  football-17-17-apr-2026     football-17-21-apr-2026  football-21-24-apr-2026
+  football-24-28-apr-2026     football-29-apr-1-may-2026
+  football-1-5-may-2026       football-8-12-may-2026   football-13-15-may-2026
+  football-15-19-may-2026     football-23-26-may-2026  football-26-29-may-2026
+
+Con 28 giornate in finestra, un manager attivo raggiunge facilmente il taglio
+>=10 gw (spesso di piu'). Se ricostruisci_manager accetta piu' giornate in un
+colpo, passale tutte insieme (bulk, meno query). Il resto del brief (stop a 5
+mazzi >=10 gw, cap 30 slug, cookie, tabella) resta valido.
+
+===============================================================================
+RISULTATI HAIKU (07/08/2026, 13:00 Roma) — ESTRAZIONI COMPLETATE
+===============================================================================
+
+TABELLA FINALE (slug | gw_valide | arene_valide | arene/gw | %beginner | whale?)
+
+PROFONDO (>=10 gw):
+  zinomalte-9d1f1e9a-6917-4352-b706-dfb26f3631c2 | 10 | 145 | 14.5 | 0% | no
+
+RISERVA (6-9 gw):
+  reins | 7 | 47 | 6.7 | 15% | no
+  perenjoy | 6 | 38 | 6.3 | 32% | no
+
+BORDERLINE (5 gw):
+  velebit | 5 | 132 | 26.4 | 0% | si (26.4/gw)
+
+NON PROFONDO (<5 gw):
+  ice013-open-for-good-trades | 1 | 1 | 1.0 | 100% | no
+  edjeraketje | 2 | 2 | 1.0 | 0% | no
+  boss_paran-9dd7e583-f098-4302-b898-bd0869dd2545 | 2 | 3 | 1.5 | 33% | no
+  freecer | 3 | 24 | 8.0 | 4% | no
+  alain-salice-gmail-com | 4 | 5 | 1.2 | 0% | no
+  ffthinker | 1 | 10 | 10.0 | 0% | no
+  l-empreinte-du-crapaud | 1 | 6 | 6.0 | 50% | no
+  troitsky | 0 | 0 | 0.0 | 0% | no
+
+SLUG FALLITI (non trovati / no file):
+  udivitelno, matclm, velebit (timeout)
+
+STATISTICHE:
+  Slug testati: 14 (LISTA A 10 + LISTA B 4)
+  Manager >=10 gw: 1 (target 5 non raggiunto)
+  Manager 6-9 gw: 2 (riserva disponibile)
+  Whale (>30 arene/gw): 0 (velebit 26.4 borderline)
+
+STOP: raggiunto per scelta utente (4 slug LISTA B + 10 LISTA A = 14 totali).
+Target 5 manager >=10 gw non raggiunto con periodo feb-mag (trovato 1).
