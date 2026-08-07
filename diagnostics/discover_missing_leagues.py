@@ -47,6 +47,7 @@ candidate migliori per la prossima pipeline dedicata da costruire. Leghe
 con 1-2 carte marginali sono probabilmente da ignorare.
 """
 import os
+import glob
 import json
 import time
 import datetime
@@ -99,18 +100,27 @@ def _load_league_dir(path=LEAGUE_DIR_SOURCE):
 
 
 def _pipeline_completa(dirname, repo_root=REPO_ROOT):
-    """True se formazione_<dirname>/ ha build_formazione_finale.py e le tre
-    sottocartelle discovery/predict/consiglio con almeno un .py ciascuna."""
-    base = os.path.join(repo_root, f'formazione_{dirname}')
-    if not os.path.isfile(os.path.join(base, 'build_formazione_finale.py')):
+    """True se il generatore vero (generatore_formazioni/build_formazione_
+    globale.py, funzione _discover_leagues) VEDE gia' questa lega: basta che
+    esista ALMENO UNA cartella formazione_<dirname>/output/*_<ruolo>_all/
+    (gk/def/mid/fwd), stesso criterio, stesso glob.
+
+    FIX 07/08/2026 (seconda correzione): il criterio precedente (sorgenti
+    presenti: build_formazione_finale.py + discovery/+predict/+consiglio/)
+    dava ancora falsi positivi nel report -- messico/norvegia/cina/spagna2
+    hanno gia' output/*_all prodotti e il generatore le usa, ma i sorgenti
+    discovery/predict non c'erano (magari girano da script condivisi) e
+    venivano segnalate come "senza pipeline". Il criterio giusto e' quello
+    che decide DAVVERO se il generatore pesca da quella lega: l'output.
+    NON importa build_formazione_globale.py (import pesanti con effetti
+    collaterali, vedi nota in _load_league_dir): replica solo il glob."""
+    base = os.path.join(repo_root, f'formazione_{dirname}', 'output')
+    if not os.path.isdir(base):
         return False
-    for sub in ('discovery', 'predict', 'consiglio'):
-        subdir = os.path.join(base, sub)
-        if not os.path.isdir(subdir):
-            return False
-        if not any(f.endswith('.py') for f in os.listdir(subdir)):
-            return False
-    return True
+    for role in ('gk', 'def', 'mid', 'fwd'):
+        if glob.glob(os.path.join(base, f'*_{role}_all')):
+            return True
+    return False
 
 
 def _build_known_league_slugs():
