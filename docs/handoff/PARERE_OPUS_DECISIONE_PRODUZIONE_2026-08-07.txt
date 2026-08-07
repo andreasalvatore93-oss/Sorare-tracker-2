@@ -436,3 +436,113 @@ d7137d52d2  COMPITO 1: p13 Test3 usa soglia_decisione
 a9d9a0dc69  COMPITO 2: bilancio essenze simmetrico dentro p13
 39f72fe0bb  COMPITO 3a: fix D6 su p11_manager_confronto.py
 (Compito 3b: nessun commit, nessun bug confermato)
+
+
+===============================================================================
+9. PREMIO VERO DAL RANK, INVECE DELLA STIMA (Sonnet esecutore, 07/08 notte)
+===============================================================================
+OBIETTIVO: sostituire la stima proporzionale/flat di sez.8 (che divergevano
+di segno) col premio VERO letto dal rank gia' in dati_globali/manager_*.json,
+usando una tabella premi-per-rank costruita da dati REALI, non inventata.
+
+--- COMPITO 1: copertura rank sul campione gia' backtestato -- 100% ---
+Sulle 317 arene di Test3 (crowss intera storia + 16 manager nuovi, stesso
+campione di sez.8), TUTTE hanno il campo 'piazzamento.rank' valorizzato nel
+file manager (317/317 = 100%). Per manager:
+  crowss 204/204, matteoogg 1/1, angioletto33 5/5, john942 2/2,
+  tijmenmaaktpap 21/21, lafindubal 23/23, nivenzg 7/7, braddersfc 10/10,
+  fins49 35/35, keano88 1/1, cedric9093 8/8.
+  (chuchochavez, snoerre, matangel716, destroyerstorm, roucash: 0 arene
+  valutate in Test3, quindi 0/0, coerente con sez.14/HANDOFF_ORCHESTRATORE.)
+Il rank c'e' SEMPRE quando l'atteso e' disponibile: nessuna perdita di
+campione passando dalla stima al dato vero.
+
+--- COMPITO 2: la tabella premi esiste in repo, trovata e riusata -- NON
+    inventata ---
+File: backtest_arene_economia.py (radice repo), funzione tabella_premi().
+Costruisce (tipo, rank) -> essenze DAI PREMI REALMENTE INCASSATI in
+dati_globali/arene_storico.json (l'archivio dell'utente, 160 arene, 75 con
+rank_premiato valorizzato -- dove piu' importi diversi capitano sullo
+stesso (tipo,rank), tiene il piu' frequente). Riusata la funzione com'era,
+NESSUNA modifica al file (ne' a build_formazione_globale.py, ovviamente).
+
+  premi_tab ricavata: (Beginner,1)=500 (Beginner,2)=250 (Beginner,3)=150
+    (cap220,1)=1000 (cap220,2)=500 (cap220,3)=300
+    (cap260,1)=1300 (cap260,2)=800 (cap260,3)=500
+    (Uncapped,2)=800   <- SOLO rank 2, mancano rank 1 e rank 3 per Uncapped
+  RANK_MASSIMO_PREMIATO=3 (dallo stesso file: mai premio oltre il 3o posto
+  in tutte le 673 arene storiche dell'archivio originale).
+
+BUCO SEGNALATO, NON TAPPATO: sul campione dei 317, le decisioni "salta" che
+cadono su (Uncapped, rank 1) sono 1 e su (Uncapped, rank 3) sono 2 (contate
+su A+G insieme): per queste 3 il premio vero e' sconosciuto (tabella non ce
+l'ha), trattato come 0 nel conto sotto -- quindi il NETTO calcolato e' un
+LIMITE INFERIORE per l'ipotesi "il modello ha sempre ragione a saltare
+Uncapped rank1/3", leggermente ottimistico verso il salto su quei 3 casi.
+Impatto piccolo (3 casi su ~279 salti totali), ma dichiarato invece di
+stimato a caso.
+
+--- COMPITO 3: bilancio con premio VERO, confronto diretto con sez.8 ---
+Metodo: per ogni arena dove il modello SALTA (soglia_decisione, compito 1),
+delta = costo_ingresso - premio_vero(tipo, rank_reale, premi_tab). Positivo
+= salto giusto (si risparmia piu' di quanto si sarebbe vinto), negativo =
+arena buona persa (si sarebbe vinto piu' del costo). Se il modello ENTRA:
+zero delta, perche' entrando gioca ESATTAMENTE la formazione di REALE (Test3
+non riseleziona le carte) -- stesso punteggio, stesso rank, stesso premio di
+REALE: nessuna differenza da contare.
+
+GRAND TOTALE (317 arene, tutti i manager insieme):
+                    n_salta   NETTO premio vero
+  A                   123          +4.500
+  G                   156          +8.300
+
+CONFRONTO DIRETTO CON SEZ.8 (stesso campione, tre metodi diversi):
+  A: proporzionale -7.404  |  flat +1.500  |  PREMIO VERO +4.500
+  G: proporzionale -5.573  |  flat +5.500  |  PREMIO VERO +8.300
+
+IL SEGNO E' POSITIVO PER A E PER G COL PREMIO VERO. Conferma la lettura
+flat (positiva) e SMENTISCE quella proporzionale (negativa): la
+proporzionale era distorta dalle estrapolazioni oltre la finestra +-5 punti
+di GUADAGNO_PER_PUNTO, esattamente il limite gia' segnalato in sez.1/sez.8.
+Il premio vero e' la cifra piu' affidabile delle tre perche' non stima
+niente sopra la soglia: legge il rank realmente ottenuto e lo passa a una
+tabella di premi realmente incassati.
+
+--- PER MANAGER (premio vero, A / G) ---
+  crowss:         A salta=74  netto=+800    G salta=94  netto=+4.800
+  matteoogg:      A salta=1   netto=+300    G salta=1   netto=+300
+  angioletto33:   A salta=0   netto=0       G salta=1   netto=-300
+  john942:        A salta=1   netto=+300    G salta=1   netto=+300
+  tijmenmaaktpap: A salta=8   netto=+1.100  G salta=10  netto=+1.600
+  lafindubal:     A salta=8   netto=+1.000  G salta=15  netto=+2.400
+  nivenzg:        A salta=1   netto=+300    G salta=3   netto=-200
+  braddersfc:     A salta=3   netto=-1.700  G salta=4   netto=-2.700
+  fins49:         A salta=22  netto=+1.700  G salta=20  netto=+1.000
+  keano88:        A salta=1   netto=-500    G salta=1   netto=-500
+  cedric9093:     A salta=4   netto=+1.200  G salta=6   netto=+1.600
+
+LETTURA: 9 manager su 11 con dati (crowss compreso) hanno NETTO A>=0;
+braddersfc e keano88 negativi (campioni minimi, 1-3 arene: un solo salto
+sbagliato basta a ribaltare il segno, non e' un giudizio sul manager).
+Su crowss (l'utente, intera storia nota) A e' debolmente positivo (+800 su
+74 salti, ~11 essenze/salto) mentre G e' nettamente positivo (+4.800 su 94
+salti, ~51 essenze/salto): stessa direzione gia' vista in sez.8 con la
+regola vera (G molto piu' forte di A su crowss), ma qui col dato vero
+invece che stimato, e col segno di A che torna positivo invece di -8
+(differenza dovuta al fatto che sez.8 "batte-persa" contava le CASELLE 1
+a 1, mentre qui si pesa quanto vale ogni casella in essenze vere: alcune
+"arene perse" da A pesavano poco in essenze reali).
+
+LIMITE ONESTO: premi_tab viene da soli 75 osservazioni (l'archivio
+dell'utente), non da migliaia: per Beginner/cap220/cap260 rank1-3 e
+Uncapped rank2 il dato e' reale ma un campione piccolo puo' non essere
+rappresentativo di ogni GW/periodo (i premi possono cambiare nel tempo,
+vedi commento in tabella_premi() sui "importi diversi... montepremi
+cambiato"). E' comunque una misura, non un'estrapolazione: la cautela e'
+sulla stabilita' nel tempo, non sulla direzione del numero.
+
+NESSUNA MODIFICA ALLA PRODUZIONE. Nessuna run GitHub. File letti, non
+modificati (backtest_arene_economia.py, dati_globali/arene_storico.json).
+Script driver non versionato (stessa scelta di sez.7: e' una lettura che
+riusa funzioni esistenti, non un nuovo strumento -- se serve stabile va
+messo dentro p13 come gia' fatto per compito 1/2 del brief precedente).
