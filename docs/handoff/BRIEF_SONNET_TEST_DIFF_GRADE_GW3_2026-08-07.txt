@@ -275,6 +275,34 @@ atteso GIA' piu' alto ma senza grade noto, e in questo caso il totale
 generale scende. E' l'esatto rischio noto di sez.5 del DESIGN ("se G li
 abbassa, e' un problema da valutare, non un ok automatico").
 
+4ter. RETTIFICA SUL VERDETTO (07/08 ~14:00 Roma, correzione dell'utente)
+I punti 4 e 4bis sopra confrontano atteso_A vs atteso_G, ma atteso_G e'
+atteso_combinato: lo STESSO metro usato per la SELEZIONE, col boost del
+grade gia' dentro. Confrontare un totale "con boost" contro uno "senza
+boost" e dire che G "guadagna +30" o "perde -6.6" e' un confronto sballato
+fra due scale diverse -- non e' un giudizio di qualita', perche' la GW3 non
+e' ancora giocata: non esiste un punteggio REALE su cui misurare se G fa
+meglio o peggio di A. I numeri +21.0 / +32.5 / -6.6 di sez.4bis vanno quindi
+LETTI COME ARTEFATTI DEL METRO, non come "G guadagna" o "G peggiora questa
+formazione": su GW future non misurabili questo confronto non prova nulla
+sulla qualita' di G.
+
+Quello che il test DIMOSTRA davvero, tolto il rumore del metro sballato:
+  - il grade e' collegato e sposta la selezione (punto 1, test A/A, mai
+    rimesso in discussione);
+  - la composizione per ruolo NON e' stravolta: 6/7 formazioni restano
+    GK/DEF/MID/FWD nella stessa proporzione di A (solo le due
+    ARENA_ALLSTARS_260 con overlap 0-1/5 nella prima misura, sez.4, avevano
+    cambiato ruolo -- con la copertura v2 la composizione resta identica in
+    TUTTE e 7, vedi DUMP_CONFRONTO_A_G_GW3_v2.txt);
+  - 22 carte su 37 slot totali (7 formazioni) sono state sostituite:
+    fatto misurato, non un giudizio -- dice quanto la selezione si muove,
+    non se si muove nella direzione giusta.
+Un verdetto vero su "G fa meglio di A" richiede punti REALIZZATI (backtest
+su GW gia' giocate, come p12_backtest_formazione_grade.py, gia' fatto su
+539 arene con esito +18.900 vs +14.300 essenze -- quello resta il numero di
+riferimento sulla qualita', non questo test GW3).
+
 5. COSA NON HO FATTO (fuori scope di questo test isolato)
 Non ho riverificato le soglie arena (d), non ho toccato lo scouting (e), non
 ho fatto il backtest di conferma ampio (f): tutto rimandato, come da vincoli
