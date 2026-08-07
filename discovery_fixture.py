@@ -225,6 +225,7 @@ query MieFormazioni($fixture: String!, $groupType: So5LeaderboardGroupType!) {
           slug
           so5Lineup {
             canEdit
+            so5Leaderboard { slug }
             so5Appearances { anyCard { slug } }
           }
         }
@@ -247,7 +248,7 @@ def carte_bloccate_live(fixture_slug):
     07/08 e' costato una giornata."""
     visti_contender = set()
     carte = set()
-    n_bloccate = n_modificabili = 0
+    n_bloccate = n_modificabili = n_in_season = 0
     for gt in _GRUPPI_LINEUP:
         r = _grade_http().post(
             base.GRAPHQL_URL,
@@ -268,15 +269,30 @@ def carte_bloccate_live(fixture_slug):
                 lineup = c.get('so5Lineup') or {}
                 if not lineup:
                     continue
+                lb = (lineup.get('so5Leaderboard') or {}).get('slug') or ''
                 if lineup.get('canEdit'):
-                    n_modificabili += 1   # ancora modificabile = carte LIBERE
-                    continue
-                n_bloccate += 1
+                    # MODIFICABILE. Di regola le sue carte restano LIBERE, ma
+                    # non se la competizione e' IN SEASON (07/08, richiesta
+                    # dell'utente dopo il primo uso sul campo): quelle
+                    # formazioni non le smonta, quindi le carte sono impegnate
+                    # nei fatti anche se Sorare lascia ancora il tasto
+                    # Modifica. Riconosciute dallo slug della leaderboard, che
+                    # contiene 'in_season' (verificato: le due K League
+                    # modificabili della GW3 sono
+                    # ...-in_season_korea_limited_pvp e ..._pve, mentre tutte
+                    # le bloccate non lo contengono).
+                    if 'in_season' not in lb:
+                        n_modificabili += 1
+                        continue
+                    n_in_season += 1
+                else:
+                    n_bloccate += 1
                 for a in (lineup.get('so5Appearances') or []):
                     cs = (a.get('anyCard') or {}).get('slug')
                     if cs:
                         carte.add(cs)
-    return carte, {'bloccate': n_bloccate, 'modificabili': n_modificabili}
+    return carte, {'bloccate': n_bloccate, 'in_season_modificabili': n_in_season,
+                   'modificabili_libere': n_modificabili}
 
 
 def _grade_bench_page(so5_slug, position, after):
@@ -1140,10 +1156,11 @@ def main():
                 log(f"[lockate] {p} illeggibile ({e}), interrogo Sorare.")
         if not letto_da_artifact:
             _carte_bloccate, _det = carte_bloccate_live(fx.get('slug'))
-            log(f"[lockate] {_det['bloccate']} formazioni BLOCCATE -> "
+            log(f"[lockate] {_det['bloccate']} bloccate + "
+                f"{_det['in_season_modificabili']} modificabili IN SEASON -> "
                 f"{len(_carte_bloccate)} carte escluse dal pool; "
-                f"{_det['modificabili']} formazioni ancora modificabili, "
-                f"le loro carte restano DISPONIBILI.")
+                f"{_det['modificabili_libere']} formazioni modificabili non "
+                f"in-season, le loro carte restano DISPONIBILI.")
         if not _carte_bloccate:
             log("[lockate] ATTENZIONE: nessuna carta bloccata trovata. Se avevi "
                 "gia' schierato formazioni non modificabili, questo e' un "
