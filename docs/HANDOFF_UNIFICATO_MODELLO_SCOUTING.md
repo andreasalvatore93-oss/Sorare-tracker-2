@@ -11,14 +11,20 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 05/08/2026, sera tardi (Roma, CEST)**.
-Sessione: passaggio 2 **P11** — `P(≥1 boom)` come funzione obiettivo della
-formazione misurata e **CHIUSA senza modifiche** (§5, blocco boom). Prima:
-P8 composizione all-around **CHIUSA**; i 16 commit del passaggio 2 (P1-P9-ter,
-blend GK `c` 17.5→22) sono **PUSHATI su `main`**. Sessione precedente: pattern arene
-(§7) + validazione soglie cap 260 (σ 42.70→50.6, pareggio 265→259.5, guadagno
-8.8→7.9), dettaglio in `analisi_manager/VALIDAZIONE_SOGLIE.md`. Regola di
-stile: file SNELLO (max ~4 pagine), sessione/giorno/ora Roma.
+Ultimo aggiornamento: **sessione 08/08/2026, mattina (Roma, CEST)** —
+consolidamento di tutto il materiale testuale del 06-07/08 (30+ file in
+`docs/handoff/`) dentro questo file, come da CLAUDE.md. I file sorgente
+restano come archivio ma NON sono più letture obbligatorie: quanto rilevante
+è qui. Novità principale della finestra 06-07/08: **il grade G è entrato in
+produzione** (§8bis) dopo un bug di sessione anonima che falsava le run
+GitHub (§8quater) e un giro di ottimizzazione performance (stessa sezione).
+Sessione precedente (05/08): passaggio 2 **P11** — `P(≥1 boom)` come funzione
+obiettivo della formazione, **CHIUSA senza modifiche** (§5); P8 composizione
+all-around **CHIUSA**; 16 commit (P1-P9-ter, blend GK `c` 17.5→22) pushati;
+pattern arene (§7) + validazione soglie cap 260 (σ 42.70→50.6, pareggio
+265→259.5, guadagno 8.8→7.9). Regola di stile: file SNELLO (max ~4 pagine),
+sessione/giorno/ora Roma — quando una sezione è superata si comprime, non si
+accumula.
 
 ---
 
@@ -251,13 +257,9 @@ riprende il filone backtest.
 
 ## 5. Lo stato dell'arte — cosa è CHIUSO (non riproporre)
 
-> **AGGIORNAMENTO 06–07/08/2026 (leggere prima del resto della sezione).**
-> Consolidamento parziale: i dettagli aperti stanno in
-> `docs/handoff/ELENCO_APERTI_2026-08-07.txt`, le consegne per il prossimo
-> orchestratore in `docs/handoff/HANDOFF_ORCHESTRATORE_2026-08-07_SERA.txt`.
-> Un rewrite completo di questo file è rimandato a quando il filone
-> odds+4ruoli sarà chiuso (FASI 3–4 ancora in corso), per non consolidare
-> uno stato parziale.
+> **Nota 08/08**: il bug D6 sotto è STORIA (chiuso), riportato per capire
+> perché certi verdetti vecchi sono nulli. Lo stato vivo di G, delle soglie
+> arena e dell'infrastruttura di estrazione è in §8bis/§8quater, non qui.
 >
 > 1. **BUG D6 — punteggi di formazione gonfiati.** Più script di backtest
 >    (`p11_manager_confronto`, `p11_bloccato_tutti_mazzi`,
@@ -713,9 +715,31 @@ sottostimati +4.9** (n71, da riverificare). Accumulare altre GW rende poco
 
 ---
 
-## 8ter. Grade G — stato al 07/08/2026 notte (filone APERTO)
+## 8bis. Grade G — stato al 08/08/2026 mattina (IN PRODUZIONE, filone APERTO)
 
-G è **in produzione** (`GRADE_ENABLED=1`). Rivalidato il 07/08 su una base
+**Cos'è**: `So5Score.projection.grade` (A→F), voto per giocatore-partita che
+Sorare pubblica prima del fischio d'inizio (non è P(gioca), non è L10, non è
+un grado per ruolo — sparisce a partita iniziata, quindi non backtestabile
+sullo storico se non registrandolo in avanti o via `playerGameScores(last:15)`
+per il passato). **Non è legato alle carte possedute**: si legge con
+`anyPlayer(slug).playerGameScores.projection.grade`, query pubblica —
+verificato su giocatori non posseduti (Charly Nouck, Matthew Hoppe → grade D
+anche da non posseduti).
+
+**Formula in produzione** (per gruppo lega/ruolo):
+`atteso_combinato = atteso_calibrato + sd_gruppo × z_grade`. Il grade
+**sposta la selezione**, non è un tie-break come le odds. Non reinventarla:
+riferimento `analisi_manager/p12_backtest_formazione_grade.py`. Fonte in
+produzione: `discovery_fixture.py::fetch_grade_live()` fa la fetch DOPO il
+filtro starter-odds, sui `kept_slugs`, sulla leaderboard aperta della GW, e
+scrive il grade in `player_card_counts.json`; il generatore lo legge da lì.
+
+**Timeline**: entrato in produzione il 07/08 (`GRADE_ENABLED` default `'1'`
+in `build_formazione_globale.py`, rollback immediato con `GRADE_ENABLED=0`),
+per DECISIONE dell'utente (segno positivo ovunque, downside nullo), non
+perché un IC statistico lo imponesse — vedi i numeri sotto. Bloccato per
+mezza giornata da un bug di sessione anonima (§8quater), poi ottimizzato
+nelle performance (stessa sezione). Rivalidato il 07/08 notte su una base
 ricostruita da capo con l'utente, criterio per criterio. Numeri:
 
 | campione | n | A | G | delta | IC95 |
@@ -742,105 +766,220 @@ nei file manager è letto **al momento dell'estrazione**
 non se lo era quando la formazione fu schierata. Le competizioni il cui
 vincolo dipende da quel campo **non sono ricostruibili a ritroso**.
 
-Aperto: gruppo B dello split A/B mai guardato, altre competizioni da 5 non
-toccate, arene non rimisurate su base pulita. Dettaglio completo in
-`docs/handoff/BRIEF_SONNET_RIVALIDAZIONE_G_2026-08-07.txt`.
+**Sulle arene** (metro premio-vero, catena verificata prima della base
+pulita non-arena): crowss 230 arene copertura 77.4% — punti A=273.07
+G=275.88 (+2.8, IC[-1.1,+6.6]), netto essenze A=96.1 G=103.0 (+7.0, IC
+include zero), formazioni identiche 11.7% (era 77% col bug di copertura: ora
+G sceglie davvero); 16 manager gruppo A, 59 righe copertura 100% — punti
+A=225.97 G=234.13 (+8.15, IC[-16.5,+29.9] include zero ma positivo nel
+71.3% dei resample). **Gruppo B non aperto** (split A/B pre-registrato,
+`HANDOFF_LETTERA_GRADE_2026-08-06.txt` righe ~2248): unica verifica non
+contaminata, va spesa una volta sola.
+
+**Catena soglie/scouting per G — VERIFICATA E CHIUSA, non si tocca**: σ
+calibrazione A=48.13 vs G=49.32 (IC sovrapposti), soglie arena delta <1.1pt
+(<0.4%, sotto il tremolio fra campioni) → `PAREGGIO_ARENA`/
+`GUADAGNO_PER_PUNTO` restano quelli di produzione; scouting legge le soglie
+dal generatore via `getattr` (nessuna copia propria) → invariato per
+costruzione. G non muove nessuno dei due anelli a valle.
+
+**Trappola da NON ripetere sul metro di qualità**: confrontare
+`atteso_combinato` A vs G (il totale mostrato dal generatore) NON è un
+giudizio di qualità — è il punteggio di SELEZIONE, gonfiato dal boost per
+costruzione quando G è acceso. Il metro vero è il REALIZZATO (backtest su
+GW già giocate). Su GW future non ancora giocate non esiste modo di dire se
+G "guadagna" o "peggiora": si può solo misurare quanto SPOSTA la selezione
+(es. test GW3: 6/7 formazioni cambiate quasi integralmente con copertura
+93%, composizione per ruolo invariata in tutte e 7).
+
+**Anomalie trovate misurando sulle competizioni senza soglia (base per il
+Passo 1 non-arena, da correggere prima di ripeterlo)**: (1) "Hot Streak"
+potrebbe ammettere fino a 2 carte classic anche fuori-lega, mentre lo script
+di backtest ne forza 1 e lega-singola — se vero, i valori assoluti A/G su
+MLS Hot Streak sono sottostimati (il DELTA A-vs-G resta comunque valido,
+stesso vincolo su entrambi i lati); da verificare sulle regole vere di
+Sorare, non deducibile dai soli dati. (2) La famiglia "Limited" mischia due
+competizioni diverse (274 formazioni da 7 carte + 255 da 5): va splittata
+per numero di carte prima di fidarsi di quella riga. (3) Bonus XP non
+applicato nello script di backtest (identico per A e G, non dovrebbe biasare
+il segno del delta, ma abbassa i valori assoluti). Dettaglio:
+`docs/handoff/BRIEF_ANOMALIE_COMPETIZIONI_NONARENA_2026-08-07.txt`.
+
+Aperto: gruppo B dello split A/B mai guardato, le 3 anomalie sopra da
+correggere e Passo 1 da ripetere, arene non rimisurate su base pulita.
+Dettaglio completo in
+`docs/handoff/BRIEF_SONNET_RIVALIDAZIONE_G_2026-08-07.txt` (Passo 1 base
+pulita) e `docs/handoff/BRIEF_SONNET_CATENA_G_2026-08-07.txt` (catena +
+numeri arena).
 
 ---
 
-## 8bis. Indagine sullo SCOUTING dopo il grade (07/08/2026, non urgente)
+## 8ter. Scouting dopo il grade (07/08/2026) — CONTROLLATO, 2 decisioni aperte
 
-Richiesta dell'utente: «se il generatore aveva un problema di autenticazione lo
-avrà anche lo scouting», e «non ho mai testato lo scouting dopo il grade».
-Indagine fatta sul codice e sui log di run vere (`30910296375`, `30845739587`).
-Nessuna modifica applicata: è un elenco di cose da decidere.
+Domanda dell'utente: se il generatore aveva un problema di autenticazione lo
+avrà anche lo scouting? E il grade ci entra?
 
-**Quello che NON è rotto** (verificato, non dedotto):
-- **Nessun problema di autenticazione.** `scouting_gw.py` non fa nessuna query
-  autenticata: zero `myFilteredBench`, `currentUser`, `owner`, `user(slug:)`.
-  Sta dov'era la discovery prima del grade — tutte query pubbliche — quindi la
-  sessione anonima descritta nell'handoff orchestratore §5bis non lo tocca.
-- **Non sovrascrive l'esclusione delle carte bloccate.** Il job `candidati`
-  scrive solo `player_slugs.json`, mai `player_card_counts.json`, che è dove
-  vive `ESCLUDI_LOCKATE`. Verificato: nessuna interferenza.
-- **Le odds le prende già in bulk** (`odds_per_giornata`) dal 03/08. Su questo
-  era la discovery a essere indietro, non lui.
+**Non è rotto**: `scouting_gw.py` non fa nessuna query autenticata (zero
+`myFilteredBench`/`currentUser`/`owner`), quindi il bug di sessione anonima
+(§8quater) non lo tocca — RISCHIO LATENTE però: usa `_gql` da
+`mls_def_discovery_global.py`, che non manda CSRF; se un domani gli si
+aggiunge una query autenticata, ricade nello stesso bug. Le odds sono già in
+bulk dal 03/08. `ESCLUDI_LOCKATE` non lo riguarda (scrive solo
+`player_slugs.json`, mai `player_card_counts.json`).
 
-**Difetti aperti, in ordine di quanto costano:**
+**Il grade non c'è, per un motivo strutturale non una dimenticanza**: quello
+di produzione viene da `myFilteredBench` (carte POSSEDUTE); per una carta da
+comprare quella via non esiste. Esiste un'alternativa
+(`anyPlayer.playerGameScores(last:15).projection.grade`, verificato
+funzionante su carte non possedute — vedi §8bis) ma dà il grade STORICO
+delle partite passate, non una proiezione per la giornata da giocare.
+**Decisione aperta con l'utente**: non è ovvio che un segnale per-giornata
+debba pesare su una decisione d'acquisto pluri-giornata.
 
-1. **Buco di copertura per leghe senza pipeline.** Ogni run avvisa per `nb-i`,
-   `nb-ii`, `premier-division-ie`, `premier-league-am`, `super-liga-sk`,
-   `virsliga`: i loro giocatori restano nel pool ma non ricevono un atteso, e
-   quindi non possono essere consigliati. Da decidere: costruire le pipeline o
-   escluderli a monte per non sporcare i conteggi.
-2. **429 fra 23 e 111 per run.** Stessa malattia della pipeline formazioni:
-   `max-parallel: 20` sulla matrice predict. Qui però le run durano 2.7-3.8
-   min, quindi il danno è piccolo — non è urgente, ma è lo stesso meccanismo.
-3. ~~Commento stantio sul `max-parallel`~~ **CHIUSO 07/08** (`74b5bed89f`):
-   diceva che il valore tarato era 8, il codice usa 20 per un motivo misurato.
-4. ~~`_gql` senza CSRF~~ **CHIUSO 07/08** (`74b5bed89f`): ora manda
-   `x-csrf-token` e svuota il barattolo dei cookie, come la discovery. Chiuso
-   anche il job `consigli` del workflow, che passava il cookie ma non il CSRF
-   pur interrogando Sorare per i prezzi.
-5. **Il job `candidati` sovrascrive `player_slugs.json` di produzione** per le
-   leghe toccate. È già scritto nel commento del workflow, ma vale ricordarlo:
-   fino alla successiva run di `formazione_giornata` un predict manuale
-   userebbe la lista dello scouting.
-
-**Decisione APERTA, da prendere con l'utente: il grade nello scouting.**
-La parola `grade` non compare in `scouting_gw.py`.
-
-RETTIFICA (07/08, sera). In una prima stesura di questa sezione avevo scritto
-che il grade «arriva dalle carte che si possiedono, quindi per una carta da
-comprare non esiste». **È FALSO, e l'utente l'ha corretto: il grade è legato
-alle odds della partita, non al possesso della carta.** Verificato subito
-dopo, su giocatori NON posseduti:
-    Charly Nouck   (non posseduto) -> D, D, D, D  (incluso il 2026-08-07)
-    Matthew Hoppe  (non posseduto) -> D, D, D, D  (incluso il 2026-08-07)
-    Hans Vanaken   (posseduto)     -> C, E, B, A
-Si leggono con `anyPlayer(slug).playerGameScores.projection.grade`, query
-pubblica. `myFilteredBench` è soltanto la query che abbiamo scelto NOI per la
-produzione, e filtra alle carte possedute perché al generatore servono solo
-quelle: non è un limite del dato.
-
-Quindi **niente ostacolo strutturale**: il grade per un candidato d'acquisto è
-ottenibile. Il vincolo vero è di TEMPO, non di possesso: per una partita
-futura il grade compare solo quando Sorare lo pubblica (misurato lo stesso
-giorno: `None` per le partite del 14 e 17 agosto, valorizzato per quelle del
-7). Resta quindi da decidere, con l'utente, se e come un segnale che esiste
-solo a ridosso della partita debba pesare su una decisione d'acquisto che vale
-per più giornate. Da discutere prima di scrivere codice.
+**Altro aperto, minore**: leghe senza pipeline (`nb-i`, `nb-ii`,
+`premier-division-ie`, `premier-league-am`, `super-liga-sk`, `virsliga`) non
+ricevono atteso; 429 occasionali (danno piccolo, run 2.7-3.8 min); job
+`candidati` sovrascrive `player_slugs.json` di produzione per le leghe
+toccate fino alla prossima run `formazione_giornata`.
 
 ---
 
-## 9. Ultima modifica di produzione (05/08/2026)
+## 8quater. Infrastruttura estrazione grade — 3 bug chiusi, 1 aperto (07/08)
 
-**Passaggio 2 (audit + fix), 16 commit — PUSHATI su `main` il 05/08 sera**
-(`e2fe378376`; il commit bot `4d8c2b7024` di Cerbero è stato integrato con un
-merge, nessuna riscrittura di storia). P1-P7
-(Sonnet): rimosso `fattore_forza_avversario` morto, scouting portato sulla
-scala calibrata, fix aritmetica L10 nel cap del knapsack, tie-break odds vero,
-blend CS del portiere da ~124 chiamate a `stima()` a 1 (e mai più muto),
-gradino `-3: 0` nella `LEVEL_TABLE` sui 4 ruoli. P3+V1+V2 (Opus): le tre
-correzioni al blend GK misurate e **non applicate** (§5); catena §1bis chiusa
-per il gradino `-3` (score_atteso si muove ≤ 0.032 pt nel caso peggiore su
-19.229 righe, MAE/corr/lift identici a 4 decimali → soglie d'arena e scouting
-invariati) e per il cutoff esatto del blend (nessun bias, media +0.0025 pt; la
-coda arriva a 8 pt ma solo su squadre con 3-9 partite di storico, e il metodo
-nuovo è il lato giusto). P9/P9-bis/P9-ter (Sonnet): `GK_TEAM_CS_WEIGHT`
-0.5→0.63 (c=17.5→22, §5) — P9 si è fermato per campione ereditato non
-riproducibile (1.487 righe invece di 6.973), P9-bis ha rigenerato il campione
-vero e applicato c=26, P9-ter lo ha corretto a c=22 (margine più largo, stesso
-guadagno direzionale). Propagato a tutte le leghe (`propaga_modello.py`, solo
-`test_gk.py`, verificato `--check`). Commit `cc7bdfdae2` e precedenti.
-**P8 (Opus)**: nessuna modifica di produzione, filone chiuso sui dati (§5).
-Difetto minore aperto: `formazione_mls/predict/test_gk.py:1632` cita ancora
-`GK_TEAM_CS_WEIGHT=0.5`, stantio dopo P9-bis — correggere e propagare al
-prossimo commit che tocca il file.
+**1. Bug sessione anonima (CSRF) — CHIUSO.** Causa dei "0 nodi grade" nelle
+run GitHub (mezza giornata persa, 5 ipotesi sbagliate prima di trovarla:
+leaderboard chiusa, secret scaduti, header Origin/Referer, header client
+Web, IP datacenter — tutte smentite da una misura). Causa vera: una funzione
+condivisa (`graphql_query`, importata da 4 script) mandava il Cookie ma non
+il CSRF; Sorare la tratta come non autenticata e restituisce un Set-Cookie
+che assegna una sessione ANONIMA — `curl_cffi` la salva e da lì in poi VINCE
+silenziosamente sull'header Cookie autenticato passato a mano. Risultato:
+`currentUser=null`, HTTP 200, nessun errore — indistinguibile da "giornata
+chiusa". Sembrava un problema solo-GitHub perché la discovery fa decine di
+query pubbliche prima del grade: i test locali isolati (solo bench) partivano
+sempre su sessione pulita e riuscivano sempre. Fix in main:
+`discovery_fixture.py::_grade_http()` usa sessione dedicata svuotata prima di
+ogni richiesta; `graphql_query()` manda `x-csrf-token` sempre. Restano ~381
+copie della stessa funzione (senza CSRF) in giro nel repo, non toccate di
+proposito: fanno solo query pubbliche, a rischio SOLO se un domani una di
+loro diventa autenticata. **Regola che ne esce**: quando una query "my"
+torna vuota, la prima domanda è "questa sessione è autenticata?"
+(`{currentUser{slug}}`), non "il dato esiste?".
+
+**2. Fetch moltiplicata per 20 / 429 — CHIUSO.** Ogni shard del workflow
+rifaceva per conto suo l'intera fetch grade (3 leaderboard × 4 ruoli × fino a
+20 pagine, ~240 richieste): 20 shard = ~4.800 richieste a run per lo STESSO
+risultato, causando paginazioni troncate dai 429 (dato mancante
+indistinguibile da dato completo — il tipo di errore più pericoloso).
+Fix: job `grade` unico nel workflow (fetch una sola volta, passata come
+artifact di run — non è una cache, nasce e muore nella run), backoff 429 più
+lungo in paginazione (dice quando si arrende, non tronca in silenzio), probe
+di autenticazione con retry sui 429 (senza retry un 429 veniva letto come
+"sessione morta", diagnosi sbagliata). Risultato misurato su 3 run della
+stessa giornata: 26.3min/156 429/parziale → 6.8min/19 429/877 grade completi,
+stesso identico esito finale (0 differenze su 308 righe sopra soglia).
+**Regola nuova dell'utente**: la run intera deve stare sotto i 10 minuti; se
+un cambio la riporta sopra, è un difetto da correggere, non un costo da
+accettare.
+
+**3. `ESCLUDI_LOCKATE` — implementato e verificato.** Problema reale: a
+giornata iniziata alcune formazioni sono bloccate (`canEdit=false`) e le
+loro carte non si spostano più; rilanciando il generatore le riusava,
+proponendo arene non più schierabili. Query:
+`so5Fixture→so5LeaderboardGroups→mySo5LeaderboardContenders→so5Lineup{canEdit,
+so5Appearances{anyCard{slug}}}` — la chiave è lo slug della CARTA (non del
+giocatore: chi ha 3 carte dello stesso giocatore e ne blocca una può
+schierare le altre due). Input workflow `escludi_lockate`, default 0
+(spento); se la lettura fallisce il job fallisce apposta (niente tutela
+silenziosa). Verificato su run vera: 71 carte escluse = esattamente le carte
+delle 11 formazioni bloccate, zero perse o doppiocontate.
+
+**4. Soglie arena cap 220 — INDAGATO, NON un difetto di taratura.** Dubbio
+dell'utente: su 30 arene proposte, 29 erano cap 260 e zero cap 220, sembrava
+impossibile. Verificato che l'algoritmo sceglie bene DATE le soglie (prova
+tutti i tipi ogni passo, la 220 non vince mai con questo mazzo). Sul valore
+delle soglie stesse: **misurato che NON è la cap 220 a essere sottostimata**
+— prendendo per ogni tipo la SUA sigma e i campi veri, lo scarto fra
+ricalcolo e produzione è lo STESSO su entrambi i tipi (cap260 +6.3, cap220
++6.5); la distanza fra i due tipi (quella che decide quale arena si sceglie)
+coincide entro 0.2 punti fra ricalcolo e produzione. Con questo mazzo le cap
+260 hanno un atteso ~24 punti sopra le cap 220, mentre le soglie distano solo
+15: **le 260 vincono per merito del mazzo, non per un bug**. Resta un
++6.4 di scarto sistematico fra ricalcolo e produzione non spiegato (non
+cambia la scelta FRA tipi, sposta se entrare in generale) — coerente col
+fatto che l'utente già alza le soglie a mano sui margini bassi. Verificato
+anche: nessuna selezione nel pool di 55 manager usato per il calcolo (scarto
++1.5/+2.5 sul campione ben alimentato vs i campi veri dell'utente), premi
+richiedibili per QUALUNQUE arena via `so5Leaderboard(slug).so5Rewards`
+(sbloccando il campione da 30 a migliaia di osservazioni), punteggi non
+gonfiati dal bug D4/D6 (letti dai nodi ufficiali `so5RankingsPaginated`, non
+ricostruiti). **Decisione dell'utente: non si tocca ora** (le arene
+schierate finora avevano atteso 300+, sarebbero finite in cap 260 comunque —
+zero costo reale). Da fare con calma: capire lo scarto +6.4, raccogliere più
+arene cap 220 prima di ritarare, ricordare la catena CLAUDE.md (le soglie
+muovono anche lo scouting). Dettaglio:
+`docs/handoff/BRIEF_SONNET_SOGLIE_ARENA_2026-08-07.txt`.
+
+**Minore**: fix estetico applicato (clic per copiare il nome carta ora
+funziona anche cliccando il cerchio avatar, non solo il nome — solo
+`formazione_mls`, le altre 25 leghe non hanno la feature). `arene_storico.json`
+è passato da 673 a 160 arene fra l'1 e il 6/08 (191 tolte su richiesta
+esplicita per le "division", il resto — 322 arene e il campo `mio_score` —
+ancora NON spiegato: le formazioni corrispondenti esistono ancora in
+`arene_formazioni.json` ma senza punteggi/premi, quindi non bastano per le
+soglie). Da investigare se si riprende il filone soglie.
 
 ---
 
-## 9bis. Modifica precedente (04/08/2026)
+## 8quinquies. Altri fili aperti del 06-07/08 (riepilogo secco)
+
+- **`crowss` = l'utente stesso, verificato NON contaminare nulla** (D1):
+  assente per costruzione dal verdetto capitano (`p11_bloccato_tutti_mazzi.py`
+  lo esclude hardcoded) e dallo smart-money (0 righe in tutte le GW
+  controllate). L'unico posto dove è nel campione, legittimamente, è il
+  backtest formazione di G (uno dei mazzi profondi). Chiuso, non riaprire.
+- **Odds+4ruoli — filone IN PAUSA**: griglia per-carta pulita conferma DEF
+  forte (7/9 varianti), GK/MID mai, FWD al limite; ma in FORMAZIONE il
+  backtest (45 mazzi) non è probante — solo 2 mazzi con ≥16 giornate,
+  pablo0078 pesa il 33% delle arene da solo. L'utente non accetta di
+  relegare il DEF sulla base di 2 mazzi: serve allargare il campione
+  profondo prima di rifare il backtest. Non blocca nulla, GW storiche non
+  scadono. Dettaglio: `docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt`.
+- **21 script in `analisi_manager/` con path Windows hardcoded**
+  (`r'C:\Users\Andrea\...'`): girano solo sulla macchina dell'utente, non nel
+  sandbox orchestratore/esecutori. Da sostituire con path relativo al file,
+  meccanico, non urgente.
+- **Buco tabella premi**: (Uncapped, rank 1) e (Uncapped, rank 3) senza
+  premio noto — 30 casi su 497 trattati come 0 nel premio-vero, quindi il
+  netto misurato è un limite inferiore. Servono più arene Uncapped rank1/3.
+- **Consolidamento handoff (questo file, 08/08)**: fatto — questo documento
+  ora contiene lo stato vivo di G, dell'infrastruttura grade e delle soglie
+  arena senza dover leggere i 30+ file sorgente in `docs/handoff/`, che
+  restano solo come archivio/dettaglio.
+
+## 9. Ultima modifica di produzione (07/08/2026)
+
+**Grade G portato in produzione** (`GRADE_ENABLED` default `'1'`,
+`build_formazione_globale.py`), con fetch automatica integrata in
+`discovery_fixture.py` — dettaglio completo, formula e numeri in §8bis.
+Insieme, nello stesso giro: fix bug sessione anonima/CSRF, ottimizzazione
+performance (429/tempi), `ESCLUDI_LOCKATE` per le carte bloccate — tutti in
+§8quater. Nessuno di questi tre tocca `score_atteso`/soglie/scouting salvo
+G stesso (catena verificata, §8bis).
+
+## 9bis. Modifica precedente (05/08/2026, compresso)
+
+Passaggio 2, 16 commit pushati (`e2fe378376`): rimosso
+`fattore_forza_avversario` morto, scouting su scala calibrata, fix L10 nel
+knapsack, tie-break odds vero, gradino `-3:0` in `LEVEL_TABLE`; blend GK
+`GK_TEAM_CS_WEIGHT` 0.5→0.63 (c=17.5→22, dettaglio §5), propagato a tutte le
+leghe. Difetto minore aperto: `formazione_mls/predict/test_gk.py:1632` cita
+ancora `GK_TEAM_CS_WEIGHT=0.5`, stantio — correggere al prossimo commit sul
+file.
+
+---
+
+## 9ter. Modifica precedente (04/08/2026)
 
 **Arene dedicate per lega disattivate di default** (`ARENA_LEAGUES` vuota in
 `generatore_formazioni/build_formazione_globale.py`, riattivabile con
