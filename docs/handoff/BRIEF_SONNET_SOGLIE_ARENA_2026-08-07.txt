@@ -1,0 +1,160 @@
+BRIEF PER SONNET -- RIVALIDARE LE SOGLIE DELLE ARENE (cap 220 sospetta)
+Scritto dall'orchestratore il 07/08/2026, sera tardi (ora di Roma).
+Destinatario: Sonnet, chat pulita, che non sa nulla di questa sessione.
+
+===============================================================================
+0. LEGGI PRIMA QUESTI, IN QUEST'ORDINE
+===============================================================================
+1. git pull.
+2. CLAUDE.md in radice, TUTTO. In particolare: divieto di affermare cio' che
+   non hai verificato, "MOSTRA I DATI NON I RIASSUNTI", e la regola della
+   CATENA (valori di produzione -> soglie arena -> scouting).
+3. Questo brief, per intero, comprese le trappole in §5. Ci sono cascato io
+   due volte in un'ora: sono scritte apposta.
+4. analisi_manager/VALIDAZIONE_SOGLIE.md (come nacquero le soglie).
+5. consiglio_arena.py (docstring + funzioni incasso_medio/pareggio).
+
+NON TOCCARE LA PRODUZIONE. Questo e' un lavoro di MISURA. Non modificare
+PAREGGIO_ARENA / GUADAGNO_PER_PUNTO in build_formazione_globale.py, non
+cambiare il generatore, non lanciare run su GitHub. Alla fine si riporta un
+numero e una raccomandazione; decide l'utente.
+
+===============================================================================
+1. LA DOMANDA
+===============================================================================
+Chiedendo 30 arene, il generatore ne produce 29 "cap 260" e 1 "uncapped",
+ZERO "cap 220". All'utente sembra impossibile che non esista una sola
+configurazione conveniente a cap 220.
+
+VERIFICATO GIA' (non rifarlo): l'ALGORITMO di scelta e' corretto. Prova tutti
+i tipi a ogni passo e tiene quello che rende piu' essenze. Rese misurate allo
+STESSO passo (il confronto va fatto li', non fra pool diversi):
+    passo  1: cap260 384 | cap220 239 | uncapped 292
+    passo 19: cap260 118 | cap220  41 | uncapped  33
+La cap 220 non e' mai la migliore. DATE LE SOGLIE ATTUALI il comportamento e'
+giusto.
+
+LA DOMANDA VERA E' UN'ALTRA: le SOGLIE sono tarate bene? Se il pareggio della
+cap 220 fosse troppo alto, quel tipo risulterebbe fuori mercato per un difetto
+di taratura, non perche' non conviene.
+
+===============================================================================
+2. PERCHE' OGGI NON SI PUO' RISPONDERE, E COSA E' CAMBIATO
+===============================================================================
+consiglio_arena.py calcola il pareggio dalle arene vere in
+dati_globali/arene_storico.json. Ma quel file contiene POCHISSIME arene:
+    cap 260   62      cap 220   16      Uncapped  8     Beginner 74
+16 e' SOTTO il minimo di 20 che lo strumento stesso pretende: stampa "storico
+troppo corto, saltato" e non calcola. Una prova in VALIDAZIONE_SOGLIE.md
+girava su n=6. Su quei numeri non si decide, e l'utente concorda che anche 62
+per la cap 260 e' poco.
+
+NOVITA' (07/08): i dati per rispondere CI SONO GIA' NEL REPO, non serve
+nessuna riestrazione. Stanno in dati_globali/manager_*.json (55 file, 29 MB).
+Inventario gia' fatto dall'orchestratore, replicabile:
+
+  9.889 partecipazioni ad arene, 7.737 arene DISTINTE, 78 giornate.
+  Arene distinte per tipo:
+      Cap 220    750     (contro 16!)
+      Cap 260  1.804     (contro 62)
+      Beginner 3.111
+      Elite      541
+      Uncapped   349
+
+  Struttura: d['giornate'][<slug_gw>] e' una LISTA di voci, una per
+  partecipazione, con:
+      leaderboard    -> identifica l'ARENA (unica per istanza)
+      competizione   -> 'Cap 260' / 'Cap 220' / 'Uncapped' / 'Beginner' / ...
+      tipo_arena     -> 'arena_limited', 'arena_limited_uncapped', ...
+      piazzamento    -> {'rank': n, 'punteggio': x}
+      carte          -> la formazione (non serve qui)
+
+IL LIMITE, da tenere presente: 6.299 arene su 7.737 hanno UN SOLO
+partecipante noto (il manager estratto). Solo 22 arene hanno 9 o 10
+partecipanti. Quindi NON si possono riusare i "campi da 9 avversari veri"
+come fa oggi consiglio_arena.py: bisogna costruire la DISTRIBUZIONE dei
+punteggi per tipo e pescare i nove avversari da li'.
+
+===============================================================================
+3. IL LAVORO, IN ORDINE. IL PRIMO PASSO E' UN CANCELLO
+===============================================================================
+
+PASSO 1 -- CANCELLO METODOLOGICO (se non passa, ci si ferma e lo si dice).
+Pescare 9 avversari INDIPENDENTI da una distribuzione non e' la stessa cosa
+che pescare un campo vero: si perde la correlazione dentro la singola arena.
+Prima di costruire qualunque cosa, DIMOSTRA che i due metodi danno lo stesso
+pareggio:
+  a) prendi le 22 arene con 9-10 partecipanti noti (piu' le 160 righe di
+     arene_storico, che i campi completi ce l'hanno);
+  b) calcola il pareggio con il metodo ATTUALE (campo vero, 9 avversari
+     presi insieme da una stessa arena);
+  c) calcola il pareggio con il metodo NUOVO (9 avversari pescati
+     indipendentemente dalla distribuzione dello stesso insieme);
+  d) confronta. Se lo scarto e' piccolo rispetto al rumore Monte Carlo, il
+     metodo nuovo e' utilizzabile e si prosegue. Se e' grande, FERMATI: la
+     strada e' chiusa, scrivilo e basta.
+Riporta i due numeri, non una conclusione qualitativa.
+
+PASSO 2 -- capire lo scarto gia' visto sulla cap 260. Sull'archivio odierno,
+con la sigma di produzione (SIGMA=50.6), consiglio_arena.py da' 267.9, mentre
+in produzione c'e' 259.5. Non e' spiegato. E' importante capirlo PRIMA di
+toccare la cap 220: se c'e' un difetto nel percorso di calcolo, sporca tutti i
+tipi, non solo uno. Sospetti da verificare, non da assumere: campione diverso,
+premi osservati diversi, sigma diversa da quella con cui nacque il 259.5.
+
+PASSO 3 -- ricalcolare i pareggi per tipo sul campione grande (le 7.737 arene
+dai manager), con la sigma corretta per tipo. Riportare per OGNI tipo: n arene,
+pareggio, guadagno per punto, e un intervallo di confidenza ottenuto
+ripetendo la simulazione con semi diversi. Senza IC il numero non serve.
+
+PASSO 4 -- rifare il conto del passo 19 (i numeri in §1) con le soglie nuove,
+per dire se la classifica cap260/cap220 si ribalta davvero. E' la domanda
+pratica dell'utente: "posso mettere qualche cap 220?".
+
+===============================================================================
+4. COSA CONSEGNARE
+===============================================================================
+ - Una tabella: tipo | n arene | pareggio attuale | pareggio ricalcolato | IC |
+   guadagno/punto attuale | ricalcolato.
+ - L'esito del cancello del passo 1, in chiaro.
+ - Un DUMP leggibile di almeno un caso completo (una arena, i dieci punteggi,
+   il premio, il piazzamento): CLAUDE.md lo pretende e serve a far vedere che
+   i dati aggregati sono quelli veri.
+ - Una raccomandazione: cambiare le soglie si' o no, e quali. NON applicarla.
+ - Se qualcosa non torna, dillo. Un "non lo so" e' una consegna valida; un
+   numero inventato no.
+
+===============================================================================
+5. TRAPPOLE -- LEGGILE, CI SONO CASCATO IO
+===============================================================================
+1. "consiglio_arena.py stampa in scala GREZZA, la produzione e' in scala
+   REALE, quindi 267.9 e 259.5 sono lo stesso numero". E' FALSO e l'ho
+   scritto io prima di verificarlo. Aprendo incasso_medio() si vede
+   `mio = gauss(atteso, sigma)` confrontato con `avversari`, che sono
+   punteggi REALIZZATI di arene vere: il pareggio e' GIA' in scala reale, e i
+   due numeri SONO confrontabili. La cronistoria in VALIDAZIONE_SOGLIE.md dice
+   il contrario: non fidartene senza aprire la funzione.
+2. Il minimo di 20 arene dentro consiglio_arena.py c'e' per un motivo. Nella
+   catena di oggi qualcuno ha ottenuto un pareggio cap 220 (236.3) aggirandolo
+   su 16 arene: quel numero NON vale. Se lo aggiri, dillo esplicitamente.
+3. valida_soglie_utente.py DICHIARA nella propria docstring che il suo
+   "pareggio assoluto" e' SOLO INDICATIVO (scala pre-ricalibrazione). Non
+   usarlo come metro di verita' senza dirlo.
+4. Non confrontare rese di tipi diversi prese da POOL DIVERSI. Io l'ho fatto e
+   ne e' uscito un falso allarme: la resa va misurata allo STESSO passo, con
+   lo stesso pool residuo.
+5. LA CATENA (CLAUDE.md): se un domani le soglie cambiano davvero, cambia
+   anche lo scouting, che le legge dal generatore via getattr. Va detto nella
+   raccomandazione.
+
+===============================================================================
+6. QUANDO HAI FINITO
+===============================================================================
+ - Scrivi l'esito IN CODA A QUESTO FILE, non in un file nuovo.
+ - Aggiorna analisi_manager/VALIDAZIONE_SOGLIE.md, che e' la casa delle
+   soglie: e' li' che il prossimo andra' a cercare.
+ - Committa solo i file tuoi (sulla stessa working tree lavorano altre
+   sessioni): segnala gli altri senza toccarli.
+ - In chat all'utente: poche righe, il percorso del file, e le domande che ti
+   bloccano. Ha l'ADHD e paga a token: niente wall of text, niente riepiloghi
+   non richiesti.
