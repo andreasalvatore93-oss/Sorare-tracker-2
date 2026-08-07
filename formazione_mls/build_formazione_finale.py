@@ -2167,18 +2167,29 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   // ricerca di Sorare (01/08, richiesta utente: i nomi coreani sono difficili
   // da riscrivere a mano).
   function copia(testo, el) {{
+    var vecchio = el.textContent;
     var ok = function () {{
-      var vecchio = el.textContent;
       el.textContent = 'copiato!';
       setTimeout(function () {{ el.textContent = vecchio; }}, 800);
     }};
-    if (navigator.clipboard && navigator.clipboard.writeText) {{
-      navigator.clipboard.writeText(testo).then(ok, function () {{}});
-    }} else {{
+    var fallback = function () {{
+      var riuscito = false;
       var ta = document.createElement('textarea');
       ta.value = testo; document.body.appendChild(ta); ta.select();
-      try {{ document.execCommand('copy'); ok(); }} catch (e) {{}}
+      try {{ riuscito = document.execCommand('copy'); }} catch (e) {{}}
       document.body.removeChild(ta);
+      if (riuscito) {{
+        ok();
+      }} else {{
+        el.style.color = 'red';
+        el.textContent = 'copia non riuscita';
+        setTimeout(function () {{ el.textContent = vecchio; el.style.color = ''; }}, 1200);
+      }}
+    }};
+    if (navigator.clipboard && navigator.clipboard.writeText) {{
+      navigator.clipboard.writeText(testo).then(ok, fallback);
+    }} else {{
+      fallback();
     }}
   }}
   document.addEventListener('click', function (ev) {{

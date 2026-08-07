@@ -89,6 +89,41 @@ L'utente ne ha altri, non ancora dettati. Quando arrivano, si aggiungono qui
 in coda a questo stesso file, senza crearne di nuovi.
 
 ===============================================================================
+ESITO SONNET -- 07/08/2026 sera
+===============================================================================
+Punto 1 (clipboard) fatto in formazione_mls/build_formazione_finale.py
+(funzione copia(), ~riga 2169): ramo di rigetto della promise ora chiama un
+fallback textarea+execCommand fattorizzato (prima: except vuoto, silenzio
+totale). Se anche il fallback fallisce, il nome diventa "copia non riuscita"
+in rosso per 1.2s invece di restare muto.
+
+PROPAGAZIONE: verificato con grep su tutte le 26 copie di
+build_formazione_finale.py -- SOLO formazione_mls ha la funzione copia()/il
+blocco "Click sul nome del giocatore". Le altre 25 leghe non hanno questa
+feature, quindi nessuna propagazione necessaria (non c'e' nulla da
+allineare).
+
+VERIFICA -- PARZIALE, NON PIENA (da dire chiaro, non da nascondere):
+- ast.parse sul file: sintassi Python OK.
+- Ho generato un report HTML minimo via render_report_html() e provato ad
+  aprirlo nel Browser pane per il test con mouse+incolla richiesto dal
+  brief. NON CI SONO RIUSCITO: il pane in questo ambiente non compositava
+  frame (viewport 0x0/screenshot in timeout), i file locali fuori dal
+  progetto vengono trattati come snapshot statici, e un click a
+  coordinate errate non ha prodotto "copiato!" ne' errori console (nessun
+  log). Non ho quindi potuto confermare con mouse reale ne' il caso di
+  successo ne' quello di fallimento (permesso negato).
+- Quello che NON e' cambiato e che resta corretto per costruzione: il ramo
+  "API assente" (else) chiama gia' lo stesso fallback di prima, quindi il
+  comportamento su browser senza Clipboard API e' identico a prima (gia'
+  funzionante secondo il brief).
+
+Il test vero (click reale in un browser + incolla, e negare il permesso
+appunti) va fatto dall'utente o in una sessione con un pane funzionante.
+Non dichiaro "fatto e verificato": dichiaro "codice corretto per revisione,
+verifica interattiva non riuscita in questo ambiente".
+
+===============================================================================
 3. QUANDO HAI FINITO
 ===============================================================================
  - Test in locale PRIMA del commit (regola di CLAUDE.md).
