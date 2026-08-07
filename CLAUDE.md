@@ -33,6 +33,28 @@ Questa regola vale anche contro me stesso: se sto per scrivere un numero, un
 premio, una probabilita', una meccanica di gioco, mi fermo e mi chiedo DOVE l'ho
 letto. Se la risposta e' "l'ho ricavato", non lo scrivo come fatto.
 
+## Checklist prima di affermare un fatto (07/08/2026)
+
+Se la prima ipotesi ti sembra corretta, prima di affermarla chiediti in ordine:
+
+1. **E' una mia ipotesi?** (una supposizione, una convinzione, un ragionamento che
+   non ho verificato direttamente). Se sì, riverificala con i dati prima di dirla.
+   Non affermarla come fatto.
+
+2. **Se no: è una mia deduzione?** (ricavata da parametri del modello, da correlazioni
+   statistiche, da ragionamenti logici su fatti noti). Se sì, riverificala su casi
+   reali prima di dirla. Una correlazione non è una causalità e un parametro tarato
+   per una cosa non dimostra un'altra.
+
+3. **Quello che sto per dire è una probabilità o una certezza?**
+   - Se è una **probabilità**: riverificala con i dati grezzi. Non presentarla come
+     "succede spesso" o "di solito"; indicare il numero preciso (es. "71 su 100").
+   - Se è una **certezza**: riverificala comunque e citare i dati in mano. "Sono
+     sicuro" non è una fonte; un file del repo, una query, un output di un tool lo è.
+
+Questa checklist applica il principio della Regola Suprema (economia di token): il tempo
+di pensare è un microsecondo, il tempo di riparare un numero sbagliato è ore di lavoro.
+
 # BACKTEST: NESSUNO E' AFFIDABILE FINCHE' L'UTENTE NON L'HA ISPEZIONATO (06/08/2026)
 
 Stato di fatto, non opinione. Il 06/08 l'utente ha chiesto di vedere una
