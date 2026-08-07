@@ -69,19 +69,45 @@ non sono stati scritti (nessun commit dal bot su main per questa run).
   Non ho pero' la controprova numerica (l'elenco leghe vero), solo l'indizio
   del conteggio partite.
 
-6. DECISIONE APERTA
-Rilancio il workflow discovery_fixture (GAMEWEEK=3) per provare a
-completarlo e ottenere l'elenco leghe vero. Se fallisce/si cancella di
-nuovo, mi fermo e riporto senza inventare un esito. Alternativa se il
-rate-limit persiste: aumentare ODDS_L10_SLEEP o shardare i ruoli piu'
-pesanti (Defender/Midfielder) in job paralleli come gia' fatto per altre
-giornate pesanti (vedi DISCOVERY_LEAGUE_SHARD in discovery_fixture.py) --
-ma questa e' una modifica di script, da decidere insieme, non da fare in
-autonomia stanotte.
+6bis. SECONDO TENTATIVO (01:16:08 -> ~01:46 UTC)
+Rilanciato lo stesso workflow (run 31137460124, GAMEWEEK=3) subito dopo il
+primo. Alle 01:46 UTC (30 min dall'avvio, timeout-minutes:30 dello yml) il
+job risultava ANCORA status="in_progress" ai controlli fatti fin li' (ultimo
+controllo confermato: in_progress). Mi sono fermato qui come da istruzione
+esplicita dell'utente ("non ritentare una terza volta in autonomia") invece
+di continuare a rilanciare alla cieca: due tentativi consecutivi non sono
+bastati a completare la discovery per questa giornata, quindi il problema
+NON e' un caso isolato ma sembra strutturale per GW3 (183 partite/366
+squadre, molto piu' pesante del solito -- vedi punto 5).
+Non ho la conferma dell'esito finale di questo secondo run (successo,
+cancellato o timeout GitHub) perche' i log restano illeggibili finche' il
+job non e' concluso e mi sono fermato prima di verificarlo di nuovo. Da
+controllare al risveglio: run 31137460124 su GitHub Actions.
 
-7. FILE DI RIFERIMENTO
-- discovery_fixture.py (script lanciato, LEAGUE_DIR per le pipeline note)
-- .github/workflows/discovery_fixture.yml (workflow lanciato)
+7. DECISIONE APERTA
+L'elenco leghe/campionati coinvolti in GW3 NON e' ancora disponibile dopo
+due tentativi. Prima di un terzo tentativo, decidere insieme una delle due
+strade (entrambe modifiche di script, non da fare in autonomia):
+  a) aumentare ODDS_L10_SLEEP (oggi 0.7s) per stare piu' larghi sotto il
+     rate-limit Sorare, a costo di un run ancora piu' lungo;
+  b) shardare i ruoli piu' pesanti (Defender 561 carte, Midfielder 472,
+     Forward 423) in piu' job paralleli, come gia' fatto per altre giornate
+     pesanti (vedi DISCOVERY_LEAGUE_SHARD in discovery_fixture.py).
+Alternativa piu' rapida per la sola domanda "quali campionati coinvolti"
+(senza bisogno delle odds/L10, quindi senza il rate-limit che ha bloccato
+questi due run): scrivere una query leggera dedicata (club->domesticLeague
+sulle squadre di anyGames della fixture, ~183-366 lookup ma senza sleep
+0.7s ne' retry 429 sistematici) invece di riusare la pipeline discovery
+pensata per selezionare candidati. Anche questa e' una modifica di codice
+da valutare insieme, non fatta stanotte.
+
+8. FILE DI RIFERIMENTO
+- discovery_fixture.py (script lanciato, LEAGUE_DIR per le pipeline note,
+  ODDS_L10_SLEEP, DISCOVERY_LEAGUE_SHARD)
+- .github/workflows/discovery_fixture.yml (workflow lanciato,
+  timeout-minutes: 30)
 - dati_globali/scouting_football-4-7-aug-2026.json (dati GW2 usati per il
   confronto)
 - Run GitHub: 31135763772 (job 92734592796), conclusion "cancelled"
+- Run GitHub: 31137460124 (job 92739936013), esito da verificare al
+  risveglio
