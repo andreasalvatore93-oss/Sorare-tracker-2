@@ -1,0 +1,204 @@
+BRIEF UNICO -- RE-INDAGINE STARTER ODDS SU TUTTI E 4 I RUOLI, CON AUDIT BUG
+Scritto dall'orchestratore, 07/08/2026, ora di Roma.
+Destinatario: Sonnet (esecutore con giudizio: contiene molti "decidi se").
+
+Questo brief riapre in modo SISTEMATICO il filone favorito_odds (starter odds
+1X2) su GK/DEF/MID/FWD insieme, invece che a pezzi. Nasce da una scoperta
+recente: piu' backtest storici erano contaminati dallo stesso bug (D6), e i
+verdetti costruiti su di essi sono nulli. Prima di decidere se e come usare
+le odds in produzione, va rifatto tutto controllando che NESSUNO dei 4 ruoli
+poggi su numeri sporchi.
+
+===============================================================================
+0. LEGGI PRIMA, IN QUEST'ORDINE
+===============================================================================
+1. CLAUDE.md (radice): sezioni "DIVIETO ALLUCINAZIONI", "BACKTEST: NESSUNO E'
+   AFFIDABILE...", "DIFETTI APERTI" (D1-D7, in particolare D6), "prima di
+   misurare l'effetto di un componente dimostro che l'interruttore funziona",
+   "La catena di produzione", "Cache game-log condivisa".
+2. docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt PER INTERO: e' la storia
+   di TUTTI i test gia' fatti su questo filone. In particolare sez.4.1
+   (griglia per-ruolo), 4.2 (backtest formazione policy A-E), 5 (le cose da
+   sapere), 5bis (composizione bloccata, arene sintetiche), 5ter (Brief 1 su
+   tutti i mazzi), 6/6bis (decisione e cosa resta), 7 (fix D6 difensore),
+   8 (25 GW).
+3. docs/handoff/HANDOFF_favorito_odds_taratura_2026-08-05.txt: la taratura
+   per-ruolo originale (righe 403-589, i numeri B DEF k0.2 poi risultati
+   contaminati da D6, vedi sotto).
+4. docs/handoff/PARERE_OPUS_DECISIONE_PRODUZIONE_2026-08-07.txt sez.8 (fix D6
+   su p11_bloccato e p11_manager_confronto, gia' fatti) e sez.5a (l'elenco
+   dei 4 script con lo stesso pattern di bug).
+5. docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md: come funziona lo scouting
+   (Ess/GW, EUR/EssGW) -- serve per la FASE 4.
+
+===============================================================================
+1. LA SITUAZIONE, IN CHIARO (cosa e' pulito e cosa no)
+===============================================================================
+COS'E' favorito_odds: un segnale esterno = p_win_squadra_propria - p_win_
+avversario, ricavato dalle quote 1X2 (winOddsBasisPoints). Testato in due
+forme: additiva (score + k*odds) e moltiplicativa (score*(1+k*odds)).
+Popolato solo da ~18/11/2025 in poi (vincolo gia' noto).
+
+PULITO (script che legge il grezzo dalla cache game-log, NON dai punteggi
+manager gonfiati):
+ - taratura_confronto_parametri.py -> la GRIGLIA PER-RUOLO (sez.4.1 handoff
+   odds). Verdetto storico: DEF 7/9 varianti passano il criterio severo
+   (MAE+corr+lift tutti e 3 IC95 fuori da zero); GK 0/9, MID 0/9, FWD 1/9.
+   QUESTO SCRIPT E' DA VERIFICARE COMUNQUE (vedi FASE 1) ma a priori non
+   e' toccato da D6.
+
+CONTAMINATO da D6 (leggevano c['punteggio'] dai file manager, gonfiato da
+xp+capitano sulle righe non-arena):
+ - p11_bloccato_tutti_mazzi.py -> FIXATO (commit 144708a1a6). Backtest
+   composizione bloccata (Brief 1).
+ - p11_manager_confronto.py -> FIXATO (commit 39f72fe0bb). Base dei backtest
+   B/C/D/E di formazione.
+ - p11_calib_fwd_confronto.py -> NON ANCORA FIXATO. Sostiene il verdetto
+   FWD +1.25/+0.90 (calibrazione FWD): OGGI NULLO.
+ - p12_backtest_manager_full.py -> verificato, NON e' un bug (pool sole
+   arene, /1.2 esatto): lasciare com'e'.
+
+CONSEGUENZA: tutti i numeri di formazione delle sez.4.2 e 5bis del handoff
+odds (policy A/B/C/D/E, composizione bloccata, arene sintetiche) sono stati
+prodotti con almeno uno script contaminato. VANNO RIFATTI. La griglia
+per-ruolo (4.1) probabilmente regge ma va riverificata.
+
+IL PUNTO STRATEGICO (dal handoff odds sez.5 e 6bis, mai risolto): il segnale
+per-ruolo E' REALE e grosso (DEF dcorr +0.060, ~18x il segnale su cui fu
+cambiato il blend GK in produzione), MA non arriva ai PUNTI in formazione
+perche' i 5 slot COMPETONO fra ruoli: correggere solo i DEF li fa scavalcare
+gli altri con un righello diverso. Il valore vero e' sospettato essere nello
+SCOUTING (dove i ruoli NON competono: si sceglie il miglior DEF fra i DEF),
+ma lo scouting NON E' MAI STATO MISURATO. Questa e' la FASE 4, ed e'
+probabilmente la piu' importante.
+
+===============================================================================
+2. OBIETTIVO E FASI
+===============================================================================
+Obiettivo: sapere, con numeri PULITI, se le starter odds migliorano qualcosa
+di USABILE, ruolo per ruolo e in combinazione, e SE il beneficio (dove
+esiste) va cercato in formazione o nello scouting. Nessuna modifica alla
+produzione in questo brief: solo misura e, se serve, fix di SCRIPT di misura
+(non del modello di produzione).
+
+Procedi in FASI, in ordine. Non passare alla successiva se la precedente ha
+un controllo che non torna: fermati e riporta.
+
+--- FASE 1: AUDIT BUG SU TUTTI E 4 I RUOLI (prima di misurare qualunque cosa)
+Prima di fidarti di QUALUNQUE numero, verifica che gli script che userai non
+siano contaminati, per tutti e 4 i ruoli (GK incluso: l'utente sospetta
+giustamente che il bug potesse esserci anche li', mai controllato).
+
+1a. Ripeti il grep di CLAUDE.md/PARERE sez.5a su TUTTO il repo: cerca ogni
+    punto in cui un backtest/taratura legge il punteggio realizzato da
+    c['punteggio'] / righe dei file dati_globali/manager_*.json invece che
+    dalla cache game-log (reale_da_cache / lettura score FINAL dalla cache).
+    Elenca OGNI file trovato, con riga, e classificalo: contaminato /
+    innocuo / gia' fixato. NON assumere che i 4 gia' noti siano tutti:
+    cercane altri.
+1b. Verifica taratura_confronto_parametri.py riga per riga: da dove prende il
+    'realizzato' per la griglia per-ruolo? Se dalla cache (score FINAL),
+    e' pulito su tutti e 4 i ruoli e lo dichiari. Se no, e' un problema
+    grosso perche' la griglia per-ruolo e' la base di tutto.
+1c. TEST A/A SULL'INTERRUTTORE (regola CLAUDE.md), per OGNI ruolo: muovi k a
+    0 (deve dare score invariato) e a un valore assurdo (1e9, deve esplodere).
+    Conferma che favorito_odds sia davvero applicato per GK/DEF/MID/FWD e non
+    inerte su qualche ruolo. Riporta l'esito per ruolo.
+
+Consegna FASE 1: tabella file/riga/stato per ogni script che tocca il tema,
+e conferma interruttore per i 4 ruoli. Se trovi un contaminato non ancora
+noto, FERMATI e segnalalo prima di procedere: potrebbe invalidare altro.
+
+--- FASE 2: GRIGLIA PER-RUOLO PULITA, GK/DEF/MID/FWD
+Rifai la griglia per-ruolo (stessa di sez.4.1) con lo script pulito,
+campione pieno, criterio severo (MAE + corr + lift, tutti e 3 gli IC95 fuori
+da zero nel verso giusto -- regola parametri di CLAUDE.md). Forma additiva e
+moltiplicativa, stessa griglia di k gia' usata.
+Obiettivo: confermare o smentire il verdetto storico (DEF passa forte, GK/
+MID/FWD no). Riporta la tabella COMPLETA per tutti e 4 i ruoli, non solo i
+"passa". Dichiara PRIMA l'ipotesi: ti aspetti che il DEF regga (script gia'
+pulito) e che GK/MID/FWD restino sotto; se cambia qualcosa rispetto allo
+storico, e' un segnale che qualcosa era diverso -- indagalo.
+
+--- FASE 3: BACKTEST DI FORMAZIONE PULITO, RUOLI E COMBINAZIONI
+Rifai i backtest di formazione (policy per-ruolo) con gli script FIXATI
+(p11_bloccato_tutti_mazzi.py e p11_manager_confronto.py gia' corretti; per il
+FWD DEVI PRIMA fixare p11_calib_fwd_confronto.py con lo stesso identico
+intervento gia' validato -- reale_da_cache sempre primario, controllo A/B
+prima di fidarti, vedi PARERE sez.8).
+
+Policy da testare (come sez.4.2, ma su campione PIU' GRANDE di prima):
+  A = produzione
+  B = DEF al suo ottimo
+  singole = GK, MID, FWD ciascuno al proprio ottimo, SEPARATAMENTE (per
+    vedere se qualcuno oltre il DEF muove qualcosa una volta pulito)
+  D = ogni ruolo al suo ottimo INSIEME (la combinazione)
+  E = D ricentrata per ruolo/GW (se il controllo di sanita' regge, vedi
+    sez.4.2: E aveva un limite noto sulle spezzature)
+  + la COMPOSIZIONE BLOCCATA (isola la selezione dentro il ruolo dalla
+    competizione fra ruoli): e' il test che nel passato faceva RIEMERGERE il
+    guadagno DEF sul campione grande (5bis A).
+
+CAMPIONE: usa TUTTI i mazzi disponibili ORA, non solo crowss+forever-young:
+il dataset e' cresciuto (16 manager nuovi + satonio + forever-young +
+crowss). Attenzione: molti mazzi nuovi hanno poche giornate; riporta n per
+mazzo e non fondere manager con profondita' minima nell'aggregato senza
+etichetta. Per il DEF/composizione bloccata, forever-young e satonio sono i
+piu' profondi.
+
+Regola del delta (CLAUDE.md): un guadagno vale solo se il SEGNO e' concorde
+su piu' mazzi indipendenti e il margine supera il tremolio. Il rumore
+per-arena e' ~50pt: servono migliaia di arene per vedere +2pt. Dichiara
+QUESTO limite prima dei numeri e non spacciare un IC che attraversa zero per
+un risultato. Attenzione ai test multipli (5 policy x piu' spezzature x piu'
+mazzi = molti confronti: 1 su 20 "significativo" per caso e' atteso).
+
+--- FASE 4: SCOUTING (il test che vale, mai fatto)
+Questo e' il punto piu' importante. In formazione i ruoli competono per lo
+slot e il segnale per-ruolo si annacqua. Nello SCOUTING no: si confronta il
+miglior DEF fra i DEF, il miglior MID fra i MID, ecc. -- nessuna competizione
+fra ruoli. Il lift +7.22% sul DEF (griglia 4.1) potrebbe tradursi
+DIRETTAMENTE in "quale difensore conviene comprare".
+
+Leggi docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md e scouting_gw.py per capire
+come lo scouting ordina le carte (Ess/GW, EUR/EssGW). Poi progetta e proponi
+(PRIMA di lanciare, per approvazione) un test che risponda: applicando
+favorito_odds al suo ottimo per ruolo, l'ordinamento di scouting DENTRO ogni
+ruolo migliora rispetto a produzione? Metrica pulita possibile (da valutare
+tu): correlazione fra ranking-scouting-con-odds e resa realizzata futura,
+per ruolo, contro lo stesso senza odds -- su carte reali, resa letta dalla
+cache (mai dai punteggi manager). Se serve un dato che non c'e', dillo,
+non stimarlo.
+
+===============================================================================
+3. COSA NON FARE
+===============================================================================
+- Nessuna modifica al modello di produzione (build_formazione_globale.py,
+  formazione_*/predict/*, soglie arena, calibrazioni). Se un fix serve, e'
+  solo su SCRIPT DI MISURA (p11_*), oppure lo proponi per la sessione catena
+  successiva.
+- Non dedurre un ruolo dall'altro. Misura GK, DEF, MID, FWD ognuno con i suoi
+  dati.
+- Non chiudere ne' aprire un filone su un backtest non ispezionato: consegna
+  un dump leggibile di almeno un caso per ogni test di formazione (nomi,
+  ruoli, ID carta, pool, scelto), come impone CLAUDE.md.
+- Se un IC attraversa lo zero, il risultato e' "non dimostrato", non
+  "negativo" e non "positivo".
+
+===============================================================================
+4. CONSEGNA
+===============================================================================
+Scrivi l'esito, fase per fase, in coda a
+docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt (e' l'handoff del filone;
+NON creare un file nuovo). Ogni fase: ipotesi PRIMA dei numeri, tabella
+completa con n, dump del caso ispezionabile, e cosa cambia rispetto ai
+verdetti storici (che erano contaminati). Numeri anche nulli.
+Committa gli script di misura fixati/nuovi separatamente, uno per fase.
+In chat: max 6 righe, con lo stato secco per fase (fatto/fermato+perche').
+
+NOTA SUL PERCHE' questo precede la catena G: la catena per portare il grade
+in produzione parte DOPO. Ma se questa indagine trova che le odds vanno
+usate (fosse anche solo nello scouting), quel cambio va nella STESSA catena
+del grade (entrambi toccano l'ordinamento a valle), quindi conviene sapere
+prima di aprire la catena se c'e' un secondo ingrediente da inserirci. Per
+questo l'utente ha voluto chiudere odds+4ruoli PRIMA di G.

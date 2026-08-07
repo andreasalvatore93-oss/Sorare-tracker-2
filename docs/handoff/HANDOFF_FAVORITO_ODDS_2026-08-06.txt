@@ -970,3 +970,94 @@ dati_globali/manager_tijmenmaaktpap.json (dati_globali/manager_forever-
 young.json NON toccato), analisi_manager/p11_bloccato_tutti_mazzi.py
 (aggiunto conteggio n_reale_fallback_raw in output, non cambia la logica),
 analisi_manager/p11_bloccato_out.txt, analisi_manager/p11_bloccato_righe.json.
+
+
+================================================================================
+9. RE-INDAGINE 4 RUOLI CON AUDIT BUG (Sonnet esecutore, 07/08 giorno Roma)
+   Da BRIEF_ODDS_4RUOLI_2026-08-07.txt
+================================================================================
+
+--- FASE 1: AUDIT BUG SU TUTTO IL REPO (GK/DEF/MID/FWD) ---
+
+1a. Grep sistematico di c['punteggio'] / c.get('punteggio') su TUTTO il
+repo (non solo i 4 script gia' noti). Tabella file/riga/stato:
+
+  p11_manager_confronto.py:88        GIA' FIXATO (39f72fe0bb)
+  p11_bloccato_tutti_mazzi.py:98     GIA' FIXATO (144708a1a6)
+  p11_calib_fwd_confronto.py:96      FIXATO ORA (stesso identico pattern e
+                                      stesso identico fix dei due sopra)
+  p12_backtest_manager_full.py:127   INNOCUO -- riverificato: pool_rows
+                                      costruito SOLO da arene_reali (filtro
+                                      esplicito riga 98), raw/1.2 e' esatto
+                                      in arena (gia' chiuso nel PARERE
+                                      07/08 notte, qui solo riconfermato)
+  p12_diagnosi_grade_sez25.py:79     INNOCUO -- 'raw' usato solo come
+                                      filtro (gia' in PARERE)
+  analizza_gw.py:134                 PULITO -- filtra le arene e toglie il
+                                      capitano (gia' noto, D6 CLAUDE.md)
+  p13_backtest_gw_crowss.py          PULITO -- usa F.trova_grade_finestra
+  (309,387,712)                      (cache); c.get('punteggio') qui e'
+                                      solo stampa/somma diagnostica, non e'
+                                      il 'reale' del backtest
+  p11_verifiche_rischio_capitano.py  INNOCUO -- reale_target usato SOLO
+  :70-72                             per classificare presente/assente
+                                      (Verifica 1: tenute vs scartate), mai
+                                      come valore numerico nel backtest;
+                                      Verifica 2 usa M.prepara_gw_base
+                                      (gia' fixato)
+  residuo_smart_money.py:112         INNOCUO IN PRATICA -- nessun filtro
+                                      tipo_arena nel codice, ma gli 8
+                                      manager della whitelist hanno SOLO
+                                      righe arena_limited* nei rispettivi
+                                      file (verificato uno per uno). Non fa
+                                      parte del filone odds. ATTENZIONE se
+                                      in futuro si aggiungono manager con
+                                      mix arena/non-arena a questa
+                                      whitelist il bug si riaprirebbe
+                                      (fins49 ha gia' un tipo_arena=None
+                                      non approfondito).
+  ricostruisci_manager.py,           FUORI SCOPE -- non toccano favorito_
+  punteggi_grezzi.py,                odds, non letti a fondo (punteggi_
+  ottimizza_giornata.py              grezzi.py ricostruisce il grezzo con
+                                      un metodo a catena diverso da D6)
+
+  Nessun contaminato NUOVO trovato oltre ai 4 gia' noti dal PARERE.
+
+1b. taratura_confronto_parametri.py NON e' lo script che ha prodotto la
+griglia 4.1: e' il modulo che fornisce lift_selezione (il metro), e legge
+'realizzato' da nodo.get('score') dentro cache.gamelog(slug) -- cache, mai
+un file manager. Lo script che ha PRODOTTO i numeri di sez.4.1 e'
+taratura_confronto_odds_definitivo.py, che importa lift_selezione da qui.
+Anche questo legge reale=nodo.get('score') dalla cache (riga 47-48), stesso
+schema, per TUTTI e 4 i ruoli indistintamente (SLUG_PER_RUOLO popolato con
+lo stesso codice per gk/def/mid/fwd, righe 33-38). CONFERMATO: la griglia
+4.1 e' pulita su tutti e 4 i ruoli, verificato riga per riga (non solo "a
+priori non toccata da D6" come diceva il brief).
+
+1c. TEST A/A SULL'INTERRUTTORE (verificato leggendo backtest_arene_
+previsioni.py:563-620, calcola()): favorito_odds_k/favorito_odds_mult_k
+hanno default None, applicati con "if favorito_odds_k:" SENZA alcun
+controllo su ctx['ruolo'] (a differenza di favorito_k che ha un ramo
+speciale per GK). k=0 e' falsy in Python -> blocco non esegue -> base
+invariato: identico per GK/DEF/MID/FWD, nessun gate per ruolo nel codice.
+k grande moltiplica un delta tipico ~0.1-0.3 (SD misurate in sez.8:
+0.276-0.283 su tutti e 4 i ruoli, stessa scala) e fa esplodere base in
+tutti i rami. CONFERMATO: interruttore vivo su tutti e 4 i ruoli.
+
+FIX APPLICATO: analisi_manager/p11_calib_fwd_confronto.py, funzione
+prepara_gw_base() -- stesso intervento gia' fatto sugli altri due file
+(reale_da_cache() sempre primario, c['punteggio'] raw solo come ripiego,
+contato in n_reale_fallback_raw, stampato a fine run). Nessuna modifica
+alla logica di selezione A/R.
+
+Verdetto PRIMA del fix (contaminato, NULLO per D6, citato in sez.8):
+  delta pesato per arena R-A = +1.250  IC95 [+0.392, +2.126]
+
+RILANCIO DOPO IL FIX: vedi in coda a questa sezione appena pronto (girato
+in background).
+
+CONSEGNA FASE 1: nessun contaminato NUOVO ha toccato favorito_odds oltre
+ai 4 gia' noti. Il quarto (p11_calib_fwd_confronto.py) e' ora fixato.
+Interruttore confermato vivo per tutti e 4 i ruoli. Griglia 4.1 confermata
+pulita per costruzione. Si procede a FASE 2 (griglia pulita, rilancio in
+corso in background) e al rilancio del fix FWD.

@@ -137,19 +137,29 @@ def atteso_raw_di(slug, ruolo_full, gw_data):
     return base, ctx
 
 
+_FALLBACK_COUNTER = {'n': 0}
+
+
 def prepara_gw_base(giornate, gw_target):
     carte_per_slug, reale_target = costruisci_pool_gw(giornate, gw_target)
     gw_data = giornate[gw_target]['data']
     base_pool = []
     n_scartate_atteso = 0
     n_scartate_reale = 0
+    n_reale_fallback_raw = 0
     for (slug, ruolo_full), info in carte_per_slug.items():
         cod = RUOLO_COD.get(ruolo_full)
         if cod is None:
             continue
-        reale = reale_target.get((slug, ruolo_full))
+        # Fix D6 (07/08, stesso identico intervento di p11_bloccato_tutti_
+        # mazzi.py/p11_manager_confronto.py): reale_da_cache() e' SEMPRE la
+        # fonte primaria. c['punteggio'] raw del file manager ha xp+capitano
+        # dentro per le righe non-arena (D4) e resta solo come ripiego.
+        reale = reale_da_cache(slug, gw_data)
         if reale is None:
-            reale = reale_da_cache(slug, gw_data)
+            reale = reale_target.get((slug, ruolo_full))
+            if reale is not None:
+                n_reale_fallback_raw += 1
         if reale is None:
             n_scartate_reale += 1
             continue
@@ -165,6 +175,7 @@ def prepara_gw_base(giornate, gw_target):
         base_pool.append({'slug': slug, 'ruolo_full': ruolo_full, 'codice': cod,
                           'base': base, 'reale': reale, 'lega': lega,
                           'copie': len(info['ids']), 'l10': l10_reale})
+    _FALLBACK_COUNTER['n'] += n_reale_fallback_raw
     return base_pool, n_scartate_atteso, n_scartate_reale
 
 
@@ -454,6 +465,8 @@ def main():
     utili = [r for r in risultati if not r['muto']]
     p('\nmazzi totali processati: %d | muti (overlap>=4.5/5, esclusi dai conteggi): %d | utili: %d'
       % (len(risultati), len(risultati) - len(utili), len(utili)))
+    p('fix D6: n_reale_fallback_raw (carte con reale preso dal punteggio grezzo del file'
+      ' manager perche non trovate in cache) = %d' % _FALLBACK_COUNTER['n'])
 
     # ---------------------------------------------------- composizione: segno stabile
     p('\n' + '-' * 80)
