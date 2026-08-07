@@ -53,6 +53,42 @@ permissions:
   contents: write
 
 jobs:
+  # GRADE (07/08/2026): UNA sola fetch per run, condivisa agli shard come
+  # artifact. Prima ognuno dei 20 shard la rifaceva per conto suo: 3
+  # leaderboard x 4 ruoli x fino a 20 pagine = ~240 richieste per shard,
+  # ~4.800 a run. Misurato sulla run 31190547919: 4-8 risposte 429 per job, e
+  # uno shard fermo a 200 slug con grade invece di 877 per paginazione
+  # troncata dai 429. Cosi' le richieste sono ~240 in tutto.
+  # NB: gira su runner GitHub normali. Il problema che sembrava di rete (0
+  # nodi solo da GitHub) era la sessione resa anonima dalle query senza CSRF,
+  # gia' corretta: nessun runner self-hosted serve.
+  grade:
+    name: grade (una fetch per tutta la run)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install requests curl_cffi
+      - name: Raccolta grade
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
+          SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
+          GAMEWEEK: ${{ github.event.inputs.gameweek }}
+          FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          PYTHONUNBUFFERED: "1"
+        run: python fetch_grade_gw.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: grade_gw
+          path: grade_gw.json
+          retention-days: 1
+
   # TEST 28/07 v4 (vedi 30.M): 24 job discovery paralleli (v3 a 12 confermato
   # funzionante, 30.L). GK/FWD x4 quote, DEF/MID x8 quote. Se il test
   # fallisce/non porta benefici, vedi 30.I per il rollback.
@@ -67,6 +103,7 @@ jobs:
   # connessioni concorrenti verso Sorare, non piu'.
   discovery:
     name: discovery ${{ matrix.gruppo.nome }}
+    needs: grade
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -103,6 +140,10 @@ jobs:
           cache: "pip"
           cache-dependency-path: requirements-formazione.txt
       - run: pip install requests curl_cffi
+      # Il grade arriva dal job 'grade' di questa stessa run: qui nessuno shard
+      # rifa' la fetch (era la causa dei 429, vedi commento sul job 'grade').
+      - uses: actions/download-artifact@v4
+        with: { name: grade_gw }
       - name: Discovery
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}

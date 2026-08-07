@@ -198,14 +198,24 @@ def _grade_bench_page(so5_slug, position, after):
         "pageSize": 50, "so5LeaderboardSlug": so5_slug, "after": after,
     }
     headers = _headers_client_web()
-    backoff = 1.0
-    for attempt in range(4):
+    # 429: 6 tentativi con attesa 2,4,8,16,32,60s invece di 4 con 1,2,4,8.
+    # Misurato sulla run 31190547919: 4-8 risposte 429 per job, e uno shard si
+    # e' fermato a 200 slug con grade invece di 877 perche' finiti i tentativi
+    # la paginazione si interrompeva a meta' -- e si interrompeva IN SILENZIO,
+    # con un risultato parziale indistinguibile da uno completo. Ora se i
+    # tentativi si esauriscono lo si scrive nel log.
+    backoff = 2.0
+    for attempt in range(6):
         try:
             r = _grade_http().post(base.GRAPHQL_URL,
                                    json={'query': GRADE_BENCH_QUERY, 'variables': variables},
                                    headers=headers, timeout=20)
             if r.status_code == 429:
-                time.sleep(backoff)
+                attesa = min(backoff, 60.0)
+                if attempt >= 2:
+                    log(f"  [grade] 429 su {so5_slug}/{position}, tentativo "
+                        f"{attempt + 1}/6, attendo {attesa:.0f}s")
+                time.sleep(attesa)
                 backoff *= 2
                 continue
             d = r.json()
@@ -236,6 +246,9 @@ def _grade_bench_page(so5_slug, position, after):
             log(f"  [grade][DEBUG] {so5_slug}/{position}: HTTP {r.status_code}, "
                 f"headers={hdrs_utili}, body[:500]={r.text[:500]!r}")
         return nodes, pinfo.get('hasNextPage'), pinfo.get('endCursor')
+    log(f"  [grade] ATTENZIONE: {so5_slug}/{position} ha esaurito i 6 tentativi "
+        f"(429 o eccezioni). La paginazione si ferma qui: il grade di questa "
+        f"leaderboard/ruolo sara' PARZIALE, non completo.")
     return [], False, None
 
 
@@ -248,6 +261,30 @@ def fetch_grade_live(fixture_slug):
     if not FETCH_GRADE:
         log("[grade] FETCH_GRADE=0, salto il fetch (G restera' in fallback z=0).")
         return {}, {}
+    # ARTIFACT DELLA STESSA RUN, NON UNA CACHE (07/08/2026).
+    # Il job 'grade' fa la fetch UNA VOLTA e la passa qui come artifact. Prima
+    # ognuno dei 20 shard la rifaceva per conto suo: ~4.800 richieste identiche
+    # a run, con 4-8 risposte 429 per job e paginazioni troncate (uno shard si
+    # e' fermato a 200 slug invece di 877). Il file nasce e muore dentro la
+    # run, non e' committato e non puo' invecchiare; se la giornata dentro non
+    # e' quella che stiamo processando lo si scarta, perche' un artifact di
+    # un'altra giornata sarebbe il fallback silenzioso da evitare.
+    p = 'grade_gw.json'
+    if os.path.exists(p):
+        try:
+            with open(p, encoding='utf-8') as f:
+                d = json.load(f)
+            if d.get('fixture') != fixture_slug:
+                log(f"[grade] ATTENZIONE: {p} e' della giornata "
+                    f"{d.get('fixture')!r}, non {fixture_slug!r}: lo IGNORO e "
+                    f"faccio la fetch diretta.")
+            else:
+                gm = d.get('grade_map') or {}
+                log(f"[grade] da artifact {p}: {len(gm)} slug con grade "
+                    f"(fetch fatta una sola volta dal job 'grade' di questa run).")
+                return gm, d.get('copertura') or {}
+        except Exception as e:
+            log(f"[grade] {p} illeggibile ({e}): faccio la fetch diretta.")
     if not SORARE_CSRF:
         log("[grade] SORARE_CSRF assente: la query bench potrebbe fallire o "
             "tornare vuota senza CSRF. Procedo comunque, verifica copertura.")
@@ -258,21 +295,42 @@ def fetch_grade_live(fixture_slug):
     # user(slug:) (query PUBBLICA, riga ~394), quindi funzionano anche a
     # cookie morto: non sono una prova che l'auth regga. Qui si chiede
     # currentUser, che e' null se e solo se la sessione non autentica.
+    # La probe RIPROVA sui 429 (difetto trovato il 07/08 sulla run
+    # 31190547919: senza retry un rate limit veniva stampato come
+    # "SESSIONE NON AUTENTICATA", cioe' una diagnosi sbagliata proprio nella
+    # riga che serve a diagnosticare). Rate limit e sessione morta sono due
+    # cose diverse e vanno dette con parole diverse.
     _probe_h = _headers_client_web()
-    try:
-        _pr = _grade_http().post(
-            base.GRAPHQL_URL, json={'query': '{ currentUser { slug } }'},
-            headers=_probe_h, timeout=20)
-        _pd = _pr.json()
-        _cu = ((_pd.get('data') or {}).get('currentUser') or {}).get('slug')
-        log(f"[grade] PROBE auth: currentUser={_cu!r} "
-            f"(len cookie={len(base.COOKIES)}, len csrf={len(SORARE_CSRF)})")
-        if not _cu:
-            log("[grade] SESSIONE NON AUTENTICATA: currentUser e' null. Il "
-                "bench tornera' 0 nodi per questo motivo, NON perche' la GW e' "
-                "chiusa. Rigenerare SORARE_COOKIE/SORARE_CSRF nei secret.")
-    except Exception as _e:
-        log(f"[grade] PROBE auth fallita: {_e}")
+    _cu, _rate_limited = None, False
+    _bk = 2.0
+    for _t in range(5):
+        try:
+            _pr = _grade_http().post(
+                base.GRAPHQL_URL, json={'query': '{ currentUser { slug } }'},
+                headers=_probe_h, timeout=20)
+            if _pr.status_code == 429:
+                _rate_limited = True
+                time.sleep(min(_bk, 60.0))
+                _bk *= 2
+                continue
+            _rate_limited = False
+            _pd = _pr.json()
+            _cu = ((_pd.get('data') or {}).get('currentUser') or {}).get('slug')
+            break
+        except Exception as _e:
+            log(f"[grade] PROBE auth, tentativo {_t + 1}/5 fallito: {_e}")
+            time.sleep(min(_bk, 60.0))
+            _bk *= 2
+    log(f"[grade] PROBE auth: currentUser={_cu!r} "
+        f"(len cookie={len(base.COOKIES)}, len csrf={len(SORARE_CSRF)})")
+    if _rate_limited:
+        log("[grade] PROBE inconcludente: 429 su tutti i tentativi. E' un "
+            "RATE LIMIT, non una sessione morta: non trarre conclusioni "
+            "sull'autenticazione da questa riga.")
+    elif not _cu:
+        log("[grade] SESSIONE NON AUTENTICATA: currentUser e' null. Il "
+            "bench tornera' 0 nodi per questo motivo, NON perche' la GW e' "
+            "chiusa. Rigenerare SORARE_COOKIE/SORARE_CSRF nei secret.")
     leaderboards = [
         f'{fixture_slug}-seasonal-all_star-all_seasons_all_star_arena_limited',
         f'{fixture_slug}-seasonal-all_star-all_seasons_all_star_limited',
