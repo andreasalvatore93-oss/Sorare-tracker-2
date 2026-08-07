@@ -421,10 +421,14 @@ def calibra_riga(row, ruolo=None):
 # non reinventata): atteso_combinato = atteso_calibrato + sd_gruppo * z_grade,
 # per gruppo (lega, ruolo) -- qui il gruppo coincide con role_data[lega][ruolo]
 # gia' costruito in load_league_role_data, nessuna nuova aggregazione.
-# Spento = scelta scritta (GRADE_ENABLED, default '0'), mai assenza del dato:
-# a GRADE_ENABLED=0 'atteso'/'sort_score' non vengono MAI toccati, quindi
-# l'output resta bit-per-bit quello di produzione (test A/A, CLAUDE.md).
-GRADE_ENABLED = os.environ.get('GRADE_ENABLED', '0') == '1'
+# Spento = scelta scritta (GRADE_ENABLED, default '1' -- G IN PRODUZIONE dal
+# 07/08/2026, catena validata: A/A passato, SIGMA/soglie/scouting invariati,
+# backtest ampio a copertura piena (crowss 77.4%, manager 100%) con segno
+# positivo su entrambi i campioni, anche se gli IC non escludono zero --
+# vedi docs/handoff/BRIEF_SONNET_CATENA_G_2026-08-07.txt esito 2), mai
+# assenza del dato: a GRADE_ENABLED=0 'atteso'/'sort_score' non vengono MAI
+# toccati (rollback rapido se serve, senza rimuovere il codice).
+GRADE_ENABLED = os.environ.get('GRADE_ENABLED', '1') == '1'
 GRADE_DATA_PATH = os.environ.get('GRADE_DATA_PATH', '')
 GRADE_NUM = {'A': 6, 'B': 5, 'C': 4, 'D': 3, 'E': 2, 'F': 1}
 _GRADE_MAP = {}

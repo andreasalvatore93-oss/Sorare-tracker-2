@@ -143,27 +143,39 @@ Tutto in CLAUDE.md, ma i punti che contano ogni volta:
   l'utente o un esecutore sulla sua macchina. Diglielo, non insistere.
 
 ===============================================================================
-3. STATO DEI NUMERI (la base della decisione, gia' verificata)
+3. STATO DEI NUMERI (CORRETTO 07/08 sera, ~17:30 Roma -- vedi rettifica sotto)
 ===============================================================================
-METRO: premio-vero in essenze, letto dal RANK reale delle arene + tabella
-premi reale dell'utente (backtest_arene_economia.tabella_premi). E' la misura
-piu' affidabile perche' non stima nulla sopra soglia (vedi PARERE sez.9-10).
+RETTIFICA (07/08 sera, richiesta esplicita utente): il "+18.900 vs +14.300
+essenze, G nettamente meglio" scritto qui sotto in una versione precedente
+di questa sezione era una TRASCRIZIONE ERRATA -- il +18.900 era il numero
+della colonna "utente" (il punteggio REALE gia' schierato dal manager),
+non della colonna G (produzione+grade). Non era un confronto A vs G valido.
+Inoltre il backtest sottostante girava con una copertura grade STORICA
+bassissima (4.6% sul pool crowss, 20% sul gruppo manager), scoperta e
+corretta il 07/08 pomeriggio: il join di carica_indice_grade() cercava la
+data ESATTA di fine fixture invece di ammettere qualunque partita nella
+finestra della fixture (che dura piu' giorni) -- fix in
+analisi_manager/p12_backtest_formazione_grade.py e
+p12_backtest_manager_grade.py, dettagli in
+docs/handoff/BRIEF_SONNET_CATENA_G_2026-08-07.txt (esito 2).
 
-GRAND TOTALE, 539 arene, crowss(=l'utente) + 16 manager + satonio:
-  A (produzione attuale)      NETTO premio-vero  +14.300 essenze
-  G (produzione + grade)      NETTO premio-vero  +18.900 essenze
-Positivo per ENTRAMBE, G nettamente meglio. Segno coerente su piu' mazzi.
+IL DATO VERO (rilanciato a copertura piena dopo il fix: crowss 77.4%,
+gruppo manager A 100%), METRO = punteggio/netto essenze realizzato (rank
+vero + tabella premi reale, backtest_arene_economia):
+  crowss (230 arene, 27 giornate):     A=273.1  ->  G=275.9  punti medi
+                                        A=96.1   ->  G=103.0  netto essenze medio
+  16-manager gruppo A (59 righe, 5 manager, gruppo B mai aperto):
+                                        A=226.0  ->  G=234.1  punti medi
+Segno POSITIVO su entrambi i campioni (crowss e manager), ma gli intervalli
+di confidenza (bootstrap) NON escludono zero su nessuno dei due -- non e'
+un "si" statisticamente pulito, e' una direzione coerente con incertezza
+ancora ampia. G e' stato comunque portato in produzione il 07/08 sera
+(decisione dell'utente, sul rischio, non su un p-value) -- vedi §1bis.
 
-CAUTELA (dilla al prossimo orch): il vantaggio di G NON e' uniforme -- viene
-da crowss(+4.000 G-A) e satonio(+1.100); sui 16 manager nuovi A pareggia o
-supera G (+3.600 vs +3.100). Ipotesi (non dimostrata): il grade aiuta i mazzi
-forti, meno i mediocri. Non promettere all'utente il guadagno degli altri sul
-SUO mazzo: su crowss A=+800, G=+4.800 (G vale ~5x A su di lui, ma A da solo
-e' modesto).
-
-Cosa e' gia' in produzione: SOLO A (il modello attuale). Per OGGI l'utente
-schiera con A + condotta "dai retta al consiglio arena del tool": validato,
-costo zero, nessuna catena. G e' il passo successivo (§1).
+Cosa e' in produzione ORA: G (GRADE_ENABLED default '1' in
+build_formazione_globale.py dal 07/08 sera), con fetch grade automatica
+integrata in discovery_fixture.py (TAPPA 1) e il fix del join sopra.
+Rollback: GRADE_ENABLED=0 torna ad A bit-per-bit, senza rimuovere codice.
 
 ===============================================================================
 4. FILONE ODDS + 4 RUOLI (in corso alla chiusura di questa sessione)
