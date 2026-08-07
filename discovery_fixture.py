@@ -178,6 +178,32 @@ def fetch_grade_live(fixture_slug):
     if not SORARE_CSRF:
         log("[grade] SORARE_CSRF assente: la query bench potrebbe fallire o "
             "tornare vuota senza CSRF. Procedo comunque, verifica copertura.")
+    # PROBE AUTENTICAZIONE (07/08/2026 notte). myFilteredBench e' una query
+    # "my": senza sessione autenticata risponde HTTP 200 + nodes:[] SENZA
+    # errori GraphQL -- indistinguibile da "leaderboard chiusa" se si guarda
+    # solo il conteggio. Le carte possedute invece si leggono con
+    # user(slug:) (query PUBBLICA, riga ~394), quindi funzionano anche a
+    # cookie morto: non sono una prova che l'auth regga. Qui si chiede
+    # currentUser, che e' null se e solo se la sessione non autentica.
+    _probe_h = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+    if base.COOKIES:
+        _probe_h['Cookie'] = base.COOKIES
+    if SORARE_CSRF:
+        _probe_h['X-CSRF-Token'] = SORARE_CSRF
+    try:
+        _pr = base._http_session.post(
+            base.GRAPHQL_URL, json={'query': '{ currentUser { slug } }'},
+            headers=_probe_h, timeout=20)
+        _pd = _pr.json()
+        _cu = ((_pd.get('data') or {}).get('currentUser') or {}).get('slug')
+        log(f"[grade] PROBE auth: currentUser={_cu!r} "
+            f"(len cookie={len(base.COOKIES)}, len csrf={len(SORARE_CSRF)})")
+        if not _cu:
+            log("[grade] SESSIONE NON AUTENTICATA: currentUser e' null. Il "
+                "bench tornera' 0 nodi per questo motivo, NON perche' la GW e' "
+                "chiusa. Rigenerare SORARE_COOKIE/SORARE_CSRF nei secret.")
+    except Exception as _e:
+        log(f"[grade] PROBE auth fallita: {_e}")
     leaderboards = [
         f'{fixture_slug}-seasonal-all_star-all_seasons_all_star_arena_limited',
         f'{fixture_slug}-seasonal-all_star-all_seasons_all_star_limited',
