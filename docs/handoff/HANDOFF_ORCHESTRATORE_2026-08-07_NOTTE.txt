@@ -351,16 +351,54 @@ confronto va fatto li', non fra pool diversi -- ci ero cascato):
 La cap 220 non e' mai la migliore, in nessun passo. Con le soglie attuali il
 comportamento e' corretto.
 
-MA IL DUBBIO RESTA APERTO, ed e' un dubbio diverso: non "l'algoritmo sceglie
-bene date le soglie" (dimostrato) ma "le SOGLIE sono giuste?". La cap 220
-pareggia a 244.1 contro i 259.5 della cap 260: solo 15.4 punti di sconto, a
-fronte di un vincolo L10<=220 che costa ~26 punti di atteso, e con un guadagno
-per punto piu' basso (6.3 contro 7.9). Se quei numeri fossero tarati male, la
-cap 220 risulterebbe strutturalmente fuori mercato per un difetto di
-calibrazione, non perche' non conviene davvero.
-DA FARE: rivalidare PAREGGIO_ARENA e GUADAGNO_PER_PUNTO della cap 220 sulle
-arene vere in archivio, come gia' fatto il 05/08 per la cap 260 (che passo' da
-265.0/8.8 a 259.5/7.9 -- vedi VALIDAZIONE_SOGLIE.md). Non urgente.
+MA IL DUBBIO RESTA APERTO, ed e' un dubbio DIVERSO: non "l'algoritmo sceglie
+bene date le soglie" (dimostrato) ma "le SOGLIE sono giuste?".
+
+INDAGINE 07/08 sera. Prima di leggere i numeri, due errori MIEI da non
+ripetere -- li lascio scritti perche' sono il tipo di scorciatoia in cui si
+ricasca:
+  ERRORE 1: ho gridato a uno scarto fra 267.9 (ricalcolato) e 259.5
+    (produzione) come se fosse una prova di bug. Non lo e': e' una domanda
+    aperta, non una conclusione.
+  ERRORE 2: ho poi "spiegato" quello scarto dicendo che consiglio_arena.py
+    stampa in previsione GREZZA mentre la produzione e' in scala REALE,
+    citando VALIDAZIONE_SOGLIE.md. FALSO, verificato nel codice:
+    incasso_medio() fa `mio = gauss(atteso, sigma)` e lo confronta con
+    `avversari`, che sono punteggi REALIZZATI di arene vere. Quindi
+    pareggio() lavora GIA' in scala reale e i due numeri SONO confrontabili.
+    Non fidarsi della cronistoria del documento senza aprire la funzione.
+
+STATO ONESTO, quello che e' misurato:
+ - consiglio_arena.py sull'archivio ODIERNO, sigma di produzione 50.6:
+       cap 260 -> 267.9      (in produzione: 259.5)   scarto 8.4 NON spiegato
+       cap 220 -> non calcolabile: 16 arene, sotto il minimo di 20 che lo
+                  strumento stesso pretende ("storico troppo corto")
+       Uncapped -> 8 arene, idem.  Beginner -> 74 arene, 263.5.
+ - la catena di oggi, con sigma 48.13, aveva ottenuto 269.6 (cap260) e 236.3
+   (cap220). Il 236.3 e' stato prodotto aggirando il controllo delle 20 arene.
+ - lo strumento dietro ai numeri del 05/08
+   (analisi_manager/valida_soglie_utente.py) DICHIARA DA SOLO, nella sua
+   docstring: "Scala atteso = 2 ago (pre-ricalibrazione): sigma/ordinamento
+   validi, PAREGGIO ASSOLUTO SOLO INDICATIVO".
+
+CONCLUSIONE: i pareggi assoluti in produzione non poggiano su basi solide, e
+la cap 220 meno di tutti (16 arene; una prova in VALIDAZIONE_SOGLIE.md ne
+aveva n=6). Non e' dimostrato che siano SBAGLIATI: e' dimostrato che non
+sappiamo se siano giusti. Il 29-cap260/0-cap220 e' compatibile sia con "la
+220 non conviene davvero" sia con "la sua soglia e' tarata male".
+COSA LO DECIDEREBBE, in ordine: (1) far girare i due strumenti sullo STESSO
+campione e capire da dove nasce lo scarto 259.5 vs 267.9 sulla cap 260 (se
+c'e' un difetto li', c'e' anche altrove); (2) raccogliere piu' arene cap 220 --
+e' un problema di DATI, non di analisi; (3) solo dopo ritarare, ricordando la
+catena di CLAUDE.md: le soglie muovono anche lo scouting.
+
+DECISIONE DELL'UTENTE (07/08): NON si tocca adesso. Le arene schierate finora
+avevano previsto 300+, quindi le migliori sarebbero finite comunque in cap
+260: l'errore non gli e' costato niente sul campo. Si sistema con calma.
+DA FARE quando si riprende: (1) capire lo scarto 259.5 vs 268 sulla cap 260,
+(2) raccogliere piu' arene cap 220 prima di ritarare la sua soglia, (3)
+ricordarsi della catena di CLAUDE.md -- toccare le soglie muove anche lo
+scouting.
 
 ===============================================================================
 6. COSA RESTA APERTO (per il prossimo, in ordine)
