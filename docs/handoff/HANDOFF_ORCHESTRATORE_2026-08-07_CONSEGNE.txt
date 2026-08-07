@@ -833,3 +833,29 @@ roucash,keano88,cedric9093-61e65334-068e-4a77-bea1-5e25e69e3500}.json.
 NESSUN BACKTEST LANCIATO IN QUESTO PASSO. Nessuna run GitHub (down). Nessuna
 modifica a CLAUDE.md/soglie di produzione. PASSO 1 PULITO: si procede al
 PASSO 2 (suite p13).
+
+16. Prova estrai_satonio_capped.py (Sonnet esecutore, 07/08 notte). Vedi
+    PARERE_OPUS_SCRIPT_SATONIO_2026-08-07.txt per il disegno. Lanciata 1 sola
+    giornata NUOVA (le altre 4 nel batch erano gia' presenti da un run
+    precedente, quindi lo script le ha saltate e ha preso la prima non
+    ancora fatta: football-18-24-jun-2026).
+    RISULTATO NON RAPPRESENTATIVO: quella GW satonio ha giocato 0 arene
+    (109 righe tutte non-arena, pool=561/slot=0). Query 110 (indice 1 +
+    formazioni 109), tempo reale ~63s.
+    PERO' le 4 GW gia' presenti (dati reali, SENZA cap, estratte prima di
+    questo brief) confermano la diagnosi di Opus sul problema pool==slot:
+      football-21-24-jul-2026: 147 arene, 0 non-arena, pool=735=slot
+      football-24-28-jul-2026: 148 arene, 0 non-arena, pool=735=slot
+      football-28-31-jul-2026: 100 arene, 0 non-arena, pool=500=slot
+      football-31-jul-4-aug-2026: 184 arene, 0 non-arena, pool=920=slot
+    Nelle GW in cui satonio gioca arene (100-184 a giornata), non gioca
+    NESSUNA competizione non-arena quella stessa settimana: zero scorta,
+    pool esattamente uguale agli slot per costruzione. Nessuna selezione
+    misurabile su queste 4 GW con l'impianto attuale.
+    NESSUN COMMIT del verdetto (test sulla GW campionata nullo per
+    costruzione, CLAUDE.md). Salvato solo il dato grezzo estratto
+    (dati_globali/manager_satonio.json, football-18-24-jun-2026 aggiunta).
+    DECISIONE APERTA: serve una GW che abbia arene E non-arena insieme per
+    misurare davvero il rapporto pool/slot con lo script capped; oppure
+    prendere atto che su satonio, nelle settimane con arene, l'opzione (c)
+    del parere Opus (solo Test3, niente selezione) e' l'unica disponibile.
