@@ -25,7 +25,13 @@ name: Scouting acquisti
 # vale per job che fanno MIGLIAIA di query a testa -- la scrematura a 8 shard
 # del 02/08, otto job e otto 429. Un job per giocatore fa poche decine di
 # chiamate e poi muore: e' il regime in cui la calibrazione gira da sempre senza
-# problemi. max-parallel: 8 e' il suo stesso valore, tarato li'.
+# problemi.
+# ATTENZIONE (corretto il 07/08): questo commento diceva "max-parallel: 8 e' il
+# suo stesso valore, tarato li'", ma il codice usa 20 dalla riga ~164, e per un
+# motivo MISURATO (a 8 la matrice era 2.5x piu' lenta: 126 predict in ~24 min
+# invece di ~10, run 30814827740). Chi leggeva solo qui credeva a un valore che
+# non e' quello in uso: il numero vero e la sua ragione stanno accanto a
+# max-parallel, non qui.
 #
 # ATTENZIONE: il job 1 SOVRASCRIVE la discovery di produzione delle leghe
 # toccate. La prossima run di `formazione_giornata` la rigenera (e' il suo primo
@@ -236,6 +242,7 @@ jobs:
       - name: Consigli
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           PYTHONUNBUFFERED: "1"
         run: |
           set +e
@@ -257,6 +264,7 @@ jobs:
       - name: Report
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           PYTHONUNBUFFERED: "1"
         run: |
           # --riusa-pool: il report NON ricostruisce il pool con searchPlayers+

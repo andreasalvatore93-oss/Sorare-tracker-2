@@ -84,10 +84,38 @@ def log(msg):
     print(f"[{ts}] [mls_def_discovery_global] {msg}")
 
 
+CSRF_TOKEN = os.environ.get('SORARE_CSRF', '')
+
+
 def graphql_query(query, variables=None, operation_name=None):
+    """NB (07/08/2026): questo modulo e' importato da scouting_gw.py (come
+    _gql, riga ~68) oltre che usato per la discovery globale.
+
+    Due accorgimenti, stessi di turchia_gk_discovery.py, nati da un bug vero
+    costato una giornata di diagnosi sbagliata:
+
+    1) SI MANDA ANCHE IL CSRF. Senza, Sorare considera la richiesta non
+       autenticata e risponde con un Set-Cookie che assegna una sessione
+       ANONIMA.
+    2) SI SVUOTA IL BARATTOLO DEI COOKIE prima di ogni richiesta. E' la
+       protezione che conta: un _sorare_session_id anonimo finito nel
+       barattolo VINCE silenziosamente sull'header Cookie autenticato.
+       Misurato altrove: 50 nodi su sessione pulita, 0 dopo UNA sola query
+       inquinata, con HTTP 200 e nessun errore GraphQL.
+
+    Qui e nello scouting le query sono tutte PUBBLICHE, quindi il difetto era
+    latente e non faceva danni. Si chiude adesso perche' basta aggiungere una
+    query autenticata -- come e' successo alla discovery col grade -- per
+    ritrovarsi lo stesso guasto, e quella volta e' costata una giornata."""
     headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
     if COOKIES:
         headers['Cookie'] = COOKIES
+    if CSRF_TOKEN:
+        headers['x-csrf-token'] = CSRF_TOKEN
+    try:
+        _http_session.cookies.clear()
+    except Exception:
+        pass
     payload = {'query': query, 'variables': variables or {}}
     if operation_name:
         payload['operationName'] = operation_name
