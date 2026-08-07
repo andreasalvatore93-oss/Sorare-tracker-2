@@ -232,6 +232,49 @@ dal segnale vero del grade. Da verificare nella catena (punto d-e-f del
 DESIGN) con una misura di copertura per gruppo ANCHE nel backtest storico,
 non solo qui.
 
+4bis. AGGIORNAMENTO -- COPERTURA CORRETTA, ESITO RIPETUTO (07/08 ~13:20 Roma)
+L'utente ha corretto un errore mio: la query bench paginava a un CAP SERVER
+di 50 nodi/pagina (verificato: pageSize=300 richiesto, 50 tornati,
+hasNextPage=True) e io leggevo solo la prima pagina -- prendevo i "50 piu'
+popolari" per ruolo, non tutto il roster. Con paginazione completa (stesse 3
+leaderboard, stesso GRADE_ENABLED/formula, NESSUNA modifica al codice) la
+mappa e' passata da 273 a 877 slug con grade.
+
+Copertura sul pool completo (698 candidati, load_league_role_data()): 93.0%
+(649/698), quasi uniforme (la maggior parte dei gruppi lega/ruolo 94-100%).
+Uniche due leghe a 0%: turchia e danimarca -- MAI apparse nelle 7 formazioni
+A, quindi non toccano questo confronto (tabella completa in
+docs/handoff/test_grade_gw3/copertura_pool_completo.txt). Mappa aggiornata:
+docs/handoff/test_grade_gw3/_grade_map_gw3.json (877 voci).
+
+RIPETUTO il differenziale A vs G con questa copertura (comando: come sopra,
+DUMP_JSON=dump_G_v2.json). Dump completo in
+docs/handoff/test_grade_gw3/DUMP_CONFRONTO_A_G_GW3_v2.txt. Risultato:
+
+  tipo                    A       G      delta   overlap
+  KLEAGUE_IN_SEASON     305.3   326.3   +21.0    4/5
+  ALLSTARS              425.6   419.0    -6.6    3/7   <- G PEGGIORA
+  ARENA_ALLSTARS_260    300.4   332.9   +32.5    2/5
+  ARENA_ALLSTARS_260    297.1   321.8   +24.7    2/5
+  ARENA_ALLSTARS_260    290.8   320.2   +29.3    3/5
+  ARENA_ALLSTARS_260    287.9   317.7   +29.7    1/5
+  ARENA_ALLSTARS_260    286.6   313.5   +26.9    0/5
+
+Formazioni IDENTICHE: 0/7 (invariato). VERDETTO CONFERMATO: CAMBIA MOLTO.
+L'ipotesi "e' un artefatto da copertura bassa" (punto 4, sopra) e' QUINDI
+NON la spiegazione principale: con copertura quasi totale (93%, praticamente
+uniforme sulle leghe coinvolte) la selezione cambia comunque quasi
+integralmente in 6/7 formazioni. Il grade sposta davvero la selezione, non
+solo per artefatto di campionamento.
+
+NUOVO FATTO RILEVANTE: la formazione ALLSTARS (All Stars da 7) PEGGIORA con
+G (-6.6 sull'atteso totale con capitano) -- esce joey-veerman (atteso_cal
+67.8, nessun grade) per entrare carles-gil-de-pareja-vicent (grade A, atteso
+combinato 69.8): il grade fa preferire un giocatore con voto alto a uno con
+atteso GIA' piu' alto ma senza grade noto, e in questo caso il totale
+generale scende. E' l'esatto rischio noto di sez.5 del DESIGN ("se G li
+abbassa, e' un problema da valutare, non un ok automatico").
+
 5. COSA NON HO FATTO (fuori scope di questo test isolato)
 Non ho riverificato le soglie arena (d), non ho toccato lo scouting (e), non
 ho fatto il backtest di conferma ampio (f): tutto rimandato, come da vincoli
