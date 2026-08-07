@@ -998,6 +998,12 @@ class CardPool:
         t = self._total_for(slug)
         return t['in_season'] + t['classic']
 
+    def copies_split(self, slug):
+        """Copie possedute divise per tipo (07/08). Il dato c'era gia' in
+        _total_for, mancava solo un accessore pubblico: serve alla card per
+        dire '2 copie (1 IS + 1 CL)' invece del solo totale."""
+        return dict(self._total_for(slug))
+
     def use(self, slug, card_type, role=None):
         u = self._used.setdefault(slug, {'in_season': 0, 'classic': 0})
         u[card_type] += 1
@@ -1761,12 +1767,21 @@ def _slot_role(slot_label):
     return m.group(1) if m and m.group(1) in ROLES_HTML else None
 
 
-def _pcard_tags_html(ctype, copie, xp_bonus_frac=0.0):
+def _pcard_tags_html(ctype, copie, xp_bonus_frac=0.0, split=None):
+    """split (07/08): {'in_season': n, 'classic': m} per dire QUANTE copie sono
+    di che tipo. Prima si vedeva solo 'N copie' e, avendone due di tipo
+    diverso, non si capiva quale andasse usata dove -- richiesta esplicita
+    dell'utente."""
     tags = []
     if ctype == 'classic':
         tags.append('<span class="tag tag-classic">Classic</span>')
+    else:
+        tags.append('<span class="tag tag-inseason">In Season</span>')
     if copie > 1:
-        tags.append(f'<span class="tag tag-copies">{copie} copie</span>')
+        det = ''
+        if split and (split.get('in_season') or 0) and (split.get('classic') or 0):
+            det = f" ({split['in_season']} IS + {split['classic']} CL)"
+        tags.append(f'<span class="tag tag-copies">{copie} copie{det}</span>')
     # Tag visibile del bonus power/xp/collezione/stagione (28/07, richiesta
     # esplicita utente: senza questo tag non si vedeva se il bonus era stato
     # applicato o se il punteggio era semplicemente piu' alto per altri
@@ -1825,6 +1840,7 @@ def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool,
     l10_html = f'<div class="pcard-l10">L10: {l10:.0f}</div>' if l10 is not None else ''
     match_html = _team_vs_opponent_html(team_slug, opponent_team_slug, opp_factor)
     return (
+        f'<span class="pcard-fatto">OK</span>'
         f'<div class="pcard-avatar">{_slug_initials(slug)}</div>'
         f'<div class="pcard-name">{card_pool.display_name(slug)}</div>'
         f'<div class="pcard-score">{atteso:.1f}</div>'
@@ -1841,7 +1857,8 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain, apply_xp_bon
     role = _slot_role(slot_label) or ''
     copie = card_pool.copies_owned(row['slug'])
     xp_bonus_frac = card_pool.power_bonus_fraction(row['slug']) if apply_xp_bonus else 0.0
-    tags_html = _pcard_tags_html(ctype, copie, xp_bonus_frac)
+    split = card_pool.copies_split(row['slug']) if hasattr(card_pool, 'copies_split') else None
+    tags_html = _pcard_tags_html(ctype, copie, xp_bonus_frac, split)
     captain_badge = '<span class="pcard-captain">C</span>' if is_captain else ''
     l10 = card_pool.l10(row['slug'])
     body_html = _pcard_body_html(row['slug'], row['atteso'], row['low'], row['high'], l10, tags_html, card_pool,
@@ -1851,7 +1868,8 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain, apply_xp_bon
     # gia' pronto -- il drag&drop lato client lo scambia con quello di
     # un'alternativa senza ricalcolare nulla in JS (vedi script nel template).
     return (
-        f'<div class="pcard" draggable="true" style="--role-color:{color}" '
+        f'<div class="pcard{" is-classic" if ctype == "classic" else ""}" '
+        f'draggable="true" style="--role-color:{color}" '
         f'data-slug="{html.escape(row["slug"], quote=True)}" data-role="{role}" '
         f'data-score="{row["atteso"]}" data-xp-frac="{xp_bonus_frac}" '
         f'data-name="{html.escape(card_pool.display_name(row["slug"]), quote=True)}" '
@@ -2020,6 +2038,33 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   .tag-classic {{ background: rgba(240,168,59,0.16); color: #f0a83b; }}
   .tag-copies {{ background: var(--stripe); color: var(--muted); }}
   .tag-xpbonus {{ background: rgba(76,175,80,0.16); color: #4caf50; }}
+  /* QOL 07/08 (richiesta utente: schierare ~300 giocatori a giornata facendo
+     avanti e indietro con Sorare, senza perdere il segno e senza sbagliare
+     formazione). Tre stati VISIBILI a colpo d'occhio:
+       - CLASSIC: contorno dorato. Sono quelle che pesano diversamente e vanno
+         distinte al volo dalle In Season, soprattutto quando si hanno 2 copie.
+       - carta GIA' COPIATA: si spegne, cosi' si sa dove si era arrivati.
+       - formazione GIA' SCHIERATA: si spegne tutta e si accascia in alto.
+     Lo stato vive in localStorage, per giornata: un refresh non lo perde. */
+  .pcard.is-classic {{ border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset, 0 1px 2px rgba(0,0,0,0.2); }}
+  .tag-inseason {{ background: rgba(94,201,255,0.16); color: #5ec9ff; }}
+  .pcard.copiata {{ opacity: 0.38; }}
+  .pcard.copiata .pcard-avatar {{ border-style: dashed; }}
+  .pcard-fatto {{
+    position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%;
+    background: #4caf50; color: #06210a; font-size: 0.62rem; font-weight: 800;
+    display: none; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface);
+  }}
+  .pcard.copiata .pcard-fatto {{ display: flex; }}
+  .lineup-block.schierata {{ opacity: 0.42; }}
+  .lineup-block.schierata .lineup-title::after {{ content: ' — SCHIERATA'; color: #4caf50; font-weight: 800; }}
+  .btn-schierata {{
+    margin-left: 10px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; padding: 3px 8px; border-radius: 5px; cursor: pointer;
+    background: var(--surface-2); color: var(--muted); border: 1px solid var(--border);
+  }}
+  .btn-schierata:hover {{ color: var(--text); border-color: var(--gold); }}
+  .lineup-block.schierata .btn-schierata {{ background: rgba(76,175,80,0.18); color: #4caf50; border-color: #4caf50; }}
   .lineup-total {{
     margin-top: 12px; display: inline-flex; align-items: center; gap: 14px; background: var(--surface);
     border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; flex-wrap: wrap;
@@ -2208,7 +2253,67 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
     var el = (card && card.querySelector('.pcard-name')) || punto;
     var testo = (card && (card.dataset.name || card.dataset.slug)) || el.textContent;
     copia(testo.trim(), el);
+    segnaCopiata(card);   // avanzamento: da qui in poi si sa dove si era arrivati
   }}, true);
+  /* AVANZAMENTO (07/08). Il problema non e' copiare un nome, e' NON PERDERE
+     IL SEGNO: ~300 giocatori a giornata, avanti e indietro con Sorare, con il
+     rischio di rimettere un difensore nella formazione di un altro portiere.
+     Due memorie, per GIORNATA, in localStorage (un refresh non le perde):
+       - carta copiata -> si spegne e prende la spunta verde
+       - formazione schierata -> si spegne tutta, col tasto FATTA
+     Niente di tutto questo tocca i punteggi: e' solo stato di avanzamento. */
+  var CHIAVE = 'sorare-avanzamento::' + (document.title || 'gw');
+  function statoLeggi() {{
+    try {{ return JSON.parse(localStorage.getItem(CHIAVE) || '{{}}'); }}
+    catch (e) {{ return {{}}; }}
+  }}
+  function statoScrivi(s) {{
+    try {{ localStorage.setItem(CHIAVE, JSON.stringify(s)); }} catch (e) {{}}
+  }}
+  function idCarta(card) {{
+    var blocco = card.closest('.lineup-block');
+    var titolo = blocco ? (blocco.querySelector('.lineup-title') || {{}}).textContent : '';
+    return (titolo || '') + '|' + (card.dataset.slug || '') + '|' + (card.dataset.role || '');
+  }}
+  function idBlocco(blocco) {{
+    var t = blocco.querySelector('.lineup-title');
+    return 'BLOCCO|' + ((t && t.textContent) || '');
+  }}
+  function applicaStato() {{
+    var s = statoLeggi();
+    document.querySelectorAll('.pcard').forEach(function (c) {{
+      c.classList.toggle('copiata', !!s[idCarta(c)]);
+    }});
+    document.querySelectorAll('.lineup-block').forEach(function (b) {{
+      b.classList.toggle('schierata', !!s[idBlocco(b)]);
+    }});
+  }}
+  function segnaCopiata(card) {{
+    if (!card) return;
+    var s = statoLeggi();
+    s[idCarta(card)] = 1;
+    statoScrivi(s);
+    card.classList.add('copiata');
+  }}
+  // Un tasto FATTA per formazione, piu' il ripristino
+  document.querySelectorAll('.lineup-block').forEach(function (b) {{
+    var t = b.querySelector('.lineup-title');
+    if (!t) return;
+    var btn = document.createElement('span');
+    btn.className = 'btn-schierata';
+    btn.textContent = 'fatta';
+    btn.title = 'Segna questa formazione come gia' schierata su Sorare';
+    btn.addEventListener('click', function (ev) {{
+      ev.preventDefault(); ev.stopPropagation();
+      var s = statoLeggi();
+      var k = idBlocco(b);
+      if (s[k]) {{ delete s[k]; }} else {{ s[k] = 1; }}
+      statoScrivi(s);
+      applicaStato();
+    }});
+    t.parentNode.appendChild(btn);
+  }});
+  applicaStato();
   var st = document.createElement('style');
   st.textContent = '.pcard-name{{cursor:copy}} .pcard-name:hover{{text-decoration:underline dotted}}'
                  + '.pcard-avatar{{cursor:copy}}'
