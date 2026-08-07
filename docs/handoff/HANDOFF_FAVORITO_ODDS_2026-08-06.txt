@@ -1092,3 +1092,52 @@ del ruolo FWD (produzione 8.40/0.789 vs refit OLS -11.06/1.172), non
 favorito_odds_k. Resta un filone distinto, gia' cosi' nel brief originale
 (non e' materia di FASE 2/3 di questo brief, che riguardano favorito_odds
 propriamente detto). Segnalato qui solo perche' il fix D6 lo tocca.
+
+--- FASE 2: GRIGLIA PER-RUOLO PULITA, GK/DEF/MID/FWD -- RIFATTA ---
+
+Ipotesi PRIMA dei numeri (dichiarata dal brief): DEF regge forte (script
+gia' pulito), GK/MID/FWD restano sotto il criterio severo.
+
+Rilanciato taratura_confronto_odds_definitivo.py per intero (campione
+pieno, bootstrap 200, criterio severo, 4 ruoli, additiva+moltiplicativa),
+salvato in dati_globali/esito_taratura_odds_definitivo.json. Tempo totale
+1300s (~22 min).
+
+TABELLA COMPLETA (tutte le varianti, non solo le PASSA):
+
+DEF (produzione MAE=14.8882 corr=+0.1853 lift=18.10%, n=14230, giornate=148)
+  forma  k     dMAE            dcorr           dlift            esito
+  add    3   -0.089 [-.103,-.077]  +0.029 [+.025,+.033]  +2.14 [-0.10,+4.78]  no
+  add    6   -0.152 [-.180,-.129]  +0.047 [+.040,+.055]  +4.97 [+0.37,+6.33]  PASSA
+  add   12   -0.199 [-.254,-.152]  +0.061 [+.050,+.074]  +6.74 [+1.23,+9.86]  PASSA
+  add   20   -0.095 [-.175,-.014]  +0.058 [+.043,+.074]  +7.31 [+1.05,+9.63]  PASSA
+  mult 0.05  -0.078 [-.089,-.067]  +0.025 [+.022,+.029]  +1.24 [-0.54,+4.14]  no
+  mult 0.1   -0.137 [-.159,-.116]  +0.043 [+.037,+.050]  +5.01 [+0.52,+6.16]  PASSA
+  mult 0.2   -0.197 [-.244,-.158]  +0.060 [+.050,+.071]  +7.22 [+1.10,+8.95]  PASSA <- MASSIMO
+  mult 0.3   -0.183 [-.254,-.122]  +0.062 [+.049,+.076]  +6.68 [+1.32,+10.79] PASSA
+  mult 0.4   -0.087 [-.171,-.007]  +0.058 [+.043,+.075]  +6.86 [+1.01,+10.05] PASSA
+  7/9 PASSA. |delta score_atteso| (mult 0.2): media 2.27pt p95 5.48pt
+  max 13.53pt -> 15%/37%/90% della soglia arena +/-15pt.
+
+GK (produzione MAE=15.9134 corr=+0.0761 lift=13.96%, n=3923, giornate=74)
+  0/9 PASSA. Nessuna riga si avvicina: il lift resta sempre con IC che
+  attraversa zero, come nel giro storico.
+
+MID (produzione MAE=13.1921 corr=+0.2531 lift=25.50%, n=13101, giornate=146)
+  0/9 PASSA. MAE e corr passano quasi ovunque, il lift mai (piu' vicino
+  add k=12 a -0.15, mult k=0.2 a -0.45, come nel giro storico).
+
+FWD (produzione MAE=14.9118 corr=+0.2687 lift=30.34%, n=9758, giornate=131)
+  1/9 PASSA (mult k=0.1, dlift +1.74 IC[+0.02,+6.56], al limite inferiore).
+
+CONFRONTO CON IL VERDETTO STORICO (sez.4.1): NUMERI IDENTICI al decimale
+su tutte e 32 le celle (n, MAE, corr, lift, IC95, esiti). Confermato per
+via diretta (non solo per audit del codice, gia' fatto in FASE 1) che
+taratura_confronto_odds_definitivo.py non era mai stato toccato dal bug
+D6: legge 'reale' da cache.gamelog, mai da un file manager, quindi
+ripetere il run con la cache di oggi (cresciuta nel frattempo) da'
+esattamente lo stesso risultato -- segno che il campione era gia' saturo
+alla finestra 18/11/2025+ per questi 4 ruoli, la cache non e' cresciuta in
+modo da spostare la griglia. VERDETTO STORICO CONFERMATO SENZA RISERVE:
+DEF passa forte (7/9), GK e MID non passano mai (0/9), FWD passa solo al
+limite (1/9). Nessuna sorpresa rispetto all'ipotesi dichiarata.
