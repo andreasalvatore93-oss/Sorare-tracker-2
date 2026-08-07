@@ -230,9 +230,33 @@ FIX (main 620f3545ba):
    sbagliata proprio nella riga che serve a diagnosticare. Ora rate limit e
    sessione morta hanno messaggi diversi. E' quasi certamente il caso dello
    shard 03 fwd2 (nel suo log: 429 con attesa 152s).
-DA VERIFICARE sulla prossima run: 429 attesi in forte calo e grade a 877 su
-tutti gli shard. Se restano 429, la leva successiva e' il throttle delle odds
-(non toccato).
+ESITO, misurato su tre run successive della STESSA giornata:
+                        durata    429     grade   sopra soglia   lega/ruolo
+  31190547919 (prima)   26.3 min  156     parziale  --             --
+  31194330176           15.6 min  1862    877       308            63
+  31196670753 (dopo)     6.8 min    19    877       308            63
+Stesso risultato, tempo diviso per quasi quattro: le colonne "sopra soglia"
+(113 DEF / 89 MID / 61 FWD / 45 GK) e "lega/ruolo" sono IDENTICHE fra la run
+lenta e quella veloce, con zero coppie di differenza. Non e' andata piu'
+veloce facendo meno lavoro: fa lo stesso lavoro senza rifarlo 20 volte.
+
+I tre tagli, in ordine di effetto:
+ 1. odds in bulk dalle partite (job 'pool') invece di una query per giocatore;
+ 2. discovery da 20 job a 4, uno per ruolo. I 20 shard servivano SOLO a
+    parallelizzare le odds; senza quel costo restavano a ri-paginare le stesse
+    carte (DEF diviso in 9 = le stesse 561 carte scaricate 9 volte). E' da li'
+    che venivano tutti i 1862 429, con attese da 289s;
+ 3. L10 chiesta dentro CARDS_QUERY (lastTenPlayedAvgScore): 308 richieste a
+    run diventano zero, erano a 0.7s l'una.
+
+Fasi della run finale: pool 0.8 | discovery 0.8 | merge 0.4 | predict 3.0 |
+consiglio 0.5 | formazione 0.7 | salva 0.3. Il prossimo collo di bottiglia e'
+il PREDICT (3 min, 45 job): li' il costo sono i fetch di game-log su cache
+mancante, e un singolo 429 costa 163s di attesa. Non toccato.
+
+REGOLA NUOVA DELL'UTENTE (07/08): la run intera deve stare SOTTO I 10 MINUTI.
+Se un cambiamento la riporta sopra, e' un difetto da correggere, non un costo
+da accettare.
 
 NOTA sui 7 script committati il 07/08 (4faf9f33cf): erano rimasti non
 tracciati da un'altra sessione. Nessuno tocca la produzione. Committati DOVE
@@ -242,6 +266,36 @@ diverso fra loro: raccolta_grade_crowss.py e' l'unico che serve davvero
 (grade ALL'INDIETRO via playerGameScores(last:15), utile per G1); i cinque
 estrai_* sono usa-e-getta con liste di slug a mano e il loro output e' gia' in
 repo (55 dati_globali/manager_*.json); analizza_manager_arene.py e' marginale.
+
+===============================================================================
+5quater. LO SCOUTING DOPO IL GRADE: CONTROLLATO, DUE RISPOSTE
+===============================================================================
+Domanda dell'utente (07/08): se il generatore aveva un problema di
+autenticazione lo avra' anche lo scouting; e lo scouting non e' mai stato
+testato dopo il grade.
+
+1. AUTENTICAZIONE: lo scouting NON ha il problema. Verificato sul codice: in
+   scouting_gw.py non c'e' nessuna query autenticata -- zero myFilteredBench,
+   zero currentUser, zero owner, zero user(slug:). Sta nella stessa posizione
+   in cui era la discovery PRIMA del grade: tutte query pubbliche, quindi la
+   sessione anonima di §5bis non lo tocca. RISCHIO LATENTE, non attivo: usa
+   _gql = formazione_mls/discovery/mls_def_discovery_global.py, che NON manda
+   il CSRF. Se un domani gli si aggiunge una query autenticata, ricade nel bug.
+
+2. GRADE: lo scouting non e' MAI stato toccato dal filone G -- la parola
+   'grade' non compare in scouting_gw.py. E c'e' una ragione strutturale, non
+   una dimenticanza: il grade di produzione arriva da myFilteredBench, cioe'
+   dalle carte CHE SI POSSIEDONO. Per una carta che si sta valutando di
+   COMPRARE quella strada non esiste. Esiste un'altra via
+   (anyPlayer.playerGameScores(last:15).projection.grade, vedi
+   raccolta_grade_crowss.py) ma da' il grade STORICO delle partite passate,
+   non una proiezione per la giornata da giocare. Decisione APERTA, da
+   prendere con l'utente: non e' ovvio che un segnale per-giornata debba
+   entrare in una decisione d'acquisto pluri-giornata.
+
+NOTA: lo scouting usava GIA' odds_per_giornata in bulk dal 03/08. Era la
+discovery a essere indietro (vedi §5ter). La catena di CLAUDE.md era stata
+verificata sulle SOGLIE (§4) e resta valida: G non le muove.
 
 ===============================================================================
 6. COSA RESTA APERTO (per il prossimo, in ordine)
