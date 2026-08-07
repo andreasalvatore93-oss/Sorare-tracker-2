@@ -68,23 +68,58 @@ OUTPUT_PATH = os.path.join(OUTPUT_DIR, 'missing_leagues_report.json')
 # ---------------------------------------------------------------------------
 # Leghe GIA' coperte da una pipeline dedicata (discovery+predict+consiglio+
 # build) -- vanno escluse dal report perche' non sono "mancanti".
+#
+# FIX 07/08/2026: prima qui c'era un set scritto a mano con solo 8 leghe,
+# mentre il repo ne ha 24 con pipeline completa -- il report segnalava come
+# "senza pipeline" leghe come MLS/mlspa, laliga-es, eredivisie che invece ce
+# l'hanno (falsi positivi). Ora il set si DERIVA da LEAGUE_DIR (mappa
+# ufficiale slug-lega -> cartella formazione_<dir>, letta senza eseguirla,
+# vedi _load_league_dir) filtrando solo le cartelle che hanno DAVVERO i 4
+# pezzi della pipeline (build_formazione_finale.py + discovery/ + predict/ +
+# consiglio/ con almeno un .py dentro). Non va piu' riscritto a mano: si
+# ri-obsoletizza da solo altrimenti.
 # ---------------------------------------------------------------------------
-KNOWN_LEAGUE_SLUGS = {
-    'k-league-1',                    # K League (Corea del Sud)
-    'mls',                           # MLS (USA/Canada)
-    'campeonato-brasileiro-serie-a', # Brasileirao (Brasile)
-    '1-hnl',                         # HNL (Croazia)
-    'primeira-liga-pt',              # Primeira Liga (Portogallo)
-    'premiership-gb-sct',            # Premiership (Scozia)
-    'austrian-bundesliga',           # Bundesliga (Austria)
-    'jupiler-pro-league',            # Jupiler Pro League (Belgio)
-    # NOTA: 'laliga-es' (Spagna) ed 'eredivisie' (Olanda) NON sono incluse
-    # qui di proposito: sono pipeline ancora IN CORSO di verifica in questa
-    # sessione, non ancora considerate "sicure/complete" dall'utente. Vanno
-    # quindi mostrate nel report se compaiono tra le carte possedute, cosi'
-    # da tenerne traccia finche' non vengono ufficialmente completate e
-    # aggiunte a questo set.
-}
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LEAGUE_DIR_SOURCE = os.path.join(REPO_ROOT, 'backtest_arene_produzione.py')
+
+
+def _load_league_dir(path=LEAGUE_DIR_SOURCE):
+    """Estrae il dict LEAGUE_DIR da backtest_arene_produzione.py via AST,
+    SENZA eseguire il modulo (che importa pipeline pesanti con effetti
+    collaterali). Se il dict non si trova, solleva un errore esplicito
+    invece di proseguire con una mappa vuota/silenziosa."""
+    import ast
+    with open(path, encoding='utf-8') as f:
+        tree = ast.parse(f.read(), filename=path)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and any(
+                isinstance(t, ast.Name) and t.id == 'LEAGUE_DIR' for t in node.targets):
+            return ast.literal_eval(node.value)
+    raise RuntimeError(f"LEAGUE_DIR non trovato in {path} (formato cambiato?)")
+
+
+def _pipeline_completa(dirname, repo_root=REPO_ROOT):
+    """True se formazione_<dirname>/ ha build_formazione_finale.py e le tre
+    sottocartelle discovery/predict/consiglio con almeno un .py ciascuna."""
+    base = os.path.join(repo_root, f'formazione_{dirname}')
+    if not os.path.isfile(os.path.join(base, 'build_formazione_finale.py')):
+        return False
+    for sub in ('discovery', 'predict', 'consiglio'):
+        subdir = os.path.join(base, sub)
+        if not os.path.isdir(subdir):
+            return False
+        if not any(f.endswith('.py') for f in os.listdir(subdir)):
+            return False
+    return True
+
+
+def _build_known_league_slugs():
+    league_dir = _load_league_dir()
+    covered_dirnames = {d for d in set(league_dir.values()) if _pipeline_completa(d)}
+    return {slug for slug, dirname in league_dir.items() if dirname in covered_dirnames}
+
+
+KNOWN_LEAGUE_SLUGS = _build_known_league_slugs()
 
 COOKIES = os.environ.get('SORARE_COOKIE', '')
 

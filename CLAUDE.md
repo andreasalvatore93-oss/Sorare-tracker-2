@@ -245,6 +245,19 @@ Conseguenze operative per l'orchestratore:
 4. Quando piu' esecutori lavorano in parallelo sulla stessa working tree,
    ciascuno committa SOLO i propri file e segnala gli altri senza toccarli.
 5. Dire sempre all'utente **a chi** va passato un brief (Opus/Sonnet/Haiku).
+6. PRIMA di riportare all'utente l'esito di un commit di un esecutore,
+   l'orchestratore VERIFICA I DATI GREZZI, non solo il messaggio/commento
+   dell'esecutore (07/08/2026). Nato da un caso reale: un esecutore ha
+   consegnato un report "leghe senza pipeline per la GW3" che sembrava a
+   posto dal commento, ma leggendo il JSON grezzo (missing_leagues_report.json)
+   elencava come scoperte MLS/Spagna/Olanda -- leghe che HANNO pipeline: lo
+   script usava una whitelist di 8 leghe quando nel repo ce ne sono 54. Il
+   commento dell'esecutore non lo diceva; solo il grezzo. Quindi: aprire il
+   file prodotto (JSON, dump, tabella), contare/ispezionare almeno un caso, e
+   confrontarlo con una fonte indipendente nel repo, PRIMA di dire all'utente
+   "fatto, ecco l'esito". Vale la regola gia' scritta piu' su ("MOSTRA I DATI,
+   NON I RIASSUNTI DEI DATI"): si applica anche all'orchestratore verso
+   l'esecutore, non solo all'esecutore verso l'utente.
 
 ## Sincronizzazione fra sessioni e fra account
 
