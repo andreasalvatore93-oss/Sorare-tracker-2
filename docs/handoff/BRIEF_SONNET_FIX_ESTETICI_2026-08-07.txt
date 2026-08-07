@@ -1,0 +1,100 @@
+BRIEF PER SONNET -- FIX ESTETICI SUL REPORT HTML DELLE FORMAZIONI
+Scritto dall'orchestratore il 07/08/2026, sera (ora di Roma).
+Destinatario: Sonnet, chat pulita, che non sa nulla di questa sessione.
+
+===============================================================================
+0. LEGGI PRIMA QUESTI
+===============================================================================
+1. git pull.
+2. CLAUDE.md in radice, TUTTO. Regole vincolanti (in particolare: divieto di
+   affermare cio' che non hai verificato, e test in locale prima di committare).
+3. Questo brief.
+
+Nessuna modifica al MODELLO, ai punteggi, alle soglie o alla pipeline: qui si
+tocca SOLO la resa HTML. Se ti accorgi che un fix richiede di cambiare un
+numero calcolato, FERMATI e segnalalo invece di farlo.
+
+===============================================================================
+1. PUNTO 1 -- CLICK SUL NOME DEL GIOCATORE = NOME NEGLI APPUNTI
+===============================================================================
+
+COSA CHIEDE L'UTENTE
+Nel report HTML delle formazioni, cliccare sul nome di un giocatore deve
+copiarlo negli appunti, per incollarlo nella ricerca di Sorare. Motivo pratico:
+i nomi coreani sono scomodi da riscrivere a mano, e con ~50 formazioni da
+comporre la differenza e' enorme.
+
+COSA C'E' GIA' (verificato, non dedotto -- non rifarlo da zero)
+La funzione ESISTE dal 01/08, chiesta dallo stesso utente per lo stesso motivo.
+Sta in formazione_mls/build_formazione_finale.py, dentro HTML_REPORT_TEMPLATE,
+nell'ultimo blocco <script> (cerca "Click sul nome del giocatore", ~riga 2165).
+Verificato nel report generato davvero (run 31197438344): il gestore di click
+c'e', il CSS .pcard-name{cursor:copy} c'e', e le carte hanno data-name
+valorizzato (es. data-name="Matt Turner").
+
+L'utente crede che lo scouting abbia una versione DIVERSA e funzionante, e
+chiede di copiare quella. NON E' COSI', ed e' importante che tu non perda tempo
+a cercarla: scouting_gw.py::_script_delle_carte (~riga 1560) ESTRAE gli
+<script> dallo stesso HTML_REPORT_TEMPLATE. E' letteralmente lo stesso codice.
+Copiarlo sarebbe un non-fare.
+
+IL DIFETTO VERO (questo e' il lavoro)
+    navigator.clipboard.writeText(testo).then(ok, function () {})
+Il gestore dell'errore e' VUOTO. Il ripiego con textarea+execCommand, scritto
+subito sotto, scatta solo se l'API NON ESISTE (ramo else), mai se l'API esiste
+e FALLISCE. Quindi ogni fallimento e' muto: niente copia, niente messaggio,
+l'utente clicca e non succede nulla -- che e' esattamente cio' che riporta.
+
+COSA FARE
+a) Nel ramo di RIGETTO della promise, chiamare il ripiego textarea+execCommand
+   invece di ingoiare l'errore. Fattorizza il ripiego in una funzione sola,
+   usata sia quando l'API manca sia quando fallisce.
+b) Se anche il ripiego fallisce, DIRLO a schermo (es. il nome diventa
+   "copia non riuscita" per ~1.2s, in rosso). Un fallimento muto e' il difetto
+   da cui nasce tutto questo: non sostituirlo con un altro fallimento muto.
+c) Lasciare invariato cosa si copia: card.dataset.name, con fallback a
+   data-slug e poi al testo visibile. E' gia' giusto.
+
+DOVE, E ATTENZIONE ALLA PROPAGAZIONE
+Il file canonico e' formazione_mls/build_formazione_finale.py: il report
+globale (generatore_formazioni/build_formazione_globale.py) lo importa come
+'bff' e lo scouting ne estrae gli script, quindi UNA modifica li' sistema
+entrambi. Esistono pero' 26 copie di build_formazione_finale.py, una per lega,
+che generano i report PER LEGA: se hanno lo stesso blocco, vanno allineate
+(il 07/08 e' stato fatto cosi' per i decimali, tutte e 26 insieme).
+NON esiste un propaga_modello per questo file: propaga_modello.py copre solo
+test_{gk,def,mid,fwd}. Quindi o uno script una-tantum come quello dei decimali,
+o a mano con verifica finale che non restino copie vecchie.
+
+COME VERIFICARE (obbligatorio prima di committare)
+Il test automatico NON basta e ti ingannera': un click simulato lascia il
+documento non a fuoco, che e' proprio la condizione che fa RIGETTARE
+writeText. Io ci sono cascato: il mio click da automazione non copiava, ma
+non prova che non funzioni per l'utente.
+Quindi:
+ 1. genera/prendi un report HTML con formazioni dentro (serve una run con
+    allstars/arene > 0: con 0 il report esce vuoto e non prova niente --
+    anche qui ci sono cascato);
+ 2. aprilo in un browser vero, clicca un nome CON IL MOUSE, e incolla altrove
+    per controllare che sia arrivato il nome giusto;
+ 3. prova anche il caso di fallimento, ad esempio negando il permesso agli
+    appunti, e verifica che compaia il messaggio del punto (b) invece del
+    silenzio.
+Riporta all'utente cosa hai visto in ognuno dei tre casi, non un "fatto".
+
+===============================================================================
+2. PUNTI SUCCESSIVI
+===============================================================================
+L'utente ne ha altri, non ancora dettati. Quando arrivano, si aggiungono qui
+in coda a questo stesso file, senza crearne di nuovi.
+
+===============================================================================
+3. QUANDO HAI FINITO
+===============================================================================
+ - Test in locale PRIMA del commit (regola di CLAUDE.md).
+ - Committa solo i file che hai toccato tu: sulla stessa working tree possono
+   lavorare altre sessioni. Se ne vedi di modificati che non sono tuoi,
+   segnalali senza toccarli.
+ - Scrivi l'esito IN CODA a questo file, non in un file nuovo.
+ - In chat all'utente: poche righe, il percorso del file, e le domande che ti
+   bloccano. Niente wall of text (ha l'ADHD, e paga a token).
