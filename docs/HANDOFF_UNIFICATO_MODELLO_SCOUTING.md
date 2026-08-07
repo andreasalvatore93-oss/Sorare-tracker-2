@@ -713,6 +713,61 @@ sottostimati +4.9** (n71, da riverificare). Accumulare altre GW rende poco
 
 ---
 
+## 8bis. Indagine sullo SCOUTING dopo il grade (07/08/2026, non urgente)
+
+Richiesta dell'utente: «se il generatore aveva un problema di autenticazione lo
+avrà anche lo scouting», e «non ho mai testato lo scouting dopo il grade».
+Indagine fatta sul codice e sui log di run vere (`30910296375`, `30845739587`).
+Nessuna modifica applicata: è un elenco di cose da decidere.
+
+**Quello che NON è rotto** (verificato, non dedotto):
+- **Nessun problema di autenticazione.** `scouting_gw.py` non fa nessuna query
+  autenticata: zero `myFilteredBench`, `currentUser`, `owner`, `user(slug:)`.
+  Sta dov'era la discovery prima del grade — tutte query pubbliche — quindi la
+  sessione anonima descritta nell'handoff orchestratore §5bis non lo tocca.
+- **Non sovrascrive l'esclusione delle carte bloccate.** Il job `candidati`
+  scrive solo `player_slugs.json`, mai `player_card_counts.json`, che è dove
+  vive `ESCLUDI_LOCKATE`. Verificato: nessuna interferenza.
+- **Le odds le prende già in bulk** (`odds_per_giornata`) dal 03/08. Su questo
+  era la discovery a essere indietro, non lui.
+
+**Difetti aperti, in ordine di quanto costano:**
+
+1. **Buco di copertura per leghe senza pipeline.** Ogni run avvisa per `nb-i`,
+   `nb-ii`, `premier-division-ie`, `premier-league-am`, `super-liga-sk`,
+   `virsliga`: i loro giocatori restano nel pool ma non ricevono un atteso, e
+   quindi non possono essere consigliati. Da decidere: costruire le pipeline o
+   escluderli a monte per non sporcare i conteggi.
+2. **429 fra 23 e 111 per run.** Stessa malattia della pipeline formazioni:
+   `max-parallel: 20` sulla matrice predict. Qui però le run durano 2.7-3.8
+   min, quindi il danno è piccolo — non è urgente, ma è lo stesso meccanismo.
+3. **Il commento in testa al workflow è STANTIO e fuorviante.** Righe 14-28 di
+   `scouting_gw.yml` dicono che «`max-parallel: 8` è il suo stesso valore,
+   tarato lì»; il codice usa **20** dalla riga 164, con una motivazione
+   misurata (a 8 la matrice era 2.5x più lenta, run `30814827740`). Chi legge
+   il commento crede a un valore che non è quello in uso. Da correggere.
+4. **`_gql` non manda il CSRF.** Lo scouting importa
+   `formazione_mls/discovery/mls_def_discovery_global.py`, una delle ~381
+   copie di `graphql_query` senza CSRF. Oggi è innocuo (query pubbliche), ma
+   il giorno che gli si aggiunge una query autenticata ricade esattamente nel
+   bug del 07/08. Rischio latente, da chiudere quando si tocca il file.
+5. **Il job `candidati` sovrascrive `player_slugs.json` di produzione** per le
+   leghe toccate. È già scritto nel commento del workflow, ma vale ricordarlo:
+   fino alla successiva run di `formazione_giornata` un predict manuale
+   userebbe la lista dello scouting.
+
+**Decisione APERTA, da prendere con l'utente: il grade nello scouting.**
+La parola `grade` non compare in `scouting_gw.py`. Non è una dimenticanza, c'è
+una ragione strutturale: il grade di produzione arriva da `myFilteredBench`,
+cioè dalle carte **che si possiedono** — per una carta che si sta valutando di
+comprare quella strada non esiste. Esiste `anyPlayer.playerGameScores(last:15)
+.projection.grade` (vedi `raccolta_grade_crowss.py`) ma dà il grade **storico**
+delle partite passate, non una proiezione per la giornata da giocare. Non è
+ovvio che un segnale per-giornata debba entrare in una decisione d'acquisto
+pluri-giornata: da discutere prima di implementare qualunque cosa.
+
+---
+
 ## 9. Ultima modifica di produzione (05/08/2026)
 
 **Passaggio 2 (audit + fix), 16 commit — PUSHATI su `main` il 05/08 sera**
