@@ -1105,6 +1105,11 @@ def main():
     advanced = (f"user.id:{uuid} AND sport:football "
                 f"AND NOT sealed=1 AND NOT rarity:custom_series")
 
+    # Leghe/ruoli ESAMINATI, anche quelli rimasti senza superstiti (07/08).
+    # Serve a svuotare i loro file invece di lasciarli intatti: vedi il
+    # commento sul ciclo di scrittura in fondo, e' un bug reale costato due
+    # arene (caso pedro-david-gallese-quiroz).
+    esaminati_lega_ruolo = set()
     per_lega_ruolo = defaultdict(lambda: defaultdict(set))
     nomi_per_lega_ruolo = defaultdict(lambda: defaultdict(dict))
     counts_per_lega_ruolo = defaultdict(lambda: defaultdict(dict))
@@ -1205,6 +1210,18 @@ def main():
                 club = p.get('activeClub') or {}
                 if not p.get('slug'):
                     continue
+                # ESAMINATA: si registra QUI, dove le carte si vedono, non
+                # nel ciclo dei sopravvissuti. Errore trovato subito dopo
+                # averlo scritto: una lega il cui unico giocatore viene
+                # SCARTATO (carta bloccata) non entra mai in 'elenco', quindi
+                # non risultava esaminata, quindi i suoi file non venivano
+                # svuotati e restavano quelli di ieri. E' esattamente il caso
+                # Gallese: le sue due carte venivano scartate correttamente,
+                # ma il file di colombia/gk continuava a dichiararne 2.
+                _lg = (p.get('activeClub') or {}).get('domesticLeague') or {}
+                _dn_pag = LEAGUE_DIR.get(_lg.get('slug')) if _lg.get('slug') else 'senza_lega'
+                if _dn_pag:
+                    esaminati_lega_ruolo.add((_dn_pag, role))
                 # CARTA gia' impegnata in una formazione BLOCCATA: si salta
                 # QUESTA carta, non il giocatore. Se ne possiede altre copie
                 # libere, quelle continuano a contare normalmente qui sotto
@@ -1341,6 +1358,14 @@ def main():
         salva_odds_storico(fx.get('slug'), risultati)
         for slug in elenco:
             lega = lega_di[slug]
+            # ESAMINATA: si registra PRIMA di ogni filtro (finestra, odds,
+            # lega senza pipeline), perche' quello che conta e' "questo job ha
+            # guardato questa lega/ruolo", non "qualcuno e' sopravvissuto". Se
+            # si registrasse dopo, una lega i cui giocatori vengono tutti
+            # scartati resterebbe con i file di ieri -- che e' il bug stesso.
+            _dn = LEAGUE_DIR.get(lega) if lega else 'senza_lega'
+            if _dn:
+                esaminati_lega_ruolo.add((_dn, role))
             odds, data, l10 = risultati.get(slug, (None, None, None))
             if data is None:
                 esclusi_finestra += 1
@@ -1435,6 +1460,26 @@ def main():
                 log(f"[grade] ATTENZIONE: {lega}/{role} ha {n_tot} kept_slugs "
                     f"ma ZERO con grade -- questa lega/ruolo girera' G in "
                     f"fallback (z_grade=0, identico ad A) per questa GW.")
+
+    # SVUOTA le lega/ruolo esaminate ma rimaste senza nessun superstite
+    # (07/08/2026, bug reale costato due arene -- caso
+    # pedro-david-gallese-quiroz).
+    # Prima si scriveva SOLO per le lega/ruolo con superstiti: se una si
+    # svuotava, i suoi player_slugs/player_names/player_card_counts restavano
+    # quelli della run precedente. Il generatore non prende i candidati da
+    # qui, li prende dai consiglio_*.txt -- e anche quelli non venivano
+    # rigenerati, perche' la lega usciva dalla matrice. Risultato: Gallese,
+    # entrambe le carte gia' bloccate, restava nel consiglio delle 16:37 e nei
+    # conteggi con 2 copie, e il generatore lo schierava in due arene che poi
+    # non erano schierabili davvero.
+    # Scrivendo i file VUOTI, CardPool torna a vedere 0 copie ("mai schierare
+    # un giocatore di cui non c'e' prova di possesso", _total_for) e il
+    # giocatore non e' piu' selezionabile anche se il consiglio e' stantio.
+    for _dn, _role in sorted(esaminati_lega_ruolo):
+        if _dn not in per_lega_ruolo or _role not in per_lega_ruolo[_dn]:
+            per_lega_ruolo[_dn][_role] = set()
+            log(f"  {_dn}/{_role}: nessun candidato oggi -> file svuotati "
+                f"(prima restavano quelli della run precedente)")
 
     scritti = {}
     for lega, ruoli in sorted(per_lega_ruolo.items()):
