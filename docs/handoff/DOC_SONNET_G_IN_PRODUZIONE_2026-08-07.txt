@@ -1,0 +1,226 @@
+DOC PER SONNET -- PORTARE IL GRADE G IN PRODUZIONE SU MAIN + VERIFICA CATENA
+Scritto dall'orchestratore, 07/08/2026, ora di Roma.
+Destinatario: SONNET (esecutore con giudizio). Chat pulita: leggi prima i file
+indicati, non assumere nulla.
+
+Questo TOCCA LA PRODUZIONE. Vale in pieno CLAUDE.md "La catena di produzione --
+mai saltare un anello" e "prima di implementare, valida la catena". Nessuna
+riga entra nel default di main finche' l'utente non ha ispezionato i grezzi.
+
+===============================================================================
+0. LEGGI PRIMA, IN QUEST'ORDINE
+===============================================================================
+1. CLAUDE.md (radice), TUTTO.
+2. docs/handoff/DESIGN_GRADE_G_PRODUZIONE_2026-08-07.txt -- SPEC completa
+   (formula, fonte grade, aggancio dopo filtro odds). NON reinventare.
+3. docs/handoff/BRIEF_SONNET_CATENA_G_2026-08-07.txt -- la catena
+   (soglie+scouting) da eseguire DOPO l'innesto.
+4. docs/handoff/BRIEF_SONNET_TEST_DIFF_GRADE_GW3_2026-08-07.txt -- il test
+   d'ingresso GIA' fatto (esito in coda, sez.4ter la rettifica).
+5. Questo file.
+
+===============================================================================
+1. STATO DI PARTENZA (verificato dall'orchestratore 07/08, sul codice)
+===============================================================================
+- Branch test-grade-g-gw3 (= e33eceb84f) contiene GIA' la formula G innestata
+  nel generatore, dietro flag GRADE_ENABLED (default '0'). Il test A/A e'
+  passato (spento = bit-per-bit main; acceso muove come da formula). Il test
+  differenziale GW3 e' passato come gate: G collegato, composizione non
+  stravolta. Da qui si parte, NON si riscrive la formula.
+- main (= f73e1d1bb2) INTATTO: build_formazione_globale.py identico a
+  origin/main, nessun default di produzione toccato.
+
+ANELLO MANCANTE (il motivo per cui G NON e' ancora pronto per main):
+  Nel branch il grade arriva SOLO da un FILE (GRADE_DATA_PATH -> _GRADE_MAP).
+  Nel test Sonnet l'ha fetchato a mano con grade_snapshot.py e passato il file.
+  IN PRODUZIONE questo non basta: il generatore gira da solo, e se il file e'
+  vecchio o assente G gira in fallback (z=0 = A) SENZA dirlo. Serve che il
+  grade venga fetchato AUTOMATICAMENTE a ogni run, per la GW corrente.
+
+===============================================================================
+2. COSA FARE -- A TAPPE CON CHECKPOINT (deciso con l'utente 07/08)
+===============================================================================
+Lavora su un branch dedicato (puoi ripartire da test-grade-g-gw3 o da main +
+cherry-pick del codice G). NIENTE commit su main finche' non si e' al punto 6.
+
+*** TAPPA 1 = punti A + C (fetch integrata + test A/A). POI FERMATI E RIPORTA.
+    NON proseguire con la catena (D-E) finche' l'orchestratore/utente non ha
+    verificato che: (1) la fetch da' copertura grade alta e uniforme sul pool
+    completo (come il test v2: ~93%, no leghe a 0% non segnalate); (2) il test
+    A/A passa (spento=main bit-per-bit, acceso muove come da formula).
+    Solo dopo l'ok su questi due, arriva la TAPPA 2 (D+E: catena+dump). ***
+
+Questo evita di spendere il giro lungo della catena se la fetch o
+l'interruttore hanno un problema. Checkpoint prima, catena dopo.
+
+ A. INTEGRARE LA FETCH GRADE NELLA PIPELINE (l'anello mancante).
+    Decisione di design gia' presa con l'utente (DESIGN sez.2): il grade si
+    prende DOPO filter_by_starter_odds, SOLO per i kept_slugs, e si scrive in
+    player_card_counts.json accanto a starter_odds -- lo stesso file da cui il
+    generatore gia' legge le odds (build_formazione_globale.py:~857,
+    counts.get(slug)['starter_odds']). Quindi:
+      - nella discovery (formazione_<lega>/discovery/*_discovery.py, dove vive
+        filter_by_starter_odds), dopo il filtro odds, fetcha projection.grade
+        per i kept_slugs con la query di grade_snapshot.py
+        (FootballComposeBenchQuery, projection { grade }) e scrivi il grade
+        nella stessa entry di player_card_counts.json;
+      - nel generatore, leggi il grade da quella entry (come starter_odds) e
+        passalo a _apply_grade_group, invece che da GRADE_DATA_PATH-file.
+    IMPORTANTE: il grade e' pre-partita e VOLATILE (leaderboard chiusa -> 0).
+    La fetch deve girare quando la GW e' APERTA, come la discovery gia' fa per
+    le odds. Verifica che la fixture interrogata sia quella corrente/aperta.
+
+ B. SOGLIA ODDS: usare MIN_STARTER_ODDS come l'utente indica per la GW (in
+    genere 0.70, safe 0.80). Il grade si chiede solo sopra soglia.
+
+ C. TEST A/A (di nuovo, ora che la fetch e' integrata):
+    - GRADE_ENABLED=0 -> output bit-per-bit main (nessun cambiamento);
+    - GRADE_ENABLED=1 con fetch reale -> lo score si muove come da formula.
+    Riporta la copertura grade sul pool completo (deve essere ~alta e uniforme,
+    come il test v2: 93%. Se una lega e' a 0% NON interrogata, segnalalo:
+    quella lega girerebbe in fallback = A).
+
+ D. CATENA (esegui BRIEF_SONNET_CATENA_G_2026-08-07.txt):
+    1. misura la SIGMA della calibrazione formazione su A vs G (stesso
+       campione ampio, punteggio reale da cache, D4). Se SIGMA non cambia
+       (regola del delta), le soglie NON si muovono -> dimostralo.
+    2. se SIGMA cambia: rifitta PAREGGIO_ARENA / GUADAGNO_PER_PUNTO via
+       consiglio_arena.py, riporta il delta vs produzione.
+    3. SCOUTING: invariato (dimostrato) o consigli che cambiano (dump).
+
+ E. DUMP ISPEZIONABILE: per l'utente, formazioni A vs G su piu' mazzi/GW
+    (backtest ampio, non solo GW3), col metro GIUSTO = punti REALIZZATI dalla
+    cache (non atteso_combinato -- quello era l'errore del primo dump GW3,
+    vedi rettifica sez.4ter del brief test). Il +18.900 vs +14.300 del backtest
+    ampio e' la base: riproducilo/confermalo col codice di produzione.
+
+===============================================================================
+3. GATE -- PRIMA DELL'UTENTE, NIENTE MERGE (vincolante)
+===============================================================================
+ 6. L'UTENTE ISPEZIONA i grezzi: test A/A, copertura grade, delta catena,
+    dump A vs G col metro realizzato. SOLO dopo il suo ok:
+    - si rende GRADE_ENABLED il default di produzione (o si toglie il flag),
+    - si aggiornano le soglie SE la catena l'ha richiesto,
+    - si fa il merge su main e push.
+ Finche' il punto 6 non e' passato, in produzione resta A. Nessun default
+ cambiato senza ispezione (regola backtest CLAUDE.md, regola 6 orchestratore).
+
+===============================================================================
+4. VINCOLI
+===============================================================================
+- Formazioni SOLO con build_one_lineup_with_growth (D7). Punteggio reale SOLO
+  da cache game-log (D4), mai ricostruito.
+- Il metro di qualita' e' il REALIZZATO (backtest ampio), non l'atteso
+  combinato (gonfiato dal boost grade). Sulla GW futura non c'e' realizzato:
+  per il verdetto di qualita' si usa il backtest ampio, non la GW corrente.
+- Se una lega non ha copertura grade (fetch non la include), NON far girare G
+  in silenzio su quella lega: segnala che gira in fallback = A.
+- Branch dedicato. Nessun commit su main prima del gate (punto 6).
+- Dump per ogni verdetto.
+
+===============================================================================
+5. COSA RIPORTARE ALL'ORCHESTRATORE
+===============================================================================
+ - fetch grade integrata: dove, e copertura ottenuta sul pool completo;
+ - test A/A: spento==main? acceso muove?
+ - catena: SIGMA cambia si/no; se si', nuove soglie + delta; scouting;
+ - dump A vs G col metro realizzato (backtest ampio), +essenze A vs G;
+ - nome branch, hash, come rigirare. Nessun verdetto senza grezzi.
+Scrivi l'esito in coda a questo file.
+
+===============================================================================
+ESITO TAPPA 1 -- SONNET, 07/08/2026 ~14:30 Roma (branch test-grade-g-gw3)
+===============================================================================
+Nota: prosegue dal branch test-grade-g-gw3 (dove ho gia' fatto il test
+d'ingresso GW3), NON dal vecchio brief di test -- questo e' il doc di
+riferimento per questa fase. Commit: afe1ee7d55.
+
+A. FETCH INTEGRATA -- FATTO
+In discovery_fixture.py (lo script che produce GIA' in produzione tutti i
+player_card_counts.json per ogni lega/ruolo): aggiunta fetch_grade_live()
+(stessa query FootballComposeBenchQuery di grade_snapshot.py, PAGINATA fino
+a hasNextPage=False -- il bug di paginazione trovato nel test isolato e'
+risolto qui alla radice, non solo nello script di test). Chiamata UNA volta
+per run (non per lega/ruolo), su 3 leaderboard bulk (all_star arena+non-
+arena, korea in_season), DOPO che counts_per_lega_ruolo contiene gia' solo i
+kept_slugs (post filtro MIN_STARTER_ODDS). Il grade trovato si scrive in
+entry['grade'] nella stessa entry di starter_odds/copie/l10 dentro
+player_card_counts.json.
+In generatore_formazioni/build_formazione_globale.py: load_league_role_data
+ora legge counts.get(slug)['grade'] (come gia' fa per starter_odds) in
+row['_grade_from_counts']; _apply_grade_group usa QUELLO come fonte primaria
+del grade, con fallback a _GRADE_MAP/GRADE_DATA_PATH (il meccanismo del test
+isolato GW3, tenuto per compatibilita', non piu' la via di produzione).
+Dietro FETCH_GRADE=1 (default ON, disattivabile) e SORARE_CSRF (gia'
+disponibile come secret in discovery_fixture.yml, non serve toccare i
+workflow).
+Flag GRADE_ENABLED invariato: default '0', in produzione oggi G resta
+SPENTO.
+
+B. SOGLIA ODDS -- INVARIATA
+Non ho toccato MIN_STARTER_ODDS (resta il default/quello che l'utente
+imposta per la GW): il grade si chiede sempre e solo sui kept_slugs che
+escono da quel filtro, qualunque sia il valore.
+
+C. TEST A/A -- PASSATO (rifatto due volte)
+ 1. GRADE_ENABLED=0, run COMPLETA (7 formazioni, stessa config del test
+    GW3): output IDENTICO byte-per-byte al dump_A.json gia' ispezionato
+    (confronto diretto in Python, True). Le modifiche non toccano il
+    default di produzione.
+ 2. GRADE_ENABLED=1 leggendo grade DA player_card_counts.json (non da
+    GRADE_DATA_PATH -- test end-to-end sul percorso vero): ho chiamato
+    fetch_grade_live() per davvero (cookie utente, GW3 aperta), iniettato
+    il risultato nei 4 file kleague_*_discovery/player_card_counts.json
+    (poi RIPRISTINATI con git checkout, zero modifiche residue --
+    verificato `git status` pulito), rigenerato con ONLY_LEAGUES=kleague:
+    lo score si muove esattamente come nel test isolato (bum-keun-song
+    atteso_cal=51.6 grade=A atteso_combinato=53.05, identico a meno di
+    arrotondamento al primo test). Il filo -- discovery scrive, generatore
+    legge -- FUNZIONA end-to-end, non solo a formula isolata.
+
+COPERTURA MISURATA SUI KEPT_SLUGS REALI DI PRODUZIONE (non il pool teorico:
+i 928 slug effettivamente presenti negli attuali player_card_counts.json di
+TUTTE le leghe, dall'ultima discovery del 05/08 -- fetch grade rilanciata
+oggi 07/08 sulla GW3 aperta): 880/928 = 94.8%.
+Leghe/ruolo COMPLETAMENTE a 0% (fetch non le raggiunge affatto, quindi
+girerebbero G in fallback = A per questa GW): turchia (gk/def/mid/fwd, 14
+slug), danimarca (gk/def, 5), polonia (fwd/mid, 3), cechia/francia/grecia
+(1 ciascuna, vari ruoli). Totale ~48 slug su 928 (5.2%) non coperti,
+concentrato in leghe piccole -- NON un buco uniforme grosso, ma va
+segnalato com'e' (regola CLAUDE.md, niente silenzio): il codice ora LOGGA
+questi casi a ogni run ("[grade] ATTENZIONE: <lega>/<ruolo> ha N kept_slugs
+ma ZERO con grade").
+CAUSA del buco non verificata (non affermo il perche'): ipotesi non
+dimostrata che quelle leghe non siano incluse nel pool "all_star"/"korea"
+per una ragione lato Sorare (forse non arena-eligible in quel formato).
+
+D/E. CATENA (soglie+scouting) -- NON FATTO, come da checkpoint (sez.2
+TAPPA 1 di questo doc): mi fermo qui e riporto, non proseguo senza l'ok
+dell'utente sui due punti sopra (fetch ~94.8% uniforme salvo le leghe
+segnalate; A/A passato due volte).
+
+VINCOLI RISPETTATI: nessun commit su main (tutto su test-grade-g-gw3, ora
+afe1ee7d55); nessun file di produzione lasciato modificato (verificato con
+git status dopo i test); GRADE_ENABLED resta OFF di default.
+
+COME RIGIRARE:
+  git checkout test-grade-g-gw3
+  # fetch isolata (senza toccare discovery reale):
+  SORARE_COOKIE=... SORARE_CSRF=... python -c "import discovery_fixture as df; print(df.fetch_grade_live('football-7-11-aug-2026'))"
+  # discovery reale COMPLETA (pesante, tocca tutti i player_card_counts.json):
+  SORARE_COOKIE=... SORARE_CSRF=... FIXTURE_SLUG=football-7-11-aug-2026 python discovery_fixture.py
+  # poi generatore con GRADE_ENABLED=1 (legge grade da counts in automatico)
+
+===============================================================================
+6. FILE DI RIFERIMENTO
+===============================================================================
+generatore_formazioni/build_formazione_globale.py  formula G (branch),
+                                                    starter_odds read ~857,
+                                                    soglie ~499/~621
+formazione_<lega>/discovery/*_discovery.py          filter_by_starter_odds,
+                                                    player_card_counts.json
+analisi_manager/grade_snapshot.py                   query projection.grade
+consiglio_arena.py                                  pareggio()/incasso_medio()
+analisi_manager/valida_soglie.py                    rifitta retta+sigma
+analisi_manager/p12_backtest_manager_grade.py       backtest ampio, metro realizzato
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md          catena + scouting
