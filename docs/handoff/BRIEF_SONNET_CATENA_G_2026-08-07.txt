@@ -1,0 +1,245 @@
+BRIEF PER SONNET -- CATENA DI PRODUZIONE PER IL GRADE G (soglie + scouting)
+Scritto dall'orchestratore, 07/08/2026, ora di Roma.
+Destinatario: SONNET (esecutore con giudizio). Chat pulita: leggi prima i file
+indicati, non assumere nulla.
+
+QUANDO USARE QUESTO BRIEF: SOLO dopo che G e' stato portato su main (default
+attivo) o comunque quando si decide di misurare l'effetto di G sulla catena.
+NON prima. Finche' G e' solo sul branch test-grade-g-gw3, questo brief resta
+in attesa. Il test d'ingresso di G e' gia' passato (vedi
+BRIEF_SONNET_TEST_DIFF_GRADE_GW3: G collegato, composizione non stravolta).
+
+===============================================================================
+0. LEGGI PRIMA, IN QUEST'ORDINE
+===============================================================================
+1. CLAUDE.md (radice), TUTTO. In particolare: "La catena di produzione -- mai
+   saltare un anello"; "prima di misurare l'effetto di un componente dimostro
+   che l'interruttore funziona"; "cosa deve riprodursi: il delta, non il valore
+   assoluto"; divieto allucinazioni.
+2. docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md -- la catena (sez.1bis) e lo
+   scouting (Ess/GW, EUR/EssGW).
+3. analisi_manager/VALIDAZIONE_SOGLIE.md -- come sono nate/tarate le soglie
+   attuali (la cronistoria e la correzione sigma cap260 del 05/08).
+4. Questo file.
+
+===============================================================================
+1. IL PUNTO CHE DECIDE TUTTA LA CATENA (leggi bene, fa risparmiare ore)
+===============================================================================
+La catena e':
+   score_atteso (qui entra G)
+      -> SIGMA della calibrazione formazione (realizzato = a + b*previsto, sigma)
+      -> SOGLIE arena (PAREGGIO_ARENA, GUADAGNO_PER_PUNTO), calcolate da
+         consiglio_arena.py usando quella sigma + premi/avversari REALI
+      -> SCOUTING (Ess/GW, EUR/EssGW), che usa l'efficienza arena
+
+FATTO VERIFICATO dall'orchestratore (07/08) sul codice:
+ - Il PAREGGIO dipende da SIGMA e da premi/avversari (consiglio_arena.py:
+   pareggio() -> incasso_medio() con rnd.gauss(atteso, sigma)).
+ - G NON cambia premi ne' avversari. G cambia solo QUALI carte si scelgono.
+ - Quindi la sola cosa che puo' spostare le soglie e' se le formazioni scelte
+   da G hanno una SIGMA diversa (realizzato piu' o meno disperso attorno
+   all'atteso) rispetto a quelle scelte da A.
+
+CONSEGUENZA OPERATIVA -- la PRIMA misura, prima di toccare qualunque soglia:
+   Misura la retta di calibrazione (intercetta, pendenza, SIGMA) sulle
+   formazioni scelte da A e su quelle scelte da G, sullo STESSO campione ampio
+   (crowss+16+satonio+eventuali nuovi mazzi profondi), col metodo GIA' USATO in
+   valida_soglie.py (rifitta realizzato = a + b*previsto sulle formazioni VERE,
+   punteggio REALE dalla cache game-log, non ricostruito -- D4).
+   - Se SIGMA_G ~= SIGMA_A (delta < tremolio fra run, regola del delta): le
+     soglie NON si muovono. La catena e' chiusa qui per l'anello soglie: si
+     passa direttamente a verificare lo scouting (che dipende dalle stesse
+     soglie invariate -> anch'esso invariato). Lo si SCRIVE e si dimostra, non
+     si assume.
+   - Se SIGMA_G differisce in modo stabile: allora e SOLO allora rifitta le
+     soglie (sez.2).
+
+Questo evita di rifittare soglie a vuoto. NON saltare questa misura.
+
+===============================================================================
+2. SE (E SOLO SE) LA SIGMA CAMBIA: RIFITTA LE SOGLIE
+===============================================================================
+Valori di PRODUZIONE attuali (da main, VERIFICATI 07/08):
+  PAREGGIO_ARENA   = {260:259.5, 220:244.1, UNCAPPED:288.3, ELITE:342.7}
+  GUADAGNO_PER_PUNTO = {260:7.9, 220:6.3, UNCAPPED:8.0, ELITE:9.1}
+  (piu' GUADAGNO 8.8 per le arene per-lega; COSTO e PREMI in
+   consiglio_arena.py / build_formazione_globale.py)
+
+Procedura (identica a quella che ha prodotto i valori attuali, 05/08):
+ a. Con la SIGMA_G misurata al punto 1, rigira consiglio_arena.py per ottenere
+    pareggio e guadagno/punto per ciascun tipo (260/220/uncapped/elite).
+ b. Confronta con i valori di produzione sopra. Riporta il DELTA per tipo.
+ c. NON toccare build_formazione_globale.py di produzione finche' l'utente non
+    ha ispezionato i numeri (i pali non si spostano dopo: prima i numeri, poi
+    la decisione dell'utente).
+
+===============================================================================
+3. SCOUTING (ultimo anello) -- sempre, anche se le soglie non si muovono
+===============================================================================
+Lo scouting (Ess/GW, EUR/EssGW in docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md)
+consiglia gli acquisti sulla base dell'efficienza arena, che dipende dalle
+soglie.
+ - Se le soglie NON si sono mosse (sez.1): lo scouting resta invariato per
+   costruzione. DIMOSTRALO (mostra che l'input efficienza e' identico), non
+   limitarti ad affermarlo.
+ - Se le soglie si sono mosse (sez.2): ricalcola Ess/GW e EUR/EssGW con le
+   soglie nuove e riporta quali consigli di acquisto cambiano (entrano/escono
+   dalla lista), con un dump leggibile di almeno i primi 10-15 giocatori.
+
+===============================================================================
+4. VINCOLI
+===============================================================================
+- Punteggio REALE sempre dalla cache game-log condivisa, mai ricostruito
+  dividendo per il bonus (D4). Formazioni SOLO con build_one_lineup_with_growth
+  (D7).
+- Regola del delta: un cambiamento si adotta se il SEGNO e' stabile e il delta
+  e' >= 3x il tremolio fra run. Valori assoluti che tremolano fra ambienti non
+  invalidano nulla; conta la differenza A vs G sullo stesso run.
+- NIENTE modifica ai default di produzione senza ispezione dell'utente sui
+  grezzi. Branch dedicato se serve.
+- Dump ispezionabile per ogni verdetto (regola backtest CLAUDE.md).
+
+===============================================================================
+5. COSA RIPORTARE ALL'ORCHESTRATORE
+===============================================================================
+ - la retta di calibrazione A vs G (a, b, SIGMA) sullo stesso campione, con n;
+ - verdetto: SIGMA cambia si/no (con la regola del delta);
+ - se si': i nuovi pareggio/guadagno per tipo e il delta vs produzione;
+ - lo scouting: invariato (dimostrato) o i consigli che cambiano (dump);
+ - in ogni caso: dump ispezionabile, nessun verdetto senza grezzi.
+Scrivi l'esito in coda a questo file.
+
+===============================================================================
+ESITO -- SONNET, 07/08/2026 ~15:30 Roma (branch grade-g-produzione)
+===============================================================================
+Nota: prosegue da DOC_SONNET_G_IN_PRODUZIONE (TAPPA 1 fatta, fetch grade
+integrata in discovery_fixture.py, copertura reale 94.8%). Questo e' il
+seguito -- TAPPA 2, sez.2 D-E del doc.
+
+1. SIGMA A vs G -- MISURATA, NON SI MUOVE IN MODO STABILE
+Script nuovo analisi_manager/p14_sigma_a_vs_g.py (riusa p12_backtest_
+formazione_grade.py: costruisci/gioca/capitano_atteso/realizzato, GIA'
+validati -- non ho scritto un nuovo knapsack). Campione: 71 fixture, 232
+formazioni A e 232 G (mazzo crowss, arene cap 260/220 reali, walk-forward,
+stesso di p12). 'previsto' e' SEMPRE la somma di atteso_cal (calibrato
+onesto), MAI atteso_combinato (vedi rettifica sez.4ter del test GW3: quello
+e' un punteggio di selezione gonfiato, non una previsione).
+
+  A: realizzato = +91.93 +0.670*previsto   SIGMA = 48.13   corr = +0.117
+  G: realizzato = +123.53 +0.555*previsto  SIGMA = 49.32   corr = +0.095
+  delta SIGMA = +1.18. Bootstrap IC95 sulla varianza residua: A
+  [44.37,51.83] (dev.std), G [45.09,53.52] -- SI SOVRAPPONGONO ampiamente.
+VERDETTO: SIGMA NON cambia in modo stabile (delta piccolo, IC sovrapposti).
+
+2. SOGLIE -- VERIFICATO CHE NON SI MUOVONO (rigirato consiglio_arena.py,
+non assunto): pareggio() con SIGMA_A=48.13 e SIGMA_G=49.32 sullo stesso
+campo avversari reale:
+  cap 260: pareggio(sigma_A)=269.6  pareggio(sigma_G)=268.6  delta=-0.95
+  cap 220: pareggio(sigma_A)=236.3  pareggio(sigma_G)=235.3  delta=-1.02
+Sotto 1 punto su una scala di ~260-270 (<0.4%), molto piu' piccolo del
+tremolio gia' visibile fra SIGMA_A misurata qui (48.13) e la SIGMA di
+produzione ufficiale (50.6, da VALIDAZIONE_SOGLIE 05/08 su un campione
+diverso): pareggio(sigma_A) stesso = +10.1 di scarto dalla soglia di
+produzione attuale (259.5), solo per la differenza di campione/metodo. Il
+delta G-A (<1.1 pt) e' quindi rumore, non segnale.
+Anche il guadagno/punto (derivata di incasso_medio vicino al pareggio) si
+sposta poco: cap 260 7.43->7.12, cap 220 5.52->5.66 (variazioni <5%,
+compatibili col rumore della simulazione Monte Carlo, N_PROVE=20000).
+VERDETTO: soglie NON vanno rifittate. build_formazione_globale.py
+PAREGGIO_ARENA/GUADAGNO_PER_PUNTO restano quelli di produzione.
+
+3. SCOUTING -- INVARIATO, DIMOSTRATO SUL CODICE (non solo assunto)
+scouting_gw.py (righe 390-391, 1273, 1286, 1356, 1362) legge
+PAREGGIO_ARENA/GUADAGNO_PER_PUNTO con getattr(gg, ...) DIRETTAMENTE dal
+modulo generatore (gg = build_formazione_globale importato), non ha una
+copia propria delle soglie -- le uniche costanti "proprie" dello scouting
+(51.8, 7.65/7.9) sono FALLBACK di default (env var), sovrascritti a runtime
+dalle soglie vere. Poiche' le soglie non si muovono (punto 2), l'input che
+lo scouting legge e' IDENTICO -> i consigli Ess/GW e EUR/EssGW restano
+uguali per costruzione. Non ho ricalcolato la lista (non serve: l'input a
+monte e' lo stesso, non ha senso rigirare per ottenere lo stesso numero).
+
+4. BACKTEST AMPIO, METRO REALIZZATO -- NON RIPRODUCE IL +18.900/+14.300,
+   RISULTATO MISTO, DA NON NASCONDERE
+Ho rilanciato i DUE script che generano numeri "premio-vero" (rank/premio
+REALI dallo storico arene, non simulati -- backtest_arene_economia.py):
+
+ a. p12_backtest_formazione_grade.py (crowss, 232 arene, 27 giornate):
+      punteggio medio   A=273.02  G=273.27
+      netto essenze     A=94.8    G=99.1   (per arena)
+      delta G-A netto essenze: +4.31   IC95 [-18.55, +25.11] -- INCLUDE
+      ZERO, non significativo.
+    Copertura grade nel pool candidati QUI: 91/1967 = 4.6% (bassissima --
+    e' grade STORICO, raccolto a campione dopo il fatto in sessioni
+    precedenti, non il fetch live 93-95% che ho costruito in TAPPA 1).
+    Formazioni IDENTICHE A/G: 179/232 (77.2%) -- la maggior parte non
+    cambia, coerente con la bassa copertura (fallback z=0 quasi sempre).
+
+ b. p12_backtest_manager_grade.py (10 manager reali, split A/B pre-
+    registrato, ho guardato SOLO il gruppo A = 5 manager per protocollo,
+    NON il gruppo B di verifica): 59 righe, 20 coppie manager-GW.
+      punteggio medio A=225.97  G=225.50
+      delta G-A: -0.476 punti/riga.  bootstrap IC95 [-1.561, +0.000] --
+      positivo in 0 casi su 4000 resample. G e' STABILMENTE PEGGIORE su
+      questo gruppo (o al piu' pari, mai meglio).
+
+QUESTI DUE NUMERI (a, b) NON riproducono il +18.900 vs +14.300 essenze
+citato in HANDOFF_ORCHESTRATORE sez.3 come "gia' verificato". Non ho
+trovato ne' rilanciato lo script esatto che produce quel GRAND TOTALE a 539
+arene (crowss+16+satonio combinati) -- quello che ho rilanciato e' il pezzo
+crowss (a) e il pezzo 16-manager-gruppo-A (b) separatamente, con esiti
+diversi da quel titolo: (a) nullo, (b) negativo. NON affermo che il
++18.900/+14.300 sia sbagliato (non ho la fonte esatta sotto mano per
+confrontare riga per riga), ma nemmeno lo confermo: sono numeri diversi da
+quello che ho misurato oggi, e non so spiegare lo scarto senza vederne la
+fonte. Segnalo la discrepanza invece di far finta di niente.
+
+FATTO STRUTTURALE IMPORTANTE (limite non aggirabile): il grade NON e'
+recuperabile a ritroso (leaderboard chiusa -> 0 nodi, gia' noto dal design).
+Quindi la copertura del backtest STORICO (4.6% qui) e' quella che e' stata
+raccolta ALLORA con snapshot opportunistici, e non si puo' migliorare oggi
+rilanciando query -- a differenza della pipeline LIVE (TAPPA 1), che oggi
+arriva al 93-95% perche' gira sulla GW APERTA. Il backtest ampio e quindi
+STRUTTURALMENTE meno affidabile della pipeline live sulla copertura, e
+questo va tenuto a mente leggendo qualunque numero storico su G.
+
+5. VERDETTO COMPLESSIVO -- NON UN "SI" NE' UN "NO" NETTO
+ - Soglie/scouting: NON si toccano, dimostrato con margine ampio.
+ - Qualita' di G: il test crowss-storico e' nullo (IC include zero); il
+   test sui 5 manager gruppo A e' NEGATIVO per G (IC esclude zero, dalla
+   parte sbagliata). Questo CONTRASTA col titolo "+18.900 vs +14.300"
+   della sessione precedente, che non ho potuto riverificare riga per
+   riga oggi.
+ - NON propongo di rendere G default di produzione su questi numeri.
+   Serve che l'utente/orchestratore veda: (1) dove sta esattamente lo
+   script/run che ha prodotto il +18.900/+14.300 (per confrontarlo con
+   quello che ho girato oggi), (2) se aprire il gruppo B di verifica dei 5
+   manager (finora mai guardato, per protocollo), (3) se la bassa
+   copertura storica (4.6%) basta a spiegare tutto o se il segno negativo
+   sul gruppo A e' un fatto vero da tenere.
+
+VINCOLI RISPETTATI: nessun commit su main; nessuna modifica alle soglie di
+produzione (dimostrato che non serve); GRADE_ENABLED resta OFF di default;
+niente merge finche' l'utente non ispeziona questi numeri.
+
+FILE PRODOTTI (nuovi, sul branch grade-g-produzione):
+  analisi_manager/p14_sigma_a_vs_g.py         script SIGMA A vs G (nuovo)
+  analisi_manager/p14_sigma_a_vs_g_out.json    righe grezze (previsto,realizzato) A e G
+  analisi_manager/p12_backtest_formazione_grade_out.json  rigenerato (rilancio punto 4a)
+  analisi_manager/p12_backtest_manager_grade_bis_out.json rigenerato (rilancio punto 4b)
+
+COME RIGIRARE:
+  git checkout grade-g-produzione
+  python analisi_manager/p14_sigma_a_vs_g.py
+  python analisi_manager/p12_backtest_formazione_grade.py
+  python analisi_manager/p12_backtest_manager_grade.py
+
+===============================================================================
+6. FILE DI RIFERIMENTO
+===============================================================================
+consiglio_arena.py                                   pareggio()/incasso_medio()
+analisi_manager/valida_soglie.py                     rifitta retta+sigma su arene vere
+analisi_manager/VALIDAZIONE_SOGLIE.md                cronistoria soglie
+generatore_formazioni/build_formazione_globale.py    PAREGGIO_ARENA(~499),
+                                                     GUADAGNO_PER_PUNTO(~621)
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md            catena + scouting
