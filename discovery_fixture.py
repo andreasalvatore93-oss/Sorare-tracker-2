@@ -166,7 +166,11 @@ def _grade_bench_page(so5_slug, position, after):
     return [], False, None
 
 
-def fetch_grade_live(fixture_slug):
+def _grade_file_path(fixture_slug):
+    return os.path.join('dati_globali', f'grade_{fixture_slug}.json')
+
+
+def fetch_grade_live(fixture_slug, usa_file=True):
     """Grade (A..F) per slug giocatore, sulla GW aperta 'fixture_slug'.
     Ritorna (grade_map, copertura_per_leaderboard) -- copertura_per_leaderboard
     e' {leaderboard_slug: n_nodi_bench} per far vedere se una leaderboard e'
@@ -175,6 +179,30 @@ def fetch_grade_live(fixture_slug):
     if not FETCH_GRADE:
         log("[grade] FETCH_GRADE=0, salto il fetch (G restera' in fallback z=0).")
         return {}, {}
+    # FILE PRODOTTO IN LOCALE (07/08/2026 notte, causa MISURATA).
+    # myFilteredBench e' una query "my": Sorare accetta la sessione dal PC
+    # dell'utente e la RIFIUTA dai server GitHub Actions. Misura fatta lo
+    # stesso minuto, stesso cookie di 2324 caratteri, stesso CSRF:
+    #   PC utente     -> currentUser = 'crowss', bench 50 nodi/pagina
+    #   GitHub Actions-> currentUser = None,     bench 0 nodi, HTTP 200 pulito
+    # Rigenerare i secret non serve (il cookie e' gia' quello giusto): la
+    # sessione non vale da quegli IP. Quindi il grade si raccoglie DA LOCALE
+    # con fetch_grade_locale.py, si committa, e qui lo si legge da file.
+    if usa_file:
+        p = _grade_file_path(fixture_slug)
+        if os.path.exists(p):
+            try:
+                with open(p, encoding='utf-8') as f:
+                    d = json.load(f)
+                gm = d.get('grade_map') or {}
+                log(f"[grade] letto da file {p}: {len(gm)} slug con grade "
+                    f"(raccolto il {d.get('raccolto_il')}). Nessuna query live.")
+                return gm, d.get('copertura') or {}
+            except Exception as e:
+                log(f"[grade] file {p} illeggibile ({e}): provo il fetch live.")
+        else:
+            log(f"[grade] nessun file {p}: provo il fetch live (funziona solo "
+                f"da locale, su GitHub Actions tornera' 0 nodi -- vedi commento).")
     if not SORARE_CSRF:
         log("[grade] SORARE_CSRF assente: la query bench potrebbe fallire o "
             "tornare vuota senza CSRF. Procedo comunque, verifica copertura.")

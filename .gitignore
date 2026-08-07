@@ -48,3 +48,8 @@ __pycache__/
 # non banalmente rigenerabili senza rifare le estrazioni bulk della sessione.
 !dati_globali/odds_1x2_index.json
 !dati_globali/fixture_date_map.json
+# Grade per giornata (07/08): NON rigenerabili da GitHub -- la query bench
+# vuole la sessione autenticata, che Sorare accetta solo dal PC dell'utente
+# (vedi fetch_grade_locale.py). Vanno versionati o la discovery gira in
+# fallback.
+!dati_globali/grade_*.json
