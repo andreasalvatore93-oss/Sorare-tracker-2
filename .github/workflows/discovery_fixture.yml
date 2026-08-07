@@ -41,6 +41,9 @@ jobs:
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
+          SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           GAMEWEEK: ${{ github.event.inputs.gameweek }}
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}

@@ -107,6 +107,9 @@ jobs:
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
+          SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           GAMEWEEK: ${{ github.event.inputs.gameweek }}
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           ARENE_EFFICIENTI: ${{ github.event.inputs.arene }}
@@ -232,6 +235,9 @@ jobs:
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
+          SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
+          SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           GRUPPO: ${{ matrix.gruppo.g }}
           PYTHONUNBUFFERED: "1"
         run: |

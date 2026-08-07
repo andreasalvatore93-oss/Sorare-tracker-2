@@ -86,6 +86,48 @@ ODDS_L10_SLEEP = float(os.environ.get('ODDS_L10_SLEEP', '0.7'))
 GRADE_NUM = {'A': 6, 'B': 5, 'C': 4, 'D': 3, 'E': 2, 'F': 1}
 FETCH_GRADE = os.environ.get('FETCH_GRADE', '1') == '1'
 SORARE_CSRF = os.environ.get('SORARE_CSRF', '')
+
+
+def _headers_client_web():
+    """Header di un client Web Sorare legittimo -- gli stessi che manda
+    bots/bot_definitivo.py (riga ~1245), che opera autenticato da GitHub
+    Actions senza problemi.
+
+    PERCHE' SERVONO (07/08/2026, misurato). Con i soli Cookie + CSRF la
+    sessione veniva accettata dal PC dell'utente e RIFIUTATA dai runner
+    GitHub: currentUser=None, e quindi myFilteredBench -> 0 nodi con HTTP 200
+    e nessun errore GraphQL (indistinguibile da 'leaderboard chiusa', che ci
+    ha depistati per giorni). Da casa Sorare e' tollerante, da datacenter
+    pretende il set completo: sorare-client/version/build + fingerprint.
+    Il bot lo sapeva gia'; la query grade no.
+
+    sorare-version/sorare-build cambiano ad ogni release del sito: stanno nei
+    secret SORARE_VERSION/SORARE_BUILD (gia' esistenti nel repo, usati da
+    bot_definitivo). I default sono gli ultimi valori visti dal vivo."""
+    h = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                      '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
+        'Origin': 'https://sorare.com',
+        'Referer': 'https://sorare.com/',
+        'Accept-Language': 'it',
+        'sorare-client': 'Web',
+        'sorare-version': os.environ.get('SORARE_VERSION', '20260717144535'),
+        'sorare-build': os.environ.get(
+            'SORARE_BUILD', '41952aef67694959421f5e001684878b72a52225'),
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-site',
+    }
+    if base.COOKIES:
+        h['Cookie'] = base.COOKIES
+    if SORARE_CSRF:
+        h['x-csrf-token'] = SORARE_CSRF
+    fp = os.environ.get('SORARE_DEVICE_FINGERPRINT', '')
+    if fp:
+        h['device_fingerprint'] = fp
+    return h
 GRADE_BENCH_QUERY = """
 query FootballComposeBenchQuery($so5LeaderboardSlug: String!, $filters: BenchFilterInput!, $pageSize: Int, $after: String) {
   so5 {
@@ -119,12 +161,7 @@ def _grade_bench_page(so5_slug, position, after):
         },
         "pageSize": 50, "so5LeaderboardSlug": so5_slug, "after": after,
     }
-    headers = {'Content-Type': 'application/json', 'Accept': 'application/json',
-               'Origin': 'https://sorare.com', 'Referer': 'https://sorare.com/'}
-    if base.COOKIES:
-        headers['Cookie'] = base.COOKIES
-    if SORARE_CSRF:
-        headers['X-CSRF-Token'] = SORARE_CSRF
+    headers = _headers_client_web()
     backoff = 1.0
     for attempt in range(4):
         try:
@@ -166,11 +203,7 @@ def _grade_bench_page(so5_slug, position, after):
     return [], False, None
 
 
-def _grade_file_path(fixture_slug):
-    return os.path.join('dati_globali', f'grade_{fixture_slug}.json')
-
-
-def fetch_grade_live(fixture_slug, usa_file=True):
+def fetch_grade_live(fixture_slug):
     """Grade (A..F) per slug giocatore, sulla GW aperta 'fixture_slug'.
     Ritorna (grade_map, copertura_per_leaderboard) -- copertura_per_leaderboard
     e' {leaderboard_slug: n_nodi_bench} per far vedere se una leaderboard e'
@@ -179,30 +212,11 @@ def fetch_grade_live(fixture_slug, usa_file=True):
     if not FETCH_GRADE:
         log("[grade] FETCH_GRADE=0, salto il fetch (G restera' in fallback z=0).")
         return {}, {}
-    # FILE PRODOTTO IN LOCALE (07/08/2026 notte, causa MISURATA).
-    # myFilteredBench e' una query "my": Sorare accetta la sessione dal PC
-    # dell'utente e la RIFIUTA dai server GitHub Actions. Misura fatta lo
-    # stesso minuto, stesso cookie di 2324 caratteri, stesso CSRF:
-    #   PC utente     -> currentUser = 'crowss', bench 50 nodi/pagina
-    #   GitHub Actions-> currentUser = None,     bench 0 nodi, HTTP 200 pulito
-    # Rigenerare i secret non serve (il cookie e' gia' quello giusto): la
-    # sessione non vale da quegli IP. Quindi il grade si raccoglie DA LOCALE
-    # con fetch_grade_locale.py, si committa, e qui lo si legge da file.
-    if usa_file:
-        p = _grade_file_path(fixture_slug)
-        if os.path.exists(p):
-            try:
-                with open(p, encoding='utf-8') as f:
-                    d = json.load(f)
-                gm = d.get('grade_map') or {}
-                log(f"[grade] letto da file {p}: {len(gm)} slug con grade "
-                    f"(raccolto il {d.get('raccolto_il')}). Nessuna query live.")
-                return gm, d.get('copertura') or {}
-            except Exception as e:
-                log(f"[grade] file {p} illeggibile ({e}): provo il fetch live.")
-        else:
-            log(f"[grade] nessun file {p}: provo il fetch live (funziona solo "
-                f"da locale, su GitHub Actions tornera' 0 nodi -- vedi commento).")
+    # NESSUNA CACHE SU FILE, PER SCELTA (07/08/2026, decisione dell'utente).
+    # I grade cambiano dentro la giornata (formazioni, infortuni), quindi un
+    # file committato invecchia; e soprattutto un fallback silenzioso su file
+    # nasconderebbe il guasto invece di mostrarlo. Il live deve funzionare:
+    # se non funziona, si deve vedere subito nel log (probe qui sotto).
     if not SORARE_CSRF:
         log("[grade] SORARE_CSRF assente: la query bench potrebbe fallire o "
             "tornare vuota senza CSRF. Procedo comunque, verifica copertura.")
@@ -213,11 +227,7 @@ def fetch_grade_live(fixture_slug, usa_file=True):
     # user(slug:) (query PUBBLICA, riga ~394), quindi funzionano anche a
     # cookie morto: non sono una prova che l'auth regga. Qui si chiede
     # currentUser, che e' null se e solo se la sessione non autentica.
-    _probe_h = {'Content-Type': 'application/json', 'Accept': 'application/json'}
-    if base.COOKIES:
-        _probe_h['Cookie'] = base.COOKIES
-    if SORARE_CSRF:
-        _probe_h['X-CSRF-Token'] = SORARE_CSRF
+    _probe_h = _headers_client_web()
     try:
         _pr = base._http_session.post(
             base.GRAPHQL_URL, json={'query': '{ currentUser { slug } }'},
