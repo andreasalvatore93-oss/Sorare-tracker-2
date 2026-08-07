@@ -1,0 +1,349 @@
+DUMP football-31-jul-4-aug-2026 -- satonio  -- TEST3 decisione entra/salta
+Formazione FISSA = quella di REALE in ogni arena (stesse 5 carte, stesso
+capitano). Il modello decide solo se schierarla, confrontando l'atteso
+(A/G) con PAREGGIO_ARENA. carta = ID carta specifica.
+
+--- ARENA 1: Cap 260  REALE 299.64 ---
+    Goalkeeper  Niklas Hedl                carta=niklas-hedl-2022-limited-336 uff=  76.90 grezzo=  76.90 [cache]
+    Defender    Michael Boxall             carta=michael-boxall-2022-limited-130 uff=  30.20 grezzo=  30.20 [cache]
+    Midfielder  Joaquín Pereyra            carta=joaquin-nicolas-pereyra-2026-limited-587 uff=  68.00 grezzo=  68.00 [cache]
+    Forward     Youssef Chermiti           carta=youssef-ramalho-chermiti-2023-limited-309 uff=  39.70 grezzo=  39.70 [cache]
+    Midfielder  Marcel Hartel              carta=marcel-hartel-2025-limited-538 uff=  84.84 grezzo=  70.70 [cache]  [CAPITANO]
+    soglia=259.50  soglia_decisione=263.30  conviene=True
+    A: atteso=273.56 ENTRA -> giusto
+    G: atteso=263.38 ENTRA -> giusto
+
+--- ARENA 2: Uncapped  REALE 277.28 ---
+    Goalkeeper  Elías Ólafsson             carta=elias-rafn-olafsson-2025-limited-672 uff=  36.90 grezzo=  36.90 [cache]
+    Defender    Mads Bech Sørensen         carta=mads-bech-sorensen-2025-rare-76 uff=  65.28 grezzo=  65.28 [cache]
+    Midfielder  Nicolás Fernández-Mercau   carta=nicolas-fernandez-mercau-2026-limited-612 uff= 101.40 grezzo=  85.00 [cache]  [CAPITANO]
+    Forward     Milan Iloski               carta=milan-iloski-2026-limited-501 uff=  73.70 grezzo=  73.70 [cache]
+    Midfielder  Miha Zajc                  carta=miha-zajc-2024-limited-512 uff=   0.00 grezzo=  60.00 [cache]
+    soglia=288.30  soglia_decisione=292.05  conviene=False
+    A: atteso=286.32 SALTA -> GIUSTO (batte REALE)
+    G: atteso=292.23 ENTRA -> errore (come REALE)
+    A essenze: prop salvate=88 perse=0 | flat salvate=300 perse=0
+
+--- ARENA 3: Cap 260  REALE 312.02 ---
+    Goalkeeper  Matt Freese                carta=freese-matthew-2022-limited-191 uff=  42.00 grezzo=  43.30 [cache]
+    Defender    João Victor                carta=joao-victor-da-silva-marcelino-2022-limited-110 uff=  58.22 grezzo=  48.52 [cache]  [CAPITANO]
+    Midfielder  Cole Bassett               carta=cole-bassett-2021-limited-94 uff=  45.40 grezzo=  45.40 [cache]
+    Forward     Axel Ojeda                 carta=agustin-ojeda-2026-limited-141 uff=  68.80 grezzo=  68.40 [cache]
+    Midfielder  Emil Frederiksen           carta=emil-frederiksen-2024-limited-148 uff=  97.60 grezzo= 100.00 [cache]
+    soglia=259.50  soglia_decisione=263.30  conviene=True
+    A: atteso=263.94 ENTRA -> giusto
+    G: atteso=261.73 SALTA -> ERRORE (persa arena buona)
+    G essenze: prop salvate=0 perse=415 | flat salvate=0 perse=300
+
+--- ARENA 4: Uncapped  REALE 315.12 ---
+    Goalkeeper  Niklas Hedl                carta=niklas-hedl-2022-limited-3 uff=  76.90 grezzo=  76.90 [cache]
+    Defender    Guilherme Ramos            carta=guilherme-ramos-2022-limited-38 uff=  48.96 grezzo=  48.96 [cache]
+    Midfielder  Jeremy Márquez             carta=angel-jeremy-marquez-castaneda-2022-limited-255 uff=  55.60 grezzo=  55.60 [cache]
+    Forward     Anders Dreyer              carta=anders-dreyer-2024-limited-13 uff=  98.16 grezzo=  81.80 [cache]  [CAPITANO]
+    Midfielder  José Paradela              carta=jose-antonio-paradela-2024-limited-184 uff=  35.50 grezzo=  35.50 [cache]
+    soglia=288.30  soglia_decisione=292.05  conviene=True
+    A: atteso=274.10 SALTA -> ERRORE (persa arena buona)
+    G: atteso=275.78 SALTA -> ERRORE (persa arena buona)
+    A essenze: prop salvate=0 perse=215 | flat salvate=0 perse=300
+    G essenze: prop salvate=0 perse=215 | flat salvate=0 perse=300
+
+--- ARENA 5: Cap 260  REALE 244.42 ---
+    Goalkeeper  Nikolas Polster            carta=nikolas-polster-2026-limited-82 uff=  67.30 grezzo=  67.30 [cache]
+    Defender    César Haydar               carta=cesar-rafael-haydar-villarreal-2025-limited-22 uff=   0.00 grezzo=   0.00 [ricostruito]
+    Midfielder  Cole Bassett               carta=cole-bassett-2023-limited-378 uff=  54.48 grezzo=  45.40 [cache]  [CAPITANO]
+    Forward     Pablo Solari               carta=pablo-solari-2023-limited-131 uff=  59.80 grezzo=  59.80 [cache]
+    Defender    Finn Surman                carta=finn-surman-2025-limited-321 uff=  62.84 grezzo=  62.84 [cache]
+    soglia=259.50  soglia_decisione=263.30  conviene=False
+    A: atteso=265.22 ENTRA -> errore (come REALE)
+    G: atteso=266.40 ENTRA -> errore (come REALE)
+
+--- ARENA 6: Uncapped  REALE 252.52 ---
+    Goalkeeper  Roman Bürki                carta=roman-burki-2025-limited-12 uff=  38.60 grezzo=  38.60 [cache]
+    Defender    Tuur Rommens               carta=tuur-rommens-2024-limited-361 uff=  51.68 grezzo=  51.68 [cache]
+    Midfielder  Marcel Hartel              carta=marcel-hartel-2025-limited-156 uff=  84.84 grezzo=  70.70 [cache]  [CAPITANO]
+    Forward     Youssef Chermiti           carta=youssef-ramalho-chermiti-2024-limited-247 uff=  39.70 grezzo=  39.70 [cache]
+    Midfielder  Raphael Veiga              carta=raphael-cavalcante-veiga-2023-limited-78 uff=  37.70 grezzo=  37.70 [cache]
+    soglia=288.30  soglia_decisione=292.05  conviene=False
+    A: atteso=270.76 SALTA -> GIUSTO (batte REALE)
+    G: atteso=263.60 SALTA -> GIUSTO (batte REALE)
+    A essenze: prop salvate=286 perse=0 | flat salvate=300 perse=0
+    G essenze: prop salvate=286 perse=0 | flat salvate=300 perse=0
+
+--- ARENA 7: Cap 260  REALE 271.02 ---
+    Goalkeeper  Matías Borgogno            carta=matias-borgogno-2021-limited-197 uff=  45.50 grezzo=  45.50 [cache]
+    Defender    Édier Ocampo               carta=edier-ocampo-vidal-2025-limited-184 uff=  87.72 grezzo=  56.82 [cache]
+    Midfielder  Matheus Oliveira           carta=matheus-oliveira-santos-2025-limited-226 uff=  72.00 grezzo=  60.00 [cache]  [CAPITANO]
+    Forward     Diego Rossi                carta=diego-martin-rossi-marachlian-2022-limited-76 uff=  65.80 grezzo=  67.60 [cache]
+    Defender    Lukas Engel                carta=lukas-ahlefeld-engel-2025-limited-146 uff=   0.00 grezzo=   0.00 [ricostruito]
+    soglia=259.50  soglia_decisione=263.30  conviene=True
+    A: atteso=262.72 SALTA -> ERRORE (persa arena buona)
+    G: atteso=258.67 SALTA -> ERRORE (persa arena buona)
+    A essenze: prop salvate=0 perse=91 | flat salvate=0 perse=300
+    G essenze: prop salvate=0 perse=91 | flat salvate=0 perse=300
+
+--- ARENA 8: Uncapped  REALE 265.72 ---
+    Goalkeeper  Daniil Khudyakov           carta=daniil-khudyakov-2025-limited-583 uff=  29.10 grezzo=  29.10 [cache]
+    Defender    Francis Westfield          carta=francis-westfield-2025-limited-536 uff=  54.90 grezzo=  50.22 [cache]
+    Midfielder  Kristoffer Askildsen       carta=kristoffer-askildsen-2024-limited-318 uff=  69.36 grezzo=  57.80 [cache]  [CAPITANO]
+    Forward     Milan Iloski               carta=milan-iloski-2026-limited-581 uff=  73.70 grezzo=  73.70 [cache]
+    Defender    Nathan Harriel             carta=nathan-harriel-2021-limited-227 uff=  38.66 grezzo=  38.66 [cache]
+    soglia=288.30  soglia_decisione=292.05  conviene=False
+    A: atteso=282.36 SALTA -> GIUSTO (batte REALE)
+    G: atteso=285.36 SALTA -> GIUSTO (batte REALE)
+    A essenze: prop salvate=181 perse=0 | flat salvate=300 perse=0
+    G essenze: prop salvate=181 perse=0 | flat salvate=300 perse=0
+
+--- ARENA 9: Cap 260  REALE 278.50 ---
+    Goalkeeper  Jo Hyeon-Woo               carta=hyun-woo-cho-2023-limited-159 uff=  33.50 grezzo=  33.50 [cache]
+    Defender    Rasmus Kristensen          carta=rasmus-nissen-kristensen-2024-limited-186 uff=  39.96 grezzo=  39.96 [cache]
+    Midfielder  Darío Osorio               carta=dario-esteban-osorio-osorio-2025-limited-166 uff=  80.50 grezzo=  80.50 [cache]
+    Forward     Youssef Chermiti           carta=youssef-ramalho-chermiti-2024-limited-255 uff=  39.70 grezzo=  39.70 [cache]
+    Midfielder  Marcel Hartel              carta=marcel-hartel-2024-limited-355 uff=  84.84 grezzo=  70.70 [cache]  [CAPITANO]
+    soglia=259.50  soglia_decisione=263.30  conviene=True
+    A: atteso=276.36 ENTRA -> giusto
+    G: atteso=257.59 SALTA -> ERRORE (persa arena buona)
+    G essenze: prop salvate=0 perse=150 | flat salvate=0 perse=300
+
+--- ARENA 10: Uncapped  REALE 227.14 ---
+    Goalkeeper  Andreas Hansen             carta=andreas-hansen-2025-limited-283 uff=  74.70 grezzo=  74.70 [cache]
+    Defender    Peter Ankersen             carta=peter-ankersen-2025-limited-180 uff=   0.00 grezzo=   0.00 [ricostruito]
+    Midfielder  Josip Mišić                carta=josip-misic-1994-06-28-2022-limited-400 uff=  68.04 grezzo=  56.70 [cache]  [CAPITANO]
+    Forward     Dion Beljo                 carta=drena-beljo-dijon-2024-limited-575 uff=  84.40 grezzo=  84.40 [cache]
+    Midfielder  Miha Zajc                  carta=miha-zajc-2024-limited-275 uff=   0.00 grezzo=  60.00 [cache]
+    soglia=288.30  soglia_decisione=292.05  conviene=False
+    A: atteso=288.94 SALTA -> GIUSTO (batte REALE)
+    G: atteso=285.97 SALTA -> GIUSTO (batte REALE)
+    A essenze: prop salvate=300 perse=0 | flat salvate=300 perse=0
+    G essenze: prop salvate=300 perse=0 | flat salvate=300 perse=0
+
+--- ARENA 11: Cap 260  REALE 289.18 ---
+    Goalkeeper  GU SUNG YUN                carta=sung-yun-gu-2024-limited-100 uff=  76.20 grezzo=  76.20 [cache]
+    Defender    Nathan Harriel             carta=nathan-harriel-2021-limited-298 uff=  38.66 grezzo=  38.66 [cache]
+    Midfielder  Marco Reus                 carta=marco-reus-2024-limited-159 uff=  72.72 grezzo=  60.60 [cache]  [CAPITANO]
+    Forward     Joseph Paintsil            carta=joseph-paintsil-2025-limited-287 uff=  59.20 grezzo=  59.20 [cache]
+    Forward     Prince Amoako              carta=prince-amoako-junior-2025-limited-857 uff=  42.40 grezzo=  42.40 [cache]
+    soglia=259.50  soglia_decisione=263.30  conviene=True
+    A: atteso=268.64 ENTRA -> giusto
+    G: atteso=271.96 ENTRA -> giusto
+
+--- ARENA 12: Uncapped  REALE 304.24 ---
+    Goalkeeper  Ivan Filipović             carta=ivan-filipovic-2022-limited-319 uff=  76.80 grezzo=  76.80 [cache]
+    Defender    Wanderson Carvalho         carta=wanderson-carvalho-oliveira-2024-limited-23 uff=  49.22 grezzo=  49.22 [cache]
+    Midfielder  Josip Mišić                carta=josip-misic-1994-06-28-2025-limited-812 uff=  56.70 grezzo=  56.70 [cache]
+    Forward     Jann-Fiete Arp             carta=jann-fiete-arp-2022-limited-91 uff=  54.72 grezzo=  45.60 [cache]  [CAPITANO]
+    Midfielder  Sébastien Salles-Lamonge   carta=sebastien-antoine-luc-salles-lamonge-2022-limited-123 uff=  66.80 grezzo=  66.80 [cache]
+    soglia=288.30  soglia_decisione=292.05  conviene=True
+    A: atteso=276.34 SALTA -> ERRORE (persa arena buona)
+    G: atteso=284.01 SALTA -> ERRORE (persa arena buona)
+    A essenze: prop salvate=0 perse=128 | flat salvate=0 perse=300
+    G essenze: prop salvate=0 perse=128 | flat salvate=0 perse=300
+
+--- ARENA 13: Cap 260  REALE 259.88 ---
+    Goalkeeper  Baek Jong-Beom             carta=jong-bum-baek-2023-limited-198 uff=  72.70 grezzo=  72.70 [cache]
+    Defender    Tate Johnson               carta=tate-johnson-2025-limited-148 uff=  51.82 grezzo=  43.18 [cache]  [CAPITANO]
+    Midfielder  Lucas Zelarayán            carta=lucas-manuel-zelarayan-2022-limited-83 uff=  47.90 grezzo=  47.90 [cache]
+    Forward     Preston Judd               carta=preston-judd-2023-limited-202 uff=  60.00 grezzo=  60.00 [cache]
+    Defender    Tristan Blackmon           carta=tristan-blackmon-2022-limited-22 uff=  27.46 grezzo=  40.38 [cache]
+    soglia=259.50  soglia_decisione=263.30  conviene=True
+    A: atteso=263.74 ENTRA -> giusto
+    G: atteso=262.72 SALTA -> ERRORE (persa arena buona)
+    G essenze: prop salvate=0 perse=3 | flat salvate=0 perse=300
+
+--- ARENA 14: Uncapped  REALE 277.20 ---
+    Goalkeeper  Elías Ólafsson             carta=elias-rafn-olafsson-2022-limited-124 uff=  36.90 grezzo=  36.90 [cache]
+    Defender    Rasmus Kristensen          carta=rasmus-nissen-kristensen-2024-limited-103 uff=  39.96 grezzo=  39.96 [cache]
+    Midfielder  João Carlos Teixeira       carta=joao-carlos-vilaca-teixeira-2021-limited-69 uff=  34.40 grezzo=  34.40 [cache]
+    Forward     Darío Osorio               carta=dario-esteban-osorio-osorio-2023-limited-272 uff=  99.36 grezzo=  80.50 [cache]  [CAPITANO]
+    Defender    Martin Erlić               carta=martin-erlic-2021-limited-76 uff=  66.58 grezzo=  66.58 [cache]
+    soglia=288.30  soglia_decisione=292.05  conviene=False
+    A: atteso=267.14 SALTA -> GIUSTO (batte REALE)
+    G: atteso=269.05 SALTA -> GIUSTO (batte REALE)
+    A essenze: prop salvate=89 perse=0 | flat salvate=300 perse=0
+    G essenze: prop salvate=89 perse=0 | flat salvate=300 perse=0
+
+--- ARENA 15: Cap 260  REALE 71.00 ---
+    Goalkeeper  Jorge Broun                carta=jorge-emanuel-broun-2024-limited-178 uff=   0.00 grezzo=   0.00 [ricostruito]
+    Defender    Marcos Acuña               carta=marcos-javier-acuna-2023-limited-6 uff=   0.00 grezzo=   0.00 [ricostruito]  [CAPITANO]
+    Midfielder  Evangelos Patoulidis       carta=evangelos-patoulidis-2021-limited-179 uff=  28.60 grezzo=  28.60 [cache]
+    Forward     Prince Amoako              carta=prince-amoako-junior-2025-limited-944 uff=  42.40 grezzo=  42.40 [cache]
+    Forward     Sota Kitano                carta=sota-kitano-2024-limited-184 uff=   0.00 grezzo=   0.00 [ricostruito]
+    soglia=259.50  soglia_decisione=263.30  conviene=False
+    A: atteso=266.32 ENTRA -> errore (come REALE)
+    G: atteso=265.12 ENTRA -> errore (come REALE)
+
+--- ARENA 16: Uncapped  REALE 307.20 ---
+    Goalkeeper  Ivan Filipović             carta=ivan-filipovic-2022-limited-166 uff=  76.80 grezzo=  76.80 [cache]
+    Defender    Kieran Tierney             carta=kieran-tierney-2025-limited-448 uff= 100.00 grezzo= 100.00 [cache]
+    Midfielder  Miha Zajc                  carta=miha-zajc-2024-limited-504 uff=   0.00 grezzo=  60.00 [cache]  [CAPITANO]
+    Forward     Milan Iloski               carta=milan-iloski-2026-limited-108 uff=  73.70 grezzo=  73.70 [cache]
+    Midfielder  Josip Mišić                carta=josip-misic-1994-06-28-2025-limited-798 uff=  56.70 grezzo=  56.70 [cache]
+    soglia=288.30  soglia_decisione=292.05  conviene=True
+    A: atteso=288.14 SALTA -> ERRORE (persa arena buona)
+    G: atteso=288.87 SALTA -> ERRORE (persa arena buona)
+    A essenze: prop salvate=0 perse=151 | flat salvate=0 perse=300
+    G essenze: prop salvate=0 perse=151 | flat salvate=0 perse=300
+
+--- ARENA 17: Cap 260  REALE 320.82 ---
+    Goalkeeper  Ivan Filipović             carta=ivan-filipovic-2023-limited-20 uff=  76.80 grezzo=  76.80 [cache]
+    Defender    Andres Andrade             carta=andres-andrade-cedeno-2024-limited-209 uff=  93.20 grezzo=  93.70 [cache]
+    Midfielder  Marco Reus                 carta=marco-reus-2024-limited-222 uff=  60.60 grezzo=  60.60 [cache]
+    Forward     Kévin Denkey               carta=ahoueke-denkey-2022-limited-364 uff=  53.52 grezzo=  44.60 [cache]  [CAPITANO]
+    Forward     Rafael Ratão               carta=rafael-rogerio-da-silva-2025-limited-42 uff=  36.70 grezzo=  36.70 [cache]
+    soglia=259.50  soglia_decisione=263.30  conviene=True
+    A: atteso=273.38 ENTRA -> giusto
+    G: atteso=266.82 ENTRA -> giusto
+
+--- ARENA 18: Uncapped  REALE 328.38 ---
+    Goalkeeper  Andre Blake                carta=andre-blake-2023-limited-105 uff=  25.00 grezzo=  25.00 [cache]
+    Defender    Kai Wagner                 carta=kai-wagner-2024-limited-54 uff=  96.14 grezzo=  96.14 [cache]
+    Midfielder  Marcel Hartel              carta=marcel-hartel-2024-limited-145 uff=  84.84 grezzo=  70.70 [cache]  [CAPITANO]
+    Forward     Milan Iloski               carta=milan-iloski-2026-limited-551 uff=  73.70 grezzo=  73.70 [cache]
+    Midfielder  Wellington Silva           carta=wellington-alves-da-silva-2022-limited-35 uff=  48.70 grezzo=  48.70 [cache]
+    soglia=288.30  soglia_decisione=292.05  conviene=True
+    A: atteso=287.96 SALTA -> ERRORE (persa arena buona)
+    G: atteso=285.15 SALTA -> ERRORE (persa arena buona)
+    A essenze: prop salvate=0 perse=321 | flat salvate=0 perse=300
+    G essenze: prop salvate=0 perse=321 | flat salvate=0 perse=300
+
+--- ARENA 19: Cap 260  REALE 356.64 ---
+    Goalkeeper  Oscar Hedvall              carta=oscar-thore-hedvall-2023-limited-298 uff=  34.00 grezzo=  34.00 [cache]
+    Defender    João Victor                carta=joao-victor-tornich-2025-limited-51 uff=  81.72 grezzo=  81.72 [cache]
+    Midfielder  Jack McGlynn               carta=jack-mcglynn-2024-limited-569 uff= 108.12 grezzo=  90.10 [cache]  [CAPITANO]
+    Forward     Timo Werner                carta=timo-werner-2024-limited-150 uff=  97.30 grezzo=  97.30 [cache]
+    Midfielder  José Paradela              carta=jose-antonio-paradela-2024-limited-245 uff=  35.50 grezzo=  35.50 [cache]
+    soglia=259.50  soglia_decisione=263.30  conviene=True
+    A: atteso=276.34 ENTRA -> giusto
+    G: atteso=281.89 ENTRA -> giusto
+
+--- ARENA 20: Uncapped  REALE 176.90 ---
+    Goalkeeper  Park Cheong-Hyo            carta=cheong-hyo-park-2024-limited-117 uff=  30.60 grezzo=  30.60 [cache]
+    Defender    Lee Gi-Hyeok               carta=gi-hyuk-lee-2026-limited-672 uff=  39.96 grezzo=  39.96 [cache]
+    Midfielder  Josip Mišić                carta=josip-misic-1994-06-28-2025-limited-808 uff=  68.04 grezzo=  56.70 [cache]  [CAPITANO]
+    Forward     Kim Dae-Won                carta=dae-won-kim-2024-limited-24 uff=  38.30 grezzo=  38.30 [cache]
+    Midfielder  Miha Zajc                  carta=miha-zajc-2022-limited-304 uff=   0.00 grezzo=  60.00 [cache]
+    soglia=288.30  soglia_decisione=292.05  conviene=False
+    A: atteso=287.74 SALTA -> GIUSTO (batte REALE)
+    G: atteso=288.69 SALTA -> GIUSTO (batte REALE)
+    A essenze: prop salvate=300 perse=0 | flat salvate=300 perse=0
+    G essenze: prop salvate=300 perse=0 | flat salvate=300 perse=0
+
+--- ARENA 21: Cap 260  REALE 227.80 ---
+    Goalkeeper  James Pantemis             carta=james-pantemis-2024-limited-49 uff=  40.00 grezzo=  40.00 [cache]
+    Defender    Peter Ankersen             carta=peter-ankersen-2024-limited-136 uff=   0.00 grezzo=   0.00 [ricostruito]  [CAPITANO]
+    Midfielder  Cole Bassett               carta=cole-bassett-2021-limited-128 uff=  45.40 grezzo=  45.40 [cache]
+    Forward     Luis Quiñones              carta=luis-enrique-quinones-2022-limited-15 uff= 100.00 grezzo= 100.00 [cache]
+    Forward     Prince Amoako              carta=prince-amoako-junior-2025-limited-222 uff=  42.40 grezzo=  42.40 [cache]
+    soglia=259.50  soglia_decisione=263.30  conviene=False
+    A: atteso=268.98 ENTRA -> errore (come REALE)
+    G: atteso=263.03 SALTA -> GIUSTO (batte REALE)
+    G essenze: prop salvate=250 perse=0 | flat salvate=300 perse=0
+
+--- ARENA 22: Uncapped  REALE 291.06 ---
+    Goalkeeper  Drake Callender            carta=drake-callender-2023-limited-24 uff=  30.40 grezzo=  30.90 [cache]
+    Defender    Lucas Olaza                carta=lucas-rene-olaza-catrofe-2022-limited-92 uff=  64.06 grezzo=  64.06 [cache]
+    Midfielder  Joaquín Pereyra            carta=joaquin-nicolas-pereyra-2025-limited-90 uff=  81.60 grezzo=  68.00 [cache]  [CAPITANO]
+    Forward     Kévin Denkey               carta=ahoueke-denkey-2022-limited-297 uff=  44.60 grezzo=  44.60 [cache]
+    Midfielder  Jens Petter Hauge          carta=jens-petter-hauge-2021-limited-312 uff=  70.40 grezzo=  69.60 [cache]
+    soglia=288.30  soglia_decisione=292.05  conviene=True
+    A: atteso=279.82 SALTA -> ERRORE (persa arena buona)
+    G: atteso=279.37 SALTA -> ERRORE (persa arena buona)
+    A essenze: prop salvate=0 perse=22 | flat salvate=0 perse=300
+    G essenze: prop salvate=0 perse=22 | flat salvate=0 perse=300
+
+--- ARENA 23: Cap 260  REALE 331.00 ---
+    Goalkeeper  Jonathan Sirois            carta=jonathan-sirois-2023-limited-237 uff=  98.20 grezzo=  98.20 [cache]
+    Defender    Mamadou Diabaté            carta=cheikh-mamadou-diabate-2025-limited-46 uff=  57.76 grezzo=  57.76 [cache]
+    Midfielder  Aleksey Miranchuk          carta=aleksey-miranchuk-2023-limited-50 uff=  60.00 grezzo=  60.00 [cache]
+    Forward     Petar Musa                 carta=petar-musa-2022-limited-244 uff=  28.40 grezzo=  28.40 [cache]
+    Midfielder  Callum McCowatt            carta=callum-mccowatt-2025-limited-13 uff=  86.64 grezzo=  72.20 [cache]  [CAPITANO]
+    soglia=259.50  soglia_decisione=263.30  conviene=True
+    A: atteso=263.20 SALTA -> ERRORE (persa arena buona)
+    G: atteso=262.58 SALTA -> ERRORE (persa arena buona)
+    A essenze: prop salvate=0 perse=565 | flat salvate=0 perse=300
+    G essenze: prop salvate=0 perse=565 | flat salvate=0 perse=300
+
+--- ARENA 24: Uncapped  REALE 351.60 ---
+    Goalkeeper  Viljami Sinisalo           carta=viljani-sinisalo-2025-limited-234 uff=  72.50 grezzo=  72.50 [cache]
+    Defender    Kieran Tierney             carta=kieran-tierney-2023-limited-191 uff= 100.00 grezzo= 100.00 [cache]
+    Midfielder  Carles Gil                 carta=carles-gil-de-pareja-vicent-2025-limited-306 uff= 109.80 grezzo=  91.50 [cache]  [CAPITANO]
+    Forward     Kasper Høgh                carta=kasper-waarst-hogh-2021-limited-25 uff=  28.90 grezzo=  28.90 [cache]
+    Forward     Camilo Durán               carta=camilo-andres-duran-marquez-2026-limited-15 uff=  40.40 grezzo=  40.40 [cache]
+    soglia=288.30  soglia_decisione=292.05  conviene=True
+    A: atteso=280.24 SALTA -> ERRORE (persa arena buona)
+    G: atteso=288.42 SALTA -> ERRORE (persa arena buona)
+    A essenze: prop salvate=0 perse=506 | flat salvate=0 perse=300
+    G essenze: prop salvate=0 perse=506 | flat salvate=0 perse=300
+
+--- ARENA 25: Cap 260  REALE 310.48 ---
+    Goalkeeper  JT Marcinkowski            carta=james-marcinkowski-2022-limited-227 uff=  75.90 grezzo=  75.90 [cache]
+    Defender    Guilherme Ramos            carta=guilherme-ramos-2021-limited-170 uff=  48.96 grezzo=  48.96 [cache]
+    Midfielder  Melendo                    carta=oscar-melendo-jimenez-2022-limited-239 uff=  52.30 grezzo=  52.30 [cache]
+    Forward     Samuel Adeniran            carta=samuel-oluwabukunmi-adeniran-2023-limited-274 uff= 101.16 grezzo=  84.30 [cache]  [CAPITANO]
+    Defender    Micael                     carta=micael-dos-santos-silva-2023-limited-111 uff=  32.16 grezzo=  32.16 [cache]
+    soglia=259.50  soglia_decisione=263.30  conviene=True
+    A: atteso=257.52 SALTA -> ERRORE (persa arena buona)
+    G: atteso=253.09 SALTA -> ERRORE (persa arena buona)
+    A essenze: prop salvate=0 perse=403 | flat salvate=0 perse=300
+    G essenze: prop salvate=0 perse=403 | flat salvate=0 perse=300
+
+--- ARENA 26: Uncapped  REALE 229.66 ---
+    Goalkeeper  Jo Hyeon-Woo               carta=hyun-woo-cho-2023-limited-141 uff=  33.50 grezzo=  33.50 [cache]
+    Defender    Lee Gi-Hyeok               carta=gi-hyuk-lee-2026-limited-714 uff=  39.96 grezzo=  39.96 [cache]
+    Midfielder  Justin Janssen             carta=justin-meltofte-janssen-2024-limited-343 uff=  60.00 grezzo=  50.00 [cache]  [CAPITANO]
+    Forward     Kim Dae-Won                carta=dae-won-kim-2023-limited-193 uff=  38.30 grezzo=  38.30 [cache]
+    Midfielder  Nicklas Røjkjær            carta=nicklas-rojkjaer-2025-limited-540 uff=  57.90 grezzo=  57.90 [cache]
+    soglia=288.30  soglia_decisione=292.05  conviene=False
+    A: atteso=297.36 ENTRA -> errore (come REALE)
+    G: atteso=304.19 ENTRA -> errore (come REALE)
+
+--- ARENA 27: Cap 260  REALE 225.50 ---
+    Goalkeeper  Brian Schwake              carta=brian-schwake-2025-limited-82 uff=  44.90 grezzo=  44.90 [cache]
+    Defender    Park Chan-Yong             carta=chan-yong-park-2022-limited-50 uff=  32.00 grezzo=  32.00 [cache]
+    Midfielder  Xherdan Shaqiri            carta=xherdan-shaqiri-2023-limited-303 uff=  42.70 grezzo=  42.70 [cache]
+    Forward     Facundo Torres             carta=facundo-daniel-torres-perez-2026-limited-495 uff=  43.20 grezzo=  36.00 [cache]  [CAPITANO]
+    Forward     Mathis lambourde           carta=mathis-lambourde-2023-limited-259 uff=  62.70 grezzo=  62.70 [cache]
+    soglia=259.50  soglia_decisione=263.30  conviene=False
+    A: atteso=268.18 ENTRA -> errore (come REALE)
+    G: atteso=270.68 ENTRA -> errore (come REALE)
+
+--- ARENA 28: Uncapped  REALE 312.92 ---
+    Goalkeeper  Lee Chang-Geun             carta=chang-geun-lee-2023-limited-263 uff=  73.00 grezzo=  73.00 [cache]
+    Defender    Lee Myung-Jae              carta=myung-jae-lee-2022-limited-298 uff=  40.00 grezzo=  40.00 [cache]
+    Midfielder  Marco Reus                 carta=marco-reus-2023-limited-314 uff=  72.72 grezzo=  60.60 [cache]  [CAPITANO]
+    Forward     Joseph Paintsil            carta=joseph-paintsil-2023-limited-30 uff=  59.20 grezzo=  59.20 [cache]
+    Midfielder  Joaquín Pereyra            carta=joaquin-nicolas-pereyra-2025-limited-114 uff=  68.00 grezzo=  68.00 [cache]
+    soglia=288.30  soglia_decisione=292.05  conviene=True
+    A: atteso=276.44 SALTA -> ERRORE (persa arena buona)
+    G: atteso=279.70 SALTA -> ERRORE (persa arena buona)
+    A essenze: prop salvate=0 perse=197 | flat salvate=0 perse=300
+    G essenze: prop salvate=0 perse=197 | flat salvate=0 perse=300
+
+--- ARENA 29: Cap 260  REALE 225.74 ---
+    Goalkeeper  Chris Brady                carta=christopher-brady-2022-limited-263 uff=  32.80 grezzo=  34.40 [cache]
+    Defender    Nikolas Veratschnig        carta=nikolas-konrad-veratschnig-2023-limited-130 uff=  72.94 grezzo=  72.94 [cache]
+    Midfielder  Juan Brunetta              carta=juan-francisco-brunetta-2024-limited-431 uff= 120.00 grezzo= 100.00 [cache]  [CAPITANO]
+    Forward     Sota Kitano                carta=sota-kitano-2024-limited-370 uff=   0.00 grezzo=   0.00 [ricostruito]
+    Midfielder  Santiago Sosa              carta=santiago-sosa-2022-limited-38 uff=   0.00 grezzo=   0.00 [ricostruito]
+    soglia=259.50  soglia_decisione=263.30  conviene=False
+    A: atteso=263.16 SALTA -> GIUSTO (batte REALE)
+    G: atteso=263.42 ENTRA -> errore (come REALE)
+    A essenze: prop salvate=267 perse=0 | flat salvate=300 perse=0
+
+--- ARENA 30: Uncapped  REALE 339.84 ---
+    Goalkeeper  Matt Turner                carta=matt-turner-2022-limited-235 uff=  50.40 grezzo=  50.40 [cache]
+    Defender    Andres Andrade             carta=andres-andrade-cedeno-2023-limited-302 uff=  93.20 grezzo=  93.70 [cache]
+    Midfielder  Josip Mišić                carta=josip-misic-1994-06-28-2025-limited-786 uff=  68.04 grezzo=  56.70 [cache]  [CAPITANO]
+    Forward     Rafael Ratão               carta=rafael-rogerio-da-silva-2022-limited-31 uff=  36.70 grezzo=  36.70 [cache]
+    Midfielder  Carles Gil                 carta=carles-gil-de-pareja-vicent-2022-limited-11 uff=  91.50 grezzo=  91.50 [cache]
+    soglia=288.30  soglia_decisione=292.05  conviene=True
+    A: atteso=280.84 SALTA -> ERRORE (persa arena buona)
+    G: atteso=286.40 SALTA -> ERRORE (persa arena buona)
+    A essenze: prop salvate=0 perse=412 | flat salvate=0 perse=300
+    G essenze: prop salvate=0 perse=412 | flat salvate=0 perse=300
+
+
+MATRICE FINALE (soglia_decisione, regola vera del tool):
+  A: giusto=7  ERRORE_persa_buona=11  GIUSTO_batte_reale=7  errore_come_reale=5
+     essenze prop: salvate=1511 perse=3010 NETTO=-1500  |  flat: salvate=2100 perse=3300 NETTO=-1200
+  G: giusto=4  ERRORE_persa_buona=14  GIUSTO_batte_reale=6  errore_come_reale=6
+     essenze prop: salvate=1406 perse=3578 NETTO=-2172  |  flat: salvate=1800 perse=4200 NETTO=-2400

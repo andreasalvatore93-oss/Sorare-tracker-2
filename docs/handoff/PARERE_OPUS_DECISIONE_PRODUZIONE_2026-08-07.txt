@@ -546,3 +546,139 @@ modificati (backtest_arene_economia.py, dati_globali/arene_storico.json).
 Script driver non versionato (stessa scelta di sez.7: e' una lettura che
 riusa funzioni esistenti, non un nuovo strumento -- se serve stabile va
 messo dentro p13 come gia' fatto per compito 1/2 del brief precedente).
+
+
+===============================================================================
+10. SATONIO: Test1+Test3 su 13 GW, e consolidamento premio-vero su tutto il
+    campione (crowss+16 manager+satonio) (Sonnet esecutore, 07/08 pomeriggio)
+===============================================================================
+PREMESSA (prima dei numeri): satonio ha pool RICCO (257-372 carte di scorta
+per GW contro 20-30 slot, sempre pool>slot -- verificato su tutte le 13 GW
+con arene>0, controllo obbligatorio superato ovunque). Un vantaggio del
+modello su satonio va letto come PIU' FACILE da ottenere di uno su crowss
+(mazzo stretto, l'utente): per questo va sempre riportato separato, mai
+fuso nell'aggregato senza etichetta.
+
+--- COMPITO 1: Test1+Test3 su satonio, 13 GW con arene>0 ---
+GW processate: football-26-29-may, 30-may-2-jun, 2-5-jun, 5-11-jun,
+24-28-jun (1 sola arena), 1-4-jul, 5-8-jul, 10-13-jul, 15-20-jul, 21-24-jul,
+24-28-jul, 28-31-jul, 31-jul-4-aug-2026. 379 arene REALI totali, 208
+valutate in Test3 (atteso disponibile su entrambe le carte in tutte le 5
+posizioni). Copertura grezzo: 7354 letture da CACHE, 816 RICOSTRUITE per
+divisione (90%/10%, coerente con un mazzo recente -- misurata, non assunta).
+
+DUMP LEGGIBILE completo (Test1 + Test3) per la GW con piu' arene (30, in
+pareggio con molte altre GW: presa football-31-jul-4-aug-2026):
+  analisi_manager/dati/DUMP_p13_satonio_31jul-4aug_test1.txt
+  analisi_manager/dati/DUMP_p13_satonio_31jul-4aug_test3.txt (gia' presente,
+  rigenerato identico -- stesso contenuto, confermato riproducibile)
+
+TEST1 (selezione, aggregato 13 GW): A=49.404,77  G=47.494,31  REALE=99.146,96
+su 357 slot nel choice-set (n schierate: A=177/357, G=168/357). Il modello
+rinuncia a piu' di meta' delle arene con pool globale: la formazione libera
+di scegliere le carte non alza il totale sopra REALE in questo campione --
+NON e' un test di batte/perde punto a punto (REALE schiera sempre tutto),
+e' un test di quanto il modello e' selettivo quando ha liberta' di scelta.
+
+TEST3 (decisione entra/salta, aggregato 13 GW, soglia_decisione):
+  A: giusto=70  ERRORE_persa_buona=68  GIUSTO_batte_reale=28  errore_come_reale=42
+     batte-persa = 28-68 = -40
+  G: giusto=70  ERRORE_persa_buona=68  GIUSTO_batte_reale=41  errore_come_reale=29
+     batte-persa = 41-68 = -27
+NEGATIVO per entrambe le varianti su satonio con la conta a caselle (1 a 1).
+E' il segno OPPOSTO a quello di crowss/16-nuovi con la stessa conta (vedi
+sotto). Va riportato cosi', senza aggiustarlo: la conta a caselle pesa
+un'arena persa da 300 come una da 3, e satonio ha piu' arene con margini
+grandi (pool ricco -> REALE spesso molto sopra soglia -> quando A/G salta
+comunque, la perdita "costa" di piu' in punti anche se la decisione era
+statisticamente ragionevole). Il premio VERO (sotto) corregge proprio
+questa distorsione.
+
+--- COMPITO 2: consolidamento premio-vero, crowss (intera storia) + 16
+    manager nuovi + satonio, TUTTI insieme ---
+Metodo IDENTICO a sez.9 (nessuna reinvenzione): per ogni arena dove il
+modello SALTA (soglia_decisione), delta = costo_ingresso - premio_vero
+(tipo, rank_reale, tabella_premi() di backtest_arene_economia.py, 75
+osservazioni reali). Se il modello ENTRA: zero delta (gioca la formazione
+di REALE, stesso rank, stesso premio). Rilanciato l'INTERO Test3 su crowss
+(27 GW, tutta la storia nota, 331 arene con rank valorizzato) + 10 manager
+nuovi con dati (85 GW totali processate senza errori) + satonio (13 GW),
+per catturare 'piazzamento.rank' arena per arena (non salvato negli script
+precedenti, quindi ricalcolato da zero -- CLAUDE.md: non deduco, misuro).
+
+GRAND TOTALE (539 arene valutate in Test3, tutti i gruppi insieme):
+                    n_salta   NETTO premio vero
+  A                   225          +14.300
+  G                   272          +18.900
+
+SATONIO DA SOLO:
+  A: n_salta=96   NETTO=+9.900   (giusto=74 errore=22)
+  G: n_salta=109  NETTO=+11.000  (giusto=84 errore=25)
+
+CROWSS DA SOLO (intera storia nota, 27 GW):
+  A: n_salta=74   NETTO=+800    (giusto=51 errore=23)
+  G: n_salta=94   NETTO=+4.800  (giusto=69 errore=25)
+  (identico al numero di sez.9 -- conferma che il ricalcolo e' coerente,
+  nessuna deriva introdotta rilanciando lo script)
+
+16 MANAGER NUOVI INSIEME:
+  A: n_salta=55   NETTO=+3.600  (giusto=40 errore=15)
+  G: n_salta=69   NETTO=+3.100  (giusto=50 errore=19)
+  (in sez.9 la somma per-manager dava +3.700/A: piccola differenza, 100
+  essenze, da nuove GW entrate nei file manager dopo quella sessione --
+  non e' un errore di metodo, e' il dataset che e' cresciuto)
+
+CONFRONTO DIRETTO A/G vs REALE (caselle, soglia_decisione), per gruppo:
+                batte-persa (GIUSTO_batte_reale - ERRORE_persa_buona)
+  crowss    A: 33-41=-8    G: 49-45=+4
+  16nuovi   A: 33-22=+11   G: 41-28=+13
+  satonio   A: 28-68=-40   G: 41-68=-27
+  TUTTI     A: 94-131=-37  G: 131-141=-10
+Con la conta a caselle satonio E' PEGGIO di crowss, non meglio: il pool
+ricco produce piu' arene con REALE molto sopra soglia (giocatori di scorta
+migliori), quindi quando il modello salta comunque la "casella persa" pesa
+piu' spesso. Ma il premio vero in essenze (sopra) resta POSITIVO su
+satonio (+9.900/+11.000), il piu' alto fra i tre gruppi: le caselle
+"perse" da satonio sono spesso rank 4+ (fuori dai premi, delta positivo
+comunque) o rank 2-3 con premio inferiore al costo salvato altrove. Le due
+letture non si contraddicono: dicono cose diverse (frequenza vs valore).
+
+PER MANAGER (premio vero, A / G) -- aggiornato con satonio:
+  crowss +800/+4.800  matteoogg +300/+300  angioletto33 0/-300
+  john942 +300/+300  tijmenmaaktpap +400/+900  lafindubal +1.200/+2.300
+  nivenzg +300/-200  braddersfc -1.300/-2.300  fins49 +1.700/+1.000
+  keano88 -500/-500  cedric9093 +1.200/+1.600  satonio +9.900/+11.000
+
+BUCO TABELLA PREMI, RICONTATO SUL CAMPIONE PIU' GRANDE (peggiore di sez.9):
+  (Uncapped, rank 1): 18 salti senza premio noto, trattati 0
+  (Uncapped, rank 3): 12 salti senza premio noto, trattati 0
+  Totale 30 salti su 497 (A+G insieme) col premio vero sconosciuto -- molto
+  piu' del "3 su 279" di sez.9 (campione piu' piccolo). Il NETTO resta un
+  LIMITE INFERIORE per l'ipotesi "saltare Uncapped rank1/3 e' giusto":
+  se quei 30 salti avessero premio vero positivo, il NETTO reale sarebbe
+  ANCORA piu' alto. La cautela e' quantitativamente piu' seria di come
+  l'avevo scritta prima: da segnalare a chi decide se tappare il buco
+  (servirebbero piu' arene Uncapped rank1/3 nell'archivio dell'utente).
+
+CAUTELE RIPETUTE (gia' note, valgono ancora):
+  - premi_tab viene da 75 osservazioni reali (archivio utente): la
+    DIREZIONE del numero e' misurata, la STABILITA' nel tempo no (i
+    montepremi possono cambiare).
+  - GW crowss pre-27/07 hanno soglia_decisione applicata retroattivamente
+    (PAREGGIO_ARENA introdotto quel giorno): per quelle GW il confronto
+    simula una condotta che all'epoca non esisteva ancora.
+  - satonio e' UN mazzo, 13 GW: stessa avvertenza gia' fatta per crowss
+    (non e' 9-12 mazzi concordi, e' storia di un solo manager).
+
+NESSUNA MODIFICA ALLA PRODUZIONE. Nessuna run GitHub. File letti, non
+modificati (backtest_arene_economia.py, dati_globali/arene_storico.json,
+dati_globali/manager_satonio.json). Rimosso il doppione segnalato in sez.6
+(DUMP_p13_crowss_21-24jul_test3.txt, md5 identico a
+DUMP_p13_crowss_football-21-24-jul-2026_test3.txt -- tenuto il nome con
+slug fixture completo). Script driver (run_satonio_suite.py,
+run_all_test3.py, consolida_premio_vero.py) girati in scratchpad, NON
+versionati (stessa scelta di sez.7/9: sono letture che riusano p13/E, non
+nuovi strumenti). Salvati come dati intermedi (righe Test3 con rank, per
+chi vuole rifare il conto senza rilanciare tutto):
+  analisi_manager/dati/satonio_righe_report_test3.json (208 righe)
+  analisi_manager/dati/crowss16_righe_report_test3.json (331 righe)
