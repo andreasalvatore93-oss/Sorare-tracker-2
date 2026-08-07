@@ -1,0 +1,173 @@
+PARERE OPUS -- SCRIPT AD-HOC PER ESTRARRE satonio
+Risposta a BRIEF_OPUS_SCRIPT_SATONIO_2026-08-07.txt
+07/08/2026 notte, ora di Roma. Progetto, NON eseguito.
+
+Letto: ricostruisci_manager.py per intero, p11_bloccato_tutti_mazzi.py
+(struttura), p13 (filtri competizione).
+Scritto: analisi_manager/estrai_satonio_capped.py (NON lanciato).
+
+
+===============================================================================
+0. IL PROBLEMA CHE AFFOSSA IL DISEGNO COSI' COM'E'
+===============================================================================
+Va detto prima di tutto il resto, perche' cambia la decisione.
+
+Una carta si usa UNA VOLTA SOLA per giornata (D7). Quindi 30 arene scaricate
+= 30 x 5 = 150 carte-arena distinte, e gli slot da riempire sono 150.
+POOL = SLOT ESATTAMENTE, per costruzione. Non e' un rischio: e' aritmetica.
+
+E' lo stesso identico caso di fins49, che infatti ha Test1 nullo su TUTTE le
+sue giornate. Con cap 30 e nient'altro, satonio nasce gia' nella condizione
+che CLAUDE.md dice di verificare PRIMA di lanciare un test ("se il pool non e'
+piu' grande degli slot, non c'e' selezione da misurare e il test e' nullo per
+costruzione: fermarsi e dirlo").
+
+Perche' e' grave QUI in particolare: il filone difensore gira su
+p11_bloccato_tutti_mazzi.py, che costruisce il pool e poi FA GIOCARE il
+generatore (funzione gioca(), riga 237) per confrontarlo col reale. Senza
+carte di scorta il generatore non sceglie niente: rimette in campo le stesse
+150 carte. Il confronto misurerebbe zero. Cioe' il cap a 30, cosi' com'e',
+rende satonio inutile PROPRIO per la cosa per cui lo si vuole.
+
+L'unica scorta possibile viene dalle righe NON-arena, che infatti si scaricano
+tutte. Ma quante siano su satonio NON lo sappiamo (il brief stesso dice di non
+assumerlo). Se sono poche, il pool resta praticamente uguale agli slot.
+
+COSA FARE, in ordine di preferenza:
+ (a) LANCIARE UNA SOLA GIORNATA e guardare due numeri: quante righe non-arena
+     ha, e il rapporto pool/slot che lo script stampa. Costa ~1/10 del totale
+     e decide tutto. Lo script ha --max-giornate 1 e --stop-se-pool-uguale-slot
+     apposta.
+ (b) Se le non-arena sono poche: alzare il cap a 60 arene tenendone comunque
+     30 "da valutare". 60 x 5 = 300 carte contro 150 slot = scorta vera. Il
+     costo raddoppia ma resta piccolo (vedi sez.3), e senza questo il campione
+     non serve al difensore.
+ (c) Se si vuole restare a 30 a tutti i costi: si accetta che da satonio esce
+     SOLO il Test3 (decisione entra/salta), non la selezione. Va detto prima,
+     non scoperto dopo.
+
+Non ho scelto io fra (b) e (c): dipende da un numero che nessuno ha ancora
+misurato. Ma (a) va fatto comunque, e costa quasi niente.
+
+
+===============================================================================
+1. CRITERIO DI SELEZIONE DELLE 30 ARENE (la domanda 1 del brief)
+===============================================================================
+NE' "le migliori per valore" NE' "le prime incontrate". Il criterio giusto e':
+
+  1. TENERE SOLO Cap 260 / Cap 220 / Uncapped.
+     p13 e p11 buttano via beginner e arene dedicate a campionato (whitelist
+     COMPETIZIONI_ARENA_AMMESSE). Se il cap si riempie di beginner, si pagano
+     query per righe che nessun test leggera' mai. Su crowss questo ha gia'
+     tolto 15 arene su 3 giornate. Su un manager da 200 arene/GW il rischio e'
+     di sprecare meta' del budget.
+  2. ROUND-ROBIN FRA I TRE TIPI, non tutto su uno.
+     I tre tipi hanno soglia di pareggio e guadagno/punto DIVERSI (Cap 260 =
+     7.9 essenze/punto, Cap 220 = 6.3, Uncapped = 8.0). Un campione tutto Cap
+     260 misura una soglia sola. Diversificare costa zero.
+  3. DENTRO OGNI TIPO, ordine per slug del contender.
+     Deterministico e riproducibile: rilanciando si prendono le stesse arene.
+     L'ordine del cursore GraphQL non lo e', quindi "le prime incontrate" non
+     e' nemmeno un criterio ripetibile.
+
+PERCHE' NON "le migliori per valore": non si puo'. Ho letto INDICE_QUERY
+(riga 81): l'indice torna SOLO slug del contender, slug della leaderboard e
+displayName. Nessun punteggio, nessun rank, nessun premio. Per sapere quanto
+valeva un'arena bisogna scaricarla, cioe' spendere la query che il cap serve a
+risparmiare. Il tipo di arena invece si legge gratis dal displayName: e'
+l'unica informazione di valore disponibile a costo zero, ed e' quella che ho
+usato.
+
+
+===============================================================================
+2. DOVE E COME (la domanda 2 del brief)
+===============================================================================
+NESSUN REFACTORING SERVE. Verificato leggendo il file: graphql(),
+partecipazioni(), formazione(), tipo_arena(), carica(), salva(), riepilogo(),
+log() e le costanti sono tutte a livello di modulo. Dentro main() c'e' solo il
+ciclo di orchestrazione. Quindi un file nuovo puo' importarle e basta:
+ricostruisci_manager.py NON si tocca, nemmeno di una riga.
+
+Scritto: analisi_manager/estrai_satonio_capped.py
+  - importa ricostruisci_manager e riusa le sue funzioni;
+  - scrive nello STESSO formato dati_globali/manager_satonio.json, cosi' tutti
+    gli script a valle lo leggono senza modifiche;
+  - mantiene la disciplina D1 identica: retry per contender fallito, guardia
+    a 3 tentativi, falliti_definitivi, chi!=manager fallito definitivo, mai
+    una riga salvata senza 'carte' in silenzio;
+  - stampa per ogni giornata: righe, mute, pool, slot, pool>slot SI/NO;
+  - --stop-se-pool-uguale-slot ferma la run se non c'e' scorta.
+
+UNICA TRAPPOLA DA RICORDARE ALL'ESECUTORE: RM.COOKIE viene letto
+dall'ambiente al momento dell'import. SORARE_COOKIE va esportato PRIMA di
+lanciare, non dentro lo script.
+
+
+===============================================================================
+3. QUANTE QUERY DAVVERO (la domanda 3 del brief)
+===============================================================================
+Conto esplicito, con le assunzioni in chiaro. NON e' una misura: la latenza di
+rete non l'ho cronometrata e non ho lanciato niente.
+
+Indice: paginato a 50 (INDICE_QUERY riga 88). Con ~250 partecipazioni per
+giornata servono ~6 pagine, cioe' ~6 query per giornata -> ~60 su 10 giornate.
+
+Formazioni, disegno CON cap 30:
+  10 GW x (30 arene + N non-arena). Con N=25 -> 550 query.
+  TOTALE ~610 query.
+
+Formazioni, scenario SENZA cap (quello da 76 ore):
+  10 GW x ~250 -> 2.500 query. TOTALE ~2.560.
+
+Le "76 ore" del brief erano un'iperbole dell'utente, non una stima da
+verificare: chiarito da lui direttamente. Non c'e' niente da smentire.
+
+Il tempo vero non lo sa nessuno perche' nessuno l'ha cronometrato. Si chiude
+con la giornata di prova (punto (a) della sez.0): lo script stampa il
+conteggio query a fine run, basta guardare l'orologio.
+
+Il cap resta giusto a prescindere dal tempo: risparmia ~l'80% delle query, e
+il budget API e' la risorsa scarsa (regola CLAUDE.md sulle query).
+
+
+===============================================================================
+4. L'ALTRA COSA CHE NON E' STATA CONSIDERATA
+===============================================================================
+Il brief cerca "un mazzo NUOVO con profondita' paragonabile a forever-young"
+per il difensore. satonio da' profondita' di ARENE (300), ma la profondita'
+che serve al difensore e' TEMPORALE: giornate distinte. 10 giornate sono 10
+giornate, che satonio ne giochi 30 o 300 per volta.
+
+Il collo di bottiglia diagnosticato nel filone difensore e' scritto nel brief
+stesso: "il collo di bottiglia e' la profondita' temporale per mazzo, non il
+numero di mazzi". Se e' vero, 300 arene concentrate in 10 giornate non sono
+300 osservazioni indipendenti: le arene della stessa giornata condividono le
+stesse partite, gli stessi avversari e in buona parte le stesse carte. Contano
+molto meno di 300.
+
+Quindi, prima di spendere le query: se satonio ha uno storico piu' lungo di 10
+giornate, per il difensore conviene probabilmente 20 giornate x 15 arene
+invece di 10 x 30. Stesso costo, molte piu' giornate distinte. Questa e' una
+scelta che non prendo io perche' il brief dice che le 10 GW sono gia' decise
+dall'utente, ma la segnalo perche' e' esattamente il tipo di cosa che si
+scopre dopo aver speso le query.
+
+
+===============================================================================
+5. COSA FAREI, IN ORDINE
+===============================================================================
+1. Una giornata sola, con --max-giornate 1 --stop-se-pool-uguale-slot.
+   Guardare tre numeri: righe non-arena, pool vs slot, query totali e tempo.
+2. Con quei numeri si decide: cap 30 (se le non-arena danno scorta), cap 60
+   (se non la danno), o 20 giornate x 15 arene (se lo storico c'e', vedi sez.4).
+3. Solo dopo, le altre 9 giornate.
+
+Comando della prova (l'esecutore deve avere SORARE_COOKIE nell'ambiente):
+
+  python analisi_manager/estrai_satonio_capped.py satonio \
+      --giornate <10 slug> --cap-arene 30 --max-giornate 1 \
+      --stop-se-pool-uguale-slot
+
+Le 10 giornate vanno prese dal calendario reale con so5Fixtures (solo quelle
+'closed'), non dal file locale: e' la stessa verifica gia' fatta nelle
+estrazioni di sez.10/11/13 dell'handoff consegne.

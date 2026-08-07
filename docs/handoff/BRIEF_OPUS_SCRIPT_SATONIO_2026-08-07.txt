@@ -1,0 +1,80 @@
+BRIEF PER OPUS -- PROGETTARE SCRIPT AD-HOC PER ESTRARRE satonio
+Scritto da un orchestratore TEMPORANEO (sessione Sonnet), 07/08/2026 notte,
+ora di Roma. Richiesta puntuale, non una decisione di produzione.
+
+CONTESTO: stiamo cercando un secondo manager con storico profondo (16-20+
+giornate valide) per dare piu' campione al filone difensore (vedi
+docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt sezione 8, appena chiuso:
+allargare i 2 mazzi esistenti a 25 GW non ha spostato il segno, serve un
+mazzo NUOVO con profondita' paragonabile a forever-young, non piu' GW sugli
+stessi due). L'utente ha un candidato pronto: satonio.
+
+PROBLEMA: satonio gioca 200+ arene A GIORNATA (confermato dall'utente, non
+misurato ancora). ricostruisci_manager.py (leggilo per intero) NON ha un
+cap sulle arene per giornata: per ogni GW fa una query indice
+(partecipazioni()) e poi UNA QUERY formazione() PER OGNI riga in
+da_scaricare. Con --solo-arene NON possiamo usarlo (serve pool completo,
+regola D2 in CLAUDE.md), quindi da_scaricare = TUTTE le partecipazioni
+(arena e non-arena). Su satonio, senza limite, questo significa centinaia di
+query per singola GW: con 10 GW si stimano ~76 ore (stima dell'utente, non
+verificata da me, ma l'ordine di grandezza e' credibile visti i numeri).
+
+RICHIESTA: l'utente ha scelto di NON modificare ricostruisci_manager.py
+(preferisce non toccare lo script principale usato per tutti gli altri
+manager), e vuole uno SCRIPT AD-HOC, isolato, solo per satonio.
+
+VINCOLI GIA' DECISI DALL'UTENTE (non rimetterli in discussione):
+- 10 GW indietro (non 15, non 25: per satonio bastano, il volume per GW e'
+  gia' enorme).
+- Cap 30 arene per GW (non di piu': con 200+ disponibili a GW, 30 bastano a
+  garantire profondita' senza esplodere in query. 10 GW x 30 = 300 arene,
+  piu' del doppio di quello che serve per il confronto con forever-young).
+- Le arene ESCLUSE dal cap non vanno scaricate (l'obiettivo e' risparmiare
+  query, non scaricare tutto e tagliare dopo).
+- Le righe NON-arena (In Season, Challenger, All Star, ecc.) vanno scaricate
+  TUTTE, senza cap: servono per il pool completo (regola D2), e presumibilmente
+  sono un volume molto minore delle arene su questo manager (da verificare,
+  non assumerlo).
+
+DA DECIDERE (e' la parte per cui serve il tuo giudizio, non solo esecuzione):
+1. CRITERIO DI SELEZIONE delle 30 arene da tenere per GW, quando ce ne sono
+   200+. L'utente non ha ancora scelto in modo netto fra "le migliori per
+   valore" (es. Cap 260 > Cap 220 > Uncapped, o altro criterio di rilevanza
+   per il modello) e "le prime incontrate" (ordine arbitrario/cronologico
+   dalla query indice). Dacci un parere: quale criterio rende il campione
+   piu' utile per il filone difensore, e perche'? Se serve un criterio misto
+   (es. prima diversificare per tipo, poi tagliare dentro ogni tipo), dillo.
+2. LO SCRIPT VA SCRITTO DOVE E COME. Proposta di partenza (non vincolante):
+   un file nuovo (es. analisi_manager/estrai_satonio_capped.py o simile) che
+   RIUSA le funzioni di ricostruisci_manager.py (partecipazioni(), formazione(),
+   la struttura dati, i controlli D1 su righe senza 'carte') importandole,
+   invece di duplicare codice. Verifica se questo e' fattibile leggendo come
+   sono strutturate le funzioni (sono gia' funzioni pulite/importabili, o
+   tutto e' dentro main()?). Se serve refactoring minimo di
+   ricostruisci_manager.py per rendere le funzioni importabili (es. spostare
+   poco codice da dentro main() a una funzione a parte), dillo esplicitamente
+   come "piccola modifica non invasiva", diverso da "aggiungere un cap
+   nativo" che l'utente ha gia' rifiutato.
+3. CONTROLLI D1 DA MANTENERE. Qualunque script nuovo deve rispettare la
+   stessa disciplina gia' in ricostruisci_manager.py: non salvare righe senza
+   'carte' in silenzio (o marcarle e permettere retry), 0 righe mute a fine
+   run, verificare pool>slot per le GW che poi finiranno nel backtest.
+
+OUTPUT RICHIESTO DA TE (non eseguire l'estrazione, solo progettare):
+- Il criterio di selezione arene scelto, con motivazione.
+- Lo scheletro/pseudocodice o il codice vero e proprio dello script ad-hoc,
+  se ti senti di scriverlo direttamente (hai accesso al repo).
+- Una stima onesta del numero di query totali con questo disegno (10 GW x
+  30 arene + query indice + non-arena), per confermare o smentire la stima
+  delle 76 ore fatta dall'utente sullo scenario NON tagliato.
+- Se vedi un problema che l'utente non ha considerato (es. le arene non
+  sono ordinabili per "valore" nella risposta dell'indice grezzo, o il cap
+  rischia di escludere sistematicamente un tipo di arena rilevante per il
+  difensore), dillo chiaro, e' esattamente il tipo di cosa che vogliamo da
+  te prima di lanciare 10 GW di query.
+
+CONSEGNA: scrivi la risposta in
+docs/handoff/PARERE_OPUS_SCRIPT_SATONIO_2026-08-07.txt (file nuovo, tema
+diverso dal parere sulla produzione). Se scrivi tu lo script, mettilo nel
+percorso che proponi, NON lanciarlo (l'estrazione la fara' un esecutore dopo
+la tua approvazione del disegno).
