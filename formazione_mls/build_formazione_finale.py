@@ -2036,6 +2036,10 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
     position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%;
     background: var(--gold); color: #241c00; font-size: 0.58rem; font-weight: 800;
     display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface);
+    /* 08/08: il capitano sta SEMPRE sopra la spunta verde di "copiata", che
+       occupava lo stesso identico angolo (top/right 5px) e lo nascondeva --
+       dopo aver copiato le 5 carte non si sapeva piu' chi fosse il capitano. */
+    z-index: 2;
   }}
   .pcard-avatar {{
     width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -2063,7 +2067,12 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
      Lo stato vive in localStorage, per giornata: un refresh non lo perde. */
   .pcard.is-classic {{ border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset, 0 1px 2px rgba(0,0,0,0.2); }}
   .tag-inseason {{ background: rgba(94,201,255,0.16); color: #5ec9ff; }}
-  .pcard.copiata {{ opacity: 0.38; }}
+  /* CARTA GIA' COPIATA (rivisto 08/08 su richiesta utente). Prima si spegneva
+     a opacity 0.38: illeggibile, e "non mi piace, diventano bui". Ora resta
+     LEGGIBILE (0.72) e il segnale di "fatto" e' il contorno verde piu' la
+     spunta, non il buio. Serve a sapere dove si era arrivati, non a
+     cancellare la carta: i numeri si devono poter ancora rileggere. */
+  .pcard.copiata {{ opacity: 0.72; }}
   .pcard.copiata .pcard-avatar {{ border-style: dashed; }}
   .pcard-fatto {{
     position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%;
@@ -2071,6 +2080,14 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
     display: none; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface);
   }}
   .pcard.copiata .pcard-fatto {{ display: flex; }}
+  /* Contorno verde: si vede a colpo d'occhio anche senza spegnere la carta.
+     outline (non box-shadow) per non cancellare il bordo dorato delle
+     Classic, che usa gia' box-shadow inset. */
+  .pcard.copiata {{ outline: 2px solid #4caf50; outline-offset: -2px; }}
+  /* Se la carta e' capitano, la spunta si sposta a fianco invece di finirgli
+     sotto. Con browser senza :has() resta sovrapposta, ma il capitano ha
+     z-index 2 e resta comunque visibile: nessun peggioramento. */
+  .pcard:has(.pcard-captain) .pcard-fatto {{ right: 25px; }}
   .lineup-block.schierata {{ opacity: 0.42; }}
   .lineup-block.schierata .lineup-title::after {{ content: ' — SCHIERATA'; color: #4caf50; font-weight: 800; }}
   .btn-schierata {{
