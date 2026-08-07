@@ -19,7 +19,7 @@ RUOLI DIVERSI per lo stesso slot (impossibile con z-score puri, che
 cancellano la scala) resta quella di produzione. Algebricamente equivale a:
   atteso_combinato = atteso_calibrato + SD_gruppo(atteso_calibrato) * z(grade)
 """
-import os, sys, io, json, math, random, collections
+import os, sys, io, json, math, random, collections, datetime
 
 if __name__ == '__main__':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -133,18 +133,51 @@ TIPI_CAPPED = {'cap 260', 'cap 220'}
 
 
 # --------------------------------------------------------- indice grade ---
+# BUG SCOPERTO E CORRETTO 07/08/2026 (richiesta esplicita utente, dopo che
+# aggiungere piu' dati storici non alzava la copertura 4.6%): il join
+# precedente cercava (slug, data_ESATTA_di_fine_fixture). Le fixture durano
+# spesso piu' giorni (es. football-1-4-jul-2026), e la partita vera di un
+# giocatore cade in un giorno QUALUNQUE della finestra, quasi mai
+# esattamente sull'ultimo -- misurato sui dati reali: match esatto 3.4% dei
+# candidati, match ammettendo qualunque partita nei GRADE_WINDOW_GIORNI
+# prima della fine 56.6%, con gli STESSI dati (nessun dato nuovo servito).
+# Ora l'indice e' slug -> lista (data, grade_num) ordinata, e la ricerca
+# usa una finestra, non piu' un dict a chiave esatta.
+GRADE_WINDOW_GIORNI = 6
+
+
+def grade_in_finestra(idx_grade, slug, fine_str):
+    """Grade piu' vicino (il piu' recente) a fine_str, entro
+    GRADE_WINDOW_GIORNI giorni PRIMA (incluso il giorno stesso). None se
+    nessuna partita nota in finestra per questo slug."""
+    entries = idx_grade.get(slug)
+    if not entries:
+        return None
+    fy, fm, fd = (int(x) for x in fine_str.split('-'))
+    fine = datetime.date(fy, fm, fd)
+    migliore, migliore_delta = None, None
+    for dt, gn in entries:
+        yy, mm, dd = (int(x) for x in dt.split('-'))
+        delta = (fine - datetime.date(yy, mm, dd)).days
+        if 0 <= delta <= GRADE_WINDOW_GIORNI and (migliore_delta is None or delta < migliore_delta):
+            migliore, migliore_delta = gn, delta
+    return migliore
+
+
 def carica_indice_grade():
-    """(slug, data[:10]) -> grade_num, da TUTTE le fonti storiche valide
-    (esclude storico_grade_Forward_MIRATO, campione non comparabile, sez.20)."""
-    idx = {}
+    """slug -> lista ordinata di (data[:10], grade_num), da TUTTE le fonti
+    storiche valide (esclude storico_grade_Forward_MIRATO, campione non
+    comparabile, sez.20). Lookup con grade_in_finestra(), non piu' chiave
+    esatta (vedi nota sopra)."""
+    idx = collections.defaultdict(list)
     date_min = None
 
     def registra(slug, dt, grade):
         nonlocal date_min
         gn = GRADE_NUM.get(grade)
-        if gn is None or not dt:
+        if gn is None or not dt or not slug:
             return
-        idx[(slug, dt[:10])] = gn
+        idx[slug].append((dt[:10], gn))
         if date_min is None or dt < date_min:
             date_min = dt
 
@@ -171,6 +204,17 @@ def carica_indice_grade():
             proj = s.get('projection') or {}
             registra(p.get('slug'), (s.get('anyGame') or {}).get('date'), proj.get('grade'))
 
+    # raccolta COMPLETATA 07/08 sul pool crowss (3.745 righe, 249 giocatori,
+    # nov25-ago26, richiesta dall'utente per alzare la copertura storica del
+    # backtest, che il 07/08 mattina era solo 4.6%): stesso formato piatto
+    # di DEF/MID/FWD sopra ({'slug','game_date','grade'}), non annidato come
+    # il file 20260806 sopra.
+    d = json.load(open('analisi_manager/dati/storico_grade_crowss_20260807.json', encoding='utf-8'))
+    for r in d:
+        registra(r.get('slug'), r.get('game_date'), r.get('grade'))
+
+    for slug in idx:
+        idx[slug] = sorted(set(idx[slug]))
     return idx, date_min
 
 
@@ -187,7 +231,8 @@ def zscore_gruppo(vals):
 
 def main():
     idx_grade, data_min = carica_indice_grade()
-    print(f'indice grade: {len(idx_grade)} coppie (slug,data) da GK/DEF/MID/FWD (FWD valido, non mirato)')
+    _n_coppie = sum(len(v) for v in idx_grade.values())
+    print(f'indice grade: {len(idx_grade)} slug, {_n_coppie} coppie (slug,data) da GK/DEF/MID/FWD (FWD valido, non mirato)')
     print(f'prima data con grade disponibile: {data_min}')
 
     # --- finestra: fixture con cutoff >= prima data col grade ---
@@ -224,8 +269,7 @@ def main():
         data_gw = gw['fine'][:10]
         for c in pool:
             c['_cal'] = bfg.calibra(c['atteso_raw'], c['codice'])
-            key = (c['slug'], data_gw)
-            c['_grade'] = idx_grade.get(key)
+            c['_grade'] = grade_in_finestra(idx_grade, c['slug'], data_gw)
             copertura_candidati += 1
             if c['_grade'] is not None:
                 copertura_con_grade += 1

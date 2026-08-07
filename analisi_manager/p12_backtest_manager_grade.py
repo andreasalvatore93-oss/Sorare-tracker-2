@@ -77,7 +77,15 @@ def parse_fixture_bounds(fx):
 def carica_indice_grade_esteso():
     """Come S21.carica_indice_grade() ma AGGIUNGE storico_grade_backtest_20260806.json
     (raccolta mirata sui 625 slug delle 8 GW manager, priorita' massima di copertura
-    su questo campione specifico)."""
+    su questo campione specifico).
+
+    FIX 07/08/2026 (stesso bug/fix di S21.carica_indice_grade, richiesta
+    esplicita utente): idx e' slug -> lista (data,grade_num), non piu' un
+    dict a chiave esatta (slug,data) -- il lookup a valle usa
+    S21.grade_in_finestra(), che ammette qualunque partita entro
+    S21.GRADE_WINDOW_GIORNI giorni prima della fine fixture (le fixture
+    durano piu' giorni, la partita vera raramente cade esattamente
+    sull'ultimo -- match esatto 3.4% vs finestra 56.6% sugli stessi dati)."""
     idx, date_min = S21.carica_indice_grade()
     path = 'analisi_manager/dati/storico_grade_backtest_20260806.json'
     if os.path.exists(path):
@@ -87,11 +95,14 @@ def carica_indice_grade_esteso():
                 proj = s.get('projection') or {}
                 gn = GRADE_NUM.get(proj.get('grade'))
                 dt = (s.get('anyGame') or {}).get('date')
-                if gn is None or not dt:
+                slug = p.get('slug')
+                if gn is None or not dt or not slug:
                     continue
-                idx[(p.get('slug'), dt[:10])] = gn
+                idx[slug].append((dt[:10], gn))
                 if date_min is None or dt < date_min:
                     date_min = dt
+    for slug in idx:
+        idx[slug] = sorted(set(idx[slug]))
     return idx, date_min
 
 
@@ -229,8 +240,7 @@ def main():
                     gw = {'pool': pool_rows}
                     for c in pool_rows:
                         c['_cal'] = S21.bfg.calibra(c['atteso_raw'], c['codice'])
-                        key = (c['slug'], d_end.isoformat())
-                        c['_grade'] = idx_grade.get(key)
+                        c['_grade'] = S21.grade_in_finestra(idx_grade, c['slug'], d_end.isoformat()[:10])
 
                     gruppi = collections.defaultdict(list)
                     for c in pool_rows:
