@@ -55,10 +55,39 @@ def log(msg):
     print(f"[{ts}] [turchia_gk_discovery] {msg}")
 
 
+CSRF_TOKEN = os.environ.get('SORARE_CSRF', '')
+
+
 def graphql_query(query, variables=None, operation_name=None):
+    """NB (07/08/2026): questo modulo e' importato come `base` da
+    discovery_fixture.py, analisi_manager/pipeline_manager.py,
+    audit_leghe_possedute.py e diagnostica_slug.py.
+
+    Due accorgimenti nati da un bug vero, costato una giornata di diagnosi
+    sbagliata (vedi _grade_http in discovery_fixture.py):
+
+    1) SI MANDA ANCHE IL CSRF. Senza, Sorare considera la richiesta non
+       autenticata e risponde con un Set-Cookie che assegna una sessione
+       ANONIMA. Le query di questo file sono quasi tutte pubbliche
+       (user(slug:), so5Fixture, odds) e quindi non se ne accorgeva nessuno.
+
+    2) SI SVUOTA IL BARATTOLO DEI COOKIE prima di ogni richiesta. E' la
+       protezione che conta davvero: la sessione HTTP e' condivisa, e un
+       _sorare_session_id anonimo finito nel barattolo VINCE sull'header
+       Cookie autenticato passato a mano, silenziosamente. Misurato:
+       bench 50 nodi su sessione pulita, 0 nodi dopo UNA sola query
+       inquinata, con HTTP 200 e nessun errore GraphQL. Qui tutte le
+       richieste portano il Cookie esplicito, quindi svuotare non toglie
+       niente e impedisce che una query pubblica saboti una autenticata."""
     headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
     if COOKIES:
         headers['Cookie'] = COOKIES
+    if CSRF_TOKEN:
+        headers['x-csrf-token'] = CSRF_TOKEN
+    try:
+        _http_session.cookies.clear()
+    except Exception:
+        pass
     payload = {'query': query, 'variables': variables or {}}
     if operation_name:
         payload['operationName'] = operation_name
