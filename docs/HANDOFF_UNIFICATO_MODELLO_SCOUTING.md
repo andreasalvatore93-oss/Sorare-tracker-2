@@ -713,6 +713,41 @@ sottostimati +4.9** (n71, da riverificare). Accumulare altre GW rende poco
 
 ---
 
+## 8ter. Grade G — stato al 07/08/2026 notte (filone APERTO)
+
+G è **in produzione** (`GRADE_ENABLED=1`). Rivalidato il 07/08 su una base
+ricostruita da capo con l'utente, criterio per criterio. Numeri:
+
+| campione | n | A | G | delta | IC95 |
+|---|---|---|---|---|---|
+| 7 carte (All Star + U23) | 864 | 424,57 | 430,55 | **+5,98** | [+2,43, +9,68] |
+| 5 carte (MLS Hot Streak) | 310 | 314,49 | 320,93 | +6,43 | [−0,09, +12,85] |
+
+Sul caso a 7 carte l'IC **esclude lo zero** e le due famiglie concordano
+(All Star +5,82, U23 +6,24). Sul caso a 5 l'IC tocca lo zero per un soffio, ma
+è una competizione molto vincolata (solo carte MLS, ≥4 in season): il modello
+ha poca scelta — solo il 6,5% delle formazioni resta identico contro il 40%
+delle 7 carte — e che l'effetto regga lì è un buon segnale.
+
+**Come si costruisce una base pulita** (vale per qualunque analisi sui file
+manager, non solo per G): niente arene; **tutte** le carte di rarità
+`limited`, filtrando sulla rarità della CARTA e non sull'etichetta della
+competizione; somma dei punteggi delle carte uguale al punteggio **ufficiale
+di Sorare** entro 0,5 — è l'unica verifica che non dipende da teorie sui
+bonus; e per All Star/U23 solo leaderboard con `division-N`.
+
+**Difetto di fondo scoperto qui, con effetti oltre G:** il campo `in_season`
+nei file manager è letto **al momento dell'estrazione**
+(`ricostruisci_manager.py:279`), quindi dice se la carta è in season *oggi*,
+non se lo era quando la formazione fu schierata. Le competizioni il cui
+vincolo dipende da quel campo **non sono ricostruibili a ritroso**.
+
+Aperto: gruppo B dello split A/B mai guardato, altre competizioni da 5 non
+toccate, arene non rimisurate su base pulita. Dettaglio completo in
+`docs/handoff/BRIEF_SONNET_RIVALIDAZIONE_G_2026-08-07.txt`.
+
+---
+
 ## 8bis. Indagine sullo SCOUTING dopo il grade (07/08/2026, non urgente)
 
 Richiesta dell'utente: «se il generatore aveva un problema di autenticazione lo
