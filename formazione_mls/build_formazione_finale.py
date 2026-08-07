@@ -2302,7 +2302,7 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
     var btn = document.createElement('span');
     btn.className = 'btn-schierata';
     btn.textContent = 'fatta';
-    btn.title = 'Segna questa formazione come gia' schierata su Sorare';
+    btn.title = 'Segna questa formazione come gia\\' schierata su Sorare';
     btn.addEventListener('click', function (ev) {{
       ev.preventDefault(); ev.stopPropagation();
       var s = statoLeggi();
