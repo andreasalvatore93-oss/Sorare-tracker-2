@@ -1827,8 +1827,8 @@ def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool,
     return (
         f'<div class="pcard-avatar">{_slug_initials(slug)}</div>'
         f'<div class="pcard-name">{card_pool.display_name(slug)}</div>'
-        f'<div class="pcard-score">{atteso}</div>'
-        f'<div class="pcard-range">{low}–{high} pt</div>'
+        f'<div class="pcard-score">{atteso:.1f}</div>'
+        f'<div class="pcard-range">{low:.1f}–{high:.1f} pt</div>'
         f'{l10_html}'
         f'{match_html}'
         f'<div class="pcard-tags">{tags_html}</div>'
@@ -1921,10 +1921,10 @@ def render_lineup_html(tipo_label, idx, formazione, card_pool, l10_cap=None, l10
         f'<div class="lineup-title">{tipo_label} <span>#{idx}</span></div></div>'
         f'<div class="card-strip">{cards_html}</div>'
         f'<div class="lineup-total" data-captain-pct="{captain_bonus_pct}">'
-        f'<div><span class="label">Totale</span><span class="figure">{totale_atteso} pt</span></div>'
+        f'<div><span class="label">Totale</span><span class="figure">{totale_atteso:.1f} pt</span></div>'
         f'<div class="divider"></div>'
         f'<div><span class="label">Con capitano</span>'
-        f'<span class="figure with-captain">{totale_con_capitano} pt</span></div>'
+        f'<span class="figure with-captain">{totale_con_capitano:.1f} pt</span></div>'
         f'<div class="captain-note">Capitano <b class="cap-name">{card_pool.display_name(captain_row["slug"])}</b> '
         f'<span class="cap-bonus">(+{bonus} pt, +{captain_bonus_pct:.0%})</span></div>{l10_note}{stack_note}{cap260_note}'
         f'</div></div>'
@@ -2111,7 +2111,7 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
       var score = el.querySelector('.alt-score');
       if (circle) circle.textContent = initials(el.dataset.name);
       if (name) name.textContent = el.dataset.name;
-      if (score) score.textContent = el.dataset.score + ' pt · ' + el.dataset.role;
+      if (score) score.textContent = (parseFloat(el.dataset.score) || 0).toFixed(1) + ' pt · ' + el.dataset.role;
     }}
   }}
 
@@ -2135,7 +2135,7 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
     var totalEl = block.querySelector('.lineup-total');
     if (!totalEl) return;
     var figure = totalEl.querySelector('.figure:not(.with-captain)');
-    if (figure) figure.textContent = Math.round(total) + ' pt';
+    if (figure) figure.textContent = total.toFixed(1) + ' pt';
     var capBadge = block.querySelector('.pcard-captain');
     var capPct = parseFloat(totalEl.dataset.captainPct || '0.5');
     var bonus = 0, capName = '';
@@ -2153,7 +2153,7 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
       capName = capCard.dataset.name || '';
     }}
     var withCap = totalEl.querySelector('.figure.with-captain');
-    if (withCap) withCap.textContent = Math.round(total + bonus) + ' pt';
+    if (withCap) withCap.textContent = (total + bonus).toFixed(1) + ' pt';
     var capNameEl = totalEl.querySelector('.cap-name');
     if (capNameEl && capName) capNameEl.textContent = capName;
     var capBonusEl = totalEl.querySelector('.cap-bonus');
