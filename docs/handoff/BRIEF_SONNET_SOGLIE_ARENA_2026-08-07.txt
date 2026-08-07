@@ -158,3 +158,98 @@ pratica dell'utente: "posso mettere qualche cap 220?".
  - In chat all'utente: poche righe, il percorso del file, e le domande che ti
    bloccano. Ha l'ADHD e paga a token: niente wall of text, niente riepiloghi
    non richiesti.
+
+===============================================================================
+ESITO -- Sonnet, 07/08/2026 sera tardi (Roma)
+===============================================================================
+Script: analisi_manager/rivalida_soglie_gate.py (passo 1),
+analisi_manager/rivalida_soglie_passo3.py (passo 3). Nessuna modifica alla
+produzione. Commit solo di questi 2 file + questo brief + VALIDAZIONE_SOGLIE.md.
+
+PASSO 1 -- CANCELLO: PASSA.
+Su cap 260 (62 arene con campo VERO completo, da arene_storico.json, 612
+punteggi nel pool piatto):
+  metodo ATTUALE (campo vero, i 9 insieme):    pareggio 288.8
+  metodo NUOVO (9 pescati indipendenti):       pareggio 287.6
+  scarto: -1.1 punti
+  rumore Monte Carlo (5 semi diversi): grouped sd~0.00, indipendente sd~0.28
+Lo scarto (1.1pt, 0.4%) e' piccolo in assoluto anche se e' ~4x il rumore
+indipendente misurato. Consiglio: METODO UTILIZZABILE, ma con margine di
+cautela su effetti sotto i 2-3 punti (non ci si affiderebbe per uno scarto
+cosi' fine).
+
+PASSO 2 -- causa del 267.9 vs 259.5: TROVATA, ED E' PIU' GRAVE DEL SOSPETTATO.
+NON e' un problema di scala o di sigma sbagliata nel confronto di oggi: e'
+che dati_globali/arene_storico.json ha PERSO dati fra l'1/08 e il 6/08:
+    01/08 (aggiornato):  673 arene totali | cap260 194 | cap220 53 | Uncapped 38 | arena division 191
+    06/08 (attuale):     160 arene totali | cap260  62 | cap220 16 | Uncapped  8 | arena division   0
+Sulle cap 260: solo 57 arene in comune fra le due versioni, e ZERO arene
+nuove nella versione attuale (ogni arena di oggi era gia' in quella
+dell'1/08). Non e' un refresh con dati nuovi, e' un CROLLO: si sono perse
+121 arene su 194 (62%) e l'intera categoria "arena division" e' sparita.
+Il codice di consiglio_arena.py (costo/premi REGOLE) e' INVARIATO dal primo
+commit: verificato via git log -p, non e' un bug di calcolo. La causa del
+crollo del file storico va cercata in chi scrive arene_storico.json
+(probabile la dedup dei commit "tolti 75 duplicati" / "deduplica anche in
+scrittura" del 5-6/08, o una ricostruzione che ha silenziosamente scartato
+righe) -- NON L'HO INDAGATA OLTRE, fuori dal perimetro "solo misura" di
+questo brief. Segnalo come BUG A SE' STANTE, prioritario: qualunque soglia
+calcolata su questo file oggi sara' diversa fra 5 giorni se il file continua
+a perdere pezzi.
+
+PASSO 3 -- pareggi sul pool grande (manager_*.json, 9.889 partecipazioni).
+LIMITE SCOPERTO (da tenere in conto sempre): i file manager NON registrano
+premio_essenze/rank_premiato per arena, SOLO piazzamento (rank+punteggio).
+Quindi il pool di AVVERSARI si allarga tantissimo (2.735 per cap260 invece
+di 612), ma il pool di PREMI resta quello di arene_storico.json -- oggi
+ANCORA PIU' PICCOLO di prima per via del crollo del passo 2 (cap220 appena
+10 premi osservati, Uncapped 3, elite/uncapped condiviso 3). Risultato:
+lato "chi sono i 9 avversari" molto piu' solido, lato "quanto si vince"
+altrettanto debole di prima, anzi peggiorato dal crollo dell'archivio.
+
+Tabella (metodo indipendente, sigma=0, punteggio trattato come certo):
+    tipo      n avversari  n premi oss.  pareggio (IC 5 semi)
+    cap 260        2735        30         286.3  (286.0..286.7)
+    cap 220         980        10         271.9  (271.6..272.2)
+    Uncapped        421         3         313.3  (312.8..313.8)
+    Beginner       3755        32         283.4  (282.7..284.1)
+    elite (*)       861         3         310.0  -- SCARTARE, vedi nota
+
+Stessa tabella a sigma=42.70 (assunzione di produzione, solo per confronto
+omogeneo con le soglie attuali -- NON e' una sigma ricavata da questo dato):
+    cap 260   272.2  (prod 265.0, +7.2)
+    cap 220   249.7  (prod 244.1, +5.6)
+    Uncapped  297.1  (prod 288.3, +8.8)
+
+(*) BUG noto nel mio script: per 'elite' la produzione pesca gli avversari
+dal campo 'Uncapped' (le arene elite non hanno mai storico proprio, vedi
+commento in REGOLE), il mio script ha invece usato il pool proprio di
+'elite' (competizione='Elite' nei file manager) -- numero da SCARTARE,
+non corretto per confronto con produzione. Non l'ho rifatto per tempo.
+
+Non ho ricavato una sigma nuova per tipo dal pool grande: servirebbe una
+regressione atteso-modello vs realizzato su migliaia di formazioni, fuori
+dal tempo di questa sessione. I numeri a sigma=42.70 sono un confronto
+omogeneo, non una ricalibrazione della sigma.
+
+PASSO 4 -- NON FATTO. Richiede rilanciare la logica di selezione "passo 19"
+del generatore con le soglie nuove. Non lo so se la classifica cap260/cap220
+si ribalta: serve un secondo giro, con piu' tempo o uno scope dedicato.
+
+DUMP DI UN CASO (arena vera, cap 260, da arene_storico.json):
+  fixture football-1-5-may-2026, tipo cap 260, costo 300, premio 500 (3° posto)
+  10 punteggi: 289.2, 239.74, 228.52, 203.6, 200.68, 199.88, 196.96, 186.38, 102.92
+  (manca il 10°, il file ne ha 9 per questa riga)
+
+RACCOMANDAZIONE (decide l'utente):
+1. PRIMA di tutto: indagare perche' arene_storico.json e' passato da 673 a
+   160 arene fra l'1 e il 6/08. E' un bug di raccolta/scrittura, non una
+   questione di soglie. Finche' non e' risolto, ogni numero di soglia
+   calcolato oggi e' su un campione instabile.
+2. Sulle soglie: col pool grande e sigma=42.70 (stessa ipotesi di
+   produzione), cap 260 e cap 220 salgono ENTRAMBE (+7.2 e +5.6): non c'e'
+   segno di un ribaltamento a favore della cap 220. Ma il lato premi resta
+   troppo debole (10-30 osservazioni) per fidarsi del valore assoluto:
+   NON cambiare le soglie su questi numeri.
+3. Se in futuro le soglie cambiano: lo scouting le eredita via getattr,
+   nessuna azione extra richiesta (regola CATENA, CLAUDE.md).

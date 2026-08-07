@@ -1,5 +1,21 @@
 # VALIDAZIONE SOGLIE ARENA — sono corrette?
 
+## AGGIORNAMENTO 07/08/2026 sera — bug piu' grave del previsto, non risolto
+Esito completo: `docs/handoff/BRIEF_SONNET_SOGLIE_ARENA_2026-08-07.txt`
+(sezione "ESITO"). In breve:
+- `dati_globali/arene_storico.json` e' CROLLATO da 673 a 160 arene fra
+  l'1/08 e il 6/08 (cap260 194→62, cap220 53→16, arena division 191→0,
+  zero arene nuove nella versione attuale). E' questo che spiega lo scarto
+  267.9/259.5 visto oggi, non un errore di scala. **Bug da investigare
+  prima di toccare qualunque soglia.**
+- Rivalidato con `dati_globali/manager_*.json` (9.889 partecipazioni): il
+  pool di avversari e' molto piu' solido, ma i PREMI restano campionati
+  solo dall'archivio (ora ancora piu' piccolo) perche' i file manager non
+  registrano `premio_essenze`. cap220 e Uncapped restano sotto misura.
+- A sigma=42.70 (stessa ipotesi di produzione): cap260 265.0→272.2 (+7.2),
+  cap220 244.1→249.7 (+5.6). Salgono insieme, nessun segno di ribaltamento
+  cap260/cap220. **Non applicare**: campione premi troppo debole.
+
 Sessione **05/08/2026, ore ~04:30 (Roma, CEST)**. Domanda dell'utente: le
 soglie di produzione (`PAREGGIO_ARENA`, `GUADAGNO_PER_PUNTO`, tarate su
 σ=42.70) sono corrette, o vanno riviste? Usare TUTTI i dati.
