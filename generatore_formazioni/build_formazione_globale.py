@@ -416,6 +416,81 @@ def calibra_riga(row, ruolo=None):
     return row
 
 
+# --- TEST ISOLATO GRADE (G), branch test-grade-g-gw3 (07/08/2026) ---------
+# Formula da analisi_manager/p12_backtest_formazione_grade.py (VERIFICATA,
+# non reinventata): atteso_combinato = atteso_calibrato + sd_gruppo * z_grade,
+# per gruppo (lega, ruolo) -- qui il gruppo coincide con role_data[lega][ruolo]
+# gia' costruito in load_league_role_data, nessuna nuova aggregazione.
+# Spento = scelta scritta (GRADE_ENABLED, default '1' -- G IN PRODUZIONE dal
+# 07/08/2026, catena validata: A/A passato, SIGMA/soglie/scouting invariati,
+# backtest ampio a copertura piena (crowss 77.4%, manager 100%) con segno
+# positivo su entrambi i campioni, anche se gli IC non escludono zero --
+# vedi docs/handoff/BRIEF_SONNET_CATENA_G_2026-08-07.txt esito 2), mai
+# assenza del dato: a GRADE_ENABLED=0 'atteso'/'sort_score' non vengono MAI
+# toccati (rollback rapido se serve, senza rimuovere il codice).
+GRADE_ENABLED = os.environ.get('GRADE_ENABLED', '1') == '1'
+GRADE_DATA_PATH = os.environ.get('GRADE_DATA_PATH', '')
+GRADE_NUM = {'A': 6, 'B': 5, 'C': 4, 'D': 3, 'E': 2, 'F': 1}
+_GRADE_MAP = {}
+if GRADE_DATA_PATH and os.path.exists(GRADE_DATA_PATH):
+    with open(GRADE_DATA_PATH, encoding='utf-8') as _f:
+        _GRADE_MAP = json.load(_f)
+
+
+def _grade_per_riga(row):
+    """Fonte del grade per una riga: PRIMA quello letto da
+    player_card_counts.json (produzione, scritto da discovery_fixture.py
+    dopo il filtro starter-odds -- vedi entry['grade'] in DOC_SONNET_G_IN_
+    PRODUZIONE sez.2.A), altrimenti _GRADE_MAP da GRADE_DATA_PATH (percorso
+    usato dal test isolato GW3, tenuto per compatibilita' con quei dump)."""
+    g = row.get('_grade_from_counts')
+    if g:
+        return g
+    return _GRADE_MAP.get(row['slug'])
+
+
+def _apply_grade_group(rows):
+    """Annota su ogni row _grade/_grade_num/atteso_combinato. Se GRADE_ENABLED
+    e' True, sovrascrive anche 'atteso' e 'sort_score' con atteso_combinato
+    (cio' che _sort_ordinamento e il knapsack leggono). Se nessuna riga ha
+    grade (ne' da counts ne' da _GRADE_MAP), ogni riga ha _grade=None ->
+    z_grade=0 -> atteso invariato: fallback esplicito, gia' previsto dalla
+    formula."""
+    if not rows:
+        return
+    vals = [r['atteso'] for r in rows if r.get('atteso') is not None]
+    if len(vals) < 2:
+        for r in rows:
+            r['_grade'] = _grade_per_riga(r)
+            r['atteso_cal'] = r.get('atteso')
+            r['atteso_combinato'] = r.get('atteso')
+        return
+    m = sum(vals) / len(vals)
+    sd = (sum((v - m) ** 2 for v in vals) / len(vals)) ** 0.5
+    grade_members = []
+    for r in rows:
+        g = _grade_per_riga(r)
+        gn = GRADE_NUM.get(g) if g else None
+        r['_grade'] = g
+        r['_grade_num'] = gn
+        if gn is not None:
+            grade_members.append(gn)
+    if len(grade_members) >= 2:
+        gm = sum(grade_members) / len(grade_members)
+        gsd = (sum((v - gm) ** 2 for v in grade_members) / len(grade_members)) ** 0.5
+    else:
+        gsd = 0.0
+    for r in rows:
+        gn = r.get('_grade_num')
+        z = (gn - gm) / gsd if (gn is not None and gsd > 0) else 0.0
+        r['atteso_cal'] = r['atteso']
+        r['atteso_combinato'] = r['atteso'] + sd * z
+        if GRADE_ENABLED:
+            r['atteso'] = r['atteso_combinato']
+            if r.get('sort_score') is not None:
+                r['sort_score'] = r['atteso_combinato']
+
+
 # Punteggio atteso oltre il quale l'ingresso si ripaga, misurato su 673 arene
 # reali (consiglio_arena.py). Sotto questa riga si pagano piu' essenze di
 # quante se ne incassino, e le carte rendono di piu' in una competizione senza
@@ -857,6 +932,14 @@ def load_league_role_data():
                 odds = (counts.get(row['slug']) or {}).get('starter_odds')
                 if odds is not None:
                     row['starter_odds'] = odds
+                grade = (counts.get(row['slug']) or {}).get('grade')
+                if grade:
+                    row['_grade_from_counts'] = grade
+            # Grade (test isolato, sez. sopra): gruppo = (league, role) = questo
+            # stesso 'rows', DOPO calibra_riga (agisce sul valore calibrato) e
+            # DOPO starter_odds (non serve starter_odds per il grade, ma cosi'
+            # la riga e' completa prima di qualunque uso a valle).
+            _apply_grade_group(rows)
             names.update(bff.load_player_names(DISCOVERY_DIRS[league][role]))
             print(f"[{league}/{role}] {path or 'NESSUN FILE TROVATO'} -> {len(rows)} giocatori")
             role_data[league][role] = rows
@@ -1718,6 +1801,45 @@ def main():
     print(f"\nFormazioni generate: {total_generated}/{num_totale}")
     if total_generated > 1:
         print(f"TOTALE COMPLESSIVO: {grand_total:.1f} pt")
+
+    # DUMP_JSON (test isolato grade, branch test-grade-g-gw3, 07/08/2026):
+    # se impostata, scrive un JSON ispezionabile delle formazioni PRIMARIE
+    # (non 'extra', cioe' esattamente le richieste esplicite via env: le
+    # ARENE_EFFICIENTI + le IN_SEASON/ALLSTARS primarie) con, per ogni riga,
+    # atteso_cal (A) / _grade / atteso_combinato (G) / se e' nella formazione.
+    # Non tocca il comportamento di default (var non impostata -> non scrive
+    # nulla, nessun costo).
+    _dump_path = os.environ.get('DUMP_JSON', '')
+    if _dump_path:
+        dump = []
+        for r in all_results:
+            if r.get('extra') or 'error' in r:
+                continue
+            _cap_slot, _cap_row, _cap_tipo = (None, None, None)
+            try:
+                _cap_slot, _cap_row, _cap_tipo = bff.pick_captain(r['formazione'])
+            except Exception:
+                pass
+            righe = []
+            for _slot, row, _t in r['formazione']:
+                righe.append({
+                    'slug': row.get('slug'), 'role_key': row.get('role_key'),
+                    'league': row.get('league'), 'atteso_cal': row.get('atteso_cal', row.get('atteso')),
+                    'grade': row.get('_grade'), 'atteso_combinato': row.get('atteso_combinato', row.get('atteso')),
+                    'atteso_usato': row.get('atteso'), 'starter_odds': row.get('starter_odds'),
+                    'capitano': (_cap_row is not None and row.get('slug') == _cap_row.get('slug')
+                                 and row.get('role_key') == _cap_row.get('role_key')),
+                })
+            dump.append({
+                'tipo': r['tipo'], 'idx': r.get('idx'), 'label': r.get('label'),
+                'atteso_totale_con_capitano': _atteso_con_capitano(r),
+                'righe': righe,
+            })
+        with open(_dump_path, 'w', encoding='utf-8') as _fh:
+            json.dump({'grade_enabled': GRADE_ENABLED, 'grade_data_path': GRADE_DATA_PATH,
+                       'n_grade_map': len(_GRADE_MAP), 'formazioni': dump},
+                      _fh, ensure_ascii=False, indent=2)
+        print(f"\nDUMP_JSON scritto: {_dump_path} ({len(dump)} formazioni primarie)")
 
     _stampa_verdetto_arene(all_results)
 

@@ -60,6 +60,149 @@ _RUN_TS = None
 # del volume totale.
 ODDS_L10_SLEEP = float(os.environ.get('ODDS_L10_SLEEP', '0.7'))
 
+# --- GRADE G (07/08/2026, DOC_SONNET_G_IN_PRODUZIONE, TAPPA 1) ------------
+# projection.grade (A..F) per la GW CORRENTE APERTA, DOPO il filtro starter-
+# odds (design gia' deciso con l'utente: si chiede solo per chi potrebbe
+# davvero entrare in formazione). Fonte VERIFICATA in analisi_manager/
+# grade_snapshot.py: query FootballComposeBenchQuery, campo
+# myFilteredBench(...).eligiblePlayerGameScores(...).projection.grade, sulla
+# leaderboard della GW aperta -- NON recuperabile a ritroso (leaderboard
+# chiusa torna 0 nodi).
+#
+# TRE leaderboard bulk (stessa formula del test isolato GW3, che ha dato
+# 93% di copertura sul pool completo, quasi uniforme): il pool "all_star"
+# (arena + non-arena) copre di fatto QUALSIASI lega perche' l'Arena/i All
+# Stars accettano carte di qualunque nazionalita'; korea in_season copre la
+# competizione dedicata K League. Rarity assunta 'limited' (quella
+# osservata nel mazzo dell'utente nel test GW3) -- NON generalizzato ad
+# altre rarity, limite noto, vedi report.
+#
+# PAGINAZIONE OBBLIGATORIA (bug reale trovato dall'utente 07/08 nel test
+# isolato): il server la CAPPA A 50 nodi/pagina indipendentemente dal
+# pageSize richiesto (hasNextPage=True anche con pageSize=300). Senza
+# paginare si prendono solo i "50 piu' popolari" per ruolo per leaderboard
+# -> copertura crollata al 32.5% invece del 93% reale. Va SEMPRE paginato
+# fino a hasNextPage=False.
+GRADE_NUM = {'A': 6, 'B': 5, 'C': 4, 'D': 3, 'E': 2, 'F': 1}
+FETCH_GRADE = os.environ.get('FETCH_GRADE', '1') == '1'
+SORARE_CSRF = os.environ.get('SORARE_CSRF', '')
+GRADE_BENCH_QUERY = """
+query FootballComposeBenchQuery($so5LeaderboardSlug: String!, $filters: BenchFilterInput!, $pageSize: Int, $after: String) {
+  so5 {
+    so5Leaderboard(slug: $so5LeaderboardSlug) {
+      myFilteredBench(filters: $filters, first: $pageSize, after: $after) {
+        nodes {
+          __typename
+          ... on ComposeTeamBenchCard {
+            anyPlayer { slug }
+            eligiblePlayerGameScores(so5LeaderboardSlug: $so5LeaderboardSlug) {
+              projection { grade }
+            }
+          }
+        }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  }
+}
+"""
+
+
+def _grade_bench_page(so5_slug, position, after):
+    variables = {
+        "filters": {
+            "query": "", "rarities": [], "includeUsed": True, "includeNoGame": False,
+            "inSeasonEligible": False, "includeUnavailablePlayers": True,
+            "lastTenPlayedSo5AverageScore": {"max": 100}, "positions": [position],
+            "selectedObjectIds": [], "sortType": {"type": "POPULAR_STARTERS", "direction": "DESC"},
+            "teamMode": "ALL"
+        },
+        "pageSize": 50, "so5LeaderboardSlug": so5_slug, "after": after,
+    }
+    headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+    if base.COOKIES:
+        headers['Cookie'] = base.COOKIES
+    if SORARE_CSRF:
+        headers['X-CSRF-Token'] = SORARE_CSRF
+    backoff = 1.0
+    for attempt in range(4):
+        try:
+            r = base._http_session.post(base.GRAPHQL_URL,
+                                        json={'query': GRADE_BENCH_QUERY, 'variables': variables},
+                                        headers=headers, timeout=20)
+            if r.status_code == 429:
+                time.sleep(backoff)
+                backoff *= 2
+                continue
+            d = r.json()
+        except Exception as e:
+            log(f"  [grade] eccezione {so5_slug}/{position}: {e}")
+            time.sleep(backoff)
+            backoff *= 2
+            continue
+        if d.get('errors'):
+            log(f"  [grade] GraphQL errors {so5_slug}/{position}: {str(d['errors'])[:200]}")
+            return [], False
+        lb = ((d.get('data') or {}).get('so5') or {}).get('so5Leaderboard')
+        if not lb:
+            return [], False
+        b = (lb.get('myFilteredBench') or {})
+        nodes = b.get('nodes') or []
+        pinfo = b.get('pageInfo') or {}
+        return nodes, pinfo.get('hasNextPage'), pinfo.get('endCursor')
+    return [], False, None
+
+
+def fetch_grade_live(fixture_slug):
+    """Grade (A..F) per slug giocatore, sulla GW aperta 'fixture_slug'.
+    Ritorna (grade_map, copertura_per_leaderboard) -- copertura_per_leaderboard
+    e' {leaderboard_slug: n_nodi_bench} per far vedere se una leaderboard e'
+    tornata vuota (leaderboard chiusa/slug sbagliato -> possibile GW gia'
+    chiusa, da NON ignorare in silenzio)."""
+    if not FETCH_GRADE:
+        log("[grade] FETCH_GRADE=0, salto il fetch (G restera' in fallback z=0).")
+        return {}, {}
+    if not SORARE_CSRF:
+        log("[grade] SORARE_CSRF assente: la query bench potrebbe fallire o "
+            "tornare vuota senza CSRF. Procedo comunque, verifica copertura.")
+    leaderboards = [
+        f'{fixture_slug}-seasonal-all_star-all_seasons_all_star_arena_limited',
+        f'{fixture_slug}-seasonal-all_star-all_seasons_all_star_limited',
+        f'{fixture_slug}-seasonal-korea-in_season_korea_limited_pvp',
+    ]
+    grade_map = {}
+    copertura = {}
+    for lb_slug in leaderboards:
+        n_totale = 0
+        for pos in ('Goalkeeper', 'Defender', 'Midfielder', 'Forward'):
+            after = None
+            while True:
+                nodes, has_next, *rest = _grade_bench_page(lb_slug, pos, after)
+                n_totale += len(nodes)
+                for n in nodes:
+                    pslug = (n.get('anyPlayer') or {}).get('slug')
+                    if not pslug:
+                        continue
+                    for sc in n.get('eligiblePlayerGameScores') or []:
+                        g = (sc.get('projection') or {}).get('grade')
+                        if g and pslug not in grade_map:
+                            grade_map[pslug] = g
+                if not has_next:
+                    break
+                after = rest[0] if rest else None
+                if after is None:
+                    break
+                time.sleep(0.2)
+        copertura[lb_slug] = n_totale
+        log(f"[grade] {lb_slug}: {n_totale} nodi bench")
+        if n_totale == 0:
+            log(f"[grade] ATTENZIONE: {lb_slug} torna 0 nodi -- la GW potrebbe "
+                f"essere gia' chiusa o lo slug leaderboard e' sbagliato. NON "
+                f"fermo la discovery (le odds restano valide), ma il grade da "
+                f"questa leaderboard sara' assente per tutti.")
+    log(f"[grade] TOTALE slug distinti con grade: {len(grade_map)}")
+    return grade_map, copertura
+
 ROLE_BY_POSITION = {'Goalkeeper': 'gk', 'Defender': 'def',
                     'Midfielder': 'mid', 'Forward': 'fwd'}
 
@@ -867,6 +1010,35 @@ def main():
     log(f"\nGiocatori eleggibili esaminati: {tot_carte} | esclusi: "
         f"{esclusi_finestra} senza partita nella giornata, {esclusi_odds} "
         f"sotto soglia o senza odds (soglia {MIN_ODDS:.0%})")
+
+    # GRADE G (TAPPA 1, DOC_SONNET_G_IN_PRODUZIONE): fetch UNA volta per tutta
+    # la run, DOPO il filtro odds (counts_per_lega_ruolo contiene gia' solo i
+    # kept_slugs). Scritto nella stessa entry di starter_odds, letto da
+    # build_formazione_globale.py via counts.get(slug)['grade'].
+    grade_map, grade_copertura = fetch_grade_live(fx.get('slug'))
+    n_entry_tot = 0
+    n_entry_grade = 0
+    copertura_per_lega_ruolo = {}
+    for lega, ruoli in counts_per_lega_ruolo.items():
+        for role, slugs_dict in ruoli.items():
+            n_g = 0
+            for slug, entry in slugs_dict.items():
+                n_entry_tot += 1
+                g = grade_map.get(slug)
+                if g:
+                    entry['grade'] = g
+                    n_entry_grade += 1
+                    n_g += 1
+            if slugs_dict:
+                copertura_per_lega_ruolo[(lega, role)] = (n_g, len(slugs_dict))
+    if n_entry_tot:
+        log(f"[grade] copertura sui kept_slugs (post filtro odds): "
+            f"{n_entry_grade}/{n_entry_tot} ({100*n_entry_grade/n_entry_tot:.1f}%)")
+        for (lega, role), (n_g, n_tot) in sorted(copertura_per_lega_ruolo.items()):
+            if n_g == 0 and n_tot > 0:
+                log(f"[grade] ATTENZIONE: {lega}/{role} ha {n_tot} kept_slugs "
+                    f"ma ZERO con grade -- questa lega/ruolo girera' G in "
+                    f"fallback (z_grade=0, identico ad A) per questa GW.")
 
     scritti = {}
     for lega, ruoli in sorted(per_lega_ruolo.items()):

@@ -34,22 +34,24 @@ A2. [CHIUSO] 59 CARTE __unknown__. Causa = dato mancante alla FONTE Sorare,
 ===============================================================================
 B. PRODUZIONE (la decisione grossa)
 ===============================================================================
-B1. [DECISO] OGGI schierare con modello ATTUALE (A) + condotta "dai retta al
-    consiglio SCHIERA/NON SCHIERA del tool". Validato: premio-vero +14.300
-    essenze su 539 arene (crowss+16 manager+satonio), positivo su 3 gruppi
-    indipendenti. Zero codice, zero rischio, nessuna catena da validare.
-    Copre la giornata di oggi.
+B1. [SUPERATO 07/08 sera] "+14.300 essenze su 539 arene" era una lettura
+    sbagliata (colonna "utente reale", non del modello A) -- vedi B2 per il
+    numero corretto e la rettifica.
 
-B2. [DECISO/DA FARE] GRADE (variante G) IN PRODUZIONE, con la CATENA COMPLETA.
-    Vale di piu' (premio-vero +18.900 vs +14.300 di A, cioe' +4.600), ma
-    modifica lo score_atteso -> catena obbligatoria di CLAUDE.md:
-      valori di produzione -> soglie arena (PAREGGIO_ARENA/GUADAGNO_PER_PUNTO)
-      -> scouting (Ess/GW, EUR/EssGW).
-    Sessione dedicata, DOPO odds+4ruoli (se le odds risultano usabili anche
-    solo nello scouting, entrano nella STESSA catena: conviene saperlo prima).
-    CAUTELA onesta: il vantaggio di G NON e' uniforme -- viene da crowss(te)
-    e satonio; sui 16 manager nuovi A pareggia/supera G (A+3.600 vs G+3.100).
-    G aiuta i mazzi forti, meno i mediocri (ipotesi, da tenere presente).
+B2. [FATTO 07/08 sera] GRADE (variante G) PORTATO IN PRODUZIONE (catena
+    validata: SIGMA A vs G non si muove -> soglie/scouting invariati,
+    dimostrato; A/A passato; fetch grade automatica integrata in
+    discovery_fixture.py). GRADE_ENABLED default '1' in
+    build_formazione_globale.py, rollback a GRADE_ENABLED=0 se serve.
+    NUMERO CORRETTO (il "+18.900 vs +14.300" era una trascrizione errata,
+    18.900 era la colonna "utente reale" non "G" -- rettificato in
+    HANDOFF_ORCHESTRATORE_2026-08-07_SERA sez.3): dopo il fix del join
+    grade storico (data esatta -> finestra, copertura crowss 4.6%->77.4%,
+    manager 20%->100%), il dato vero e' punteggio medio realizzato
+    crowss A=273.1->G=275.9, 16-manager gruppo A A=226.0->G=234.1. Segno
+    positivo su entrambi, ma gli IC bootstrap NON escludono zero -- deciso
+    sul rischio, non su un verdetto statisticamente pulito. Dettagli in
+    docs/handoff/BRIEF_SONNET_CATENA_G_2026-08-07.txt (esiti 1 e 2).
 
 ===============================================================================
 C. FILONI RIAPERTI (erano chiusi da backtest contaminati dal bug D6)
