@@ -1061,3 +1061,34 @@ ai 4 gia' noti. Il quarto (p11_calib_fwd_confronto.py) e' ora fixato.
 Interruttore confermato vivo per tutti e 4 i ruoli. Griglia 4.1 confermata
 pulita per costruzione. Si procede a FASE 2 (griglia pulita, rilancio in
 corso in background) e al rilancio del fix FWD.
+
+RILANCIO p11_calib_fwd_confronto.py DOPO IL FIX -- ESITO:
+  49 mazzi processati (3 muti, overlap>=4.5/5), 46 utili, 6826 arene, 305
+  cluster (manager,gw). n_reale_fallback_raw = 8549 (carte con reale preso
+  dal grezzo del file manager perche' non trovate in cache -- fetta
+  rilevante, coerente con la soglia 10-15% gia' segnalata in sez.8).
+
+  LETTURA 1 (segno su 46 mazzi utili): FWD sale in 41, scende in 3,
+  invariato in 2. p-value(segno) = 0.0000. Nettamente concorde.
+  LETTURA 2 (composizione media pesata per arena, n=6826): FWD A=1.061
+  R=1.230 (+0.168); a compensare scendono DEF (1.480->1.430, -0.050) e MID
+  (1.459->1.341, -0.118); GK invariato.
+  LETTURA 3 (delta punti pesato per arena, bootstrap cluster manager+gw):
+    delta = +1.087  IC95 [+0.398, +1.759]  -- ESCLUDE ZERO.
+
+CONFRONTO CON IL VERDETTO VECCHIO (contaminato, citato in sez.8):
+  vecchio: +1.250  IC95 [+0.392, +2.126]  (37 mazzi, dato gonfiato)
+  nuovo :  +1.087  IC95 [+0.398, +1.759]  (46 mazzi, pulito)
+A DIFFERENZA DEL DEF (dove il fix D6 aveva CAPOVOLTO il segno, sez.7), qui
+il fix NON capovolge nulla: il segno resta positivo, il centro si sposta
+di poco (-0.16 pt) e l'IC95 resta stretto ed esclude zero in entrambe le
+versioni. La calibrazione FWD refit (R) regge anche sui dati puliti, con
+campione piu' grande (46 vs 37 mazzi) e piu' arene.
+
+LETTURA ONESTA: e' l'unico dei quattro filoni toccati dal bug D6 il cui
+verdetto positivo SOPRAVVIVE al fix quasi inalterato. Non e' pero' lo
+stesso segnale di favorito_odds -- questo test confronta due CALIBRAZIONI
+del ruolo FWD (produzione 8.40/0.789 vs refit OLS -11.06/1.172), non
+favorito_odds_k. Resta un filone distinto, gia' cosi' nel brief originale
+(non e' materia di FASE 2/3 di questo brief, che riguardano favorito_odds
+propriamente detto). Segnalato qui solo perche' il fix D6 lo tocca.
