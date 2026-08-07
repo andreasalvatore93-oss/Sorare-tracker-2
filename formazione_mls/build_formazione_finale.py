@@ -2193,15 +2193,26 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
     }}
   }}
   document.addEventListener('click', function (ev) {{
-    var el = ev.target.closest('.pcard-name');
-    if (!el) return;
+    // Si copia cliccando il CERCHIO con le iniziali oppure il nome (07/08,
+    // richiesta utente): il cerchio e' molto piu' grande e piu' facile da
+    // centrare quando si compongono decine di formazioni. Restano validi
+    // entrambi, cosi' chi e' abituato al nome non perde niente.
+    if (!ev.target || !ev.target.closest) return;
+    var punto = ev.target.closest('.pcard-avatar, .pcard-name');
+    if (!punto) return;
     ev.preventDefault(); ev.stopPropagation();
-    var card = el.closest('[data-name]') || el.closest('[data-slug]');
+    var card = punto.closest('[data-name]') || punto.closest('[data-slug]')
+               || punto.closest('.pcard');
+    // Il messaggio ('copiato!'/'copia non riuscita') va SEMPRE sul nome, mai
+    // sul cerchio: li' dentro ci stanno due lettere e non si leggerebbe.
+    var el = (card && card.querySelector('.pcard-name')) || punto;
     var testo = (card && (card.dataset.name || card.dataset.slug)) || el.textContent;
     copia(testo.trim(), el);
   }}, true);
   var st = document.createElement('style');
-  st.textContent = '.pcard-name{{cursor:copy}} .pcard-name:hover{{text-decoration:underline dotted}}';
+  st.textContent = '.pcard-name{{cursor:copy}} .pcard-name:hover{{text-decoration:underline dotted}}'
+                 + '.pcard-avatar{{cursor:copy}}'
+                 + '.pcard-avatar:hover{{outline:2px solid currentColor;outline-offset:2px}}';
   document.head.appendChild(st);
 }})();
 </script>

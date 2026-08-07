@@ -47,10 +47,25 @@ def main():
     odds = df.odds_per_giornata(fixture_slug) or {}
     grade_map, copertura = df.fetch_grade_live(fixture_slug)
 
+    # CARTE GIA' IMPEGNATE IN FORMAZIONI BLOCCATE (solo con ESCLUDI_LOCKATE=1).
+    # Raccolte qui una volta sola e passate agli shard con l'artifact. Se la
+    # lettura fallisce il job FALLISCE: e' una richiesta esplicita di tutela,
+    # e una tutela che si spegne da sola in silenzio non tutela niente.
+    carte_bloccate = None
+    if df.ESCLUDI_LOCKATE:
+        carte, det = df.carte_bloccate_live(fixture_slug)
+        carte_bloccate = sorted(carte)
+        print(f"[pool] formazioni BLOCCATE: {det['bloccate']} -> "
+              f"{len(carte_bloccate)} carte escluse dal pool. "
+              f"Formazioni ancora modificabili: {det['modificabili']} "
+              f"(le loro carte restano disponibili).")
+
+    dati = {'fixture': fixture_slug, 'odds': odds,
+            'copertura': copertura, 'grade_map': grade_map}
+    if carte_bloccate is not None:
+        dati['carte_bloccate'] = carte_bloccate
     with open(OUT, 'w', encoding='utf-8') as f:
-        json.dump({'fixture': fixture_slug, 'odds': odds,
-                   'copertura': copertura, 'grade_map': grade_map},
-                  f, ensure_ascii=False, sort_keys=True)
+        json.dump(dati, f, ensure_ascii=False, sort_keys=True)
 
     dist = {}
     for g in grade_map.values():

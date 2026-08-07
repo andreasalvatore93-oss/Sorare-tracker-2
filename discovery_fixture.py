@@ -186,6 +186,99 @@ query FootballComposeBenchQuery($so5LeaderboardSlug: String!, $filters: BenchFil
 """
 
 
+ESCLUDI_LOCKATE = os.environ.get('ESCLUDI_LOCKATE', '0') == '1'
+
+# LE MIE FORMAZIONI GIA' SCHIERATE (07/08/2026, richiesta dell'utente).
+# Problema reale: rilanciando il generatore a giornata iniziata, lui ripescava
+# carte gia' impegnate in formazioni BLOCCATE, e quelle formazioni non si
+# riuscivano piu' a schierare.
+#
+# Schema scoperto sondando i messaggi d'errore (l'introspezione e' disabilitata):
+#  - il contender e' l'iscrizione a una leaderboard; il suo so5Lineup contiene
+#    le so5Appearances, e ogni apparizione porta anyCard.slug -> lo slug della
+#    CARTA, non del giocatore. Serve esattamente quello: il vincolo Sorare e'
+#    una carta = un uso per giornata, quindi chi possiede 3 carte dello stesso
+#    giocatore e ne blocca una puo' ancora schierare le altre due. Escludere
+#    per giocatore toglierebbe carte ancora usabili.
+#  - canEdit distingue BLOCCATA da modificabile, ed e' lo stesso stato che sul
+#    sito mostra o nasconde i tasti "Modifica formazione"/"Cancella squadra".
+#    SOLO le canEdit=false vanno escluse: una formazione inviata ma ancora
+#    modificabile NON blocca le sue carte (decisione dell'utente).
+#
+# Verificato sui dati veri della GW3, e i conti tornano a quelli che l'utente
+# vedeva a schermo: 4 All Stars da 7 + 4 Under 23 da 7 + 3 arene = 11
+# formazioni bloccate, 71 carte; 5 K League modificabili, 25 carte, lasciate
+# disponibili. Zero carte in entrambi gli insiemi.
+#
+# groupType validi (ricavati facendo fallire apposta un valore inventato):
+# RARITY, COMPETITION, ARENA, COMPETITION_WITH_ARENA, ARENA_CLASSIC,
+# ARENA_IN_SEASON. Se ne leggono piu' d'uno deduplicando per slug del
+# contender: COMPETITION_WITH_ARENA da solo bastava sulla GW3, ma se Sorare
+# sposta un gruppo non lo voglio perdere in silenzio.
+LINEUP_MIEI_QUERY = """
+query MieFormazioni($fixture: String!, $groupType: So5LeaderboardGroupType!) {
+  so5 {
+    so5Fixture(slug: $fixture) {
+      so5LeaderboardGroups(groupType: $groupType) {
+        displayName
+        mySo5LeaderboardContenders {
+          slug
+          so5Lineup {
+            canEdit
+            so5Appearances { anyCard { slug } }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+_GRUPPI_LINEUP = ('COMPETITION_WITH_ARENA', 'ARENA_CLASSIC', 'ARENA_IN_SEASON')
+
+
+def carte_bloccate_live(fixture_slug):
+    """Slug delle CARTE impegnate in formazioni BLOCCATE della giornata.
+
+    Ritorna (set_di_slug_carta, dettaglio_per_il_log).
+    SOLLEVA un'eccezione se la query fallisce, invece di tornare un insieme
+    vuoto: 'non ci sono formazioni bloccate' e 'non sono riuscito a leggerle'
+    devono restare distinguibili. Confonderli e' esattamente l'errore che il
+    07/08 e' costato una giornata."""
+    visti_contender = set()
+    carte = set()
+    n_bloccate = n_modificabili = 0
+    for gt in _GRUPPI_LINEUP:
+        r = _grade_http().post(
+            base.GRAPHQL_URL,
+            json={'query': LINEUP_MIEI_QUERY,
+                  'variables': {'fixture': fixture_slug, 'groupType': gt},
+                  'operationName': 'MieFormazioni'},
+            headers=_headers_client_web(), timeout=30)
+        d = r.json()
+        if d.get('errors'):
+            raise RuntimeError(f"formazioni schierate ({gt}): {str(d['errors'])[:200]}")
+        gruppi = (((d.get('data') or {}).get('so5') or {})
+                  .get('so5Fixture') or {}).get('so5LeaderboardGroups') or []
+        for g in gruppi:
+            for c in (g.get('mySo5LeaderboardContenders') or []):
+                if c.get('slug') in visti_contender:
+                    continue
+                visti_contender.add(c.get('slug'))
+                lineup = c.get('so5Lineup') or {}
+                if not lineup:
+                    continue
+                if lineup.get('canEdit'):
+                    n_modificabili += 1   # ancora modificabile = carte LIBERE
+                    continue
+                n_bloccate += 1
+                for a in (lineup.get('so5Appearances') or []):
+                    cs = (a.get('anyCard') or {}).get('slug')
+                    if cs:
+                        carte.add(cs)
+    return carte, {'bloccate': n_bloccate, 'modificabili': n_modificabili}
+
+
 def _grade_bench_page(so5_slug, position, after):
     variables = {
         "filters": {
@@ -1019,6 +1112,41 @@ def main():
     esclusi_finestra = 0
     tot_carte = 0
 
+    # CARTE GIA' BLOCCATE IN ALTRE FORMAZIONI (ESCLUDI_LOCKATE=1).
+    # Si legge una volta sola per processo, prima del ciclo sui ruoli. Se la
+    # lettura fallisce la run si FERMA: proseguire come se non ci fossero
+    # formazioni bloccate rimetterebbe l'utente esattamente nel problema che
+    # questa funzione deve evitare, e in silenzio.
+    _carte_bloccate = set()
+    n_carte_saltate = [0]
+    if ESCLUDI_LOCKATE:
+        p = 'pool_gw.json'
+        letto_da_artifact = False
+        if os.path.exists(p):
+            try:
+                with open(p, encoding='utf-8') as f:
+                    _d = json.load(f)
+                if _d.get('fixture') == fx.get('slug') and _d.get('carte_bloccate') is not None:
+                    _carte_bloccate = set(_d['carte_bloccate'])
+                    letto_da_artifact = True
+                    log(f"[lockate] da artifact {p}: {len(_carte_bloccate)} carte "
+                        f"gia' impegnate in formazioni BLOCCATE, le escludo dal pool.")
+            except Exception as e:
+                log(f"[lockate] {p} illeggibile ({e}), interrogo Sorare.")
+        if not letto_da_artifact:
+            _carte_bloccate, _det = carte_bloccate_live(fx.get('slug'))
+            log(f"[lockate] {_det['bloccate']} formazioni BLOCCATE -> "
+                f"{len(_carte_bloccate)} carte escluse dal pool; "
+                f"{_det['modificabili']} formazioni ancora modificabili, "
+                f"le loro carte restano DISPONIBILI.")
+        if not _carte_bloccate:
+            log("[lockate] ATTENZIONE: nessuna carta bloccata trovata. Se avevi "
+                "gia' schierato formazioni non modificabili, questo e' un "
+                "difetto, non una buona notizia: controlla prima di fidarti.")
+    else:
+        log("[lockate] ESCLUDI_LOCKATE=0: le carte gia' schierate in formazioni "
+            "bloccate NON vengono escluse (comportamento storico).")
+
     for position, role in ROLE_BY_POSITION.items():
         visti = set()
         l10_di = {}   # slug -> L10, arriva gratis dalla CARDS_QUERY
@@ -1076,6 +1204,15 @@ def main():
                 p = h.get('anyPlayer') or {}
                 club = p.get('activeClub') or {}
                 if not p.get('slug'):
+                    continue
+                # CARTA gia' impegnata in una formazione BLOCCATA: si salta
+                # QUESTA carta, non il giocatore. Se ne possiede altre copie
+                # libere, quelle continuano a contare normalmente qui sotto
+                # (copie_di) e restano schierabili; se erano tutte bloccate il
+                # giocatore non entra mai in 'visti' e sparisce dal pool, che
+                # e' il comportamento voluto. Attivo solo con ESCLUDI_LOCKATE=1.
+                if _carte_bloccate and h.get('slug') in _carte_bloccate:
+                    n_carte_saltate[0] += 1
                     continue
                 # PRE-FILTRO decisivo: se il club non gioca in questa giornata,
                 # non serve nemmeno chiedere le starter odds. E' questo che
@@ -1265,6 +1402,10 @@ def main():
     log(f"\nGiocatori eleggibili esaminati: {tot_carte} | esclusi: "
         f"{esclusi_finestra} senza partita nella giornata, {esclusi_odds} "
         f"sotto soglia o senza odds (soglia {MIN_ODDS:.0%})")
+    if ESCLUDI_LOCKATE:
+        log(f"[lockate] carte SALTATE perche' gia' in formazioni bloccate: "
+            f"{n_carte_saltate[0]} (su {len(_carte_bloccate)} note; le altre "
+            f"sono di ruoli/leghe non processati da questo job)")
 
     # GRADE G (TAPPA 1, DOC_SONNET_G_IN_PRODUZIONE): fetch UNA volta per tutta
     # la run, DOPO il filtro odds (counts_per_lega_ruolo contiene gia' solo i
