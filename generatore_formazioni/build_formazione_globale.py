@@ -1521,6 +1521,20 @@ FLAG_SCHIERATE_SNIPPET = r"""
     box-shadow: 0 0 0 4px rgba(47, 191, 106, 0.28);
   }
   .lineup-block[data-schierata="1"] { outline: 2px solid #2fbf6a; outline-offset: 3px; }
+  /* COLLASSO (08/08, richiesta esplicita utente: "falla proprio sparire, cosi'
+     non la vedo piu' e non mi confondo"). Segnata come schierata, la
+     formazione si richiude e resta solo il titolo con un tasto per
+     riaprirla. Lo stato "riaperta" NON e' persistito di proposito: alla
+     riapertura del file le schierate tornano chiuse, che e' lo scopo. */
+  .lineup-block[data-schierata="1"] { padding-bottom: 4px; }
+  .btn-riapri {
+    display: none; margin-left: 12px; cursor: pointer; user-select: none;
+    font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em;
+    padding: 3px 10px; border-radius: 999px; vertical-align: middle;
+    border: 1px solid #2fbf6a; color: #2fbf6a; background: rgba(47,191,106,0.12);
+  }
+  .btn-riapri:hover { background: rgba(47,191,106,0.24); }
+  .lineup-block[data-schierata="1"] .btn-riapri { display: inline-block; }
 </style>
 <script>
 (function () {
@@ -1548,20 +1562,46 @@ FLAG_SCHIERATE_SNIPPET = r"""
     flag.appendChild(box);
     flag.appendChild(testo);
 
+    // Tasto per riaprire una formazione richiusa. Vive DENTRO il titolo,
+    // l'unica parte che resta visibile quando il blocco e' collassato.
+    var riapri = document.createElement('span');
+    riapri.className = 'btn-riapri';
+    var aperta = false;   // non persistito: si riparte sempre da chiusa
+
+    // Il contenuto da nascondere sono tutti i figli diretti del blocco TRANNE
+    // quello che contiene il titolo. Si ricava risalendo dal titolo invece di
+    // elencare classi a mano: se un domani il template cambia struttura,
+    // questo continua a funzionare.
+    var ramoTitolo = titolo;
+    while (ramoTitolo && ramoTitolo.parentNode !== block) { ramoTitolo = ramoTitolo.parentNode; }
+
     function applica() {
       var on = stato[id] ? '1' : '0';
       flag.setAttribute('data-on', on);
       block.setAttribute('data-schierata', on);
+      var chiudi = !!stato[id] && !aperta;
+      Array.prototype.forEach.call(block.children, function (ch) {
+        if (ch !== ramoTitolo) { ch.style.display = chiudi ? 'none' : ''; }
+      });
+      riapri.textContent = aperta ? 'richiudi' : 'clicca per riaprire';
     }
     flag.addEventListener('click', function (ev) {
       ev.stopPropagation();
       stato[id] = !stato[id];
       if (!stato[id]) { delete stato[id]; }
+      aperta = false;   // rimarcandola da schierare si riparte da chiusa
       salva();
+      applica();
+    });
+    riapri.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      ev.preventDefault();
+      aperta = !aperta;
       applica();
     });
     applica();
     titolo.appendChild(flag);
+    titolo.appendChild(riapri);
   });
 })();
 </script>
@@ -2081,7 +2121,11 @@ def main():
                     f"Filtro qualita' L5/L10/L40 disattivato (28/07): ridondante con lo starter-odds.")
     verdetto_html = _verdetto_arene_html(all_results)
     if verdetto_html:
-        lineup_html_blocks.insert(0, verdetto_html)
+        # IN FONDO, non in cima (08/08, richiesta esplicita utente): e' una
+        # tabella lunga quanto il numero di arene, e in testa al report
+        # spingeva giu' le formazioni, che sono la cosa che si usa davvero.
+        # Si legge una volta per decidere se entrare, non ad ogni scorrimento.
+        lineup_html_blocks.append(verdetto_html)
     if capienza_html:
         lineup_html_blocks.insert(0, capienza_html)
     html_text = bff.render_report_html(page_title, page_subhead, lineup_html_blocks, footer_html)

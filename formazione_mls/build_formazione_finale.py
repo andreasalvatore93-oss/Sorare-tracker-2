@@ -2065,7 +2065,16 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
        - carta GIA' COPIATA: si spegne, cosi' si sa dove si era arrivati.
        - formazione GIA' SCHIERATA: si spegne tutta e si accascia in alto.
      Lo stato vive in localStorage, per giornata: un refresh non lo perde. */
-  .pcard.is-classic {{ border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset, 0 1px 2px rgba(0,0,0,0.2); }}
+  /* CLASSIC vs IN SEASON (rimarcato 08/08, richiesta esplicita utente: la
+     scritta "classic" da sola "e' poco intuitiva"). Tre segnali insieme,
+     leggibili senza rileggere il testo: contorno dorato DOPPIO (2px invece
+     di 1), striscia dorata in cima al posto del colore ruolo (il ruolo si
+     legge comunque nel badge in alto a sinistra), e il tag pieno d'oro con
+     un rombo davanti invece che scritta scolorita su fondo grigio. */
+  .pcard.is-classic {{ border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold) inset, 0 1px 2px rgba(0,0,0,0.2); }}
+  .pcard.is-classic .pcard-stripe {{ background: var(--gold) !important; height: 5px; }}
+  .tag-classic {{ background: var(--gold); color: #241c00; font-weight: 800; }}
+  .tag-classic::before {{ content: '\\25C6'; margin-right: 3px; }}
   .tag-inseason {{ background: rgba(94,201,255,0.16); color: #5ec9ff; }}
   /* CARTA GIA' COPIATA (rivisto 08/08 su richiesta utente). Prima si spegneva
      a opacity 0.38: illeggibile, e "non mi piace, diventano bui". Ora resta
