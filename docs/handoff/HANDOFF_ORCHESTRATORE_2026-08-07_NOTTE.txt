@@ -337,6 +337,32 @@ moon-hwan-kim 3->2 restano nel pool con una copia in meno -- la prova che si
 scala la CARTA e non si butta il giocatore.
 
 ===============================================================================
+5sexies. BACKLOG APERTO: RIVALIDARE LE SOGLIE ARENA (cap 220 sospetta)
+===============================================================================
+Osservazione dell'utente (07/08): chiedendo 30 arene ne escono 29 cap 260 e 1
+uncapped, ZERO cap 220. Gli sembra impossibile che non esista una sola
+configurazione conveniente a cap 220.
+
+VERIFICATO che l'ALGORITMO fa il suo lavoro: prova tutti e tre i tipi a ogni
+passo e tiene il migliore per essenze. Resa misurata allo STESSO passo (il
+confronto va fatto li', non fra pool diversi -- ci ero cascato):
+      passo  1: cap260 384 | cap220 239 | uncapped 292
+      passo 19: cap260 118 | cap220  41 | uncapped  33
+La cap 220 non e' mai la migliore, in nessun passo. Con le soglie attuali il
+comportamento e' corretto.
+
+MA IL DUBBIO RESTA APERTO, ed e' un dubbio diverso: non "l'algoritmo sceglie
+bene date le soglie" (dimostrato) ma "le SOGLIE sono giuste?". La cap 220
+pareggia a 244.1 contro i 259.5 della cap 260: solo 15.4 punti di sconto, a
+fronte di un vincolo L10<=220 che costa ~26 punti di atteso, e con un guadagno
+per punto piu' basso (6.3 contro 7.9). Se quei numeri fossero tarati male, la
+cap 220 risulterebbe strutturalmente fuori mercato per un difetto di
+calibrazione, non perche' non conviene davvero.
+DA FARE: rivalidare PAREGGIO_ARENA e GUADAGNO_PER_PUNTO della cap 220 sulle
+arene vere in archivio, come gia' fatto il 05/08 per la cap 260 (che passo' da
+265.0/8.8 a 259.5/7.9 -- vedi VALIDAZIONE_SOGLIE.md). Non urgente.
+
+===============================================================================
 6. COSA RESTA APERTO (per il prossimo, in ordine)
 ===============================================================================
 G1. CONSOLIDARE G (il piu' importante): nessun IC esclude zero. Prossimi passi:
