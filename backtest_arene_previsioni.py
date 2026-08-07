@@ -64,6 +64,52 @@ def partita_target(cache, slug, fine_giornata, giorni_finestra=6):
     return cand[-1] if cand else None
 
 
+def diagnostica_staleness_cache(cache, slug_list, fine_giornata, giorni_finestra=6):
+    """Difetto D3 (freschezza cache game-log). partita_target() torna None se la
+    cache non contiene una partita del giocatore nella finestra della giornata;
+    i chiamanti (backtest) SCARTANO quella carta IN SILENZIO. Se la cache non e'
+    stata aggiornata dopo la GW che si sta testando, si scartano carte che in
+    produzione ci sarebbero state -> il test misura un campione mutilato senza
+    dirlo (viola CLAUDE.md D1: "mai scartare in silenzio").
+
+    Questa funzione NON modifica partita_target ne' il flusso: e' una diagnosi
+    da chiamare PRIMA di un backtest e stampare in chiaro. Dato l'elenco degli
+    slug che verranno testati e il cutoff della GW, ritorna un dict con:
+      - n_slug, n_target_trovato, n_target_mancante (tornerebbero None)
+      - slug_mancanti (lista)
+      - ultima_partita_in_cache (max data su TUTTA la cache degli slug dati)
+      - cache_piu_vecchia_della_gw (bool): True se la partita piu' recente in
+        cache e' PRECEDENTE alla fine giornata -> forte sospetto di staleness,
+        non di semplice "giocatore fermo".
+    Regola d'uso: se cache_piu_vecchia_della_gw e' True O n_target_mancante e'
+    una quota non trascurabile, FERMARSI e aggiornare la cache prima di fidarsi
+    dei numeri. Non e' Claude a decidere la soglia: si riporta il numero grezzo.
+    """
+    n_trovato = 0
+    mancanti = []
+    ultima_globale = None
+    for slug in slug_list:
+        # data piu' recente in assoluto per questo slug (serve a distinguere
+        # "cache stale" da "giocatore che non gioca da un po'")
+        for n in cache.gamelog(slug):
+            d = _data(n)
+            if d is not None and (ultima_globale is None or d > ultima_globale):
+                ultima_globale = d
+        if partita_target(cache, slug, fine_giornata, giorni_finestra) is not None:
+            n_trovato += 1
+        else:
+            mancanti.append(slug)
+    return {
+        'n_slug': len(slug_list),
+        'n_target_trovato': n_trovato,
+        'n_target_mancante': len(mancanti),
+        'slug_mancanti': mancanti,
+        'ultima_partita_in_cache': ultima_globale.isoformat() if ultima_globale else None,
+        'cache_piu_vecchia_della_gw': (
+            ultima_globale is not None and ultima_globale < fine_giornata),
+    }
+
+
 def _squadra(usable, target_competition):
     same = [n for n in usable
             if (n['anyGame'].get('competition') or {}).get('slug') == target_competition] \

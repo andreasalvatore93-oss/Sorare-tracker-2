@@ -72,12 +72,23 @@ C4. [APERTO] VERDETTI STORICI DA RIFARE perche' contaminati:
 ===============================================================================
 D. SCOPERTI IN QUESTI GIORNI, NON ANCORA IN NESSUN BRIEF
 ===============================================================================
-D1. [APERTO -- il piu' rilevante] crowss E' L'UTENTE STESSO. Scritto in
-    HANDOFF_FAVORITO_ODDS sez.5: chiunque abbia fatto un confronto "pick dei
-    manager vs nostro atteso" includendo crowss ha confrontato l'utente con
-    se stesso. Segnalato "DA VERIFICARE se ha inquinato il filone CAPITANO
-    (1332 formazioni) e lo SMART-MONEY". Mai verificato. Tocca conclusioni
-    gia' tratte su due filoni.
+D1. [CHIUSO NEGATIVO -- 07/08 sera] crowss E' L'UTENTE STESSO, ma NON ha
+    inquinato ne' il capitano ne' lo smart-money. Verificato sui GREZZI/CODICE
+    (non sui commenti):
+      - SMART-MONEY: crowss assente in tutte e 8 le GW. Fonte: tabelle "Skill
+        per manager" di analisi_manager/dati/report_*.md (dati generati).
+      - VERIFICA CAPITANO-BLOCCATO (le "1332 formazioni", p11_verifiche_out.txt):
+        crowss escluso PER COSTRUZIONE, hardcoded nel codice
+        (p11_bloccato_tutti_mazzi.py:39 ESCLUSI={'manager_crowss.json',...}).
+        Verdetto V2 su 38 mazzi senza crowss: segno 16+/22- p=0.42, delta
+        pesato +0.023 IC[-0.594,+0.772] -> nullo pulito.
+      - VERDETTO CAPITANO VERO (analisi_debolezze_capitano.md, 354 formazioni,
+        4 GW 21lug-4ago): crowss = 0 righe in TUTTE e 4 le GW. Fonte:
+        analisi_manager/dati/righe_<gw>.json (grezzi, conteggio per manager).
+    Conclusione: chi ha costruito i due filoni aveva gia' escluso crowss
+    ovunque contasse. Nessuna conclusione da rifare. L'unico posto dove crowss
+    e' nel campione (legittimo, dichiarato) e' il backtest formazione FASE 3 e
+    la decisione G, come uno dei 3 mazzi profondi.
 D2. [APERTO] 21 script in analisi_manager/ con ROOT hardcoded Windows
     (r'C:\\Users\\Andrea\\...'): girano SOLO sulla macchina dell'utente. E'
     il motivo per cui l'orchestratore e gli esecutori nel sandbox non possono
