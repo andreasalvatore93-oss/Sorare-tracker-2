@@ -1,0 +1,242 @@
+BRIEF PER SONNET -- TEST SECCO DIFFERENZIALE GRADE G SULLA GW3 (branch isolato)
+Scritto dall'orchestratore, 07/08/2026, ora di Roma.
+Destinatario: SONNET (esecutore con giudizio). Chat pulita: leggi prima i file
+indicati, non assumere nulla.
+
+Questo NON e' l'implementazione in produzione. E' un TEST d'ingresso isolato:
+se il grade non cambia le formazioni, non ha senso proseguire con la catena.
+Branch dedicato, main (= produzione reale) NON si tocca e NON si fa merge.
+
+===============================================================================
+0. LEGGI PRIMA, IN QUEST'ORDINE
+===============================================================================
+1. CLAUDE.md (radice), TUTTO. In particolare: divieto allucinazioni; "prima di
+   misurare l'effetto di un componente, dimostro che l'interruttore funziona";
+   difetti D4 (punteggio col bonus dentro) e D7 (ruolo = proprieta' della
+   carta, generatore vero, mai knapsack ad hoc).
+2. docs/handoff/DESIGN_GRADE_G_PRODUZIONE_2026-08-07.txt -- la SPEC completa di
+   G (formula, fonte grade, aggancio dopo filtro odds). Questo brief e' il
+   sottoinsieme "test isolato" di quel design: la formula e la fonte sono LI'.
+3. Questo file.
+
+===============================================================================
+1. OBIETTIVO (una frase)
+===============================================================================
+Su un BRANCH ISOLATO: generare le formazioni della GW3 (che INIZIA FRA ~4 ORE,
+quindi e' APERTA e il grade e' leggibile live) DUE volte -- con modello attuale
+(A) e con modello+grade (G) -- e confrontarle. Verificare se G cambia le scelte.
+
+===============================================================================
+2. SEQUENZA (esattamente questa, richiesta dall'utente)
+===============================================================================
+ 1. Crea un branch dedicato (es. test-grade-g-gw3) da main. Tutto il lavoro
+    sta li'. NIENTE merge su main, NIENTE commit su main.
+ 2. TEST CON MODELLO ATTUALE (A): genera le formazioni GW3 come produzione
+    fa oggi (grade non presente). Salva l'output ispezionabile.
+ 3. IMPLEMENTA G sul branch: innesta il grade nel generatore come da DESIGN
+    (formula atteso_combinato = atteso_cal + sd_gruppo * z_grade per gruppo
+    lega/ruolo; aggancio DOPO filter_by_starter_odds sui soli kept_slugs;
+    grade da grade_snapshot.py / projection.grade LIVE sulla GW3 aperta).
+    Metti G dietro un flag ESPLICITO (es. GRADE_ENABLED, default OFF = A
+    identico). Spento deve essere una scelta scritta, non l'assenza del dato.
+ 4. TEST A/A SULL'INTERRUTTORE (obbligatorio PRIMA del confronto, regola
+    CLAUDE.md): con GRADE_ENABLED=OFF l'output deve essere IDENTICO al punto 2.
+    Con una carta a grade noto e ACCESO, lo score_atteso deve muoversi del
+    valore atteso dalla formula. Se spento != A, o acceso non muove, FERMATI:
+    l'innesto e' sbagliato, non ha senso confrontare.
+ 5. TEST CON MODELLO G: stessa GW3, GRADE_ENABLED=ON. Salva output.
+ 6. VERIFICA RISULTATI: confronta A vs G formazione per formazione. Dump
+    leggibile (sez.4).
+
+===============================================================================
+3. COSA GENERARE (copertura casi, decisa con l'utente)
+===============================================================================
+Soglia odds: MIN_STARTER_ODDS = 0.80 (safe). Il grade si chiede solo per i
+giocatori sopra 80% di titolarita' (i kept_slugs dopo il filtro).
+
+Generare, sul mazzo dell'utente, per la GW3:
+  - 5 ARENE OTTIMIZZATE: le migliori 5 che il bot sceglie per efficienza
+    (lascia decidere al generatore quali tipi ARENA_* -- ARENA_ALLSTARS_260/
+    220/UNCAPPED -- in base al pool; NON forzarle a mano);
+  - 1 IN SEASON K LEAGUE: tipo KLEAGUE_IN_SEASON (FORMATION_SHAPES, riga 186:
+    role_slots GK/DEF/MID/FWD, extra DEF/MID/FWD, max_classic=1);
+  - 1 ALL STARS DA 7: tipo ALLSTARS (riga 190: role_slots GK/DEF/DEF/MID/MID/
+    FWD, 6+1, cap 370 soft).
+Cosi' si coprono arena, in-season e all-stars in un colpo.
+
+Costruire le formazioni SOLO con build_one_lineup_with_growth (il generatore
+vero, D7). Mai un knapsack scritto per l'occasione.
+
+===============================================================================
+4. DUMP DA CONSEGNARE (ispezionabile, non "si/no")
+===============================================================================
+Per ciascuna delle 7 formazioni, tabella A accanto a G:
+  slug giocatore | ruolo | atteso_A | grade | atteso_G | in_A? | in_G? | cap?
+Piu', per formazione: composizione per ruolo A vs G (quanti GK/DEF/MID/FWD),
+punti attesi totali A vs G (col capitano, regola D4: capitano +20% in arena),
+e quali carte entrano/escono passando da A a G.
+Il punteggio reale NON serve qui (la GW non e' ancora giocata): il test e'
+sulla SELEZIONE, non sull'esito.
+
+===============================================================================
+5. LETTURA DEL RISULTATO -- 3 ESITI, decisi PRIMA (non spostarli dopo)
+===============================================================================
+ - CAMBIA POCO (scambia qualche carta dentro lo stesso ruolo, composizione
+   simile ad A): esito BUONO voluto dall'utente. L'interruttore funziona e non
+   stravolge. G e' un candidato serio per la catena.
+ - CAMBIA MOLTO (sposta quanti DEF/MID/FWD si schierano, composizione diversa):
+   l'interruttore funziona ma e' il rischio noto. Riportare i punti attesi A vs
+   G: se G li abbassa, e' un problema da valutare, non un ok automatico.
+ - NON CAMBIA AFFATTO: l'interruttore non e' collegato, o e' tutto fallback
+   (grade assente -> z=0). DEBUGGARE prima di dire qualunque cosa: e' il caso
+   "misuro una cosa diversa da quella che credo" vietato da CLAUDE.md.
+   Riportare anche QUANTE carte della GW3 hanno grade (copertura): se poche,
+   il "non cambia" e' spiegato dalla copertura, non dal modello.
+
+===============================================================================
+6. VINCOLI
+===============================================================================
+- Branch isolato. Main intatto. Nessun merge, nessun commit su main.
+- NIENTE catena (soglie arena, scouting): quella e' il passo DOPO, solo se
+  questo test passa e l'utente ispeziona.
+- Grade LIVE dalla GW3 aperta (grade_snapshot.py). Verifica prima che la
+  leaderboard GW3 risponda con nodi non-zero: se torna 0, la GW pot첿ebbe
+  essersi gia' chiusa o lo slug e' sbagliato -- CHIEDI all'utente, non
+  proseguire con grade vuoto.
+- Punteggio reale sempre dalla cache game-log condivisa se serve, mai
+  ricostruito dividendo (D4). Qui comunque il reale non serve (GW futura).
+- Cookie/CSRF li fornisce l'utente. Se si impalla sulla lettura, espandi/
+  controlla apici prima di dire "scaduto".
+
+===============================================================================
+7. COSA RIPORTARE ALL'ORCHESTRATORE
+===============================================================================
+ - esito test A/A (spento==A? acceso muove? con 1-2 carte d'esempio);
+ - il dump A vs G delle 7 formazioni (sez.4);
+ - in quale dei 3 esiti cadiamo (sez.5) e la copertura grade sulla GW3;
+ - il nome del branch e come rigirare (comando esatto, flag).
+Scrivi l'esito in coda a questo file. Nessun verdetto senza dump.
+
+===============================================================================
+ESITO -- SONNET, 07/08/2026 ~13:00 Roma (branch test-grade-g-gw3)
+===============================================================================
+
+0. BRANCH E COME RIGIRARE
+Branch: test-grade-g-gw3 (da main, commit di partenza 9e85adee57). Nessun
+commit su main, nessun merge. Modifiche SOLO in
+generatore_formazioni/build_formazione_globale.py: flag GRADE_ENABLED
+(default '0' = A identico), GRADE_DATA_PATH (json slug->grade 'A'..'F'),
+DUMP_JSON (path opzionale per dump ispezionabile delle formazioni primarie).
+Nessuna di queste tocca il comportamento quando le env var non sono
+impostate.
+
+Comando baseline A:
+  IN_SEASON=kleague:1 ARENE_EFFICIENTI=5 ALLSTARS=1 DUMP_JSON=dump_A.json \
+  python generatore_formazioni/build_formazione_globale.py
+
+Comando G (grade acceso, con la mappa gia' scaricata live GW3):
+  IN_SEASON=kleague:1 ARENE_EFFICIENTI=5 ALLSTARS=1 \
+  DUMP_JSON=dump_G.json GRADE_ENABLED=1 \
+  GRADE_DATA_PATH=docs/handoff/test_grade_gw3/_grade_map_gw3.json \
+  python generatore_formazioni/build_formazione_globale.py
+
+Dump/evidenze in docs/handoff/test_grade_gw3/: dump_A.json, dump_G.json,
+_grade_map_gw3.json (273 slug->grade, fetch live 07/08 ~12:50 Roma via
+GraphQL FootballComposeBenchQuery, 3 leaderboard: all_star_arena_limited,
+all_star_limited, korea_in_season_limited_pvp, tutte GW3=
+football-7-11-aug-2026), DUMP_CONFRONTO_A_G_GW3.txt (dump leggibile completo
+richiesto in sez.4, riga per riga slug/ruolo/atteso_A/grade/atteso_G/in_A/
+in_G/capitano per ciascuna delle 7 formazioni -- NON incollato qui per
+brevita', aprire il file).
+
+1. TEST A/A SULL'INTERRUTTORE -- PASSATO
+ - Rerun di A due volte: output bit-per-bit identico (determinismo confermato).
+ - GRADE_ENABLED=1 con GRADE_DATA_PATH inesistente (mappa vuota, n_grade_map=0):
+   output IDENTICO ad A. Fallback z_grade=0 funziona come da formula.
+ - GRADE_ENABLED=1 con mappa reale: lo score si muove esattamente come da
+   formula (verificato riga per riga, esempio KLEAGUE_IN_SEASON):
+     dong-kyung-lee   atteso_cal(A)=59.0  grade=A  atteso_combinato(G)=65.34
+     jin-su-kim       atteso_cal(A)=56.3  grade=A  atteso_combinato(G)=60.62
+     masatoshi-ishida atteso_cal(A)=51.0(none in A) grade=C  atteso_combinato(G)=56.08
+   L'interruttore e' collegato e fa esattamente quello che dice la formula.
+
+2. IL GRADE E' STATO TROVATO LIVE SULLA GW3 APERTA
+Fixture aperta verificata via so5Fixtures pubblico: football-7-11-aug-2026,
+aasmState='opened' (le altre piu' vecchie erano gia' 'started'/in corso).
+Query bench (myFilteredBench, cookie utente=crowss) su 3 leaderboard:
+  - .../all_star-all_seasons_all_star_arena_limited (200 nodi bench)
+  - .../all_star-all_seasons_all_star_limited (200 nodi bench)
+  - .../korea-in_season_korea_limited_pvp (155 nodi bench)
+Totale 273 slug distinti con grade non nullo. currentUser confermato = crowss.
+
+3. COPERTURA -- MISURATA, NON UNIFORME (dato importante per leggere il punto 4)
+Sui 31 slug distinti che compaiono nelle 7 formazioni A: 19/31 coperti (61.3%),
+12/31 mai apparsi in nessuna delle 3 bench interrogate (cesar-jasib-montes-
+castro, ivan-perisic, pedro-antonio-pereira-goncalves, adrian-andres-cubas,
+koki-ogawa, jan-bednarek, nicolas-hernan-otamendi, sem-steijn, kristijan-
+kahlina, luis-javier-suarez-charris, joey-veerman, hayato-araki). Causa non
+verificata (ipotesi non confermata: rarity della carta diversa da 'limited',
+o quella lega/ruolo non e' nel pool eligible di quelle 3 leaderboard -- NON
+lo affermo come fatto).
+
+Copertura sul POOL COMPLETO (tutti i candidati caricati dal generatore, non
+solo i 31 selezionati, tramite load_league_role_data()): 227/698 (32.5%),
+ma FORTEMENTE disomogenea fra lega/ruolo:
+  kleague  GK/MID  100%     kleague DEF 91.2%   kleague FWD 95.7%
+  mls      FWD     0.0%     mls DEF 4.0%        mls GK 18.2%   mls MID 20.0%
+  olanda   MID     13.3%    belgio DEF 22.2%    giappone MID 11.8%
+(tabella completa per ogni lega/ruolo in
+docs/handoff/test_grade_gw3/copertura_pool_completo.txt).
+K League e' quasi completamente coperta (le mie 3 query includevano
+esplicitamente la leaderboard korea in-season); MLS e molte leghe europee
+sono coperte MALISSIMO (le mie query non includevano una leaderboard
+specifica per quelle leghe -- limite del test, non del meccanismo G).
+
+4. DUMP E VERDETTO -- CADIAMO IN "CAMBIA MOLTO"
+Le 7 formazioni (dump completo in DUMP_CONFRONTO_A_G_GW3.txt):
+  tipo                 atteso_A  atteso_G  delta   overlap giocatori
+  KLEAGUE_IN_SEASON     305.3     325.9   +20.6    4/5 (1 cambio)
+  ALLSTARS              425.6     436.3   +10.7    5/7 (2 cambi)
+  ARENA_ALLSTARS_260    300.4     324.2   +23.9    1/5 (4 cambi)
+  ARENA_ALLSTARS_260    297.1     315.4   +18.2    1/5 (4 cambi)
+  ARENA_ALLSTARS_260    290.8     310.6   +19.8    0/5 (5 cambi)
+  ARENA_ALLSTARS_260    287.9     304.6   +16.7    0/5 (5 cambi, composizione
+                                                     ruoli cambiata DEF/MID)
+  ARENA_ALLSTARS_260    286.6     299.3   +12.7    0/5 (5 cambi, composizione
+                                                     ruoli cambiata DEF/MID)
+
+Formazioni IDENTICHE: 0/7. Con 1 sola carta cambiata: 1/7. Con 2+ carte
+cambiate: 6/7 (5 arene ARENA_ALLSTARS_260 su 5 hanno overlap 0-1 su 5, e 2
+di queste cambiano anche la composizione per ruolo).
+
+QUESTO E' L'ESITO "CAMBIA MOLTO" di sez.5, non "cambia poco". MA il sospetto
+concreto, misurato (non dedotto a caso) al punto 3: la copertura grade nel
+pool completo e' 32.5% e molto disomogenea. Nella formula, z_grade e'
+calcolato SOLO fra i membri che hanno grade (zscore_gruppo su
+grade_vals_presenti): se in un gruppo lega/ruolo solo 2-3 candidati su 20-30
+hanno grade, quei pochi competono solo fra loro per lo z-score e possono
+ottenere z estremi (es. l'unico 'A' fra 2 graduati) che si traducono in un
+bonus grande (sd_atteso * z) anche se nel pool completo ci sono candidati
+altrettanto buoni senza grade. Questo e' un meccanismo PLAUSIBILE per
+spiegare il "cambia molto" -- NON e' verificato come causa certa in questo
+test (servirebbe ripetere il confronto con una copertura grade uniforme e
+alta per isolare l'effetto), lo riporto come ipotesi con la matematica dietro,
+non come fatto.
+
+Il grade E' collegato e sposta la selezione (punto 1), il "cambia molto" NON
+e' quindi il caso "interruttore scollegato" di sez.5 -- ma prima di
+considerare G un candidato serio per la catena, il campione sospetta che il
+guadagno misurato nel backtest ampio (+18.900 vs +14.300 essenze, HANDOFF
+sez.3) possa essere gonfiato dallo stesso squilibrio di copertura, non solo
+dal segnale vero del grade. Da verificare nella catena (punto d-e-f del
+DESIGN) con una misura di copertura per gruppo ANCHE nel backtest storico,
+non solo qui.
+
+5. COSA NON HO FATTO (fuori scope di questo test isolato)
+Non ho riverificato le soglie arena (d), non ho toccato lo scouting (e), non
+ho fatto il backtest di conferma ampio (f): tutto rimandato, come da vincoli
+sez.6 del DESIGN. Non ho tentato di aumentare la copertura con altre query
+(altre leghe): sarebbe costato piu' chiamate API, fuori dal perimetro di
+"test differenziale secco" richiesto qui -- segnalo il buco, non lo tappo di
+mia iniziativa.
+
