@@ -1973,7 +1973,7 @@ def main():
         # "vs" resta l'unica colonna che tronca (meno critica).
         return (
             f'<tr><td style="padding:2px 6px 2px 0;color:var(--muted)">{i+1}.</td>'
-            f'<td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">{row.get("atteso")} pt</td>'
+            f'<td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">{(row.get("atteso") or 0):.1f} pt</td>'
             f'<td style="padding:2px 6px 2px 0;white-space:normal">{player_names.get(row["slug"], row["slug"])}</td>'
             f'<td style="padding:2px 6px 2px 0;color:var(--muted)">{r}</td>'
             f'<td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;'
