@@ -235,6 +235,106 @@ COME RIGIRARE:
   python analisi_manager/p12_backtest_manager_grade.py
 
 ===============================================================================
+ESITO 2 -- SONNET, 07/08/2026 ~16:30 Roma (branch grade-g-produzione)
+===============================================================================
+Richiesta dell'utente: rifare il backtest crowss a copertura piena, dopo
+aver completato la raccolta storica (storico_grade_crowss_20260807.json,
+3.745 righe/249 giocatori). Prima di leggere i numeri, dovevo riportare la
+copertura reale: e' rimasta 4.6% col solo file nuovo aggiunto (indice
+cresciuto 16.881->18.282 coppie, ma overlap con cio' che serve invariato).
+Fermato come da istruzione, e ho cercato la causa invece di limitarmi a
+dirlo.
+
+CAUSA TROVATA E CORRETTA (bug, non mancanza di dati): carica_indice_grade()
+cercava (slug, data ESATTA di fine fixture). Le fixture durano piu' giorni
+(es. football-1-4-jul-2026), la partita vera del giocatore cade in un
+giorno qualunque della finestra, quasi mai esattamente sull'ultimo.
+Verificato sui dati REALI (non dedotto): match esatto 94/2728 candidati
+(3.4%); ammettendo qualunque partita entro 6 giorni PRIMA della fine
+fixture, 1543/2728 (56.6%) -- CON GLI STESSI DATI GIA' IN REPO, senza
+aggiungerne. Il collo di bottiglia era il join, non il volume.
+
+FIX (chiesto esplicitamente all'utente prima di farlo, autorizzato):
+ - analisi_manager/p12_backtest_formazione_grade.py: carica_indice_grade()
+   ora ritorna slug -> lista (data,grade_num) ordinata (prima: dict a
+   chiave esatta (slug,data)). Nuova funzione grade_in_finestra(idx, slug,
+   fine_str) cerca la partita PIU' VICINA entro GRADE_WINDOW_GIORNI=6 giorni
+   prima (incluso il giorno stesso). Il lookup in main() usa questa
+   funzione al posto della chiave esatta.
+ - analisi_manager/p12_backtest_manager_grade.py: carica_indice_grade_esteso()
+   e il lookup a valle avevano LA STESSA struttura (chiave esatta) e sono
+   stati aggiornati allo stesso modo -- senza questo fix sarebbero rimasti
+   SILENZIOSAMENTE rotti (idx_grade.get(tupla) su un dict slug->lista
+   ritorna sempre None, nessun errore, solo copertura a zero senza
+   spiegazione). Trovato e corretto perche' ho controllato, non perche'
+   segnalato.
+
+COPERTURA DOPO IL FIX (misurata, non assunta):
+  crowss (p12_backtest_formazione_grade.py): 1522/1967 = 77.4% (era 4.6%)
+  16-manager gruppo A (p12_backtest_manager_grade.py): 59/59 = 100% (era 20%)
+Sopra la soglia per fidarsi del backtest, come richiesto al punto 3.
+
+RISULTATO -- CROWSS (230 arene, 27 giornate, copertura 77.4%):
+  punteggio medio    A=273.07   G=275.88   delta +2.812  IC95[-1.133,+6.588]
+  netto essenze      A=96.1     G=103.0    delta +6.957  IC95[-37.190,+48.691]
+  rank medio         A=4.617    G=4.517    delta -0.100  IC95[-0.381,+0.211] (neg=G meglio)
+  podio (rank<=3)    A=41.7%    G=40.4%    delta -0.013  IC95[-0.052,+0.026]
+  formazioni IDENTICHE: 27/230 (11.7%, era 77.2% a bassa copertura -- ora G
+  sceglie DAVVERO carte diverse in 88.3% delle arene, non piu' fallback).
+VERDETTO CROWSS: direzione POSITIVA su punteggio e netto essenze, ma
+NESSUN intervallo esclude zero. Non e' un "si" statisticamente pulito, ma
+nemmeno piu' il quasi-nullo di prima (a 4.6% di copertura il segnale era
+annegato nel fallback).
+
+RISULTATO -- 16 MANAGER, GRUPPO A (5 manager, 59 righe, copertura 100%,
+GRUPPO B ANCORA NON GUARDATO -- protocollo pre-registrato rispettato):
+  punteggio medio A=225.97  G=234.13
+  delta punti medio (G-A): +8.154 (ERA -0.476 a copertura 20%)
+  bootstrap IC95 [-16.460, +29.916] -- include zero, MA positivo nel 71.3%
+  dei resample (prima: 0.0%).
+Il segno si e' RIBALTATO col fix. La misura precedente (-0.476,
+"stabilmente peggiore") era quindi un ARTEFATTO della bassa copertura/del
+bug di join, non un fatto vero su G -- lo dico chiaramente perche' l'avevo
+scritto io in coda a questo file il 07/08 ~15:30 come "G stabilmente
+peggiore": era sbagliato, causa il bug appena corretto, non un cambio di
+opinione senza motivo.
+
+DUMP DI UNA GIORNATA (richiesto, 2 arene complete, nomi/ruolo/atteso_cal/
+grade/reale/in_A/in_G/capitano): analisi_manager/dati/
+dump_giornata_sigma_esempio_20260807.txt, giornata football-8-12-may-2026
+(fine 2026-05-12), copertura 152/152 candidati (100% su questa giornata).
+Le due arene mostrate vanno in direzioni opposte (A=260.3/G=288.2 e
+A=270.7/G=238.8): coerente con l'IC ampio che include zero, il segnale non
+e' uniforme arena per arena.
+
+VERDETTO COMPLESSIVO AGGIORNATO: ne' il "+18.900/+14.300" della sessione
+precedente ne' il "G stabilmente peggiore" scritto qui stamattina reggono
+alla luce del fix di copertura. Il quadro onesto oggi, con dati e join
+corretti: G sposta parecchio la selezione (72-88% delle formazioni
+cambiano almeno una carta), la direzione e' PIU' SPESSO POSITIVA che
+negativa su entrambi i campioni (crowss e manager gruppo A), ma NESSUN
+intervallo di confidenza esclude zero. Non c'e' ancora un verdetto
+statisticamente pulito -- serve o un campione piu' ampio (piu' giornate/
+manager) o accettare l'incertezza e decidere sul rischio, non sul p-value.
+NON propongo ancora di rendere G default di produzione.
+
+VINCOLI RISPETTATI: fix del join autorizzato esplicitamente prima di
+applicarlo (AskUserQuestion); nessun commit su main; gruppo B dei manager
+MAI aperto; GRADE_ENABLED resta OFF di default.
+
+FILE MODIFICATI/PRODOTTI (branch grade-g-produzione):
+  analisi_manager/p12_backtest_formazione_grade.py   fix join (grade_in_finestra)
+  analisi_manager/p12_backtest_manager_grade.py       stesso fix
+  analisi_manager/p12_backtest_formazione_grade_out.json  rigenerato
+  analisi_manager/p12_backtest_manager_grade_bis_out.json rigenerato
+  analisi_manager/dati/dump_giornata_sigma_esempio_20260807.txt  dump richiesto
+
+COME RIGIRARE:
+  git checkout grade-g-produzione
+  python analisi_manager/p12_backtest_formazione_grade.py
+  python analisi_manager/p12_backtest_manager_grade.py
+
+===============================================================================
 6. FILE DI RIFERIMENTO
 ===============================================================================
 consiglio_arena.py                                   pareggio()/incasso_medio()
