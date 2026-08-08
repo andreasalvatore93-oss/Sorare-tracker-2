@@ -177,3 +177,77 @@ pena del costo.
     Il "no" del Passo 3 e' un no informativo: l'interruttore funziona (9.1),
     sposta piu' di meta' delle scelte reali, ma il risultato netto resta
     a zero/negativo su formazione realizzata, su due basi indipendenti.
+
+10. LIVELLO ASSOLUTO CONTRO DELTA (09/08/2026, notte, Roma)
+    Esecutore: Sonnet, da BRIEF_SONNET_ODDS_LIVELLO_ASSOLUTO_2026-08-09.txt.
+    Script nuovo: analisi_manager/p20_odds_livello_assoluto.py + output
+    analisi_manager/p20_odds_livello_assoluto_out.json +
+    analisi_manager/p20_livello_dump_esempio.txt (dump 4f). Non committati,
+    in attesa di ok utente. Nessun file di produzione toccato, nessuna
+    query a Sorare.
+
+    DOMANDA: L = p_win_own - p_win_opp della partita da giocare (livello
+    assoluto, senza sottrarre la media storica, senza il vincolo delle 5
+    partite storiche) batte G meglio del delta storico D gia' misurato
+    negativo al §9?
+
+    SCALA (§2c del brief): D e L non hanno la stessa distribuzione (D
+    media +0.073 sd 0.275, L media +0.189 sd 0.287, n=4487 comuni). Scelta:
+    entrambi z-scorati dentro ogni gruppo (lega,codice), stesso k=0.2 sui
+    due. I numeri di D qui sono quindi DIVERSI da quelli raw del §5 (li'
+    k=0.2 sul delta grezzo, qui k=0.2 sullo z-score): non confrontabili fra
+    loro riga per riga, ma il confronto D_z vs L_z dentro QUESTO giro e'
+    valido perche' stessa scala per entrambi.
+
+    CONTROLLO 4a interruttore: a k=0, _d_cal e _l_cal coincidono ESATTAMENTE
+    con _cal su tutte le righe di entrambe le basi (max_diff=0.0000000000).
+    A k=0.2, fra il 62% e il 94% delle carte per ruolo cambiano atteso (D e
+    L simili come impatto grezzo): l'interruttore funziona, non e' inerte.
+
+    CONTROLLO 4b COPERTURA (il risultato atteso, confermato):
+      allstar_u23   (n=28.786): D con=17.233 (59,9%)  L con=22.297 (77,5%)
+      mls_hotstreak (n=14.425): D con=12.669 (87,8%)  L con=13.549 (93,9%)
+    Eliminare il vincolo delle 5 partite storiche alza davvero la copertura,
+    +17,6 punti su allstar_u23 e +6,1 su mls_hotstreak.
+
+    PASSO 3 (G+L_z contro G, IC95 bootstrap sui manager, k=0.2 per ruolo):
+      allstar_u23  (n=864):  GK -0.583 [-1.244,+0.547]  DEF -1.981 [-4.752,+0.287]
+                             MID -0.771 [-3.083,+0.514]  FWD +0.015 [-1.934,+2.397]
+      mls_hotstreak(n=311):  GK +0.090 [-1.183,+1.453]  DEF -1.357 [-3.533,+0.505]
+                             MID +1.636 [-1.413,+3.901]  FWD +0.750 [-1.021,+2.668]
+    NESSUN ruolo, su NESSUNA base, ha IC95 tutto positivo per L: G+L non
+    batte G in nessun caso. Passo 3b/placebo per L non eseguito (nessun
+    ruolo sopravvissuto, come da regola 3b).
+
+    CONFRONTO G+D_z contro G, stessa scala (per completezza, stesso giro):
+      allstar_u23:  GK -1.323 [-2.310,-0.178]  DEF -1.758 [-3.277,-0.422]
+                    MID -0.411 [-2.294,+1.869]  FWD -1.897 [-4.369,+0.248]
+      mls_hotstreak: GK +1.038 [-0.855,+2.620]  DEF +0.185 [-2.424,+2.443]
+                    MID +2.983 [+1.255,+4.722]  FWD -0.319 [-1.895,+0.602]
+    Unico ruolo positivo: MID su mls_hotstreak (D, non L), placebo passato
+    (percentile 100 a k=0.2 e k=0.3, N=30), ma NON confermato su allstar_u23
+    (li' MID e' -0.411, IC attraversa lo zero): segno instabile fra le due
+    basi sullo stesso ruolo, quindi NON e' un risultato da applicare per la
+    regola del delta stabile (CLAUDE.md "Cosa deve riprodursi").
+
+    PASSO 5 (extra, non obbligatorio) -- correlazione livello_odds vs
+    score_atteso (atteso_raw), stesse carte:
+      GK n=836 corr=+0.421   DEF n=1530 corr=+0.236   MID n=1470 corr=+0.222
+      FWD n=1243 corr=+0.106   GLOBALE n=5079 corr=+0.217
+    Il livello assoluto e' piu' correlato allo score_atteso del delta (che
+    al §4 aveva corr globale +0.094): coerente con l'ipotesi del brief che
+    il livello porti PIU' informazione gia' assorbita dal modello (piu'
+    rischio di doppio conteggio), non meno. Il GK e' il ruolo piu'
+    correlato (+0,421): li' il rischio di doppio conteggio e' concreto.
+
+    VERDETTO: il livello assoluto NON batte G in nessun ruolo su nessuna
+    base, nonostante una copertura molto piu' alta (fino a +17,6 punti) e
+    un interruttore verificato funzionante. Non fa nemmeno meglio del delta
+    storico in modo sistematico (unico segno positivo di D, su mls MID, non
+    si riproduce su allstar_u23; L non ha nessun segno positivo stabile su
+    nessuna base). La copertura maggiore da sola non si traduce in punti:
+    l'informazione aggiuntiva che porta il livello sembra in parte gia'
+    assorbita da G (corr +0,217 con lo score_atteso, superiore a quella del
+    delta), a sostegno del motivo originale per cui e' stato scelto il
+    delta invece del livello. Il filone resta chiuso: ne' D ne' L, sopra G,
+    aggiungono un vantaggio misurabile sulla formazione realizzata.
