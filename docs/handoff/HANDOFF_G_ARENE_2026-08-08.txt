@@ -630,8 +630,11 @@ piene -- vedi sopra per la riconciliazione):
 
   G batte A su entrambe le regole (stretta: +2600->+3200; larga: -100->
   +2900). G-larga e' la combinazione migliore in assoluto su questo
-  campione, ma nessuna delle 4 batte "non gioca mai" (0), che qui e' il
-  vero pavimento essendo il saldo manager negativo.
+  campione. CORREZIONE 08/08 sera (segnalata dall'orchestratore, il log
+  smentiva la frase precedente): 3 rami su 4 battono il pavimento "non
+  gioca mai" (0 essenze) -- A-stretta +2000, G-stretta +2600, G-larga
+  +2900. Solo A-larga (-100) non lo batte. La quadratura resta corretta
+  su tutti e quattro, era solo il commento a sbagliare.
 
 7.3 TASSO DI DECISIONI GIUSTE (diagonale/142; "gioca sempre"=manager reale
 =30,3% podio; "non gioca mai"=69,7%):
@@ -709,3 +712,93 @@ LIMITI DA TENERE A MENE (dichiarati dal brief, confermati qui):
 - il campione e' concentrato: bxl-spartak+lairdinho+fins49+shirimimi = 115
   arene su 142 (81%); il bootstrap sui manager (7.5) e' la protezione
   contro questo, non un aggregato semplice.
+
+
+=====================================================================
+13. FRONTE 2 -- FOLLOW-UP (08/08/2026, sera, Roma) -- eseguito da Sonnet
+=====================================================================
+Script: analisi_manager/p15_fronte2_followup.py (committato). Log integrale:
+analisi_manager/p15_full_run.log. Riusa le funzioni di p14, non le riscrive.
+
+COMPITO A -- fatto in-place sopra, in sez.12.
+
+COMPITO B -- G e' acceso o mezzo spento?
+B1: nei 432 gruppi (lega,ruolo) dentro i pool usati dal test: 277 hanno un
+solo membro col grade (z=0 per costruzione), 78 ne hanno esattamente 2 (lo
+z meccanico +-1 di cui parlava l'orchestratore), 33 ne hanno 3, 13 ne hanno
+4, 31 ne hanno 5+. Sulle 798 carte con grade nel pool, 156 (19,5%) stanno in
+un gruppo da esattamente 2.
+B2: mediana membri-col-grade per gruppo, IN PRODUZIONE (57 gruppi lega/ruolo
+con grade fetchato oggi in player_card_counts.json reali): 3. NEL TEST fronte
+2 (432 gruppi): 1. Il sospetto dell'orchestratore era fondato sulla
+direzione giusta ma per un motivo diverso da quello temuto: anche in
+produzione i gruppi sono spesso piccoli (19 gruppi su 57 hanno un solo
+membro col grade, la distribuzione va da 1 a 16) -- il problema dei gruppi
+piccoli NON e' un artefatto del test, e' strutturale ovunque il pool per
+lega/ruolo sia piccolo. Ma nel test e' PIU' marcato perche' il gruppo si
+forma dentro il pool di UN SOLO manager per UNA SOLA GW (10-20 carte in
+tutto, split su 4 ruoli e diverse leghe), mentre in produzione il gruppo e'
+condiviso su TUTTI i candidati di quella lega/ruolo per l'intera GW: e' un
+bacino piu' grande per costruzione, non uno diverso.
+B3 -- DA DOVE VIENE IL DELTA (il punto che risolve il sospetto): sulle 16
+arene dove A/G differiscono (regola stretta) e le 10 dove differiscono
+(regola larga), il gruppo piu' grande fra le carte che hanno spostato la
+decisione ha SEMPRE >=3 membri col grade, MAI solo 2 (0 arene "solo gruppi
+da 2" su 26 in totale). Il vantaggio misurato di G in questo campione NON
+viene dal rumore meccanico dei gruppi da 2: viene da gruppi con almeno 3
+osservazioni, dove lo z-score ha margine per dire qualcosa di diverso da
++-1. Il rischio strutturale (B1/B2) e' reale e va tenuto d'occhio, ma QUI
+non ha contaminato il risultato.
+
+COMPITO C -- TEST PLACEBO (il piu' importante, fatto per primo nei fatti)
+200 permutazioni dei grade dentro ogni gruppo (lega,ruolo) di ogni coppia
+(manager,GW), stessa struttura/dimensione dei gruppi, nessun legame vero
+grade-giocatore. Delta placebo (saldo_bot_G_placebo - saldo_manager):
+  regola stretta: distribuzione placebo [-900, +6500], mediana +2500.
+    G VERO (+3200) sta al PERCENTILE 65.0 -- dentro la nuvola del caso.
+  regola larga:   distribuzione placebo [-2900, +4100], mediana +600.
+    G VERO (+3500) sta al PERCENTILE 98.2 -- fuori dalla nuvola del caso.
+VERDETTO, SENZA ADDOLCIRLO: sulla regola LARGA il segnale e' vero (il grade
+reale batte il 98,2% delle permutazioni casuali che hanno la stessa
+struttura ma nessun legame vero col giocatore). Sulla regola STRETTA
+(quella che l'utente usa davvero in produzione) il vantaggio di G NON si
+distingue dal rumore: al 65esimo percentile, un grade a caso con la stessa
+struttura avrebbe prodotto un delta simile o migliore 35 volte su 100. La
+mediana placebo positiva anche da sola (+2500 stretta, +600 larga) dice che
+GRAN PARTE del vantaggio misurato nel primo giro veniva semplicemente dal
+perturbare gli attesi e far saltare qualche arena in piu' -- non dal
+contenuto informativo del grade -- e questo vale anche per G vero sulla
+regola stretta.
+
+COMPITO D -- le 28 arene escluse (bias a favore del bot)
+D1 (30 slug distinti dietro le 34 carte del brief): 17 con cache game-log
+VUOTA (slug mai visto), 9 con cache presente ma storico insufficiente
+(finestra_storica fallita nonostante 30-60 partite in cache -- da capire in
+un giro dedicato, non qui), 4 senza nessuna partita trovata entro 6gg prima
+di fine-fixture. Esempi con nome nel log integrale.
+D2: NESSUNA estrazione lanciata. I 17 "cache vuota" sono potenzialmente
+recuperabili con query game-log mirate SE la loro lega ha pipeline
+completa (da verificare uno per uno, non stimato qui). I 9 "storico
+insufficiente" e i 4 "nessuna partita in finestra" NON sono un problema di
+query: il dato che manca non e' recuperabile aggiungendo chiamate.
+D3 -- quanto pesa (regge/si ribalta nei due scenari estremi, 142 valutate +
+28 escluse = 170, saldo manager pieno +800):
+  A-stretta: delta 142=+2600 | bot gioca le 28=+2600 | bot le salta=+1200 -> REGGE
+  G-stretta: delta 142=+3200 | bot gioca le 28=+3200 | bot le salta=+1800 -> REGGE
+  A-larga:   delta 142=+500  | bot gioca le 28=+500  | bot le salta=-900  -> SI RIBALTA
+  G-larga:   delta 142=+3500 | bot gioca le 28=+3500 | bot le salta=+2100 -> REGGE
+G-stretta e G-larga reggono in entrambi gli scenari estremi delle 28 arene
+escluse: il bias a favore del bot segnalato dall'orchestratore non decide
+da solo il risultato per i rami con grade. A-larga invece si ribalta: senza
+grade, la regola larga da sola dipende dal buco di copertura.
+
+CONCLUSIONE COMPLESSIVA DEL FOLLOW-UP: il risultato del primo giro REGGE
+solo in parte. La regola LARGA con G (G-larga) ha un segnale vero (placebo
+98,2 percentile) e regge al bias delle 28 escluse. La regola STRETTA (quella
+di produzione) con G non si distingue dal rumore sul test placebo (65
+percentile), anche se regge al bias delle escluse e batte comunque il
+manager e il pavimento "non gioca mai". Non e' un risultato negativo su
+tutta la linea, ma non e' nemmeno la conferma piena che il primo giro
+sembrava dare: la parte "grade aiuta la regola stretta di produzione" resta
+da dimostrare, la parte "un veto d'ingresso batte giocare sempre" e' piu'
+solida (regge su 3 rami su 4 nei controlli di questo giro).

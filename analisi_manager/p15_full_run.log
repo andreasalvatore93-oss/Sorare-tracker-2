@@ -1,0 +1,85 @@
+==============================================================================
+COMPITO A -- correzione sez.12 (fatta in-place nell'handoff, non qui)
+==============================================================================
+A-stretta +2000 batte 0; G-stretta +2600 batte 0; A-larga -100 NON
+batte 0; G-larga +2900 batte 0. 3 rami su 4 battono il pavimento.
+
+==============================================================================
+COMPITO B -- G e' acceso o mezzo spento?
+==============================================================================
+
+B1 -- distribuzione dei gruppi (lega,ruolo) per numero di membri COL GRADE:
+  gruppi con 0 membri col grade: 14
+  gruppi con 1 membri col grade: 277
+  gruppi con 2 membri col grade: 78
+  gruppi con 3 membri col grade: 33
+  gruppi con 4 membri col grade: 13
+  gruppi con 5+ membri col grade: 31
+  carte totali nei pool: 821, con grade: 798
+  carte che stanno in un gruppo da ESATTAMENTE 2 membri col grade: 156/798 (19.5% delle carte con grade)
+
+B2 -- membri COL GRADE per gruppo (lega,ruolo), fra i gruppi con almeno 1:
+  in produzione (player_card_counts.json di oggi, 57 gruppi lega/ruolo con grade fetchato): mediana 3.0, distribuzione [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 6, 6, 7, 7, 7, 7, 7, 7, 8, 9, 9, 12, 15, 15, 16]
+  nel test fronte 2 (432 gruppi): mediana 1.0, distribuzione [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 8, 8, 8, 8, 8, 9, 10, 11, 11, 11, 14]
+
+B3 -- da dove viene il delta (arene dove A e G decidono diverso):
+  A-stretta->G-stretta: arene con gruppo>=3 che decide: 16  (contributo al saldo: +600)
+                arene SOLO gruppi da 2: 0  (contributo al saldo: +0)
+  A-larga->G-larga: arene con gruppo>=3 che decide: 10  (contributo al saldo: +3000)
+                arene SOLO gruppi da 2: 0  (contributo al saldo: +0)
+  NOTA: serve _n_grade_gruppo su ogni row (annotato qui sotto prima di B3).
+
+==============================================================================
+COMPITO C -- TEST PLACEBO (grade permutati a caso dentro il gruppo)
+==============================================================================
+delta reale G-stretta vs manager: +3200
+delta reale G-larga vs manager: +3500
+
+200 permutazioni placebo (grade rimescolati dentro ogni gruppo lega/ruolo):
+  regola stretta: distribuzione placebo del delta min=-900 mediana=+2500 max=+6500
+    G VERO (+3200) sta al percentile 65.0 della distribuzione placebo
+  regola larga:   distribuzione placebo del delta min=-2900 mediana=+600 max=+4100
+    G VERO (+3500) sta al percentile 98.2 della distribuzione placebo
+  -> regola stretta: percentile 65, ne' chiaramente rumore ne' chiaramente segnale.
+  -> regola larga: il G vero e' oltre il 95esimo percentile del placebo: SEGNALE VERO.
+
+==============================================================================
+COMPITO D -- le 28 arene escluse (bias a favore del bot)
+==============================================================================
+arene escluse per carta-senza-atteso: 28
+
+D1 -- motivi (su 30 slug distinti senza atteso, controllo brief: 34 carte -- puo' differire leggermente perche' qui e' per SLUG distinto, non per carta):
+  cache game-log vuota (slug mai visto): 17
+  storico insufficiente (finestra_storica fallita): 9
+  nessuna partita trovata entro la finestra (6gg) prima di fine-fixture: 4
+  esempi:
+    Johan Carbonero (johan-stiven-carbonero-balanta, Forward): cache game-log vuota (slug mai visto)  [gamelog: 0 partite]
+    Emanuel Mammana (emanuel-mammana, Defender): cache game-log vuota (slug mai visto)  [gamelog: 0 partite]
+    Aleksandar Dragović (aleksandar-dragovic, Defender): cache game-log vuota (slug mai visto)  [gamelog: 0 partite]
+    Gustavo Albarracín (gustavo-hidalgo-albarracin, Midfielder): storico insufficiente (finestra_storica fallita)  [gamelog: 60 partite]
+    Franco Ibarra (franco-ibarra, Midfielder): cache game-log vuota (slug mai visto)  [gamelog: 0 partite]
+    Oliver Ross (oliver-ross, Forward): storico insufficiente (finestra_storica fallita)  [gamelog: 60 partite]
+    Giacomo Vrioni (giacomo-vrioni, Forward): storico insufficiente (finestra_storica fallita)  [gamelog: 60 partite]
+    Elias Manoel (elias-manoel-alves-de-paula, Forward): storico insufficiente (finestra_storica fallita)  [gamelog: 30 partite]
+
+D2 -- NON lancio nessuna estrazione (richiesto dal brief). Diagnosi:
+  17 slug con cache game-log VUOTA: se la loro lega ha pipeline completa,
+    sono recuperabili con un'estrazione game-log per quello slug (1 query a slug).
+  4 slug CON cache ma senza una partita trovata vicino alla fine-fixture:
+    non e' un buco di query, e' che il giocatore non ha giocato in quella finestra
+    (o gioca in una lega/fixture che qui non tracciamo) -- non recuperabile con piu' query.
+
+D3 -- quanto pesano le 28 arene escluse sul risultato:
+  saldo manager sulle 28 arene escluse: +1400 (+50.0 a testa)
+  saldo manager sulle 142 valutate: -600 (-4.2 a testa)
+  saldo manager sulle 170 (142+28): +800
+  ramo A-stretta: delta su 142 = +2600  |  scenario (a) bot gioca le 28 = +2600  |  scenario (b) bot le salta = +1200  REGGE (sempre positivo)
+  ramo G-stretta: delta su 142 = +3200  |  scenario (a) bot gioca le 28 = +3200  |  scenario (b) bot le salta = +1800  REGGE (sempre positivo)
+  ramo A-larga: delta su 142 = +500  |  scenario (a) bot gioca le 28 = +500  |  scenario (b) bot le salta = -900  SI RIBALTA in almeno uno scenario
+  ramo G-larga: delta su 142 = +3500  |  scenario (a) bot gioca le 28 = +3500  |  scenario (b) bot le salta = +2100  REGGE (sempre positivo)
+
+==============================================================================
+RIEPILOGO PER L'UTENTE
+==============================================================================
+placebo stretta: G vero al percentile 65.0  (delta reale +3200)
+placebo larga:   G vero al percentile 98.2  (delta reale +3500)
