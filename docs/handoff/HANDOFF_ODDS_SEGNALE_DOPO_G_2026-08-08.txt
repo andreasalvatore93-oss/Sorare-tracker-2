@@ -41,8 +41,10 @@ carte con entrambi i valori disponibili:
   GLOBALE n=3066  corr=+0.094
 Lettura: nessuna correlazione forte in nessun ruolo. I due segnali NON sono
 ridondanti (potrebbe esserci informazione nuova nelle odds), ma nemmeno
-opposti in modo netto sui GK come ipotizzato: c'e' un'ipotesi dell'utente
-verificata e NON confermata dal dato, va corretta.
+opposti in modo netto sui GK come ipotizzato: l'ipotesi non e' confermata
+dal dato. Va detto pero' che l'ipotesi nasceva da una schermata reale di
+7 carte tutte GK -- non era una misura, ed e' esattamente per questo che
+andava messa alla prova qui su un campione vero (n=588 GK).
 
 5. PASSO 3 -- il test decisivo (G+O contro G, formazione realizzata)
 3a, un ruolo alla volta, k=0.2, DENTRO g+o, IC95 bootstrap sui manager:
@@ -72,15 +74,20 @@ intero sopra. Nessuna selezione a posteriori.
 6. VERDETTO
 Sul campione disponibile (864+310 formazioni non-arena, walk-forward), le
 favorito-odds come aggiustamento SOPRA il grade NON aggiungono un vantaggio
-misurabile nella formazione realizzata, in nessun ruolo. Anzi sui GK
-peggiorano (allstar_u23, IC95 tutto negativo). G sembra avere gia' preso
-il posto che le odds avrebbero potuto occupare (o comunque il residuo
-informativo delle odds non si traduce in punti in piu' nella scelta reale).
+misurabile nella formazione realizzata, in nessun ruolo. Sui GK il segno si
+ribalta fra le due basi (-1,09 su allstar_u23, +1,01 su mls_hotstreak):
+segni opposti su due campioni indipendenti sono la firma del RUMORE, non di
+un effetto sistematico -- non si puo' dire "le odds fanno male ai GK"
+(CORRETTO qui il 09/08, vedi punto 9: la prima stesura di questo file lo
+diceva ed era una lettura sbagliata). G sembra avere gia' preso il posto
+che le odds avrebbero potuto occupare (o comunque il residuo informativo
+delle odds non si traduce in punti in piu' nella scelta reale).
 
-Nota metodologica: NON e' stato ripetuto il fenomeno "migliora la carta,
-peggiora la formazione" visto nel test pre-G (qui l'effetto e' quasi sempre
-piccolo/nullo anche a livello di formazione, non solo di carta -- vedi
-colonna "O vs A" nei log, mai forte).
+Nota metodologica: il Controllo 1 (punto 9) mostra che l'interruttore
+FUNZIONA e sposta parecchie scelte (50-71% delle formazioni cambiano
+almeno una carta a k=0.2): quindi il verdetto "non aggiunge nulla" NON e'
+un test nullo/inerte, e' un vero pareggio fra riordinamenti diversi che si
+annullano in media.
 
 7. COSA NON FARE / decisione aperta
 Non applicare le odds come segnale sopra G in produzione: il test non lo
@@ -94,3 +101,79 @@ pena del costo.
   analisi_manager/p20_odds_vs_grade.py (script)
   analisi_manager/p20_odds_vs_grade_out.json (numeri grezzi)
   docs/handoff/HANDOFF_ODDS_SEGNALE_DOPO_G_2026-08-08.txt (questo file)
+
+9. CONTROLLI INTEGRATIVI (09/08/2026, Roma) -- da
+   BRIEF_SONNET_ODDS_CONTROLLI_MANCANTI_2026-08-08.txt. Script nuovo:
+   analisi_manager/p20_controlli.py. Nessun test rifatto, solo misure sopra
+   l'infrastruttura gia' scritta.
+
+9.1 CONTROLLO INTERRUTTORE (il decisivo)
+  1a -- k=0 su tutti i ruoli: _odds_cal COINCIDE ESATTAMENTE con _cal, su
+        TUTTE le 28.786 righe (allstar_u23) e 14.425 righe (mls_hotstreak),
+        max_diff=0.0000000000. L'interruttore, spento, e' davvero spento.
+
+  1b -- k=0.2, quante carte cambiano `atteso` (A->O) e di quanto:
+    allstar_u23:  GK 60.0% cambiate (mediana 0.5, max 2.6 punti)
+                  DEF 58.9% (mediana 1.8, max 9.8)
+                  MID 58.8% (mediana 1.6, max 10.8)
+                  FWD 57.0% (mediana 1.7, max 9.3)
+    mls_hotstreak: GK 85.2% (mediana 0.5, max 2.5)
+                   DEF 86.3% (mediana 1.7, max 8.7)
+                   MID 86.3% (mediana 1.7, max 8.0)
+                   FWD 85.3% (mediana 1.7, max 8.5)
+    Il segnale NON e' inerte: si muove su piu' della meta' delle carte, con
+    scostamenti mediani di 0.5-1.8 punti (non decimali trascurabili).
+
+  1c -- quante formazioni cambiano almeno una carta fra G e G+O (stessa
+        policy per-ruolo di 3a, k=0.2):
+    allstar_u23:  GK 50.5% (436/864)  DEF 63.7% (550/864)
+                  MID 64.7% (559/864) FWD 57.2% (494/864)
+    mls_hotstreak: GK 55.3% (172/311) DEF 57.9% (180/311)
+                   MID 71.1% (221/311) FWD 64.0% (199/311)
+    Fra il 50% e il 71% delle formazioni cambia almeno una carta scelta.
+    CONCLUSIONE 9.1: "le odds non aggiungono nulla" e "le odds non sono mai
+    entrate nel calcolo" sono ORA distinguibili, ed e' la prima: il segnale
+    sposta moltissime scelte reali (non e' rumore di arrotondamento) ma il
+    risultato netto sul realizzato resta a zero/negativo (Passo 3). Non e'
+    un interruttore rotto: e' un interruttore che funziona e produce un
+    pareggio.
+
+9.2 COPERTURA (denominatore)
+    allstar_u23:  TOTALE 28.786 carte-giornata, con_delta 17.233 (59.9%),
+                  senza_delta 11.553 (40.1%). Per ruolo: GK 63.3%, DEF 59.9%,
+                  MID 59.6%, FWD 57.9% con delta disponibile.
+    mls_hotstreak: TOTALE 14.425, con_delta 12.669 (87.8%), senza_delta 1.756
+                  (12.2%). Copertura molto piu' alta (mls ha piu' quote
+                  disponibili nella finestra).
+    Motivi della mancanza (3 esempi per ruolo, vedi log completo):
+      - 'quote_partita_corrente_mancanti' (piu' frequente): non c'e' una
+        riga di quote 1X2 per la partita bersaglio del giocatore in quella
+        finestra -- es. Emiliano Martinez, Mike Maignan, Lionel Messi.
+      - 'meno_di_5_partite_storiche_con_quote(n=..)': il giocatore ha
+        giocato ma le sue partite precedenti non hanno abbastanza quote
+        storiche per calcolare la media di riferimento -- es. Kai Wagner
+        (n=1), Aaron Long (n=3).
+    Le carte senza delta entrano con effetto nullo (k*0=0): sono ~40% del
+    campione su allstar_u23, quota non trascurabile -- il test misura
+    l'effetto su una base di copertura reale del 60%, non del 100%.
+
+9.3 DUMP LEGGIBILE
+    analisi_manager/p20_dump_esempio.txt -- una formazione Under23 completa
+    (manager angioletto33, gw football-21-24-jul-2026): pool intero (7+7+7+
+    ...carte con grade/delta_odds/atteso A e O), le 4 formazioni scelte
+    (A/G/O/G+O) e il realizzato. Esempio concreto del meccanismo: in DEF, O
+    sceglie gabriel-armando-de-abreu (atteso_O 57.40, delta_odds +0.434) al
+    posto di nouhou-tolo (atteso_A 55.00, delta_odds -0.14) -- G+O eredita
+    la stessa sostituzione.
+
+9.4 LIMITE DICHIARATO (non risolto qui)
+    Testato UN SOLO k=0.2 per ruolo (come da brief). Non si sa se un k piu'
+    piccolo (0.05-0.1) darebbe un effetto positivo piccolo ma reale, ne' se
+    un k piu' grande peggiorerebbe di piu'. Non e' stata fatta una griglia:
+    richiederebbe un'ipotesi a priori su quale k testare, altrimenti e'
+    pesca a strascico. Chi riapre il filone parte da qui.
+
+9.5 VERDETTO CONFERMATO
+    Il "no" del Passo 3 e' un no informativo: l'interruttore funziona (9.1),
+    sposta piu' di meta' delle scelte reali, ma il risultato netto resta
+    a zero/negativo su formazione realizzata, su due basi indipendenti.
