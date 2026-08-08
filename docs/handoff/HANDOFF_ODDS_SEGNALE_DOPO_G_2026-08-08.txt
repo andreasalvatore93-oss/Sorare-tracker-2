@@ -251,3 +251,91 @@ pena del costo.
     delta), a sostegno del motivo originale per cui e' stato scelto il
     delta invece del livello. Il filone resta chiuso: ne' D ne' L, sopra G,
     aggiungono un vantaggio misurabile sulla formazione realizzata.
+
+11. FOLLOW-UP (09/08/2026, notte, Roma) -- quattro punti su richiesta
+    esplicita dell'utente, nessuna query rete. Script nuovo:
+    analisi_manager/p20_odds_livello_followup.py + output
+    analisi_manager/p20_odds_livello_followup_out.json. Non committati, in
+    attesa di ok utente. Nessuna modifica alla produzione (i controlli su
+    "perche' fallisce contesto()" richiamano prev.partita_target/
+    finestra_storica gia' esistenti, in sola lettura, senza toccarle).
+
+11.1 PUNTO 1 -- livello GREZZO (non z-scorato), k calibrato a parita' di
+     effetto (§2b del brief originale, alternativa a §2c gia' fatta).
+     Calibrazione: per ogni ruolo/base, cercato in una griglia di k
+     (0.02-0.4) quello che avvicina di piu' lo scostamento MEDIANO
+     dell'atteso al valore gia' misurato per il delta grezzo a k=0.2
+     (§9.1: allstar GK 0,5/DEF 1,8/MID 1,6/FWD 1,7; mls GK 0,5/DEF 1,7/
+     MID 1,7/FWD 1,7). Trovato per allstar_u23 k=0.13 su tutti e 4 i
+     ruoli (mediane ottenute 0,5/1,7/1,5/1,6, molto vicine al target); per
+     mls_hotstreak k=0.16 (GK/MID/FWD) e k=0.13 (DEF).
+     RISULTATO (G+Lraw vs G, IC95 bootstrap manager):
+       allstar_u23:  GK -0.248 [-1.488,+0.671]  DEF -0.105 [-1.198,+0.786]
+                     MID -0.022 [-1.564,+1.392]  FWD +1.080 [-1.046,+2.111]
+       mls_hotstreak: GK +0.446 [-0.046,+0.875]  DEF -0.053 [-1.240,+0.913]
+                     MID +0.617 [-1.455,+2.753]  FWD -0.264 [-1.544,+1.200]
+     NESSUN ruolo ha IC95 tutto positivo, su nessuna base. Anche con la
+     scelta di scala alternativa (§2b invece di §2c) il verdetto non
+     cambia: il livello non batte G. L'aspettativa dichiarata dall'utente
+     (nessun ribaltamento) e' confermata dal dato, non per allineamento.
+
+11.2 PUNTO 2 -- perche' manca il 22,5% su allstar_u23, tre gruppi
+     diagnostici (ripercorsi in sola lettura prev.partita_target/
+     finestra_storica/_p_own_opp_odds, stessa unita' di conteggio per
+     riga del 4b: n=28.786 allstar, n=14.425 mls, non deduplicato):
+       allstar_u23:  mancante totale 6.489/28.786 (22,5%)
+         target_non_trovato             n=0
+         finestra_storica_insufficiente n=0
+         quote_partita_mancanti         n=6.489 (100% del mancante)
+       mls_hotstreak: mancante totale 876/14.425 (6,1%)
+         quote_partita_mancanti         n=876 (100% del mancante)
+     TUTTO il mancante, su entrambe le basi, e' 'quote_partita_mancanti':
+     la partita bersaglio del giocatore non ha una riga nell'indice
+     odds_1x2 (fuori dalla finestra coperta, o lega esclusa tipo
+     eliteserien). Zero casi di target_non_trovato o finestra_storica
+     insufficiente: quando contesto() e' costruibile (la squadra/avversario
+     sono noti), l'unico ostacolo e' la disponibilita' della quota. QUESTO
+     E' IL NUMERO CHE RISPONDE ALLA DOMANDA: recuperare le quote storiche
+     mancanti (lavoro gia' sul tavolo dell'utente, non fatto qui) alzerebbe
+     la copertura livello fino quasi al 100% -- non c'e' nessun altro
+     collo di bottiglia strutturale da risolvere prima.
+
+11.3 PUNTO 3 -- il n=310 vs n=311 su mls_hotstreak, causa trovata.
+     Non dipende da nessun segnale odds: ris_A (formazioni giocate con
+     _cal, nessun aggiustamento) ha 310 formazioni valide su 314, ris_G
+     (_combinato, grade) ne ha 311. La formazione che fallisce sotto A ma
+     riesce sotto G e':
+       manager=keano88  gw=football-31-jul-4-aug-2026
+       competizione="MLS - Hot Streak - Limited"
+     build_one_lineup_with_growth (produzione, non toccata) non trova una
+     formazione valida quando ordina i candidati sui valori _cal, ma la
+     trova quando ordina su _combinato (grade sommato sopra) -- probabile
+     tie-break/vincolo (stack guard o anti-sinergia) che con _cal seleziona
+     un candidato che poi fallisce un controllo a valle, mentre _combinato
+     sposta l'ordinamento quel tanto che basta a scegliere un candidato che
+     passa. Non e' stato indagato oltre (fuori scope, nessuna riscrittura
+     del knapsack, D7 CLAUDE.md). CONSEGUENZA SUI NUMERI: il CONTROLLO 4c
+     (che confronta A vs G) e' quindi correttamente n=310 (l'intersezione
+     dei due), mentre i confronti 3a/3b (che confrontano G+D_z/G+L_z contro
+     G, MAI contro A) recuperano quella formazione e mostrano n=311. Non e'
+     un bug del test: sono due basi di confronto diverse (A∩G contro
+     X∩G) che per costruzione possono avere n leggermente diverso.
+
+11.4 PUNTO 4 -- CONTROLLO 4c messo per iscritto esplicitamente (era gia'
+     stato eseguito e stampato al §10 come "CONTROLLO 4c", ma qui la
+     richiesta era di formalizzarlo col confronto atteso/ottenuto):
+       allstar_u23:   A=424.57  G=430.55  delta=+5.98  n=864  atteso=+5,98
+                      n=864 -- MATCH ESATTO
+       mls_hotstreak: A=314.49  G=320.95  delta=+6.46  n=310  atteso=+6,46
+                      n=310 -- MATCH ESATTO (n=310, non 311: vedi 11.3 per
+                      il perche' e' corretto che sia cosi')
+     Base confermata identica in entrambi i giri (§10 originale e questo
+     follow-up), nessuna deriva.
+
+11.5 VERDETTO FOLLOW-UP: nessuno dei quattro punti ribalta il §10. Il
+     livello grezzo con k calibrato a parita' di effetto (11.1) da' lo
+     stesso esito nullo dello z-scorato. Il mancante e' spiegato al 100%
+     da quote di partita assenti (11.2), non da altri difetti strutturali.
+     Il n=310/311 e' un artefatto benigno dell'intersezione fra due rami
+     diversi, non un bug (11.3). Il controllo 4c e' confermato per
+     iscritto su entrambe le basi (11.4). Filone chiuso.
