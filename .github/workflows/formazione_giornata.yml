@@ -48,6 +48,10 @@ on:
         description: 'Escludi le carte schierate in formazioni BLOCCATE (non modificabili) di questa giornata. Le formazioni ancora modificabili non contano. 0=no (default), 1=si'
         required: false
         default: '0'
+      arena_criterio:
+        description: 'MISURA (brief BRIEF_SONNET_CRITERIO_ARENE_2026-08-08.txt): come genera_arene_efficienti confronta i tipi. assoluto=comportamento di sempre (default). capitale=resa per essenza impegnata (tiene conto del costo d ingresso).'
+        required: false
+        default: 'assoluto'
       list_unused_candidates:
         description: 'Stampa nel log i candidati eleggibili mai schierati (debug, 0/1)'
         required: false
@@ -484,6 +488,7 @@ jobs:
           ALLSTARS_U23: ${{ github.event.inputs.allstars_u23 }}
           ARENA_LEAGUES_ENABLED: ${{ github.event.inputs.arena_leghe_abilitate }}
           LIST_UNUSED_CANDIDATES: ${{ github.event.inputs.list_unused_candidates }}
+          ARENA_CRITERIO: ${{ github.event.inputs.arena_criterio }}
           PYTHONUNBUFFERED: "1"
         run: python generatore_formazioni/build_formazione_globale.py
       - if: always()

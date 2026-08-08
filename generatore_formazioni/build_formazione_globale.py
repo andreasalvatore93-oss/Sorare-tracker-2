@@ -703,6 +703,14 @@ COSTO_INGRESSO.update({arena_type(lg): 300 for lg in ARENA_LEAGUES})
 # guadagno netto.
 QUOTA_MINIMA = 0.10
 
+# ARENA_CRITERIO (brief BRIEF_SONNET_CRITERIO_ARENE_2026-08-08.txt): come
+# genera_arene_efficienti confronta i tipi fra loro. 'assoluto' (default,
+# INVARIATO) = comportamento di sempre, ignora il costo d'ingresso. 'capitale'
+# = resa per essenza impegnata (resa/COSTO_INGRESSO), tiene conto che la cap
+# 220 costa 200 e la cap 260 ne costa 300. MISURA, non ancora una scelta di
+# produzione: il default non cambia finche' l'utente non decide.
+ARENA_CRITERIO = os.environ.get('ARENA_CRITERIO', 'assoluto')
+
 
 def _etichetta_arena(tipo, atteso):
     """(testo, colore) da mostrare accanto alla formazione.
@@ -1265,17 +1273,34 @@ def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool):
                 continue
             atteso = _atteso_con_capitano(valide[0])
             resa = (atteso - soglia) * GUADAGNO_PER_PUNTO.get(tipo, 7.9)  # B05, vedi _etichetta_arena
-            if migliore is None or resa > migliore[0]:
-                migliore = (resa, tipo, atteso)
+            # ARENA_CRITERIO (brief BRIEF_SONNET_CRITERIO_ARENE_2026-08-08.txt,
+            # MISURA non ancora scelta di produzione): 'assoluto' (default,
+            # comportamento di sempre) confronta la resa in essenze SENZA
+            # guardare quanto costa entrare -- a parita' di margine la cap 260
+            # vince sempre (GUADAGNO_PER_PUNTO piu' alto), anche se la cap 220
+            # rende di piu' per essenza investita (misurato: 3.2%/pt contro
+            # 2.6%/pt). 'capitale' confronta la resa PER ESSENZA IMPEGNATA
+            # (resa/COSTO_INGRESSO), come si farebbe con un budget limitato.
+            # Il segno di 'resa' non cambia (COSTO_INGRESSO sempre positivo),
+            # quindi il criterio di stop "migliore[0] <= 0" sotto resta valido
+            # in entrambi i casi -- verificato, non solo assunto.
+            if ARENA_CRITERIO == 'capitale':
+                resa_confronto = resa / COSTO_INGRESSO.get(tipo, 300)
+            else:
+                resa_confronto = resa
+            if migliore is None or resa_confronto > migliore[0]:
+                migliore = (resa_confronto, tipo, atteso, resa)
         if migliore is None or migliore[0] <= 0:
             break
-        _resa, tipo, atteso = migliore
+        _resa_confronto, tipo, atteso, _resa = migliore
         vera = generate_lineups_for_type(tipo, 1, role_data, pools, card_pool)
         for r in vera:
             if 'error' not in r:
                 scelte.append(r)
+        nota_criterio = (f", resa/essenza investita {_resa_confronto:.4f}"
+                        if ARENA_CRITERIO == 'capitale' else '')
         print(f"  arena efficiente #{len(scelte)}: {LABELS.get(tipo, tipo)} "
-              f"-- atteso {atteso:.1f}, resa {_resa:.0f} essenze")
+              f"-- atteso {atteso:.1f}, resa {_resa:.0f} essenze{nota_criterio}")
     return scelte
 
 

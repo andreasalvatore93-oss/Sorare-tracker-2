@@ -1,0 +1,38 @@
+C:\Users\Andrea\Documents\GitHub\Sorare-tracker-2\generatore_formazioni\build_formazione_globale.py:924: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  now = now or datetime.datetime.utcnow()
+C:\Users\Andrea\Documents\GitHub\Sorare-tracker-2\generatore_formazioni\build_formazione_globale.py:2208: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  ts = datetime.datetime.utcnow().strftime('%Y-%m-%d_%H%M%S')
+C:\Users\Andrea\Documents\GitHub\Sorare-tracker-2\generatore_formazioni\build_formazione_globale.py:2211: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  page_subhead = (f"Generato {datetime.datetime.utcnow().strftime('%d/%m/%Y %H:%M')}Z — "
+ONLY_LEAGUES attivo: solo ('kleague', 'mls')
+Formazioni richieste: totale=2 -> In Season MLS=1, In Season K League=1
+[kleague/GK] formazione_kleague\output\kleague_gk_all\consiglio_2026-08-08_094629.txt -> 5 giocatori
+[kleague/DEF] formazione_kleague\output\kleague_def_all\consiglio_2026-08-08_094630.txt -> 15 giocatori
+[kleague/MID] formazione_kleague\output\kleague_mid_all\consiglio_2026-08-08_094631.txt -> 7 giocatori
+[kleague/FWD] formazione_kleague\output\kleague_fwd_all\consiglio_2026-08-08_094632.txt -> 3 giocatori
+[mls/GK] formazione_mls\output\mls_gk_all\consiglio_2026-08-08_094629.txt -> 6 giocatori
+[mls/DEF] formazione_mls\output\mls_def_all\consiglio_2026-08-08_094630.txt -> 16 giocatori
+[mls/MID] formazione_mls\output\mls_mid_all\consiglio_2026-08-08_094631.txt -> 9 giocatori
+[mls/FWD] formazione_mls\output\mls_fwd_all\consiglio_2026-08-08_094632.txt -> 7 giocatori
+
+Finestra giornata: solo partite fra adesso e +4 giorni (MATCH_WINDOW_DAYS). Candidati GK: 11->11, DEF: 31->31, MID: 16->16, FWD: 10->10
+Formazione In Season MLS #1: generata (306.7 pt)
+Formazione In Season K League #1: generata (264.3 pt)
+Formazione In Season MLS #1: generata (300.7 pt)
+Formazione In Season MLS #2: generata (266.8 pt)
+Formazione In Season MLS #3: generata (256.2 pt)
+Formazione In Season MLS #4: generata (247.9 pt)
+Formazione In Season MLS #5: generata (239.2 pt)
+Formazione In Season K League #1: generata (264.3 pt)
+Formazione In Season K League #2: generata (253.5 pt)
+Formazione In Season K League #3: NON GENERATA — Nessun candidato disponibile per lo slot FWD (vincolo di schieramento (portiere vs avversario) + copie esaurite o consiglio vuoto).
+
+Formazioni OPZIONALI extra generate con il pool residuo: 7 (In Season MLS=5, In Season K League=2)
+
+Formazioni generate: 9/2
+TOTALE COMPLESSIVO: 2399.6 pt
+
+DUMP_JSON scritto: analisi_manager/dump_criterio_default.json (2 formazioni primarie)
+Candidati non schierati in nessuna formazione: 30 (GK:3, DEF:18, MID:7, FWD:2)
+
+Report visivo salvato in: C:\Users\Andrea\Documents\GitHub\Sorare-tracker-2\generatore_formazioni\output\generatore_formazioni_2026-08-08_103907.html

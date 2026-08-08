@@ -1,0 +1,57 @@
+==============================================================================
+PASSO 2 -- CONTROLLO DI REALTA' RETROSPETTIVO (ROI per tipo/costo)
+==============================================================================
+LIMITE dichiarato: premi BASE, golden NON distinte (CLAUDE.md D5) -- il
+ROI assoluto e' sottostimato, ma il moltiplicatore golden lascia il costo
+dov'e' quindi NON cambia quale tipo conviene di piu', solo il livello.
+
+file manager validi: 54
+scarti (tutti i manager): {'competizione_sconosciuta:Elite': 861, 'competizione_sconosciuta:Jupiler Pro League Arena - Limited': 17, 'competizione_sconosciuta:All Star Arena - Limited': 171, 'competizione_sconosciuta:Turkish League Arena - Limited': 12, 'competizione_sconosciuta:Eredivisie Arena - Limited': 11, 'competizione_sconosciuta:Under 23 Arena - Limited': 2, 'competizione_sconosciuta:Portuguese League Arena - Limited': 1, 'competizione_sconosciuta:Italian League Arena - Limited': 9, 'competizione_sconosciuta:LALIGA EA SPORTS Arena - Limited': 17, 'competizione_sconosciuta:Premier League Arena - Limited': 11, 'rank_mancante': 21, 'competizione_sconosciuta:Ligue 1 Arena - Limited': 8, 'competizione_sconosciuta:Bundesliga Arena - Limited': 6, 'competizione_sconosciuta:Liga Portugal Arena - Limited': 4}
+
+==============================================================================
+TUTTI I MANAGER  (n=7699 arene)
+==============================================================================
+
+  PER TIPO:
+  tipo            n    netto_tot    costo_tot     ROI%
+  Cap 260      2564       -70000       769200    -9.1%
+  Cap 220       980       -11900       196000    -6.1%
+  Uncapped      421       -11800       126300    -9.3%
+  Beginner     3734       -13900       373400    -3.7%
+
+  PER COSTO D'INGRESSO:
+  costo           n    netto_tot    costo_tot     ROI%
+         300   2985       -81800       895500    -9.1%
+         200    980       -11900       196000    -6.1%
+         100   3734       -13900       373400    -3.7%
+
+  TOTALE: n=7699  netto=-107600  costo=1464900  ROI=-7.3%
+
+scarti (crowss): {'competizione_sconosciuta:Jupiler Pro League Arena - Limited': 5, 'competizione_sconosciuta:All Star Arena - Limited': 4, 'competizione_sconosciuta:Turkish League Arena - Limited': 2, 'competizione_sconosciuta:Eredivisie Arena - Limited': 1, 'competizione_sconosciuta:Under 23 Arena - Limited': 2, 'competizione_sconosciuta:Portuguese League Arena - Limited': 1}
+
+==============================================================================
+SOLO crowss  (n=361 arene)
+==============================================================================
+
+  PER TIPO:
+  tipo            n    netto_tot    costo_tot     ROI%
+  Cap 260       147          400        44100     0.9%
+  Cap 220        45         2100         9000    23.3%
+  Uncapped       31        -1100         9300   -11.8%
+  Beginner      138        -2400        13800   -17.4%
+
+  PER COSTO D'INGRESSO:
+  costo           n    netto_tot    costo_tot     ROI%
+         300    178         -700        53400    -1.3%
+         200     45         2100         9000    23.3%
+         100    138        -2400        13800   -17.4%
+
+  TOTALE: n=361  netto=-1000  costo=76200  ROI=-1.3%
+
+==============================================================================
+NOTA (brief 1d, da ripetere sempre insieme a questi numeri): la fonte
+esterna indipendente (screenshot utente, 710 ingressi, ROI 11.79%) mostra
+lo STESSO ORDINE fra tipi (cap220 > cap260 > uncapped > beginner per costo
+investito) -- citata come fonte esterna, non ricalcolata qui. Due bias:
+l'utente selezionava le cap220 "a mano" (ROI gonfiato), e le cap220 hanno
+strutturalmente meno ingressi (vincolo L10<=220), non e' un difetto.
