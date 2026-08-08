@@ -6,6 +6,37 @@ spendendo meno token: se esiste, uso quello. Non eseguo un'operazione costosa
 (run, query, lettura di file grossi, fetch) quando una via piu' economica da'
 la stessa risposta. Questa regola viene prima di ogni altra in questo file.
 
+# LA FONTE DI VERITA' E' IL CODICE IN PRODUZIONE, NON I RIASSUNTI (08/08/2026)
+
+Regola nuova, dettata dall'utente. Sovrasta tutte le regole precedenti che
+dicono di partire dagli handoff o dai riassunti.
+
+I documenti in docs/ e docs/handoff/ sono ormai troppi, si contraddicono fra
+loro e contengono verdetti superati scritti come se fossero attuali. Non sono
+piu' una fonte affidabile. Da adesso:
+
+1. A INIZIO SESSIONE mi oriento su TRE cose, in quest'ordine:
+     a) git pull;
+     b) git log (l'ultimo lavoro fatto davvero, con data e messaggio);
+     c) il CODICE IN PRODUZIONE che riguarda il tema di cui si parla.
+   NON apro gli handoff per "prendere contesto". Se l'utente me ne indica
+   uno, lo leggo come indizio, non come verita'.
+2. UN DOCUMENTO NON E' UNA PROVA. Un numero, un verdetto o uno stato letto in
+   un handoff vale come IPOTESI DA VERIFICARE, mai come fatto. Prima di
+   ripeterlo all'utente lo riscontro nel codice o con una misura. Se non
+   posso riscontrarlo, dico "sta scritto in X ma non l'ho verificato".
+3. QUANDO DOCUMENTO E CODICE DIVERGONO, VINCE IL CODICE, sempre e senza
+   discussione. E correggo il documento nello stesso momento, altrimenti la
+   prossima sessione ci ricasca.
+4. PRIMA DI APRIRE UN FILONE O SCRIVERE UN BRIEF: git log sul tema. Serve a
+   non far rifare lavoro gia' fatto. Errore reale dell'08/08 che ha prodotto
+   questa regola: ho scritto un brief per far sistemare la copia-incolla
+   dell'HTML che era GIA' STATA SISTEMATA otto ore prima (commit b1cbf53db6,
+   apostrofo non escapato). Bastava un git log.
+5. Gli handoff si continuano a SCRIVERE (servono all'utente e alle altre
+   sessioni), ma non si LEGGONO come base di partenza. Chi scrive un handoff
+   scrive per un lettore che verifichera' tutto sul codice.
+
 # DIVIETO TOTALE DI ALLUCINAZIONI E ASSUNZIONI (06/08/2026, 22:50 Roma)
 
 Divieto assoluto, senza eccezioni. Non affermo NIENTE che non sia:
@@ -286,9 +317,10 @@ Conseguenze operative per l'orchestratore:
 L'utente lavora con piu' account e piu' sessioni sullo stesso repo. Il repo e'
 l'unico canale di memoria condivisa fra loro.
 
-- All'INIZIO di ogni sessione: `git pull`, poi leggo i file in `docs/handoff/`
-  con data piu' recente e il CONTEXT piu' aggiornato. Non chiedo all'utente di
-  raccontarmi cosa e' stato fatto: sta nel repo.
+- All'INIZIO di ogni sessione: `git pull`, poi `git log`, poi il CODICE in
+  produzione sul tema. NON gli handoff (regola dell'08/08 in cima a questo
+  file: la fonte di verita' e' il codice). Non chiedo all'utente di
+  raccontarmi cosa e' stato fatto: sta nel repo, e sta nel git log.
 - Alla FINE di ogni sessione: scrivo l'handoff, committo TUTTO (handoff
   incluso) e faccio `git push`. Un lavoro non pushato non esiste per le altre
   sessioni.
@@ -443,7 +475,10 @@ strumenti insieme, mai separatamente (vedi regola sopra).
   dell'arte vero. Non accumulare in coda: quando una sezione supera la sua
   utilita' (filone chiuso, dato superato), riscriverla snella invece di
   lasciarla accanto alla versione nuova.
-  Obiettivo: restare digeribile, leggibile per intero a inizio sessione.
+  Obiettivo: restare digeribile. NOTA 08/08: non e' piu' "la lettura di
+  inizio sessione" (vedi la regola in cima: si parte dal codice e dal git
+  log). Resta il posto dove si SCRIVE lo stato, e dove si va a cercare un
+  dettaglio quando serve -- come indizio da verificare, non come prova.
 - Gli altri file storici (`RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md`,
   `RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `HANDOFF_BEST_FIVE.md`) restano
   come archivio, non piu' da consultare o aggiornare.

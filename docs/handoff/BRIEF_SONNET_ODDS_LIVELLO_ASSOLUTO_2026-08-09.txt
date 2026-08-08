@@ -1,0 +1,161 @@
+BRIEF PER SONNET — FAVORITO ODDS: LIVELLO ASSOLUTO CONTRO DELTA STORICO
+Scritto dall'orchestratore (Opus) il 09/08/2026, notte (Roma).
+Seguito di: BRIEF_SONNET_ODDS_SEGNALE_DOPO_G_2026-08-08.txt e del suo
+follow-up sui controlli. Esito precedente:
+docs/handoff/HANDOFF_ODDS_SEGNALE_DOPO_G_2026-08-08.txt
+
+SI MISURA, NON SI APPLICA. Nessun file di produzione toccato.
+Si riusa `analisi_manager/p20_odds_vs_grade.py`: stessa base, stesso
+impianto, si aggiunge una variante. Non riscrivere niente da capo.
+
+
+=====================================================================
+1. DA DOVE NASCE (obiezione dell'utente, e ha un fondamento)
+=====================================================================
+Oggi il segnale odds usato nel test e' `delta_favorito_odds`: lo SCARTO fra
+la quota della partita da giocare e la MEDIA STORICA di quel giocatore
+(`backtest_arene_previsioni.py` righe 549-574).
+
+Il motivo della scelta e' scritto a riga 550: evitare il DOPPIO CONTEGGIO
+con lo storico dei punteggi. Se un giocatore ha sempre affrontato squadre
+deboli, i suoi punteggi passati sono gia' alti e lo `score_atteso` lo
+riflette: sommarci anche il livello assoluto delle quote conterebbe due
+volte la stessa informazione. E' una ragione seria e va rispettata.
+
+L'OBIEZIONE DELL'UTENTE, testuale nell'esempio: Yamal (Barcellona) contro
+Mbappe (Real) avra' quote da partita equilibrata, diciamo 33/33/33, cioe'
+nessun segnale. Ma se nelle cinque partite precedenti il Barcellona era
+dato al 90%, il delta diventa fortemente negativo e il modello penalizza
+Yamal in una partita che in assoluto e' equilibrata.
+
+Il difetto che questo smaschera e' reale: **due giocatori che affrontano
+la stessa identica partita al 50% ricevono segnali opposti** a seconda di
+chi hanno incontrato prima. Il delta misura "quanto e' diversa dal suo
+solito", il livello misura "quanto e' difficile". Sono due domande diverse
+e non e' ovvio quale serva.
+
+QUALE SIA MEGLIO E' UNA DOMANDA EMPIRICA, non logica: dipende da quanto il
+modello abbia gia' assorbito la forza dell'avversario attraverso i punteggi
+storici. Si misura.
+
+VANTAGGIO PRATICO NON PICCOLO del livello assoluto: non richiede le cinque
+partite storiche con quote (riga 572, `if len(storici) < 5: return None`).
+Basta la quota della partita da giocare. Solo per questo la copertura
+dovrebbe salire dal ~60% attuale (allstar_u23) a quasi il 100% sulle
+partite che hanno la quota — **e questo va misurato e riportato, perche' e'
+un risultato di per se'**.
+
+
+=====================================================================
+2. COSA IMPLEMENTARE
+=====================================================================
+Una terza forma del segnale, accanto a quelle gia' presenti:
+
+  L (livello assoluto): al posto di `delta_favorito_odds` usa direttamente
+      `p_win_own - p_win_opp` della partita da giocare, cioe' il valore che
+      `_p_own_opp_odds(squadra, opp, cutoff)` gia' restituisce
+      (`backtest_arene_previsioni.py` righe 527-546) — senza sottrarre
+      nessuna media storica e senza il requisito delle 5 partite.
+
+  Applicazione: identica a quella del delta, stesso punto della catena,
+  stessa formula:
+      atteso_raw_adj = atteso_raw * (1 + k * segnale)
+  applicata ad `atteso_raw` PRIMA della calibrazione.
+
+ATTENZIONE ALLA SCALA — e' il punto dove si sbaglia piu' facilmente:
+`delta` e livello NON hanno la stessa distribuzione. Il delta e' centrato
+attorno a zero per costruzione; il livello va da circa -1 a +1 con media
+diversa da zero. Con lo STESSO k i due segnali producono effetti di
+grandezza diversa, e un confronto ingenuo misurerebbe la scala, non il
+segnale.
+ 2a. Riporta media, deviazione standard, minimo e massimo dei DUE segnali
+     sullo stesso campione, PRIMA di confrontarli.
+ 2b. Confronta a parita' di EFFETTO, non di k: scegli il k del livello in
+     modo che lo scostamento mediano di `atteso` (A->L) sia dello stesso
+     ordine di quello misurato per il delta a k=0.2 (era 0.5-1.8 punti,
+     vedi §9.1 dell'handoff precedente). Dichiara il k che ne esce e come
+     l'hai scelto.
+ 2c. Se preferisci, in alternativa: standardizza entrambi i segnali (z-score
+     sul campione) e usa lo stesso k. Va bene uguale, purche' sia
+     DICHIARATO quale delle due strade hai preso e perche'.
+
+
+=====================================================================
+3. IL TEST
+=====================================================================
+Stessa base pulita non-arena di sempre (All Star + U23 n=864, MLS Hot
+Streak n=310), stesso metro, stessi controlli.
+
+Rami:
+    A     = baseline
+    G     = solo grade (produzione)
+    G+D   = grade + delta storico        (gia' misurato: nessun ruolo positivo)
+    G+L   = grade + livello assoluto     (NUOVO)
+Il numero che decide e' **G+L contro G**. Confronta anche G+L contro G+D,
+per dire quale delle due forme del segnale funziona meglio.
+
+Procedura identica a prima, per non pescare a strascico:
+ 3a. un ruolo alla volta, gli altri a zero: quattro misure per base.
+ 3b. si combinano SOLO i ruoli con IC95 tutto positivo. Se nessuno lo e', ci
+     si ferma e lo si scrive, come hai fatto la volta scorsa.
+ 3c. dichiara il numero TOTALE di varianti provate.
+
+
+=====================================================================
+4. CONTROLLI OBBLIGATORI
+=====================================================================
+ 4a. INTERRUTTORE, come la volta scorsa: con k=0 il ramo L coincide
+     ESATTAMENTE con A; con il k scelto, quante carte cambiano `atteso` e
+     di quanto (mediana, massimo), e quante FORMAZIONI cambiano almeno una
+     carta. Senza questi numeri il risultato non e' leggibile.
+ 4b. COPERTURA: quante carte hanno il livello assoluto disponibile, contro
+     le 17.233/28.786 (59,9%) del delta su allstar_u23 e le 12.669/14.425
+     (87,8%) su mls_hotstreak. **E' una delle risposte che cerchiamo**:
+     quanto guadagniamo eliminando il requisito delle 5 partite storiche.
+ 4c. Il ramo G deve riprodurre +5,98 (n=864) e +6,43/6,46 (n=310). Se non li
+     ritrovi, base diversa: fermati.
+ 4d. PLACEBO su qualunque ramo risulti positivo: permuta il segnale fra le
+     carte dello stesso gruppo, 200 permutazioni se il costo lo consente,
+     altrimenti dichiara N e riporta la distanza dal massimo del placebo.
+ 4e. Bootstrap sui MANAGER (cluster), non sulle formazioni.
+ 4f. DUMP leggibile di una formazione completa con entrambi i segnali in
+     colonna (grade, delta, livello, atteso nei quattro rami, realizzato).
+
+
+=====================================================================
+5. UNA DOMANDA IN PIU', SE IL TEMPO LO CONSENTE (non obbligatoria)
+=====================================================================
+Il motivo per cui il delta esiste e' il timore del doppio conteggio con lo
+storico dei punteggi. Quel timore si puo' misurare: **quanto e' correlato il
+livello assoluto delle odds con lo `score_atteso` gia' calcolato?** Se la
+correlazione e' alta, il doppio conteggio e' reale e il delta ha ragione di
+esistere; se e' bassa, il livello porta informazione che il modello non ha.
+Un numero solo, per ruolo, con la sua n. E' la spiegazione di qualunque cosa
+esca dal test.
+
+
+=====================================================================
+6. COSA NON FARE
+=====================================================================
+- Non toccare la produzione; non toccare le STARTER odds (filtro e
+  tie-break restano come sono).
+- Non confrontare delta e livello allo stesso k senza aver verificato che
+  producano effetti di grandezza confrontabile (§2b): sarebbe un confronto
+  fra scale, non fra segnali.
+- Non presentare come positivo un ramo che non ha passato il placebo.
+- Se l'interruttore risulta inerte, fermati e riporta invece di aggiustarlo.
+- Niente query a Sorare in questo giro: si lavora sulle quote gia' in
+  archivio. Il recupero delle quote storiche mancanti e' un lavoro separato,
+  gia' sul tavolo dell'utente.
+
+
+=====================================================================
+7. DOVE SCRIVERE
+=====================================================================
+In coda a `docs/handoff/HANDOFF_ODDS_SEGNALE_DOPO_G_2026-08-08.txt`,
+sezione "10. LIVELLO ASSOLUTO CONTRO DELTA (data, ora Roma)". Stesso filone,
+niente file nuovo. Committa solo i tuoi file.
+
+Riporta all'utente in cinque righe: la copertura del livello contro quella
+del delta (4b), il delta G+L contro G sulle due basi, il confronto G+L
+contro G+D, quante varianti hai provato e l'esito dell'interruttore.

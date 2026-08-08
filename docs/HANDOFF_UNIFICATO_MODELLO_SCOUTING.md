@@ -255,9 +255,23 @@ Season/All Star/Under 23, **+20% in arena**.
 
 ## 4. Dati costruiti (l'archivio su cui si misura tutto)
 
+### 4.0 QUALE ARCHIVIO ARENE USARE — leggere prima di ogni misura (08/08)
+
+Gli archivi arene sono **TRE**, con contenuti diversi. Confonderli è già
+costato tempo due volte: si sceglie in base a **cosa** si deve misurare.
+
+| se devi misurare… | usa | cosa contiene |
+|---|---|---|
+| ROI, sigma, punteggi, backtest, distribuzioni | **`dati_globali/manager_*.json`** (54 file) | **7.699 arene** di 54 manager: punteggio ufficiale, piazzamento, le 5 carte con ruolo/capitano/xp/rarità. **NON ha i punteggi degli avversari.** È l'archivio più grande: il default per qualunque misura statistica |
+| campo avversario, premi osservati, soglie (`consiglio_arena.py`) | **`analisi_manager/p11_pool.json`** | **673 arene complete** (cap260 194, Beginner 182, cap220 53, Uncapped 38, + 206 del formato vecchio "division"/"arena uncapped" da ESCLUDERE): tutti i punteggi dei partecipanti, `premio_essenze` reale (golden incluse), `mio_rank`, `costo`. È l'unica fonte con la classifica completa |
+| — | `dati_globali/arene_storico.json` | **160 arene**, stesso formato di p11_pool ma ridotto. È quello che `consiglio_arena.py` legge di default (riga 33), ed è il motivo per cui oggi NON riproduce i valori di produzione (misurati su 673) |
+
+Regola pratica: **statistica → i 54 file manager; classifiche e premi → p11_pool.**
+`arene_storico.json` non va usato per nuove misure finché non è ripristinato.
+
 | file | contenuto |
 |---|---|
-| `dati_globali/arene_storico.json` | 673 arene reali dell'utente (giu 2025–lug 2026): tutti e 10 i punteggi, premi, piazzamento |
+| `dati_globali/arene_storico.json` | 673 arene reali dell'utente (giu 2025–lug 2026): tutti e 10 i punteggi, premi, piazzamento — **ATTENZIONE: oggi ne contiene 160, vedi §4.0** |
 | `dati_globali/arene_formazioni.json` | 593 formazioni schierate: giocatore/carta/ruolo/capitano/punteggio |
 | `dati_globali/manager_forever-young.json` | arene REALI di un altro manager (mazzo simile, non scelto per il risultato), 71 giornate, 3326 righe con carte |
 | `dati_globali/manager_crowss.json` | **ATTENZIONE: e' l'UTENTE STESSO** (nickname Sorare `Crowss`), NON un manager esterno. 72 giornate, 1332 formazioni usate nel filone capitano. La vecchia descrizione ("un manager Korea-centrico") era doppiamente sbagliata: non e' un terzo e non e' Korea-centrico. Da NON includere in nessun confronto "i pick dei manager vs il nostro atteso" (filone smart-money, §7): confrontarsi con se stessi falsa il verdetto. Verificare se il filone capitano e le analisi smart-money lo hanno incluso per errore. |
@@ -1117,11 +1131,150 @@ vince il rendimento sul capitale. Risposta dell'utente: "dipende dalla
 giornata" — ma l'08/08 aveva 6.000 essenze e carte per oltre 40 arene, cioè
 il vincolo erano le essenze.
 
-Stato: brief `docs/handoff/BRIEF_SONNET_CRITERIO_ARENE_2026-08-08.txt`,
-flag `ARENA_CRITERIO` ('assoluto' default / 'capitale'), run di confronto
-lanciata su GitHub a fine sessione. **Nota: questo cambio NON tocca
-`score_atteso`, le soglie né lo scouting** — cambia solo l'ordine con cui i
-tipi vengono messi in fila, quindi la catena di produzione resta ferma.
+**ESITO (09/08, notte) — il criterio "capitale" NON migliora, e le soglie
+erano giuste.** Due misure, entrambe chiuse:
+
+1. *Criterio a rendimento sul capitale* (`ARENA_CRITERIO='capitale'`,
+   implementato e **lasciato spento**): su GW3 propone 22 arene invece di 23,
+   promuove la cap 220 dalla posizione 22 alla 7 — ma **rende meno**
+   (0,294 essenze per essenza impegnata contro 0,317), e anche a budget
+   fisso di 6.000 essenze resta sotto (1.876 contro 2.113). Perché il
+   ragionamento teorico non reggeva: vale *a parità di margine*, ma il
+   vincolo L10 ≤ 220 costringe a carte deboli, quindi le cap 220
+   costruibili stanno appena sopra il pareggio e un vantaggio percentuale
+   su un margine minuscolo resta minuscolo.
+2. *Taratura delle soglie*, rifatta su un archivio 14 volte più grande
+   (vedi §8octies): la cap 220 si sposta di **meno di un punto**. Il
+   rapporto fra i guadagni per punto resta **0,78**, contro lo 0,80 di
+   produzione — l'ipotesi dell'orchestratore che fosse 0,88-1,00 è
+   **smentita dai dati**.
+
+**Conclusione: le 34 cap 260 su 35 non erano un difetto.** Con questo mazzo
+le cap 260 vincono per merito, non per un errore di taratura. Non riaprire
+il filone del criterio senza un'idea nuova.
+
+Brief: `docs/handoff/BRIEF_SONNET_CRITERIO_ARENE_2026-08-08.txt`; esito
+`docs/handoff/HANDOFF_CRITERIO_ARENE_2026-08-08.txt`.
+
+---
+
+## 8octies. Soglie arena ritarate su 2.125 arene (09/08) — DA APPLICARE
+
+**L'archivio è stato ricostruito**: scaricate le classifiche complete di
+1.677 arene (`dati_globali/classifiche_arene_2026-08-08.json`), unite alle
+673 preesistenti → `dati_globali/arene_storico_full_v2.json`. Per la cap 220
+si passa da **53 a 755** classifiche complete, per l'Uncapped da 38 a 354.
+Il download è stato **validato** su 2.431 righe dei file manager di cui
+conoscevamo già punteggio e piazzamento: 99,6% dei punteggi ritrovati, 99,8%
+alla posizione giusta.
+
+| tipo | pareggio: produzione → nuovo | guadagno/pt: produzione → nuovo | costo |
+|---|---|---|---|
+| cap 260 | 259,5 → **260,2** | 7,9 → **6,93** | 300 |
+| cap 220 | 244,1 → **243,2** | 6,3 → **5,42** | 200 |
+| Uncapped | 288,3 → **282,4** | 8,0 → **5,95** | 300 |
+| Beginner | non esisteva → **259,2** | — → **2,34** | 100 |
+
+**I pareggi sono confermati** (scarti di 0,7-0,9 punti sui due tipi
+principali) e **stabili**: dividendo le arene in due metà casuali i pareggi
+distano 0,3 (cap 260) e 1,4 punti (cap 220), un ordine di grandezza sotto la
+soglia di fragilità. Quello che si muove davvero è il **guadagno per punto**,
+in calo del 12-26% su tutti i tipi. Effetto su GW3: 24 arene invece di 23
+(+1 cap 220).
+
+**LIMITE APERTO, ed è il prossimo lavoro**: il campione dei **premi** non è
+cresciuto — 235 osservazioni totali, **20 per la cap 220** — perché il
+download portava le classifiche ma non i premi incassati. Quindi metà del
+calcolo (quanto è fitto il campo) è ora solidissima, l'altra metà (quanto si
+incassa) poggia ancora su venti casi. È proprio la metà da cui dipende il
+guadagno per punto, cioè il numero che si muove di più.
+
+**Decisione dell'utente (09/08): si scaricano anche i premi, poi si
+applicano le soglie.** Non tocca `score_atteso`: cambia solo l'efficienza,
+cioè quali arene conviene giocare e cosa consiglia lo scouting.
+Dettaglio: `docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt` §10.
+
+---
+
+## 8nonies. Favorito odds come segnale SOPRA G (09/08) — pareggio, aperto un filone nuovo
+
+Le **starter odds** (probabilità che il giocatore sia titolare) restano quel
+che erano: filtro a 0,80 in discovery più tie-break a parità di atteso entro
+1 punto. Non si toccano. Qui si parla delle **favorito odds** (quanto la
+squadra è data favorita), che erano state provate come segnale *prima* di G
+e mai adottate.
+
+**Esito: pareggio vero, non test nullo.** Su entrambe le basi pulite
+non-arena, in nessun ruolo il ramo G+odds batte G: gli intervalli non
+escludono mai lo zero. E l'interruttore è stato verificato per bene — con
+k=0 il ramo coincide col baseline su 43.000 righe, con k=0,2 si muove il
+57-86% delle carte e **cambia almeno una carta nel 50-71% delle formazioni**.
+Quindi le odds riordinano moltissimo e in media azzeccano quanto sbagliano.
+Correlazione grade↔odds: +0,09 globale, mai sopra +0,21 — **non sono
+ridondanti**, semplicemente il residuo informativo non si traduce in punti.
+
+**Due cose emerse strada facendo, entrambe aperte:**
+
+1. **Il metodo è discutibile, e l'utente ha sollevato un'obiezione fondata.**
+   Il segnale usato è `delta_favorito_odds` = scarto fra la quota di questa
+   partita e la **media storica** del giocatore. La ragione sta nel codice
+   (`backtest_arene_previsioni.py` riga 550): evitare il doppio conteggio
+   con lo storico dei punteggi, già dentro lo `score_atteso`. Ma così due
+   giocatori che affrontano la **stessa** partita al 50% ricevono segnali
+   opposti a seconda di chi hanno incontrato prima. Va testato il **livello
+   assoluto**: brief pronto in
+   `docs/handoff/BRIEF_SONNET_ODDS_LIVELLO_ASSOLUTO_2026-08-09.txt`.
+2. **La copertura delle quote parte da metà novembre 2025.**
+   `_p_own_opp_odds` (righe 527-546) legge le quote 1X2 da SorareInside via
+   `winOddsBasisPoints`, e l'archivio è persistente solo da ~18/11/2025
+   (eliteserien sempre esclusa). Perciò il 40% delle carte su All Star+U23
+   non ha il delta — non perché manchino le odds oggi, ma perché mancano
+   nello storico. **Il dato è per SQUADRA, non per giocatore** (undici
+   giocatori della stessa squadra condividono il valore): recuperarlo
+   costerebbe una manciata di chiamate per giornata, non centinaia. Da
+   verificare con **una singola query** se `winOddsBasisPoints` risponda
+   ancora per partite già giocate.
+   NOTA: il livello assoluto non richiede le 5 partite storiche, quindi da
+   solo porterebbe la copertura dal 60% a quasi il 100%.
+
+Dettaglio: `docs/handoff/HANDOFF_ODDS_SEGNALE_DOPO_G_2026-08-08.txt`.
+
+---
+
+## 8undecies. COME SI PARLA CON L'API SORARE — i tre pezzi (09/08)
+
+Scritto perché nella notte del 09/08 due esecutori si sono bloccati per ore
+su questo, e la risposta era già nel codice. **Chiunque scriva uno script che
+interroga Sorare in modo autenticato deve avere TUTTI E TRE i pezzi**:
+
+1. **`x-csrf-token` su ogni richiesta.** Senza, Sorare risponde con un
+   `Set-Cookie` che assegna una sessione **anonima**.
+2. **Sessione HTTP dedicata, col barattolo dei cookie svuotato prima di ogni
+   richiesta** (`discovery_fixture._grade_http()`, righe 94-125). Serve
+   perché `curl_cffi` **salva** quel cookie anonimo e da lì in poi vince su
+   quello autenticato passato a mano nell'header. Misurato: bench su
+   sessione pulita → 50 nodi; dopo **una sola** query senza CSRF → 0 nodi.
+   Non serve che sia la tua richiesta a essere sbagliata: basta che lo sia
+   stata una qualunque precedente sulla stessa sessione.
+3. **Header di client Web** (`discovery_fixture._headers_client_web()`,
+   righe 127-160): `sorare-client: Web` + `sorare-version` + `sorare-build`
+   (dai secret `SORARE_VERSION`/`SORARE_BUILD`, cambiano a ogni release del
+   sito) più Origin, Referer e i `sec-fetch-*`. Il commento lo dice chiaro:
+   **da casa Sorare è tollerante, da datacenter pretende il set completo**.
+   È il motivo per cui l'utente naviga senza problemi mentre uno script
+   prende 429 immediati.
+
+**Come si diagnostica in dieci secondi**, prima di lanciare qualunque batch:
+`{ currentUser { slug } }`. Se risponde con lo slug, sei autenticato e
+eventuali 429 sono un vero rate limit (rallenta). Se torna `null`, **non è
+rate limit**: è sessione anonima, e nessun backoff ti salverà.
+Attenzione: la probe stessa può prendere 429 — va fatta con retry, altrimenti
+un rate limit viene letto come "sessione morta" (errore reale del 07/08).
+
+**Regola pratica**: non costruire header o sessioni nuove. Riusa
+`_grade_http()` e `_headers_client_web()`. Se un esecutore inizia a parlare
+di *fingerprint*, non sta delirando — serve davvero, ma **esiste già** in
+`bots/bot_definitivo.py`, che gira autenticato da GitHub Actions da mesi.
 
 ---
 
@@ -1209,16 +1362,32 @@ se la GW le rendeva schierabili. Commit `ee4c2deec2`.
 
 ---
 
-## 10bis. COSE DA FARE — in ordine di priorità (aggiornato 08/08 notte)
+## 10bis. COSE DA FARE — in ordine di priorità (aggiornato 09/08 notte)
 
-1. **Criterio di scelta fra tipi di arena** (§8septies) — il filone più
-   promettente aperto oggi, e l'unico a basso rischio (non tocca
-   `score_atteso`, soglie né scouting). Run di confronto fra
-   `ARENA_CRITERIO='assoluto'` e `'capitale'` lanciata su GitHub a fine
-   sessione: da leggere. Attenzione: sul mazzo di oggi il confronto dice
-   solo **quanto cambia il mix**, non se guadagna — il verdetto arriva a
-   giornata giocata.
-2. **Normalizzazione del grade** (§8bis): il difetto è documentato e la
+**I TRE LAVORI APERTI, in sequenza.** Sono collegati: 1 e 2 chiudono le
+soglie, 3 è un filone a sé che può ripartire in parallelo.
+
+1. **Scaricare i PREMI incassati** (§8octies). È il collo di bottiglia
+   rimasto: il campione premi è fermo a 235 osservazioni, **20 per la cap
+   220**, mentre le classifiche sono passate a 2.125. Il guadagno per punto
+   — il numero che si muove di più e che decide quale arena giocare —
+   dipende proprio da quella metà. Si usa la stessa tecnica della raccolta
+   classifiche (`dati_globali/classifiche_arene_2026-08-08.json`), che ha
+   funzionato: stessa lista di slug, si aggiunge il campo dei premi.
+   **ATTENZIONE al trasporto**: servono tutti e tre i pezzi, vedi §8undecies.
+2. **Applicare le soglie nuove** (§8octies), dopo il punto 1. Decisione
+   dell'utente già presa: si applicano. Non toccano `score_atteso`, quindi
+   il modello predittivo non si muove — ma **toccano lo scouting**, che
+   legge soglie e guadagno/punto dal generatore via `getattr` e si allinea
+   da solo. Va percorsa la catena fino allo scouting incluso.
+3. **Favorito odds, livello assoluto contro delta** (§8nonies). Brief già
+   scritto e **non ancora mandato**:
+   `docs/handoff/BRIEF_SONNET_ODDS_LIVELLO_ASSOLUTO_2026-08-09.txt`. In
+   coda, una singola query di prova per capire se `winOddsBasisPoints`
+   risponda per partite già giocate: se sì, le quote storiche si recuperano
+   in bulk (per SQUADRA, non per giocatore) e i backtest si allargano alle
+   giornate prima di novembre 2025.
+4. **Normalizzazione del grade** (§8bis): il difetto è documentato e la
    prima cura (scala storica) è stata misurata e scartata. Serve un'idea
    NUOVA, non ripetere quella. Non urgente: G resta acceso e funziona.
 3. **Le due verifiche mancanti su G**, entrambe economiche: (a) dove il

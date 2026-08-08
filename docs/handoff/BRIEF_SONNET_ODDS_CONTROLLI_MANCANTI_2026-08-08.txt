@@ -1,0 +1,115 @@
+BRIEF PER SONNET — CONTROLLI MANCANTI PRIMA DI CHIUDERE IL FILONE ODDS
+Scritto dall'orchestratore (Opus) l'08/08/2026, notte (Roma).
+Seguito di: BRIEF_SONNET_ODDS_SEGNALE_DOPO_G_2026-08-08.txt
+Esito da integrare: docs/handoff/HANDOFF_ODDS_SEGNALE_DOPO_G_2026-08-08.txt
+
+Il lavoro fatto e' buono e il verdetto e' probabilmente giusto. Non si
+rifa' niente: mancano tre controlli che il brief chiedeva e che decidono se
+il "no" e' un no informativo o un no vuoto. Sono misure brevi sullo script
+gia' scritto (p20_odds_vs_grade.py), non un nuovo test.
+
+Riconoscimenti, perche' contano: hai riprodotto i numeri di controllo, hai
+dichiarato tutte e 8 le varianti senza selezione a posteriori, hai
+correttamente NON eseguito il passo 3b non avendo ruoli sopravvissuti, e hai
+smentito un'ipotesi dell'orchestratore/utente invece di assecondarla (la
+correlazione GK e' zero, non opposta). Continua cosi'.
+
+
+=====================================================================
+1. CONTROLLO DELL'INTERRUTTORE — il piu' importante (era il 5c del brief)
+=====================================================================
+PROBLEMA: "le odds non aggiungono nulla" e "le odds non sono mai entrate nel
+calcolo" producono lo STESSO risultato osservato. Finche' non si distinguono,
+il test non e' concludente. E' la regola di CLAUDE.md: prima di misurare
+l'effetto di un componente si dimostra che l'interruttore funziona (nata da
+due casi reali di parametri inerti misurati per ore).
+
+Da consegnare, tre numeri:
+ 1a. Con k=0 il ramo O deve coincidere ESATTAMENTE con A, carta per carta.
+     Verificalo e dillo (uguaglianza esatta, non "circa").
+ 1b. Con k=0.2, quante carte su quante cambiano `atteso` passando da A a O,
+     e di quanto: mediana e massimo dello scostamento in punti. Se lo
+     scostamento mediano e' ~0, il segnale e' inerte e TUTTO il test e'
+     nullo: fermati e dillo, non serve altro.
+ 1c. Quante FORMAZIONI cambiano almeno una carta fra G e G+O, per ruolo e
+     per base. Se sono pochissime, il delta misurato e' rumore di
+     arrotondamento e va detto: non e' "le odds non servono", e' "le odds
+     non hanno spostato nessuna scelta".
+
+
+=====================================================================
+2. COPERTURA DEL SEGNALE (era il 5d del brief)
+=====================================================================
+Hai scritto che 3.066 carte hanno entrambi i valori, ma non su quante
+totali. Serve il denominatore:
+ 2a. Quante carte del pool hanno un delta_favorito_odds disponibile e quante
+     no, in totale e per ruolo. Chi non ce l'ha entra con delta=0, cioe' il
+     segnale su quella carta e' spento: se fosse una quota grande, il test
+     misurerebbe l'effetto su una frazione del campione e sarebbe piu' debole
+     di quanto sembra.
+ 2b. Il motivo per cui manca, con conteggio (partita non trovata? lega senza
+     odds? data fuori finestra?) e 3 esempi con nome.
+
+
+=====================================================================
+3. IL DUMP LEGGIBILE (era il 5e del brief, ed e' obbligatorio per CLAUDE.md)
+=====================================================================
+Un manager, una giornata, una formazione completa: nome, ruolo, grade,
+delta_favorito_odds, atteso nei quattro rami (A / G / O / G+O), realizzato,
+e quali carte sono entrate in formazione in ciascun ramo.
+CLAUDE.md lo rende obbligatorio PRIMA di consegnare qualunque backtest, e va
+consegnato insieme ai numeri, non su richiesta. Serve a vedere con gli occhi
+che il segnale fa quello che crediamo faccia.
+
+
+=====================================================================
+4. UNA LETTURA DA CORREGGERE NEL FILE
+=====================================================================
+Il verdetto dice "sui GK peggiorano". I due campioni pero' dicono cose
+OPPOSTE:
+    All Star + U23   GK  delta = -1.094  (IC tutto negativo)
+    MLS Hot Streak   GK  delta = +1.014  (IC include zero)
+Segni opposti su due basi indipendenti sono la firma del RUMORE, non di un
+effetto reale. Riscrivi quel passaggio come: "sui GK il segno si ribalta fra
+le due basi (-1,09 e +1,01): incompatibile con un effetto sistematico, va
+letto come rumore". Se resta scritto com'e' ora, fra un mese qualcuno legge
+"le odds fanno male ai portieri" e ci costruisce sopra una decisione.
+
+Correggi anche la riga del Passo 0 dove dici che l'ipotesi dell'utente non e'
+confermata: e' giusto dirlo, ma aggiungi che l'ipotesi nasceva da una
+schermata di 7 carte tutte GK — cioe' non era una misura, ed e' esattamente
+per questo che la si e' messa alla prova.
+
+
+=====================================================================
+5. UN LIMITE DA DICHIARARE (non da risolvere ora)
+=====================================================================
+Hai testato UN SOLO valore di intensita' (k=0.2), perche' cosi' diceva il
+brief. Va dichiarato nei limiti: non sappiamo se un k piu' piccolo (0.05-0.1)
+darebbe un effetto positivo piccolo ma reale, ne' se uno piu' grande
+peggiorerebbe. Non farlo adesso — sarebbe una griglia senza un'ipotesi — ma
+scrivilo, cosi' chi riapre il filone sa cosa non e' stato provato.
+
+
+=====================================================================
+6. COSA NON FARE
+=====================================================================
+- Non rifare il test: i numeri ci sono, servono solo i controlli.
+- Non aggiungere varianti nuove (nessuna griglia su k) in questo giro.
+- Non toccare la produzione.
+- Se il controllo 1b mostra che il segnale e' inerte, NON aggiustarlo per
+  farlo funzionare: fermati e riporta. Un interruttore rotto scoperto e'
+  molto piu' prezioso di un test riparato di nascosto.
+
+
+=====================================================================
+7. DOVE SCRIVERE
+=====================================================================
+In coda a docs/handoff/HANDOFF_ODDS_SEGNALE_DOPO_G_2026-08-08.txt, sezione
+"9. CONTROLLI INTEGRATIVI (data, ora Roma)", e correggi in-place i due
+passaggi indicati al punto 4. Committa i tuoi file (lo script era rimasto
+non committato in attesa di ok: ora puoi).
+
+Riporta all'utente in cinque righe: l'esito di 1b (il segnale si muove
+si'/no), quante formazioni cambiano (1c), la copertura del delta (2a) e
+conferma di aver corretto la lettura sui GK.

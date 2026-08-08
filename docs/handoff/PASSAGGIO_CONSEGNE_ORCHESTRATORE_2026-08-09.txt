@@ -1,0 +1,140 @@
+PASSAGGIO DI CONSEGNE — PER IL PROSSIMO ORCHESTRATORE
+Scritto da Opus il 09/08/2026, notte (Roma), a fine sessione.
+
+Leggi questo file per PRIMO. Ti dice dove siamo e cosa fare. Poi vai al
+riassunto unico (`docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md`) per i
+dettagli. Non leggere gli altri 30 file in docs/handoff/: sono archivio.
+
+
+=====================================================================
+0. COME SI APRE LA SESSIONE (non saltare)
+=====================================================================
+`git pull` → `git log` → **il CODICE in produzione sul tema**. Non gli
+handoff: contengono verdetti superati scritti come se fossero attuali. Un
+numero letto in un documento è un'IPOTESI DA VERIFICARE, non un fatto.
+Esiste una skill che fa questo rituale: `.claude/skills/apri-sessione/`.
+Ce n'è una seconda, `brief-esecutore/`, che struttura i brief per Sonnet e
+Haiku: usale, sono state scritte apposta il 09/08.
+
+L'utente lavora con più account Claude sullo stesso repo e passa da uno
+all'altro. Il repo è l'unica memoria condivisa. Lui fa da navetta fra te e
+gli esecutori: gli agenti non si parlano.
+
+**In Cowork non hai i permessi git**: scrivi i file, il commit lo fa un
+esecutore. Non credere che il lavoro sia salvo solo perché l'hai scritto.
+
+
+=====================================================================
+1. DOVE SIAMO — lo stato in dieci righe
+=====================================================================
+Il **grade G è in produzione e ci resta**. Nella notte del 08-09/08 è stato
+messo alla prova con un test placebo (mai fatto prima) e l'ha superato: sul
+non-arena il grade vero batte tutte le permutazioni casuali, e mescolando i
+voti il modello **peggiora** — che è la firma di un'informazione vera. Il
++5,98 punti a formazione su cui G sta in piedi è più solido di ieri.
+
+Sull'ARENA invece G non è dimostrato: con la regola di ingresso che l'utente
+usa davvero, il vantaggio non si distingue dal rumore. Non è dannoso, non è
+provato. Sta lì.
+
+Due cure sono state provate e **scartate con i numeri**: la scala storica
+per il grade e il criterio di scelta arene a rendimento sul capitale.
+Entrambe implementate dietro flag **spenti di default**. Non riproporle
+senza un'idea nuova: sono già state misurate.
+
+Le **soglie arena** sono state ritarate su un archivio 14 volte più grande e
+risultano **sostanzialmente confermate** (scarti sotto il punto). Restano da
+applicare, dopo aver scaricato i premi.
+
+**Nessuna modifica di produzione è stata fatta in questa sessione.**
+
+
+=====================================================================
+2. COSA FARE, IN ORDINE
+=====================================================================
+Il backlog completo è al §10bis del riassunto. I primi tre:
+
+**(1) SCARICARE I PREMI INCASSATI.** È il pezzo mancante per chiudere le
+soglie. Le classifiche di 2.125 arene ci sono; i premi sono fermi a 235
+osservazioni, **20 per la cap 220**. Il guadagno per punto — il numero che
+si muove di più — dipende da quella metà. Stessa tecnica della raccolta
+classifiche, che ha funzionato: stessa lista di slug, si aggiunge il campo
+premi. **Prima di scrivere lo script leggi §8undecies del riassunto**: il
+trasporto verso Sorare ha tre pezzi obbligatori e senza uno solo si prendono
+429 immediati (ci abbiamo perso ore).
+
+**(2) APPLICARE LE SOGLIE.** L'utente ha già deciso di sì. Non toccano lo
+`score_atteso`, ma **toccano lo scouting**, che le legge dal generatore via
+`getattr` e si allinea da solo. Va percorsa la catena fino allo scouting.
+
+**(3) FAVORITO ODDS, LIVELLO ASSOLUTO.** Il brief è **già scritto e non
+ancora mandato**:
+`docs/handoff/BRIEF_SONNET_ODDS_LIVELLO_ASSOLUTO_2026-08-09.txt`.
+Nasce da un'obiezione dell'utente che ha un fondamento serio: oggi il
+segnale è lo *scarto dalla media storica*, quindi due giocatori che
+affrontano la stessa partita al 50% ricevono segnali opposti a seconda di
+chi hanno incontrato prima. Il livello assoluto risolve anche un problema di
+copertura (il 40% delle carte oggi resta senza segnale).
+In coda a quel lavoro: **una singola query** per capire se
+`winOddsBasisPoints` risponda per partite già giocate. Se sì, le quote
+storiche si recuperano in bulk — sono per SQUADRA, non per giocatore, quindi
+una manciata di chiamate per giornata.
+
+
+=====================================================================
+3. COME LAVORARE CON QUESTO UTENTE (osservato in una sessione lunga)
+=====================================================================
+- **Il suo istinto sui numeri che "non tornano" è buono e va assecondato
+  muovendosi**, non frenando. Le due scoperte migliori della sessione sono
+  partite da sue perplessità ("possibile che su 40 arene non ne trovi una
+  cap 220?", "perché usare un delta storico?").
+- **Ma il suo argomento va verificato anche quando la conclusione è giusta.**
+  Esempio reale: aveva ragione a diffidare del sito che chiedeva la password
+  Sorare, ma il motivo tecnico era diverso da quello che pensava.
+- **Non dargli numeri che non hai misurato.** Preferisce "non lo so, servirebbe
+  X" a una stima travestita da misura. Se citi un documento, dillo che è un
+  documento.
+- **Cinque righe in chat, il resto nei file.** Paga a token e ha una forma
+  grave di ADHD: analisi, tabelle e ragionamenti vanno nei file, mai in chat.
+- **Spiega i numeri con esempi banali.** Ha una laurea in legge, non in
+  statistica. "Intervallo di confidenza" non gli dice niente; "su 200
+  mescolate a caso, il valore vero ha fatto meglio di 195" sì. Se dice "non
+  ho capito", riformula più STUPIDO, non più preciso.
+- **Verifica i grezzi degli esecutori prima di riferire.** In questa sessione
+  tre report su cinque avevano qualcosa da correggere: un'affermazione
+  smentita dal loro stesso log, controlli richiesti e non eseguiti, una
+  lettura sbagliata di segni opposti fra campioni. Il lavoro era buono
+  comunque — ma se non apri il file e non conti un caso, non te ne accorgi.
+
+
+=====================================================================
+4. TRE ERRORI CHE HO FATTO IO, per non rifarli
+=====================================================================
+- **Ho stampato un file intero** in un comando di verifica, bruciando
+  contesto per niente. Filtra sempre l'output.
+- **Ho cancellato una voce di lista** mentre inserivo la voce nuova con una
+  sostituzione di testo. Rileggi cosa stai sostituendo, non solo cosa
+  aggiungi.
+- **Ho ipotizzato che il guadagno per punto della cap 220 fosse sottostimato**
+  partendo da una pendenza empirica grezza. Con il calcolo fatto per bene, su
+  14 volte i dati, l'ipotesi era sbagliata: il rapporto è 0,78, non 0,90-1,00.
+  Una pendenza misurata sui punteggi realizzati NON è la stessa cosa del
+  parametro di produzione, che viene da una simulazione con l'incertezza
+  della previsione dentro. Non confonderle.
+
+
+=====================================================================
+5. FILE DI RIFERIMENTO
+=====================================================================
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md   il riassunto unico. §8bis (G),
+  §8octies (soglie), §8nonies (odds), §8undecies (come parlare con l'API),
+  §4.0 (quale archivio arene usare), §10bis (backlog)
+CLAUDE.md                                     le regole vincolanti
+.claude/skills/apri-sessione/                 rituale di apertura
+.claude/skills/brief-esecutore/               struttura dei brief
+docs/handoff/BRIEF_SONNET_ODDS_LIVELLO_ASSOLUTO_2026-08-09.txt  già pronto
+docs/handoff/HANDOFF_G_ARENE_2026-08-08.txt          G sulle arene
+docs/handoff/HANDOFF_GRADE_SCALA_2026-08-08.txt      scala storica (scartata)
+docs/handoff/HANDOFF_CRITERIO_ARENE_2026-08-08.txt   criterio arene (scartato)
+docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt §10 = soglie nuove
+docs/handoff/HANDOFF_ODDS_SEGNALE_DOPO_G_2026-08-08.txt  odds sopra G

@@ -1,0 +1,162 @@
+BRIEF PER SONNET — SOGLIE DEFINITIVE, ORA SULL'ARCHIVIO GRANDE
+Scritto dall'orchestratore (Opus) il 09/08/2026, notte (Roma).
+Rifà: BRIEF_SONNET_SOGLIE_DEFINITIVE_2026-08-08.txt, che girava su 673
+classifiche. Ora ne abbiamo 1.677, e per la cap 220 quattordici volte tante.
+
+SI MISURA, NON SI APPLICA. Nessun valore di produzione toccato in questo
+giro. Alla fine si consegnano i numeri nuovi accanto ai vecchi e decide
+l'utente.
+
+
+=====================================================================
+0. LEGGERE PRIMA
+=====================================================================
+1. CLAUDE.md nella radice (catena di produzione, divieto di stime).
+2. `consiglio_arena.py` intero: ARCHIVIO (riga 33), `campo_per_tipo()`
+   (85-109), `premi_osservati()` (112-127), `incasso_medio()`, `pareggio()`,
+   SIGMA (riga 76).
+3. `docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt` — il giro
+   precedente: metodo, controlli e numeri da battere. **Si riusa quello, non
+   si riparte da zero.** Script già scritti e da riusare:
+   `analisi_manager/p18_sigma_tutti_tipi.py` (sigma),
+   `analisi_manager/p19_ricostruisci_archivio_completo.py` (archivio),
+   `analisi_manager/p24_gw3_soglie_nuove.py` (effetto a valle).
+
+
+=====================================================================
+1. COSA E' CAMBIATO — il dato nuovo
+=====================================================================
+`dati_globali/classifiche_arene_2026-08-08.json` — 1.677 arene con la
+classifica COMPLETA dei partecipanti, scaricata stanotte.
+Campi presenti: `slug`, `tipo`, `partecipanti`, `punteggi` (lista di tutti i
+partecipanti), `rank_premiati`.
+
+  tipo        classifiche PRIMA (p11_pool)   ORA
+  Cap 220              53                    748
+  Uncapped             38                    348
+  Cap 260             194                    271
+  Beginner            182                    310
+
+VALIDATO dall'orchestratore prima di consegnartelo, non fidarti sulla
+parola ma sappi che il controllo c'è già stato: incrociando 2.431 righe dei
+file manager (di cui conoscevamo punteggio e piazzamento), il **99,6%** dei
+punteggi si ritrova nella classifica scaricata e il **99,8%** di quelli
+trovati sta alla posizione prevista dal rank. Le 10 discrepanze sono
+formazioni a punteggio 0/117/187 in arene da 300+: formazioni non schierate,
+non errori di download.
+
+PERCHE' CONTA: la cap 220 aveva una sigma stimata su **8 osservazioni** e un
+campo avversario su 53 arene. Era il collo di bottiglia di tutto il filone.
+
+
+=====================================================================
+2. IL LAVORO
+=====================================================================
+
+PASSO 1 — ARCHIVIO NEL FORMATO CHE consiglio_arena.py SI ASPETTA.
+ Il file nuovo non ha tutti i campi: mancano `mio_score`, `mio_rank`,
+ `premio_essenze`, `rank_premiato`, `costo`. Vanno ricostruiti:
+  1a. `mio_score`/`mio_rank`: dai file `dati_globali/manager_*.json`, per le
+      arene dove c'era un nostro manager (match sullo slug leaderboard).
+      Dove non c'era nessuno dei nostri, lascia `mio_score` a None: il
+      campo serve solo a togliere se stessi dal campo avversario, e se non
+      c'eravamo non c'è niente da togliere. **Dichiara quante arene hanno
+      `mio_score` e quante no.**
+  1b. `costo`: dal tipo (Cap 260 = 300, Cap 220 = 200, Uncapped = 300,
+      Beginner = 100). Leggilo da `COSTO_INGRESSO` del generatore via
+      import, non scriverlo a mano.
+  1c. `premio_essenze`/`rank_premiato`: dal campo `rank_premiati` del file
+      nuovo. **Conta quante arene hanno un premio osservato, per tipo**: è
+      il secondo ingrediente di `pareggio()` e se resta scarso va detto.
+  1d. Unisci con l'archivio vecchio (`arene_storico_full.json`, 673 arene da
+      p11_pool) **deduplicando sullo slug**: dove un'arena c'è in entrambi,
+      tieni quella con più informazione (quella vecchia ha il premio reale
+      incassato). Dichiara quante arene finali, per tipo, e quante venivano
+      da ciascuna fonte.
+  1e. Scrivi `dati_globali/arene_storico_full_v2.json`. **NON sovrascrivere**
+      né `arene_storico.json` né `arene_storico_full.json`.
+
+ CONTROLLO OBBLIGATORIO: le arene restano RAGGRUPPATE per arena, mai
+ mescolate in un calderone di punteggi sciolti (il docstring di
+ `campo_per_tipo()` dice che col calderone l'errore misurato triplica).
+ Verificalo e dimostralo con un numero, come hai fatto nel giro precedente.
+
+PASSO 2 — SIGMA, invariata nel metodo.
+ La sigma NON viene dall'archivio classifiche ma dal confronto atteso/
+ realizzato sui file manager: quella misurata nel giro precedente
+ (`p18_sigma_tutti_tipi.py`: cap220 46,70 su n=251, cap260 50,52 su n=1356,
+ Uncapped 53,72 su n=288, Beginner 50,18 su n=1472) resta valida e si
+ riusa. **Non rifarla**, a meno che tu non abbia modo di allargarne il
+ campione — nel qual caso rifai anche il controllo di riproduzione della
+ sigma 50,6 nota per la cap 260.
+
+PASSO 3 — RICALCOLO, tutti e quattro i tipi.
+ Con l'archivio del Passo 1 e la sigma del Passo 2, ricalcola pareggio e
+ guadagno-per-punto per Cap 260, Cap 220, Uncapped, Beginner.
+ Escludi "arena division" e "arena uncapped" (formato vecchio), dichiarando
+ quante ne hai escluse.
+ Consegna una tabella sola, con TRE colonne di confronto:
+
+   tipo | n arene | n premi oss. | sigma(n) | pareggio: PRODUZIONE ->
+   giro precedente (673) -> QUESTO GIRO | guadagno/pt: idem | costo
+
+ Riferimenti: produzione = cap260 259,5/7,9 | cap220 244,1/6,3 |
+ Uncapped 288,3/8,0 | Beginner non esiste.
+ Giro precedente (673 arene) = cap260 258,3/7,51 | cap220 241,0/5,46 |
+ Uncapped 281,9/6,82 | Beginner 259,4/2,78.
+
+ 3a. LA DOMANDA CHE CONTA PIU' DI TUTTE: **il valore della cap 220 si muove
+     rispetto al giro precedente, ora che le classifiche sono 748 invece di
+     53?** Se resta lì, il 5,46 era già buono nonostante il campione. Se si
+     muove parecchio, il giro precedente era guidato dal rumore e va detto.
+ 3b. SENSIBILITA': ripeti con sigma ±10% e riporta di quanto si spostano
+     pareggio e guadagno/punto. Soglia di fragilità: 5 punti sul pareggio.
+ 3c. STABILITA' (nuovo, ora possibile grazie alla n): dividi le arene cap
+     220 in due metà casuali e calcola le soglie su ciascuna. Se le due metà
+     danno numeri vicini, il valore è solido; se ballano, la n non basta
+     ancora nemmeno adesso. Fallo anche per Cap 260 come controllo.
+
+PASSO 4 — EFFETTO A VALLE (misurare, non applicare).
+ 4a. Rigioca in locale il generatore sui dati già scaricati del run
+     GW3 (31253830349), con le soglie nuove, override in memoria dopo
+     l'import — mai scrivendo nel file. Confronta con le 23 arene di
+     baseline (22 cap260 + 1 cap220) e con le 26 del giro precedente
+     (23 cap260 + 3 cap220).
+ 4b. SCOUTING: `scouting_gw.py` legge le soglie dal generatore via getattr.
+     Dichiara direzione e ordine di grandezza dell'effetto sui candidati.
+
+
+=====================================================================
+3. TRAPPOLE NOTE
+=====================================================================
+- Non mescolare i punteggi in un calderone (Passo 1, controllo).
+- "arena division" e "arena uncapped" sono il formato PRE-riforma: escludere,
+  non riclassificare.
+- Le GOLDEN non sono un tipo a parte: `premi_osservati()` le cattura da sé
+  leggendo i premi incassati. Non modellarle a parte, non filtrarle.
+- Ogni numero con la sua n. Una sigma senza n non è un dato.
+- Se un tipo non ha abbastanza premi osservati per una stima seria, scrivilo
+  invece di produrre un numero fragile.
+
+
+=====================================================================
+4. COSA NON FARE
+=====================================================================
+- Non modificare PAREGGIO_ARENA, GUADAGNO_PER_PUNTO, COSTO_INGRESSO,
+  QUOTA_MINIMA, né il default di ARCHIVIO in consiglio_arena.py.
+- Non sovrascrivere gli archivi esistenti.
+- Non lanciare run GitHub né query Sorare: tutto quello che serve è in repo.
+- Non consegnare una soglia nuova senza sensibilità (3b) e stabilità (3c).
+
+
+=====================================================================
+5. DOVE SCRIVERE
+=====================================================================
+In coda a `docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt`, sezione
+"10. RICALCOLO SULL'ARCHIVIO GRANDE (data, ora Roma)" — è lo stesso filone,
+non aprire un file nuovo. Aggiorna anche
+`analisi_manager/VALIDAZIONE_SOGLIE.md`. Committa solo i tuoi file.
+
+Riporta all'utente in cinque righe: la tabella a tre colonne del Passo 3, se
+la cap 220 si è mossa rispetto al giro su 53 classifiche (3a), l'esito del
+test di stabilità (3c) e quante arene cambierebbero su GW3 (4a).
