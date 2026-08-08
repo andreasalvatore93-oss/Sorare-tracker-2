@@ -150,9 +150,78 @@ insieme a questo numero (dichiarati dal brief, non miei):
 =====================================================================
 6. PASSO 1 -- CONFRONTO DEI DUE MIX SUL MAZZO REALE (query GitHub)
 =====================================================================
-[[DA COMPLETARE -- lanciato su GitHub Actions come richiesto dall'utente
-("da far girare su github"), vedi run id e stato in fondo a questa
-sezione]]
+Metodo (concordato con l'utente/orchestratore dopo un primo tentativo
+fallito, vedi 6bis): UN SOLO run GitHub Actions vero (formazione_giornata.yml,
+GAMEWEEK=3, escludi_lockate=1, arena_criterio=assoluto, arene=50,
+starter_odds_min=0.80 default) -- e' quello che ha inviato la notifica
+Telegram reale e committato le formazioni. Il confronto capitale e' stato
+rigiocato IN LOCALE sugli STESSI dati appena committati (stesso
+player_card_counts.json, stesse carte escluse da escludi_lockate, nessuna
+seconda query, nessuna seconda notifica).
+Run GitHub: https://github.com/andreasalvatore93-oss/Sorare-tracker-2/actions/runs/31253830349
+Dettaglio numerico integrale: analisi_manager/p22_criterio_arene_confronto.txt
+Log grezzi: analisi_manager/p22_capitale_run.log (locale, capitale)
+
+CONDIZIONE (verificata prima di fidarsi del confronto, richiesta esplicita
+dall'orchestratore): stesso input nei due run. Candidati dopo finestra
+giornata IDENTICI: GK 27->25, DEF 86->72, MID 66->50, FWD 46->37. Carte
+lockate escluse: 0 in entrambi. Top-up L10 (serve il cookie, assente in
+locale): non e' mai scattato in nessuno dei due run (nessun candidato ne
+aveva bisogno) -- quindi l'assenza del cookie in locale non ha introdotto
+NESSUNA differenza di dati fra i due confronti.
+
+MIX PER TIPO (nessuno dei due tocca il tetto di 50 -- il numero di arene e'
+una scelta del criterio, non del tetto):
+                  n arene   Cap260   Cap220   Uncapped   essenze impegnate
+  ASSOLUTO           23        22        1        0            6.800
+  CAPITALE           22        20        2        0            6.400
+La Cap 220 entra 1 volta con ASSOLUTO (posizione #22, quasi in coda) e 2
+volte con CAPITALE, e la prima Cap 220 di CAPITALE arriva alla posizione #7
+(molto prima), esattamente come previsto dalla teoria del brief: il
+criterio promuove le Cap 220, non solo ne aumenta il numero.
+
+RESA ATTESA TOTALE / PER ESSENZA IMPEGNATA:
+  ASSOLUTO: totale 2.152, per essenza 0,3165
+  CAPITALE: totale 1.885, per essenza 0,2945
+ATTENZIONE, dichiarato senza addolcirlo: la resa attesa per essenza e' PIU'
+BASSA con capitale su questo mazzo specifico, non piu' alta. Il criterio
+capitale ottimizza la scelta AL MARGINE (quale tipo aggiungere ORA rende di
+piu' per essenza), non il totale finale -- che dipende anche da quante
+arene si costruiscono prima di fermarsi (23 con assoluto, 22 con capitale:
+un'arena in meno pesa sul totale).
+
+BUDGET FISSO 6.000 essenze (il vincolo vero dell'utente oggi, sez.1e del
+brief): arene prese nell'ordine di scelta di ciascun criterio finche' il
+budget regge:
+                 n arene   essenze usate   resa attesa totale   mix
+  ASSOLUTO          20         6.000            2.113          20x Cap260
+  CAPITALE          20         5.800            1.876           18x Cap260, 2x Cap220
+A budget 6.000, ASSOLUTO non include NESSUNA Cap 220 (la sua unica e' fuori
+budget, posizione 22); CAPITALE ne include 2 ma con resa attesa totale piu'
+bassa (1.876 contro 2.113). Il criterio nuovo diversifica il mix con lo
+stesso budget, ma su questo mazzo specifico non alza la resa attesa totale
+-- coerente con l'avviso del brief: NON e' un giudizio di qualita', la
+giornata non e' ancora giocata, si misura solo cosa cambia, non chi vince.
+
+ARENE CHE ENTRANO/ESCONO: le formazioni non sono identificabili 1:1 (knapsack
+diverso, pool consumato in ordine diverso), il confronto e' sul mix: CAPITALE
+aggiunge una Cap220 alla posizione #7 dove ASSOLUTO ha Cap260; ASSOLUTO
+genera 3 Cap260 in coda (posizioni 21-23) che CAPITALE non arriva a costruire.
+
+
+=====================================================================
+6bis. PRIMO TENTATIVO FALLITO (dichiarato, non nascosto)
+=====================================================================
+Il primo lancio (run 31253497386, GAMEWEEK/FIXTURE_SLUG non impostati) ha
+FALLITO: senza gameweek esplicita il resolver ha preso "la prossima
+giornata APERTA" (gameweek 4, football-11-14-aug-2026, inizio fra 3
+giorni), le cui quote bookmaker non sono ancora pubblicate -- "0 giocatori
+con odds (0 sopra 0.80)" su tutte le leghe, 0 candidati ovunque, il job
+'formazione' e' fallito con errore esplicito (nessuna formazione generata,
+nessun commit, nessuna notifica: fallimento pulito, non silenzioso).
+Diagnosticato confrontando con l'ultima run automatica riuscita di oggi
+(31251127186), che passava GAMEWEEK=3 esplicito. Rilanciato con GAMEWEEK=3
+(run 31253830349, sez.6): riuscito.
 
 
 =====================================================================

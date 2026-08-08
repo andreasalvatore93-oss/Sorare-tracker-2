@@ -1,0 +1,71 @@
+PASSO 1 -- confronto ASSOLUTO vs CAPITALE, mazzo reale, GW3 (gameweek 3,
+risolta esplicitamente, GAMEWEEK=3), ESCLUDI_LOCKATE=1, ARENE_EFFICIENTI=50,
+MIN_STARTER_ODDS=0.80 (default).
+
+Run GitHub Actions (ASSOLUTO, quello che ha inviato la notifica Telegram
+reale): https://github.com/andreasalvatore93-oss/Sorare-tracker-2/actions/runs/31253830349
+Run locale (CAPITALE, stessi dati committati dal run sopra, nessuna query):
+GAMEWEEK=3 ARENE_EFFICIENTI=50 ARENA_CRITERIO=capitale python generatore_formazioni/build_formazione_globale.py
+
+--- CONDIZIONE 1: stesso input, verificato -----------------------------
+Candidati dopo finestra giornata, IDENTICI nei due run:
+  GK: 27->25   DEF: 86->72   MID: 66->50   FWD: 46->37
+Carte lockate escluse dal pool (ESCLUDI_LOCKATE=1): 0 in entrambi (nessuna
+carta era gia' schierata in formazioni bloccate al momento del run).
+Top-up L10 via API (gira solo con SORARE_COOKIE): non scattato in NESSUNO
+dei due run (nessun candidato senza L10 in cache) -- quindi l'assenza del
+cookie nel run locale non ha introdotto nessuna differenza di dati.
+
+--- CONDIZIONE 2: dove si e' fermato ciascun criterio -------------------
+Nessuno dei due ha toccato il tetto di 50 (il tetto non ha morso in nessuno
+dei due casi -- il numero di arene proposte e' una scelta del criterio, non
+del tetto):
+  ASSOLUTO: 23 arene, ultima resa positiva 8 essenze (arena #23)
+  CAPITALE: 22 arene, ultima resa/essenza positiva 0.0031 (arena #22, 1 essenza)
+
+--- MIX PER TIPO --------------------------------------------------------
+                  n arene   Cap260   Cap220   Uncapped   essenze impegnate
+  ASSOLUTO           23        22        1        0            6.800
+  CAPITALE           22        20        2        0            6.400
+La Cap 220 entra 1 volta con ASSOLUTO (posizione #22, quasi in fondo) e 2
+volte con CAPITALE (posizione #7 e #20 -- la prima e' MOLTO piu' avanti:
+il criterio la promuove, come previsto dalla teoria del brief). Nessuna
+Uncapped in nessuno dei due (il pool di oggi non ne genera di convenienti,
+indipendente dal criterio).
+
+--- RESA ATTESA TOTALE E PER ESSENZA IMPEGNATA ---------------------------
+                 resa attesa totale   resa attesa / essenza impegnata
+  ASSOLUTO             2.152                    0,3165
+  CAPITALE             1.885                    0,2945
+ATTENZIONE (non e' un errore, e' il punto centrale del brief): la resa
+attesa PER ESSENZA IMPEGNATA e' piu' BASSA con capitale su questo mazzo,
+non piu' alta. Il criterio 'capitale' ottimizza la SCELTA fra tipi passo
+per passo (quale arena aggiungere ORA rende di piu' per essenza), non il
+totale finale, che dipende anche da QUANTE arene si fermano a costruire.
+Con 'assoluto' si costruiscono piu' arene (23 vs 22) prima di fermarsi,
+quindi il totale finale può restare piu' alto anche se la scelta singola
+al margine e' meno efficiente per essenza. Non e' un giudizio di qualita'
+(la giornata non e' giocata, vedi trappola del brief): e' solo la
+descrizione di cosa succede matematicamente coi due criteri su QUESTO mazzo.
+
+--- CONFRONTO A BUDGET FISSO 6.000 essenze -------------------------------
+Arene prese nell'ordine di scelta di ciascun criterio, finche' il budget
+regge (si salta un'arena che sforerebbe, si continua con la prossima che
+ci sta -- stesso comportamento di un utente con budget limitato):
+                 n arene   essenze usate   resa attesa totale   mix
+  ASSOLUTO          20         6.000            2.113          20x Cap260, 0x Cap220
+  CAPITALE          20         5.800            1.876           18x Cap260, 2x Cap220
+A budget fisso, ASSOLUTO include TUTTE le arene fino al budget SENZA
+nessuna Cap 220 (la sua unica Cap 220 e' in posizione 22, fuori budget).
+CAPITALE include 2 Cap 220 dentro il budget, ma con resa attesa totale
+PIU' BASSA (1.876 contro 2.113) -- stesso punto di sopra: il criterio
+capitale sceglie diversamente, non necessariamente "di piu'" in assoluto.
+
+--- QUANTE ARENE ENTRANO/ESCONO PASSANDO DA UN CRITERIO ALL'ALTRO --------
+Le formazioni non sono identificabili 1:1 fra i due run (ogni run rigioca
+il knapsack e puo' scegliere carte diverse anche per lo stesso tipo, il
+pool si consuma in ordine diverso). Il confronto significativo e' sul MIX:
+  - CAPITALE aggiunge una Cap 220 alla posizione #7 che ASSOLUTO non aveva
+    li' (ASSOLUTO ha Cap260 in quella posizione);
+  - ASSOLUTO ha 3 Cap260 in piu' in coda (posizioni 21-23) che CAPITALE
+    non genera (si ferma prima, avendo consumato diversamente il pool).
