@@ -187,6 +187,10 @@ FORMATION_SHAPES = {
     'ARENA_ALLSTARS_260': {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None},
     'ARENA_ALLSTARS_220': {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None},
     'ARENA_ALLSTARS_UNCAPPED': {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None},
+    # Tipo NUOVO 09/08/2026 (BRIEF_SONNET_APPLICA_SOGLIE_2026-08-09.txt §3):
+    # identica alla cap 260 (shape/pool/regole), cambia solo costo (100) e
+    # premi (inferiori), vedi COSTO_INGRESSO/PAREGGIO_ARENA/GUADAGNO_PER_PUNTO.
+    'ARENA_ALLSTARS_BEGINNER': {'role_slots': ['GK', 'DEF', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None},
     'ALLSTARS': {'role_slots': ['GK', 'DEF', 'DEF', 'MID', 'MID', 'FWD'], 'extra_roles': ['DEF', 'MID', 'FWD'], 'max_classic': None},
     # Identica a ALLSTARS (stessa shape/regole, richiesta esplicita utente
     # 28/07), unico vincolo aggiuntivo: pool filtrato ai soli giocatori con
@@ -205,7 +209,8 @@ FORMATION_SHAPES.update({
 LABELS = {
     'MLS_IN_SEASON': 'In Season MLS', 'KLEAGUE_IN_SEASON': 'In Season K League',
     'ARENA_ALLSTARS_260': 'Arena All Stars (cap 260)', 'ARENA_ALLSTARS_220': 'Arena All Stars (cap 220)',
-    'ARENA_ALLSTARS_UNCAPPED': 'Arena All Stars (uncapped)', 'ALLSTARS': 'All Stars',
+    'ARENA_ALLSTARS_UNCAPPED': 'Arena All Stars (uncapped)', 'ARENA_ALLSTARS_BEGINNER': 'Arena All Stars (Beginner)',
+    'ALLSTARS': 'All Stars',
     'ALLSTARS_U23': 'All Stars Under 23',
 }
 LABELS.update({arena_type(lg): f'Arena {ARENA_LEAGUE_LABELS.get(lg, lg)} (cap 260)'
@@ -213,6 +218,7 @@ LABELS.update({arena_type(lg): f'Arena {ARENA_LEAGUE_LABELS.get(lg, lg)} (cap 26
 
 L10_CAP_BY_TYPE = {
     'ARENA_ALLSTARS_260': 260.0, 'ARENA_ALLSTARS_220': 220.0,  # ARENA_ALLSTARS_UNCAPPED: nessuna chiave = None
+    'ARENA_ALLSTARS_BEGINNER': 260.0,  # identica alla cap 260 (09/08)
 }
 L10_CAP_BY_TYPE.update({arena_type(lg): 260.0 for lg in ARENA_LEAGUES})
 
@@ -236,7 +242,8 @@ L10_CAP_BY_TYPE.update({arena_type(lg): 260.0 for lg in ARENA_LEAGUES})
 # misurata, non piu' per un'assunzione teorica. Non riattivare senza
 # rifare quei due test.
 VARIANCE_MODE_TYPES = {'ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220',
-                        'ARENA_ALLSTARS_UNCAPPED', 'ALLSTARS', 'ALLSTARS_U23'}
+                        'ARENA_ALLSTARS_UNCAPPED', 'ARENA_ALLSTARS_BEGINNER',
+                        'ALLSTARS', 'ALLSTARS_U23'}
 VARIANCE_MODE_TYPES.update(arena_type(lg) for lg in ARENA_LEAGUES)
 
 # Tipi "In Season dedicata" (31/07): estratto in una costante propria perche'
@@ -272,6 +279,7 @@ XP_BONUS_TYPES = {'MLS_IN_SEASON', 'KLEAGUE_IN_SEASON', 'ALLSTARS', 'ALLSTARS_U2
 CAPTAIN_BONUS_BY_TYPE = {
     'MLS_IN_SEASON': 0.5, 'KLEAGUE_IN_SEASON': 0.5,
     'ARENA_ALLSTARS_260': 0.2, 'ARENA_ALLSTARS_220': 0.2, 'ARENA_ALLSTARS_UNCAPPED': 0.2,
+    'ARENA_ALLSTARS_BEGINNER': 0.2,
     'ALLSTARS': 0.5, 'ALLSTARS_U23': 0.5,
 }
 CAPTAIN_BONUS_BY_TYPE.update({arena_type(lg): 0.2 for lg in ARENA_LEAGUES})
@@ -299,13 +307,14 @@ bff.CAP260_L10_THRESHOLD_BY_TYPE.update(CAP260_THRESHOLD_BY_TYPE)
 PRIORITY_ORDER = (
     ['MLS_IN_SEASON', 'KLEAGUE_IN_SEASON']
     + [arena_type(lg) for lg in ARENA_LEAGUES]
-    + ['ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED']
+    + ['ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED', 'ARENA_ALLSTARS_BEGINNER']
     + ['ALLSTARS_U23', 'ALLSTARS']
 )
 
 POOL_LEAGUE_BY_TYPE = {
     'MLS_IN_SEASON': 'mls', 'KLEAGUE_IN_SEASON': 'kleague',
     'ARENA_ALLSTARS_260': 'mixed', 'ARENA_ALLSTARS_220': 'mixed', 'ARENA_ALLSTARS_UNCAPPED': 'mixed',
+    'ARENA_ALLSTARS_BEGINNER': 'mixed',
     'ALLSTARS': 'mixed', 'ALLSTARS_U23': 'mixed_u23',
 }
 
@@ -325,7 +334,7 @@ ARENA_OPTIONAL_CAP = 20
 
 
 def _is_arena_type(tipo):
-    return tipo in ('ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED') \
+    return tipo in ('ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED', 'ARENA_ALLSTARS_BEGINNER') \
         or tipo in {arena_type(lg) for lg in ARENA_LEAGUES}
 
 
@@ -566,15 +575,24 @@ PAREGGIO_ARENA = {
     # In punteggio REALE, perche' la previsione arriva gia' calibrata (vedi
     # calibra_riga). Prima erano espresse in previsione grezza -- 274.1 per la
     # cap 260 -- che e' lo stesso pareggio letto sull'altra scala.
-    'ARENA_ALLSTARS_260': 259.5,      # era 265.0; sigma cap 260 corretta 42.70->50.6 (validazione 05/08, VALIDAZIONE_SOGLIE.md)
-    'ARENA_ALLSTARS_220': 244.1,      # era 243.5
-    'ARENA_ALLSTARS_UNCAPPED': 288.3,  # era 288.2
-    'ARENA_ALLSTARS_ELITE': 342.7,    # invariata
+    # AGGIORNATE 09/08/2026 (BRIEF_SONNET_APPLICA_SOGLIE_2026-08-09.txt,
+    # HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt §11-12): premi VERI letti da
+    # rewardsConfig su 2.125 arene avversarie / 5.031 premi osservati (contro
+    # i 141 su cui poggiavano i valori precedenti). Split-half stabile
+    # (scarti 0,2-2,5 pt).
+    'ARENA_ALLSTARS_260': 264.5,      # era 259.5 (05/08); sigma cap 260 50.6
+    'ARENA_ALLSTARS_220': 247.1,      # era 244.1
+    'ARENA_ALLSTARS_UNCAPPED': 279.6,  # era 288.3
+    'ARENA_ALLSTARS_ELITE': 342.7,    # INVARIATA (esclusa dal perimetro, decisione utente 09/08)
+    'ARENA_ALLSTARS_BEGINNER': 256.5,  # tipo NUOVO 09/08, vedi COSTO_INGRESSO/GUADAGNO_PER_PUNTO sotto
 }
 # Arene dedicate a un campionato: SONO cap 260 (confermato dall'utente 03/08),
 # stesso ingresso e stessi premi. La soglia e' comunque leggermente piu' bassa,
-# 262.9 contro 265.0, perche' il campo avversario e' un po' piu' debole:
-# misurata sulle 191 arene dedicate in archivio, non copiata dalla cap 260.
+# 262.9, perche' il campo avversario e' un po' piu' debole: misurata sulle 191
+# arene dedicate in archivio, non copiata dalla cap 260. NON ricalcolabile coi
+# premi veri (quelle arene non sono nel nuovo archivio): lasciata INVARIATA
+# il 09/08 per decisione esplicita dell'utente (vedi GUADAGNO_PER_PUNTO sotto,
+# li' invece si allinea alla cap 260).
 PAREGGIO_ARENA.update({arena_type(lg): 262.9 for lg in ARENA_LEAGUES})
 
 def _stampa_verdetto_arene(all_results):
@@ -686,14 +704,23 @@ def _verdetto_arene_html(all_results):
 # commento credeva a una catena che non esiste piu'.
 GUADAGNO_PER_PUNTO = {
     # Essenze guadagnate per ogni punto REALE sopra il pareggio.
-    'ARENA_ALLSTARS_260': 7.9, 'ARENA_ALLSTARS_220': 6.3,   # cap260 8.8->7.9 (sigma 50.6, 05/08); cap220 era 7.4
-    'ARENA_ALLSTARS_UNCAPPED': 8.0, 'ARENA_ALLSTARS_ELITE': 9.1,  # erano 7.3 e 10.0
+    # AGGIORNATE 09/08/2026 (stessa fonte di PAREGGIO_ARENA sopra: premi veri,
+    # 5.031 osservazioni).
+    'ARENA_ALLSTARS_260': 6.96, 'ARENA_ALLSTARS_220': 5.11,   # erano 7.9 e 6.3
+    'ARENA_ALLSTARS_UNCAPPED': 5.88, 'ARENA_ALLSTARS_ELITE': 9.1,  # uncapped era 8.0; elite INVARIATA
+    'ARENA_ALLSTARS_BEGINNER': 2.46,  # tipo NUOVO 09/08
 }
-GUADAGNO_PER_PUNTO.update({arena_type(lg): 8.8 for lg in ARENA_LEAGUES})
+# Arene dedicate: allineato a cap 260 (09/08, decisione utente). L'8.8 vecchio
+# era un residuo della taratura precedente (l'unico rimasto alto mentre tutti
+# gli altri sono scesi del 20-25% con i premi veri): il pareggio (sopra) resta
+# la misura vera sul campo dedicato, ma il guadagno/pt si allinea perche' le
+# regole/premi sono identici alla cap 260.
+GUADAGNO_PER_PUNTO.update({arena_type(lg): 6.96 for lg in ARENA_LEAGUES})
 
 COSTO_INGRESSO = {
     'ARENA_ALLSTARS_260': 300, 'ARENA_ALLSTARS_220': 200,
     'ARENA_ALLSTARS_UNCAPPED': 300, 'ARENA_ALLSTARS_ELITE': 800,
+    'ARENA_ALLSTARS_BEGINNER': 100,  # tipo NUOVO 09/08
 }
 COSTO_INGRESSO.update({arena_type(lg): 300 for lg in ARENA_LEAGUES})
 
@@ -1697,13 +1724,15 @@ def main():
     arena_allstars_260 = _read_int_env('ARENA_ALLSTARS_260', 0)
     arena_allstars_220 = _read_int_env('ARENA_ALLSTARS_220', 0)
     arena_allstars_uncapped = _read_int_env('ARENA_ALLSTARS_UNCAPPED', 0)
+    arena_allstars_beginner = _read_int_env('ARENA_ALLSTARS_BEGINNER', 0)
     allstars_qty = _read_int_env('ALLSTARS', 0)
     allstars_u23_qty = _read_int_env('ALLSTARS_U23', 0)
 
     counts = {
         'MLS_IN_SEASON': in_season_req['mls'], 'KLEAGUE_IN_SEASON': in_season_req['kleague'],
         'ARENA_ALLSTARS_260': arena_allstars_260, 'ARENA_ALLSTARS_220': arena_allstars_220,
-        'ARENA_ALLSTARS_UNCAPPED': arena_allstars_uncapped, 'ALLSTARS': allstars_qty,
+        'ARENA_ALLSTARS_UNCAPPED': arena_allstars_uncapped, 'ARENA_ALLSTARS_BEGINNER': arena_allstars_beginner,
+        'ALLSTARS': allstars_qty,
         'ALLSTARS_U23': allstars_u23_qty,
     }
     counts.update({arena_type(lg): arena_dedicata_req.get(lg, 0) for lg in ARENA_LEAGUES})
@@ -1731,7 +1760,8 @@ def main():
     # All Stars/Arena All Stars sono richieste (pescano dal pool misto di
     # TUTTE le leghe), restano rilevanti tutte le LEAGUES; altrimenti solo le
     # leghe con almeno una formazione In Season o Arena dedicata richiesta.
-    if allstars_qty or allstars_u23_qty or arena_allstars_260 or arena_allstars_220 or arena_allstars_uncapped:
+    if allstars_qty or allstars_u23_qty or arena_allstars_260 or arena_allstars_220 or arena_allstars_uncapped \
+            or arena_allstars_beginner:
         leghe_rilevanti = set(LEAGUES)
     else:
         leghe_rilevanti = ({lg for lg, n in in_season_req.items() if n} |

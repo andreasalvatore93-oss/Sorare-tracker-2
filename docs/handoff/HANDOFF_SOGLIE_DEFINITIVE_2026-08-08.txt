@@ -663,3 +663,170 @@ File nuovi: dati_globali/premi_arene_2026-08-08.json,
 dati_globali/premi_arene_2026-08-08_falliti.json, scarica_premi_arene.py,
 analisi_manager/p27_premi_veri_soglie.py,
 analisi_manager/p27_risultato.json, analisi_manager/p28_gw3_premi_veri.py.
+
+
+=====================================================================
+13. SESSIONE 09/08/2026, notte Roma (~01:00-02:30 CEST) -- APPLICAZIONE
+    IN PRODUZIONE (Sonnet, BRIEF_SONNET_APPLICA_SOGLIE_2026-08-09.txt)
+=====================================================================
+TOCCA LA PRODUZIONE. Non pushato, solo committato in locale (in attesa
+del via utente per il push su main).
+
+--- §4 BUG DEDUP p25_archivio_v2.py: 199 -> 228, NON 235 -------------
+Corretto (righe 118-124 vecchie): teneva indiscriminatamente l'ULTIMA
+riga per slug duplicato, ora tiene quella CON premio. Rilanciato:
+premi osservati risaliti da 199 a **228**, non 235 come stimato
+dall'orchestratore. Verificato riga per riga: il file vecchio ha 61
+gruppi di slug duplicati, di cui 34 hanno almeno una riga con premio
+(41 righe-premio totali sparse su quei 34 gruppi). 7 di quei 34 gruppi
+hanno PIU' di una riga con premio (manager diversi, podi diversi sulla
+stessa arena) -- un dict indicizzato per slug ne puo' tenere solo una,
+quindi il massimo recuperabile e' 194 (non duplicati) + 34 (un premio
+per gruppo duplicato) = 228, non 235. Il numero 235 nell'handoff §11
+era il conteggio GREZZO di tutte le righe con premio PRIMA di qualunque
+dedup (comprese le duplicate), non il massimo recuperabile con
+un'archiviazione per-slug. Non e' un errore da correggere ulteriormente:
+228 e' il tetto strutturale finche' l'archivio resta indicizzato per
+slug singolo.
+
+--- §4 ARCHIVIO v3: costruito, wiring fatto con una correzione ---------
+`dati_globali/arene_storico_full_v3.json` (script
+analisi_manager/p28_archivio_v3.py): v2 (rigenerato con dedup fixato,
+2.125 arene) + campo 'premi_veri_per_posizione' agganciato per slug da
+premi_arene_2026-08-08.json (1.677/2.125 arene agganciate).
+
+`consiglio_arena.premi_osservati()` modificata (righe 113-140): se
+l'ARCHIVIO contiene ALMENO una riga con 'premi_veri_per_posizione', usa
+SOLO quelli per TUTTE le righe (chi non ha match non contribuisce nulla).
+Se l'archivio non ha nessuna riga con quel campo (v2, storico vecchio),
+ricade sul comportamento di sempre (rank_premiato/premio_essenze).
+ATTENZIONE, PRIMA VERSIONE SBAGLIATA: la prima stesura mescolava, riga
+per riga, premi_veri quando presenti e rank_premiato/premio_essenze come
+fallback per le righe senza match. Sembrava piu' ricco (piu' dati) ma
+sposta il pareggio cap260 di 1.3 punti rispetto al calcolo di misura
+(p27), perche' aggiunge osservazioni FUORI dal campione dei 5.031 su cui
+sono stati calcolati i valori del §1. Corretto per restare fedele al
+metodo di misura: tutto o niente per archivio, mai mescolato per riga.
+
+--- §4 CONTROLLO OBBLIGATORIO: consiglio_arena su v3 riproduce i valori? --
+Script analisi_manager/p29_verifica_v3.py. Risultato (sigma per tipo
+riusata dal Passo 2: cap260 50.52, cap220 46.70, Uncapped 53.72,
+Beginner 50.18):
+
+  tipo       pareggio v3   atteso §1   guadagno/pt v3   atteso §1
+  cap 260      263.92        264.5        6.735            6.96    SCARTO
+  cap 220      247.27        247.1        5.112            5.11    OK
+  Uncapped     279.59        279.6        5.945            5.88    OK
+  Beginner     256.57        256.5        2.505            2.46    OK
+
+3 tipi su 4 riproducono quasi alla cifra. La cap 260 scarta di 0.58 pt /
+0.23 essenze-punto. VERIFICATO che non e' un bug: rilanciando p27 (lo
+script di misura originale, IDENTICO, nessuna modifica) sui dati
+rigenerati, anche LUI si scosta dai valori scritti in §12
+(264.2 contro 264.5, guadagno 6.75 contro 6.96) -- stesso ordine di
+grandezza dello scarto misurato su v3. La causa e' che pareggio() e'
+deterministico dato un seed fisso ma sensibile all'ORDINE delle righe
+nell'archivio (rnd.randrange(len(avversari)) pesca per indice): il
+riordino introdotto dal fix del dedup (§4 sopra) sposta leggermente
+quale arena cade a quale indice, quindi sposta il campione pescato dal
+seed fisso. E' rumore di composizione dati, non un errore di calcolo:
+la cap 220/Uncapped/Beginner (dove il dedup non toccava premi, o li
+toccava per una manciata di casi) restano quasi immutati, la cap 260
+(5 premi persi/recuperati dal dedup, secondo §11-12) e' quella che si
+muove di piu' -- coerente con l'ipotesi.
+DECISIONE: applicare comunque i valori del §1 (264.5/6.96 per cap260),
+gia' decisi dall'utente prima di questa sessione. Lo scarto e' onestamente
+riportato, non nascosto: chi rilancia consiglio_arena su v3 oggi ottiene
+263.9, non 264.5 -- la differenza (0.6 pt) e' sotto la soglia di
+fragilita' di 5 punti gia' adottata per lo split-half in questo filone.
+
+--- §1/§2/§3 VALORI APPLICATI in build_formazione_globale.py -----------
+PAREGGIO_ARENA: cap260 259.5->264.5, cap220 244.1->247.1,
+uncapped 288.3->279.6, elite INVARIATA 342.7, arene dedicate INVARIATO
+262.9, Beginner (NUOVO) 256.5.
+GUADAGNO_PER_PUNTO: cap260 7.9->6.96, cap220 6.3->5.11,
+uncapped 8.0->5.88, elite INVARIATA 9.1, arene dedicate 8.8->6.96
+(allineato a cap260), Beginner (NUOVO) 2.46.
+COSTO_INGRESSO: invariati, Beginner (NUOVO) 100.
+
+Tipo ARENA_ALLSTARS_BEGINNER aggiunto in TUTTI i punti trovati via grep
+su ARENA_ALLSTARS_220 (13 occorrenze) + un buco NON elencato dal brief
+dell'orchestratore: riga ~1763, il controllo "leghe rilevanti per questa
+run" (`if allstars_qty or ... or arena_allstars_uncapped:`) non
+includeva `arena_allstars_beginner` -- se il Beginner fosse stato
+l'UNICA arena richiesta, il generatore avrebbe limitato le leghe
+rilevanti a zero e prodotto un pool vuoto. Corretto, segnalato come da
+istruzione del brief.
+Verificato CAPTAIN_BONUS_BY_TYPE: tutti i tipi arena (260/220/uncapped/
+Beginner/dedicate) sono ESPLICITAMENTE in tabella in entrambi i punti
+del codice (riga 613 generatore + rendering bff, che la copia via
+bff.CAPTAIN_BONUS_BY_TYPE.update() a import time) -- il difetto sul
+default .get(tipo,0.2) vs .get(tipo,0.5) segnalato nel brief non tocca
+NESSUN tipo oggi, perche' nessuno cade sul default. Nessuna correzione
+necessaria, solo verifica.
+
+--- §5 TEST A/A E DIFF ------------------------------------------------
+SCOPERTO (non introdotto da questa sessione): il generatore ha un
+non-determinismo di base run-to-run anche a CODICE INVARIATO, nella fase
+di generazione OPZIONALE (pool residuo) -- due run identiche del codice
+PRE-modifica hanno prodotto allocazioni diverse tra cap260/cap220/
+uncapped (stesso totale di formazioni, ordine/tipo diverso). Causa
+verificata: hash randomization di Python su set/dict con chiavi stringa
+(PYTHONHASHSEED di default e' randomico per processo). Con
+PYTHONHASHSEED=0 fissato, due run IDENTICHE del codice pre-modifica sono
+risultate byte-identiche (a parte il timestamp nel nome file). Da qui in
+poi tutti i confronti sono stati fatti con PYTHONHASHSEED=0 fisso.
+Non e' stato corretto nel codice (fuori scope di questo brief): se serve
+riproducibilita' run-to-run in produzione, va fissato PYTHONHASHSEED=0
+nell'ambiente di lancio, segnalato per una sessione futura.
+
+DIFF soglie (stessa richiesta 260=3/220=3/uncapped=3, NESSUN Beginner,
+per isolare l'effetto soglie da solo): su 16 arene generate, 3 cambiano
+verdetto -- uncapped atteso 288.2 (LASCIA PERDERE -0.1 -> SCHIERA +8.6),
+uncapped atteso 279.9 (LASCIA PERDERE -8.4 -> SCHIERA +0.3), cap220
+atteso 246.2 (SCHIERA +2.1 -> LASCIA PERDERE -0.9). Netto +1 SCHIERA
+(8->9 su 16). In linea con l'atteso "circa un'arena" dal giro di misura
+precedente (GW3: 23->24, +1 cap220).
+
+BEGINNER: aggiungendo ARENA_ALLSTARS_BEGINNER=3 alla stessa richiesta,
+il generatore produce 4 formazioni Beginner (3 richieste + 1 opzionale
+dal pool residuo), punteggi attesi 250-267 contro pareggio 256.5: 3 su 4
+SCHIERA (267.9/+11.4, 264.1/+7.6, 262.7/+6.2, 260.8/+4.3 -- attenzione,
+tutte e 4 sopra pareggio in questo run specifico, margini 4-11 pt).
+Il Beginner NON e' quello con margini piu' risicati in questo campione:
+essendo pero' il tipo con guadagno/pt piu' basso (2.46 contro 5-7 degli
+altri), un margine di 4-11 punti vale MOLTE meno essenze di un margine
+uguale sulla cap260 -- e' un'informazione qualitativa, non quantificata
+qui in essenze, da riportare all'utente prima della produzione.
+
+--- §7 CATENA SCOUTING --------------------------------------------------
+Verificato meccanicamente (senza lanciare l'intera pipeline di scouting,
+che richiede rete/cookie e sarebbe stato uno spreco per una verifica di
+wiring): scouting_gw.py legge PAREGGIO_ARENA/GUADAGNO_PER_PUNTO/
+COSTO_INGRESSO SEMPRE via `getattr(gg, ...)` dal modulo generatore
+caricato dinamicamente (best_five._import_gg()), MAI valori duplicati a
+mano -- verificato con un import diretto: gg.PAREGGIO_ARENA['ARENA_ALLSTARS_260']
+risulta 264.5, gg.PAREGGIO_ARENA['ARENA_ALLSTARS_BEGINNER'] risulta 256.5.
+Nessuna modifica necessaria in scouting_gw.py: si allinea da solo, come
+atteso dalla regola della catena in CLAUDE.md.
+NON FATTO (fuori dal tempo disponibile in questa sessione): il diff
+completo dei CONSIGLI DI ACQUISTO (§7b, quali giocatori entrano/escono,
+quanto si muove Ess/GW e EUR/EssGW) richiede la pipeline di scouting
+completa con dati di mercato, costosa e non essenziale per verificare
+che il wiring funzioni. Se l'utente vuole quel diff prima di autorizzare
+il push, va fatto in un giro dedicato.
+
+--- COSA NON E' STATO FATTO ---------------------------------------------
+- Push su main: NON fatto, in attesa del via.
+- Diff completo scouting (consigli di acquisto reali): NON fatto, vedi
+  sopra.
+- Fix del non-determinismo PYTHONHASHSEED in produzione: NON fatto,
+  segnalato come backlog.
+
+--- FILE TOCCATI/NUOVI ----------------------------------------------------
+Modificati: generatore_formazioni/build_formazione_globale.py,
+consiglio_arena.py, analisi_manager/p25_archivio_v2.py,
+dati_globali/arene_storico_full_v2.json (rigenerato),
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md (§8octies aggiornato).
+Nuovi: dati_globali/arene_storico_full_v3.json,
+analisi_manager/p28_archivio_v3.py, analisi_manager/p29_verifica_v3.py.

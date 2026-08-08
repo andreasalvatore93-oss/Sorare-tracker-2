@@ -113,10 +113,20 @@ def main():
     # (p11_pool) perche' ha il premio reale incassato (rank_premiato/
     # premio_essenze dal nostro manager, piu' affidabile del rank_premiati
     # ricostruito sopra che vale solo se il nostro manager era fra i premiati)
+    # BUG FIXATO 09/08/2026 (HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt §11-12):
+    # il file vecchio ha 61 slug duplicati al suo interno (stessa arena,
+    # righe diverse per manager diversi). Prima si teneva indiscriminatamente
+    # l'ULTIMA riga per slug, perdendo il premio in 36 casi su 61 (235->199).
+    # Ora si tiene la riga CON il premio quando c'e' un duplicato.
     fonte = collections.Counter()
     finale = {}
     for a in vecchio['arene']:
-        finale[a['slug']] = a
+        slug = a['slug']
+        precedente = finale.get(slug)
+        if precedente is not None and precedente.get('rank_premiato') and precedente.get('premio_essenze') \
+                and not (a.get('rank_premiato') and a.get('premio_essenze')):
+            continue  # la riga precedente aveva il premio, questa no: la teniamo
+        finale[slug] = a
         fonte['vecchio (p11_pool)'] += 1
     aggiunte_nuovo = 0
     for slug, a in arene_nuovo.items():

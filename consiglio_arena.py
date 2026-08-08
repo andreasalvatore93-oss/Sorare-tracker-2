@@ -118,10 +118,31 @@ def premi_osservati():
     cap 260, 4.8% in Beginner, contro il 5% dichiarato dall'utente). Pescando
     dai premi osservati invece di usare una terna fissa, i jackpot entrano da
     soli alla loro frequenza vera, senza doverli modellare a parte.
+
+    Se l'archivio ha il campo 'premi_veri_per_posizione' (v3, 09/08/2026:
+    HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt §11-12, rewardsConfig su 1.677
+    arene, jackpot inclusi, 5.031 osservazioni contro le 141/199/228 di
+    rank_premiato/premio_essenze che valgono solo dove il NOSTRO manager era
+    a podio) si usano SOLO quelli -- stesso metodo di misura di
+    analisi_manager/p27_premi_veri_soglie.py, per restare riproducibile alla
+    cifra. NON si mischiano con rank_premiato/premio_essenze delle righe
+    senza match (mischiare le due fonti e' stato provato il 09/08 e sposta il
+    pareggio cap260 di 1.3 punti rispetto al calcolo di misura, perche'
+    aggiunge osservazioni vecchie non presenti nel campione dei 5.031: vedi
+    HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt §13).
+    Se l'archivio non ha NESSUNA riga con quel campo (v2, storico vecchio) si
+    ricade sul comportamento di sempre (rank_premiato/premio_essenze):
+    nessuna rottura per chi passa un archivio vecchio.
     """
     d = json.load(open(ARCHIVIO, encoding='utf-8'))
+    ha_premi_veri = any(r.get('premi_veri_per_posizione') for r in d['arene'])
     out = collections.defaultdict(list)
     for r in d['arene']:
+        if ha_premi_veri:
+            for pos, premio in (r.get('premi_veri_per_posizione') or []):
+                if pos and pos <= 3 and premio is not None:
+                    out[(r['tipo'], pos)].append(premio)
+            continue
         rank, premio = r.get('rank_premiato'), r.get('premio_essenze')
         if rank and premio:
             out[(r['tipo'], rank)].append(premio)

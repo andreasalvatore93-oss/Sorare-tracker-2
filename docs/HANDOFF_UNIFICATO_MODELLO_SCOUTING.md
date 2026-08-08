@@ -1158,7 +1158,29 @@ Brief: `docs/handoff/BRIEF_SONNET_CRITERIO_ARENE_2026-08-08.txt`; esito
 
 ---
 
-## 8octies. Soglie arena ritarate su 2.125 arene (09/08) — DA APPLICARE
+## 8octies. Soglie arena ritarate su 2.125 arene + premi veri — APPLICATO 09/08
+
+**STATO (09/08/2026, notte Roma): APPLICATO IN PRODUZIONE.** Eseguito da
+Sonnet su BRIEF_SONNET_APPLICA_SOGLIE_2026-08-09.txt. Dettaglio completo
+in `docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt` §13. Valori
+finali in `generatore_formazioni/build_formazione_globale.py`
+(PAREGGIO_ARENA/GUADAGNO_PER_PUNTO):
+
+| tipo | pareggio | guadagno/pt | costo |
+|---|---|---|---|
+| cap 260 | 259,5 → **264,5** | 7,9 → **6,96** | 300 |
+| cap 220 | 244,1 → **247,1** | 6,3 → **5,11** | 200 |
+| Uncapped | 288,3 → **279,6** | 8,0 → **5,88** | 300 |
+| Beginner | non esisteva → **256,5** (NUOVO tipo, `ARENA_ALLSTARS_BEGINNER`) | — → **2,46** | 100 |
+| Elite | 342,7 INVARIATA (esclusa dal perimetro) | 9,1 INVARIATA | 800 |
+| arene dedicate | 262,9 INVARIATO (misura propria, non ricalcolabile) | 8,8 → **6,96** (allineato a cap 260) | 300 |
+
+Fonte: premi VERI via rewardsConfig, 1.677 arene scaricate, 5.031
+osservazioni (contro le 141 precedenti). Catena verificata fino allo
+scouting incluso (legge i valori via `getattr(gg, ...)`, nessuna modifica
+necessaria in scouting_gw.py). Non pushato su main, in attesa dell'utente.
+
+--- SEZIONE STORICA (09/08 sera, superata dall'applicazione sopra) ---
 
 **L'archivio è stato ricostruito**: scaricate le classifiche complete di
 1.677 arene (`dati_globali/classifiche_arene_2026-08-08.json`), unite alle
@@ -1436,6 +1458,30 @@ soglie, 3 è un filone a sé che può ripartire in parallelo.
    della scala storica (§8bis). Servono più arene Uncapped a podio.
 10. **21 script con path Windows hardcoded** in `analisi_manager/`: girano
     solo sulla macchina dell'utente, meccanico — §8quinquies.
+
+**BACKLOG APERTO IL 09/08 (non lavorare, solo registrato):**
+
+- **Il grade e' in buona parte un indicatore di TITOLARITA', non di
+  qualita'.** Fatti: sale all'uscita delle odds per chi risulta titolare a
+  sorpresa (F->E, osservato in diretta dall'utente); Messi ha 10 A e 5 F su
+  15 partite, mai un voto intermedio; il 09/08 e' passato da A a F dopo la
+  morte del padre, cioe' su una notizia extra-campo che riguarda se
+  giochera', non come giochera'. CONTROLLO DA FARE nel test G sulle arene:
+  **G batte ancora A dopo aver gia' filtrato per starting odds >=0,80?**
+  Se il vantaggio sparisce, G non e' un segnale sulla qualita' ma un
+  secondo filtro di titolarita' sovrapposto a uno che il bot ha gia'.
+- **Bonus 4% (cap L10) e 2% (anti-stack) fuori dall'arena**: il generatore
+  li tratta come informativi e non li insegue, e test passati dicevano che
+  inseguirli peggiorava il totale -- ma erano test SENZA G. Da rifare con G.
+  Serve anche sistemare il realizzato dei backtest non-arena, che oggi non
+  li calcola (p16/p17 righe 61-65).
+- **Correlazione grade <-> punteggio realizzato della stessa partita**:
+  numero mai misurato, costa zero query. Serve come limite superiore alla
+  contaminazione possibile (se fosse >0,8 il grade sarebbe una rilettura
+  del risultato; un pronostico onesto sta molto piu' in basso).
+- **Caso andrew-vincent-rick 13/05/2026**: grade cambiato fra due letture
+  con scoreStatus FINAL in entrambe, senza causa nota. 1 su 729. Riprendere
+  solo se ricapita su un campione piu' grande.
 
 **Voci chiuse, non riaprire**: soglie cap 220 come difetto di taratura
 (non lo sono, §8septies); buco dati `arene_storico.json`; 3 anomalie
