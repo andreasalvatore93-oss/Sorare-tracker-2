@@ -436,6 +436,50 @@ if GRADE_DATA_PATH and os.path.exists(GRADE_DATA_PATH):
     with open(GRADE_DATA_PATH, encoding='utf-8') as _f:
         _GRADE_MAP = json.load(_f)
 
+# --- GRADE_SCALE ("scala storica"), brief BRIEF_SONNET_GRADE_SCALA_STORICA_
+# 2026-08-08.txt -- MISURA, non ancora una scelta di produzione. Default
+# INVARIATO ('gruppo' = comportamento di sempre: media/sd del grade DENTRO
+# il gruppo (lega,ruolo) della singola giornata). 'storica' sostituisce SOLO
+# media/sd del grade con quelle di analisi_manager/p18_grade_scala_storica.py
+# (calcolate sullo storico multi-giornata per lega/ruolo, con fallback
+# ruolo/globale) -- la dispersione degli ATTESI (sd sopra, riga poco sotto)
+# resta sempre quella del gruppo corrente, come in produzione: cambia solo la
+# scala con cui si legge il grade, non la conversione in punti.
+# Spento con un flag esplicito, mai con l'assenza del file (se il file manca
+# con GRADE_SCALE=storica, si stampa un avviso e si ricade su 'gruppo' --
+# mai in silenzio).
+GRADE_SCALE = os.environ.get('GRADE_SCALE', 'gruppo')
+GRADE_SCALE_DATA_PATH = os.environ.get(
+    'GRADE_SCALE_DATA_PATH',
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dati', 'grade_scala_storica.json'))
+_GRADE_SCALE_TABLE = None
+if GRADE_SCALE == 'storica':
+    if os.path.exists(GRADE_SCALE_DATA_PATH):
+        with open(GRADE_SCALE_DATA_PATH, encoding='utf-8') as _f:
+            _GRADE_SCALE_TABLE = json.load(_f)
+    else:
+        print(f"ATTENZIONE: GRADE_SCALE=storica ma {GRADE_SCALE_DATA_PATH} non esiste "
+              "-- fallback su 'gruppo' (nessuna scala storica applicata).")
+        GRADE_SCALE = 'gruppo'
+
+
+def _scala_storica_per(league, role):
+    """(mean, sd, livello) dalla tabella storica per (league,role), con
+    fallback lega+ruolo -> solo ruolo -> globale. None se la tabella non
+    c'e' o non ha nessun livello disponibile."""
+    if not _GRADE_SCALE_TABLE:
+        return None
+    voce = _GRADE_SCALE_TABLE.get('per_lega_ruolo', {}).get(f'{league}|{role}')
+    if voce:
+        return voce['mean'], voce['sd'], 'lega_ruolo'
+    voce = _GRADE_SCALE_TABLE.get('per_ruolo', {}).get(role)
+    if voce:
+        return voce['mean'], voce['sd'], 'ruolo'
+    voce = _GRADE_SCALE_TABLE.get('globale')
+    if voce:
+        return voce['mean'], voce['sd'], 'globale'
+    return None
+
 
 def _grade_per_riga(row):
     """Fonte del grade per una riga: PRIMA quello letto da
@@ -475,11 +519,16 @@ def _apply_grade_group(rows):
         r['_grade_num'] = gn
         if gn is not None:
             grade_members.append(gn)
-    if len(grade_members) >= 2:
+
+    scala = _scala_storica_per(rows[0].get('league'), rows[0].get('role_key')) \
+        if GRADE_SCALE == 'storica' else None
+    if scala is not None:
+        gm, gsd, _livello_scala = scala
+    elif len(grade_members) >= 2:
         gm = sum(grade_members) / len(grade_members)
         gsd = (sum((v - gm) ** 2 for v in grade_members) / len(grade_members)) ** 0.5
     else:
-        gsd = 0.0
+        gm, gsd = 0.0, 0.0
     for r in rows:
         gn = r.get('_grade_num')
         z = (gn - gm) / gsd if (gn is not None and gsd > 0) else 0.0
@@ -1668,6 +1717,28 @@ def main():
           (", ".join(f"{LABELS[t]}={counts[t]}" for t in richiesti) if richiesti else "nessuna"))
 
     role_data, role_counts, player_names = load_league_role_data()
+
+    # DUMP_JSON_CANDIDATI (misura GRADE_SCALE, brief BRIEF_SONNET_GRADE_
+    # SCALA_STORICA_2026-08-08.txt, Passo 0b/0c): se impostata, scrive TUTTI
+    # i candidati (non solo quelli scelti in una formazione, a differenza di
+    # DUMP_JSON) con grade/atteso_cal/atteso_combinato -- serve a misurare
+    # quante carte cambiano z fra GRADE_SCALE=gruppo e =storica. Var non
+    # impostata -> non scrive nulla, nessun costo.
+    _dump_cand_path = os.environ.get('DUMP_JSON_CANDIDATI', '')
+    if _dump_cand_path:
+        _cand = []
+        for lg in LEAGUES:
+            for role in ROLES:
+                for row in role_data.get(lg, {}).get(role, []):
+                    _cand.append({
+                        'slug': row.get('slug'), 'league': lg, 'role_key': role,
+                        'grade': row.get('_grade'), 'grade_num': row.get('_grade_num'),
+                        'atteso_cal': row.get('atteso_cal'),
+                        'atteso_combinato': row.get('atteso_combinato'),
+                    })
+        with open(_dump_cand_path, 'w', encoding='utf-8') as _fh:
+            json.dump({'grade_scale': GRADE_SCALE, 'candidati': _cand}, _fh, ensure_ascii=False)
+        print(f"\nDUMP_JSON_CANDIDATI scritto: {_dump_cand_path} ({len(_cand)} candidati)")
 
     # Flag u23Eligible per slug (28/07): estratto da role_counts, gia'
     # caricato da player_card_counts.json (stesso file che porta L10) --

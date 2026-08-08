@@ -1,0 +1,41 @@
+==============================================================================
+SCALA STORICA DEL GRADE per (lega,ruolo)
+==============================================================================
+osservazioni totali (slug,data,grade) dalle fonti storiche: 24529
+scarti: {'senza_lega': 3469, 'senza_ruolo': 105}
+osservazioni utilizzabili (lega+ruolo noti): 20955
+prima data nelle fonti: 2025-07-13T01:30:00Z
+
+gruppi (lega,ruolo) osservati: 120
+  di cui sopra soglia 100 (usano scala lega+ruolo): 70
+ruoli sopra soglia 500 (fallback ruolo): 4
+ripartizione per livello di fallback: {'lega_ruolo': 70, 'ruolo': 50}
+
+scala globale: {'mean': 3.0373657838224766, 'sd': 1.6466380808423626, 'n': 20955}
+
+scala per ruolo (sopra soglia):
+  DEF  mean=3.01 sd=1.60 n=6885
+  FWD  mean=2.89 sd=1.61 n=5136
+  GK   mean=3.70 sd=1.88 n=2603
+  MID  mean=2.91 sd=1.55 n=6331
+
+scala per (lega,ruolo) (sopra soglia, 70 coppie) -- prime 15:
+  mls|DEF                        mean=2.86 sd=1.51 n=1319
+  mls|MID                        mean=2.92 sd=1.57 n=1247
+  mls|FWD                        mean=2.83 sd=1.59 n=1064
+  kleague|DEF                    mean=3.09 sd=1.72 n=660
+  kleague|FWD                    mean=2.52 sd=1.37 n=495
+  germania|DEF                   mean=3.11 sd=1.61 n=478
+  germania|MID                   mean=3.11 sd=1.50 n=464
+  spagna|DEF                     mean=2.89 sd=1.48 n=450
+  inghilterra|MID                mean=2.98 sd=1.60 n=449
+  mls|GK                         mean=3.64 sd=1.82 n=421
+  kleague|MID                    mean=2.82 sd=1.60 n=405
+  belgio|DEF                     mean=3.07 sd=1.58 n=391
+  spagna|FWD                     mean=3.13 sd=1.89 n=374
+  olanda|DEF                     mean=3.22 sd=1.78 n=361
+  belgio|MID                     mean=2.77 sd=1.54 n=360
+
+salvato: C:\Users\Andrea\Documents\GitHub\Sorare-tracker-2\generatore_formazioni\dati\grade_scala_storica.json
+
+controllo (brief cita media~2.95 sd~1.65 su 5.792 osservazioni con lega nota): qui, su 20955 osservazioni CON lega+ruolo noti: mean=3.04 sd=1.65 n=20955

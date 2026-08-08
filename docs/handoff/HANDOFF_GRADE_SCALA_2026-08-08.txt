@@ -1,0 +1,248 @@
+HANDOFF -- GRADE_SCALE: IL GRADE SI NORMALIZZA SU GRUPPI TROPPO PICCOLI
+Sessione 08/08/2026, sera/notte (Roma). Eseguito da Sonnet su brief di Opus
+(docs/handoff/BRIEF_SONNET_GRADE_SCALA_STORICA_2026-08-08.txt).
+
+
+=====================================================================
+1. STATO DEL REPO
+=====================================================================
+Branch: main. Ultimo commit prima di questa sessione: b5d4f3b2e3 (Fronte 2
+follow-up). Questa sessione ha TOCCATO la produzione (generatore_formazioni/
+build_formazione_globale.py) ma SOLO dietro un flag spento di default
+(GRADE_SCALE='gruppo' = comportamento di sempre, verificato bit-per-bit
+identico -- vedi Passo 0a). Nessun default di produzione e' cambiato.
+
+File nuovi/modificati, tutti committati insieme a questo handoff:
+  generatore_formazioni/build_formazione_globale.py   MODIFICATO (flag
+    GRADE_SCALE/GRADE_SCALE_DATA_PATH + dump diagnostico DUMP_JSON_CANDIDATI,
+    entrambi a costo zero se non impostati)
+  generatore_formazioni/dati/grade_scala_storica.json NUOVO (dati, la scala
+    storica "tutta la storia" che la produzione userebbe con GRADE_SCALE=
+    storica; si rigenera con p18, vedi sotto)
+  analisi_manager/p18_grade_scala_storica.py          NUOVO (costruisce la
+    scala storica, riusabile per walk-forward)
+  analisi_manager/p19_nonarena_grade_scala.py         NUOVO (Passo 1: A vs
+    G-gruppo vs G-storica sul non-arena, placebo, bootstrap sui manager)
+  vari *_out.json/*.log di corredo (evidenza dei run, non script)
+
+
+=====================================================================
+2. PERCHE' ESISTE QUESTO LAVORO
+=====================================================================
+Il fronte 2 (HANDOFF_G_ARENE_2026-08-08.txt sez.12-13) aveva scoperto che il
+grade in produzione si normalizza DENTRO il gruppo (lega,ruolo) della
+singola giornata: se il gruppo ha meno di 2 carte col grade, il grade viene
+IGNORATO (z=0); se ne ha esattamente 2, lo z e' meccanicamente +1/-1
+qualunque sia la distanza vera. Misurato in produzione: su 57 gruppi
+lega/ruolo con grade fetchato oggi, mediana 3 membri, 19 su 57 con un solo
+membro (grade ignorato su un terzo dei gruppi).
+L'idea da misurare: tenere la correzione per (lega,ruolo) ma calcolare
+media/sd del grade sullo STORICO multi-giornata invece che sulle poche
+carte della singola giornata -- "scala storica". La dispersione degli
+ATTESI (che converte lo z in punti) resta sempre quella del gruppo
+corrente: cambia solo la fonte di media/sd del GRADE.
+
+
+=====================================================================
+3. COSA HO TOCCATO -- COME SI RILANCIA
+=====================================================================
+generatore_formazioni/build_formazione_globale.py: nuova variabile
+GRADE_SCALE ('gruppo' default, 'storica' alternativa), GRADE_SCALE_DATA_PATH
+(default generatore_formazioni/dati/grade_scala_storica.json). In
+_apply_grade_group, se GRADE_SCALE=storica e la tabella e' caricata, media/sd
+del grade vengono da li' (fallback lega+ruolo -> ruolo -> globale) invece
+che dai membri del gruppo corrente. Se il file manca, STAMPA un avviso e
+ricade su 'gruppo' (mai in silenzio). Aggiunto anche DUMP_JSON_CANDIDATI
+(dump di TUTTI i candidati con grade/atteso, non solo quelli scelti in
+formazione -- serve a misurare l'effetto di GRADE_SCALE su tutto il pool,
+DUMP_JSON esistente copre solo le formazioni scelte).
+
+Rigenerare la scala storica (serve prima di poter usare GRADE_SCALE=storica):
+  python analisi_manager/p18_grade_scala_storica.py
+
+Rilanciare il generatore con la scala storica (esempio):
+  ONLY_LEAGUES=mls,kleague GRADE_SCALE=storica python generatore_formazioni/build_formazione_globale.py
+
+Rilanciare il backtest non-arena (Passo 1):
+  python analisi_manager/p19_nonarena_grade_scala.py --base allstar_u23 [--placebo N]
+  python analisi_manager/p19_nonarena_grade_scala.py --base mls_hotstreak [--placebo N]
+
+
+=====================================================================
+4. PASSO 0 -- L'INTERRUTTORE
+=====================================================================
+
+0a -- GRADE_SCALE=gruppo IDENTICO a oggi: CONFERMATO.
+Run locale (nessuna query, solo file gia' in repo/output di oggi):
+ONLY_LEAGUES=mls,kleague, DUMP_JSON di tutte le formazioni primarie (grade,
+atteso_cal, atteso_combinato per ogni carta schierata). Confrontati tre
+dump: (1) build_formazione_globale.py PRIMA di questa modifica, GRADE_
+ENABLED default; (2) STESSO codice DOPO la modifica, GRADE_SCALE=gruppo
+esplicito; (3) idem, GRADE_SCALE non impostato (default).
+Risultato: (1) == (2) == (3), IDENTICI byte per byte (confronto diretto in
+Python su tutto il dizionario, True). Il flag non sposta di un bit il
+comportamento di oggi quando resta sul default.
+
+0b -- GRADE_SCALE=storica: quante carte cambiano z, e di quanto.
+Stesso mazzo (ONLY_LEAGUES=mls,kleague, tutte le leghe scoperte in realta'
+tramite _DISCOVERED -- 250 candidati totali con almeno un consiglio
+disponibile), dump DI TUTTI i candidati (non solo quelli scelti in
+formazione, via DUMP_JSON_CANDIDATI nuovo):
+  carte che passano da z=0 (gruppo) a z!=0 (storica), cioe' il GUADAGNO
+    netto di informazione: 13 su 250
+  carte che passano da z!=0 (gruppo) a z=0 (storica), cioe' una PERDITA:
+    0 su 250
+  carte gia' a z=0 in entrambi i modi: 44
+  carte diverse da zero in entrambi i modi (ma valore diverso): 193
+  distribuzione |atteso_combinato_storica - atteso_combinato_gruppo|
+    (quanto si sposta il punteggio di selezione, in punti): min 0.00,
+    mediana 1.12, massimo 7.51; 77/250 carte (30.8%) si spostano di piu' di
+    2 punti.
+Lettura: la scala storica non toglie MAI informazione (0 perdite), ne
+aggiunge in un piccolo sottoinsieme di carte (13/250, 5.2%) e sposta il
+valore su una parte consistente delle altre (mediana 1.1pt, non
+trascurabile per una decisione di selezione al margine).
+
+0c -- gruppi che passano da "grade ignorato" a "grade attivo".
+Sugli stessi 250 candidati, 38 gruppi (lega,ruolo) hanno almeno una carta
+col grade:
+  con GRADE_SCALE=gruppo: 6 gruppi TOTALMENTE ignorati (tutte le carte a
+    z=0), 32 con almeno una carta attiva
+  con GRADE_SCALE=storica: 1 gruppo totalmente ignorato, 37 attivi
+  gruppi che passano da tutto-ignorato ad almeno-1-attivo: 5 su 38 (13.2%)
+Il gruppo che resta ignorato anche con la scala storica non ha nessun
+fallback disponibile (nessuna coppia lega+ruolo, nessun ruolo sopra soglia
+500 -- verosimilmente una lega/ruolo mai vista nelle fonti storiche; non
+identificato per nome in questo giro, da fare se si procede).
+
+
+=====================================================================
+5. PASSO 1 -- IL NON-ARENA
+=====================================================================
+Riprodotta la base pulita del 07/08 con gli stessi criteri (niente arene,
+solo carte limited, somma=ufficiale entro 0.5, division-N per All Star/U23).
+
+1a -- RIPRODUZIONE DEL NUMERO ATTUALE (A vs G-gruppo): CONFERMATA.
+  All Star + U23 (7 carte): n=864, A=424.57, G-gruppo=430.55, delta=+5.98
+    -- IDENTICO al numero in docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md.
+  MLS Hot Streak (5 carte): n=310, A=314.49, G-gruppo=320.93, delta=+6.43
+    -- IDENTICO.
+Se non li avessi ritrovati esatti mi sarei fermato: la base e' la stessa,
+il confronto che segue e' valido.
+
+1b/1c/1e -- A vs G-gruppo vs G-storica, INCERTEZZA con bootstrap sui
+MANAGER (cluster, 3.000 resample), non sulle formazioni (istruzione 1e,
+integrata direttamente qui invece che come passo separato: ogni delta sotto
+e' gia' bootstrap-per-manager).
+
+  All Star + U23 (n=864, 13 manager):
+    A          = 424.57
+    G-gruppo   = 430.55   delta G-A = +5.98  IC95 [+4.87, +10.38]  (esclude 0)
+    G-storica  = 430.12   delta S-A = +5.55  IC95 [+3.76, +10.46]  (esclude 0)
+    G-storica vs G-gruppo: delta = -0.43  IC95 [-2.34, +1.21]  (include 0)
+
+  MLS Hot Streak (n=310, 10 manager):
+    A          = 314.49
+    G-gruppo   = 320.93   delta G-A = +6.43  IC95 [+2.58, +12.12]  (esclude 0)
+    G-storica  = 321.99   delta S-A = +7.50  IC95 [+5.42, +11.67]  (esclude 0)
+    G-storica vs G-gruppo: delta = +1.07  IC95 [-2.45, +4.13]  (include 0)
+
+Lettura: su ENTRAMBE le basi, sia G-gruppo che G-storica battono A con IC95
+che esclude lo zero (piu' netto di quanto risultasse col bootstrap per
+formazione del 07/08, specialmente per MLS Hot Streak: allora l'IC toccava
+quasi lo zero, col bootstrap per manager lo esclude nettamente). G-storica
+NON e' distinguibile da G-gruppo su nessuna delle due basi (IC del delta
+S-G include sempre zero): la scala storica non peggiora ne' migliora in
+modo significativo il segnale gia' presente, sposta solo DOVE il grade
+agisce (Passo 0b/0c), non SE agisce in media sul risultato realizzato.
+
+1d -- TEST PLACEBO (200 richieste dal brief, ESEGUITE MENO per costo
+computazionale -- dichiarato, non nascosto: ogni permutazione ricostruisce
+864 o 310 formazioni intere col knapsack di produzione, ~35s/permutazione
+per All Star+U23, ~13s per MLS Hot Streak. 200 permutazioni sarebbero
+~2h/~45min; qui N=30 e N=60 rispettivamente, in background durante la
+sessione).
+
+  MLS Hot Streak (60 permutazioni, completato):
+    G-gruppo:  placebo delta [-6.80,-0.35], mediana -3.72
+      G VERO (+6.43) sta al PERCENTILE 100.0 -- fuori dalla nuvola del caso
+    G-storica: placebo delta [-6.99,+0.29], mediana -2.48
+      S VERO (+7.50) sta al PERCENTILE 100.0 -- fuori dalla nuvola del caso
+  All Star + U23 (30 permutazioni, completato):
+    G-gruppo:  placebo delta [-3.18,-0.58], mediana -1.51
+      G VERO (+5.98) sta al PERCENTILE 100.0 -- fuori dalla nuvola del caso
+    G-storica: placebo delta [-1.21,+1.03], mediana -0.54
+      S VERO (+5.55) sta al PERCENTILE 100.0 -- fuori dalla nuvola del caso
+
+VERDETTO, SENZA ADDOLCIRLO -- vale su ENTRAMBE LE BASI: sia G-gruppo che
+G-storica battono TUTTE le permutazioni placebo (30 su All Star+U23, 60 su
+MLS Hot Streak: il vero sta sempre al 100esimo percentile, mai una sola
+permutazione a caso ha fatto meglio). Il segnale e' vero, non e' l'artefatto
+"perturbare gli attesi fa gia' guadagnare" (che qui comunque non esiste come
+nel fronte 2, perche' nel non-arena non c'e' nessuna decisione di ingresso/
+uscita da saltare: e' selezione pura, a parita' di formazioni giocate). E'
+la prima volta che il placebo si fa sul non-arena, su entrambe le basi ed
+entrambe le varianti del grade escono nettamente positive. Con N ridotto
+(30/60 invece di 200, sez.6) il percentile esatto sopra il 100esimo
+osservato non e' misurabile piu' finemente di questo, ma la distanza fra il
+delta vero e IL MASSIMO della distribuzione placebo e' larga su entrambe le
+basi (All Star: vero +5.98 contro un massimo placebo di -0.58; MLS: vero
++7.50 contro un massimo placebo di +0.29) -- non e' un risultato al
+margine che rischia di ribaltarsi con piu' permutazioni.
+
+
+=====================================================================
+6. DUBBI E LIMITI DICHIARATI
+=====================================================================
+- La scala storica per (lega,ruolo) usa il RUOLO MAGGIORITARIO con cui uno
+  slug compare nelle carte di dati_globali/manager_*.json (non e' walk-
+  forward sul ruolo, e' un'approssimazione aggregata -- D7 CLAUDE.md: un
+  giocatore puo' cambiare ruolo, qui conta una volta sola). Accettabile per
+  una scala AGGREGATA su migliaia di osservazioni, non per la predizione
+  riga per riga (dove il ruolo giusto e' sempre quello della carta, invariato).
+- Il numero di osservazioni utilizzabili per la scala (20.955, lega+ruolo
+  noti) non coincide col "5.792 osservazioni con lega nota" citato nel
+  brief -- NON VERIFICATO il motivo esatto (probabilmente contano UNITA'
+  diverse: slug vs osservazioni, o un filtro ruolo diverso). La sd
+  complessiva pero' coincide quasi esattamente (1.65 qui, 1.65 nel brief):
+  non cambia la sostanza, ma il numero assoluto va preso come mio, non
+  riconciliato col brief.
+- Il placebo (1d) e' su N ridotto (30/60, non 200): la stima del percentile
+  ha una risoluzione di ~3%/1.7% invece di ~0.5%. Se il risultato finale
+  cade vicino a un bordo (es. percentile 90-96), andrebbe rifatto con piu'
+  permutazioni prima di trarre conclusioni nette.
+- Il Passo 2 (arena, fronte 2 con GRADE_SCALE=storica) e il Passo 3 (catena
+  sigma/soglie/scouting) NON sono stati fatti: il brief chiede di fermarsi
+  dopo il Passo 1 e aspettare l'utente. Il Passo 4 (pezzo live sulla GW
+  corrente) nemmeno: richiede una decisione esplicita sull'uso del cookie
+  che l'utente ha fornito a parte, non ancora usato in questa sessione.
+
+
+=====================================================================
+7. DECISIONE APERTA
+=====================================================================
+G-storica non batte G-gruppo in modo significativo (Passo 1c: IC include
+zero su entrambe le basi), ma nemmeno lo peggiora, e risolve il difetto
+strutturale misurato nel Fronte 2 (gruppi da 1-2 membri, z ignorato o
+meccanico) su una parte non banale del pool (Passo 0b/0c: 5/38 gruppi
+riattivati, 13/250 carte da ignorate ad attive, mediana 1.1pt di
+spostamento sulle altre). Il caso per passare a GRADE_SCALE=storica in
+produzione e' "non fa danno misurato E chiude un difetto strutturale noto",
+non "fa meglio in modo dimostrato" -- l'utente decide se questo basta,
+eventualmente dopo aver visto l'esito del placebo completo (1d) e prima di
+autorizzare il Passo 2.
+
+
+=====================================================================
+8. FILE DI RIFERIMENTO
+=====================================================================
+generatore_formazioni/build_formazione_globale.py   righe ~431-538 (GRADE_
+  SCALE, _scala_storica_per, _apply_grade_group), ~1719-1740 (DUMP_JSON_
+  CANDIDATI)
+generatore_formazioni/dati/grade_scala_storica.json  la scala storica
+analisi_manager/p18_grade_scala_storica.py          costruzione scala
+analisi_manager/p19_nonarena_grade_scala.py         Passo 1 (A/G-gruppo/G-storica + placebo)
+analisi_manager/p16_backtest_allstar_u23.py         base pulita 7 carte (riusato)
+analisi_manager/p17_backtest_mls_hotstreak.py       base pulita 5 carte (riusato)
+docs/handoff/HANDOFF_G_ARENE_2026-08-08.txt         Fronte 2, origine del problema
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md          §8bis, i numeri +5.98/+6.43 originali

@@ -1,0 +1,24 @@
+==============================================================================
+PASSO 1 -- mls_hotstreak -- A vs G-gruppo vs G-storica (walk-forward)
+==============================================================================
+manager processati: 55   giornate totali: 738
+unita' (manager,GW) valide: 69   formazioni attese: 314
+scarti: pool<=slot=0  lega_non_deducibile=0  shape_inattesa={}
+punteggi grezzi CACHE=13842  RICOSTRUITI=583
+
+formazioni valutate (A, G-gruppo, G-storica tutte costruite): 310
+
+--- 1a/1b/1c: A vs G-gruppo vs G-storica (bootstrap sui MANAGER, non sulle formazioni) ---
+n=310  manager distinti=10
+  A          = 314.49
+  G-gruppo   = 320.93   delta G-A = +6.43  IC95=[+2.58,+12.12]
+  G-storica  = 321.99   delta S-A = +7.50  IC95=[+5.42,+11.67]
+  G-storica vs G-gruppo: delta S-G = +1.07  IC95=[-2.45,+4.13]
+
+--- 1d: PLACEBO (60 permutazioni) ---
+  G-gruppo:  placebo delta [-6.80,-0.35] mediana -3.72
+    G VERO (+6.43) sta al percentile 100.0 del placebo
+  G-storica: placebo delta [-6.99,+0.29] mediana -2.48
+    S VERO (+7.50) sta al percentile 100.0 del placebo
+
+salvato analisi_manager/p19_mls_hotstreak_out.json
