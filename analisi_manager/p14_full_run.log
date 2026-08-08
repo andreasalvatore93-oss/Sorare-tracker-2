@@ -1,0 +1,684 @@
+==============================================================================
+FRONTE 2 -- "a parita' di carte, il bot decide meglio?"
+==============================================================================
+
+indice grade: 1639 slug, 24529 coppie (slug,data), da 2025-07-13T01:30:00Z (controllo brief: ~1.639 slug, ~24.529 coppie, da 2025-07-13 a 2026-08-07)
+file manager validi: 54 (controllo brief: 54)
+
+coppie (manager,GW) con >=1 arena ammessa e pool/slot<=1.05 e copertura>=70%: 41
+scarti fase coppie: {'pool_slot_oltre_1.05': 208, 'copertura_grade_sotto_70pct': 48}
+
+arene nel campione (dopo filtro 5-carte + somma=ufficiale): 170  (controllo brief: 171)
+scarti fase arena: {'somma_diversa_da_ufficiale': 1}
+manager: 14  (controllo brief: 14)
+GW: 13  (controllo brief: 13)
+ripartizione: {'Cap 260': 100, 'Cap 220': 44, 'Uncapped': 26}  (controllo brief: Cap 260=101, Cap 220=44, Uncapped=26)
+arene per manager: {'bxl-spartak': 40, 'lairdinho': 39, 'fins49': 37, 'shirimimi': 21, 'eoghankelly': 11, 'qtn-d8cd72ac-240c-493c-894c-a45f5b3d151d': 9, 'spillo678': 3, 'ericeinicke-fc2a0cf2-c258-4fdc-afc5-0ec69d4cd4df': 2, 'ninoshooter': 2, 'serji0': 2, 'braddersfc': 1, 'keano88': 1, 'matteoogg': 1, 'sticole-ac-i-like-card-swapping-20-more': 1}
+a podio: 54/170 (31.8%)  (controllo brief: 54/171, 31.6%)
+
+--- CONTROLLO 6.3: pool/slot sulle coppie ammesse: mediana=1.000  massimo=1.000
+
+scarti nel calcolo atteso/grade sul pool (per tutte le coppie): {'no_atteso': 34}
+
+scarti nella decisione (arene del campione escluse dai numeri finali): {'carta_senza_atteso': 28}
+arene valutate nei 4 rami: 142
+carte con grade (sulle arene valutate): 694/710 (97.7%)  (controllo brief: 815/855, 95.3%)
+arene con tutte e 5 le carte col grade: 130/142  (controllo brief: 146/171)
+
+saldo netto REALE manager (arene valutate): -600 essenze (controllo brief: +500)
+  ripartizione: {'Cap 260': -5000, 'Cap 220': 2000, 'Uncapped': 2400}  (controllo brief: Cap 260 -4.400, Cap 220 +2.600, Uncapped +2.300)
+
+--- CONTROLLO 6.1: interruttore G vs A ---
+  regola stretta: arene dove G decide diverso da A: 16/142
+  regola larga: arene dove G decide diverso da A: 10/142
+  carte del pool con z_grade=0: 421/821  cause: {'gruppo_lega_ruolo_<2_col_grade': 398, 'nessun_grade': 23}
+
+--- CONTROLLO 6.2: test A/A (due run del ramo A devono essere identici) ---
+  differenze fra run1 e run2 (ramo A, atteso_cal): 0  (deve essere 0)
+
+==============================================================================
+F1-F2-F4: TUTTE LE ARENE VALUTATE (aggregato)  (n=142)
+==============================================================================
+saldo manager reale ("gioca sempre"): -600  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        28       58
+      bot non gioca    15       41
+    tasso decisioni giuste (diagonale/n): 69/142 (48.6%)   vs "gioca sempre"=30.3%   vs "non gioca mai"=69.7%
+    saldo_bot=+2000  risparmio=+11800  mancato_guadagno=+9200  quadratura(manager+risp-mancato)=+2000  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        28       58
+      bot non gioca    15       41
+    tasso decisioni giuste (diagonale/n): 69/142 (48.6%)   vs "gioca sempre"=30.3%   vs "non gioca mai"=69.7%
+    saldo_bot=+2600  risparmio=+11600  mancato_guadagno=+8400  quadratura(manager+risp-mancato)=+2600  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        31       72
+      bot non gioca    12       27
+    tasso decisioni giuste (diagonale/n): 58/142 (40.8%)   vs "gioca sempre"=30.3%   vs "non gioca mai"=69.7%
+    saldo_bot=-100  risparmio=+7900  mancato_guadagno=+7400  quadratura(manager+risp-mancato)=-100  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        33       66
+      bot non gioca    10       33
+    tasso decisioni giuste (diagonale/n): 66/142 (46.5%)   vs "gioca sempre"=30.3%   vs "non gioca mai"=69.7%
+    saldo_bot=+2900  risparmio=+9500  mancato_guadagno=+6000  quadratura(manager+risp-mancato)=+2900  OK
+
+==============================================================================
+F5: STRATIFICATO PER TIPO -- Cap 260  (n=84)
+==============================================================================
+saldo manager reale ("gioca sempre"): -5000  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        15       40
+      bot non gioca     8       21
+    tasso decisioni giuste (diagonale/n): 36/84 (42.9%)   vs "gioca sempre"=27.4%   vs "non gioca mai"=72.6%
+    saldo_bot=-2100  risparmio=+6300  mancato_guadagno=+3400  quadratura(manager+risp-mancato)=-2100  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        14       40
+      bot non gioca     9       21
+    tasso decisioni giuste (diagonale/n): 35/84 (41.7%)   vs "gioca sempre"=27.4%   vs "non gioca mai"=72.6%
+    saldo_bot=-2300  risparmio=+6300  mancato_guadagno=+3600  quadratura(manager+risp-mancato)=-2300  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        17       49
+      bot non gioca     6       12
+    tasso decisioni giuste (diagonale/n): 29/84 (34.5%)   vs "gioca sempre"=27.4%   vs "non gioca mai"=72.6%
+    saldo_bot=-3800  risparmio=+3600  mancato_guadagno=+2400  quadratura(manager+risp-mancato)=-3800  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        18       45
+      bot non gioca     5       16
+    tasso decisioni giuste (diagonale/n): 34/84 (40.5%)   vs "gioca sempre"=27.4%   vs "non gioca mai"=72.6%
+    saldo_bot=-2400  risparmio=+4800  mancato_guadagno=+2200  quadratura(manager+risp-mancato)=-2400  OK
+
+==============================================================================
+F5: STRATIFICATO PER TIPO -- Cap 220  (n=34)
+==============================================================================
+saldo manager reale ("gioca sempre"): +2000  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        10       17
+      bot non gioca     2        5
+    tasso decisioni giuste (diagonale/n): 15/34 (44.1%)   vs "gioca sempre"=35.3%   vs "non gioca mai"=64.7%
+    saldo_bot=+1400  risparmio=+1000  mancato_guadagno=+1600  quadratura(manager+risp-mancato)=+1400  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        10       15
+      bot non gioca     2        7
+    tasso decisioni giuste (diagonale/n): 17/34 (50.0%)   vs "gioca sempre"=35.3%   vs "non gioca mai"=64.7%
+    saldo_bot=+1800  risparmio=+1400  mancato_guadagno=+1600  quadratura(manager+risp-mancato)=+1800  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        11       20
+      bot non gioca     1        2
+    tasso decisioni giuste (diagonale/n): 13/34 (38.2%)   vs "gioca sempre"=35.3%   vs "non gioca mai"=64.7%
+    saldo_bot=+1600  risparmio=+400  mancato_guadagno=+800  quadratura(manager+risp-mancato)=+1600  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        10       18
+      bot non gioca     2        4
+    tasso decisioni giuste (diagonale/n): 14/34 (41.2%)   vs "gioca sempre"=35.3%   vs "non gioca mai"=64.7%
+    saldo_bot=+1200  risparmio=+800  mancato_guadagno=+1600  quadratura(manager+risp-mancato)=+1200  OK
+
+==============================================================================
+F5: STRATIFICATO PER TIPO -- Uncapped  (n=24)
+==============================================================================
+saldo manager reale ("gioca sempre"): +2400  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         3        1
+      bot non gioca     5       15
+    tasso decisioni giuste (diagonale/n): 18/24 (75.0%)   vs "gioca sempre"=33.3%   vs "non gioca mai"=66.7%
+    saldo_bot=+2700  risparmio=+4500  mancato_guadagno=+4200  quadratura(manager+risp-mancato)=+2700  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         4        3
+      bot non gioca     4       13
+    tasso decisioni giuste (diagonale/n): 17/24 (70.8%)   vs "gioca sempre"=33.3%   vs "non gioca mai"=66.7%
+    saldo_bot=+3100  risparmio=+3900  mancato_guadagno=+3200  quadratura(manager+risp-mancato)=+3100  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         3        3
+      bot non gioca     5       13
+    tasso decisioni giuste (diagonale/n): 16/24 (66.7%)   vs "gioca sempre"=33.3%   vs "non gioca mai"=66.7%
+    saldo_bot=+2100  risparmio=+3900  mancato_guadagno=+4200  quadratura(manager+risp-mancato)=+2100  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         5        3
+      bot non gioca     3       13
+    tasso decisioni giuste (diagonale/n): 18/24 (75.0%)   vs "gioca sempre"=33.3%   vs "non gioca mai"=66.7%
+    saldo_bot=+4100  risparmio=+3900  mancato_guadagno=+2200  quadratura(manager+risp-mancato)=+4100  OK
+
+==============================================================================
+F5: STRATIFICATO PER MANAGER -- braddersfc  (n=1)
+==============================================================================
+saldo manager reale ("gioca sempre"): -300  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     0        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=-300  risparmio=+0  mancato_guadagno=+0  quadratura(manager+risp-mancato)=-300  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     0        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=-300  risparmio=+0  mancato_guadagno=+0  quadratura(manager+risp-mancato)=-300  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     0        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=-300  risparmio=+0  mancato_guadagno=+0  quadratura(manager+risp-mancato)=-300  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     0        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=-300  risparmio=+0  mancato_guadagno=+0  quadratura(manager+risp-mancato)=-300  OK
+
+==============================================================================
+F5: STRATIFICATO PER MANAGER -- bxl-spartak  (n=37)
+==============================================================================
+saldo manager reale ("gioca sempre"): +1600  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        12       15
+      bot non gioca     2        8
+    tasso decisioni giuste (diagonale/n): 20/37 (54.1%)   vs "gioca sempre"=37.8%   vs "non gioca mai"=62.2%
+    saldo_bot=+2200  risparmio=+2400  mancato_guadagno=+1800  quadratura(manager+risp-mancato)=+2200  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        11       14
+      bot non gioca     3        9
+    tasso decisioni giuste (diagonale/n): 20/37 (54.1%)   vs "gioca sempre"=37.8%   vs "non gioca mai"=62.2%
+    saldo_bot=+2300  risparmio=+2700  mancato_guadagno=+2000  quadratura(manager+risp-mancato)=+2300  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        13       18
+      bot non gioca     1        5
+    tasso decisioni giuste (diagonale/n): 18/37 (48.6%)   vs "gioca sempre"=37.8%   vs "non gioca mai"=62.2%
+    saldo_bot=+2100  risparmio=+1500  mancato_guadagno=+1000  quadratura(manager+risp-mancato)=+2100  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca        12       18
+      bot non gioca     2        5
+    tasso decisioni giuste (diagonale/n): 17/37 (45.9%)   vs "gioca sempre"=37.8%   vs "non gioca mai"=62.2%
+    saldo_bot=+1300  risparmio=+1500  mancato_guadagno=+1800  quadratura(manager+risp-mancato)=+1300  OK
+
+==============================================================================
+F5: STRATIFICATO PER MANAGER -- eoghankelly  (n=10)
+==============================================================================
+saldo manager reale ("gioca sempre"): +1200  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         4        5
+      bot non gioca     0        1
+    tasso decisioni giuste (diagonale/n): 5/10 (50.0%)   vs "gioca sempre"=40.0%   vs "non gioca mai"=60.0%
+    saldo_bot=+1500  risparmio=+300  mancato_guadagno=+0  quadratura(manager+risp-mancato)=+1500  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         4        5
+      bot non gioca     0        1
+    tasso decisioni giuste (diagonale/n): 5/10 (50.0%)   vs "gioca sempre"=40.0%   vs "non gioca mai"=60.0%
+    saldo_bot=+1500  risparmio=+300  mancato_guadagno=+0  quadratura(manager+risp-mancato)=+1500  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         4        5
+      bot non gioca     0        1
+    tasso decisioni giuste (diagonale/n): 5/10 (50.0%)   vs "gioca sempre"=40.0%   vs "non gioca mai"=60.0%
+    saldo_bot=+1500  risparmio=+300  mancato_guadagno=+0  quadratura(manager+risp-mancato)=+1500  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         4        5
+      bot non gioca     0        1
+    tasso decisioni giuste (diagonale/n): 5/10 (50.0%)   vs "gioca sempre"=40.0%   vs "non gioca mai"=60.0%
+    saldo_bot=+1500  risparmio=+300  mancato_guadagno=+0  quadratura(manager+risp-mancato)=+1500  OK
+
+==============================================================================
+F5: STRATIFICATO PER MANAGER -- ericeinicke-fc2a0cf2-c258-4fdc-afc5-0ec69d4cd4df  (n=1)
+==============================================================================
+saldo manager reale ("gioca sempre"): -300  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     0        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=-300  risparmio=+0  mancato_guadagno=+0  quadratura(manager+risp-mancato)=-300  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     0        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=-300  risparmio=+0  mancato_guadagno=+0  quadratura(manager+risp-mancato)=-300  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     0        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=-300  risparmio=+0  mancato_guadagno=+0  quadratura(manager+risp-mancato)=-300  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     0        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=-300  risparmio=+0  mancato_guadagno=+0  quadratura(manager+risp-mancato)=-300  OK
+
+==============================================================================
+F5: STRATIFICATO PER MANAGER -- fins49  (n=34)
+==============================================================================
+saldo manager reale ("gioca sempre"): -1600  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         3       10
+      bot non gioca     6       15
+    tasso decisioni giuste (diagonale/n): 18/34 (52.9%)   vs "gioca sempre"=26.5%   vs "non gioca mai"=73.5%
+    saldo_bot=-100  risparmio=+4200  mancato_guadagno=+2700  quadratura(manager+risp-mancato)=-100  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         3       12
+      bot non gioca     6       13
+    tasso decisioni giuste (diagonale/n): 16/34 (47.1%)   vs "gioca sempre"=26.5%   vs "non gioca mai"=73.5%
+    saldo_bot=-800  risparmio=+3500  mancato_guadagno=+2700  quadratura(manager+risp-mancato)=-800  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         4       16
+      bot non gioca     5        9
+    tasso decisioni giuste (diagonale/n): 13/34 (38.2%)   vs "gioca sempre"=26.5%   vs "non gioca mai"=73.5%
+    saldo_bot=-1200  risparmio=+2600  mancato_guadagno=+2200  quadratura(manager+risp-mancato)=-1200  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         5       14
+      bot non gioca     4       11
+    tasso decisioni giuste (diagonale/n): 16/34 (47.1%)   vs "gioca sempre"=26.5%   vs "non gioca mai"=73.5%
+    saldo_bot=-500  risparmio=+3100  mancato_guadagno=+2000  quadratura(manager+risp-mancato)=-500  OK
+
+==============================================================================
+F5: STRATIFICATO PER MANAGER -- lairdinho  (n=26)
+==============================================================================
+saldo manager reale ("gioca sempre"): +3700  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         6       12
+      bot non gioca     4        4
+    tasso decisioni giuste (diagonale/n): 10/26 (38.5%)   vs "gioca sempre"=38.5%   vs "non gioca mai"=61.5%
+    saldo_bot=+1400  risparmio=+1200  mancato_guadagno=+3500  quadratura(manager+risp-mancato)=+1400  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         7       11
+      bot non gioca     3        5
+    tasso decisioni giuste (diagonale/n): 12/26 (46.2%)   vs "gioca sempre"=38.5%   vs "non gioca mai"=61.5%
+    saldo_bot=+2700  risparmio=+1500  mancato_guadagno=+2500  quadratura(manager+risp-mancato)=+2700  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         7       12
+      bot non gioca     3        4
+    tasso decisioni giuste (diagonale/n): 11/26 (42.3%)   vs "gioca sempre"=38.5%   vs "non gioca mai"=61.5%
+    saldo_bot=+1900  risparmio=+1200  mancato_guadagno=+3000  quadratura(manager+risp-mancato)=+1900  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         9       11
+      bot non gioca     1        5
+    tasso decisioni giuste (diagonale/n): 14/26 (53.8%)   vs "gioca sempre"=38.5%   vs "non gioca mai"=61.5%
+    saldo_bot=+4200  risparmio=+1500  mancato_guadagno=+1000  quadratura(manager+risp-mancato)=+4200  OK
+
+==============================================================================
+F5: STRATIFICATO PER MANAGER -- matteoogg  (n=1)
+==============================================================================
+saldo manager reale ("gioca sempre"): -300  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        0
+      bot non gioca     0        1
+    tasso decisioni giuste (diagonale/n): 1/1 (100.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=+0  risparmio=+300  mancato_guadagno=+0  quadratura(manager+risp-mancato)=+0  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        0
+      bot non gioca     0        1
+    tasso decisioni giuste (diagonale/n): 1/1 (100.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=+0  risparmio=+300  mancato_guadagno=+0  quadratura(manager+risp-mancato)=+0  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        0
+      bot non gioca     0        1
+    tasso decisioni giuste (diagonale/n): 1/1 (100.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=+0  risparmio=+300  mancato_guadagno=+0  quadratura(manager+risp-mancato)=+0  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        0
+      bot non gioca     0        1
+    tasso decisioni giuste (diagonale/n): 1/1 (100.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=+0  risparmio=+300  mancato_guadagno=+0  quadratura(manager+risp-mancato)=+0  OK
+
+==============================================================================
+F5: STRATIFICATO PER MANAGER -- ninoshooter  (n=1)
+==============================================================================
+saldo manager reale ("gioca sempre"): +500  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        0
+      bot non gioca     1        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=100.0%   vs "non gioca mai"=0.0%
+    saldo_bot=+0  risparmio=+0  mancato_guadagno=+500  quadratura(manager+risp-mancato)=+0  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        0
+      bot non gioca     1        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=100.0%   vs "non gioca mai"=0.0%
+    saldo_bot=+0  risparmio=+0  mancato_guadagno=+500  quadratura(manager+risp-mancato)=+0  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        0
+      bot non gioca     1        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=100.0%   vs "non gioca mai"=0.0%
+    saldo_bot=+0  risparmio=+0  mancato_guadagno=+500  quadratura(manager+risp-mancato)=+0  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        0
+      bot non gioca     1        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=100.0%   vs "non gioca mai"=0.0%
+    saldo_bot=+0  risparmio=+0  mancato_guadagno=+500  quadratura(manager+risp-mancato)=+0  OK
+
+==============================================================================
+F5: STRATIFICATO PER MANAGER -- qtn-d8cd72ac-240c-493c-894c-a45f5b3d151d  (n=8)
+==============================================================================
+saldo manager reale ("gioca sempre"): -1900  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     1        6
+    tasso decisioni giuste (diagonale/n): 6/8 (75.0%)   vs "gioca sempre"=12.5%   vs "non gioca mai"=87.5%
+    saldo_bot=-300  risparmio=+1800  mancato_guadagno=+200  quadratura(manager+risp-mancato)=-300  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     1        6
+    tasso decisioni giuste (diagonale/n): 6/8 (75.0%)   vs "gioca sempre"=12.5%   vs "non gioca mai"=87.5%
+    saldo_bot=-300  risparmio=+1800  mancato_guadagno=+200  quadratura(manager+risp-mancato)=-300  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        3
+      bot non gioca     1        4
+    tasso decisioni giuste (diagonale/n): 4/8 (50.0%)   vs "gioca sempre"=12.5%   vs "non gioca mai"=87.5%
+    saldo_bot=-900  risparmio=+1200  mancato_guadagno=+200  quadratura(manager+risp-mancato)=-900  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     1        6
+    tasso decisioni giuste (diagonale/n): 6/8 (75.0%)   vs "gioca sempre"=12.5%   vs "non gioca mai"=87.5%
+    saldo_bot=-300  risparmio=+1800  mancato_guadagno=+200  quadratura(manager+risp-mancato)=-300  OK
+
+==============================================================================
+F5: STRATIFICATO PER MANAGER -- serji0  (n=1)
+==============================================================================
+saldo manager reale ("gioca sempre"): -300  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     0        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=-300  risparmio=+0  mancato_guadagno=+0  quadratura(manager+risp-mancato)=-300  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     0        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=-300  risparmio=+0  mancato_guadagno=+0  quadratura(manager+risp-mancato)=-300  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     0        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=-300  risparmio=+0  mancato_guadagno=+0  quadratura(manager+risp-mancato)=-300  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     0        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=-300  risparmio=+0  mancato_guadagno=+0  quadratura(manager+risp-mancato)=-300  OK
+
+==============================================================================
+F5: STRATIFICATO PER MANAGER -- shirimimi  (n=18)
+==============================================================================
+saldo manager reale ("gioca sempre"): -2500  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         2       11
+      bot non gioca     1        4
+    tasso decisioni giuste (diagonale/n): 6/18 (33.3%)   vs "gioca sempre"=16.7%   vs "non gioca mai"=83.3%
+    saldo_bot=-2000  risparmio=+1000  mancato_guadagno=+500  quadratura(manager+risp-mancato)=-2000  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         2       11
+      bot non gioca     1        4
+    tasso decisioni giuste (diagonale/n): 6/18 (33.3%)   vs "gioca sempre"=16.7%   vs "non gioca mai"=83.3%
+    saldo_bot=-2100  risparmio=+900  mancato_guadagno=+500  quadratura(manager+risp-mancato)=-2100  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         2       13
+      bot non gioca     1        2
+    tasso decisioni giuste (diagonale/n): 4/18 (22.2%)   vs "gioca sempre"=16.7%   vs "non gioca mai"=83.3%
+    saldo_bot=-2500  risparmio=+500  mancato_guadagno=+500  quadratura(manager+risp-mancato)=-2500  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         2       12
+      bot non gioca     1        3
+    tasso decisioni giuste (diagonale/n): 5/18 (27.8%)   vs "gioca sempre"=16.7%   vs "non gioca mai"=83.3%
+    saldo_bot=-2300  risparmio=+700  mancato_guadagno=+500  quadratura(manager+risp-mancato)=-2300  OK
+
+==============================================================================
+F5: STRATIFICATO PER MANAGER -- spillo678  (n=3)
+==============================================================================
+saldo manager reale ("gioca sempre"): -100  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         1        1
+      bot non gioca     0        1
+    tasso decisioni giuste (diagonale/n): 2/3 (66.7%)   vs "gioca sempre"=33.3%   vs "non gioca mai"=66.7%
+    saldo_bot=+200  risparmio=+300  mancato_guadagno=+0  quadratura(manager+risp-mancato)=+200  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         1        1
+      bot non gioca     0        1
+    tasso decisioni giuste (diagonale/n): 2/3 (66.7%)   vs "gioca sempre"=33.3%   vs "non gioca mai"=66.7%
+    saldo_bot=+200  risparmio=+300  mancato_guadagno=+0  quadratura(manager+risp-mancato)=+200  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         1        1
+      bot non gioca     0        1
+    tasso decisioni giuste (diagonale/n): 2/3 (66.7%)   vs "gioca sempre"=33.3%   vs "non gioca mai"=66.7%
+    saldo_bot=+200  risparmio=+300  mancato_guadagno=+0  quadratura(manager+risp-mancato)=+200  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         1        1
+      bot non gioca     0        1
+    tasso decisioni giuste (diagonale/n): 2/3 (66.7%)   vs "gioca sempre"=33.3%   vs "non gioca mai"=66.7%
+    saldo_bot=+200  risparmio=+300  mancato_guadagno=+0  quadratura(manager+risp-mancato)=+200  OK
+
+==============================================================================
+F5: STRATIFICATO PER MANAGER -- sticole-ac-i-like-card-swapping-20-more  (n=1)
+==============================================================================
+saldo manager reale ("gioca sempre"): -300  |  pavimento "non gioca mai": 0
+
+  ramo A-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        0
+      bot non gioca     0        1
+    tasso decisioni giuste (diagonale/n): 1/1 (100.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=+0  risparmio=+300  mancato_guadagno=+0  quadratura(manager+risp-mancato)=+0  OK
+
+  ramo G-stretta:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        0
+      bot non gioca     0        1
+    tasso decisioni giuste (diagonale/n): 1/1 (100.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=+0  risparmio=+300  mancato_guadagno=+0  quadratura(manager+risp-mancato)=+0  OK
+
+  ramo A-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     0        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=-300  risparmio=+0  mancato_guadagno=+0  quadratura(manager+risp-mancato)=-300  OK
+
+  ramo G-larga:
+    matrice 2x2 [bot gioca/non gioca x podio/non podio]:
+                    podio    non podio
+      bot gioca         0        1
+      bot non gioca     0        0
+    tasso decisioni giuste (diagonale/n): 0/1 (0.0%)   vs "gioca sempre"=0.0%   vs "non gioca mai"=100.0%
+    saldo_bot=-300  risparmio=+0  mancato_guadagno=+0  quadratura(manager+risp-mancato)=-300  OK
+
+==============================================================================
+F6: BOOTSTRAP sui 14 MANAGER (cluster), 2.000 resample
+==============================================================================
+  ramo A-stretta: delta (saldo_bot - saldo_manager) IC95 [-4200, +8700]  frazione resample col segno positivo: 79.3%
+  ramo G-stretta: delta (saldo_bot - saldo_manager) IC95 [-900, +7800]  frazione resample col segno positivo: 93.4%
+  ramo A-larga: delta (saldo_bot - saldo_manager) IC95 [-4400, +4300]  frazione resample col segno positivo: 59.9%
+  ramo G-larga: delta (saldo_bot - saldo_manager) IC95 [+100, +7700]  frazione resample col segno positivo: 97.5%
+
+==============================================================================
+7.6: RIEPILOGO SCARTI
+==============================================================================
+coppie escluse: {'pool_slot_oltre_1.05': 208, 'copertura_grade_sotto_70pct': 48}
+arene escluse a livello arena (5-carte/somma): {'somma_diversa_da_ufficiale': 1}
+scarti nel calcolo atteso/grade (sul pool, non tutte finiscono nel campione): {'no_atteso': 34}
+arene del campione escluse dalla decisione: {'carta_senza_atteso': 28}
+
+dump scritto in C:\Users\Andrea\Documents\GitHub\Sorare-tracker-2\analisi_manager\p14_dump_esempio.txt

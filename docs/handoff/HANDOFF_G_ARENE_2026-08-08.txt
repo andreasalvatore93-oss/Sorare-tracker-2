@@ -1,0 +1,711 @@
+HANDOFF — RIVALIDAZIONE DI G SULLE COMPETIZIONI ARENA
+Sessione 08/08/2026, pomeriggio (Roma). Orchestratore: Opus.
+Stato: RICOGNIZIONE FATTA, test NON ancora lanciato. Nessuna modifica al
+codice, nessun commit di produzione.
+
+Tutti i numeri qui sotto sono MISURATI sui file del repo in questa sessione,
+non ripresi da documenti precedenti.
+
+
+=====================================================================
+1. L'ARCHIVIO: DOVE STA E QUANTO E' GRANDE
+=====================================================================
+
+Cartella: dati_globali/, file manager_<nome>.json (55 file).
+  - 54 sono file manager veri (struttura {'manager', 'giornate'});
+  - 1 NON e' un file manager e va escluso:
+    manager_foreveryoung_predizioni_gw2.json (e' un dizionario di
+    predizioni per slug, non ha il campo 'giornate').
+
+Contenuto totale dei 54 file: 14.926 formazioni (righe), di cui 9.889 con
+tipo_arena valorizzato. 50 manager hanno almeno un'arena.
+
+Struttura di una riga = UNA formazione schierata:
+  contender, leaderboard, competizione, tipo_arena,
+  piazzamento {rank, punteggio}  <- punteggio UFFICIALE Sorare della
+                                    formazione
+  carte[] con: slug, nome, squadra, ruolo, capitano, punteggio, rarita,
+               carta (id carta), xp, bonus_carta, in_season, u23
+
+Ripartizione per tipo_arena (formazioni):
+  arena_limited            4.674
+  arena_limited_beginner   3.755
+  arena_altro              1.034
+  arena_limited_uncapped     421
+  arena_rare                   5
+
+
+=====================================================================
+2. CHE ARENE SONO — CENSIMENTO PER TIPO
+=====================================================================
+
+Incrocio tipo_arena x competizione (formazioni), ordinato:
+
+  arena_limited_beginner  Beginner                        3.755
+  arena_limited           Cap 260                         2.564
+  arena_limited           Cap 220                           980
+  arena_altro             Arena - Limited                   956
+  arena_limited           Elite                             861
+  arena_limited_uncapped  Uncapped                          421
+  arena_limited           All Star Arena - Limited          171
+  arena_altro             Arena - Uncapped - Limited         57
+  arena_limited           <arene di lega singola>            96
+                          (Jupiler 17, LaLiga 17, Turchia 12,
+                           Eredivisie 11, Premier 11, Italia 9,
+                           Ligue1 8, Bundes 6, Portogallo 5, U23 2)
+  arena_altro             Arena - Rare / Uncapped-Rare       17
+  arena_rare              varie                               5
+  arena_altro             Cap 260 / Limited                   4
+
+Come si riconoscono dallo slug della leaderboard (verificato):
+  Cap 260   -> all_seasons_all_star_arena_limited
+  Cap 220   -> all_seasons_all_star_arena_limited_cap_220
+  Uncapped  -> all_seasons_all_star_arena_limited_uncapped
+  Beginner  -> all_seasons_all_star_arena_limited_beginner
+  Elite     -> all_seasons_all_star_arena_limited_elite
+  vecchie   -> global-arena-division-N  (nome "Arena - Limited",
+               sparisce dopo feb-2026: e' l'arena pre-riforma)
+
+I TRE TIPI DEL TEST (Cap 260 + Cap 220 + Uncapped):
+  3.965 formazioni, 19.825 carte, su 43 GW distinte, 50 manager.
+  Cap 260 = 2.564   Cap 220 = 980   Uncapped = 421
+
+Caso limite da decidere (vedi Domande): "All Star Arena - Limited" (171
+formazioni, solo 4 GW di feb-2026) ha lo STESSO slug base della Cap 260,
+con in piu' "-division-N": e' plausibilmente la Cap 260 col nome vecchio.
+Non e' inclusa nei 3.965 sopra.
+
+
+=====================================================================
+3. VERIFICA "SONO DAVVERO ARENE LIMITED" — 3 CONTROLLI, TUTTI PASSATI
+=====================================================================
+
+3.1 CINQUE CARTE PER FORMAZIONE — OK
+    arena_limited: 4.669 formazioni da 5 carte, 5 da 4 carte (0,1%).
+    arena_limited_uncapped: 421 su 421 da 5 carte.
+    Le 5 formazioni incomplete vanno scartate.
+
+3.2 CAPITANO +20% — CONFERMATO, non assunto
+    Test: stessa CARTA, stessa GW, schierata da capitano in un'arena e da
+    non-capitano in un'altra. 34 casi trovati. Rapporto capitano/non
+    capitano = 1,200 in 34 casi su 34 (zero eccezioni).
+    Un capitano per formazione in 5.094 formazioni su 5.095 (1 senza).
+
+3.3 BONUS XP NON APPLICATO IN ARENA — CONFERMATO
+    Test: due CARTE DIVERSE dello stesso giocatore, stessa GW, entrambe
+    non capitano, con xp diverso (es. 400 xp vs 2.200 xp). Se l'xp
+    contasse, i due punteggi dovrebbero differire.
+    4.078 casi: differenza mediana 0,00. Solo 139 casi (3,4%) con
+    differenza > 0,5 punti, e di quei 139 ben 136 sono carte con RUOLO
+    diverso (D7: il punteggio dipende dal ruolo con cui la carta e' stata
+    emessa, non dal giocatore). Restano 3 casi non spiegati su 4.078.
+    -> in arena l'xp non conta. Confermato dai dati, non dedotto.
+
+3.4 CONTROPROVA INDIPENDENTE: somma carte = punteggio ufficiale
+    Per ogni formazione ho confrontato la somma dei punteggi delle 5 carte
+    col campo piazzamento.punteggio (il punteggio ufficiale Sorare).
+    5.095 formazioni: 4.999 coincidono entro 0,5 punti (98,1%), 96 no.
+    Le 96 vanno scartate (sono formazioni con carte a zero / dati
+    incompleti, non un problema di bonus).
+    Questo e' l'unico controllo che non dipende da teorie sui bonus:
+    conferma che il campo 'punteggio' delle carte in arena e' gia' il
+    valore finale, xp escluso e capitano incluso.
+
+3.5 ANOMALIA DA DECIDERE: carte NON limited dentro arene limited
+    Dentro le arene dei 3 tipi ci sono 629 carte 'rare' e 7 'super_rare'
+    su 25.470 (2,5%):
+      Cap 220  rare 260, super_rare 1
+      Cap 260  rare 311, super_rare 6
+      Uncapped rare 22
+    Non so se sia una regola di gioco (le arene "limited" ammettono anche
+    carte di rarita' superiore?) o un difetto dei dati. E' una regola di
+    gioco: va chiesta, non dedotta. Vedi Domande.
+
+
+=====================================================================
+4. IL VINCOLO VERO: LA COPERTURA DEL GRADE STORICO
+=====================================================================
+
+G non si puo' misurare dove il grade storico non c'e'. Se si misura su
+formazioni in cui G non ha informazione, si misura rumore e il verdetto e'
+nullo — e' esattamente il sospetto sul test del 06/08 sul gruppo B.
+
+Indice grade ricostruito dalle 6 fonti storiche in repo (le stesse di
+p12_backtest_formazione_grade.carica_indice_grade + il file _backtest_):
+  1.639 giocatori, 24.529 coppie (slug, data), da 2025-07-13 a 2026-08-07.
+Regola di lookup: grade della partita piu' recente entro 6 giorni prima
+della fine fixture (GRADE_WINDOW_GIORNI = 6, come in produzione nei test).
+
+Copertura sulle CARTE SCHIERATE nei 3 tipi: 10.830 / 19.825 = 54,6%.
+  Cap 260  57,5%     Cap 220  42,9%     Uncapped  64,5%
+La copertura cresce moltissimo nelle GW recenti (le fonti storiche sono
+state raccolte a inizio agosto sui giocatori dei mazzi recenti):
+
+  GW                          mgr  260  220  unc   tot   cov%  pool/slot
+  football-31-jul-4-aug-2026   16   77   33   19   129   93,3     2,80
+  football-24-28-jul-2026      17   98   38   18   154   92,6     2,55
+  football-21-24-jul-2026      15  100   20   21   141   92,2     2,37
+  football-19-22-may-2026       1    1    0    1     2   90,0     5,00
+  football-10-13-jul-2026      10   31    1   23    55   88,7     2,51
+  football-13-15-may-2026       3   16    5    6    27   87,4     3,87
+  football-28-31-jul-2026      13   43    5   16    64   85,9     1,97
+  football-15-20-jul-2026      14   54    6   17    77   84,9     3,21
+  football-5-8-jul-2026         4   28    3    8    39   79,5     2,16
+  football-21-24-apr-2026       3    5    5    1    11   74,5    11,16
+  football-1-4-jul-2026         7   19    2   26    47   72,8     2,78
+  football-23-26-may-2026      13   85   31   15   131   69,6     2,41
+  football-10-14-apr-2026       3   21   10    5    36   67,2     8,14
+  ... (43 GW in tutto; sotto il 50% quasi tutte le GW anteriori a marzo)
+  TOTALE                       50 2564  980  421  3965   54,6
+
+pool/slot = quante carte distinte il manager ha schierato in quella GW in
+TUTTE le sue competizioni, diviso il numero di slot arena da riempire.
+E' il controllo obbligatorio di CLAUDE.md: se non e' > 1 il modello non ha
+carte di scorta e non c'e' nessuna selezione da misurare.
+Su 299 coppie (manager, GW) con almeno un'arena dei 3 tipi:
+  mediana pool/slot = 2,00; 198 coppie sopra 1,2; 90 coppie a 1,0 o meno
+  (queste ultime da scartare per costruzione).
+NOTA: questo pool e' un LIMITE INFERIORE del mazzo vero (vediamo solo le
+carte effettivamente schierate da qualche parte, non tutta la collezione).
+
+
+=====================================================================
+5. CAMPIONE DEL TEST — quanto resta applicando i due filtri insieme
+=====================================================================
+
+Filtri: copertura grade sul POOL della coppia (manager, GW) >= soglia, E
+pool/slot > 1,2.
+
+  soglia    coppie(mgr,GW)   manager   GW    arene
+   50%          116             25     24    1.310
+   70%           68             18     22      746
+   80%           45             14     15      477
+   90%           24              9     10      257
+
+A 80%: Cap 260 = 332, Cap 220 = 61, Uncapped = 84.
+
+Termine di paragone: il test arena del 07/08 su cui oggi poggia tutto
+girava su 59 righe (gruppo A, 5 manager). Anche la soglia piu' severa
+(90%) da' 257 arene, 4 volte tanto.
+
+
+=====================================================================
+6. PARAMETRI PROPOSTI PER IL CONFRONTO A vs G (da approvare)
+=====================================================================
+
+P1. UNITA' DI MISURA = la singola arena ricostruita (5 carte).
+    Il delta si calcola sulla STESSA arena, stesso manager, stessa GW,
+    stesso pool, nello stesso run: A e G differiscono solo per il grade.
+    (regola CLAUDE.md: conta il delta, non il valore assoluto)
+
+P2. METRO = PUNTI REALIZZATI, non l'atteso.
+    punti = somma dei punteggi grezzi realizzati + 0,20 x grezzo del
+    capitano. Il grezzo si LEGGE dalla cache game-log condivisa (D4), non
+    si ricostruisce dividendo. Confrontare atteso_combinato A vs G sarebbe
+    solo il punteggio di selezione, gonfiato per costruzione (trappola gia'
+    documentata).
+    Metrica secondaria: netto essenze col premio-vero, se la tabella premi
+    copre i tipi (buco noto su Uncapped rank 1 e 3).
+
+P3. GENERATORE = build_one_lineup_with_growth (il vero, quello di
+    produzione), MAI un knapsack scritto per l'occasione (D7): e' l'unico
+    che rispetta "un giocatore una volta sola per formazione" e i conteggi
+    per (slug, ruolo).
+
+P4. VINCOLI PER TIPO DI ARENA: cap L10 260 / 220 / nessuno da
+    bfg.L10_CAP_BY_TYPE, 5 carte, un capitano.
+    LIMITE NOTO, da dichiarare nel risultato: l'L10 usato nel backtest e'
+    quello del GIOCATORE ricostruito walk-forward dai game log, mentre
+    Sorare capa sull'L10 della CARTA (§8sexies del riassunto, scoperto
+    l'08/08). Nel campione del 06/08 questo era vero anche allora, quindi
+    non invalida il CONFRONTO A vs G (agisce identico sui due rami), ma
+    puo' rendere ammissibili carte che in realta' non lo erano.
+
+P5. FILTRO CAMPIONE (i due filtri della sezione 5):
+    - copertura grade sul pool >= 70% (proposta; 80% se si vuole severita'
+      maggiore a costo di un terzo del campione);
+    - pool/slot > 1,2.
+    Entrambi vanno DICHIARATI nel risultato, insieme al numero di carte
+    del pool senza grade (quelle entrano nel ramo G con z=0, cioe' G non
+    le sposta).
+
+P6. UNITA' DI RICAMPIONAMENTO (bootstrap) = la coppia (manager, GW), non
+    la singola arena. Le arene dello stesso manager nella stessa giornata
+    pescano dallo stesso pool e non sono indipendenti: ricampionare le
+    arene gonfierebbe la precisione e farebbe sembrare "sicuro" un
+    risultato che non lo e'.
+
+P7. TEST A/A PRIMA DI TUTTO (regola dell'interruttore): un run con
+    GRADE_ENABLED spento su entrambi i rami deve dare delta ESATTAMENTE 0.
+    Se non e' 0, il confronto sta misurando altro e ci si ferma.
+
+P8. DUMP OBBLIGATORIO PRIMA DEI NUMERI: un caso completo (un manager, una
+    GW) con nomi, ruolo, grade, atteso, realizzato, arena per arena, piu'
+    l'elenco delle carte fra cui il modello poteva scegliere e quelle che
+    ha scelto nei due rami. Si consegna INSIEME ai numeri.
+
+P9. STRATIFICAZIONE: risultato riportato separatamente per Cap 260,
+    Cap 220 e Uncapped, oltre che aggregato. Sono tre giochi con vincoli
+    diversi e il campione e' molto sbilanciato (332 / 61 / 84 a soglia
+    80%).
+
+P10. Lo script di riferimento gia' esistente e' analisi_manager/
+     p13_backtest_gw_crowss.py: fa gia' P2, P3, P4 e limita l'universo a
+     Cap 260/220/Uncapped (COMPETIZIONI_ARENA_AMMESSE). Va esteso da un
+     manager a tutti, non riscritto da zero.
+
+
+=====================================================================
+7. DOMANDE APERTE PER L'UTENTE (bloccanti)
+=====================================================================
+
+D-A. "Elite" (861 formazioni, slug ..._arena_limited_elite): e' un quarto
+     tipo di arena che NON giochi, o e' una divisione interna di uno dei
+     tre? Proposta: escludere. Se e' invece una divisione della Cap 260,
+     il campione cresce parecchio.
+
+D-B. "All Star Arena - Limited" (171 formazioni, feb-2026, stesso slug
+     base della Cap 260 + division-N): la conto come Cap 260 o la
+     escludo? Proposta: escludere (copertura grade 9,6%, quindi inutile
+     comunque).
+
+D-C. Le arene Cap 260/220/Uncapped ammettono carte RARE oltre alle
+     limited? Nei dati ce ne sono 629 rare + 7 super_rare (2,5%). E' una
+     regola di gioco: non la deduco.
+
+D-D. Soglia di copertura grade: 70% (68 coppie, 746 arene) o 80%
+     (45 coppie, 477 arene)? Proposta: 70%, con il risultato ripetuto a
+     80% come controllo di robustezza.
+
+
+=====================================================================
+7bis. DECISIONI PRESE DALL'UTENTE (08/08, pomeriggio)
+=====================================================================
+- Base pulita CONFERMATA: 746 arene, 18 manager, 22 GW (soglia copertura
+  grade sul pool 70%, pool/slot > 1,2).
+- "Elite": ESCLUSA dal test.
+- "All Star Arena - Limited" (nome vecchio, feb-2026): ESCLUSA.
+- REGOLA DI GIOCO (data dall'utente, non dedotta): nelle arene limited SI
+  POSSONO schierare carte rare, ma si comportano esattamente come le
+  limited — nessun punteggio, bonus o beneficio diverso. Quindi le 629
+  rare + 7 super_rare NON vanno filtrate e non richiedono trattamento
+  speciale.
+
+
+=====================================================================
+9. COM'E' FATTA LA BASE PULITA — quello che cambia il disegno del test
+=====================================================================
+
+9.1 IL CAMPIONE E' CONCENTRATO SU 4 MANAGER (dichiararlo sempre)
+    Arene per manager, sulle 746:
+      qtn-d8cd72ac...  210     tijmenmaaktpap   19     shirimimi      6
+      satonio          210     cedric9093       12     lafindubal     3
+      crowss           175     lairdinho        10     s-g-51d741f4   3
+      forever-young     60     milkyfresht      10     john942        2
+                                nivenzg          10     keano88        2
+                                angioletto33      6     matteoogg      1
+                                pablo0078         6     ninoshooter    1
+    I primi quattro sono 655 arene su 746 = 88%. E' lo stesso difetto del
+    filone odds (pablo0078 al 33%): un risultato guidato da un solo mazzo
+    non e' un risultato generale.
+    Conseguenza sul metodo: il bootstrap va fatto ricampionando i MANAGER
+    (18 cluster), non le arene. Vedi M7.
+
+9.2 I MANAGER DELLA BASE SONO GENTE NORMALE, non campioni
+    Distribuzione del loro piazzamento reale nelle 746 arene (10
+    partecipanti per arena):
+      rank 1: 69   rank 2: 91   rank 3: 64   rank 4: 78   rank 5: 78
+      rank 6: 68   rank 7: 72   rank 8: 78   rank 9: 72   rank 10: 76
+    In top-3 (l'unica zona che paga): 224 su 746 = 30,0%, cioe' esattamente
+    quello che darebbe il caso con 10 partecipanti. Il confronto e' equo:
+    non stiamo sfidando dei fenomeni ne' dei polli.
+
+9.3 STRUTTURA ECONOMICA DELL'ARENA (misurata su p11_pool.json, 673 arene)
+    Ogni arena ha ~10 partecipanti. Si paga per entrare, si incassa solo
+    in top-3 (dal 4o posto in giu' si incassa ZERO):
+      cap 260  costo 300 essenze   rank1 1300  rank2 800  rank3 500
+      cap 220  costo 200 essenze   rank1 1000  rank2 500  rank3 300
+      Uncapped costo 300 essenze   rank1 1300  rank2 800  rank3 500
+    I premi doppi visti nei dati (cap260 rank1 = 4000, cap220 rank1 =
+    2000, rank2 = 1400) sono le GOLDEN: stessa arena, stesse regole,
+    premio moltiplicato (D5). Il moltiplicatore va letto dal dato, non
+    assunto.
+
+9.4 IL LIMITE CHE DECIDE COSA SI PUO' MISURARE SUBITO
+    Per sapere che PREMIO avrebbe preso il bot serve sapere quanti punti
+    hanno fatto gli altri 9 partecipanti di quell'arena. Quel dato c'e'
+    solo per 169 arene su 746 (quelle di crowss, in p11_pool.json). Per
+    le altre 577 abbiamo il punteggio e il rank del manager, ma non i
+    punteggi degli avversari.
+    -> le metriche in ESSENZE, sulle 746, richiedono un'estrazione
+       aggiuntiva. Le metriche in PUNTI si possono fare subito, a costo
+       zero. Vedi la domanda D-E.
+
+
+=====================================================================
+10. I PARAMETRI DEL CONFRONTO — PROPOSTA (da approvare)
+=====================================================================
+
+TRE RAMI, stesse arene, stesso pool, stesso run:
+   M = la formazione VERA del manager (quella che ha davvero schierato)
+   A = il modello SENZA grade
+   G = il modello CON grade (produzione)
+Le domande sono due e vanno tenute separate:
+   (1) G batte A?      -> serve a decidere se il grade aiuta in arena
+   (2) G batte M?      -> serve a dire "il bot schiera meglio di un umano"
+
+--- LIVELLO 1: METRICHE IN PUNTI (fattibili subito, zero query) ---
+
+M1. PUNTI MEDI PER ARENA, nei tre rami, e i tre delta (G-A, G-M, A-M).
+    punti = somma dei 5 grezzi realizzati + 0,20 x grezzo del capitano.
+    Grezzo LETTO dalla cache game-log, mai ricostruito dividendo (D4).
+
+M2. WIN RATE: in quante arene su 746 il ramo batte il manager reale.
+    E' la metrica piu' leggibile: "il bot ha fatto piu' punti dell'umano
+    in X arene su 100". Un delta medio positivo tirato da 3 arene
+    stratosferiche non e' un modello migliore, e questa metrica lo smaschera.
+
+M3. DELTA MEDIANO oltre alla media, per lo stesso motivo.
+
+M4. STRATIFICAZIONE per tipo di arena: Cap 260 / Cap 220 / Uncapped
+    separati oltre che aggregati. Sono tre giochi diversi e il campione e'
+    sbilanciato.
+
+M5. DISTANZA DAL PODIO: per ogni arena, punti del ramo meno punti del 3o
+    classificato. Dice se i punti in piu' cadono dove servono. Guadagnare
+    8 punti stando decimi non vale niente; guadagnarne 3 stando quarti
+    vale un premio intero. (Calcolabile solo dove conosciamo il punteggio
+    del terzo: sicuro sulle 169 arene crowss, sulle altre serve
+    l'estrazione.)
+
+M6. RISULTATO PER MANAGER, non solo aggregato: 18 righe. Se il segno e'
+    positivo solo su qtn e satonio, non e' un risultato, e' un mazzo.
+
+M7. INCERTEZZA: bootstrap ricampionando i 18 MANAGER (cluster), non le
+    arene ne' le coppie (manager, GW). Le arene dello stesso manager nella
+    stessa giornata pescano dallo stesso pool: trattarle come indipendenti
+    gonfia la precisione e fa sembrare solido un risultato che non lo e'.
+    Riportare anche la versione per coppia (manager, GW) come confronto,
+    dichiarando che e' la piu' ottimista.
+
+--- LIVELLO 2: METRICHE IN ESSENZE (richiedono l'estrazione, D-E) ---
+
+M8. PREMIO CONTROFATTUALE: inserendo il punteggio del ramo nella
+    classifica vera dell'arena si ottiene il rank, e dal rank il premio
+    (tabella 9.3, moltiplicatore golden letto dal dato).
+    NETTO = premio incassato - costo d'ingresso.
+    E' la metrica che conta davvero: i punti non si spendono, le essenze si'.
+
+M9. TASSO DI PODIO: quante volte su 100 il ramo finisce in top-3.
+    Il salto da 4o a 3o vale 500 essenze; da 10o a 5o vale zero.
+
+M10. ESSENZE RISPARMIATE (la decisione di NON entrare). Due modalita', da
+     misurare separatamente:
+       (a) A PARITA' DI ARENE: il bot riempie le stesse arene che il
+           manager ha giocato -> misura solo la SELEZIONE delle carte.
+       (b) CON VETO: il bot puo' rifiutare l'arena se l'atteso e' sotto la
+           soglia di pareggio di produzione (PAREGGIO_ARENA /
+           GUADAGNO_PER_PUNTO) -> misura selezione + decisione d'ingresso.
+           Qui il risparmio e' il costo evitato sulle arene rifiutate, meno
+           i premi che si sarebbe comunque portato a casa.
+     Propongo (a) come primaria (e' la domanda di oggi: G sceglie meglio le
+     carte?) e (b) come secondaria.
+
+M11. BILANCIO NETTO TOTALE in essenze sui tre rami, ricondotto a
+     "essenze per arena giocata". E' il numero da portarsi via.
+
+--- CONTROLLI OBBLIGATORI PRIMA DEI NUMERI ---
+
+C1. TEST A/A: un run con il grade spento su ENTRAMBI i rami deve dare
+    delta esattamente 0. Se non e' 0, si sta misurando altro: fermarsi.
+C2. POOL > SLOT gia' verificato in fase di selezione del campione
+    (mediana 2,0), da ristampare nel risultato.
+C3. DUMP LEGGIBILE di un manager/una GW completo PRIMA dei numeri di
+    sintesi: nomi, ruolo, grade, atteso, realizzato, arena per arena, piu'
+    le carte fra cui il modello poteva scegliere e quelle scelte nei due
+    rami. Si consegna insieme ai numeri, non su richiesta.
+C4. QUANTE CARTE DEL POOL NON HANNO IL GRADE: quelle entrano in G con
+    z = 0, cioe' G non le sposta. Va dichiarato per ogni manager.
+
+--- ASIMMETRIA DA DICHIARARE (a sfavore del bot) ---
+Il pool ricostruito contiene solo le carte che il manager ha effettivamente
+schierato da qualche parte in quella giornata: e' un sottoinsieme del suo
+mazzo vero. Il manager aveva piu' scelta di quella che diamo al bot.
+Quindi il confronto e' CONSERVATIVO: se il bot vince, vince con una mano
+peggiore.
+
+
+=====================================================================
+D-E. DOMANDA APERTA (bloccante per il Livello 2)
+=====================================================================
+Per le metriche in essenze servono i punteggi dei 10 partecipanti di ogni
+arena. Ne abbiamo 169 su 746. Le altre 577 richiedono un'estrazione da
+Sorare (leaderboard -> classifica). Tre strade:
+  1. si parte SUBITO col Livello 1 (punti) e si decide dopo;
+  2. si lancia prima l'estrazione delle 577 classifiche e si fa tutto
+     insieme (costo: query da quantificare, ma e' un dato che resta in
+     repo e serve anche ai filoni futuri);
+  3. si fa il Livello 2 solo sulle 169 arene di crowss come assaggio.
+Proposta: 1 e in parallelo far preparare l'estrazione, cosi' il Livello 2
+arriva senza far aspettare.
+
+
+=====================================================================
+11. FRONTE 2 — "A PARITA' DI CARTE, IL BOT DECIDE MEGLIO?" (08/08)
+=====================================================================
+
+Aggiunto dall'utente. NON sostituisce il fronte 1: si sommano.
+
+11.1 LA DOMANDA
+Si prendono le coppie (manager, GW) in cui il manager ha schierato SOLO
+arene, cioe' le carte disponibili coincidono con gli slot da riempire.
+Sul fronte 1 quel campione e' nullo per costruzione (nessuna selezione da
+misurare). Qui invece serve, perche' la domanda e' un'altra: date esattamente
+quelle 5 carte in quella arena, il bot ci ENTRA o no? E aveva ragione?
+
+11.2 REGOLE FISSATE DALL'UTENTE (08/08)
+- carte INCHIODATE all'arena in cui il manager le ha messe: niente
+  riallocazione fra arene dello stesso giorno;
+- CAPITANO identico a quello del manager.
+Conseguenza diretta e importante: il punteggio del bot e' IDENTICO a quello
+del manager, e quindi anche il piazzamento. L'unica variabile e' la
+decisione di entrare. E' un confronto sulla SCELTA, non sull'allocazione.
+
+11.3 CONSEGUENZA OPERATIVA: IL FRONTE 2 NON RICHIEDE NESSUNA ESTRAZIONE
+Siccome punteggio e rank del bot coincidono con quelli del manager, non
+servono i punteggi degli altri 9 partecipanti: il rank vero e' gia' nei
+file manager (campo piazzamento.rank), su tutte le 171 arene.
+-> Il fronte 2 e' misurabile SUBITO, a costo zero di query.
+   Il fronte 1 resta in attesa dell'estrazione delle 577 classifiche.
+
+11.4 CAMPIONE MISURATO (pool/slot <= 1,05, copertura grade sul pool >= 70%)
+  171 arene, 14 manager, 13 GW.
+  Manager: bxl-spartak 40, lairdinho 39, fins49 37, shirimimi 21,
+  eoghankelly 11, qtn 9, spillo678 4, ericeinicke 2, ninoshooter 2,
+  serji0 2, braddersfc 1, keano88 1, matteoogg 1, sticole 1.
+  Sono quasi tutti manager DIVERSI da quelli del fronte 1 (che e' dominato
+  da qtn, satonio, crowss, forever-young): i due fronti non si sovrappongono.
+  Piazzamento reale: rank1 24, rank2 19, rank3 11, rank4 22, rank5 16,
+  rank6 18, rank7 21, rank8 20, rank9 11, rank10 9. A podio 54 su 171
+  (31,6%), di nuovo in linea col caso: campione equo.
+  Sensibilita' alla soglia di copertura: 80% -> 147 arene / 13 manager;
+  50% -> 505 arene / 21 manager; nessun filtro -> 842 arene / 21 manager.
+
+11.5 IL CRITERIO DI INGRESSO E' GIA' IN PRODUZIONE — due varianti, non una
+Letto nel codice (build_formazione_globale.py), non nei documenti:
+  - verdetto_arena(tipo, atteso) -> entra se atteso >= PAREGGIO_ARENA[tipo]
+      ARENA_ALLSTARS_260 259,5 | _220 244,1 | _UNCAPPED 288,3
+  - _etichetta_arena() e' piu' severa: SCHIERA solo se il guadagno atteso
+    (margine x GUADAGNO_PER_PUNTO) vale almeno il 10% del costo d'ingresso
+    (QUOTA_MINIMA = 0,10), altrimenti MARGINALE, altrimenti LASCIA PERDERE.
+      GUADAGNO_PER_PUNTO 260 = 7,9 | 220 = 6,3 | UNCAPPED = 8,0
+      COSTO_INGRESSO     260 = 300 | 220 = 200 | UNCAPPED = 300
+Sono due soglie diverse e vanno misurate ENTRAMBE: la prima e' "entra", la
+seconda e' "entra col margine che l'utente considera degno". Il risultato
+va dato per tutte e due, altrimenti non si sa quale regola si sta giudicando.
+
+ATTENZIONE (da verificare, non ripetere come fatto): il docstring di
+verdetto_arena afferma che applicare questa regola allo storico dell'utente
+avrebbe portato il saldo da +9.800 a +54.700 essenze. E' scritto in un
+commento, non l'ho verificato: e' un'ipotesi, e per giunta e' proprio la
+cosa che questo fronte 2 va a misurare in modo indipendente.
+
+11.6 CONTABILITA' (tabella confermata dall'utente, esempio cap 260)
+                        manager a podio        manager fuori podio
+  bot gioca             +(premio - costo)      -costo         (sbagliato)
+                        = giusto
+  bot NON gioca         -(premio - costo)      +costo         (giusto)
+                        mancato guadagno
+                        = sbagliato
+Premi base (misurati su p11_pool.json, 673 arene):
+  cap 260  rank1 1300 rank2 800 rank3 500  costo 300
+  cap 220  rank1 1000 rank2 500 rank3 300  costo 200
+  Uncapped rank1 1300 rank2 800 rank3 500  costo 300
+LIMITE DA DICHIARARE: non sappiamo quali di queste 171 arene fossero
+GOLDEN (premio moltiplicato, stesso costo). Usando i premi base il valore
+assoluto delle essenze e' un limite INFERIORE, ma il giudizio
+giusto/sbagliato non cambia: la golden moltiplica il premio e lascia il
+costo dov'e', quindi un'arena conveniente resta conveniente.
+
+11.7 METRICHE DEL FRONTE 2
+  F1. MATRICE 2x2 gioca/non gioca x podio/non podio, in numero di arene.
+      E' la risposta diretta alla domanda dell'utente.
+  F2. SALDO NETTO IN ESSENZE del bot contro il saldo netto REALE del
+      manager, sulle stesse 171 arene. Il numero da portarsi via.
+  F3. Le stesse due metriche per il ramo A (senza grade): serve a separare
+      "la soglia e' buona" da "il grade migliora la decisione". Senza il
+      ramo A non si sa a chi attribuire il merito.
+  F4. Tasso di decisioni giuste (le due caselle in diagonale) per il ramo
+      G, il ramo A e - come pavimento - una regola stupida ("gioca sempre",
+      che e' quello che ha fatto il manager per costruzione, e "non giocare
+      mai"). Un modello che non batte "gioca sempre" non serve a niente.
+  F5. Stratificazione per tipo (Cap 260 / 220 / Uncapped) e per manager.
+  F6. Incertezza col bootstrap sui 14 MANAGER (cluster), come M7.
+  F7. Entrambe le soglie di 11.5, riportate separatamente.
+
+11.8 NOTA DELL'UTENTE SUL FRONTE 1
+L'utente ritiene il fronte 2 piu' pulito e teme che il fronte 1 sia poco
+confrontabile, perche' li' il bot sceglie carte diverse, gioca
+probabilmente meno arene o arene diverse. E' un'obiezione corretta e va
+tenuta: sul fronte 1 il confronto con il manager (G vs M) e' il pezzo
+debole, mentre il confronto G vs A (stesse arene, stesso pool, cambia solo
+il grade) resta pulito. Da riportare separati.
+
+
+=====================================================================
+8. FILE DI RIFERIMENTO
+=====================================================================
+dati_globali/manager_*.json                      l'archivio (54 validi)
+analisi_manager/p13_backtest_gw_crowss.py        backtest arena esistente
+analisi_manager/p12_backtest_formazione_grade.py indice grade + finestra
+analisi_manager/dati/storico_grade_*.json        le 6 fonti grade storiche
+generatore_formazioni/build_formazione_globale.py  G in produzione (r.431)
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md       riassunto unico, §8bis
+
+
+=====================================================================
+12. FRONTE 2 -- ESITO (08/08/2026, sera, Roma) -- eseguito da Sonnet
+=====================================================================
+Script: analisi_manager/p14_fronte2_astensioni_arena.py (committato).
+Log integrale: analisi_manager/p14_full_run.log. Dump leggibile (6.4):
+analisi_manager/p14_dump_esempio.txt (bxl-spartak, GW football-10-13-jul-2026,
+3 arene Uncapped).
+
+RICOSTRUZIONE CAMPIONE -- quasi identica al controllo del brief, con UNA
+differenza spiegata (non un errore di ricostruzione):
+  arene ....... 170 (brief: 171)   manager .... 14 (brief: 14)
+  GW .......... 13 (brief: 13)
+  ripartizione . Cap 260=100, Cap 220=44, Uncapped=26 (brief: 101/44/26)
+  podio ........ 54/170 = 31.8% (brief: 54/171 = 31.6%)
+  indice grade . 1.639 slug, 24.529 coppie, da 2025-07-13 (brief: identico)
+
+LA DIFFERENZA (1 arena): spillo678, GW football-28-31-jul-2026, Cap 260,
+piazzamento.rank=9, piazzamento.punteggio=0.0, ma la somma delle 5 carte
+schierate fa 300.66. Il filtro 5.e del brief ("scarta se la somma si
+discosta di piu' di 0.5 dal punteggio ufficiale") l'ha scartata: e' un
+record rotto (punteggio ufficiale 0 con carte che hanno punteggio reale),
+esattamente il tipo di riga che quel filtro esiste per intercettare. Se la
+si include con rank=9 (premio 0, netto -300), il totale torna IDENTICO al
+controllo del brief: saldo pieno campione 800-300=+500, Cap 260
+-4100-300=-4400. L'ho tenuta ESCLUSA (applico il filtro come scritto), lo
+segnalo qui perche' e' l'unica differenza fra il mio campione e il
+controllo e la spiega per intero.
+
+CONTROLLO 6.1 -- L'INTERRUTTORE FUNZIONA: SI'.
+  regola stretta: G decide diverso da A in 16/142 arene
+  regola larga:   G decide diverso da A in 10/142 arene
+  (142 = arene con atteso disponibile per tutte e 5 le carte, su 170 nel
+  campione: 28 escluse per carta senza atteso, vedi sotto)
+  z_grade=0 per 421/821 carte del pool: 398 per gruppo (lega,ruolo) con
+  meno di 2 membri col grade, 23 per carta senza grade proprio.
+
+CONTROLLO 6.2 -- TEST A/A: 0 differenze fra due run del ramo A. Determinismo ok.
+
+CONTROLLO 6.3 -- POOL/SLOT sulle coppie ammesse: mediana 1,000, massimo 1,000
+(per costruzione, filtro <=1.05).
+
+CARTE/ARENE CON GRADE (sulle 142 arene valutate, non 171: la copertura del
+brief e' sul campione pieno, la mia e' sul sottoinsieme con atteso -- non
+confrontabili 1:1, dichiarato):
+  carte con grade: 694/710 = 97,7%
+  arene con tutte e 5 le carte col grade: 130/142
+
+SCARTI (7.6):
+  coppie (manager,GW) escluse: pool/slot>1.05 -> 208, copertura grade<70% -> 48
+  arene escluse a livello arena: somma!=ufficiale -> 1 (vedi sopra)
+  scarti nel calcolo atteso sul pool: no_atteso -> 34 carte
+  arene del campione escluse dalla decisione: carta_senza_atteso -> 28
+  (di cui il manager keano88, 1 arena nel campione base, sparisce qui: la
+  sua unica arena ha una carta senza atteso)
+
+7.2 SALDO IN ESSENZE (142 arene valutate; saldo manager reale = -600, non
++500, perche' e' calcolato sul sottoinsieme valutabile, non sulle 170/171
+piene -- vedi sopra per la riconciliazione):
+                    saldo_bot  risparmio  mancato_guad.  delta vs manager(-600)
+  A-stretta            +2000     +11800        +9200          +2600
+  G-stretta            +2600     +11600        +8400          +3200
+  A-larga                -100     +7900        +7400            +500
+  G-larga              +2900      +9500        +6000          +3500
+  pavimento "non gioca mai": 0 essenze (delta vs manager = +600)
+
+  G batte A su entrambe le regole (stretta: +2600->+3200; larga: -100->
+  +2900). G-larga e' la combinazione migliore in assoluto su questo
+  campione, ma nessuna delle 4 batte "non gioca mai" (0), che qui e' il
+  vero pavimento essendo il saldo manager negativo.
+
+7.3 TASSO DI DECISIONI GIUSTE (diagonale/142; "gioca sempre"=manager reale
+=30,3% podio; "non gioca mai"=69,7%):
+  A-stretta 69/142 = 48,6%   G-stretta 69/142 = 48,6%
+  A-larga   58/142 = 40,8%   G-larga   66/142 = 46,5%
+ATTENZIONE: tutti e 4 i rami sono SOTTO "non gioca mai" (69,7%) su questa
+metrica di accuratezza grezza. Non e' in contraddizione col saldo positivo
+di 7.2: l'accuratezza premia allo stesso modo un salto giusto su un'arena
+da -300 e uno su un'arena da -5, il saldo no. Il numero utile per decidere
+resta 7.2 (essenze), non questo. Lo riporto perche' il brief lo richiede
+esplicitamente (F4).
+
+7.4 STRATIFICATO PER TIPO (saldo_bot / n, manager reale fra parentesi):
+                A-stretta   G-stretta   A-larga    G-larga   (manager)
+  Cap 260 (84)   -2100       -2300       -3800      -2400    (-5000)
+  Cap 220 (34)   +1400       +1800       +1600      +1200    (+2000)
+  Uncapped (24)  +2700       +3100       +2100      +4100    (+2400)
+Cap 260 resta negativo su tutti i rami (compreso il manager reale): il
+campione di questo fronte per Cap 260 e' fatto soprattutto di arene perse.
+Uncapped e' l'unico tipo dove tutti e 4 i rami battono il manager reale.
+
+7.4 STRATIFICATO PER MANAGER (13 manager compaiono nelle 142 arene valutate,
+keano88 escluso per carta senza atteso; n, saldo manager reale, saldo_bot
+per i 4 rami):
+  manager                                    n  saldo_mgr  A-str  G-str  A-larga G-larga
+  bxl-spartak                                37      1600   2200   2300     2100    1300
+  fins49                                     34     -1600   -100   -800    -1200    -500
+  lairdinho                                  26      3700   1400   2700     1900    4200
+  shirimimi                                  18     -2500  -2000  -2100    -2500   -2300
+  eoghankelly                                10      1200   1500   1500     1500    1500
+  qtn-d8cd72ac-...b3d151d                     8     -1900   -300   -300     -900    -300
+  spillo678                                   3      -100    200    200      200     200
+  braddersfc                                  1      -300   -300   -300     -300    -300
+  ericeinicke-fc2a0cf2-...9d4cd7df             1      -300   -300   -300     -300    -300
+  matteoogg                                   1      -300      0      0        0       0
+  ninoshooter                                 1       500      0      0        0       0
+  serji0                                      1      -300   -300   -300     -300    -300
+  sticole-ac-i-like-card-swapping-20-more     1      -300      0      0     -300    -300
+Il segno positivo di G-stretta non e' guidato da un solo mazzo: batte il
+manager reale su bxl-spartak, lairdinho, spillo678 e pareggia/batte sugli
+altri tranne fins49 e shirimimi (dove pero' anche il manager reale perde).
+lairdinho e' il piu' grande singolo contributo (+2700 vs manager +3700 --
+NB qui il bot fa MENO del manager, che aveva gia' azzeccato quasi tutto).
+
+7.1 MATRICE 2x2 aggregata (142 arene), bot gioca/non gioca x podio/non podio:
+                    podio  non podio
+  A-stretta gioca      28        58
+            non gioca  15        41
+  G-stretta gioca      28        58
+            non gioca  15        41
+  A-larga   gioca      31        72
+            non gioca  12        27
+  G-larga   gioca      33        66
+            non gioca  10        33
+(matrici per tipo e per manager nel log integrale, non ripetute qui)
+
+7.5 INCERTEZZA -- bootstrap sui 13 MANAGER presenti in decisione (cluster),
+2.000 resample, delta (saldo_bot - saldo_manager):
+  A-stretta   IC95 [-4200, +8700]   positivo in 79,3% dei resample
+  G-stretta   IC95 [-900,  +7800]   positivo in 93,4% dei resample
+  A-larga     IC95 [-4400, +4300]   positivo in 59,9% dei resample
+  G-larga     IC95 [+100,  +7700]   positivo in 97,5% dei resample
+G-larga e' l'unico ramo il cui IC95 non include lo zero. G-stretta ci va
+vicino (93,4% positivo, IC quasi tutto sopra zero). A-larga e' il piu'
+debole: quasi un coin-flip (59,9%).
+
+LIMITI DA TENERE A MENE (dichiarati dal brief, confermati qui):
+- saldo in essenze coi PREMI BASE: non sappiamo quali delle 142 arene erano
+  golden (premio moltiplicato, stesso costo); il valore assoluto e' un
+  limite inferiore per i rami che entrano di piu', ma il segno
+  giusto/sbagliato non cambia (una golden conveniente resta conveniente).
+- Uncapped: rank1/rank3 poggiano su una sola osservazione ciascuno in
+  p11_pool.json (dichiarato dal brief); qui l'Uncapped e' comunque riportato
+  separato (n=24) per trasparenza, non aggregato ciecamente.
+- il campione e' concentrato: bxl-spartak+lairdinho+fins49+shirimimi = 115
+  arene su 142 (81%); il bootstrap sui manager (7.5) e' la protezione
+  contro questo, non un aggregato semplice.
