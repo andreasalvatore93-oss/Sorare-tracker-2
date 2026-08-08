@@ -1,0 +1,246 @@
+HANDOFF -- RITARATURA DEFINITIVA DELLE SOGLIE ARENA, TUTTI I TIPI
+Sessione 08/08/2026, notte (Roma). Eseguito da Sonnet su brief di Opus
+(docs/handoff/BRIEF_SONNET_SOGLIE_DEFINITIVE_2026-08-08.txt).
+
+SOLO MISURA. Nessun valore di produzione toccato (PAREGGIO_ARENA,
+GUADAGNO_PER_PUNTO, COSTO_INGRESSO, QUOTA_MINIMA, ARCHIVIO di default
+invariati nel file). Decide l'utente se applicare.
+
+
+=====================================================================
+1. STATO DEL REPO
+=====================================================================
+Branch: main. Nessun commit ancora fatto in questa sessione (da fare dopo
+la review dell'utente). File nuovi, tutti aggiuntivi, zero file di
+produzione modificati:
+  dati_globali/arene_storico_full.json          NUOVO (archivio completo,
+    673 arene, ricostruito da p11_pool.json)
+  analisi_manager/p19_ricostruisci_archivio_completo.py   NUOVO (Passo 1)
+  analisi_manager/p18_sigma_tutti_tipi.py        NUOVO (Passo 2)
+  analisi_manager/p18_sigma_risultato.json       NUOVO (esito Passo 2)
+  analisi_manager/p24_gw3_soglie_nuove.py        NUOVO (Passo 4a)
+  consiglio_arena.py                             MODIFICATO: ARCHIVIO ora
+    legge la env var ARCHIVIO_ARENE se presente, altrimenti il default
+    invariato (dati_globali/arene_storico.json). Riga 33-34. Nessun altro
+    comportamento cambiato.
+  analisi_manager/VALIDAZIONE_SOGLIE.md          da aggiornare (vedi §6)
+
+
+=====================================================================
+2. PERCHE' ESISTE QUESTO LAVORO
+=====================================================================
+Le soglie di produzione (PAREGGIO_ARENA/GUADAGNO_PER_PUNTO) non erano piu'
+riproducibili: l'archivio che consiglio_arena.py legge era crollato da 673
+a 160 arene (bug del 07/08, mai risolto), e la sigma della cap 220 poggiava
+su appena 8 osservazioni. L'utente ha chiesto di chiudere la questione una
+volta per tutte, su tutti e quattro i tipi (260/220/uncapped/beginner
+incluse), senza cambiare nulla in produzione in questo giro.
+
+
+=====================================================================
+3. PASSO 1 -- ARCHIVIO RICOSTRUITO
+=====================================================================
+Da analisi_manager/p11_pool.json (71 fixture, campo 'slot' per fixture) a
+dati_globali/arene_storico_full.json, STESSO formato di arene_storico.json
+(dict con 'aggiornato' e 'arene', ogni arena con punteggi/mio_score/
+mio_rank/premio_essenze/rank_premiato/costo/tipo).
+
+  totale arene ricostruite: 673 (0 scartate, tutte con >=5 punteggi)
+    cap 260          194   |  cap 220           53
+    arena division   191   |  arena uncapped     15
+    Beginner         182   |  Uncapped           38
+  con premio osservato (rank_premiato + premio_essenze): 235 totali
+    cap 260  73  |  Beginner  63  |  arena division  60
+    cap 220  20  |  Uncapped  12  |  arena uncapped   7
+  distribuzione partecipanti per arena: 652 arene a 10, 16 a 9, 3 a 8,
+    1 a 7, 1 a 5 -- coerente con "9 avversari + io".
+
+Numeri IDENTICI a quelli citati nel brief (§1, COLLO 1): confermato che
+p11_pool.json e' la fonte giusta e completa.
+
+Controllo obbligatorio (1b, grouping per arena): eseguito
+`python -ARCHIVIO_ARENE=arene_storico_full.json consiglio_arena.py
+--verifica` -- il conteggio n per tipo nell'output (cap260=194, cap220=53,
+Uncapped=38, Beginner=182) coincide esattamente col numero di ARENE (non di
+punteggi sciolti), quindi campo_per_tipo() sta raggruppando correttamente
+anche sul nuovo archivio.
+
+RIPRODUCIBILITA' RISOLTA (risponde alla domanda aperta nell'HANDOFF_
+CRITERIO_ARENE del giro precedente, sez.9 Passo 1a): con l'archivio pieno e
+le SIGMA DI PRODUZIONE (50.6 cap260, 42.70 cap220, invariate):
+    cap 260   n=194   pareggio 258.1   (produzione: 259.5, scarto -1.4)
+    cap 220   n= 53   pareggio 244.3   (produzione: 244.1, scarto +0.2)
+Prima (archivio degradato a 160): 267.9 e 240.9 -- scarti di 8-9 punti.
+Il buco NON era nella sigma ne' nel metodo: era l'archivio dimagrito.
+Con l'archivio pieno la riproducibilita' torna, entro 1-2 punti (rumore di
+campionamento nella simulazione Monte Carlo, N_PROVE=20000).
+
+
+=====================================================================
+4. PASSO 2 -- SIGMA RIMISURATA SU CAMPIONE VERO
+=====================================================================
+Script: analisi_manager/p18_sigma_tutti_tipi.py. Fonte: TUTTI i 55 file
+dati_globali/manager_*.json (738 giornate, 81 GW uniche), non solo crowss.
+Per ogni arena REALMENTE giocata (formazione FISSA del manager, nessuna
+selezione qui, stesso principio del TEST3 di p13_backtest_gw_crowss.py):
+  atteso = somma degli score_atteso calibrati walk-forward delle 5 carte
+           (P.score_atteso + bfg.calibra, fine=fine giornata) + 0.2 *
+           atteso del capitano (bonus arena +20%)
+  realizzato = punteggio UFFICIALE della formazione (col bonus dentro,
+               stessa scala di PAREGGIO_ARENA -- nessuna divisione,
+               nessuna ricostruzione D4)
+  residuo = realizzato - atteso
+
+Arene candidate (tipo_arena ammesso + competizione nota): 7.720
+Scarti: 4.353 per 'no_atteso' (giocatore/data senza previsione nella
+  cache walk-forward -- dichiarato, non silenzioso)
+
+RISULTATO (n molto piu' alta del 05/08, dove cap220 era n=8):
+    tipo         n      media residuo     sigma
+    cap 220    251           -0.87       46.70
+    Beginner  1472           -1.89       50.18
+    cap 260   1356           +0.20       50.52
+    Uncapped   288           +9.42       53.72
+
+Media residuo vicina a zero per cap220/Beginner/cap260 (nessun bias di
+calibrazione grave); Uncapped ha un bias sistematico di +9.4 (l'atteso
+sottostima il realizzato di ~9 punti per l'Uncapped -- da tenere a mente,
+non e' solo rumore, potrebbe segnalare un problema di calibrazione
+specifico per quel pool, non indagato oltre in questo giro).
+
+CONTROLLO 2c -- riproduzione della sigma nota (50.6, cap260, n=113):
+rifatto col MIO metodo (walk-forward su tutti i manager) MA limitato allo
+STESSO file di VALIDAZIONE_SOGLIE.md (dati_globali/
+backtest_arene_dettaglio_0805.json, colonne utente_reale/utente_atteso,
+stessa formula residuo=reale-atteso, stessa deviazione standard di
+popolazione):
+    cap 260   n=113   sigma=51.15   (pubblicato: 50.6 -- scarto 0.5, OK)
+    Uncapped  n= 31   sigma=47.06   (pubblicato: 46.9 -- OK)
+    Beginner  n= 73   sigma=47.05   (pubblicato: 46.9 -- OK)
+    cap 220   n=  8   sigma=42.06   (pubblicato: 41.9 -- OK)
+Riprodotto entro l'arrotondamento su tutti e quattro i tipi: il metodo e'
+coerente con quello del 05/08, i numeri nuovi (n molto piu' grande) sono
+un affinamento della stessa misura, non un metodo diverso che per caso da'
+un altro numero.
+
+
+=====================================================================
+5. PASSO 3 -- SOGLIE RICALCOLATE, TUTTI I TIPI
+=====================================================================
+consiglio_arena.py, archivio del Passo 1 (arene_storico_full.json, 673
+arene), sigma del Passo 2. Guadagno/punto = pendenza dell'incasso medio
+nell'intorno del pareggio (+-5 punti), stessa definizione di produzione.
+
+  tipo        n arene  n premi oss.  sigma(n)        pareggio           guadagno/pt
+                                                    vecchio -> nuovo    vecchio -> nuovo
+  cap 260       194        73      50.52(1356)    259.5 -> 258.3       7.9 -> 7.51
+  cap 220        53        20      46.70( 251)    244.1 -> 241.0       6.3 -> 5.46
+  Uncapped       38        12      53.72( 288)    288.3 -> 281.9       8.0 -> 6.82
+  Beginner      182        63      50.18(1472)    n/d   -> 259.4       n/d -> 2.78
+
+TUTTI E QUATTRO I TIPI SI MUOVONO NELLA STESSA DIREZIONE: pareggio piu'
+basso e guadagno/punto piu' basso di quello di produzione (tranne cap220
+il cui pareggio scende di piu', 3 punti). La cap 260 e' quella che si
+muove meno (-1.2 pt pareggio): coerente col fatto che era gia' stata
+corretta il 05/08 con un campione quasi altrettanto solido (n=113 vs 1356
+di oggi, stesso ordine di grandezza).
+
+La Beginner ORA HA una soglia misurata (259.4) dove prima non esisteva.
+Guadagno/punto pero' e' bassissimo (2.78, un terzo della cap 260): il
+premio per essere sopra soglia e' molto meno ripido, coerente con premi
+piu' bassi (100/500-250-150 contro 300/1300-800-500 della cap260).
+
+SENSIBILITA' (sigma +-10%):
+  tipo        pareggio -10%/+10%      guadagno/pt -10%/+10%
+  cap 260        261.9 / 254.4           8.47 / 6.96
+  cap 220        244.8 / 237.1           6.18 / 4.98
+  Uncapped       284.6 / 278.7           7.28 / 6.42
+  Beginner       262.4 / 256.3           2.90 / 2.56
+Il pareggio si sposta 3.5-4 punti per un 10% di sigma su tutti i tipi:
+sotto la soglia di fragilita' dichiarata nel brief (5 punti). Il
+guadagno/punto oscilla di piu' in proporzione (15-20%), come atteso
+essendo una derivata della curva -- va usato come ordine di grandezza, non
+come cifra al centesimo.
+
+
+=====================================================================
+6. PASSO 4 -- EFFETTO A VALLE
+=====================================================================
+4a. GENERATORE, GW3 (stessi dati del run GitHub 31253830349, override in
+memoria di PAREGGIO_ARENA/GUADAGNO_PER_PUNTO dopo l'import, mai scritto
+nel file, script analisi_manager/p24_gw3_soglie_nuove.py):
+    BASELINE (soglie produzione): 23 arene -- 22x cap260, 1x cap220
+    CON SOGLIE NUOVE (§5):        26 arene -- 23x cap260, 3x cap220
+Le soglie piu' basse fanno passare 3 arene in piu' (tutte cap220): sul
+mazzo di stanotte l'effetto e' misurabile ma piccolo (+3 arene su 23, +13%),
+va nella direzione attesa (soglie piu' basse -> piu' arene sopra soglia).
+
+4b. BEGINNER NON PUO' ENTRARE NEL MIX: verificato nel codice
+(build_formazione_globale.py, PRIORITY_ORDER riga 299-302 e
+_is_arena_type riga 327-328) che il generatore produce SOLO
+ARENA_ALLSTARS_260/220/UNCAPPED come tipi arena -- non esiste un tipo
+ARENA_ALLSTARS_BEGINNER generabile. Dare una soglia alla Beginner (§5) e'
+un dato nuovo per lo strumento consiglio_arena.py, ma non fa entrare
+niente nel mix di genera_arene_efficienti finche' il generatore non viene
+esteso con un tipo dedicato -- lavoro non fatto e non richiesto in questo
+giro. Coerente con l'avvertimento del brief: dai dati reali (CLAUDE.md,
+ROI Beginner negativo) la Beginner resta il tipo peggiore per resa, e il
+fatto che ora abbia "una soglia" non e' un segnale per giocarla di piu'.
+
+4c. SCOUTING: scouting_gw.py legge PAREGGIO_ARENA/GUADAGNO_PER_PUNTO/
+COSTO_INGRESSO sempre via getattr(gg, ...) (righe 390-391, 1273, 1286,
+1356, 1362, 1366) -- nessuna copia locale, propagazione automatica se un
+giorno si applica. Con le soglie nuove (tutte piu' basse) l'ordine di
+grandezza dell'effetto e': candidati che oggi restano appena SOTTO
+PAREGGIO_ARENA (margine negativo piccolo, es. -1..-3 pt su cap220, -1..-6
+pt su Uncapped) passerebbero SOPRA con le soglie nuove e verrebbero
+raccomandati in piu'; nessun candidato oggi ampiamente sopra soglia
+cambierebbe verdetto. Non e' stato rilanciato uno scouting_gw.py completo
+in questo giro (nessuna nuova query, ma la generazione candidati richiede
+tempo non speso qui): la direzione e l'ordine di grandezza sono coerenti
+col Passo 4a (poche unita' di margine spostano poche raccomandazioni, non
+un ribaltamento).
+
+
+=====================================================================
+7. LIMITI E COSE DA SAPERE PRIMA DI DECIDERE
+=====================================================================
+- L'archivio nuovo (arene_storico_full.json) copre le arene fino a
+  inizio agosto 2026 (ultima fixture in p11_pool.json): non si
+  autoaggiorna, e' una fotografia. Se si decide di applicare, va deciso
+  anche CHI aggiorna questo archivio da qui in avanti (oggi
+  arene_storico.json si e' "dimagrito" per un bug mai chiuso -- lo stesso
+  bug puo' colpire anche il nuovo file se non si tocca la causa a monte).
+- Il bias +9.4 sull'Uncapped (§4) non e' spiegato: potrebbe essere
+  calibrazione debole su quel pool specifico, non indagato oltre.
+- Il guadagno/punto per tutti i tipi e' piu' sensibile della soglia
+  (15-20% di oscillazione per un 10% di sigma): se si applica, va accettato
+  come stima di ordine di grandezza, non come costante precisa.
+- 4.353 arene scartate su 7.720 per 'no_atteso' nel Passo 2 (giocatore o
+  data senza previsione in cache): la sigma misurata e' su chi HA una
+  previsione, non su tutto l'universo -- possibile bias di selezione se i
+  giocatori senza cache sono sistematicamente diversi (non verificato).
+- Passo 4c e' qualitativo (nessun run scouting completo): se serve la
+  lista esatta di candidati che cambierebbero, va fatto un giro dedicato.
+
+
+=====================================================================
+8. DECISIONE APERTA
+=====================================================================
+I numeri sono pronti (§5). Non applicati. Se l'utente vuole procedere, la
+catena da percorrere e' quella di CLAUDE.md: build_formazione_globale.py
+(PAREGGIO_ARENA/GUADAGNO_PER_PUNTO) -> verifica scouting_gw.py -> run di
+verifica. Decisione dell'utente, non presa qui.
+
+
+=====================================================================
+9. FILE DI RIFERIMENTO
+=====================================================================
+  docs/handoff/BRIEF_SONNET_SOGLIE_DEFINITIVE_2026-08-08.txt  (il brief)
+  dati_globali/arene_storico_full.json          (archivio, 673 arene)
+  analisi_manager/p19_ricostruisci_archivio_completo.py  (Passo 1)
+  analisi_manager/p18_sigma_tutti_tipi.py       (Passo 2)
+  analisi_manager/p18_sigma_risultato.json      (esito Passo 2, JSON)
+  analisi_manager/p24_gw3_soglie_nuove.py       (Passo 4a)
+  consiglio_arena.py                            (ARCHIVIO ora da env var)
+  analisi_manager/VALIDAZIONE_SOGLIE.md         (da aggiornare, §6)

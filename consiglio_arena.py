@@ -30,7 +30,8 @@ import re
 import statistics
 import sys
 
-ARCHIVIO = 'dati_globali/arene_storico.json'
+import os
+ARCHIVIO = os.environ.get('ARCHIVIO_ARENE', 'dati_globali/arene_storico.json')
 
 # costo d'ingresso e premi ai primi tre, dichiarati dall'utente (tabella
 # completa nella sezione 48 del RIASSUNTO).

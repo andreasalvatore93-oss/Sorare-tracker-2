@@ -1,5 +1,26 @@
 # VALIDAZIONE SOGLIE ARENA — sono corrette?
 
+## AGGIORNAMENTO 08/08/2026 notte — riparato l'archivio, sigma su campione vero
+Esito completo: `docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt`.
+In breve, SOLO MISURA, nulla applicato:
+- L'archivio (crollato a 160 arene, bug sotto) e' stato RICOSTRUITO a 673
+  arene da `analisi_manager/p11_pool.json` -> `dati_globali/
+  arene_storico_full.json` (file nuovo, non sovrascrive l'originale). Con
+  l'archivio pieno e le sigma di produzione, cap260/cap220 tornano
+  riproducibili entro 1-2 punti (258.1/244.3 contro 259.5/244.1).
+- La sigma della cap 220 non poggia piu' su n=8: rimisurata su n=251
+  (walk-forward su TUTTI i manager, 7.720 arene candidate). Anche gli
+  altri tipi sono su campioni molto piu' larghi: cap260 n=1356, Beginner
+  n=1472, Uncapped n=288.
+- Soglie nuove (vecchio -> nuovo): cap260 259.5->258.3 (guad 7.9->7.51),
+  cap220 244.1->241.0 (guad 6.3->5.46), Uncapped 288.3->281.9 (guad
+  8.0->6.82), Beginner n/d->259.4 (guad n/d->2.78, mai avuta prima).
+- Sul mazzo GW3 gia' generato: con le soglie nuove il mix passa da 23
+  arene (22x260+1x220) a 26 (23x260+3x220). La Beginner non puo' entrare
+  nel mix: il generatore non ha un tipo ARENA_ALLSTARS_BEGINNER.
+- Bias non spiegato: l'Uncapped ha un residuo medio +9.4 (l'atteso
+  sottostima il realizzato), non indagato oltre.
+
 ## AGGIORNAMENTO 07/08/2026 sera — bug piu' grave del previsto, non risolto
 Esito completo: `docs/handoff/BRIEF_SONNET_SOGLIE_ARENA_2026-08-07.txt`
 (sezione "ESITO"). In breve:
