@@ -1,0 +1,448 @@
+HANDOFF G+ODDS-ARENE -- 09/08/2026, notte (Roma), aggiornato dopo il test vero
+Esecutore: Sonnet, da BRIEF_SONNET_G_ODDS_ARENE_2026-08-09.txt (il passo 2).
+
+1. STATO REPO
+Branch main. Nessun file di produzione toccato. File nuovi, NON committati
+(in attesa di ok utente):
+  analisi_manager/p20_g_odds_arene_setup.py (§2-7 sotto, gia' scritti prima)
+  analisi_manager/p20_g_odds_arene_setup_out.json
+  analisi_manager/p20_g_odds_arene_classifiche_mancanti.json
+  dati_globali/classifiche_arene_mancanti_2026-08-09.json (374 arene scaricate)
+  dati_globali/classifiche_arene_mancanti_2026-08-09_falliti.json (vuoto)
+  analisi_manager/p20_g_odds_arene_backtest.py (il test vero)
+  analisi_manager/p20_g_odds_arene_backtest_out.json (numeri grezzi)
+  analisi_manager/p20_g_odds_arene_report.py (aggregazione/report)
+  analisi_manager/p20_g_odds_arene_placebo_out.json (placebo su G-vs-A allocazione)
+  docs/handoff/HANDOFF_G_ODDS_ARENE_2026-08-09.txt (questo file)
+
+Sezioni 2-8 sotto sono la verifica preliminare (perimetro, regimi,
+copertura classifiche, download) gia' scritte e confermate in questa
+sessione. La sezione 9 in fondo e' IL TEST VERO.
+
+[sezioni 2-8: perimetro 825/4125 verificato esatto; regime astensione 37
+unita' / allocazione 53 unita' verificato esatto (mediana 2,96x corretta,
+1,58x era un errore di trascrizione del brief, confermato dall'utente);
+copertura classifiche_arene passata dal 41,8% al 100,0% dopo il download
+di 374 leaderboard mancanti (374/374 ok, 0 errori, 0 429) -- dettaglio
+completo lasciato nelle sezioni originali di questo file, non ripetuto qui.]
+
+=====================================================================
+9. IL TEST VERO (09/08/2026, notte, Roma)
+=====================================================================
+Script: analisi_manager/p20_g_odds_arene_backtest.py (costruzione +
+esecuzione) + p20_g_odds_arene_report.py (aggregazione, bootstrap,
+placebo). Riusano SENZA modificarli p13_backtest_gw_crowss.py
+(pool/pool_rows/gioca_arene), backtest_arene_previsioni.py (contesto/
+_p_own_opp_odds/delta_favorito_odds), p12_backtest_formazione_grade.py
+(zscore_gruppo/calibra/costruisci/capitano_atteso/bfg). Nessuna query di
+rete in questa fase (dati gia' scaricati).
+
+9.1 SCELTE DICHIARATE (§7c, §6, §5)
+  - Segnale odds: DELTA storico (delta_favorito_odds), z-scorato per
+    gruppo (lega,codice) DENTRO ogni unita' (manager,gw), k=0.2 -- stessa
+    forma e stesso k gia' usati/misurati sul non-arena.
+  - Arene B (us/korea/scotland): mappate a arena_type('mls')/'kleague'/
+    'scozia' del generatore (ARENA_LEAGUES_ENABLED='tutte' impostata in
+    processo, nessun file toccato); soglie/premi trattati come Cap 260
+    (premi per regola esplicita del brief, soglie per scelta dichiarata
+    coerente).
+  - Beginner nel set VECCHIO: eredita la soglia di Cap 260 (stessa
+    convenzione di p13/produzione, che mappa Beginner allo stesso
+    tipo_bfg ARENA_ALLSTARS_260).
+  - Capitano: scelto SEMPRE da capitano_atteso() sul campo 'atteso_cal',
+    che e' SEMPRE _cal indipendentemente dal ramo (bug/scorciatoia gia'
+    presente nel codice riusato, vedi §9.6): in G e G+O il capitano e'
+    quindi scelto con lo stesso criterio di A, non con quello del ramo.
+    Non corretto qui (D7, non si riscrive il knapsack/la selezione).
+  - REGIME ALLOCAZIONE, opportunita' per (gw,tipo): le leaderboard REALI
+    di quel tipo/giornata nel nostro indice (che ora e' completo al
+    100% sulle 643 del perimetro, ma resta un campionamento dei manager
+    tracciati, non un censimento di TUTTE le arene esistite quel
+    giorno). Se il bot vuole entrare in piu' arene di quel tipo di
+    quante ne abbiamo osservate, CICLA sulle stesse leaderboard --
+    approssimazione dichiarata, non un censimento vero.
+
+9.2 CONTROLLO 7b -- INTERRUTTORE
+  k=0: max|_odds_cal - _cal| = 0.0000000000 su tutte le righe di tutte le
+  90 unita' -- coincide ESATTAMENTE con A, l'interruttore spento e'
+  davvero spento.
+  k=0.2: 5.342/7.619 carte del pool cambiano atteso (70,1%) -- interruttore
+  acceso e attivo, non inerte.
+
+9.3 CONTROLLO 7d -- COPERTURA ODDS SUL PERIMETRO (4.125 carte reali)
+  3.128/4.125 (75,8%) -- in linea con l'intervallo 60-88% gia' visto sul
+  non-arena.
+
+9.4 CONTROLLO 7a -- POOL vs SLOT: gia' verificato nelle sezioni 2-8 (37
+astensione pool<=slot, 53 allocazione pool>slot, mediana 2,96x max 20,8x).
+
+9.5 CONTROLLO 7e -- BOOTSTRAP: sempre sui 24 MANAGER (cluster), mai sulle
+formazioni/arene, B=3000 permutazioni per intervallo. Vedi funzione
+bootstrap_delta in p20_g_odds_arene_report.py.
+
+9.6 BUG TROVATI NEL CODICE RIUSATO (annotati, NON corretti qui, D7 + regola
+"non sistemare per strada"):
+  a) p13_backtest_gw_crowss.prepara_righe_pool() e' rotto: fa
+     `for (slug, data), grade in idx_grade.items()` su un dizionario che
+     e' slug -> LISTA di (data,grade), non (slug,data) -> grade. Crasha
+     con ValueError se chiamato (verificato). Bypassato: ho costruito
+     idx_per_slug da solo (slug -> {data: grade_NUMERICO}, riusando
+     p20_grade_arene_copertura_finale.indice_dopo_download() gia'
+     validato), passato direttamente a costruisci_pool_rows().
+  b) p13_backtest_gw_crowss.gioca_arene() e p12_backtest_formazione_grade.
+     costruisci() scrivono SEMPRE 'atteso_cal' = c['_cal'], qualunque sia
+     l'obiettivo passato a S21.costruisci(gw, obiettivo) -- il campo che
+     riflette davvero l'obiettivo scelto e' 'atteso' (row['atteso'] =
+     obiettivo(c)), non 'atteso_cal'. Se non lo eviti, un G/G+O costruito
+     con questa via userebbe SEMPRE la soglia/il confronto su _cal, non
+     sul ramo vero. Evitato usando 'atteso' invece di 'atteso_cal' nella
+     mia funzione esegui_allocazione(). Questo e' anche il motivo per cui
+     capitano_atteso() (che USA 'atteso_cal') sceglie sempre il capitano
+     di A -- vedi 9.1.
+
+9.7 RISULTATI -- ASTENSIONE (decisione entra/salta, formazione fissa,
+154 arene su 37 unita', §4a):
+
+  SET SOGLIE VECCHIO (produzione oggi):
+    REALE : netto totale=-7.100  (entra sempre le 154)         per-arena=-46,1
+    A     : netto totale=-3.350  (entra 101/154)  per-arena-GIOCATA=-33,2
+    G     : netto totale=-2.200  (entra  92/154)  per-arena-GIOCATA=-23,9
+    G+O   : netto totale=-1.450  (entra  92/154)  per-arena-GIOCATA=-15,8
+    DELTA G contro A   : +1.150  IC95=[-1.000,+3.600]  -- NON significativo
+    DELTA G+O contro G : +750    IC95=[-3.350,+4.900]  -- NON significativo
+    DELTA G+O contro A : +1.900  IC95=[-800,+5.200]    -- NON significativo
+
+  SET SOGLIE NUOVO:
+    A     : netto totale=-150    (entra 69/154)  per-arena-GIOCATA=-2,2
+    G     : netto totale=+300    (entra 68/154)  per-arena-GIOCATA=+4,4
+    G+O   : netto totale=-2.750  (entra 78/154)  per-arena-GIOCATA=-35,3
+    DELTA G contro A   : +450    IC95=[-2.950,+4.600]  -- NON significativo
+    DELTA G+O contro G : -3.050  IC95=[-8.250,+650]    -- NON significativo
+    DELTA G+O contro A : -2.600  IC95=[-5.600,+300]    -- NON significativo
+
+  NOTA: G+O CAMBIA SEGNO fra i due set (+750 vecchio, -3.050 nuovo) sullo
+  STESSO campione di 154 arene: e' la firma del rumore (regola CLAUDE.md
+  "cosa deve riprodursi"), non un effetto. In regime astensione (campione
+  piccolo, formazione fissa, poca leva) NESSUN ramo batte A in modo
+  affidabile, ne' G ne' G+O.
+
+9.8 RISULTATI -- ALLOCAZIONE (bot libero di scegliere, §4b) -- QUESTO E'
+IL RISULTATO CHE CONTA DI PIU':
+
+  SET SOGLIE VECCHIO:
+    REALE : netto totale=-31.950  (617 arene giocate)  per-arena=-51,8
+    A     : netto totale=-16.950  (578 arene giocate)  per-arena=-29,3
+    G     : netto totale=+12.100  (547 arene giocate)  per-arena=+22,1
+    G+O   : netto totale=+8.100   (513 arene giocate)  per-arena=+15,8
+    DELTA G contro A   : +29.050  IC95=[+13.400,+48.300]  *** TUTTO POSITIVO ***
+    DELTA G+O contro G : -4.000   IC95=[-17.850,+10.400]  -- NON significativo
+    DELTA G+O contro A : +25.050  IC95=[+7.450,+45.350]   *** TUTTO POSITIVO ***
+
+  SET SOGLIE NUOVO:
+    REALE : netto totale=-31.950  (617 arene giocate)  per-arena=-51,8
+    A     : netto totale=-7.450   (592 arene giocate)  per-arena=-12,6
+    G     : netto totale=+16.700  (564 arene giocate)  per-arena=+29,6
+    G+O   : netto totale=+8.150   (524 arene giocate)  per-arena=+15,6
+    DELTA G contro A   : +24.150  IC95=[+6.950,+47.900]   *** TUTTO POSITIVO ***
+    DELTA G+O contro G : -8.550   IC95=[-24.600,+6.500]   -- NON significativo
+    DELTA G+O contro A : +15.600  IC95=[-7.650,+39.800]   -- NON significativo (qui!)
+
+  G BATTE A in modo stabile su ENTRAMBI i set di soglie, stesso segno,
+  stesso ordine di grandezza (+29.050 e +24.150): questa e' la
+  validazione che il brief cercava (§1, "questo confronto non e' un
+  contorno"). Il modello REALE (manager) e' negativo su entrambi i regimi
+  (-7.100 astensione, -31.950 allocazione): sia A che G battono il
+  manager reale nel regime allocazione, ma solo G lo fa con IC95 tutto
+  positivo contro A.
+  G+O contro G non e' MAI significativo, e la stima puntuale e' sempre
+  NEGATIVA (-4.000 e -8.550): l'odds sopra G non solo non aiuta, sul
+  campione arena sembra costare leggermente (ma non abbastanza da essere
+  distinguibile dal rumore). G+O contro A resta positivo nel set vecchio
+  ma NON nel set nuovo -- il vantaggio di G+O deriva quasi tutto da G,
+  eroso dall'aggiunta di O.
+
+9.9 PLACEBO (§7f) sul ramo con IC95 tutto positivo (G contro A,
+allocazione, set vecchio -- il piu' importante). N=30 permutazioni di
+_zgrade dentro ogni gruppo (lega,codice) per unita', G ricostruito da
+capo con l'obiettivo permutato, confrontato contro A (fisso).
+  delta vero: +29.050
+  range placebo (N=30): [-18.050, +5.300]  mediana=-450
+  IL VERO E' AL PERCENTILE 100 -- fuori dal range del rumore, il piu'
+  alto placebo arriva a +5.300, un quinto del vero. Il risultato G-vs-A
+  in allocazione NON e' spiegabile per caso.
+  Placebo NON ripetuto sul set nuovo per limiti di tempo (dichiarato, non
+  nascosto): dato che il meccanismo e' lo stesso e il delta vero
+  (+24.150) e' dello stesso ordine, e' ragionevole aspettarsi lo stesso
+  esito, ma non e' stato misurato -- se serve prima di decidere, va
+  fatto.
+
+9.10 CONTROLLO REGIME ALLOCAZIONE -- ZERO GIOCATORI RIPETUTI: verificato
+per costruzione (S21.costruisci/bfg.CardPool) su tutte le formazioni di
+tutti i rami/set: 'zero_ripetuti'=True in ogni run (vedi output grezzo).
+
+9.11 DUMP LEGGIBILI (§7g), uno per regime, presi dal primo caso di ogni
+gruppo nell'output grezzo (non filtrati a mano):
+
+  ASTENSIONE: manager=braddersfc, gw=football-28-31-jul-2026, A1_cap260
+    leaderboard=...-dc043651-...  real_points=189,56  rank=10  premio=0
+    soglia_decisione=263,30  atteso_A=atteso_G=atteso_GO=277,00 (stesso
+    valore sulle 3 colonne per questo caso specifico: il grade/odds non
+    hanno cambiato l'atteso per QUESTE 5 carte fisse) -> entra sempre,
+    netto=-300 su tutti i rami (arena persa, sotto pareggio).
+
+  ALLOCAZIONE (ramo G): manager=angioletto33, gw=football-31-jul-4-aug-2026,
+    A1_cap260, leaderboard_usata=...-014e4220-...  atteso=313,99
+    real_points=297,27  rank=6  premio=0  netto=-300 (arena giocata, sotto
+    il podio -- capita, non tutte le entrate di G vincono: il vantaggio
+    di G e' nella MEDIA su tutte le arene, non in ogni singola arena).
+
+  Dump completi (pool/formazione/tutte le carte) NON scritti su file
+  separato per limiti di tempo: le righe sopra vengono dal record grezzo
+  completo in p20_g_odds_arene_backtest_out.json (ogni riga ha
+  manager/gw/gruppo/leaderboard/atteso/real_points/rank/premio/netto).
+  Se serve il dump con nome/ruolo/grade/odds carta-per-carta (richiesto
+  alla lettera dal §7g), va prodotto come passo successivo -- dichiarato,
+  non nascosto.
+
+9.12 VERDETTO
+  G contro A: VALIDATO nel regime ALLOCAZIONE su entrambi i set di
+  soglie (IC95 tutto positivo, placebo passato al percentile 100 sul set
+  vecchio). NON validato nel regime ASTENSIONE (campione piu' piccolo,
+  nessun ramo significativo).
+  G+O contro G: MAI validato, in nessun regime, in nessun set di soglie.
+  Stima puntuale sempre negativa in allocazione. Coerente con l'ipotesi
+  dichiarata dall'orchestratore (§2 del brief: "mi aspetto che O aggiunga
+  poco o nulla anche qui") e con l'esito gia' chiuso sul non-arena.
+
+=====================================================================
+10. CODA -- PLACEBO SUL SET NUOVO E DUE LIMITI (09/08/2026, notte, Roma)
+=====================================================================
+
+10.1 PLACEBO SUL SET NUOVO -- FATTO. Stesso metodo del §9.9 (permuta
+_zgrade dentro ogni gruppo lega/codice per unita', G ricostruito da capo
+con l'obiettivo permutato, A fisso), N=30 (non salito a 100: tempi,
+dichiarato non assunto).
+  delta vero (G-A, allocazione, set NUOVO): +24.150 (A=-7.450, G=+16.700)
+  range placebo (N=30): [-17.300, +2.000]  mediana=-6.750
+  IL VERO E' AL PERCENTILE 100 -- stesso esito del set vecchio, NON
+  assunto per analogia: misurato di nuovo da capo (file
+  analisi_manager/p20_g_odds_arene_placebo_nuovo_out.json). Il massimo
+  del rumore placebo (+2.000) e' 12 volte piu' piccolo del vero. Su
+  ENTRAMBI i set di soglie, il vantaggio di G in allocazione supera
+  nettamente il rumore.
+
+10.2 DUE LIMITI TROVATI DALL'ORCHESTRATORE -- confermati, lasciati
+com'erano (non si correggono, si sanno). Entrambi rendono il risultato
+CONSERVATIVO (a sfavore di G, non a favore):
+  a) rank_e_premio() (backtest.py righe 104-114) piazza il bot nella
+     classifica COMPLETA della leaderboard, che include anche il
+     punteggio del manager REALE che quell'arena l'ha davvero giocata:
+     quando il bot entra nella STESSA arena, compete contro un
+     avversario in piu' che nella realta' non ci sarebbe stato per lui.
+     Penalizza A/G/G+O allo stesso modo (il confronto FRA rami resta
+     pulito), ma rende il confronto bot-contro-manager leggermente
+     sfavorevole al bot su tutti i rami.
+  b) Il CAPITANO e' scelto da capitano_atteso() sul campo 'atteso_cal',
+     che (bug §9.6.b) e' SEMPRE _cal in ogni ramo: G e G+O non scelgono
+     il capitano col proprio criterio, solo con quello di A. G e' quindi
+     misurato SENZA uno dei vantaggi che avrebbe in produzione (dove il
+     capitano sarebbe scelto secondo lo stesso segnale che ha scelto la
+     formazione).
+  Lettura corretta: se questi due limiti comprimono il vantaggio di G,
+  il vero vantaggio di G (in produzione, senza questi limiti) e'
+  probabilmente PIU' GRANDE di +29.050/+24.150, non piu' piccolo.
+
+10.3 VERIFICA SUL RICICLO LEADERBOARD -- RI-VERIFICATO, NUMERO DIVERSO DA
+QUELLO RIPORTATO DALL'ORCHESTRATORE. Ho ricontato io stesso sui grezzi
+(p20_g_odds_arene_backtest_out.json), per non limitarmi a citare un
+numero altrui senza controllarlo (CLAUDE.md):
+  - RICICLO VERO (stessa leaderboard usata 2+ volte dal bot dentro la
+    STESSA unita'/tipo, l'approssimazione dichiarata al §9.1): **ZERO
+    casi**, su tutte le 3.318 righe allocazione (6 combinazioni
+    set x ramo). Non e' mai successo che il bot dovesse ciclare.
+  - QUELLO CHE HO TROVATO INVECE (probabilmente cio' a cui si riferiva
+    l'orchestratore, stesso ordine di grandezza ma meccanismo diverso):
+    righe dove per quel (gw,gruppo) NON C'ERA NESSUNA leaderboard nel
+    nostro indice (opp_list vuota) -- il bot ha comunque costruito e
+    "giocato" la formazione (l'atteso superava la soglia), ma non
+    potendo assegnarla a nessuna arena reale e' stata trattata come NON
+    PREMIATA (rank=None, premio=0, netto=-costo), un'ipotesi
+    PESSIMISTICA (ulteriore compressione a sfavore di G, come al §10.2).
+    Conteggio esatto: vecchio A 3/578 (0,52%), G 4/547 (0,73%), G+O
+    4/513 (0,78%); nuovo A 4/592 (0,68%), G 4/564 (0,71%), G+O 4/524
+    (0,76%) -- range 0,52%-0,78%, vicino ma non identico al 0,3-0,6%
+    riportato: la differenza e' nella definizione (righe senza
+    leaderboard, non righe con leaderboard riusata), non un errore di
+    conteggio su entrambi i lati. Ininfluente sui risultati: sotto l'1%
+    in ogni ramo/set, e comunque conservativo (a sfavore di G).
+
+VERDETTO CONFERMATO SU ENTRAMBI I SET: G batte A nel regime allocazione
+in modo solido (placebo percentile 100 su entrambi), G+O non aggiunge
+nulla sopra G in nessun regime/set. I limiti trovati sono tutti
+conservativi: non gonfiano il risultato di G, se mai lo comprimono.
+
+11. REGOLA DI GIOCO: IL LEVEL SCORE (09/08/2026, dichiarata dall'utente
+    dopo un errore dell'orchestratore, che aveva affermato il contrario
+    SENZA FONTE -- assunzione vietata da CLAUDE.md).
+
+Un giocatore che entra in campo anche per UN SOLO MINUTO prende circa
+**35 punti** (level score, punteggio base legato al livello della carta).
+Non serve che giochi bene ne' a lungo: il salto vero e' fra "non gioca"
+(zero) e "gioca" (>=35).
+
+PERCHE' CONTA, e non e' un dettaglio di colore:
+  - il valore atteso di una carta dipende soprattutto dalla PROBABILITA'
+    DI SCENDERE IN CAMPO, molto piu' che dalla qualita' della prestazione
+    attesa. La distanza fra 0 e 35 e' piu' grande della distanza fra una
+    prestazione mediocre e una buona;
+  - questo spiega perche' il grade G sposta cosi' tanto (§9): il grade e'
+    in larga parte un indicatore di titolarita' (vedi HANDOFF_GRADE_ARENE
+    §12 e il caso Messi A->F su notizia extra-campo), e nel backtest il
+    ramo A e' completamente cieco su chi gioca;
+  - e rafforza il dubbio gia' a backlog: in produzione il bot ha GIA' il
+    filtro starting odds a 0,80, che cattura la stessa informazione. Il
+    guadagno marginale di G sopra quel filtro non e' ancora misurato.
+
+Dichiarata dall'utente (3 anni di gioco), non verificata sui dati: se
+serve come parametro di modello va misurata, non copiata da qui.
+
+=====================================================================
+12. SESSIONE 09/08/2026 (Sonnet, BRIEF_SONNET_G_SOPRA_ODDS_2026-08-09.txt)
+    -- QUANTO DEL VANTAGGIO DI G E' SOLO "EVITARE CHI NON GIOCA"
+=====================================================================
+SOLO MISURA. Nessun file di produzione toccato, nessuna query di rete
+(dati gia' scaricati/cachati). Script: analisi_manager/p21_g_titolarita.py.
+File grezzi: analisi_manager/p21_g_titolarita_pool_intero.json,
+analisi_manager/p21_g_titolarita_passo1_out.json,
+analisi_manager/p21_g_titolarita_passo2_out.json.
+
+--- CRITERIO "NON HA GIOCATO" -----------------------------------------
+Usato: pool_rows['reale'] <= 1.0 (o assente). 'reale' viene dalla cache
+game-log (score_da_cache, gia' in produzione) con fallback al punteggio
+ufficiale della carta quando la cache non ha un game FINAL/REVIEWING
+nella finestra -- compreso il caso scoreStatus=DID_NOT_PLAY, che
+score_da_cache scarta esplicitamente. Soglia 1.0 scelta perche' il level
+score minimo di chi scende in campo anche un minuto e' ~35 (§11 sopra):
+niente di reale sta fra 0 e 35, quindi 1.0 e' un taglio sicuro, non
+arbitrario in mezzo alla distribuzione.
+CONTROLLO INDIPENDENTE fatto: lettura diretta di scoreStatus da
+cache.gamelog(slug) per la stessa finestra, su un campione di 120
+formazioni (~600 carte, set vecchio, A+G). Risultato: 597 carte
+d'accordo col criterio 'reale<=1.0', 3 in disaccordo, 0 senza dato in
+finestra. Il criterio usato per il filtro (piu' economico, nessuna query
+di cache aggiuntiva) e' quindi affidabile al 99.5% sul campione.
+
+--- A/A: RIPRODOTTO ESATTAMENTE ----------------------------------------
+Sul pool INTERO, stesso identico codice di costruzione (S21.costruisci +
+build_one_lineup_with_growth, mai riscritto): delta G-A = +29.050 (set
+vecchio) e +24.150 (set nuovo), SCARTO ZERO rispetto al test di stanotte,
+su entrambi i set di soglie. Confermato anche deterministico: due run
+consecutive di questo script hanno prodotto output identico riga per
+riga. Base di confronto valida.
+
+--- PASSO 1: DECOMPOSIZIONE (formazioni in regime allocazione) ---------
+  SET VECCHIO (578 formazioni A, 547 G):
+    A: 117/578 formazioni (20,2%) hanno almeno una carta non-giocante,
+       128/2.890 carte non-giocanti (4,4%)
+    G: 56/547 formazioni (10,2%) ne hanno almeno una, 66/2.735 carte
+       (2,4%)
+    -> A pesca CIRCA IL DOPPIO di formazioni con un non-giocante rispetto
+       a G, in proporzione (20,2% contro 10,2%).
+    Costo per bucket:
+       A CON non-giocante   : netto totale -24.450  (n=117, -209,0/arena)
+       A SENZA non-giocante : netto totale  +7.500  (n=461,  +16,3/arena)
+       G CON non-giocante   : netto totale -11.400  (n=56,  -203,6/arena)
+       G SENZA non-giocante : netto totale +23.500  (n=491,  +47,9/arena)
+    Le formazioni con un non-giocante dentro perdono ~200 essenze ad
+    arena su ENTRAMBI i rami (il costo di un non-giocante e' quasi lo
+    stesso, non e' G a renderlo meno doloroso quando capita) -- il
+    vantaggio di G qui sta nel PESCARNE MENO, non nel soffrirne meno.
+    Delta G-A totale +29.050: quota nel bucket CON non-giocante +13.050
+    (44,9%), quota nel bucket SENZA +16.000 (55,1%).
+
+  SET NUOVO (592 formazioni A, 564 G): stessa lettura, quote 52,4%
+    CON / 47,6% SENZA (A 120/592=20,3% con non-giocante, G 55/564=9,8%).
+
+  LETTURA (esempio banale): immagina di scommettere al bar 592 volte.
+  In quasi 1 scommessa su 5 (A) o 1 su 10 (G) il "cavallo" non si
+  presenta alla partenza e perdi la posta comunque -- quello e' il non-
+  giocante. Ma della differenza fra quanto vince G e quanto vince A,
+  SOLO CIRCA META' viene dall'aver scommesso su meno cavalli assenti:
+  l'altra meta' viene da scommesse dove ENTRAMBI i cavalli si sono
+  presentati, eppure G ha scelto meglio comunque.
+
+--- PASSO 2: IL LIMITE SUPERIORE (pool ripulito dai non-giocanti VERI) -
+Tolte dal pool TUTTE le carte poi risultate non-giocanti (filtro di
+titolarita' PERFETTO, molto piu' severo del filtro odds 0,80 vero in
+produzione), PRIMA di ricostruire le formazioni.
+  53 unita' allocazione originali -> 52 restano in regime allocazione
+  dopo la pulizia (1 esclusa perche' scesa a pool<=slot: la si toglie dal
+  conteggio, come richiesto, non la si tiene dentro).
+  296 carte tolte su 6.667 totali nelle 53 unita' (4,4%), 6.371 restano.
+
+  SET VECCHIO, pool ripulito:
+    A: netto totale +2.000  (559 arene giocate)
+    G: netto totale +27.750 (533 arene giocate)
+    DELTA G contro A: +25.750  IC95=[+7.800,+45.750]  -- TUTTO POSITIVO
+    (confronto: sullo stesso set, pool intero, il delta era +29.050)
+
+  SET NUOVO, pool ripulito:
+    A: netto totale +13.050 (568 arene giocate)
+    G: netto totale +31.750 (550 arene giocate)
+    DELTA G contro A: +18.700  IC95=[+2.600,+36.000]  -- TUTTO POSITIVO
+    (confronto: sullo stesso set, pool intero, il delta era +24.150)
+
+  G BATTE ANCORA A anche col filtro titolarita' PIU' SEVERO possibile
+  (IC95 interamente positivo su entrambi i set di soglie): il vantaggio
+  di G non e' spiegato per intero dall'evitare chi non gioca.
+
+--- L'INTERVALLO (§ finale del brief, nessuna stima puntuale) ----------
+Il valore vero del vantaggio di G in produzione (dove il filtro odds a
+0,80 e' imperfetto, ne' assente ne' perfetto come nei due estremi
+misurati qui) sta:
+  SET VECCHIO: fra +25.750 (limite inferiore, filtro perfetto) e
+    +29.050 (limite superiore, nessun filtro) essenze
+  SET NUOVO: fra +18.700 (limite inferiore, filtro perfetto) e
+    +24.150 (limite superiore, nessun filtro) essenze
+Intervallo STRETTO in entrambi i casi (l'estremo basso e' il 76-89% di
+quello alto): anche nello scenario piu' sfavorevole a G, il vantaggio
+resta ampiamente sopra zero e con IC95 tutto positivo. Il filtro odds
+reale (0,80, imperfetto) porra' il valore vero probabilmente PIU' VICINO
+al limite superiore che a quello inferiore, dato che intercetta solo una
+parte dei non-giocanti (§9.3 sopra: copertura odds 75,8% sul perimetro,
+e le odds contaminate al 64,6% non sono nemmeno quelle usate qui).
+
+--- DUMP (§ obbligatorio) -----------------------------------------------
+manager=angioletto33, gw=football-31-jul-4-aug-2026, gruppo=A1_cap260
+(set vecchio, primo caso trovato dove A pesca un non-giocante e G, nello
+STESSO manager/gw/gruppo, no):
+  Formazione A (obiettivo A):
+    ethan-horvath                reale=50,2   giocante
+    cesar-jasib-montes-castro    reale=0,0    NON GIOCANTE
+    philip-billing               reale=73,5   giocante
+    wesley-moraes-ferreira...    reale=60,7   giocante
+    ezequiel-barco                reale=79,7   giocante
+    atteso=281,4  real_points=280,0  netto=-300 (sotto pareggio, persa)
+  Formazione G (stesso manager/gw/gruppo, obiettivo G):
+    andrew-thomas-1998-09-01     reale=32,9   giocante
+    kai-wagner                   reale=96,1   giocante
+    eduard-lowen                 reale=45,1   giocante
+    heung-min-son                reale=64,6   giocante
+    valeri-qazaishvili            reale=39,3   giocante
+    atteso=314,0  real_points=297,3  netto=-300 (sotto pareggio, persa
+    ANCHE questa: G non vince ogni singola arena, vince in MEDIA su
+    tutte -- nota gia' scritta al §9.11 sopra, confermata qui)
+
+--- VERDETTO -------------------------------------------------------------
+A pesca il doppio delle formazioni con un non-giocante rispetto a G
+(20% contro 10%), e quelle formazioni costano ~200 essenze in piu' ad
+arena su entrambi i rami. Ma questo spiega solo META' del vantaggio
+misurato (44,9%-52,4% a seconda del set di soglie): l'altra meta' resta
+anche fra le formazioni dove ENTRAMBI i rami hanno pescato solo carte
+che hanno giocato. Col filtro titolarita' PIU' SEVERO possibile (tolto
+OGNI non-giocante dal pool prima di costruire), G batte ancora A con
+IC95 interamente positivo su entrambi i set di soglie (+25.750 e
++18.700). Il vantaggio di G quindi NON e' solo "evitare chi non gioca":
+in produzione, dove il filtro odds e' imperfetto (0,80, copertura 76%),
+il valore vero sta in un intervallo stretto, fra questi due limiti e
++29.050/+24.150.
