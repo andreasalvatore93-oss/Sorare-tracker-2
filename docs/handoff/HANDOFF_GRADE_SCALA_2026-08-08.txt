@@ -246,3 +246,106 @@ analisi_manager/p16_backtest_allstar_u23.py         base pulita 7 carte (riusato
 analisi_manager/p17_backtest_mls_hotstreak.py       base pulita 5 carte (riusato)
 docs/handoff/HANDOFF_G_ARENE_2026-08-08.txt         Fronte 2, origine del problema
 docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md          §8bis, i numeri +5.98/+6.43 originali
+
+
+=====================================================================
+9. PASSO 2 -- FRONTE 2 CON GRADE_SCALE=storica (08/08/2026, notte, Roma)
+=====================================================================
+Script: analisi_manager/p20_fronte2_grade_storica.py (committato). Log
+integrale: analisi_manager/p20_full_run.log. Rifa' ESATTAMENTE il campione
+di p14/p15 (170 arene, 142 valutabili, 13 manager nelle 142) e aggiunge un
+terzo ramo S = G con GRADE_SCALE=storica (scala walk-forward, stesso cutoff
+per fixture di p19 Passo 1). A e G-gruppo sono riprodotti IDENTICI a p14/p15
+(controllo automatico nello script, confermato dai numeri sotto).
+
+A differenza del Passo 1 (non-arena, formazione da ricostruire col
+knapsack), qui la formazione e' FISSA (quella del manager): il placebo non
+richiede rigiocare nulla, e' economico -> fatto a PIENA POTENZA, 200
+permutazioni come da brief (non ridotte come nel Passo 1).
+
+--- CONFRONTO DIRETTO S vs G (quello che il brief chiede di guardare) ---
+  regola stretta: S decide diverso da G in 16/142 arene.
+    saldo G-stretta = +2.600   saldo S-stretta = +3.600   delta S-G = +1.000
+  regola larga:   S decide diverso da G in 16/142 arene.
+    saldo G-larga   = +2.900   saldo S-larga   = +3.500   delta S-G =   +600
+S batte G su ENTRAMBE le regole, sulle stesse 142 arene, stesso pool, stesso
+capitano: l'unica variabile e' la fonte di media/sd del grade.
+
+--- PLACEBO (200 permutazioni, la stessa domanda del follow-up fronte 2:
+il vantaggio e' vero o e' rumore?) ---
+  G-stretta: VERO (+3.200) al percentile 57.5 del placebo -- CONFERMA il
+    follow-up (li' era 65.0, stesso ordine di grandezza, differenza dovuta
+    al seed/implementazione della permutazione, non al metodo): sulla
+    regola stretta G-gruppo NON si distingue dal rumore.
+  S-stretta: VERO (+4.200) al percentile 82.5 del placebo -- MEGLIO di
+    G-stretta ma ANCORA non oltre la soglia dei 95 punti presa come
+    "segnale vero" nel follow-up: resta un miglioramento, non una prova.
+  G-larga:   VERO (+3.500) al percentile 97.2 del placebo -- CONFERMA il
+    follow-up (li' era 98.2): segnale vero, come gia' saputo.
+  S-larga:   VERO (+4.100) al percentile 97.8 del placebo -- segnale vero
+    anche qui, leggermente sopra G-larga.
+Lettura: la scala storica non crea un segnale che prima non c'era (la
+regola stretta resta indistinguibile dal rumore anche con S), ma SPOSTA
+verso l'alto il percentile su entrambe le regole (57.5->82.5 e
+97.2->97.8): coerente col Passo 1, dove S non batteva G in modo
+significativo ma nemmeno lo peggiorava mai.
+
+--- MATRICE E SALDO, AGGREGATO (142 arene, 13 manager, saldo manager reale
+"gioca sempre" = -600) ---
+                 saldo_bot  risparmio  mancato_guad.  tasso_decisioni_giuste
+  A-stretta         +2.000    +11.800        +9.200        69/142 (48.6%)
+  G-stretta         +2.600    +11.600        +8.400        69/142 (48.6%)
+  S-stretta         +3.600     +8.900        +4.700        65/142 (45.8%)
+  A-larga              -100     +7.900        +7.400        58/142 (40.8%)
+  G-larga           +2.900     +9.500        +6.000        66/142 (46.5%)
+  S-larga           +3.500     +6.800        +2.700        60/142 (42.3%)
+Quadratura verificata su tutti e 6 i rami (OK). Il tasso di decisioni
+giuste di S e' PIU' BASSO di A/G su entrambe le regole (S entra piu' spesso
+-- vedi matrice nel log -- quindi sbaglia piu' arene in valore assoluto, ma
+quelle giuste in essenze pesano di piu': coerente con la regola gia' scritta
+nel Fronte 2, il saldo conta, non l'accuratezza grezza).
+
+--- STRATIFICATO PER TIPO (saldo_bot; manager reale fra parentesi) ---
+                A-stretta  G-stretta  S-stretta   A-larga   G-larga   S-larga  (manager)
+  Cap 260 (84)     -2.100     -2.300     -3.200     -3.800    -2.400    -3.700   (-5.000)
+  Cap 220 (34)     +1.400     +1.800     +2.000     +1.600    +1.200    +1.400   (+2.000)
+  Uncapped (24)    +2.700     +3.100     +4.800     +2.100    +4.100    +5.800   (+2.400)
+ATTENZIONE, dichiarato senza addolcirlo: S NON e' uniformemente meglio di G.
+Su Cap 260 (il tipo peggiore in assoluto, gia' negativo su tutti i rami) S
+peggiora ULTERIORMENTE il saldo rispetto a G (-3.200 contro -2.300 stretta,
+-3.700 contro -2.400 larga). Tutto il guadagno S-G aggregato viene da
+Uncapped (+4.800/+5.800 contro +3.100/+4.100 di G) e in parte da Cap 220. Il
+confronto aggregato "S batte G" nasconde un tipo che va peggio con S.
+
+--- BOOTSTRAP sui MANAGER (13 manager, cluster, 3.000 resample) ---
+  A-stretta: IC95 [-4.100,+8.700]  positivo nel 79.6%
+  G-stretta: IC95 [-800,+7.600]    positivo nel 93.2%
+  S-stretta: IC95 [+1.300,+7.000]  positivo nel 99.9%  <- unico ramo stretta che ESCLUDE zero
+  A-larga:   IC95 [-4.300,+4.400]  positivo nel 60.4%
+  G-larga:   IC95 [+0,+7.600]      positivo nel 97.3%
+  S-larga:   IC95 [+1.100,+7.600]  positivo nel 99.8%
+Nota di metodo: questo bootstrap misura l'incertezza del PUNTO STIMATO
+(saldo vero contro se stesso ricampionato), non se il vantaggio viene dal
+grade -- quella domanda la risponde solo il placebo sopra. I due controlli
+vanno letti insieme: S-stretta ha un IC95 che esclude zero (il numero e'
+stabile) ma il placebo dice che un grade a caso con la stessa struttura
+avrebbe fatto meglio o uguale il 17.5% delle volte (non trascurabile).
+
+--- LIMITI, GIA' DICHIARATI NEL FRONTE 2, VALGONO ANCHE QUI ---
+Stesso campione, stesse asimmetrie: 28 arene escluse per carta-senza-atteso
+(bias A FAVORE del bot, non rimisurato qui -- vedi sez.13 di HANDOFF_G_
+ARENE per il Compito D del follow-up, che regge nei due scenari estremi per
+G; non rifatto per S in questo giro), campione concentrato su 4 manager
+(88%), premi BASE senza distinguere le golden.
+
+--- CONCLUSIONE PASSO 2 ---
+S batte G in saldo aggregato su entrambe le regole (+1.000 stretta, +600
+larga) e il placebo mostra che il vantaggio di S sul rumore e' PIU' FORTE di
+quello di G (57.5->82.5 percentile stretta, 97.2->97.8 larga), MAI il
+contrario. Ma il guadagno non e' uniforme: viene quasi tutto da Uncapped, e
+su Cap 260 (il tipo piu' pesante nel campione, 84/142 arene) S peggiora
+rispetto a G. La regola stretta (quella che l'utente segue davvero in
+produzione) resta indistinguibile dal rumore anche con la scala storica
+(82.5 non supera la soglia empirica del 95 usata nel follow-up). Coerente
+col Passo 1: nessun danno dimostrato, un miglioramento parziale e non
+uniforme, non ancora una prova che regge da sola per il Passo 3 (catena).
