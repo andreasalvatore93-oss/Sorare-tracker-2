@@ -251,3 +251,148 @@ generatore_formazioni/build_formazione_globale.py   righe ~655-660
 analisi_manager/p21_criterio_arene_roi.py           Passo 2 (ROI)
 docs/handoff/BRIEF_SONNET_CRITERIO_ARENE_2026-08-08.txt  brief originale
 docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md          §8bis/§8quater, contesto G
+
+
+=====================================================================
+9. GUADAGNO_PER_PUNTO DELLA CAP 220 (08/08/2026, notte, Roma)
+=====================================================================
+Brief: docs/handoff/BRIEF_SONNET_GUADAGNO_PUNTO_220_2026-08-08.txt.
+NESSUNA modifica a GUADAGNO_PER_PUNTO/PAREGGIO_ARENA/COSTO_INGRESSO/
+QUOTA_MINIMA in questo giro (ne' al file ne' dietro flag, come richiesto).
+Script: analisi_manager/p23_guadagno_punto_220.py. Log integrale:
+analisi_manager/p23_full_run.log (+ p23_passo3_extra.log per due valori
+aggiuntivi del Passo 3).
+
+--- PASSO 1a: consiglio_arena.py riproduce 259,5/7,9 e 244,1/6,3 oggi? NO ---
+Con l'archivio ATTUALE (dati_globali/arene_storico.json) e le sigma di
+produzione (50,6 per cap260, 42,70 per cap220): cap260 -> pareggio 267,9,
+guadagno/pt 6,27 (non 259,5/7,9); cap220 -> pareggio 240,9, guadagno/pt
+5,89 (non 244,1/6,3). NON riproducibile. Causa nota, non nuova: l'archivio
+e' CROLLATO da 673 a 160 arene fra l'1/08 e il 6/08 (bug documentato in
+analisi_manager/VALIDAZIONE_SOGLIE.md il 07/08 sera, MAI risolto). Oggi ha
+solo 62 arene cap260 e 16 cap220 -- una frazione di quelle che hanno
+prodotto i valori di produzione. Questo NON e' un difetto di questo script:
+e' un buco di dati preesistente che va segnalato di nuovo, con piu' forza,
+perche' blocca anche questa verifica.
+
+--- PASSO 1b: con che sigma e' stata calcolata la cap 220? -----------------
+Ricostruita la sigma per tipo con lo STESSO file e lo STESSO metodo di
+VALIDAZIONE_SOGLIE.md (dati_globali/backtest_arene_dettaglio_0805.json,
+regressione utente_reale ~ utente_atteso, sigma = deviazione standard dei
+residui): RIPRODOTTO ESATTAMENTE il numero gia' pubblicato.
+  cap 260          n=113   sigma=50,6  (corretta il 05/08, da 42,70)
+  cap 220          n=  8   sigma=41,9  (NON corretta: coerente col 42,70 di default)
+  Uncapped         n= 31   sigma=42,9
+  Beginner         n= 73   sigma=46,9
+  arena division   n= 94   sigma=42,8
+RISPOSTA AL SOSPETTO DELL'ORCHESTRATORE: cap 220 non e' rimasta ferma per
+disattenzione. E' stata MISURATA (41,9, vicinissima al default 42,70,
+quindi "nessuna correzione necessaria" era la conclusione corretta DATO
+QUEL CAMPIONE). Il problema e' il campione: n=8. Cap 260 e' stata corretta
+perche' la sua misura (n=113) era solida; cap 220 e' rimasta invariata
+perche' la sua misura, aritmeticamente identica nel metodo, poggiava su un
+campione 14 volte piu' piccolo -- troppo poco per dire alcunche' con
+sicurezza, in un senso o nell'altro. Non e' un errore di calcolo, e' un
+buco di dati mai colmato.
+
+--- PASSO 2: pendenza empirica (ess/pt) per tipo, finestre dichiarate ------
+2a, TUTTI I MANAGER (dati_globali/manager_*.json, premi BASE, golden non
+distinte -- replica pulita del §2 dell'orchestratore):
+  pareggio empirico: Cap260=290, Cap220=275, Uncapped=310
+  finestra +-10: Cap260=11,55 (n=337)  Cap220= 8,24 (n=136)  rapporto=0,714
+  finestra +-15: Cap260=12,81 (n=534)  Cap220=11,48 (n=214)  rapporto=0,896
+  finestra +-20: Cap260=13,16 (n=681)  Cap220=11,01 (n=280)  rapporto=0,837
+  finestra +-25: Cap260=12,19 (n=850)  Cap220=11,84 (n=343)  rapporto=0,971
+Il rapporto oscilla 0,71-0,97 secondo la finestra (nessuna e' stabilmente
+sopra 0,88 su tutte le finestre, a differenza di quanto ipotizzato nel
+brief), ma e' SEMPRE sopra 0,80 (il rapporto di produzione) tranne che
+nella finestra piu' stretta (+-10, la piu' rumorosa per costruzione, n
+piccola). Nelle tre finestre piu' larghe il rapporto medio e' 0,90 -- sopra
+0,80, nella direzione del sospetto dell'orchestratore ma non cosi'
+nettamente come il suo conto grezzo (che dava 0,88-1,00).
+
+2b, SOLO crowss con premi REALI (analisi_manager/p11_pool.json, golden
+incluse per costruzione perche' e' il premio davvero incassato):
+  pareggio empirico: Cap260=285, Cap220=280, Uncapped=305
+  finestra +-10: Cap260=-2,74 (n=31)  Cap220=45,79 (n=8)   rapporto=-16,7 (INSTABILE)
+  finestra +-15: Cap260= 3,35 (n=42)  Cap220=27,29 (n=12)  rapporto=+8,1  (INSTABILE)
+  finestra +-20: Cap260=11,85 (n=57)  Cap220=17,81 (n=19)  rapporto=+1,50
+  finestra +-25: Cap260=13,08 (n=64)  Cap220=16,20 (n=21)  rapporto=+1,24
+DICHIARATO SENZA ADDOLCIRLO: questa seconda misura e' INUTILIZZABILE nelle
+finestre strette (n=8/12 per la cap220, pendenze che cambiano segno e
+grandezza in modo implausibile) e anche nelle finestre larghe (n=19/21) da'
+un rapporto SOPRA 1 (cap220 renderebbe piu' della cap260 per punto, non
+solo alla pari) -- diverso in grandezza dalla misura 2a. Le due misure
+CONCORDANO solo sulla direzione (cap220 non sotto-rende rispetto a cap260
+quanto il rapporto 0,80 di produzione assume), non sul livello esatto. Il
+numero su cui appoggiarsi e' 2a (tutti i manager, n molto piu' alta),
+2b resta un controllo di direzione, dichiaratamente troppo rumoroso per
+fissare un valore.
+
+--- PASSO 3: quante arene cambierebbero, sui dati REALI di stanotte -------
+Rigiocato in locale (override IN MEMORIA di bfg.GUADAGNO_PER_PUNTO dopo
+l'import, MAI scritto nel file -- stesso pattern di p13/p15/p20 per
+bfg.LEAGUES) sugli STESSI dati committati dal run GitHub 31253830349
+(GAMEWEEK=3, ARENE_EFFICIENTI=50), tre valori:
+  guadagno220 = 6,30 (produzione, baseline)  -> 23 arene: 22x Cap260, 1x Cap220
+  guadagno220 = 6,85 (rapporto medio +-15/+-20 di 2a x 7,9)  -> 23 arene: 22x Cap260, 1x Cap220
+  guadagno220 = 6,95 (limite inferiore ipotizzato nel brief, 88%)  -> 23 arene: 22x Cap260, 1x Cap220
+  guadagno220 = 7,90 (PARITA' TOTALE con cap260, 100%)  -> 23 arene: 22x Cap260, 1x Cap220
+RISULTATO PIU' IMPORTANTE DI TUTTO IL FILONE: IL MIX NON CAMBIA, nemmeno
+alla parita' totale (7,9). Guardando i log passo per passo (p23_full_run.log),
+la ragione e' visibile: sul mazzo di stanotte le formazioni Cap 220
+generate ad ogni passo hanno un atteso quasi sempre SOTTO il proprio
+pareggio (244,1) -- es. "Formazione Arena All Stars (cap 220): generata
+233,9-251,9 pt" contro soglia 244,1: margine negativo o appena positivo in
+quasi tutti i tentativi, mentre la Cap 260 aveva margini larghi e
+consistenti (atteso 249-289 contro soglia 259,5 -- fino a +29,6). Con
+margine negativo o quasi nullo NESSUN guadagno_per_punto, per quanto alto,
+puo' rendere la cap220 competitiva: il problema visibile stanotte non era
+(solo) il moltiplicatore, era che il POOL non aveva abbastanza carte buone
+per costruire cap220 competitive. Coerente con la nota strutturale gia'
+nel brief precedente (vincolo L10<=220 -> meno combinazioni valide) e con
+sez.1d del brief di oggi: e' un fatto del mazzo/pool di stanotte, non
+(necessariamente) del parametro.
+
+--- PASSO 4: coerenza col ROI storico -------------------------------------
+Gia' misurato nel brief precedente (sez.5 di questo stesso file): Cap 220
+rende di piu' per essenza investita su tutti i manager (-6,1% contro -9,1%
+di Cap260) e su crowss (+23,3% contro +0,9%), coerente con una fonte
+esterna indipendente (+54,5% contro +20,0%). Va nella stessa direzione di
+un guadagno_per_punto piu' alto per la cap220 (indizio di coerenza, non
+prova -- i bias di selezione a mano dell'utente restano, vedi sez.5).
+Questo indizio pero' NON e' contraddetto dal risultato del Passo 3: un
+guadagno_per_punto piu' alto potrebbe comunque non bastare a far scegliere
+PIU' cap220 quando il pool del giorno non ne offre di competitive, ma
+potrebbe far scegliere le cap220 quando IL POOL LE OFFRE gia' sopra soglia
+-- quella verifica (su una giornata dove esistono davvero piu' candidati
+cap220 sopra pareggio) non e' stata fatta, e andrebbe fatta prima di
+decidere.
+
+--- VERDETTO SUI TRE CRITERI DEL BRIEF (sez.4) -----------------------------
+  riproducibilita': NO (Passo 1a, causa: archivio degradato, buco noto).
+  coerenza interna: PARZIALE (Passo 2: rapporto sempre sopra 0,80 tranne
+    nella finestra piu' rumorosa, ma non stabilmente sopra 0,88 come
+    ipotizzato; la seconda fonte, crowss, e' troppo rumorosa per
+    confermare il livello, solo la direzione).
+  effetto a valle dichiarato: MISURATO ed E' NULLO su questo mazzo (Passo 3).
+Per la regola del brief ("se questi tre non sono tutti soddisfatti, non si
+tocca niente"): NON tutti soddisfatti. Non si tocca GUADAGNO_PER_PUNTO in
+questo giro. Ma la ragione per cui non conta stanotte (Passo 3) e' piu'
+interessante della domanda originale: il collo di bottiglia visibile oggi
+e' il pool di carte cap220-competitive, non (solo) il moltiplicatore.
+
+--- LIMITI E DUBBI ---------------------------------------------------------
+- L'archivio dati_globali/arene_storico.json resta degradato (160 arene,
+  bug del 07/08 mai risolto): finche' non si ripara, NESSUNA verifica di
+  riproducibilita' delle soglie di produzione e' possibile con
+  consiglio_arena.py. E' un debito tecnico che blocca piu' di un filone,
+  segnalato di nuovo qui con piu' forza.
+- Il Passo 3 e' stato misurato su UNA SOLA giornata (GW3, stanotte): non
+  si sa se il pool "povero di cap220 competitive" sia la norma o
+  un'eccezione di questa specifica finestra. Andrebbe ripetuto su altre GW
+  prima di trarre conclusioni generali sul perche' il bot sceglie sempre
+  cap260.
+- La misura 2b (crowss, premi reali) e' dichiaratamente troppo rumorosa
+  (n=8-21 per cap220) per fissare un valore: usata solo come controllo di
+  direzione.
