@@ -244,3 +244,138 @@ verifica. Decisione dell'utente, non presa qui.
   analisi_manager/p24_gw3_soglie_nuove.py       (Passo 4a)
   consiglio_arena.py                            (ARCHIVIO ora da env var)
   analisi_manager/VALIDAZIONE_SOGLIE.md         (da aggiornare, §6)
+
+
+=====================================================================
+10. RICALCOLO SULL'ARCHIVIO GRANDE (09/08/2026, notte, Roma)
+=====================================================================
+Brief: docs/handoff/BRIEF_SONNET_SOGLIE_ARCHIVIO_NUOVO_2026-08-09.txt.
+Rifà questo stesso filone ora che esistono le classifiche complete di
+1.677 arene (dati_globali/classifiche_arene_2026-08-08.json, scaricate la
+notte precedente -- vedi handoff separato sulla raccolta). SOLO MISURA,
+nessun valore di produzione toccato.
+
+--- PASSO 1: archivio unito, 673 (p11_pool) + 1.677 (download diretto) ---
+Script: analisi_manager/p25_archivio_v2.py. Unione per slug, dedup: dove
+un'arena è in entrambe le fonti tiene la VECCHIA (ha il premio reale
+incassato, il file nuovo ha rank_premiati vuoto per costruzione -- non
+era nello scope della raccolta). mio_score presente in TUTTE le 1.677
+arene nuove (venivano tutte da una nostra partecipazione, per costruzione
+della lista scaricata).
+File: dati_globali/arene_storico_full_v2.json (NUOVO, non sovrascrive
+gli altri due archivi).
+
+  tipo            n finale   di cui da vecchio   di cui da nuovo
+  cap 220             755           53                 702
+  cap 260             404          194                 210
+  Uncapped             354           38                 316
+  Beginner             427          182                 245
+  arena division       171          191 (*)             0
+  arena uncapped        14           15 (*)              0
+(*) 20 arene "arena division/uncapped" del vecchio archivio non sono
+finite nel conteggio 673->171/14 perché erano duplicate di slug già
+presenti; ininfluente, questi due tipi restano esclusi dal calcolo (§3
+del brief, formato pre-riforma).
+
+Controllo grouping: n per tipo da campo_per_tipo() (404/755/354/427)
+coincide esattamente col conteggio arene sopra -- confermato ancora una
+volta che il raggruppamento per arena tiene, non un calderone di punteggi
+sciolti.
+
+--- PASSO 2: sigma, riusata dal giro precedente (invariata) ---
+Come da brief, non rifatta: cap260 50,52 (n=1356), cap220 46,70 (n=251),
+Uncapped 53,72 (n=288), Beginner 50,18 (n=1472). Nessun modo comodo di
+allargare QUESTO campione nel tempo di questo giro (viene dai file
+manager con score walk-forward, non dalle classifiche appena scaricate),
+quindi non rifatta come da istruzione esplicita del brief.
+
+--- PASSO 3: soglie ricalcolate, tabella a tre colonne ---
+  tipo      n arene  n premi oss.  sigma(n)     pareggio (produzione ->
+                                                giro-673 -> giro-2125)
+  cap 260      404        73       50,52(1356)   259,5 -> 258,3 -> 260,2
+  cap 220      755        20       46,70( 251)   244,1 -> 241,0 -> 243,2
+  Uncapped     354        12       53,72( 288)   288,3 -> 281,9 -> 282,4
+  Beginner     427        63       50,18(1472)    n/d  -> 259,4 -> 259,2
+
+  tipo      guadagno/pt (produzione -> giro-673 -> giro-2125)   costo
+  cap 260        7,9  -> 7,51 -> 6,93                            300
+  cap 220        6,3  -> 5,46 -> 5,42                            200
+  Uncapped       8,0  -> 6,82 -> 5,95                            300
+  Beginner       n/d  -> 2,78 -> 2,34                            100
+
+n premi osservati INVARIATO rispetto al giro precedente (235 totali,
+20 per cap220): il file nuovo non porta premi (rank_premiati vuoto per
+costruzione, vedi Passo 1). Il campo avversario è cresciuto, il campione
+premi no -- da tenere a mente se un giorno si vuole stringere ANCHE quel
+lato del calcolo.
+
+--- 3a: LA CAP 220 SI E' MOSSA? -----------------------------------------
+Pochissimo. Pareggio 241,0 -> 243,2 (+2,2 punti), guadagno/pt 5,46 -> 5,42
+(sostanzialmente fermo). Con la n che passa da 53 a 755 (14x) il numero
+NON si sposta in modo rilevante: il 5,46 del giro precedente era già un
+valore solido, non un artefatto del campione piccolo. Stesso quadro per
+gli altri tre tipi: tutti i pareggi restano entro 2 punti dal giro-673,
+tutti i guadagni/pt entro 0,9. Il rumore del giro-673 era già basso.
+
+--- 3b: SENSIBILITA' (sigma +-10%) ---------------------------------------
+  tipo         pareggio -10%/+10%   delta    guadagno/pt -10%/+10%
+  cap 260         264,0 / 256,6      7,4        7,89 / 6,54
+  cap 220         247,4 / 239,0      8,4        5,57 / 5,15
+  Uncapped        285,6 / 278,9      6,6        6,79 / 5,76
+  Beginner        262,8 / 254,9      7,9        2,55 / 2,16
+Delta pareggio sempre sotto la soglia di fragilità (5 punti PER LATO,
+quindi <10 di ampiezza totale): 6,6-8,4 di ampiezza totale = 3,3-4,2 per
+lato, coerente col giro precedente (3,5-4 pt).
+
+--- 3c: STABILITA' split-half (nuovo, ora possibile con la n) -----------
+Arene divise a metà casualmente (seme 42), pareggio/guadagno calcolati
+separatamente su ciascuna metà:
+  cap 260  meta1 n=202 pareggio=260,8 guad=7,46 | meta2 n=202
+           pareggio=261,1 guad=6,81 | delta pareggio=0,3
+  cap 220  meta1 n=377 pareggio=244,1 guad=5,07 | meta2 n=378
+           pareggio=242,7 guad=5,53 | delta pareggio=1,4
+Molto stabile su entrambi i tipi: le due metà indipendenti danno pareggi
+a 0,3-1,4 punti di distanza, un ordine di grandezza sotto la soglia di
+fragilità (5 pt). La n di 755/404 basta abbondantemente per un valore
+solido, non solo per la cap 220 (che era il dubbio del brief) ma anche
+per la cap 260 di controllo.
+
+--- PASSO 4: effetto a valle -----------------------------------------
+4a. GW3 (stessi dati del run GitHub 31253830349, override in memoria,
+script analisi_manager/p26_gw3_soglie_archivio_grande.py):
+    baseline (produzione):        23 arene -- 22x cap260, 1x cap220
+    giro precedente (673 arene):  26 arene -- 23x cap260, 3x cap220
+    QUESTO GIRO (2.125 arene):    24 arene -- 22x cap260, 2x cap220
+Risultato INTERMEDIO fra baseline e giro-673: con le soglie più
+accurate (n molto più alta) l'effetto sul mazzo di GW3 è più piccolo di
+quanto sembrava col giro-673 (+1 arena cap220 invece di +2), ma resta
+nella stessa direzione (soglie più basse -> qualche cap220 in più
+ammessa). Non un ribaltamento, una conferma attenuata.
+
+4b. SCOUTING: stesso ragionamento qualitativo del giro precedente
+(scouting_gw.py legge via getattr, propagazione automatica). Le soglie
+di questo giro sono più VICINE alla produzione di quelle del giro-673
+(es. cap220 243,2 contro 241,0: solo 2,2 pt di differenza), quindi
+l'effetto sui candidati raccomandati sarebbe ANCORA PIU' PICCOLO di
+quanto stimato nel giro precedente. Non rilanciato uno scouting_gw.py
+completo in questo giro (stessa scelta del giro-673, per lo stesso
+motivo: tempo, non dati mancanti).
+
+--- LIMITI --------------------------------------------------------------
+- Il campione premi (235, 20 per cap220) non è cresciuto: il file
+  scaricato non porta rank_premiati (fuori scope della raccolta). Se un
+  giorno serve stringere anche quel lato, va scaricato apposta.
+- mio_score/mio_rank per le 1.677 arene nuove sono ricostruiti dal file
+  manager con match sullo slug: dove più di un nostro manager era nella
+  stessa arena, preso il primo trovato (non cambia il calcolo, serve solo
+  a togliersi dal campo avversario).
+
+--- DECISIONE -------------------------------------------------------------
+Stesso file di riferimento del giro precedente: nessuna soglia applicata.
+La differenza col giro-673 è piccola e nella stessa direzione: se
+l'utente decide di applicare, i numeri di QUESTO giro (n molto più alta,
+stabilità verificata) sono da preferire a quelli del giro-673.
+
+File nuovi: dati_globali/arene_storico_full_v2.json,
+analisi_manager/p25_archivio_v2.py,
+analisi_manager/p26_gw3_soglie_archivio_grande.py.

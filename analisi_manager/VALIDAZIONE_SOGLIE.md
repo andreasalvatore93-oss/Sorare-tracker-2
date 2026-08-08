@@ -1,5 +1,16 @@
 # VALIDAZIONE SOGLIE ARENA — sono corrette?
 
+## AGGIORNAMENTO 09/08/2026 notte — ricalcolo su 2.125 arene, cap220 confermata
+Esito completo: `docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt`
+sez.10. Solo misura, nulla applicato. Con le classifiche complete scaricate
+(1.677 arene) unite all'archivio precedente (673) l'archivio passa a 2.125
+arene, cap220 da 53 a 755 osservazioni (14x). Risultato chiave: **la cap220
+NON si muove quasi per niente** (pareggio 241,0->243,2, guadagno/pt
+5,46->5,42): il valore del giro precedente era già solido, non un
+artefatto del campione piccolo. Stabilità verificata con split-half:
+cap260 e cap220 danno pareggi a 0,3-1,4 punti fra le due metà casuali,
+ben sotto la soglia di fragilità (5 pt). Tabella completa nell'handoff.
+
 ## AGGIORNAMENTO 08/08/2026 notte — riparato l'archivio, sigma su campione vero
 Esito completo: `docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt`.
 In breve, SOLO MISURA, nulla applicato:
