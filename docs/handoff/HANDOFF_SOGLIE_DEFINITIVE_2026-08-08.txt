@@ -379,3 +379,287 @@ stabilità verificata) sono da preferire a quelli del giro-673.
 File nuovi: dati_globali/arene_storico_full_v2.json,
 analisi_manager/p25_archivio_v2.py,
 analisi_manager/p26_gw3_soglie_archivio_grande.py.
+
+
+=====================================================================
+11. SESSIONE 08/08/2026, sera Roma (~21:00 CEST / 19:00 UTC) -- PREMI
+    ARENE: FASE 1 FATTA, BATCH IN ATTESA DEL VIA (Sonnet su
+    BRIEF_SONNET_PREMI_ARENE_2026-08-08.txt)
+=====================================================================
+SOLO MISURA. Nessun file di produzione toccato, nessun commit ancora.
+
+--- CONTROLLI PRELIMINARI (§4 brief) ---------------------------------
+classifiche_arene_2026-08-08.json: 1.677 arene, Cap 220=748 Uncapped=348
+Beginner=310 Cap 260=271 -- COINCIDE col brief.
+arene_storico_full_v2.json: 2.125 arene, cap220=755 Beginner=427
+cap260=404 Uncapped=354 arena division=171 arena uncapped=14 --
+COINCIDE.
+
+--- PUNTO 4, DOVE SI PERDONO I 36 PREMI (risolto) ---------------------
+NON si perdono nell'unione col file nuovo. Si perdono PRIMA, dentro
+p25_archivio_v2.py, quando legge il file VECCHIO
+(arene_storico_full.json, 673 righe) e lo mette in un dict indicizzato
+per slug: quel file ha 61 slug DUPLICATI al suo interno (stessa arena,
+righe diverse per manager diversi che l'hanno giocata), e il dict tiene
+solo l'ULTIMA riga per slug. Su 36 di quei 61 casi la riga scartata
+aveva il premio e quella superstite no (verificato riga per riga,
+esempio: slug football-1-5-may-2026-...beginner-8a6fd7c2..., riga
+scartata mio_rank=2/premio=250, riga superstite mio_rank=8/premio=0).
+Per tipo, premi persi: Beginner 21, arena division 8, cap 260 5,
+Uncapped 1, arena uncapped 1 (cap 220 zero -- ecco perche' il numero
+"20" del cap220 non si era mosso). Somma 36, torna esatta.
+Quindi 235 (grezzo vecchio) - 36 (dedup interno al vecchio) = 199
+(quello che si legge oggi in arene_storico_full_v2.json). Il file nuovo
+(classifiche_arene) non ha ancora premi (§C sotto), quindi non c'entra
+nella perdita.
+BUG DA SEGNALARE (non toccato, fuori scope misura): p25_archivio_v2.py
+riga 118-120, per-slug tiene indiscriminatamente l'ultima riga del
+file vecchio invece di unire/preferire quella con premio. Va corretto
+insieme al prossimo aggiornamento dell'archivio.
+CORREZIONE HANDOFF UNIFICATO §8octies: dove dice "235 osservazioni
+totali" va corretto in "199 dopo la deduplica interna, 141 quelle che
+contano per le soglie (tolti arena division e arena uncapped, esclusi
+dal calcolo)". Applicata sotto.
+
+--- FASE 1: SI PUO' LEGGERE IL PREMIO VERO DI UN'ARENA CHIUSA? SI. ----
+Query provata (senza autenticazione: la validazione GraphQL avviene
+prima dell'auth, come da §8undecies):
+
+  query Test($slug: String!) {
+    so5 {
+      so5Leaderboard(slug: $slug) {
+        rewardsConfig {
+          ranking {
+            ranks
+            rewardConfigs { __typename ... on CardShardRewardConfig { quantity } }
+          }
+        }
+      }
+    }
+  }
+
+Scoperta per tentativi (introspezione disabilitata, letta dai messaggi
+d'errore "did you mean"): rewardsConfig -> ranking (lista di
+So5RewardConfig, uno per fascia di rank) -> ranks (larghezza della
+fascia, letto 1 per tutte le arene provate: ogni fascia copre un solo
+piazzamento) -> rewardConfigs (union, serve il frammento
+CardShardRewardConfig{quantity}, stessa forma gia' nota da
+myEligibleOrSo5Rewards in traccia_arene.py). Per un'arena cap 220
+normale: [1000, 500, 300, currency, currency] -- combacia con la terna
+REGOLE (1000,500,300).
+
+CONTROLLO CHE DECIDE TUTTO (§5b/5c, fatto SUBITO, non a valle): e' il
+premio VERO di quell'arena o una tabella nominale uguale per tutte?
+Testato su 4 arene JACKPOT note dall'archivio (dove il premio incassato
+dal nostro manager NON coincide con la terna standard):
+  cap 220  rank1  atteso 2000  letto 2000  MATCH
+  cap 260  rank1  atteso 4000  letto 4000  MATCH
+  Beginner rank3  atteso  250  letto  250  MATCH
+  cap 260  rank1  atteso 4000  letto 4000  MATCH
+4 su 4. rewardsConfig legge il premio VERO della singola arena, jackpot
+incluso, non una terna nominale. E funziona SENZA COOKIE: la query
+sopra e' stata girata su sessione anonima e ha risposto lo stesso
+(diverso da so5RankingsPaginated, che senza cookie torna vuoto).
+Questo significa: si puo' scaricare i premi delle 1.677 arene SENZA
+credenziali Sorare, solo con lo scheletro trasporto (sessione dedicata,
+header client web -- niente cookie/csrf da chiedere all'utente per
+QUESTO passo).
+
+VERDETTO FASE 1: SI PUO'. Si passa alla Fase 2 (batch), previo via
+dell'utente.
+
+--- COSA MANCA ANCORA PRIMA DEL BATCH VERO -----------------------------
+- Non ancora testato: cosa risponde per un'arena SENZA classifica
+  visibile/non ancora chiusa, e il comportamento sui rate limit da
+  sessione anonima su centinaia di richieste consecutive (con auth i
+  429 si distinguono da sessione morta con la probe currentUser; senza
+  auth quella probe non serve a niente, va verificato empiricamente
+  quanti 429 arrivano su un campione piccolo, es. 20 arene, prima di
+  lanciare le 1.677).
+- §5c distribuzione completa premi diversi dalla terna standard: da
+  fare sul batch vero (qui solo il controllo mirato sui 4 jackpot noti).
+- Punti 5-9 del brief (copertura, tabella soglie a 3 colonne, split-half,
+  effetto GW3, dump leggibile): dopo il batch.
+
+--- IL VIA DELL'UTENTE (§6.1 brief) ------------------------------------
+Batch proposto: 1.677 query (una per arena in classifiche_arene), stessa
+forma della query sopra, SENZA bisogno di cookie/csrf (verificato
+funzionare anonimo). Pausa prudente 0,4-0,5s fra una richiesta e l'altra
+come traccia_arene.py -> stima 12-15 minuti se zero rate limit, di piu'
+se scatta backoff. Salvataggio incrementale, file NUOVO
+(dati_globali/premi_arene_2026-08-08.json), niente sovrascritture.
+IN ATTESA DEL VIA per lanciare il batch.
+
+
+=====================================================================
+12. SESSIONE 08/08/2026, sera Roma (~20:35 CEST) -- BATCH COMPLETO E
+    RICALCOLO CON PREMI VERI (continuazione §11)
+=====================================================================
+SOLO MISURA. Nessun file di produzione toccato, nessun commit.
+
+--- COPERTURA DEL DOWNLOAD (batch 1.677 arene, sessione ANONIMA) ------
+Test preliminare 20 arene: 20/20 ok, 0 errori, 0 429 (girato senza
+cookie, come richiesto). Via libera, batch lanciato.
+RISULTATO FINALE: 1.677/1.677 arene, 0 falliti.
+  Cap 220=748  Uncapped=348  Beginner=310  Cap 260=271  (somma 1.677,
+  torna esatta col conteggio del file classifiche).
+File: dati_globali/premi_arene_2026-08-08.json (nuovo, non sovrascrive
+niente). Script: scarica_premi_arene.py (nuovo).
+Ritmo osservato: ~30 arene/min (piu' lento della stima 12-15 min iniziale,
+finito in ~50 min), zero 429 in tutto il batch.
+
+--- CONTROLLO §5c: JACKPOT VERI, NON TABELLA NOMINALE -----------------
+Distribuzione premi diversi dalla terna standard REGOLE, per tipo:
+  Cap 260:   12/271 diverse (4,4%)  es. 4000/1400/800 invece di 1300/800/500
+  Cap 220:   46/748 diverse (6,1%)  es. 2000/800/500 invece di 1000/500/300
+  Uncapped:  19/348 diverse (5,5%)  es. 4000/1400/800 invece di 1300/800/500
+  Beginner:  21/310 diverse (6,8%)  es. 1000/400/250 invece di 500/250/150
+In linea con la frequenza jackpot gia' nota (~5%, misurata nel giro
+vecchio 4,8-6,5%). CONFERMATO: rewardsConfig legge il premio VERO di
+quell'arena specifica, jackpot incluso, non una tabella piatta uguale
+per tutte -- altrimenti questa percentuale sarebbe 0%.
+
+--- CONTROLLO §5b: I PREMI NUOVI COINCIDONO CON QUELLI VERI GIA' NOTI? -
+Confronto fra arene_storico_full_v2.json (dove sappiamo gia' rank e
+premio incassato dal nostro manager, 199 righe) e premi_arene_2026-08-08
+alla STESSA posizione:
+  sovrapposizioni trovate: 47
+  coincidono: 46 (97,9%)
+  disallineati: 1
+    football-20-24-feb-2026-...jupiler...division-1-523d34e2...
+    tipo cap 260, rank 2: premio noto (incassato) 1400, letto (nuovo) 800
+    Verificato di persona sulla query grezza: rewardsConfig per
+    quest'arena e' 1300/800/500 (terna standard, NESSUN jackpot, nessuna
+    seconda voce di reward da sommare). Il valore 1400 non corrisponde a
+    NESSUNA combinazione semplice della terna: sospetto forte di errore
+    di REGISTRAZIONE nel dato vecchio (non della fonte nuova), coerente
+    col difetto gia' documentato in consiglio_arena.py righe 58-63 sulle
+    "arena division" mal etichettate. Non corretto (fuori scope,
+    annotato per chi tocchera' l'archivio).
+VERDETTO: 46/47 = 97,9% di accordo, l'unico scarto ha una spiegazione
+plausibile lato dato vecchio, non lato fonte nuova. La fonte e'
+UTILIZZABILE.
+
+--- PUNTO 4C.1: DOVE SI PERDEVANO I 36 PREMI NELL'UNIONE (risolto) ----
+Vedi §11 sopra: bug di dedup in p25_archivio_v2.py sul file VECCHIO
+(61 slug duplicati al suo interno, l'ultima riga per slug vince e in 36
+casi la riga scartata era quella col premio). Non nella fonte nuova.
+
+--- IL CAMPIONE PREMI: DA 141 A 5.031 -----------------------------------
+Vecchio: premi_osservati() legge SOLO le arene dove il NOSTRO manager era
+arrivato a podio -- 141 osservazioni utili (68 cap260 + 42 Beginner +
+20 cap220 + 11 Uncapped).
+Nuovo: rewardsConfig da' il premio VERO di OGNI arena scaricata, ai
+primi 3 posti, INDIPENDENTEMENTE da chi le ha giocate. Osservazioni per
+(tipo, rank<=3):
+  cap 260:  271 arene x 3 posizioni = 813 osservazioni (n_arene invariato)
+  cap 220:  748 arene x 3 posizioni = 2.244 osservazioni (da 20 a 2.244)
+  Uncapped: 348 arene x 3 posizioni = 1.044 osservazioni (da 11 a 1.044)
+  Beginner: 310 arene x 3 posizioni =   930 osservazioni (da 42 a 930)
+Totale: 5.031 osservazioni (da 141). Il buco che preoccupava di piu'
+(cap 220, 20 casi) e' quello cresciuto di piu' in proporzione: x112.
+
+--- TABELLA SOGLIE A TRE COLONNE (produzione -> giro2125 premi VECCHI --
+    -> giro2125 premi VERI). Stesso archivio avversari (2.125 arene),
+    stessa sigma per tipo (RIUSATA dal giro precedente, non rifatta) ----
+Script: analisi_manager/p27_premi_veri_soglie.py (nuovo).
+
+  tipo       n arene  sigma(n)      pareggio: prod -> v.vecchi -> v.NUOVI
+  cap 260      404    50,52(1356)   259,5  ->  260,2  ->  264,5
+  cap 220      755    46,70( 251)   244,1  ->  243,2  ->  247,1
+  Uncapped     354    53,72( 288)   288,3  ->  282,4  ->  279,6
+  Beginner     427    50,18(1472)    n/d   ->  259,2  ->  256,5
+
+  tipo       guadagno/pt: prod -> v.vecchi -> v.NUOVI      costo
+  cap 260       7,9   ->   6,93  ->   6,96                 300
+  cap 220       6,3   ->   5,42  ->   5,11                 200
+  Uncapped      8,0   ->   5,95  ->   5,88                 300
+  Beginner      n/d   ->   2,34  ->   2,46                 100
+
+LETTURA (esempio banale, non tecnico): e' come se la stima del pareggio
+fosse un peso su una bilancia letta prima con 20 pesate (il giro
+vecchio) e ora con 2.244 pesate (cap220). Se il numero non si sposta di
+molto passando da 20 a 2.244 misure, vuol dire che le 20 misure vecchie
+erano gia' abbastanza vicine al vero, anche se poche -- non che fossero
+sbagliate.
+Coincide con l'ipotesi dichiarata "forse i premi veri non spostano
+niente" nel senso debole: gli spostamenti ci sono ma sono PICCOLI
+(pareggio +2,3/+3,9 pt su cap260/220, -1,3/-2,7 pt su Uncapped/Beginner;
+guadagno/pt quasi fermo su cap260/Uncapped, -5,7% su cap220, +5% su
+Beginner) -- molto piu' piccoli del salto -12/-26% osservato nel giro
+precedente fra produzione e giro-2125 (che era dovuto al CAMPO
+avversari, non ai premi). Il guadagno/pt della cap220 (il numero piu'
+mobile, evidenziato dal brief) si e' mosso ANCORA nella stessa
+direzione (in giu'), ma di un altro 5,7%, non di un altro 12-26%: il
+grosso del movimento era gia' successo col campo, i premi veri
+raffinano, non ribaltano.
+
+--- SPLIT-HALF (seme 42), con premi VERI --------------------------------
+  cap 260    meta1(n=202)=263,2  meta2(n=202)=263,4  scarto=0,2
+  cap 220    meta1(n=377)=248,8  meta2(n=378)=246,3  scarto=2,5
+  Uncapped   meta1(n=177)=280,5  meta2(n=177)=279,4  scarto=1,1
+  Beginner   meta1(n=213)=257,0  meta2(n=214)=255,6  scarto=1,5
+Tutti gli scarti sotto la soglia di fragilita' (5 punti) del giro
+precedente. Stabile.
+
+--- SENSIBILITA' SIGMA +-10%, con premi VERI ----------------------------
+  tipo       pareggio -10%/+10%      guadagno/pt -10%/+10%
+  cap 260       267,5 / 260,8           7,69 / 6,37
+  cap 220       250,5 / 243,6           5,77 / 4,67
+  Uncapped      282,9 / 276,2           6,22 / 5,95
+  Beginner      259,9 / 253,2           2,71 / 2,17
+Stesso ordine di grandezza del giro precedente (3,5-7 punti di pareggio
+per un 10% di sigma).
+
+--- EFFETTO A VALLE SU GW3 -----------------------------------------------
+Script: analisi_manager/p28_gw3_premi_veri.py (nuovo). Dati e pool di
+OGGI (08/08 sera), quindi il baseline NON coincide col 23 del giro
+precedente (dati del 09/08 notte, pool diverso nel frattempo) -- confronto
+valido solo fra baseline e nuovo DI QUESTA STESSA run:
+  BASELINE (soglie produzione):     15 arene -- tutte cap260
+  CON SOGLIE PREMI VERI (questo §): 11 arene -- 9x cap260, 1x Uncapped, 1x cap220
+Con le soglie premi-veri (pareggio cap260/220 PIU' ALTO, non piu' basso,
+rispetto al giro-vecchi) si giocano MENO arene di quella run specifica,
+non di piu': coerente col fatto che qui il pareggio cap260/220 e' salito
+di 2-4 punti invece di scendere.
+
+--- DUMP LEGGIBILE, UN CASO COMPLETO -------------------------------------
+Arena: football-1-5-may-2026-...cap_220-162a279e-e15e-48d4-99cb-1f90ef6c8f32
+Tipo: cap 220
+I 10 punteggi (ordine di arrivo): 296,80 / 251,82 / 247,62 / 240,16 /
+  236,28 / 227,24 / 213,46 / 182,28 / 178,50 / 167,72
+Il nostro manager: punteggio 296,80, RANK 1 (primo posto)
+Premio che sapevamo (incassato, dal file vecchio): 2000 essenze
+Premi letti dalla fonte nuova (rewardsConfig, tutte le posizioni
+premiate): rank1=2000, rank2=800, rank3=500, rank4/5=valuta di gioco
+(non essenze/shard)
+Coincide esattamente alla posizione che conta (rank1: 2000=2000).
+
+--- LIMITI E COSE APERTE -------------------------------------------------
+- 1 disallineamento su 47 nel controllo §5b (vedi sopra), attribuito a
+  probabile errore di registrazione nel dato vecchio, non verificato
+  oltre.
+- Bug p25_archivio_v2.py (dedup che scarta 36 premi): NON corretto in
+  questo giro, solo diagnosticato. Chi tocchera' l'archivio dei premi
+  la prossima volta deve sistemarlo, altrimenti la prossima unione perde
+  di nuovo dati.
+- GW3 "effetto a valle" non e' confrontabile col numero "23/26" del
+  giro precedente: pool/dati sono cambiati nel frattempo (run diverse,
+  giorni diversi). Confrontare solo baseline vs nuovo DENTRO la stessa
+  run (fatto sopra).
+- rewardsConfig NON e' stato provato su arene ancora aperte/non chiuse:
+  serve solo per arene passate, che e' l'uso di questo lavoro.
+- Sigma NON rifatta (per scelta esplicita del brief): resta quella del
+  giro precedente, con gli stessi limiti gia' segnalati li' (bias
+  selezione su chi ha una previsione in cache, non verificato).
+
+--- DECISIONE -------------------------------------------------------------
+Ancora aperta, come i giri precedenti. I numeri di QUESTO giro (§ sopra)
+sono la versione piu' solida disponibile: campo avversari 2.125 arene +
+5.031 osservazioni premio (jackpot inclusi, non nominali). Se si applica,
+usare la colonna "v.NUOVI" della tabella soglie sopra.
+
+File nuovi: dati_globali/premi_arene_2026-08-08.json,
+dati_globali/premi_arene_2026-08-08_falliti.json, scarica_premi_arene.py,
+analisi_manager/p27_premi_veri_soglie.py,
+analisi_manager/p27_risultato.json, analisi_manager/p28_gw3_premi_veri.py.

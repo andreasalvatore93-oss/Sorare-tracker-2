@@ -1183,11 +1183,19 @@ in calo del 12-26% su tutti i tipi. Effetto su GW3: 24 arene invece di 23
 (+1 cap 220).
 
 **LIMITE APERTO, ed è il prossimo lavoro**: il campione dei **premi** non è
-cresciuto — 235 osservazioni totali, **20 per la cap 220** — perché il
-download portava le classifiche ma non i premi incassati. Quindi metà del
-calcolo (quanto è fitto il campo) è ora solidissima, l'altra metà (quanto si
-incassa) poggia ancora su venti casi. È proprio la metà da cui dipende il
+cresciuto — **199** osservazioni dopo deduplica (non 235: quel numero
+contava anche righe perse per uno slug duplicato nel file vecchio, vedi
+`docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt` §11), di cui **141**
+sono quelle che contano davvero per le soglie (tolti arena division e arena
+uncapped, esclusi dal calcolo), **20 per la cap 220** — perché il download
+portava le classifiche ma non i premi incassati. Quindi metà del calcolo
+(quanto è fitto il campo) è ora solidissima, l'altra metà (quanto si
+incassa) poggia ancora su pochi casi. È proprio la metà da cui dipende il
 guadagno per punto, cioè il numero che si muove di più.
+09/08 sera: verificato che si può leggere il premio VERO di ogni arena
+chiusa (jackpot incluso) via `rewardsConfig.ranking.rewardConfigs`, **senza
+cookie**. Batch di 1.677 query in attesa del via utente, vedi
+`docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt` §11.
 
 **Decisione dell'utente (09/08): si scaricano anche i premi, poi si
 applicano le soglie.** Non tocca `score_atteso`: cambia solo l'efficienza,
