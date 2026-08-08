@@ -11,11 +11,23 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 08/08/2026, mattina (Roma, CEST)** —
-consolidamento di tutto il materiale testuale del 06-07/08 (30+ file in
+Ultimo aggiornamento: **sessione 08/08/2026, sera/notte (Roma, CEST)** —
+rivalidazione di G sulle ARENE. Tre esiti, tutti in §8bis: (1) il **placebo**
+sul non-arena, mai fatto prima, **conferma che il grade è segnale vero** e
+irrobustisce il +5,98; (2) sull'arena G aiuta con la regola larga ma **non si
+distingue dal rumore con la regola stretta**, quella che l'utente usa; (3)
+scoperto un difetto strutturale — **G è ignorato sul 23% delle carte** perché
+normalizza su gruppi (lega,ruolo) troppo piccoli. La cura provata (scala
+storica) è stata misurata e **NON adottata**: §8bis. Filone aperto a fine
+sessione: il criterio di scelta fra tipi di arena ignora il costo d'ingresso
+(§8septies). **Nessuna modifica di produzione in questa sessione**: i due
+flag nuovi sono spenti di default.
+
+Aggiornamento precedente (08/08 mattina): consolidamento di tutto il
+materiale testuale del 06-07/08 (30+ file in
 `docs/handoff/`) dentro questo file, come da CLAUDE.md. I file sorgente
 restano come archivio ma NON sono più letture obbligatorie: quanto rilevante
-è qui. Novità principale della finestra 06-07/08: **il grade G è entrato in
+è qui. Novità della finestra 06-07/08: **il grade G è entrato in
 produzione** (§8bis) dopo un bug di sessione anonima che falsava le run
 GitHub (§8quater) e un giro di ottimizzazione performance (stessa sezione).
 Sessione precedente (05/08): passaggio 2 **P11** — `P(≥1 boom)` come funzione
@@ -200,7 +212,14 @@ dall'utente, fondamento di ogni calcolo)
 - Cap L10 (arene "cap 260"/"cap 220"): somma degli L10 delle 5 carte ≤ soglia.
   Uncapped/elite senza tetto — lì si schierano i fuoriclasse.
 - Bonus arena: **solo capitano, +20%**. Nessun altro bonus (season/xp/scarcity
-  ecc.) si applica in arena.
+  ecc.) si applica in arena. **Verificato sui dati l'08/08**: capitano ×1,20
+  esatto in 34 casi su 34; xp ininfluente in 4.078 casi (due carte diverse
+  dello stesso giocatore con xp diverso, stessa giornata → differenza mediana
+  0,00; i pochi casi con differenza si spiegano col RUOLO della carta, D7).
+- **Carte rare in arena limited** (regola data dall'utente l'08/08): si
+  POSSONO schierare, ma si comportano esattamente come le limited — nessun
+  punteggio, bonus o beneficio diverso. Non vanno filtrate dalle analisi.
+  Nei file manager sono il 2,5% delle carte in arena.
 - **Le arene dedicate a un campionato** (MLS/K League/Belgio/...) hanno gli
   **stessi costo e premi** di una cap 260 normale — sono la stessa
   competizione, filtrata a un solo campionato. **Ora disattivate di default**
@@ -661,6 +680,12 @@ sottostimati +4.9** (n71, da riverificare). Accumulare altre GW rende poco
 
 ## 8. Trappole già cadute — da non ricascarci
 
+0. **`formazione_giornata.yml` senza fixture esplicita prende la giornata NON
+   ANCORA INIZIATA, non quella in corso** (scoperto dall'utente l'08/08,
+   dopo una run buttata). Il campo `gameweek` accetta anche il solo numero
+   della fixture corrente (es. `3`). Altra trappola dello stesso workflow:
+   **`arene` ha default `0`** — se non lo si valorizza, non viene generata
+   nessuna arena e il run non serve a niente.
 1. **I punteggi di classifica Sorare includono già il capitano moltiplicato**
    — sommare gli `atteso` grezzi sottostima ogni formazione di 12-15 punti.
 2. **Fino a 3 formazioni nello stesso pool arena**: la chiave di identità è
@@ -766,32 +791,80 @@ nei file manager è letto **al momento dell'estrazione**
 non se lo era quando la formazione fu schierata. Le competizioni il cui
 vincolo dipende da quel campo **non sono ricostruibili a ritroso**.
 
-**Sulle arene** (metro premio-vero, catena verificata prima della base
-pulita non-arena): crowss 230 arene copertura 77.4% — punti A=273.07
-G=275.88 (+2.8, IC[-1.1,+6.6]), netto essenze A=96.1 G=103.0 (+7.0, IC
-include zero), formazioni identiche 11.7% (era 77% col bug di copertura: ora
-G sceglie davvero); 16 manager gruppo A, 59 righe copertura 100% — punti
-A=225.97 G=234.13 (+8.15, IC[-16.5,+29.9] include zero ma positivo nel
-71.3% dei resample).
+**IL PLACEBO (08/08 notte) — il controllo che mancava a tutto il filone.**
+Mai fatto prima d'ora. Si rifà il backtest identico ma con i grade
+PERMUTATI a caso dentro il gruppo: stessa struttura, nessun legame vero
+grade↔giocatore. Sul NON-ARENA, su entrambe le basi pulite, il grade vero
+batte **tutte** le permutazioni (percentile 100 su 30 e 60 permutazioni),
+e — dato che conta più del percentile — **la mediana placebo è NEGATIVA**
+(−1,51 All Star, −3,72 MLS): dare voti a caso *peggiora* rispetto a non
+usarli. È la firma di un'informazione vera. Il +5,98 non è un artefatto.
+Rimisurata anche l'incertezza col bootstrap **sui manager** (cluster)
+invece che sulle formazioni, che è il modo corretto: gli IC si
+restringono e ora escludono lo zero su entrambe le basi — All Star
+[+4,87, +10,38], MLS Hot Streak [+2,58, +12,12] (prima toccava lo zero).
 
-**RETTIFICA 08/08 — il gruppo B NON è intatto, è già stato speso.** Tutti i
-documenti del 07/08 (brief G, backlog, questa sezione) dicevano "mai
-guardato": è FALSO, verificato sui grezzi. Lo split A/B è di 10 manager
-(5 A + 5 B, `HANDOFF_LETTERA_GRADE_2026-08-06.txt` righe ~2249-2253; il
-"16 manager" è il nome del dataset, non dei manager) e il gruppo B è stato
-aperto il **06/08 notte, sez.26** dello stesso file, con verdetto NEGATIVO:
-cap 260 su B, n=174 arene, delta +1,254 IC95 [−14,51, +10,38], 3/5 manager
-concordi, contro il +9,175 IC95 [+2,26, +14,26] del gruppo A. Su quel
-verdetto il filone era stato CHIUSO ("il grade non va in produzione").
-**Ma quel test girava PRIMA del fix del bug di join**: usa
-`p12_backtest_manager_grade.py::carica_indice_grade_esteso()`, la cui
-docstring data il fix al **07/08**, cioè il giorno DOPO — è lo stesso bug
-che aveva fatto sembrare G nullo/negativo ovunque e che, corretto, ha
-portato lo stesso campione gruppo A da −0,476 a +8,15. Quindi il verdetto
-negativo su B è **plausibilmente contaminato, ma questo NON è dimostrato**:
-va misurata la copertura effettiva di quel run prima di dire qualunque cosa.
-Stato onesto: non abbiamo più una verifica indipendente vergine sulle arene,
-e non sappiamo se quella spesa valga o no.
+**SULLE ARENE — rivalidato l'08/08 su base pulita, esito a metà.**
+Campione: 3.965 arene Cap 260/220/Uncapped in archivio (54 file manager,
+43 GW, 50 manager); filtrando per copertura grade ≥70% e pool>slot restano
+746 arene / 18 manager / 22 GW. Verifiche di integrità superate: 5 carte
+per formazione, capitano ×1,20 in 34 casi su 34, **xp non applicato in
+arena** (4.078 casi di carte diverse dello stesso giocatore, differenza
+mediana 0,00), somma carte = punteggio ufficiale in 4.999 righe su 5.095.
+REGOLA DI GIOCO (data dall'utente): nelle arene limited **si possono
+schierare carte rare**, che si comportano esattamente come le limited —
+nessun bonus o punteggio diverso. Non vanno filtrate.
+
+Misurato il **fronte "astensioni"** (171 arene dove il pool coincide con
+gli slot: carte inchiodate e capitano identico al manager, quindi l'unica
+variabile è entrare o no). Su 142 arene valutabili, contro un manager che
+in quel sottoinsieme perdeva 600 essenze:
+| ramo | saldo | placebo |
+|---|---|---|
+| A-stretta | +2.000 | — |
+| G-stretta | +2.600 | percentile 57-65 → **rumore** |
+| A-larga | −100 | — |
+| G-larga | +2.900 | percentile 97-98 → **segnale vero** |
+Con la **regola stretta** (quella che l'utente segue: salta le marginali)
+G non si distingue da un grade a caso. Con la larga sì. ATTENZIONE
+metodologica emersa qui: in arena il placebo ha mediana POSITIVA (+2.500),
+perché perturbare gli attesi fa saltare qualche arena e in un campione di
+arene perdenti questo guadagna da solo — il pavimento vero non è "gioca
+sempre" ma "salta a caso". Nel non-arena questo artefatto non esiste
+(nessuna decisione di ingresso), ed è il motivo per cui quel risultato è
+più solido di questo.
+
+**IL DIFETTO STRUTTURALE DI G, scoperto l'08/08 (vale in PRODUZIONE, non
+solo nei test).** Il grade non è un voto assoluto: entra come confronto coi
+pari, cioè quanto una carta sta sopra la **media dei grade del suo gruppo
+(lega, ruolo)** in quella giornata (`_apply_grade_group`, righe 452-491;
+il gruppo è fissato a riga 942). Se il gruppo ha **meno di 2 carte col
+grade**, la deviazione è zero e **il grade viene ignorato**; stessa cosa se
+tutte le carte del gruppo hanno lo stesso grade. Misurato su un mazzo reale
+di produzione: 57 gruppi lega/ruolo con grade, **mediana 3 membri**, e 19
+gruppi su 57 ne hanno **uno solo**. In termini di carte: il grade sposta
+qualcosa sul **77%** e viene ignorato sul **23%**. Non produce nessun
+errore visibile, per questo non se n'era accorto nessuno.
+Copertura del DATO (cosa diversa): 242 slug su 266 hanno il grade nella
+discovery reale = 91%; i 24 mancanti sono quasi tutti MLS (13) e Messico
+(6). Buco piccolo rispetto a quello d'uso: non è lì la priorità.
+
+**LA CURA PROVATA E SCARTATA — scala storica (`GRADE_SCALE`).** Idea:
+tenere la correzione per (lega, ruolo) ma prendere media e sd del grade
+dallo STORICO (centinaia di osservazioni) invece che dalle 1-3 carte della
+giornata. Implementata dietro flag `GRADE_SCALE` in
+`build_formazione_globale.py`, **default `'gruppo'` = comportamento di
+sempre, verificato identico bit per bit**. Misure: accende il grade su 13
+carte su 250 e non ne spegne **nessuna** (5 gruppi su 38 riattivati), ma
+sul non-arena **pareggia** (−0,43 e +1,07, IC includono zero) e sull'arena
+il guadagno aggregato (+1.000 stretta, +600 larga) viene **tutto dalle 24
+arene Uncapped**, mentre sulle **Cap 260 peggiora** (−900 stretta, −1.300
+larga) — e le Cap 260 sono il tipo che l'utente gioca quasi sempre, oltre
+a essere 84 arene su 142 nel campione. Sulla regola stretta il placebo sale
+da 57,5 a 82,5 ma non raggiunge la soglia del 95.
+**DECISIONE DELL'UTENTE (08/08): non si adotta, il flag resta spento.** Il
+difetto resta documentato qui in attesa di una normalizzazione migliore.
+Non riproporre la scala storica senza un'idea nuova: è già stata misurata.
 
 **Catena soglie/scouting per G — VERIFICATA E CHIUSA, non si tocca**: σ
 calibrazione A=48.13 vs G=49.32 (IC sovrapposti), soglie arena delta <1.1pt
@@ -816,12 +889,19 @@ facevano parte del consolidamento di G e sono state risolte lì. Non
 riaprirle. Storico:
 `docs/handoff/BRIEF_ANOMALIE_COMPETIZIONI_NONARENA_2026-08-07.txt`.
 
-Aperto: gruppo B dello split A/B mai guardato, arene non rimisurate su base
-pulita.
-Dettaglio completo in
-`docs/handoff/BRIEF_SONNET_RIVALIDAZIONE_G_2026-08-07.txt` (Passo 1 base
-pulita) e `docs/handoff/BRIEF_SONNET_CATENA_G_2026-08-07.txt` (catena +
-numeri arena).
+**Verdetto d'insieme su G (08/08): si tiene acceso.** Il beneficio è
+dimostrato sul non-arena e ora regge anche al placebo; sull'arena non è
+dimostrato ma **non è mai risultato dannoso** in nessuna misura. La logica
+con cui è entrato in produzione il 07/08 (segno positivo ovunque, downside
+nullo) regge. Unica riserva mai misurata: dove il gruppo ha esattamente 2
+carte col grade lo spostamento è meccanico ±1 sd, e nessuno ha verificato
+se lì G peggiori la selezione.
+
+Dettaglio completo: `docs/handoff/HANDOFF_G_ARENE_2026-08-08.txt` (censimento
+arene, fronte astensioni, placebo, i due brief e i due follow-up) e
+`docs/handoff/HANDOFF_GRADE_SCALA_2026-08-08.txt` (difetto dei gruppi, scala
+storica, Passi 0-1-2). Storico: `BRIEF_SONNET_RIVALIDAZIONE_G_2026-08-07.txt`,
+`BRIEF_SONNET_CATENA_G_2026-08-07.txt`.
 
 ---
 
@@ -993,6 +1073,58 @@ localStorage. Commit `b1cbf53db6`.
 
 ---
 
+## 8septies. Il criterio di scelta fra tipi di arena ignora il costo (08/08, APERTO)
+
+Osservazione dell'utente: su ~35 arene proposte, **34 erano cap 260 e quasi
+mai una cap 220**. Due riverifiche delle soglie non avevano trovato niente,
+e infatti **le soglie non sono il problema** — l'indagine del 07/08
+(§8quater punto 4) era corretta.
+
+**Le soglie sono ben calibrate fra loro**: sulle arene reali in archivio le
+cap 220 fanno in media 247,8 punti (soglia 244,1) e le cap 260 ne fanno
+263,3 (soglia 259,5). I punteggi distano 15,5, le soglie 15,4: rispetto al
+proprio pareggio i due tipi stanno alla stessa distanza.
+
+**Il problema è il criterio di confronto** (riga 1267,
+`genera_arene_efficienti`): `resa = (atteso − soglia) × GUADAGNO_PER_PUNTO`,
+si sceglie la resa più alta, e **il costo d'ingresso non entra**. Siccome
+GUADAGNO_PER_PUNTO vale 7,9 per la cap 260 e 6,3 per la cap 220, a parità
+di margine la 260 vince sempre del 25%. Ma costa 300 contro 200:
+
+| | costo | essenze/punto | rendimento per punto sul capitale |
+|---|---|---|---|
+| Cap 260 | 300 | 7,9 | 2,6% |
+| Cap 220 | 200 | 6,3 | **3,2%** |
+
+**La realtà conferma, su due fonti indipendenti.** Dai file manager (premi
+base, golden non distinte, quindi ROI sottostimati ma confrontabili): su
+tutti i 54 manager cap 260 −7,0% (n=2506) contro cap 220 −4,9% (n=968); su
+crowss cap 260 +1,6% (n=146) contro cap 220 **+23,3%** (n=45). Da un sito
+di tracking indipendente (dati reali dell'utente, 710 ingressi, ROI
+complessivo 11,79%): cap 260 +20,0% (n=202), cap 220 **+54,5%** (n=55),
+uncapped −8,8%, beginner −20,9%; per costo d'ingresso, 300 → +17,5% e
+200 → +54,5%. **L'ordine dei tipi coincide fra le due fonti**; i livelli
+differiscono perché il repo non distingue le golden.
+
+Due bias da citare sempre insieme a quei numeri: l'utente giocava le cap 220
+solo "quando vedeva un buon incastro" (arene **selezionate a mano**, ROI
+gonfiato), e le cap 220 sono strutturalmente più rare perché il vincolo
+L10 ≤ 220 rende difficile trovare combinazioni valide.
+
+Quale criterio sia giusto dipende da **quale risorsa è scarsa**: se sono le
+carte, vince il guadagno assoluto (criterio di oggi); se sono le essenze,
+vince il rendimento sul capitale. Risposta dell'utente: "dipende dalla
+giornata" — ma l'08/08 aveva 6.000 essenze e carte per oltre 40 arene, cioè
+il vincolo erano le essenze.
+
+Stato: brief `docs/handoff/BRIEF_SONNET_CRITERIO_ARENE_2026-08-08.txt`,
+flag `ARENA_CRITERIO` ('assoluto' default / 'capitale'), run di confronto
+lanciata su GitHub a fine sessione. **Nota: questo cambio NON tocca
+`score_atteso`, le soglie né lo scouting** — cambia solo l'ordine con cui i
+tipi vengono messi in fila, quindi la catena di produzione resta ferma.
+
+---
+
 ## 8quinquies. Altri fili aperti del 06-07/08 (riepilogo secco)
 
 - **`crowss` = l'utente stesso, verificato NON contaminare nulla** (D1):
@@ -1019,7 +1151,17 @@ localStorage. Commit `b1cbf53db6`.
   arena senza dover leggere i 30+ file sorgente in `docs/handoff/`, che
   restano solo come archivio/dettaglio.
 
-## 9. Ultima modifica di produzione (07/08/2026)
+## 9. Ultima modifica di produzione — NESSUNA nella sessione 08/08
+
+La sessione dell'08/08 (sera/notte) **non ha cambiato niente in produzione**.
+Sono stati aggiunti due interruttori, entrambi **spenti di default**:
+`GRADE_SCALE` (default `'gruppo'` = comportamento di sempre, §8bis) e
+`ARENA_CRITERIO` (default `'assoluto'`, §8septies). Per entrambi è stato
+verificato che col default l'output è identico a prima. In più:
+`DUMP_JSON_CANDIDATI` (dump diagnostico di tutti i candidati, non solo di
+quelli schierati; costo zero se non impostato).
+
+## 9bis. Modifica di produzione precedente (07/08/2026)
 
 **Grade G portato in produzione** (`GRADE_ENABLED` default `'1'`,
 `build_formazione_globale.py`), con fetch automatica integrata in
@@ -1029,7 +1171,7 @@ performance (429/tempi), `ESCLUDI_LOCKATE` per le carte bloccate — tutti in
 §8quater. Nessuno di questi tre tocca `score_atteso`/soglie/scouting salvo
 G stesso (catena verificata, §8bis).
 
-## 9bis. Modifica precedente (05/08/2026, compresso)
+## 9ter. Modifica precedente (05/08/2026, compresso)
 
 Passaggio 2, 16 commit pushati (`e2fe378376`): rimosso
 `fattore_forza_avversario` morto, scouting su scala calibrata, fix L10 nel
@@ -1041,7 +1183,7 @@ file.
 
 ---
 
-## 9ter. Modifica precedente (04/08/2026)
+## 9quater. Modifica precedente (04/08/2026)
 
 **Arene dedicate per lega disattivate di default** (`ARENA_LEAGUES` vuota in
 `generatore_formazioni/build_formazione_globale.py`, riattivabile con
@@ -1067,37 +1209,42 @@ se la GW le rendeva schierabili. Commit `ee4c2deec2`.
 
 ---
 
-## 10bis. COSE DA FARE — in ordine di priorità (08/08/2026)
+## 10bis. COSE DA FARE — in ordine di priorità (aggiornato 08/08 notte)
 
-1. **Consolidare G sul lato ARENA (gruppo B)**: sul NON-arena G ha già prova
-   solida (base pulita, n=864 All Star+U23 delta +5,98 IC95[+2,43,+9,68]
-   esclude zero; n=310 MLS Hot Streak IC quasi escludente) — quel lato è
-   forte, non serve altro lavoro a breve. Sul lato ARENA invece il campione
-   resta piccolo (59 righe, gruppo A = 5 manager) e IC non esclude zero.
-   **ATTENZIONE, rettifica 08/08: il gruppo B è GIÀ STATO SPESO** il 06/08
-   (sez.26 di `HANDOFF_LETTERA_GRADE_2026-08-06.txt`), con esito negativo
-   (+1,254, IC95 [−14,51,+10,38]) — ma prima del fix del bug di join, lo
-   stesso che ribaltò il gruppo A da −0,476 a +8,15. Primo passo quindi non
-   è "aprire B" ma **misurare la copertura grade di quel run del 06/08**:
-   se era bassa, il verdetto è nullo e B si può rifare; se era alta, il
-   verdetto negativo vale e G sull'arena non è dimostrato — §8bis.
-2. ~~Buco dati `arene_storico.json`~~ — **CHIUSO l'08/08 dall'utente**: non
-   era una perdita di dati ma un disallineamento fra DUE archivi diversi (uno
-   grande e uno piccolo, scopi diversi). Nessun bug da indagare, voce
-   eliminata dal backlog.
-3. ~~3 anomalie non-arena~~ — **CHIUSO l'08/08 dall'utente**: facevano parte
-   del consolidamento di G, già risolte lì. Voce eliminata dal backlog, non
-   riaprire.
-4. **Soglie arena cap 220**: scarto sistematico +6.4 fra ricalcolo e
-   produzione non spiegato; raccogliere più arene cap 220 prima di ritarare
-   — §8quater.
-5. **Decisione grade nello scouting**: usare il grade storico
+1. **Criterio di scelta fra tipi di arena** (§8septies) — il filone più
+   promettente aperto oggi, e l'unico a basso rischio (non tocca
+   `score_atteso`, soglie né scouting). Run di confronto fra
+   `ARENA_CRITERIO='assoluto'` e `'capitale'` lanciata su GitHub a fine
+   sessione: da leggere. Attenzione: sul mazzo di oggi il confronto dice
+   solo **quanto cambia il mix**, non se guadagna — il verdetto arriva a
+   giornata giocata.
+2. **Normalizzazione del grade** (§8bis): il difetto è documentato e la
+   prima cura (scala storica) è stata misurata e scartata. Serve un'idea
+   NUOVA, non ripetere quella. Non urgente: G resta acceso e funziona.
+3. **Le due verifiche mancanti su G**, entrambe economiche: (a) dove il
+   gruppo ha esattamente 2 carte col grade lo spostamento è meccanico ±1 sd
+   — nessuno ha misurato se lì G peggiori la selezione; (b) il secondo
+   placebo, permutando i grade **fra giornate dello stesso giocatore**
+   invece che fra giocatori: risponde alla domanda se il segnale sia "questo
+   giocatore è forte" o "questa partita andrà bene".
+4. **Beginner nel fronte astensioni**: il campione salirebbe da 171 a 258
+   arene, ma **il bot non ha una soglia per le beginner** (`PAREGGIO_ARENA`
+   non ha la chiave). Va derivata con `consiglio_arena.py`, lo stesso
+   strumento con cui sono state calcolate le altre tre — servirebbe comunque
+   se un giorno si vuole che il bot consigli anche le beginner. Nota: dai
+   dati reali le beginner sono il tipo **peggiore** (ROI −20,9%).
+5. **Fronte 1 arena (selezione, non astensione)**: 746 arene / 18 manager /
+   22 GW già individuate, ma richiede di estrarre le classifiche di 577
+   arene per conoscere i punteggi degli avversari. L'utente è dubbioso sulla
+   pulizia del confronto (il bot sceglie carte diverse, quindi arene
+   diverse): valutare se vale la spesa — §8bis, `HANDOFF_G_ARENE`.
+6. **Decisione grade nello scouting**: usare il grade storico
    (`playerGameScores(last:15)`) anche per candidati non posseduti, o
    lasciare lo scouting senza grade? — §8ter.
-6. **Odds+4ruoli — allargare il campione profondo**: solo 2 mazzi con ≥16
+7. **Odds+4ruoli — allargare il campione profondo**: solo 2 mazzi con ≥16
    giornate, pablo0078 pesa il 33%; il DEF non si può ancora relegare allo
    scouting su questa base — §8quinquies.
-7. **L10 incoerente lato SORARE (non nostro) — in attesa, non indagare**:
+8. **L10 incoerente lato SORARE (non nostro) — in attesa, non indagare**:
    caso Jeppe Erenbjerg (run146, 07/08). L'utente ha contato a mano le ultime
    dieci: media **66**. La schermata principale di Sorare mostra **62**; la
    stessa carta schierata in ARENA torna a mostrare **66**. Il bot legge
@@ -1106,10 +1253,18 @@ se la GW le rendeva schierabili. Commit `ee4c2deec2`.
    isolato, si tratta solo se ricapita. ATTENZIONE però se ricapita: se
    l'arena di Sorare conta 66 dove noi contiamo 62, il cap L10 può sforare
    davvero — le arene cap 260 del run146 erano riempite a 260 esatti.
-8. **Buco tabella premi Uncapped rank 1/3**: 30 casi su 497 trattati come 0
-   nel premio-vero, netto sottostimato — §8quinquies.
-8. **21 script con path Windows hardcoded** in `analisi_manager/`: girano
-   solo sulla macchina dell'utente, meccanico — §8quinquies.
+9. **Buco tabella premi Uncapped rank 1/3**: il premio del 1° e del 3° posto
+   poggia su **una sola osservazione** ciascuno in archivio. Non è un
+   dettaglio: è su Uncapped che si concentrava tutto il presunto guadagno
+   della scala storica (§8bis). Servono più arene Uncapped a podio.
+10. **21 script con path Windows hardcoded** in `analisi_manager/`: girano
+    solo sulla macchina dell'utente, meccanico — §8quinquies.
+
+**Voci chiuse, non riaprire**: soglie cap 220 come difetto di taratura
+(non lo sono, §8septies); buco dati `arene_storico.json`; 3 anomalie
+non-arena; fix HTML della copia/incolla e del tasto "fatta" (commit
+`b1cbf53db6`, **verificato in produzione dall'utente l'08/08**); scala
+storica del grade (misurata e scartata, §8bis).
 
 ---
 
