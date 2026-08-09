@@ -1139,3 +1139,39 @@ l'accumulo pre-lock a ridosso dei kickoff e rimandare; (c) considerare il
 filone "tabella fissa" non decidibile ora e passare al capitano. In tutti i
 casi il verdetto "G fisso non batte G variabile" NON e' provato: e' solo NON
 provato il contrario. Il §21 va letto con questa correzione.
+
+
+23. CATTURA LIVE GENK-ZULTE post-ufficiali (Sonnet, esecutore, 09/08/2026
+    ~15:52 Roma, BRIEF_SONNET_CATTURA_GRADE_GENK_ZULTE_2026-08-09.txt)
+------------------------------------------------------------------------
+Comando: python analisi_manager/grade_snapshot_pubblico.py --fixture
+football-7-11-aug-2026 --include-live (kickoff gia' passato, 16:00 Roma).
+File: analisi_manager/dati/snapshot_public_fixture_football-7-11-aug-2026_
+20260809_1352Z.json (4374 righe, 68 partite).
+
+Righe Genk (genk-genk) + Zulte-Waregem (zulte-waregem-waregem): 55.
+Distribuzione grade: F 33, D 8, E 6, B 3, C 3, A 2.
+
+Confronto col pre-ufficiali (screenshot manuale utente, 28 giocatori
+listati): 6 giocatori cambiano grade fra pre e post-ufficiali (match per
+nome, normalizzato):
+  Brent Gabriel          B->F   odds 70%->0%    (crollo da titolare a fuori)
+  Enrique Lofolomo       E->D   odds 70%->100%  (confermato titolare)
+  Louis Bostyn           F->E   odds 30%->100%  (sorpresa: entra titolare)
+  Zakaria El Ouahdi      C->A   odds 60%->100%  (confermato titolare)
+  Matte Smets            C->F   odds 60%->0%    (crollo da titolare a fuori)
+  Nikolas Sattlberger    F->E   odds 40%->100%  (sorpresa: entra titolare)
+Gli altri 22 giocatori del pre-ufficiali non cambiano lettera (nessun
+attraversamento di soglia). Coerente con §17.3/18.1: il crollo a F segue
+sempre odds->0 (Gabriel, Smets), non solo la media storica.
+
+Immagine formazioni ufficiali (screenshot Sorare incollato in chat
+dall'utente, non salvato su disco da me: nessun tool disponibile per
+estrarre il file da un'immagine incollata in chat) NON committata. Se serve
+come documentazione visiva, l'utente deve salvarla su disco e indicarmi il
+percorso. Nessun dato numerico ne' e' stato estratto: il confronto sopra e'
+fatto sul JSON pubblico catturato, non sullo screenshot.
+
+NON FATTO: aggancio del realizzato (partita in corso alle 15:52, a fine
+partita ~18:30 Roma va ripetuta la cattura o letta la cache game-log per
+chiudere il confronto pre/post/realizzato).
