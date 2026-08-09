@@ -1385,41 +1385,44 @@ due condizioni distinte: **IPOTESI PRINCIPALE CONFERMATA COME PLAUSIBILE
 DAL CODICE** (non da una query: nessun log/dump locale mostra i nodi
 bench veri), con una seconda faglia possibile scoperta leggendo il
 codice, non ipotizzata a priori.
-Indizio numerico che rafforza il sospetto sulla leaderboard Korea
-dedicata: **kleague ha 0 carte con grade su TUTTI e 4 i ruoli (38/38)**,
-nonostante il codice preveda ESPLICITAMENTE una leaderboard dedicata
-(`...-korea-in_season_korea_limited_pvp`) proprio per coprire quella
-competizione (commento riga 75-76: "korea in_season copre la competizione
-dedicata K League"). Zero su 38 con una leaderboard dedicata e' piu'
-estremo di quanto ci si aspetterebbe se fosse solo eleggibilita' bassa:
-IPOTESI AGGIUNTIVA (mia, da verificare, NON confermata) e' che lo slug di
-quella leaderboard, costruito concatenando il fixture_slug GLOBALE
-multi-lega (`f'{fixture_slug}-seasonal-korea-...'`), non corrisponda al
-vero fixture Korea in-season (che altrove nel repo ha una pipeline/slug
-dedicati, `inseason_kleague`), rendendo quella leaderboard sistematicamente
-vuota o inesistente per K League — un possibile bug di costruzione slug,
-non solo un limite di copertura. Mls invece HA copertura parziale **11/45
-con grade** (def 8/19, fwd 1/10, gk 0/6, mid 2/10), quindi il canale
-FUNZIONA per almeno una lega: non e' un fallimento totale del meccanismo.
-[CORREZIONE dell'orchestratore, 09/08: la prima stesura di questa voce
-diceva "19/45", ma 19 e' il numero di CARTE mls_def, non quelle col
-grade. Il dato grezzo in `diagnosi_buco_grade_20260809.json` (campo
-`tabella`) dice 8+1+0+2 = 11, riscontrato con un conteggio indipendente
-sui `player_card_counts.json`. La conclusione qualitativa non cambia, la
-cifra si'.]
-**Non verificabile oltre senza query o log della run GitHub** (i log con
-le righe `[grade] <leaderboard>: N nodi bench` non sono in repo, girano
-solo su GH Actions): serve o (a) rilanciare la discovery con log visibile,
-o (b) 2-3 query mirate come la sonda del punto 12 ma sul bench delle tre
-leaderboard per un giocatore K League noto. NON avviato, serve il via
-libera dell'utente.
-**Valore di chiudere il buco**: se il canale coprisse tutte le carte
-eleggibili con partita in finestra, i 20 gruppi oggi inerti (104 carte)
-diventerebbero attivi con lo z-score del grade; il kleague da solo vale 4
-gruppi/38 carte su questi 20.
-File: `analisi_manager/diagnosi_buco_grade.py` (script),
-`analisi_manager/dati/diagnosi_buco_grade_20260809.json` (dump completo,
-tabella per lega/ruolo + dump di esempio mls/mid).
+**CAUSA VERA, TROVATA SUBITO DOPO — NON E' UN BUCO, E' IL MOMENTO DELLA
+MISURA** (orchestratore 09/08, dopo che l'utente ha detto che al momento
+della discovery le sue carte K League e MLS **avevano gia' giocato**).
+Incrociando il grade con la data di kickoff della PROSSIMA partita di
+ogni carta (`analisi_manager/p21_grade_vs_kickoff.py`, zero query, dati
+gia' su disco), il taglio e' netto e senza eccezioni:
+    kickoff 09/08 ...... 71 carte, 71 col voto (100%)
+    kickoff 10/08 ...... 13 carte, 13 col voto (100%)
+    kickoff 11/08 ...... 22 carte,  0 col voto (0%)
+    kickoff 12-16/08 ... 138 carte, 0 col voto (0%)
+    senza kickoff ...... 10 carte,  2 col voto
+**84 su 84** le carte che giocavano nella giornata gia' aperta hanno il
+voto; **0 su 163** quelle la cui prossima partita cade nella giornata
+SUCCESSIVA. Il voto e' una proiezione pre-partita servita dalle
+leaderboard della giornata APERTA: se la giornata dopo non e' ancora
+aperta, il voto non esiste per nessuno — non e' un difetto del nostro
+canale.
+Cade quindi l'ipotesi dello slug Korea sbagliato: **kleague 0/38 si
+spiega interamente col fatto che tutte le carte K League hanno la
+prossima partita il 15-16/08**, cioe' nella giornata non ancora aperta.
+Nessun bug di costruzione slug dimostrato: NON aprire quel filone.
+Cadono anche le due cifre di copertura citate sopra come se fossero un
+problema (33,7% delle carte col voto, 20 gruppi inerti su 41): sono
+l'artefatto di una discovery girata il 09/08 alle 14:00, a giornata quasi
+finita. **La copertura vera si misura su una discovery lanciata a
+giornata aperta e prima dei kickoff**, che e' il momento in cui il bot
+compone davvero le formazioni.
+DOMANDA APERTA, questa si' operativa: se il generatore gira per una
+giornata non ancora aperta, G e' inerte per costruzione (z=0 su tutti).
+Da capire quando gira davvero il bot rispetto all'apertura della GW.
+File: `analisi_manager/p21_grade_vs_kickoff.py` +
+`analisi_manager/dati/grade_vs_kickoff_20260809.json` (verifica nuova);
+`analisi_manager/diagnosi_buco_grade.py` +
+`analisi_manager/dati/diagnosi_buco_grade_20260809.json` (diagnosi
+precedente: i conteggi restano validi, la loro INTERPRETAZIONE no).
+NOTA su un numero della prima stesura: diceva "Mls 19/45 con grade", ma
+19 e' il numero di CARTE mls_def. Il dato vero e' **11/45** (def 8/19,
+fwd 1/10, gk 0/6, mid 2/10).
 
 **In attesa, non indagare**: L10 incoerente lato Sorare (caso Jeppe
 Erenbjerg, run146): il bot legge `lastTenPlayedAvgScore` e copia
