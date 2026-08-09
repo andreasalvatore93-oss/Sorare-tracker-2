@@ -43,7 +43,21 @@ la sua sfiducia dichiarata verso i backtest — motivata, non un capriccio.
    misura.** Non si aprono nuovi filoni su quel materiale, e i verdetti
    già presi lì non si estendono a nuove decisioni. Se una misura passata
    serve, si cita dicendo che veniva da lì.
-5. Conseguenza pratica sulla potenza statistica: le giornate dell'utente
+5. **Dove sta l'archivio: `archivio_crowss/`** (creato il 09/08, per ora
+   **vuoto di proposito** — è un contenitore pronto, non c'è nessuna
+   estrazione né backtest in attesa). Due partizioni, taglio netto alla
+   fixture 7-11 agosto 2026:
+   - `pre_2026-08-07/` = **crowss manager reale**. Le formazioni le
+     costruiva il bot ma l'utente le correggeva SEMPRE a mano, e il
+     modello era ancora primordiale: è il benchmark **umano**, non una
+     versione del modello.
+   - `dal_2026-08-07/` = **modello G** schierato integralmente, senza
+     correzioni a mano.
+   Ci vanno tutte le competizioni che l'utente gioca davvero (arene, In
+   Season, All Star, U23), un file per fixture e competizione, mai
+   mescolate. I dati degli altri manager NON entrano qui. Convenzione
+   completa in `archivio_crowss/README.md`.
+6. Conseguenza pratica sulla potenza statistica: le giornate dell'utente
    crescono di una alla volta. Un test che ha bisogno di centinaia di
    osservazioni per decidere **non si può fare adesso** — e va detto
    subito invece di girarlo su un campione sbagliato. Meglio aspettare
@@ -503,18 +517,22 @@ quella giusta.
   una terza metrica per aggirarlo — deciso, non riproporre.
 
 ### 5.7 Difetti nati qui e ancora aperti
-- **Refit vero di `CALIB_PER_RUOLO` mai completato (P10)**: manca nel repo
-  lo script che calcola i 4 coefficienti `CALIB_A/B_*` (esistono solo
-  hardcoded, `build_formazione_globale.py:394-399`), e la retta "in
-  produzione" 63,43+0,736x non coincide né col rigenerato vecchio
-  (40,64+0,823x) né col nuovo (33,49+0,853x). Scollegata da tempo. La
-  verifica di catena fatta per il blend GK è **analitica, non un refit**:
-  da rifare alla prossima occasione in cui `taratura_coppie.json` viene
-  comunque rigenerato. Non blocca: lo spostamento è sotto l'incertezza nota.
-- **`backtest_arene_previsioni.py:257-260`** ha ancora default
-  `GK_TEAM_CS_WEIGHT=0.5` col commento "come produzione" — **falso** dopo il
-  passaggio a 22/35. Chi usa quel modulo senza esportare la variabile misura
-  un modello che non esiste più. Meglio leggerlo da `test_gk` che duplicarlo.
+- **`CALIB_PER_RUOLO` — chiarita il 09/08, verificata sul codice.** Il
+  confronto produzione-contro-refit **è stato fatto**, ma solo sul FWD
+  (`analisi_manager/p11_calib_fwd_confronto.py`: 8.40/0.789 contro il
+  refit OLS −11.06/1.172) ed è risultato **senza effetto rilevante** —
+  detto dall'utente e coerente con l'esistenza dello script. Quindi la
+  voce NON è "mai completata".
+  Quello che davvero non esiste nel repo è uno script che **calcoli** i
+  quattro coefficienti: il confronto li prende come dati già noti. In
+  produzione restano hardcoded con override da env
+  (`build_formazione_globale.py:403-407`: GK 35.78/0.264, DEF 7.28/0.831,
+  MID 11.61/0.740, FWD 8.40/0.789). Non blocca niente, non è una priorità.
+- **`backtest_arene_previsioni.py:257-260`, default `GK_TEAM_CS_WEIGHT=0.5`
+  — SCELTA VOLUTA dell'utente, non un difetto** (chiarito il 09/08). Resta
+  qui come voce **informativa**: chi usa quel modulo senza esportare la
+  variabile non sta usando il valore di produzione (22/35), e deve saperlo.
+  Non "correggerlo" pensando di sistemare un bug.
 - **I 4 coefficienti OLS reale=a+b·atteso NON sono riproducibili dal repo**:
   nessuno script li ha mai calcolati, l'unica occorrenza è una citazione in
   un report. Non usarli come conferma indipendente di nulla (è già costato
@@ -578,11 +596,9 @@ integrali in `analisi_manager/VALIDAZIONE_SOGLIE.md`.
   37%, 2 flop → 0%). Il modello ORDINA i boom (quintile-alto di atteso 26% vs
   11%; carta #1-atteso 21% vs 8% della #5) — ma vedi il blocco boom in §5:
   come leva d'azione è chiuso in tutte e tre le forme.
-- **UNICO THREAD VIVO**: `corr(atteso_somma, rank)` = −0.02 era un artefatto di
-  pooling; within-competizione è −0.05, e in **arene Uncapped −0.30** (n=31).
-  Il cap comprime i totali attesi e nasconde il segnale; dove non morde, il
-  totale predice il rank. **Da riverificare con più arene uncapped**: è anche
-  l'unico ambiente in cui la scelta della funzione obiettivo potrebbe contare.
+- (La voce "thread vivo" sulla correlazione atteso↔rank nelle Uncapped,
+  −0,30 su n=31, è stata **eliminata il 09/08 su richiesta dell'utente**:
+  tema minoritario, generava solo confusione.)
 
 ### Infrastruttura — cartella `analisi_manager/`
 - `analizza_gw.py` (`--gw <slug> --fine <data>` → `dati/righe_/formazioni_/
@@ -1195,13 +1211,13 @@ di *fingerprint*, non sta delirando — serve davvero, ma **esiste già** in
   lo esclude hardcoded) e dallo smart-money (0 righe in tutte le GW
   controllate). L'unico posto dove è nel campione, legittimamente, è il
   backtest formazione di G (uno dei mazzi profondi). Chiuso, non riaprire.
-- **Odds+4ruoli — filone IN PAUSA**: griglia per-carta pulita conferma DEF
-  forte (7/9 varianti), GK/MID mai, FWD al limite; ma in FORMAZIONE il
-  backtest (45 mazzi) non è probante — solo 2 mazzi con ≥16 giornate,
-  pablo0078 pesa il 33% delle arene da solo. L'utente non accetta di
-  relegare il DEF sulla base di 2 mazzi: serve allargare il campione
-  profondo prima di rifare il backtest. Non blocca nulla, GW storiche non
-  scadono. Dettaglio: `docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt`.
+- **Odds+4ruoli — CHIUSO il 09/08 per decisione dell'utente**, insieme a
+  tutto il filone favorito-odds (§8nonies e punto fermo 2). Era rimasto
+  "in pausa" perché il DEF passava la griglia per-carta (7/9 varianti) ma
+  il backtest in formazione poggiava su 2 soli mazzi profondi. Non si
+  riapre: allargare il campione avrebbe richiesto altri manager, e dal
+  09/08 i backtest si fanno solo sulle giornate dell'utente (regola in
+  testata). Storia in `docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt`.
 - **21 script in `analisi_manager/` con path Windows hardcoded**
   (`r'C:\Users\Andrea\...'`): girano solo sulla macchina dell'utente, non nel
   sandbox orchestratore/esecutori. Da sostituire con path relativo al file,
@@ -1458,16 +1474,18 @@ giocatore è forte" o "questa partita andrà bene".
 **7. Correlazione grade ↔ punteggio realizzato della stessa partita**: mai
 misurata, zero query. Limite superiore alla contaminazione possibile.
 
-**8. Decisione grade nello scouting** (§8ter): usare il grade storico
-anche per candidati non posseduti, o lasciare lo scouting senza grade?
+**8. Decisione grade nello scouting** (§8ter) — **VERIFICATO sul codice
+il 09/08: il grade nello scouting NON c'è.** `scouting_gw.py` non
+contiene nessuna occorrenza della parola "grade" (zero). L'utente
+riteneva fosse già stato allineato: non lo è. La decisione resta aperta
+com'era — usare il grade storico anche per i candidati non posseduti, o
+lasciare lo scouting senza grade? È una scelta di significato (un voto
+per-giornata su una decisione d'acquisto pluri-giornata), non una misura.
 
-**9. Odds+4ruoli, campione profondo**: solo 2 mazzi con ≥16 giornate,
-pablo0078 pesa il 33% — il DEF non si può relegare allo scouting su questa
-base (§8quinquies).
-
-**10. Buco tabella premi Uncapped rank 1/3**: un'osservazione sola
-ciascuno nell'archivio vecchio. Con i premi veri (§4.0) probabilmente è
-già risolto: **da riverificare su v3 prima di rimetterci mano.**
+**9. e 10. — ELIMINATE il 09/08 per decisione dell'utente.** La 9
+(odds+4ruoli, campione profondo) cade col filone favorito-odds, chiuso
+definitivamente. La 10 (buco premi Uncapped rank 1/3) è tema minoritario
+e generava confusione: non riaprirla.
 
 **11. 21 script con path Windows hardcoded** in `analisi_manager/`:
 girano solo sulla macchina dell'utente. Meccanico.
@@ -1484,6 +1502,15 @@ rispondono, 5/5 con grade presente oggi, 5/5 identico allo storico
 (incluso un caso a 5 mesi di distanza, 09/03 -> 09/08). Nessun caso NULLO
 o diverso. Dettaglio in
 `analisi_manager/dati/sonda_grade_passato_recupero_20260809.json`.
+**A COSA SERVE, chiarito il 09/08 (l'utente non lo sapeva, ed è giusto
+che lo chiedesse):** NON serve alla produzione. Il bot prende il grade
+fresco della giornata in `discovery_fixture.fetch_grade_live()`, come
+l'utente riteneva. Lo storico serviva solo alla RICERCA: costruire la
+tabella lettera→punti e le misure sul grade. `raccolta_grade_storico.py`
+campiona 150-200 giocatori per ruolo presi dai file manager (NON le carte
+dell'utente) e ne scarica 15 partite passate. Dal 09/08, con la regola
+"backtest sulle sole giornate dell'utente" (testata), questa voce ha
+senso solo se un giorno servisse lo storico delle carte di `crowss`.
 Campione piccolo (5 righe, un solo giorno): non dimostra che valga SEMPRE
 (vedi caso `andrew-vincent-rick` sotto, 1/729 grade cambiato), ma la
 domanda "sparisce dopo la partita?" ha risposta NO su questo campione.
