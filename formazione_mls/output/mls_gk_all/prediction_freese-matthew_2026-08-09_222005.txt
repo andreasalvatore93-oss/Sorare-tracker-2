@@ -1,10 +1,11 @@
 ======================================================================
 CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-09T21:33:44.843590Z
+Generato: 2026-08-09T22:20:05.870897Z
 Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
-1) freese-matthew: 47 pt attesi (26-71)
-   SQUADRA: new-york-city-new-york-new-york | AVVERSARIO: cruz-azul-ciudad-de-mexico-d-f
+1) freese-matthew: 54 pt attesi (33-77)
+   SQUADRA: new-york-city-new-york-new-york | AVVERSARIO: necaxa-aguascalientes
+   AMBIGUO_FIXTURE: si
 ======================================================================
 
 ######################################################################
@@ -13,7 +14,7 @@ Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: freese-matthew (squadra: new-york-city-new-york-new-york)
-Generato: 2026-08-09T21:33:44.841770Z
+Generato: 2026-08-09T22:20:05.829878Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -57,33 +58,34 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 Media pesata esponenziale (half-life 6.0 partite): 49.79
   di cui Punteggio decisivo (level_score) medio: 41.02 | Punteggio complessivo (granulari) medio: 8.77 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
   Punteggio decisivo condizionato per forza prossimo avversario: 38.25 (delta -2.77 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
-  Gol subiti condizionato: delta venue -0.00, delta avversario -1.21 | Possesso condizionato per venue: delta +0.11 | Goalkeeping condizionato per venue: delta -0.12 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+  Gol subiti condizionato: delta venue +0.78, delta avversario -1.21 | Possesso condizionato per venue: delta +0.20 | Goalkeeping condizionato per venue: delta +1.84 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
 Deviazione standard pesata: 23.01
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.1 - 73.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.43 (differenza: +7.58)
 Media score in casa: 47.78 | Media score fuori casa: 47.78
-Fattore casa/trasferta applicato: 0.985 (TRASFERTA nella prossima partita)
+Fattore casa/trasferta applicato: 1.046 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 8.4
-Ranking prossimo avversario: 6
-Fattore forza avversario applicato: 0.934 (gol fatti reali dell'avversario, ultime 10; delta granulare parate -0.00 pt)
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.174 (gol fatti reali dell'avversario, ultime 10; delta granulare parate -0.00 pt)
 NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
-Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.999
-Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.996
-Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.000
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.010
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.006
 Fattore gol subiti (goals_conceded, con cap, non applicato): 1.000
 Tasso storico clean sheet (porta inviolata nei primi 60'): 23.3% (bonus atteso incorporato nella media pesata: ~5.8pt)
 Fattore trend (media ultime 5: 49.9 vs media 5 PRECEDENTI: 50.3): 1.000
 P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
 
 --- PROSSIMA PARTITA ---
-Data: 2026-08-09T23:30
-Casa: Cruz Azul FC | Trasferta: New York City FC
+Data: 2026-08-13T23:30
+Casa: New York City FC | Trasferta: Club Necaxa
 Competizione: leagues-cup-mls
+ATTENZIONE FIXTURE AMBIGUA: due partite future avevano GIA' le starter odds pubblicate insieme -- scelta quella piu' tardiva (caso limite mai visto prima del 10/08/2026, verificare a mano).
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 47.1 (range 26.4 - 70.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 53.7 (range 33.0 - 77.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 44.08
