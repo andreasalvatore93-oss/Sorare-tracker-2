@@ -1,6 +1,6 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-09T21:31:22.765413Z
+Generato: 2026-08-09T23:01:54.645307Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 1) alexandro-maidana-mendieta: 49 pt attesi (37-73)
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: alexandro-maidana-mendieta (squadra: talleres-cordoba-ciudad-de-cordoba-provincia-de-cordoba)
-Generato: 2026-08-09T21:31:22.761092Z
+Generato: 2026-08-09T23:01:54.644309Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -44,7 +44,7 @@ Deviazione standard pesata: 15.78
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.62 (differenza: +5.16)
 Media score in casa: 54.03 | Media score fuori casa: 50.97
 Fattore casa/trasferta applicato: 0.998 (CASA nella prossima partita)
-Ranking medio avversari affrontati (storico): 8.2
+Ranking medio avversari affrontati (storico): 8.3
 Ranking prossimo avversario: 12
 Fattore forza avversario applicato: 0.528 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 0.999
@@ -85,13 +85,13 @@ Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
 P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
 
  idx  storico  predetto   reale   errore   range  in_range
-   6        6      76.7    56.8    -19.9    18.9        NO
-   7        7      43.9    45.5     +1.6    17.4        SI
-   8        8      58.7    43.9    -14.8    17.0        SI
-   9        9      63.2    29.2    -34.0    16.6        NO
-  10       10      60.1    45.9    -14.2    18.2        SI
+   6        6      76.2    56.8    -19.4    18.9        NO
+   7        7      43.5    45.5     +2.0    17.4        SI
+   8        8      58.4    43.9    -14.5    17.0        SI
+   9        9      62.9    29.2    -33.7    16.6        NO
+  10       10      59.8    45.9    -13.9    18.2        SI
 
-MAE (errore assoluto medio): 16.88
+MAE (errore assoluto medio): 16.70
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
