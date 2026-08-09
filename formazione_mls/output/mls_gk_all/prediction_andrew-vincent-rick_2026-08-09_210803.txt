@@ -1,9 +1,9 @@
 ======================================================================
 CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-07T13:22:24.757526Z
+Generato: 2026-08-09T21:08:03.949780Z
 Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
-1) andrew-vincent-rick: 47 pt attesi (24-73)
+1) andrew-vincent-rick: 45 pt attesi (22-71)
    SQUADRA: philadelphia-union-chester-pennsylvania | AVVERSARIO: necaxa-aguascalientes
 ======================================================================
 
@@ -13,7 +13,7 @@ Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: andrew-vincent-rick (squadra: philadelphia-union-chester-pennsylvania)
-Generato: 2026-08-07T13:22:24.755839Z
+Generato: 2026-08-09T21:08:03.947985Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -36,21 +36,21 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 6.0 partite): 40.44
   di cui Punteggio decisivo (level_score) medio: 40.26 | Punteggio complessivo (granulari) medio: 0.18 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Punteggio decisivo condizionato per forza prossimo avversario: 36.82 (delta -3.44 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
-  Gol subiti condizionato: delta venue +2.20, delta avversario -0.55 | Possesso condizionato per venue: delta +0.54 | Goalkeeping condizionato per venue: delta -1.59 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+  Punteggio decisivo condizionato per forza prossimo avversario: 40.26 (delta +0.00 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.48, delta avversario +0.00 | Possesso condizionato per venue: delta -0.05 | Goalkeeping condizionato per venue: delta -0.70 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
 Deviazione standard pesata: 22.88
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 17.4 - 66.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.02 (differenza: +6.85)
-Media score in casa: 56.40 | Media score fuori casa: 37.80
-Fattore casa/trasferta applicato: 1.044 (CASA nella prossima partita)
-Ranking medio avversari affrontati (storico): 4.6
+Media score in casa: 37.60 | Media score fuori casa: 40.44
+Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 13.0
 Ranking prossimo avversario: 8
 Fattore forza avversario applicato: 0.815 (gol fatti reali dell'avversario, ultime 10; delta granulare parate -0.00 pt)
 NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
-Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.006
-Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.001
-Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.995
-Fattore gol subiti (goals_conceded, con cap, non applicato): 1.004
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.004
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.998
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.001
 Tasso storico clean sheet (porta inviolata nei primi 60'): 40.0% (bonus atteso incorporato nella media pesata: ~10.0pt)
 Fattore trend (media ultime 5: 34.4 vs media 5 PRECEDENTI: 51.3): 1.000
 P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
@@ -63,7 +63,7 @@ Competizione: leagues-cup-mls
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 47.1 (range 24.0 - 72.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 45.2 (range 22.1 - 70.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 40.98
@@ -81,12 +81,12 @@ Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
 P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
 
  idx  storico  predetto   reale   errore   range  in_range
-   6        6      55.8    36.6    -19.2    24.4        SI
-   7        7      41.0    41.6     +0.6    23.3        SI
-   8        8      53.6     0.7    -52.9    21.5        NO
-   9        9      34.7    37.6     +2.9    28.6        SI
+   6        6      54.3    36.6    -17.7    24.4        SI
+   7        7      50.8    41.6     -9.2    23.3        SI
+   8        8      49.2     0.7    -48.5    21.5        NO
+   9        9      41.0    37.6     -3.4    28.6        SI
 
-MAE (errore assoluto medio): 18.88
+MAE (errore assoluto medio): 19.69
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
