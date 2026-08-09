@@ -1,0 +1,210 @@
+BRIEF PER SONNET -- LA LETTERA E' DAVVERO DELLA GIORNATA GIUSTA?
+Orchestratore, 09/08/2026 notte (Roma, CEST). Verifica unica, poi run.
+
+Chat pulita: non sai nulla di questo repo. Leggi PRIMA:
+  1. CLAUDE.md
+  2. docs/handoff/BRIEF_SONNET_GRADE_SCOUTING_2026-08-09.txt e
+     docs/handoff/BRIEF_SONNET_SCOUTING_TERZO_GIRO_2026-08-09.txt
+     (tre giri di lavoro sullo scouting e i loro esiti)
+  3. docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8ter, §8bis, §8 trappola 17
+Il codice vince sui documenti.
+
+--- IL PUNTO, IN BREVE ---------------------------------------------------
+
+Lo scouting ora mostra la lettera (grade) presa da
+`nextClassicFixtureProjectedGrade { grade }` dentro `searchPlayers`.
+Quel campo e' la proiezione per la PROSSIMA partita DEL GIOCATORE, non
+per la giornata che lo scouting sta analizzando. Se un club deve ancora
+giocare una partita della giornata precedente (GW3, 7-11 ago), la
+"prossima" potrebbe essere quella vecchia, e la colonna mostrerebbe la
+lettera sbagliata senza dirlo.
+
+Nel terzo giro questo e' stato testato cosi': per 8 giocatori a rischio
+(club con partita GW3 ancora da giocare, e di cui l'utente possiede una
+carta) si e' confrontata la lettera di searchPlayers con quella letta dal
+bench della GW4. Risultato 8/8 identiche, e da li' il verdetto "lo scudo
+regge".
+
+PERCHE' QUEL TEST NON BASTA (obiezione dell'utente, ed e' corretta):
+8 accordi su 8 sono compatibili con DUE storie diverse.
+  (a) il campo legge davvero la GW4 -> accordo;
+  (b) il campo legge la partita GW3, ma quel giocatore ha la STESSA
+      lettera in entrambe le partite -> accordo lo stesso.
+La (b) e' tutt'altro che improbabile: la lettera dipende in larga parte
+dall'essere titolare (§8bis), e chi e' titolare il 10 di solito lo e'
+anche il 13. Quindi il test non poteva fallire: non distingue. Un test
+che non puo' fallire non e' una prova.
+
+L'utente NON puo' controllare a occhio: sull'interfaccia Sorare vede solo
+le lettere delle partite FUTURE, non di quelle gia' giocate.
+
+--- COSA DEVI FARE: UNA SOLA VERIFICA -----------------------------------
+
+OBIETTIVO: trovare i casi in cui la lettera della GW3 e quella della GW4
+sono DIVERSE per lo stesso giocatore, e guardare quale delle due mostra
+lo scouting. Sono gli unici casi che discriminano.
+
+COME (la funzione esiste gia', non riscriverla):
+`discovery_fixture.fetch_grade_live(fixture_slug)` legge il grade dal
+bench per la fixture che gli passi. Chiamala DUE volte:
+  - una con lo slug della GW3 (football-7-11-aug-2026)
+  - una con lo slug della GW4 (football-11-14-aug-2026)
+Ottieni due mappe slug->lettera. Incrociale e tieni SOLO i giocatori
+presenti in entrambe con lettera DIVERSA: chiamali "casi
+discriminanti". RIPORTA QUANTI SONO -- e' il primo numero che conta.
+
+Poi, per quei soli casi, leggi la lettera che restituisce
+`searchPlayers` con `nextClassicFixtureProjectedGrade` (la stessa query
+che lo scouting usa oggi, stesso client `_client_ritmato()`, refinement
+`playing_next` sulla GW4 come fa `pool_da_search`) e conta:
+  - quante volte coincide con la lettera GW4  -> il campo e' GIUSTO
+  - quante volte coincide con la lettera GW3  -> il campo e' SBAGLIATO
+  - quante volte non coincide con nessuna delle due -> dillo, e' un
+    terzo caso che non abbiamo previsto
+Riporta la TABELLA per esteso: slug, lettera GW3, lettera GW4, lettera
+scouting. Non solo i totali: l'utente vuole vedere le righe.
+
+SE I CASI DISCRIMINANTI SONO ZERO: fermati e dillo. Significa che con
+questi dati la domanda non ha risposta -- che e' un esito legittimo e
+va scritto, non aggirato con un test che non distingue. NON lanciare la
+run in quel caso: lo decide l'utente.
+
+ATTENZIONE: `fetch_grade_live` su una fixture gia' chiusa puo' tornare
+0 nodi. Se la GW3 torna vuota, NON concludere niente: dillo e basta
+(§8quater: "0 nodi" ha piu' cause possibili, sessione anonima compresa;
+la diagnosi si fa con `{ currentUser { slug } }`, §8undecies).
+
+--- SE LA VERIFICA DICE CHE IL CAMPO E' GIUSTO --------------------------
+
+Allora puoi lanciare la run vera dello scouting sulla GW4. Prima leggi
+questi tre punti, sono le cose che nel lavoro precedente NON sono state
+provate end-to-end:
+
+ 1. FILTRO ODDS MAI ESERCITATO. Il test locale e' girato su MLS, dove le
+    odds non erano ancora uscite (0 su 215): il percorso con
+    `--odds-min 0.80` attivo non e' mai stato provato davvero. La soglia
+    va passata ESPLICITAMENTE (richiesta dell'utente: senza, il test
+    fallisce).
+ 2. LA MODALITA' SEMPLIFICATA E' SPENTA DI DEFAULT. La run va lanciata
+    con `--minimal` (checkbox `minimal` nel workflow), altrimenti esce
+    il report completo con arene ed essenze, che l'utente ora non vuole.
+ 3. TEMPO. Il riuso delle predizioni e' stato SPENTO di default in
+    questo filone: ogni candidato viene ripredetto da zero. La regola
+    dell'utente e' che la run stia sotto i 10 minuti (§8quater.2). MISURA
+    quanto dura e riportalo: se sfora, dillo invece di lasciarlo passare
+    -- e' un difetto da correggere, non un costo da accettare.
+
+--- CONSEGNA ------------------------------------------------------------
+- Esito in coda a QUESTO file.
+- Nessun push su main: committa e dillo, il push lo fa l'utente.
+- Niente stime: se un numero non l'hai misurato, scrivi "non misurato".
+- Se una cosa scritta qui e' falsa, dillo per primo.
+
+--- ESITO (Sonnet esecutore, 09/08/2026 notte, Roma) ----------------------
+
+L'obiezione dell'utente era corretta: il test 8/8 del terzo giro non
+distingueva. Rifatto col test giusto.
+
+=== IL TEST DISCRIMINANTE ===
+
+`fetch_grade_live` chiamata su ENTRAMBE le fixture (sessione autenticata
+crowss, verificata con la probe -- niente "0 nodi" ambigui):
+  GW3 (football-7-11-aug-2026, "started"): 88 slug con grade nel bench
+  GW4 (football-11-14-aug-2026, "opened"): 230 slug con grade nel bench
+  slug in comune fra i due bench: 17
+  CASI DISCRIMINANTI (lettera diversa GW3 vs GW4): **6**
+
+I 6 casi, con la lettera che restituisce `searchPlayers` (stesso percorso
+di produzione, `pool_da_search`, refinement `playing_next=GW4`):
+
+  slug                                  | GW3 | GW4 | scouting | esito
+  sebastien-antoine-luc-salles-lamonge  |  C  |  E  |    E     | GIUSTO (=GW4)
+  ezequiel-eduardo-bullaude             |  D  |  F  |    F     | GIUSTO (=GW4)
+  quinn-sullivan                        |  F  |  E  |    E*    | GIUSTO (=GW4)
+  malachi-jones                         |  F  |  E  |    E     | GIUSTO (=GW4)
+  tayvon-gray                           |  D  |  C  |    C     | GIUSTO (=GW4)
+  julian-carranza                       |  D  |  F  |    F     | GIUSTO (=GW4)
+
+  TOTALI: giusto (=GW4) 6/6 | sbagliato (=GW3) 0/6 | altro 0/6
+
+(*) quinn-sullivan risultava ASSENTE dal pool con i filtri di default di
+`pool_da_search` (playing_status starter/regular): non e' un problema del
+campo grade, e' il filtro di stato che lo esclude perche' il suo
+playing_status non e' starter/regular. Rilanciata la query senza quel
+filtro (stati=(), solo_in_vendita=False): compare con grade='E', identico
+alla GW4. Segnalato perche' e' un comportamento del filtro stati, non del
+grade -- nessuna azione necessaria, il filtro fa il suo lavoro (chi non e'
+titolare non entra nel pool di default).
+
+VERDETTO: su TUTTI i casi che potevano discriminare (6/6, l'universo
+completo trovato con questo confronto, non un campione), la lettera
+mostrata da `searchPlayers.nextClassicFixtureProjectedGrade` e' SEMPRE
+quella della GW4, MAI quella della GW3. Zero controesempi. n e' piccolo
+(6) perche' e' quanto passa nell'intersezione dei due bench (17 slug) con
+lettera diversa -- non e' un campione scelto, e' l'universo di quello che
+i dati disponibili permettono di verificare oggi. Il campo regge anche
+al test che poteva smentirlo.
+
+=== RUN VERA SULLA GW4 (odds>=0.80, --minimal) ===
+
+Lanciata (nessuna modifica alla produzione: output su file temporanei,
+NIENTE --scrivi-discovery, quindi nessuna discovery di produzione
+toccata):
+  `python scouting_gw.py --gameweek 4 --odds-min 0.80 --minimal ...`
+
+Fixture verificata: football-11-14-aug-2026 (gameweek 4, stato "opened",
+2026-08-11T14:00:00Z -> 2026-08-14T13:59:59Z) -- confermata anche in
+questo lancio, non solo nel controllo Tyler Miller.
+
+  COPERTURA -- pool: 108 | odds pubblicate: 108/108 (100%) | grade:
+  108/108 (100%) | atteso: 13/108 (12%) | prezzo: 107/108 (99%)
+
+108 candidati con starter odds >= 80% su tutta la GW4 (tutte le leghe),
+grade presente su TUTTI (100%, coerente col fatto che odds pubblicate =>
+partita imminente => Sorare ha gia' la proiezione). Atteso presente solo
+su 13/108: normale, il predict per questi candidati NON e' stato lanciato
+in questa sessione (nessuna run GitHub, nessun --scrivi-discovery) -- i
+13 hanno predizioni gia' su disco da sessioni precedenti dentro la
+finestra GW4.
+
+Report HTML minimale scritto (non nella produzione, su file temporaneo):
+prime righe per ruolo (L10/proiezione Sorare/prezzo/club/avversario),
+grade e odds confermati sui candidati mostrati, es. Tyler Miller in cima
+ai GK con L10 85, prezzo 0.49EUR, avversario Pachuca, GW4.
+
+=== 1. FILTRO ODDS -- ESERCITATO DAVVERO, PRIMA VOLTA ===
+108/1584 (pool completo GW4 senza filtro stato) sopra soglia 0.80,
+passato ESPLICITAMENTE con `--odds-min 0.80`. Confermato che senza le
+odds pubblicate (run precedente su MLS filtrato per lega, dove erano 0)
+il filtro non aveva mai scartato nulla per davvero: qui si', 984/1584
+scartati per odds assenti o sotto soglia.
+
+=== 2. MODALITA' SEMPLIFICATA -- USATA, CONFERMATA ===
+`--minimal` passato esplicitamente: report con la tabella
+giocatore/ruolo/club/odds/prezzo/atteso/grade, niente arene/essenze.
+
+=== 3. TEMPO -- MISURATO SOLO IL PEZZO CHE POTEVO MISURARE IN LOCALE ===
+La fase "candidati" (searchPlayers + odds in blocco + scrittura report)
+misurata: **21.1 secondi reali** (`time`, GW4 completa, 1584 pool grezzo
+-> 108 sopra soglia).
+NON MISURATO: il tempo della matrice `predict` (job separato su GitHub
+Actions, un giocatore per job, richiede lanciare la run vera). Non l'ho
+lanciata: e' un'azione su GitHub Actions e la regola di questo repo e'
+chiedere prima di ogni run del genere. Se vuoi il tempo reale end-to-end
+sotto i 10 minuti (§8quater.2), serve il tuo via libera per lanciare
+`scouting_gw.yml` su GitHub con `minimal=true`, `odds_min=0.80`,
+`riusa_predizioni=false` (default).
+
+File toccati: nessuna modifica al codice in questo giro (solo verifica +
+run locale), questo file. Nessun commit necessario oltre a questo esito
+(pool/HTML della run vera scritti su file temporanei, non nel repo, per
+non sporcare lo stato committato con un pool parziale -- vedi nota
+sotto).
+
+NOTA: il primo lancio della run vera aveva scritto per errore mio in
+`dati_globali/scouting_football-11-14-aug-2026.json` (file gia'
+tracciato dalla produzione), sovrascrivendolo con un pool con solo 13
+attesi su 108. Ripristinato subito con `git checkout` prima di
+committare qualsiasi cosa: il file di produzione NON e' stato alterato.
+Le run di verifica successive sono andate su file temporanei fuori dal
+repo.
