@@ -1334,3 +1334,53 @@ dell'esclusione E in se'.
 Commit: analisi_manager/p20_gfisso_v2_backtest.py,
 p20_gfisso_v2_backtest_out.json, p20_gfisso_v2_dump.txt,
 p20_gfisso_v2_run.log, questo handoff.
+
+
+26. VERIFICA ORCHESTRATORE SUL §25 (09/08/2026 sera, letto il JSON e il log
+riga per riga, non il commento del commit). ESITO: esecuzione CORRETTA,
+verdetto pooled REGGE, ma la stratificazione per tipo -- che Sonnet ha
+CALCOLATO (campo per_cap_type) e NON ha usato nel `decisione` -- nasconde un
+segnale che va detto. E' il "qualcosa tralasciato" temuto dall'utente.
+
+26.1 COSA HO RISCONTRATO E CONFERMO.
+- I numeri del run.log coincidono col JSON. C4 (n identica sui due rami in
+  astensione) confermato ANCHE per tipo: P_noF astensione n=111 con
+  cap220 23/23, cap260 36/36, uncapped 6/6, beginner 40/40, arena_paese 6/6
+  (var e gf identici). Nessun disallineamento di arene.
+- L'interruttore (placebo tabella=0 == _cal; +5000 si muove) PASS.
+- Prova del nove del §21.4: la tabella 'empirica' in P_ALL astensione da'
+  delta +8000 (vecchio), identico al vecchio "V2 vince" del §20 -> quel
+  +8000 era TUTTO F post-partita. Tolte le F (P_noF), la stessa empirica fa
+  +850/-650 (attraversa 0): il vantaggio evapora. Diagnosi del §21 CONFERMATA
+  sui grezzi.
+- VERDETTO POOLED "GF FISSO NON VINCE" REGGE sulla popolazione di produzione
+  (P_noF): in astensione (regime a parita' di arene) NESSUNA tabella della
+  griglia ha delta>0 su ENTRAMBE le soglie; in allocazione i delta sono
+  perlopiu' NEGATIVI, anche centrati. Quindi: dare un valore fisso per lettera
+  NON batte lo z-score. Si tiene lo z-score. CONFERMATO.
+
+26.2 IL SEGNALE CHE IL POOLED NASCONDE (da NON spacciare per vittoria del
+fisso). Spaccando P_noF astensione per tipo di arena, delta (gf-var) positivo
+su ENTRAMBE le soglie, su 14 tabelle:
+    cap220 0/14 | cap260 5/14 | uncapped 0/14 | beginner 0/14 |
+    ARENA_PAESE (US/Korea/Scotland) 13/14.
+Su cap260 il 5/14 e' solo sulle tabelle RAW ad alto k e sull'empirica (spinta
+di livello): centrate torna negativo -> artefatto, non selezione.
+Su arena_paese invece il +300/+600 tiene ANCHE centrato. MA -- ed e' decisivo
+per non ingannarsi -- il PLACEBO (grade spento, GF=_cal) su arena_paese da'
+lo STESSO +600/+300. Quindi NON e' la tabella fissa a vincere: e' lo z-score
+che su leghe piccole e' leggermente CONTROPRODUCENTE rispetto al non toccare
+niente. Il fisso non batte "nessun grade" li'; pareggia. n=6 arene: troppo
+poche per concludere, nessun IC per tipo.
+
+26.3 LETTURA. Il segnale arena_paese NON riapre il filone "tabella fissa"
+(il fisso non batte il no-grade, quindi non c'e' un valore fisso vincente da
+portare in produzione). Appartiene alla domanda GIA' aperta del ~23% di carte
+dove lo z-score non calcola (gruppo <2 membri): su leghe piccole lo z-score
+puo' fare peggio che spegnersi. Ipotesi da tenere per quel filone, con n vero,
+non per questo. DECISIONE CONFERMATA: filone "tabella fissa per lettera"
+CHIUSO, z-score resta produzione. Si puo' passare al capitano.
+
+26.4 NON FATTO da Sonnet (minore): la vista "insieme" (astensione+allocazione
+sommate) chiesta dall'utente non c'e'; separate e per-tipo si'. Non cambia il
+verdetto, ma se serve va aggiunta.

@@ -705,6 +705,35 @@ Cap 260, il tipo più giocato. Non riproporla senza un'idea nuova.
 Riserva collegata mai misurata: dove il gruppo ha esattamente 2 carte col
 grade lo spostamento è meccanico ±1 sd.
 
+**TABELLA FISSA per lettera — SECONDA cura al 23%, CHIUSA il 09/08 sera.**
+Idea: dare a ogni lettera un valore FISSO (invece dello z-score di gruppo), così
+il grade agisce anche dove il gruppo è <2. Come e perché il test: si è confrontato
+G variabile (z-score) contro G fisso, ma con tre pulizie che i giri precedenti non
+avevano (§20-26 di `HANDOFF_TABELLA_GRADE_2026-08-09.txt`): (a) stesso pool ridotto
+ai due rami; (b) popolazione = pool SENZA carte F (proxy di titolarità ≥0,80, vedi
+verifica live sotto), perché sotto 0,80 l'utente non schiera; (c) i valori fissi
+NON assunti ma cercati a **griglia** (7 tabelle × versione centrata × 2 set soglie),
+letti a **parità di arene**. Esito: NESSUNA tabella batte lo z-score su entrambe le
+soglie — **il fisso NON vince**. L'apparente "+8000" della tabella empirica sul pool
+intero era tutto l'affossamento delle F post-partita: tolte le F, svanisce. Unico
+segnale residuo sulle arene-PAESE piccole (US/Korea/Scotland, n=6), dove però anche
+il placebo "grade spento" pareggia il fisso: non è vittoria del fisso, è lo z-score
+che su leghe minuscole (gruppi <2) è lievemente controproducente — indizio per la
+riserva del 23% qui sopra, non una cura. Non riproporre la tabella fissa senza
+un'idea nuova.
+
+**Verifica live 09/08 (Genk-Zulte, cattura pre e post ufficiali, §23 stesso
+handoff grade):** sulle carte già date ≥0,80 al lock il grade NON cambia con le
+ufficiali (18/18 identiche pre→post); TUTTI i cambi (2 crolli a F per panchina/fuori
+lista, 4 salite quando il titolare è confermato) sono su carte <0,80. Conseguenza
+metodologica: per la popolazione di produzione (≥0,80) il grade al LOCK coincide col
+grade FINAL, quindi backtestare sul grade final è un **proxy pulito** lì (il timore
+"grade post-partita che sballa il backtest" non tocca ≥0,80); sotto 0,80 il grade si
+muove nei due sensi. Nota separata verificata sui grezzi: le odds pre-partita NON
+sono recuperabili a ritroso — per una partita chiusa l'API le ridà congelate a 0 o
+10000 (0 valori intermedi su 5.775 righe Forward), l'unica fonte del lock è la
+cattura live.
+
 **Catena soglie/scouting per G — verificata e chiusa**: σ di calibrazione
 A=48,13 vs G=49,32 (IC sovrapposti), soglie arena delta <1,1 pt. G non
 muove nessuno dei due anelli a valle.
@@ -1204,7 +1233,9 @@ valere essenze.
 
 **Tutto quello che era in cima a questa lista il 09/08 mattina è FATTO**:
 premi scaricati, soglie applicate, G validato sulle arene, filone odds
-chiuso. Quello che segue è quello che resta, in ordine di interesse.
+chiuso. **Aggiunto 09/08 sera**: filone "tabella fissa per lettera" testato
+pulito e CHIUSO (non batte lo z-score, §8bis); resta produzione lo z-score.
+Quello che segue è quello che resta, in ordine di interesse.
 
 **PRIORITARIO — CAPITANO SCELTO COL GRADE** (idea dell'utente 09/08,
 messa in cima su sua richiesta). Il capitano MOLTIPLICA il punteggio: +20%
@@ -1227,6 +1258,32 @@ Due effetti da misurare SEPARATAMENTE, perché sono meccanismi diversi:
 Da sapere: sul capitano sono già state chiuse otto ipotesi (§5.3), ma
 **nessuna con il grade**, che è arrivato dopo. Non è una voce bruciata.
 Si misura sul backtest arene già rodato, come ramo a sé.
+
+**COME E SU QUALE ARCHIVIO — impostazione (orchestratore 09/08 sera; l'utente
+la conferma/rifinisce a inizio sessione PRIMA che si scriva il brief a Sonnet,
+perché voleva illustrarla lui).**
+- Archivio PULITO: lo stesso delle arene (`p20_g_odds_arene_backtest.costruisci_
+  unita` / `p20_gfisso_v2_backtest.py`, 90 unità manager×GW, 6 GW), popolazione
+  **P_noF** = pool senza carte F (= proxy titolarità ≥0,80, la sola che l'utente
+  schiera; sopra 0,80 il grade al lock = grade final, verificato live §8bis, quindi
+  archivio pulito senza leakage). Realizzato dalla cache game-log condivisa.
+- Regime: **allocazione** (pool>slot), perché lì c'è una scelta VERA di capitano fra
+  più candidati; in astensione la formazione è fissa e la fascia non si sceglie.
+- Confronto a parità di formazione e di arene: ramo BASELINE (`pick_captain()`
+  attuale, fascia sull'atteso) contro ramo GRADE (gerarchia dell'utente qui sopra:
+  grade più alto → a parità atteso più alto → a parità ruolo). Cambia SOLO chi porta
+  la fascia; tutto il resto identico. Metrica: essenze REALIZZATE, delta = grade −
+  baseline, bootstrap per manager IC95, ENTRAMBE le soglie, segno stabile per decidere.
+- Misurare SEPARATE **protezione** e **spinta** (già spiegate sopra). Attenzione al
+  leakage §18/S2: la protezione usa "chi non gioca", che nel grade FINAL è
+  informazione post-partita — misurabile pulita SOLO sulla popolazione ≥0,80 (dove
+  lock=final, §8bis); fuori di lì è un limite superiore, dirlo.
+- Vincoli di metodo (dal filone tabella, §21.7/§26): i due rami devono giocare lo
+  STESSO numero di arene (o confronto per-arena con n dichiarata); **stratificare per
+  tipo di arena** (cap220/cap260/uncapped/beginner/arene-paese) e NON dare un
+  verdetto che pesa insieme tipi diversi; separare pool=slot e pool>slot e riportare
+  anche la vista insieme; ogni n dichiarata riga per riga. Ispezionare i grezzi (non
+  il riassunto dell'esecutore) prima di chiudere.
 
 **1. Quanto vale G sopra il filtro starting odds?** È la riserva più
 importante ed è aperta. Il grade è in larga parte un indicatore di
