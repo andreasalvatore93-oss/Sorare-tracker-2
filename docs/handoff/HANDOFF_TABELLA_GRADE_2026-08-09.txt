@@ -680,3 +680,92 @@ non attraversava un confine di lettera.
   fieldStatus: NOT_ON_GAME_SHEET 30, ON_FIELD 22, ON_BENCH 18
   starter_odds_bp: 0 -> 48 righe, 10000 -> 22 righe (nessun valore
   intermedio: a ufficiali uscite l'odds e' binaria).
+
+
+18. SEGUITO 09/08/2026, ~11:30 Roma -- VERIFICA DEI GREZZI DELL'ORCHESTRATORE
+SUGLI SNAPSHOT DI SONNET (§16-§17). SCOPERTA STRUTTURALE.
+----------------------------------------------------------------------------
+Fatta come da regola "verifica i grezzi, non il riassunto". Il report di
+Sonnet e' corretto in tutto cio' che afferma; il caso Suzuki e' reale
+(riverificato riga per riga). Ma i grezzi contengono un fatto piu' grande
+che il report non aveva estratto.
+
+18.1 IL GRADE POST-UFFICIALI E' TITOLARE SI'/NO. Incrocio fieldStatus x
+grade sui tre snapshot pubblici, 214 righe totali, ZERO eccezioni:
+
+  Nagasaki-Kyoto (0914Z, 70 giocatori, post-ufficiali):
+    ON_FIELD          -> D 12, E 6, B 2, C 2   (22)
+    ON_BENCH          -> F 18
+    NOT_ON_GAME_SHEET -> F 30
+  TokyoVerdy-Kawasaki (0855Z e 0906Z, 72 giocatori, identici fra loro):
+    ON_FIELD          -> D 9, C 8, E 4, B 1    (22)
+    ON_BENCH          -> F 18
+    NOT_ON_GAME_SHEET -> F 32
+
+  Controllo esplicito: ON_FIELD con grade F = 0 casi.
+                       non-ON_FIELD con grade diverso da F = 0 casi.
+  Anche le starter odds collassano: post-ufficiali solo 0 o 10000, nessun
+  valore intermedio su 70 giocatori (pre-ufficiali erano 9000/8000/4000/0).
+
+  Quindi, dopo l'uscita delle formazioni ufficiali, la lettera non e' piu'
+  una previsione: F significa "non e' nell'undici", e le lettere B-E
+  distinguono la qualita' SOLO fra i titolari.
+
+18.2 PERCHE' CONTA -- I NOSTRI RESIDUI SONO MISURATI SU GRADI POST-EVENTO.
+I "file grade di produzione" che alimentano la tabella dei residui sono
+analisi_manager/dati/storico_grade_*.json, letti da p20_tabella_grade.py
+(righe 64-86). Ispezionati: ogni nodo ha scoreStatus FINAL / DID_NOT_PLAY,
+cioe' sono stati scaricati a partita CONCLUSA. Il grade che ci sta dentro
+e' quello finale, non quello visibile al momento del lock.
+  Conseguenza: il residuo F = -31,0 (§9) / -33,15 (§12) non e' il valore di
+una previsione, e' in buona parte il valore di una CONSTATAZIONE. Al
+momento in cui il bot schiera, quella F spesso non c'e' ancora: Suzuki era
+C con odds 90% (§17) ed e' diventato F solo con le ufficiali.
+  NON e' una prova che il grade sia inutile in produzione -- e' la prova
+che il numero -31 NON e' il guadagno realizzabile. Il guadagno realizzabile
+va misurato sul grade PRE-ufficiali, che e' l'unico che il bot vede.
+
+18.3 CONTROPROVA CHE LA MECCANICA E' QUELLA -- gli F che hanno giocato sono
+i subentrati. Incrocio grade x scoreStatus su storico_grade_arene_2026-08-08
+(169 giocatori, 2.533 nodi):
+    A  142  FINAL 140, REVIEWING 2
+    B  169  FINAL 163, REVIEWING 6
+    C  361  FINAL 353, REVIEWING 7, DNP 1
+    D  833  FINAL 820, REVIEWING 11, DNP 2
+    E   79  FINAL  60, DNP 14, REVIEWING 5
+    F  935  DNP 580, FINAL 347, REVIEWING 8
+  I 347 F con FINAL non contraddicono 18.1: sono panchinari (grade F per
+non essere titolari) che poi sono entrati. Coerente col caso Schjelderup
+gia' noto (subentrato, 85 punti, grade crollato). D-A hanno 3 DNP su 1.505.
+  Nota: la corrispondenza F<->non-giocante NON e' perfetta negli storici
+(37% delle F ha un punteggio FINAL) proprio perche' i subentrati esistono;
+e' perfetta solo contro fieldStatus, che e' la variabile giusta.
+
+18.4 IL GRADE PRE-UFFICIALI NON E' UNA COPIA DELLE STARTER ODDS. Dalle 7
+righe sovrapposte di §17 (unico campione pre-ufficiali disponibile, piccolo):
+    odds 9000 -> C (Suzuki), 9000 -> B (Rafael Elias)
+    odds 8000 -> B (Henrique), 8000 -> D (Thiago Santana)
+    odds 4000 -> F (Yoneda)
+    odds 0    -> F (Marco Tulio)
+  A parita' di odds la lettera cambia: c'e' informazione di qualita' dentro,
+non solo probabilita' di giocare. Con n=6 slug distinti non e' una misura,
+e' un indizio che vale la pena misurare.
+
+18.5 CORREZIONI MINORI AL REPORT DI SONNET (nessuna cambia le conclusioni):
+ - il file "pre-ufficiali (08:50Z)" e' grade_snapshot_football-7-11-aug-2026_
+   20260809_0850.json: contiene 13 righe su 6 squadre (e' il bench
+   dell'utente, con cookie), non 7. Le righe che si sovrappongono alla
+   partita Nagasaki-Kyoto sono 7, per 6 slug distinti (Thiago Santana
+   compare due volte, due carte). Il confronto pre/post e' quindi su 6
+   giocatori, non su 70: e' un aneddoto solido, non un campione.
+ - il confronto pre/post di §17 e' fra DUE FONTI DIVERSE (bench con cookie
+   vs query pubblica sul game). Il campo grade e' lo stesso oggetto
+   (projection.grade), ma vale la pena dirlo.
+
+18.6 LA DOMANDA CHE ORA DECIDE TUTTO
+Quanto vale il grade LETTO AL MOMENTO DEL LOCK, sopra le starter odds che
+gia' usiamo? Tutto quello che abbiamo misurato finora e' il valore del
+grade letto dopo. Serve uno storico di grade PRE-ufficiali, che oggi non
+esiste in repo (i grade_snapshot_* del 06/08 sono l'unico embrione).
+grade_snapshot_pubblico.py ora permette di costruirlo: e' l'asset da
+accumulare, una cattura per giornata a ridosso del lock.
