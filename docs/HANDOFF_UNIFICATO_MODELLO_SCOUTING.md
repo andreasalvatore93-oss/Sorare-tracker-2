@@ -765,7 +765,22 @@ Cap 260, il tipo più giocato. Non riproporla senza un'idea nuova.
 Riserva collegata mai misurata: dove il gruppo ha esattamente 2 carte col
 grade lo spostamento è meccanico ±1 sd.
 
-**TABELLA FISSA per lettera — SECONDA cura al 23%, CHIUSA il 09/08 sera.**
+**TABELLA FISSA per lettera — TUTTO QUELLO CHE SEGUE È STORIA, NON UN
+VERDETTO (riclassificato il 09/08 notte, decisione dell'utente).**
+Il file conteneva due verdetti opposti sullo stesso test: qui sotto
+"CHIUSA, il fisso non vince"; in §10bis.14 il riesame che dice che quel
+verdetto valeva solo in un riquadro stretto e che fuori da lì la tabella
+fissa non perdeva affatto. **Non è che una delle due avesse ragione: sono
+state misurate entrambe sull'archivio dei 24 manager, che dalla regola in
+testata non è più base di misura.** Quindi nessuna delle due decide.
+La domanda "z-score o tabella fissa" **si riapre da zero sulle giornate
+dell'utente**: verifica fissata per l'**11/08/2026, a fixture 7-11
+chiusa**. Fino ad allora resta in produzione lo z-score, che è lo stato
+attuale del codice — non perché abbia vinto, ma perché è quello che c'è.
+Si legge quel che segue per sapere cosa è già stato provato e come, non
+per concludere.
+
+*(storia, 09/08 sera)* **SECONDA cura al 23%.**
 Idea: dare a ogni lettera un valore FISSO (invece dello z-score di gruppo), così
 il grade agisce anche dove il gruppo è <2. Come e perché il test: si è confrontato
 G variabile (z-score) contro G fisso, ma con tre pulizie che i giri precedenti non
@@ -1261,6 +1276,14 @@ GK `GK_TEAM_CS_WEIGHT` 0,5→0,63 propagato a tutte le leghe.
 (`ARENA_LEAGUES` vuota, riattivabile con `ARENA_LEAGUES_ENABLED`), commit
 `ee4c2deec2`.
 
+**NOTA MINORE sulle arene dedicate per lega** (chiarito dall'utente il
+09/08, per chiudere un contrasto apparente nel file): nelle soglie sono
+state **allineate alle cap 260** (§8octies), ma nel generatore restano
+**spente di default** e l'utente **de facto non le schiera**. Quindi
+tarare le loro soglie non contraddice il fatto che siano disattivate:
+sono valori pronti nel caso si riaccendano. **Tema minore, nessuna
+azione, non farne un filone.**
+
 **DIFETTO APERTO, scoperto il 09/08 e NON introdotto da noi**: il
 generatore è **non deterministico** run-to-run. Due esecuzioni identiche,
 a codice invariato, allocano diversamente le formazioni opzionali (pool
@@ -1586,7 +1609,14 @@ lettera (niente con cui confrontarla) e 5 gruppi hanno tutte le lettere
 UGUALI (mls_mid due D, belgio_def tre D, messico_mid tre C) -> sd=0 ->
 z=0. Non e' un buco di dati: e' la formula. Vedi §14.
 
-**14. IL MERITO DEL BACKTEST CHE HA SCELTO LA FORMULA — riesame
+**14. — STORIA, non un verdetto** (riclassificato il 09/08 notte). Questa
+sezione e il blocco "tabella fissa" in §8bis si contraddicevano a vicenda;
+entrambe poggiano sull'archivio dei 24 manager, che non è più base di
+misura. **La domanda z-score contro tabella fissa si rifà da zero sulle
+giornate dell'utente, verifica fissata per l'11/08/2026.** Quanto segue
+serve solo a sapere cosa è già stato provato e come.
+
+*(storia)* **IL MERITO DEL BACKTEST CHE HA SCELTO LA FORMULA — riesame
 dell'orchestratore, 09/08 sera** (richiesto dall'utente: "e' la
 combinazione migliore? non se ne puo' trovare una che non escluda
 carte?").
