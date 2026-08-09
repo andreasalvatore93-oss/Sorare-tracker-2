@@ -112,19 +112,34 @@ che lo scouting riusi previsioni gia' su disco -- una previsione salvata
 prima potrebbe essere stata calcolata senza G o con un grade diverso, e
 verrebbe riusata in silenzio.
 
-Il flag ESISTE GIA': `best_five.RIUSA_PREDIZIONI`, che legge
-`BEST_FIVE_RIUSA_PREDIZIONI` (default '1', best_five.py:482). Lo scouting
-lo usa via `bf._predizione_riutilizzabile(...)` (scouting_gw.py:~1081).
+Stato verificato: il flag esiste NEL CODICE
+(`best_five.RIUSA_PREDIZIONI`, legge `BEST_FIVE_RIUSA_PREDIZIONI`,
+default '1', best_five.py:482; lo scouting lo usa via
+`bf._predizione_riutilizzabile(...)`, scouting_gw.py:~1081) ma **NON e'
+esposto da nessuna parte all'utente**: nella schermata "Run workflow" di
+`scouting_gw.yml` gli unici controlli sono numero di giornata, soglia
+starter-odds, "far girare il modello sui candidati" e "controllo 2-su-3".
+Verificato dall'utente sullo screenshot della UI, 09/08. Quindi oggi lui
+NON ha modo di spegnere il riuso senza modificare il codice: e' questo il
+difetto da chiudere, non solo il valore del default.
 
-Fai la cosa MENO invasiva: spegnilo per lo scouting, non globalmente per
-chiunque importi best_five. Valuta se metterlo come variabile d'ambiente
-nel workflow `scouting_gw.yml` oppure impostarlo dentro `scouting_gw.py`
-prima dell'import. Scegli tu, ma:
- - deve restare RIACCENDIBILE con una variabile, senza toccare il codice;
+Fai due cose:
+ a) **spegnilo di default per lo scouting** (l'utente lo vuole spento
+    finche' G non e' innestato con sicurezza). Non spegnerlo globalmente
+    per chiunque importi best_five: NON toccare il riuso nel generatore
+    di formazioni, qui si parla solo dello scouting;
+ b) **esponilo come input del workflow** `scouting_gw.yml`, con la stessa
+    forma degli altri (checkbox, testo in italiano comprensibile, es.
+    "Riusa le previsioni gia' calcolate per questa giornata (piu' veloce,
+    ma non ricalcola con G)"), default SPENTO.
+
+Inoltre:
  - deve LOGGARE in chiaro che il riuso e' spento e quante previsioni sono
-   state rifatte per questo motivo (l'utente deve accorgersene dal log);
- - NON toccare il riuso nel generatore di formazioni: qui si parla solo
-   dello scouting.
+   state rifatte per questo motivo (l'utente deve accorgersene dal log,
+   non deve andarlo a cercare nel codice);
+ - se scopri altri interruttori importanti dello scouting non esposti
+   nella UI, ELENCALI nell'esito. Non aggiungerli tutti di tua
+   iniziativa: e' l'utente a decidere quali gli servono in mano.
 
 --- REGOLE DI CONSEGNA ---------------------------------------------------
 
