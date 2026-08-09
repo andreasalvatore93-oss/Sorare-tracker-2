@@ -1,0 +1,113 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-09T23:01:59.001853Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) jhonder-leonel-cadiz-fernandez: 58 pt attesi (33-78)
+   ORDINAMENTO: 61.43
+   SQUADRA: wuhan-three-towns | AVVERSARIO: shanghai-sipg-shanghai
+======================================================================
+
+######################################################################
+# GIOCATORE: jhonder-leonel-cadiz-fernandez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jhonder-leonel-cadiz-fernandez (squadra: wuhan-three-towns)
+Generato: 2026-08-09T23:01:59.001201Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: chinese-super-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-13 | WTT vs DXC | chinese-super-league | score=67.3 | peso=0.125
+  2026-03-21 | HEN vs WTT | chinese-super-league | score=29.9 | peso=0.140
+  2026-04-05 | None vs WTT | chinese-super-league | score=71.2 | peso=0.157
+  2026-04-11 | CHT vs WTT | chinese-super-league | score=60.0 | peso=0.177
+  2026-04-17 | WTT vs QIA | chinese-super-league | score=31.0 | peso=0.198
+  2026-04-21 | WTT vs ZGR | chinese-super-league | score=60.2 | peso=0.223
+  2026-04-25 | SHE vs WTT | chinese-super-league | score=24.3 | peso=0.250
+  2026-05-01 | TED vs WTT | chinese-super-league | score=60.0 | peso=0.281
+  2026-05-06 | WTT vs QDJ | chinese-super-league | score=64.1 | peso=0.315
+  2026-05-10 | QYI vs WTT | chinese-super-league | score=67.1 | peso=0.354
+  2026-05-16 | WTT vs SHU | chinese-super-league | score=79.7 | peso=0.397
+  2026-05-20 | SHE vs WTT | chinese-super-league | score=83.0 | peso=0.445
+  2026-05-24 | SLT vs WTT | chinese-super-league | score=100.0 | peso=0.500
+  2026-05-31 | WTT vs YUY | chinese-super-league | score=80.4 | peso=0.561
+  2026-06-27 | GUO vs WTT | chinese-super-league | score=50.9 | peso=0.630
+  2026-07-04 | DXC vs WTT | chinese-super-league | score=89.2 | peso=0.707
+  2026-07-18 | WTT vs None | chinese-super-league | score=74.6 | peso=0.794
+  2026-07-25 | WTT vs CHT | chinese-super-league | score=38.9 | peso=0.891
+  2026-08-01 | QIA vs WTT | chinese-super-league | score=40.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 63.15
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=19): 59.00 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 53.78 | Punteggio complessivo (granulari) medio: 9.37 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 2.98 (delta -0.06) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 21.01
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.9 - 83.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.49 (differenza: +2.52)
+Media score in casa: 62.03 | Media score fuori casa: 61.49
+Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.5
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 0.901 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.994
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 58.9 vs media 5 PRECEDENTI: 82.0): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T11:35
+Casa: Wuhan Three Towns FC | Trasferta: Shanghai SIPG FC
+Competizione: chinese-super-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 57.7 (range 33.5 - 77.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 61.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 66.28
+Punteggio REALE ottenuto in quella partita: 40.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -25.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      62.2    24.3    -37.9    18.7        NO
+   7        7      57.4    60.0     +2.6    21.2        SI
+   8        8      63.5    64.1     +0.6    20.0        SI
+   9        9      38.8    67.1    +28.3    19.3        NO
+  10       10      56.2    79.7    +23.5    18.8        NO
+  11       11      66.4    83.0    +16.6    20.2        SI
+  12       12      53.1   100.0    +46.9    21.2        NO
+  13       13      57.0    80.4    +23.4    24.9        SI
+  14       14      63.2    50.9    -12.3    23.7        SI
+  15       15      54.6    89.2    +34.6    23.2        NO
+  16       16      77.6    74.6     -3.0    23.3        SI
+  17       17      68.2    38.9    -29.3    21.9        NO
+  18       18      50.5    40.8     -9.7    23.7        SI
+
+MAE (errore assoluto medio): 20.66
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 53.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
