@@ -1661,71 +1661,89 @@ def _escape(testo):
     return (testo.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;'))
 
 
-def _riga_minimale(g, atteso):
-    prezzo = ('&mdash;' if g.get('prezzo_eur') is None
-              else '%.2f&nbsp;&euro;' % g['prezzo_eur'])
-    odds_txt = ('&mdash;' if g.get('starter_odds') is None
-                else "<span class='%s'>%.0f%%</span>"
-                     % ('mia' if g['starter_odds'] >= 0.8 else 'warn',
-                        g['starter_odds'] * 100))
-    grade = g.get('grade') or '&mdash;'
-    return (
-        "<tr>"
-        f"<td><a href='https://sorare.com/football/players/{g['slug']}' "
-        f"target='_blank' rel='noopener'>{(g.get('nome') or g['slug'])}</a></td>"
-        f"<td>{'/'.join(g['ruoli'])}</td>"
-        f"<td>{(g.get('club') or '')}</td>"
-        f"<td class='n'>{odds_txt}</td>"
-        f"<td class='n'><a href='https://sorare.com/football/players/{g['slug']}/cards' "
-        f"target='_blank' rel='noopener'>{prezzo}</a></td>"
-        f"<td class='n'>{'&mdash;' if atteso is None else '%.1f' % atteso}</td>"
-        f"<td class='n'>{grade}</td>"
-        "</tr>")
+def _atteso_combinato_per_gruppo(pool, attesi, gg):
+    """atteso_combinato = atteso + sd_gruppo * z_grade, la STESSA formula gia'
+    validata in produzione (generatore, build_formazione_globale._apply_grade_
+    group -- vedi HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8bis), non
+    reinventata qui: gruppo = (lega, ruolo primario), come nel generatore.
+    sd_gruppo e' la dispersione degli ATTESI dentro il gruppo (non del
+    grade); z_grade e' lo z-score del grade numerico (A=6..F=1) dentro lo
+    stesso gruppo. Con meno di 2 atteso o 2 grade nel gruppo, fallback allo
+    stesso identico atteso (z=0), mai un numero inventato.
+    Ritorna {slug: atteso_combinato} SOLO per chi ha un atteso."""
+    grade_num = getattr(gg, 'GRADE_NUM', None) or {'A': 6, 'B': 5, 'C': 4, 'D': 3, 'E': 2, 'F': 1}
+    gruppi = defaultdict(list)
+    for g in pool['giocatori']:
+        if attesi.get(g['slug']) is None or not g.get('ruoli'):
+            continue
+        gruppi[(g.get('lega'), g['ruoli'][0])].append(g)
+
+    combinato = {}
+    for righe in gruppi.values():
+        vals = [attesi[r['slug']] for r in righe]
+        m = sum(vals) / len(vals)
+        sd = (sum((v - m) ** 2 for v in vals) / len(vals)) ** 0.5 if len(vals) >= 2 else 0.0
+        grade_members = [grade_num[r['grade']] for r in righe if r.get('grade') in grade_num]
+        if len(grade_members) >= 2:
+            gm = sum(grade_members) / len(grade_members)
+            gsd = (sum((v - gm) ** 2 for v in grade_members) / len(grade_members)) ** 0.5
+        else:
+            gm, gsd = 0.0, 0.0
+        for r in righe:
+            gn = grade_num.get(r.get('grade'))
+            z = (gn - gm) / gsd if (gn is not None and gsd > 0) else 0.0
+            combinato[r['slug']] = attesi[r['slug']] + sd * z
+    return combinato
 
 
-def _tabella_minimale(pool, attesi):
-    """Tabella semplificata (09/08/2026, richiesta utente): solo giocatore,
-    ruolo, club, odds, prezzo, atteso, grade -- niente essenze/GW ne' arene.
-
-    DUE tabelle, non una (09/08 notte, terzo giro): con l'atteso presente
-    solo su una minoranza (predict non ancora lanciato per tutti), una
-    sola tabella ordinata per atteso relegava la maggioranza in fondo,
-    a valori vuoti, illeggibile. I COMPLETI (hanno l'atteso) stanno primi,
-    ordinati per atteso decrescente; gli INCOMPLETI stanno in una seconda
-    tabella separata, col motivo (nessuna pipeline per la lega, oppure
-    predict non ancora fatto per questa giornata)."""
-    completi = [g for g in pool['giocatori'] if attesi.get(g['slug']) is not None]
-    incompleti = [g for g in pool['giocatori'] if attesi.get(g['slug']) is None]
-    completi.sort(key=lambda g: -attesi[g['slug']])
+def _tabella_minimale(pool, attesi, gg=None):
+    """Tabella semplificata (09/08/2026, richiesta utente): SOLO giocatore,
+    ruolo, club, odds, prezzo, grade, atteso, A+G -- niente arene, niente
+    essenze/GW, niente "si ripaga in". UNA lista sola, ordinata per A+G
+    (atteso_combinato) decrescente, colonne ordinabili col click (JS gia'
+    esistente in _HTML_ORDINAMENTO, agganciato su table#candidati). Chi non
+    ha ancora l'atteso (predict non fatto) resta in fondo, mai a valore
+    inventato."""
+    combinato = _atteso_combinato_per_gruppo(pool, attesi, gg)
+    righe = sorted(pool['giocatori'],
+                   key=lambda g: -(combinato.get(g['slug'], float('-inf'))))
 
     pezzi = [
-        f"<h2>{len(completi)} candidati con Atteso</h2>"
+        f"<h2>{len(righe)} candidati</h2>"
+        "<div class='meta'>A+G = atteso + effetto del grade dentro il gruppo "
+        "lega/ruolo (stessa formula del generatore di formazioni). Ordinamento "
+        "di default. Clicca un'intestazione per riordinare su un'altra "
+        "colonna.</div>"
         "<div class='wrap'><table id='candidati'>"
         "<tr><th>Giocatore</th><th>R</th><th>Club</th>"
         "<th title='Starter odds Sorare'>Odds</th><th>Prezzo</th>"
-        "<th>Atteso</th><th title='Lettera Sorare A..F per la prossima "
-        "partita classic'>Grade</th></tr>"]
-    for g in completi:
-        pezzi.append(_riga_minimale(g, attesi.get(g['slug'])))
-    pezzi.append("</table></div>")
-
-    if incompleti:
+        "<th title='Lettera Sorare A..F per la prossima partita classic'>Grade</th>"
+        "<th>Atteso</th>"
+        "<th title='Atteso + effetto del grade dentro il gruppo lega/ruolo'>A+G</th></tr>"]
+    for g in righe:
+        atteso = attesi.get(g['slug'])
+        ag = combinato.get(g['slug'])
+        prezzo = ('&mdash;' if g.get('prezzo_eur') is None
+                  else '%.2f&nbsp;&euro;' % g['prezzo_eur'])
+        odds_txt = ('&mdash;' if g.get('starter_odds') is None
+                    else "<span class='%s'>%.0f%%</span>"
+                         % ('mia' if g['starter_odds'] >= 0.8 else 'warn',
+                            g['starter_odds'] * 100))
+        grade = g.get('grade') or '&mdash;'
         pezzi.append(
-            f"<h2>{len(incompleti)} candidati SENZA Atteso</h2>"
-            "<div class='meta'>Predict non ancora fatto per questa giornata, o "
-            "nessuna pipeline per la loro lega. Stessi dati, nessun numero "
-            "inventato al posto dell'atteso mancante.</div>"
-            "<div class='wrap'><table id='incompleti'>"
-            "<tr><th>Giocatore</th><th>R</th><th>Club</th>"
-            "<th title='Starter odds Sorare'>Odds</th><th>Prezzo</th>"
-            "<th>Atteso</th><th title='Lettera Sorare A..F per la prossima "
-            "partita classic'>Grade</th><th>Motivo</th></tr>")
-        for g in incompleti:
-            riga = _riga_minimale(g, None)
-            motivo = ('nessuna pipeline per la lega' if not g.get('cartella')
-                      else 'predict non ancora fatto')
-            pezzi.append(riga.replace('</tr>', f"<td class='muted'>{motivo}</td></tr>"))
-        pezzi.append("</table></div>")
+            "<tr>"
+            f"<td><a href='https://sorare.com/football/players/{g['slug']}' "
+            f"target='_blank' rel='noopener'>{(g.get('nome') or g['slug'])}</a></td>"
+            f"<td>{'/'.join(g['ruoli'])}</td>"
+            f"<td>{(g.get('club') or '')}</td>"
+            f"<td class='n'>{odds_txt}</td>"
+            f"<td class='n'><a href='https://sorare.com/football/players/{g['slug']}/cards' "
+            f"target='_blank' rel='noopener'>{prezzo}</a></td>"
+            f"<td class='n'>{grade}</td>"
+            f"<td class='n'>{'&mdash;' if atteso is None else '%.1f' % atteso}</td>"
+            f"<td class='n'>{'&mdash;' if ag is None else '%.1f' % ag}</td>"
+            "</tr>")
+    pezzi.append("</table></div>")
     return pezzi
 
 
@@ -1768,7 +1786,7 @@ def scrivi_html(pool, dest, formazioni=(), minimal=False):
     scremati = any('idoneo' in g for g in pool['giocatori'])
     pezzi = [testa]
     if minimal:
-        pezzi += _tabella_minimale(pool, attesi)
+        pezzi += _tabella_minimale(pool, attesi, gg)
         pezzi.append(_HTML_CODA)
         documento = '\n'.join(pezzi)
         os.makedirs(os.path.dirname(dest), exist_ok=True)
