@@ -1,6 +1,6 @@
 ======================================================================
 CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-09T21:09:54.688467Z
+Generato: 2026-08-09T21:35:34.029977Z
 Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
 1) claudio-rafael-soares-braga: 51 pt attesi (32-78)
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: claudio-rafael-soares-braga (squadra: hearts-edinburgh)
-Generato: 2026-08-09T21:09:54.660841Z
+Generato: 2026-08-09T21:35:34.028893Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -64,8 +64,8 @@ Deviazione standard pesata: 18.10
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.39 (differenza: +0.71)
 Media score in casa: 50.36 | Media score fuori casa: 48.52
 Fattore casa/trasferta applicato: 1.007 (CASA nella prossima partita)
-Ranking medio avversari affrontati (storico): 4.6
-Ranking prossimo avversario: 9
+Ranking medio avversari affrontati (storico): 4.5
+Ranking prossimo avversario: 6
 Fattore forza avversario applicato: 0.901 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
 Fattore falli (casa/trasferta, da dati reali): 0.998
 Fattore duelli (casa/trasferta, da dati reali): 1.000
@@ -124,10 +124,10 @@ P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo sto
   25       25      41.2    46.4     +5.2    20.0        SI
   26       26      50.4    41.0     -9.4    18.8        SI
   27       27      43.9    45.9     +2.0    17.9        SI
-  28       28      53.5    27.6    -25.9    16.8        NO
-  29       29      54.8    80.0    +25.2    17.2        NO
+  28       28      48.8    27.6    -21.2    16.8        NO
+  29       29      55.0    80.0    +25.0    17.2        NO
 
-MAE (errore assoluto medio): 16.32
+MAE (errore assoluto medio): 16.12
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
