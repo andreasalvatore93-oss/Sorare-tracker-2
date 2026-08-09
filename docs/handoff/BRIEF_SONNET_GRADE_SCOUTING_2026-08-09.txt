@@ -1,0 +1,137 @@
+BRIEF PER SONNET -- GRADE NELLO SCOUTING + CACHE PREDICT
+Scritto dall'orchestratore, 09/08/2026 notte (Roma, CEST).
+
+Chat pulita: non sai nulla di questo repo. Leggi PRIMA, in quest'ordine:
+  1. CLAUDE.md (regole di lavoro; in cima c'e' la regola nuova sui backtest)
+  2. docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md, sezioni 2.2 (scouting),
+     8bis (grade G), 8ter (scouting dopo il grade), 8undecies (come si
+     parla con l'API Sorare: i TRE pezzi obbligatori per l'autenticazione)
+Il codice vince sui documenti: se divergono, segui il codice e correggi
+il documento nello stesso commit.
+
+--- PERCHE' ESISTE QUESTO LAVORO -----------------------------------------
+
+Il generatore di formazioni usa il grade (la lettera A..F che Sorare
+pubblica prima della partita) dal 07/08. Lo scouting acquisti NO:
+verificato il 09/08 sul codice, `scouting_gw.py` non contiene nessuna
+occorrenza della parola "grade", e la tabella HTML non ha nessuna colonna
+per la lettera (le colonne sono Conviene/Giocatore/R/Atteso/Prezzo/
+Ess/GW/Si ripaga in/Odds/Note, riga ~1702).
+
+L'utente vuole ALLINEARE i due strumenti. Non e' una dimenticanza da
+riparare in fretta: e' strutturale, e va capito prima di scrivere codice.
+
+COME IL GENERATORE PRENDE IL GRADE (letto in discovery_fixture.py:364-479):
+`fetch_grade_live(fixture_slug)` pagina il BENCH (`myFilteredBench`) su 3
+leaderboard x 4 posizioni e legge `eligiblePlayerGameScores.projection.
+grade`. E' bulk, ma il bench contiene SOLO LE CARTE POSSEDUTE, e la query
+richiede sessione autenticata. In produzione la fetch la fa un job unico
+che passa il risultato agli altri come artifact `pool_gw.json`.
+
+PERCHE' NON SI PUO' COPIARE NELLO SCOUTING: lo scouting valuta carte NON
+possedute (e' tutto il suo scopo, §2.2). Nel bench non ci sono. Quindi la
+strada del generatore, per costruzione, non le vede.
+
+--- COSA DEVI FARE: TRE COMPITI, IN QUEST'ORDINE --------------------------
+
+=== COMPITO 1 (MISURA, nessuna modifica al codice) ===
+DOMANDA: la query `searchPlayers` che lo scouting gia' fa puo' portare
+anche il grade, senza nessuna richiesta in piu'?
+
+Contesto: `scouting_gw.py` chiama `searchPlayers` paginata (~12 chiamate
+per l'intera giornata, costante `SEARCH_QUERY`, funzione a riga ~493) e da
+li' ottiene gia' L5/L10/L40, presenze, infortuni, prezzo minimo, starter
+odds e `nextClassicFixtureProjectedScore`. Se lo stesso `anyPlayer` dentro
+`commonPlayerHits` accetta anche il campo della lettera, il grade arriva
+GRATIS nelle stesse chiamate.
+
+Come si prova (l'introspezione GraphQL e' DISABILITATA su Sorare, vedi
+CLAUDE.md: non tentare `__type`/`__schema`, si legge il messaggio d'errore
+di una query mirata):
+ a) parti dalla `SEARCH_QUERY` esistente, NON riscriverla da zero;
+ b) aggiungi sull'`anyPlayer` il pezzo `playerGameScores(last: 3) {
+    projection { grade } }` (e' la rotta gia' usata e verificata
+    funzionante su giocatori NON posseduti, vedi
+    analisi_manager/raccolta_grade_storico.py e §8bis);
+ c) lancia UNA sola pagina (page 1, pageSize piccolo) e riporta la
+    risposta esatta: accettata? errore di validazione? errore di
+    complessita' ("depth N / complexity M")?
+ d) se passa: quante righe su quella pagina hanno effettivamente una
+    lettera non nulla, e per quale partita e' quella lettera (la
+    proiezione e' PER PARTITA, non per giocatore -- §8bis). Serve sapere
+    se e' la partita della giornata che lo scouting sta valutando.
+
+ATTENZIONE ALLE TRAPPOLE GIA' PAGATE:
+ - il CLIENT conta: la stessa query passa col client di
+   `scanners/bot_profit.py` e viene respinta per complessita' con altri
+   (trappola 6 in §8, e commento a scouting_gw.py:~515). Usa lo stesso
+   client che usa gia' lo scouting (`_client_ritmato()`).
+ - i nomi leggibili in `searchPlayers` sono ALIAS (trappola 5).
+ - se aggiungendo il campo la query inizia a farsi respingere per
+   complessita' dalla pagina 2 in poi, dillo: e' esattamente il modo in
+   cui questo errore si e' gia' presentato una volta.
+
+SE LA RISPOSTA E' NO (query respinta): fermati e riportalo. L'alternativa
+sarebbe una query per giocatore (centinaia), e se costa tanto la decisione
+se valga la pena la prende l'utente, non tu.
+
+SE LA RISPOSTA E' SI': NON implementare ancora l'uso del grade nel
+punteggio. Riporta e basta. Come il grade debba PESARE su una decisione
+d'acquisto pluri-giornata (mentre la lettera vale per una sola partita) e'
+una decisione aperta dell'utente, §8ter -- non una scelta tecnica tua.
+
+=== COMPITO 2 (VERIFICA, poi eventuale modifica) ===
+CACHE PREZZI. L'utente ricordava di averla, e HA RAGIONE: esiste in
+`best_five.py` (`PREZZI_CACHE_PATH = best_five_prezzi_cache.json`, TTL
+`BEST_FIVE_PREZZI_CACHE_TTL_ORE` default 5 GIORNI, alzato da 24h il 31/07
+su sua richiesta; c'e' anche una cache L10 con lo stesso schema).
+
+MA -- e questo va verificato da te, non dato per buono: nello SCOUTING i
+prezzi NON sembrano costare query aggiuntive. `_prezzo_eur(p)` legge
+`lowestPriceAnyCard` dal payload di `searchPlayers`, cioe' arriva dentro
+le stesse ~12 chiamate. Se e' cosi, aggiungere una cache prezzi allo
+scouting non risparmierebbe NIENTE e in cambio darebbe prezzi vecchi su
+una decisione d'acquisto.
+
+Quindi: verifica sul codice se lo scouting fa QUALCHE query dedicata ai
+prezzi (cerca `liveSingleSaleOffers`, `lowestPriceAnyCard`, e ogni
+chiamata dentro il percorso dei prezzi). Riporta il conteggio vero delle
+query per prezzi in una run di scouting.
+ - Se sono ZERO query dedicate: NON implementare nessuna cache, spiegalo.
+ - Se invece ci sono query dedicate: allora la cache serve davvero, e
+   l'utente la vuole con blocco di 2-3 GIORNI ("una volta cachato un
+   prezzo, tienilo, non si sposta di molto"). In quel caso riusa lo schema
+   gia' esistente in best_five (stesso file-schema, stesso meccanismo di
+   TTL), NON scriverne uno nuovo.
+
+=== COMPITO 3 (MODIFICA, richiesta esplicita dell'utente) ===
+DISATTIVARE IL RIUSO DELLE PREDIZIONI nello scouting.
+
+Motivo dell'utente: finche' G non e' innestato con sicurezza, non vuole
+che lo scouting riusi previsioni gia' su disco -- una previsione salvata
+prima potrebbe essere stata calcolata senza G o con un grade diverso, e
+verrebbe riusata in silenzio.
+
+Il flag ESISTE GIA': `best_five.RIUSA_PREDIZIONI`, che legge
+`BEST_FIVE_RIUSA_PREDIZIONI` (default '1', best_five.py:482). Lo scouting
+lo usa via `bf._predizione_riutilizzabile(...)` (scouting_gw.py:~1081).
+
+Fai la cosa MENO invasiva: spegnilo per lo scouting, non globalmente per
+chiunque importi best_five. Valuta se metterlo come variabile d'ambiente
+nel workflow `scouting_gw.yml` oppure impostarlo dentro `scouting_gw.py`
+prima dell'import. Scegli tu, ma:
+ - deve restare RIACCENDIBILE con una variabile, senza toccare il codice;
+ - deve LOGGARE in chiaro che il riuso e' spento e quante previsioni sono
+   state rifatte per questo motivo (l'utente deve accorgersene dal log);
+ - NON toccare il riuso nel generatore di formazioni: qui si parla solo
+   dello scouting.
+
+--- REGOLE DI CONSEGNA ---------------------------------------------------
+
+- NESSUN push su main. Committa se vuoi, ma dillo; il push lo fa l'utente.
+- Compito 1 e 2 sono MISURA: nessuna modifica alla produzione.
+- Se un numero non lo hai misurato, scrivi "non misurato", mai una stima.
+- Riporta l'esito IN CODA A QUESTO FILE, non in un file nuovo.
+- Se scopri che una cosa scritta in questo brief e' falsa, dillo per
+  primo: l'orchestratore preferisce essere smentito subito. E' gia'
+  successo oggi due volte, ed e' stato utile entrambe le volte.
