@@ -1,9 +1,9 @@
 ======================================================================
 CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-04T19:47:51.494595Z
+Generato: 2026-08-09T21:05:34.501462Z
 Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
-1) luis-ezequiel-unsain: 51 pt attesi (27-78)
+1) luis-ezequiel-unsain: 53 pt attesi (29-80)
    SQUADRA: talleres-cordoba-ciudad-de-cordoba-provincia-de-cordoba | AVVERSARIO: lanus-lanus-provincia-de-buenos-aires
 ======================================================================
 
@@ -13,7 +13,7 @@ Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: luis-ezequiel-unsain (squadra: talleres-cordoba-ciudad-de-cordoba-provincia-de-cordoba)
-Generato: 2026-08-04T19:47:51.493774Z
+Generato: 2026-08-09T21:05:34.500600Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -63,10 +63,9 @@ Deviazione standard pesata: 21.16
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.93 (differenza: +4.23)
 Media score in casa: 44.80 | Media score fuori casa: 67.90
 Fattore casa/trasferta applicato: 0.994 (CASA nella prossima partita)
-Ranking medio avversari affrontati (storico): 7.0
-Ranking prossimo avversario: 10
-Fattore forza avversario applicato: 1.112 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
-Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 1.103
+Ranking medio avversari affrontati (storico): 6.0
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.293 (gol fatti reali dell'avversario, ultime 10; delta granulare parate -0.00 pt)
 NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
 Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.004
 Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.004
@@ -74,7 +73,7 @@ Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicat
 Fattore gol subiti (goals_conceded, con cap, non applicato): 0.997
 Tasso storico clean sheet (porta inviolata nei primi 60'): 16.7% (bonus atteso incorporato nella media pesata: ~4.2pt)
 Fattore trend (media ultime 5: 57.7 vs media 5 PRECEDENTI: 49.6): 1.000
-P(gioca): 100.00% (fonte: tasso di presenza storico (30/30))
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
 
 --- PROSSIMA PARTITA ---
 Data: 2026-08-12T00:00
@@ -84,7 +83,7 @@ Competizione: superliga-argentina-de-futbol
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 51.1 (range 26.7 - 77.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 53.5 (range 29.1 - 80.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 46.62
@@ -125,9 +124,9 @@ P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo sto
   26       26      50.0    23.4    -26.6    21.1        NO
   27       27      47.0    45.7     -1.3    22.1        SI
   28       28      40.4    44.8     +4.4    20.8        SI
-  29       29      66.6    90.1    +23.5    19.6        NO
+  29       29      61.7    90.1    +28.4    19.6        NO
 
-MAE (errore assoluto medio): 15.27
+MAE (errore assoluto medio): 15.47
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
