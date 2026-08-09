@@ -1363,6 +1363,43 @@ di nuovo questa voce.
 
 ## 10bis. COSE DA FARE — riscritto il 09/08 notte
 
+**PRIORITARIO (aggiunto 10/08 notte, richiesta esplicita dell'utente):
+gruppo del grade esteso a TUTTA LA GIORNATA per ruolo, non per (lega,
+ruolo).** Nato da un caso reale ispezionato in scouting: Hugo Lloris
+(grade B) prende uno SCONTO di -0,53 pt sull'atteso perché nel suo
+gruppo attuale (MLS, GK, con atteso disponibile: Louro B / Lloris B /
+Sirois A) la media è 5,33 (fra B e A) — B è SOTTO media lì, anche se in
+assoluto B è un voto buono. Il gruppo oggi è piccolissimo (a volte 2-3
+carte, §8bis "difetto strutturale 23%") perché è per lega. Ipotesi da
+testare: allargare il gruppo a TUTTI i portieri (o TUTTI i giocatori di
+un ruolo) della giornata, indipendentemente dalla lega, dà una media/sd
+più stabile e meno rumorosa? Da fare per ogni ruolo (GK/DEF/MID/FWD), con
+BACKTEST prima di toccare produzione — stessa metodologia già usata per
+G (§8bis: allocazione/astensione separate, placebo, IC). Confrontare
+contro lo z-score per (lega,ruolo) attuale, non sostituirlo alla cieca.
+Nessuna implementazione fatta finché il backtest non decide.
+
+**Aggiunto 10/08 notte: difetto strutturale nella scelta della "prossima
+partita" per il predict (test_gk.py e affini, condiviso da scouting E dal
+generatore).** Caso reale: Matt Freese (NYC) ha una partita di Leagues Cup
+il 9/08 (prima della finestra GW4, competizione diversa) e la vera
+partita MLS della GW4 il 13/08. Il predict prende `anyFutureGames` e usa
+SEMPRE il primo nodo (la partita cronologicamente più vicina), senza
+controllare se cade dentro la finestra della giornata target — ha quindi
+calcolato l'atteso per la partita di Leagues Cup del 9/08. La rete di
+sicurezza di scouting (`_atteso_dai_consigli`, controllo sulla finestra
+`Data:`) ha scartato correttamente quel numero (nessun valore sbagliato
+mostrato), ma il risultato e' un buco: Freese resta senza Atteso/A+G pur
+avendo uno storico enorme, un problema diverso da chi non ha proprio
+abbastanza storico (Miller/Rick). Root cause verificata sul campo (query
+`anyFutureGames` diretta, non dedotta): Sorare restituisce ENTRAMBE le
+partite come "scheduled", lo script non filtra per competizione/finestra.
+Tocca un file condiviso con la produzione (stesso `test_gk.py` che gira
+per l'owned-card): fix da valutare con l'utente prima di toccarlo, non
+banale da isolare al solo scouting. Non ancora quantificato quanti
+giocatori nel pool sono colpiti (nessuna misura fatta, solo il caso
+Freese ispezionato).
+
 **Tutto quello che era in cima a questa lista il 09/08 mattina è FATTO**:
 premi scaricati, soglie applicate, G validato sulle arene, filone odds
 chiuso. **Aggiunto 09/08 sera**: filone "tabella fissa per lettera" testato
