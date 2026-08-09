@@ -425,3 +425,120 @@ invertire la logica in scouting_gw.py).
 
 File toccati in questo giro: `scouting_gw.py`,
 `.github/workflows/scouting_gw.yml`, questo brief. Nessun push su main.
+
+
+--- TERZO GIRO, DI CHIUSURA (orchestratore, 09/08/2026 notte) ------------
+
+L'utente NON vuole altri giri di navetta: deve funzionare dopo QUESTO
+fix. Quindi qui c'e' tutto, compreso l'aggiornamento della
+documentazione. Leggi tutto prima di iniziare.
+
+Ottimo lavoro sul secondo giro: il campo trovato al primo colpo e il
+controllo incrociato col bench (124/125) erano piu' forti di quanto il
+brief chiedesse. Quello che segue non lo smentisce, lo mette in
+sicurezza.
+
+=== A. IL RISCHIO RESIDUO SUL GRADE (il piu' importante) ===
+
+Il campo si chiama `nextClassicFixtureProjectedGrade`: e' la proiezione
+per la PROSSIMA partita DI QUEL GIOCATORE, non per la giornata che lo
+scouting sta valutando. Le 125 carte del tuo confronto stavano tutte nel
+bench della GW target, quindi avevano per costruzione la prossima partita
+li': il test non poteva vedere il problema.
+
+Il caso che rompe: oggi la GW3 (7-11 ago) e' ancora aperta e la GW4
+comincia l'11. Un club che gioca il 10 (GW3) e poi il 13 (GW4) ha come
+"next fixture" quella del 10 -> la colonna Grade mostrerebbe la lettera
+di UN'ALTRA giornata, senza dirlo. E' lo stesso inganno gia' documentato
+in §10bis.13 del riassunto (grade legato alla giornata aperta).
+
+PERO' c'e' uno scudo possibile, ed e' la prima cosa da verificare:
+il pool viene chiesto con il refinement `playing_next=<slug_fixture>`
+(vedi `_refinements` e il log "Filtri: playing_next=..."). SE quel
+refinement significa davvero "giocatori la cui PROSSIMA partita e' in
+questa fixture", allora `nextClassicFixtureProjectedGrade` coincide con
+la fixture target PER COSTRUZIONE e il rischio non esiste.
+
+COSA FARE, in quest'ordine:
+ 1. Verifica il significato di `playing_next` con una misura, non con
+    un'assunzione. Un modo economico: prendi il pool della GW4 e conta
+    quanti club di quel pool hanno ANCHE una partita nella GW3 ancora da
+    giocare. Hai gia' in mano `partite_della_giornata(slug_fx)`, che
+    torna club -> (avversario, data) per la fixture chiesta: chiamala
+    sulle DUE fixture e incrocia. Se il pool GW4 contiene giocatori il
+    cui club deve ancora giocare in GW3, lo scudo NON regge.
+ 2. SE NON REGGE: non mostrare una lettera che parla di un'altra
+    partita. Metti la cella VUOTA (o marcata) quando la partita del club
+    nella fixture target non e' la prima partita futura di quel club.
+    Meglio una cella vuota che un dato silenziosamente sbagliato: e' la
+    regola di questo repo.
+ 3. SE REGGE: scrivilo nell'esito con il numero che lo dimostra, e
+    aggiungi un commento nel codice accanto al campo, cosi' nessuno
+    riapre il dubbio fra un mese.
+
+=== B. NUMERI CHE MANCANO NEL TUO ESITO (servono per fidarsi) ===
+
+Nel test locale hai riportato "26 attesi su ~184 candidati MLS" ma NON
+quanti avessero la lettera. Senza quel numero non si sa se la colonna
+Grade sara' piena o quasi vuota.
+
+Aggiungi un LOG di copertura, che deve comparire a ogni run:
+  - quanti giocatori nel pool, quanti con odds sopra soglia;
+  - quanti hanno il grade (n e %);
+  - quanti hanno l'atteso (n e %);
+  - quanti hanno il prezzo (n e %).
+Non e' decorazione: e' il modo in cui l'utente si accorge da solo se una
+run e' venuta male, senza chiedere a nessuno.
+
+=== C. LA TABELLA MINIMALE DEVE ESSERE LEGGIBILE ===
+
+Ordinata per Atteso decrescente: se l'atteso manca a gran parte dei
+candidati (nel tuo test 26 su 184), dove finiscono gli altri 158? Una
+tabella con 158 righe vuote in fondo e' inutilizzabile.
+
+Decidi e implementa la cosa sensata: chi non ha atteso va in fondo,
+oppure -- meglio -- in `--minimal` si mostrano PRIMA quelli completi e
+gli incompleti restano in una seconda tabellina separata, con scritto
+perche' sono incompleti (niente pipeline per la lega, predict non
+lanciato, ecc.). Scegli tu, ma il risultato deve essere una pagina che si
+guarda e si capisce in dieci secondi.
+
+=== D. COERENZA FRA I DUE JOB (rischio di run buttata) ===
+
+Hai gia' detto di aver passato `--minimal` sia a `candidati` sia al
+report. VERIFICALO davvero leggendo il workflow riga per riga: se i due
+job ricevono flag diversi, la prima passata scrive un formato e la
+seconda un altro, e la run e' persa. Stessa verifica per `--odds-min`:
+il workflow ha default '0.80' e lo passa solo `if [ -n ... ]` -- controlla
+che arrivi a ENTRAMBI i job, non solo al primo.
+
+=== E. DOCUMENTAZIONE -- DA FARE, non facoltativo ===
+
+Adesso i documenti dicono il FALSO su questo tema. Correggi:
+ 1. In `docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md`, §8ter: dice che il
+    grade nello scouting non c'e' "per un motivo strutturale" e che
+    l'unica rotta pubblica da' solo lo storico. E' SUPERATO: esiste
+    `nextClassicFixtureProjectedGrade`, gratis dentro searchPlayers.
+    Riscrivi il paragrafo con: il campo, come e' stato trovato, la
+    verifica 124/125 contro il bench, e l'esito del punto A qui sopra.
+ 2. Sempre nel riassunto, §10bis voce 8 ("Decisione grade nello
+    scouting"): non e' piu' "il dato non esiste". Il dato c'e' ed e'
+    mostrato in tabella; quello che resta aperto e' SOLO se e come debba
+    PESARE sul punteggio d'acquisto. Riscrivila cosi'.
+ 3. In QUESTO file, l'esito del PRIMO giro contiene una conclusione
+    sbagliata ("non esiste, nei campi provati, una rotta che dia la
+    proiezione FUTURA per un giocatore non posseduto"). Non cancellarla:
+    aggiungi sotto una riga che dice che e' stata SMENTITA dal secondo
+    giro e perche' (era l'argomento `last:`). Chi legge fra un mese deve
+    trovare la correzione accanto all'errore.
+ 4. Aggiungi in §8 (trappole) una voce nuova: i campi `next*` di Sorare
+    si riferiscono alla prossima partita DEL GIOCATORE, non alla giornata
+    che stai analizzando -- con l'esito del punto A.
+
+=== F. CONSEGNA ===
+- Nessun push su main. Committa e dillo.
+- Prima di consegnare, RILANCIA il test locale in `--minimal` e incolla
+  nell'esito le prime 10 righe della tabella prodotta (nomi veri, odds,
+  prezzo, atteso, grade). L'utente vuole vedere il risultato, non la
+  descrizione del risultato.
+- Se una delle cose scritte qui e' falsa, dillo per primo.
