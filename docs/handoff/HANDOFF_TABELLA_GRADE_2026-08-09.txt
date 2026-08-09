@@ -1,0 +1,637 @@
+HANDOFF -- TABELLA LETTERA GRADE -> PUNTI REALIZZATI
+Sessione 09/08/2026, sera (Roma). Esecutore: Sonnet (brief
+BRIEF_SONNET_TABELLA_GRADE_2026-08-09.txt). SOLO MISURA: nessuna modifica
+alla produzione, nessuna query di rete.
+
+Script: analisi_manager/p20_tabella_grade.py
+Rilancio: python analisi_manager/p20_tabella_grade.py  (locale, ~10s, dati
+gia' sul disco)
+Output grezzo: analisi_manager/p20_tabella_grade_out.json
+Dump leggibile: analisi_manager/p20_tabella_grade_dump.txt (10 esempi/lettera)
+
+
+1. FONTI E PERIMETRO
+---------------------
+Grade: unione validata al §13 dell'handoff arene = carica_indice_grade_esteso
+(6 file di produzione, 1.639 slug) + storico_grade_Forward_ampio_20260806 +
+storico_grade_Goalkeeper_20260806 + storico_grade_arene_2026-08-08 (il
+download dei 169). Totale: 2.241 slug distinti, 33.519 coppie (slug,data)
+uniche.
+
+Punteggio realizzato: SEMPRE dalla cache game-log condivisa
+(backtest_arene_cache.CacheLocale.gamelog), match ESATTO sulla data del
+grade (non finestra: la coppia (slug,data) e' gia' agganciata alla partita
+precisa). Mai il campo 'punteggio' dei file manager (D6, CLAUDE.md).
+
+Di 33.519 coppie: 26.571 hanno un punteggio in cache utilizzabile
+(scoreStatus FINAL/REVIEWING/DID_NOT_PLAY), 6.948 scartate perche' la
+partita non e' in cache locale (giocatore non tracciato quel giorno, o
+partita troppo recente).
+
+"Non-giocante" = punteggio realizzato <=1 (stesso criterio del §12 citato
+nel brief), e comprende esplicitamente lo status DID_NOT_PLAY.
+
+
+2. TABELLA BASE (lettera -> punti realizzati)
+-----------------------------------------------
+lettera  n       media   mediana   sd      quota non-giocanti
+F        8732    15.90    0.00    21.37    61.5%
+E         846    38.27   39.05    24.35    19.6%
+D        7097    49.30   45.60    17.58     0.3%
+C        4930    52.33   49.20    18.58     0.4%
+B        2765    54.61   52.50    19.37     0.5%
+A        2201    57.42   56.30    20.23     0.1%
+
+Esempio banale: se il grade fosse una scommessa "il giocatore fa canestro
+o no", con F il canestro sfuma quasi 2 volte su 3 (61,5%), con D o meglio
+sfuma quasi mai (sotto 1 volta su 200). Il salto vero non e' fra un buono e
+un mediocre: e' fra F/E e tutto il resto.
+
+TEST DI MONOTONIA: OK. La media cresce ad ogni gradino da F (15,90) ad A
+(57,42), senza inversioni.
+
+
+3. STRATIFICATA (ruolo e lega)
+--------------------------------
+Per ruolo (GK/DEF/MID/FWD) la stessa forma si ripete: F crolla per il non-
+giocante (GK: F media 0,77, quasi tutti banchina; DEF/MID/FWD: F fra 11 e 22
+di media), D-A restano fra 45 e 64 punti. Il campione con ruolo noto e' solo
+10.328 righe su 26.571: sulle restanti 16.243 il ruolo non e' ricostruibile
+dai file grade usati (mancano nei file "arene"/"crowss", che non portano il
+campo ruolo) -- limite dichiarato, non aggirato con una stima.
+
+Per lega (soglia 30 osservazioni/lettera, celle sotto non commentate): la
+stessa forma "F crolla, D-A vicini" si ripete su tutte le leghe popolose
+misurate (mls, kleague, germania, inghilterra, austria, giappone, scozia,
+brasile, danimarca, croazia, portogallo, svizzera, cina, germania2,
+norvegia, russia). Numeri completi nel file JSON e nell'output console
+(non ripetuti qui per restare snelli).
+
+
+4. TABELLA CONDIZIONATA (esclusi i non-giocanti)
+---------------------------------------------------
+lettera  n       media   mediana
+F        3364    41.28   37.69
+E         680    47.61   43.10
+D        7076    49.45   45.67
+C        4911    52.53   49.28
+B        2751    54.89   52.60
+A        2199    57.47   56.30
+
+Anche togliendo chi non ha giocato, la scala resta ordinata (monotona) ma si
+comprime parecchio: F condizionato (41,3) e' molto piu' vicino a D (49,5) che
+non lo era prima (15,9 vs 49,3). Conferma quanto trovato al §12: il grade
+porta un po' di informazione anche "a parita' di gioco", ma la sua forza
+maggiore resta prevedere SE si gioca, non quanto si rende giocando.
+
+
+5. CONFRONTO COL MECCANISMO ATTUALE (z-score di giornata)
+--------------------------------------------------------------
+Su 10.218 carte confrontabili (gruppi giornata/ruolo con almeno 2 grade
+noti): correlazione fra la direzione dello z-score attuale e la direzione
+della tabella = 0,88 (concordano quasi sempre). Le due misure hanno SEGNO
+OPPOSTO su 483 carte, il 4,7%.
+
+Esempio banale: e' come due giudici che quasi sempre danno lo stesso voto,
+ma su 1 carta ogni 21 uno dice "spingi su" e l'altro "spingi giu'" sulla
+stessa carta.
+
+
+6. CONTROLLO ANTI-CONTAMINAZIONE (snapshot pre-partita) -- INCONCLUSIVO
+----------------------------------------------------------------------
+Gli snapshot pre-partita disponibili (grade_snapshot_*.json, 170 slug/174
+coppie) riguardano partite del 06-07/08/2026. Nessuna delle 174 ha un
+punteggio corrispondente nella cache locale con la data esatta: la cache di
+questa sessione non e' stata aggiornata dopo quelle giornate (o quelle
+partite non sono ancora tracciate localmente). Non e' quindi possibile, con
+i dati oggi sul disco, confrontare la quota di non-giocanti pre-partita
+contro quella della tabella principale. Va ripetuto quando la cache sara'
+aggiornata a valle di quelle giornate -- NON dichiaro un numero che non ho.
+
+
+7. LIMITI DA TENERE PRESENTE
+-------------------------------
+- 6.948 coppie (slug,data) su 33.519 (20,7%) scartate per assenza in cache
+  locale: la tabella misura solo cio' che e' gia' tracciato.
+- Il ruolo e' noto solo per il 39% delle righe utilizzabili (10.328/26.571):
+  la stratificazione per ruolo (punto 3) e' parziale, anche se il segnale
+  regge ovunque sia misurabile.
+- Il confronto del punto 5 usa il valore MEDIO di lettera come "valore
+  assoluto": e' la stessa semplificazione che il passo 2 (sostituire il
+  meccanismo attuale) dovra' affinare, qui serve solo a stimare quanto
+  spesso oggi si sbaglia direzione.
+- Controllo 5 non eseguibile con i dati disponibili (punto 6).
+
+
+8. DECISIONE APERTA
+----------------------
+Passo 1 (misura) fatto. Il passo 2 -- se sostituire lo z-score di gruppo
+con questa tabella lettera->punti in produzione -- non e' stato deciso qui,
+come da brief. Si decide con l'utente dopo aver visto questi numeri.
+
+
+9. SEGUITO 09/08/2026 -- TABELLA DEI RESIDUI (BRIEF_SONNET_GRADE_RESIDUI)
+--------------------------------------------------------------------------
+Script: analisi_manager/p20_grade_residui.py (rilancio: python
+analisi_manager/p20_grade_residui.py, locale, ~1 min, dati gia' sul disco).
+Output grezzo: analisi_manager/p20_grade_residui_out.json
+Dump leggibile: analisi_manager/p20_grade_residui_dump.txt
+
+ATTENZIONE, NON CONFONDERE CON LA TABELLA DEL §2: quella dice "quanto rende
+una lettera" (in assoluto); questa dice "quanto una lettera aggiunge a
+quello che il modello prevede gia'" -- e' l'unica delle due applicabile a
+un cambio di produzione, perche' il modello i giocatori forti li stima gia'
+piu' alti da solo (rischio di contare due volte la stessa informazione,
+come nel filone odds).
+
+9.1 METODO. Per ogni coppia (slug, partita) del campione di ieri con ruolo
+noto (serve a scegliere il modulo di previsione) ho ricostruito l'atteso di
+produzione con backtest_arene_previsioni.score_atteso -- la stessa funzione
+gia' usata nei backtest arene per il pool -- e l'ho calibrato con la
+STESSA funzione di produzione (build_formazione_globale.calibra). Questa
+funzione NON calcola mai il grade al suo interno: e' gia' "l'atteso prima
+del grade" per costruzione, non c'e' un interruttore da spegnere. Verifica
+di sanita' (5 righe stampate nel log): atteso calibrato sempre in un range
+plausibile (48-50 punti) e coerente col realizzato/grade della riga.
+
+Campione: 10.328 coppie con ruolo noto (su 26.571 totali di ieri: il resto
+non ha ruolo ricostruibile dai file grade disponibili, limite gia'
+dichiarato al §7). Di queste, 9.727 hanno anche l'atteso ricostruibile (601
+scartate per assenza in cache game-log della finestra storica).
+
+9.2 TABELLA DEI RESIDUI (realizzato - atteso), bootstrap sul GIOCATORE
+(cluster = slug, non riga, 2000 ricampionamenti):
+
+lettera  n      slug   media    mediana   sd     IC95
+F        3292    600   -30,97   -45,80   22,19   [-32,28 ; -29,66]
+E         284    108   -15,87   -13,23   26,37   [-20,59 ; -11,29]
+D        2901    487    +1,45    -3,00   17,56   [ +0,81 ;  +2,11]
+C        1636    376    +2,45    -1,10   18,65   [ +1,50 ;  +3,35]
+B         866    243    +2,22    -1,50   19,07   [ +0,93 ;  +3,59]
+A         748    146    +3,94    +2,06   20,08   [ +2,24 ;  +5,50]
+
+Esempio banale: se l'atteso del modello fosse il peso che "immagini" per
+uno sconosciuto guardandolo, il residuo e' quanto la bilancia vera lo
+smentisce. Con F il modello sbaglia per DIFETTO di 31 punti in media (dice
+"giochera' normale", il giocatore invece o non gioca o rende malissimo);
+con D-A sbaglia solo di 1-4 punti, quasi sempre nella direzione giusta
+(l'intervallo IC95 non tocca lo zero, tranne che marginalmente per B).
+
+9.3 TEST DI MONOTONIA: FALLITO in senso stretto. La sequenza F(-31,0) ->
+E(-15,9) -> D(+1,4) -> C(+2,4) -> B(+2,2) -> A(+3,9) inverte fra C e B (B
+leggermente sotto C). Lo scarto (0,23 punti) e' pero' minuscolo rispetto
+alla dimensione delle celle e i due intervalli IC95 si sovrappongono quasi
+per intero (C: +1,50/+3,35; B: +0,93/+3,59): con questi dati NON si puo'
+dire che B valga davvero meno di C, e' rumore statistico, non un'inversione
+vera. Il salto grosso e sicuro resta F/E (fortemente negativi, IC95 mai
+vicino allo zero) contro D/C/B/A (piccoli ma quasi tutti sopra zero).
+
+9.4 GIOCANTI vs NON-GIOCANTI (§1b). Il crollo di F ed E e' quasi tutto
+concentrato nei non-giocanti: F non-giocante residuo medio -48,80 (n=1889),
+F giocante -6,97 (n=1403); E non-giocante -53,27 (n=73), E giocante -2,94
+(n=211). Per D/C/B/A i non-giocanti sono troppo pochi per essere
+commentati (sotto 30 casi). Conferma quanto gia' visto ieri: la lettera
+prevede soprattutto SE si gioca, non tanto quanto si rende giocando --
+anche al netto di quello che il modello sa gia'.
+
+9.5 PER RUOLO (§1c, celle sotto 30 non commentate): la stessa forma si
+ripete su GK/DEF/MID/FWD -- F pesantemente negativo (da -25,8 FWD a -47,7
+GK), D-A piccoli e quasi sempre positivi. Numeri completi nel JSON.
+
+9.6 VERDETTO SUL PASSO 1: residui NON nulli, in particolare su F/E (grosso
+e sicuro) e con segnale piu' debole ma presente su D/C/B/A (IC95 quasi
+sempre sopra zero). Il passo 2 (portare la tabella dei residui in
+produzione dietro flag GRADE_MODE='residui', spento di default) NON e'
+stato fatto: richiede il via esplicito dell'utente, come da brief. Prima di
+darlo, segnalare che la quasi totalita' del guadagno misurabile sta nella
+distinzione F/E vs resto (soprattutto "gioca o non gioca"), non nella scala
+fine D->A, dove i residui sono piccoli e vicini fra loro.
+
+
+10. SEGUITO 09/08/2026 -- PASSO 1-bis, PUNTO 0: ESISTE UN VALORE PIU' FINE
+DELLA LETTERA? (BRIEF_SONNET_GRADE_RESIDUI §Passo 1-bis)
+----------------------------------------------------------------------------
+2 query GraphQL pubbliche (nessun cookie, nessuna credenziale, sfruttando
+che la validazione dei campi avviene prima dell'autenticazione, come gia'
+noto per rewardsConfig).
+
+10.1 IL CAMPO ESISTE. Provando nomi plausibili dentro `projection`, il
+primo tentativo ("score") e' risultato valido:
+  projection { grade score reliabilityBasisPoints }
+Su Mbappe, ultime 5 partite: grade sempre 'A', ma projection.score vale
+60.0/60.0/60.0/61.0/61.0 -- UN VALORE CONTINUO, distinto dal punteggio
+REALIZZATO (playerGameScores.score, quello vero post-partita). Conferma
+che esiste davvero qualcosa di piu' fine della lettera.
+
+Query bulk usata: `players(slugs: [...])` (max 100 slug per chiamata, ma
+il limite vero e' la complessita': senza APIKEY il tetto e' 500, ~62 punti
+a giocatore -> batch massimo 8 per restare sotto soglia). Usato su tutti i
+169 slug di storico_grade_arene_2026-08-08.json (lo stesso campione
+"arene" gia' validato), 166/169 risposte, script/output non salvati come
+tool permanente (misura una tantum) ma il dump grezzo e' in
+analisi_manager/p20_grade_punto0_out.json.
+
+10.2 MA NON RIPRODUCE L'ORDINE CHE HAI OSSERVATO -- test fallito.
+Ordinando le 166 righe per projection.score decrescente, la sequenza delle
+lettere NON e' a blocchi con mescolamento solo al bordo: e' mescolata
+quasi ovunque. Esempi dal dump (score decrescente):
+  56.0 B corentin-tolisso
+  56.0 F german-berterame        <- F con lo stesso score di una B
+  53.0 C carlos-henrique-casimiro
+  53.0 F jorge-nicolas-figal     <- F ancora dentro il blocco delle C
+  49.0 C angus-gunn
+  49.0 D guilherme-ramos
+  49.0 E jesus-manuel-corona-ruiz
+Le F compaiono sparse su quasi tutto il range (7-63), comprese zone dove
+dominano B e C. Anche restringendo a scoreStatus FINAL/REVIEWING (escluse
+le DID_NOT_PLAY, che potrebbero confondere), il quadro non cambia: F/E/D/C
+si sovrappongono ampiamente, non solo ai bordi.
+
+LETTURA (con riserva, vedi 10.3): projection.score sembra un voto di
+QUALITA' del giocatore SE gioca, mentre grade sembra dipendere ANCHE da
+quanto e' probabile che giochi (starter odds/affidabilita'): un giocatore
+forte ma a rischio panchina puo' avere score alto (e' bravo) e grade basso
+(rischia di non scendere in campo) -- coerente con quanto gia' misurato
+al §9.4 di questo handoff (F e' soprattutto "non gioca"). Se questa
+lettura e' giusta, score e grade NON sono la stessa informazione a
+risoluzioni diverse: sono due informazioni diverse, e servirebbero
+ENTRAMBE, non una al posto dell'altra.
+
+10.3 LIMITE DICHIARATO, non verificato: ho letto `playerGameScores(last:1)`,
+cioe' l'ULTIMA partita nota per il giocatore al momento della query (che
+per molti risultava gia' DID_NOT_PLAY, quindi gia' conclusa). Non ho
+verificato se questo e' lo stesso identico grade/score che l'interfaccia ti
+mostra OGGI per la formazione arena in corso che stavi guardando -- se la
+UI usa una partita futura diversa (prossima giornata, non l'ultima nota),
+il confronto sarebbe fra due cose diverse e la mancata riproduzione
+dell'ordine non proverebbe niente. Non ho i mezzi per controllarlo senza
+sapere quale partita/formazione esatta stavi guardando.
+
+10.4 MI FERMO QUI COME DA BRIEF ("verifica che ordinandolo riproduca
+l'ordine osservato... e FERMATI"): il test di riproduzione non e' passato
+con questi dati, ma il limite del punto 10.3 lascia il dubbio aperto. Non
+proseguo con A/B/C del passo 1-bis finche' non decidi come muoverti:
+ripetere il test sulla formazione ESATTA che stavi guardando (mi servirebbe
+sapere quale, o il cookie per leggerla), oppure accettare il risultato di
+oggi e considerare score/grade due segnali distinti, oppure procedere
+comunque con A/B/C ignorando il punto 0.
+
+
+11. SEGUITO 09/08/2026 -- TRACCIA 1: TEST SU PARTITE FUTURE
+(BRIEF_SONNET_SCORE_E_GRADE_2026-08-09.txt) -- INCONCLUSIVO, NON PER COLPA
+DEL METODO
+----------------------------------------------------------------------------
+Ho trovato la giornata realmente aperta e non ancora giocata via query
+pubblica `so5Fixtures` (nessun cookie): `football-11-14-aug-2026` (GW4,
+apre 11/08) e `football-7-11-aug-2026` (GW3, "started", finestra 07-11/08,
+oggi 09/08 siamo dentro, con partite gia' giocate e altre ancora da
+giocare nella stessa finestra).
+
+Ho preso le rose vere (query pubblica `team(slug).players`, niente cookie)
+di 8 squadre con partita in programma oggi pomeriggio (Genk, Zulte-Waregem,
+Charleroi, OH Leuven, Motherwell, Falkirk, Hearts, Dundee United -- 240
+slug), e interrogato grade+score per ciascuno.
+
+RISULTATO: al momento della query (07:48 UTC, kickoff piu' vicino alle
+12:00-14:30 UTC, quindi 4-6 ore prima) NESSUN giocatore aveva ancora un
+nodo `playerGameScores` per la partita di oggi: l'ultimo nodo disponibile
+per tutti restava quello della partita PRECEDENTE (gia' FINAL/REVIEWING/
+DID_NOT_PLAY). Sorare non espone la proiezione pre-partita finche' non ci
+si avvicina al kickoff (probabile finestra: intorno alle formazioni
+ufficiali, tipicamente entro 1-2 ore prima -- gli unici esempi PENDING nel
+repo, i `grade_snapshot_*`, sono stati catturati circa 24h prima del
+game_date, quindi la finestra vera potrebbe essere piu' ampia di quanto
+ho aspettato oggi, semplicemente non sono rimasto in ascolto abbastanza
+a lungo).
+
+CONCLUSIONE: la traccia 1 NON e' chiusa per un limite del metodo (come il
+punto 0 di ieri), ma per una finestra di tempo che questa sessione non
+copre -- servirebbe ripetere la query 1-2 ore prima di un kickoff reale e
+salvare il risultato (il punto "cogli l'occasione" del brief, snapshot
+datato). Non l'ho fatto perche' avrebbe richiesto restare in attesa per
+ore, fuori scope per questa sessione. Se vuoi, posso schedulare/ripetere il
+prelievo piu' vicino a un kickoff futuro. Punto 1d (confronto con
+`FootballComposeBenchQuery`, serve il cookie): non fatto, nessuna
+credenziale disponibile in questa sessione.
+
+
+12. SEGUITO 09/08/2026 -- TRACCIA 2, PUNTO A: CAMPIONE ALLARGATO CON RUOLO
+DAI FILE MANAGER (BRIEF_SONNET_SCORE_E_GRADE_2026-08-09.txt)
+----------------------------------------------------------------------------
+Script: analisi_manager/p20_grade_residui_allargato.py
+Output: analisi_manager/p20_grade_residui_allargato_out.json
+
+Ruolo recuperato in piu', quando assente nei file grade di produzione,
+dal ruolo DOMINANTE dello slug in dati_globali/manager_*.json (55 file):
+4.825 slug distinti trovati, 203 con ruoli discordanti fra loro sulle
+carte (D7, il ruolo e' della carta non del giocatore) -- di questi, 62
+sono effettivamente entrati nel campione (per gli altri il ruolo serviva
+gia' da altrove o lo slug non compare nell'indice grade). Per i
+discordanti ho usato comunque il dominante (dichiarato, non scelto a
+caso): e' un'approssimazione, il conteggio e' qui per chi vuole rifare la
+scelta diversamente.
+
+Campione: da 9.727 a 25.326 righe (quasi 3x), da 26.543 con ruolo noto
+(scarti: 6.946 senza punteggio in cache esatta, 30 con ruolo ancora
+ignoto, 1.217 senza atteso ricostruibile).
+
+TABELLA RESIDUI SUL CAMPIONE ALLARGATO (bootstrap cluster=giocatore):
+
+lettera  n      slug    media    IC95
+F        7912   1538   -33,15   [-33,97 ; -32,33]
+E         776    275   -12,46   [-15,67 ;  -9,37]
+D        6831   1197    +1,26   [ +0,84 ;  +1,68]
+C        4883   1103    +1,70   [ +1,18 ;  +2,20]
+B        2742    744    +2,66   [ +1,97 ;  +3,35]
+A        2182    443    +3,87   [ +2,96 ;  +4,81]
+
+TEST DI MONOTONIA: OK, nessuna inversione. F(-33,15) -> E(-12,46) ->
+D(+1,26) -> C(+1,70) -> B(+2,66) -> A(+3,87), tutti i gradini crescono.
+
+RISPOSTA ALLA DOMANDA DEL BRIEF -- l'inversione B/C di ieri era RUMORE, non
+un fenomeno vero: sul campione allargato (quasi 3 volte piu' grande) B
+(+2,66) supera C (+1,70) come atteso, con margine di 0,96 punti, piu' del
+doppio dello scarto (0,23) che aveva fatto fallire il test di ieri.
+Misurato, non dichiarato, come richiesto dal brief.
+
+Esempio banale: era come pesare due persone quasi identiche su una
+bilancia che oscilla -- con un solo pesaggio (campione di ieri) l'ago
+poteva sbagliare di lato; pesandole di nuovo con piu' letture (campione
+allargato) si vede chiaramente chi pesa di piu'.
+
+NON FATTI IN QUESTA SESSIONE (traccia 2, punti B e C, e traccia 3):
+richiedono di montare/rilanciare il backtest arene gia' rodato
+(`analisi_manager/p20_g_odds_arene_backtest.py`, script grande, non ancora
+letto in questa sessione) per costruire i rami G/G-noFE su pool reali e
+bootstrap sui 24 manager -- lavoro sostanzioso, separato da quanto fatto
+finora. Non avviato senza una nuova conferma esplicita, per non spendere
+altro tempo/token su una direzione che l'utente potrebbe voler ridiscutere
+alla luce di 10-11-12.
+
+
+13. SEGUITO 09/08/2026 ~10:45 Roma -- TRACCIA 1 CHIUSA: TROVATA LA QUERY.
+Fonte: dump DevTools della risposta `FootballComposeBenchQuery` catturato
+dall'UTENTE sulla schermata di schieramento, partita Tokyo Verdy - Kawasaki
+Frontale del 2026-08-09T09:00:00Z (11:00 Roma), catturato PRIMA del kickoff.
+Verificato dall'orchestratore parsando il JSON grezzo, non il riassunto.
+----------------------------------------------------------------------------
+
+13.1 IL GRADE ESISTE PER UNA PARTITA FUTURA, E NON STA IN playerGameScores.
+Percorso vero:
+  ComposeTeamBenchCard.eligiblePlayerGameScores[].projection.grade
+con `anyGame.statusTyped == "scheduled"` e `anyGame.date` nel futuro.
+Sonnet cercava in `playerGameScores(last:N)` e concludeva "finestra non
+ancora aperta": diagnosi SBAGLIATA, cercava nel posto sbagliato.
+
+13.2 `projection` NON CONTIENE `score`. Campi effettivamente restituiti:
+  {__typename, grade, id, reliabilityBasisPoints}
+Nessun campo numerico continuo. Questo INDEBOLISCE la §10 ("esiste
+projection.score"): nella query che la UI usa davvero, non c'e'. Da
+riverificare se §10 avesse letto un campo esistente ma non usato dalla UI.
+
+13.3 IL NUMERO VIOLA SULLA CARTA NON E' UNA PROIEZIONE: e'
+`lastTenPlayedSo5AverageScore`, la media delle ultime 10 giocate. Verificato
+su 4 carte su 4 (la quinta, Wakizaka, non e' nel dump):
+  Yamamoto  UI 50  L10p 50   grade C
+  Ito       UI 45  L10p 45   grade C
+  Someno    UI 45  L10p 45   grade D
+  Hirakawa  UI 44  L10p 44   grade D
+CONSEGUENZA: l'osservazione "stesso numero, lettera diversa" (Ito 45=C,
+Someno 45=D) NON e' un'anomalia del grade. E' banale: due giocatori con la
+stessa MEDIA STORICA possono avere proiezioni diverse. Il numero e' passato,
+la lettera e' futuro.
+
+13.4 IL "MESCOLAMENTO FRA LETTERE ADIACENTI" VA RILETTO. La query era
+ordinata `sortType: {type:"PROJECTED_GRADE", direction:"DESC"}` e l'ordine
+osservato (52C, 50C, 45C, 45D, 44D) e' decrescente sia per lettera sia per
+numero: in QUESTO caso nessun mescolamento. Ipotesi da verificare (NON
+dimostrata): l'utente ordinava per grade e leggeva il numero, che essendo
+la media storica non deve essere monotono con la lettera; il "mescolamento"
+sarebbe quindi un artefatto di lettura, non una proprieta' del grade.
+Serve una schermata con mescolamento vero per decidere.
+
+13.5 CAMPI NUOVI TROVATI NELLA STESSA RISPOSTA, non sfruttati finora:
+- `anyPlayerGameStats.fieldStatus` = "ON_FIELD": dice se il giocatore e'
+  nella formazione UFFICIALE gia' uscita. Segnale di titolarita' CERTO, non
+  probabilistico.
+- `anyPlayerGameStats.footballPlayingStatusOdds`: {starterOddsBasisPoints
+  (10000 = 100%), reliability "HIGH", provider sorareinside.com}. E' la
+  stessa starting-odds che gia' usiamo, ma qui arriva insieme al grade nella
+  stessa chiamata.
+- `anyPlayer.rawPlayerGameScores`: le ultime 5 partite in punteggio GREZZO
+  (es. Hirakawa [27.4, 66.8, 52.5, 37.3, 33.4]). Fonte pubblica di grezzo
+  senza dover togliere bonus (cfr. difetto D4).
+- `anyGame.homeStats/awayStats.winOddsBasisPoints` (VER 3000, FRO 4000):
+  odds 1X2 della partita nella stessa risposta.
+- `bonus`, `lastFiveSo5AverageScore`, `lastFifteen`, `lastForty`,
+  `seasonAverage`, `lockedForLeaderboard`, `activeSuspensions`,
+  `activeInjuries`.
+
+13.6 LIMITE: la query e' quella della panchina di composizione dell'utente
+(compare `user.slug = "crowss"` e uno `so5LeaderboardSlug`), quindi
+verosimilmente RICHIEDE IL COOKIE. Da verificare se lo stesso
+`projection.grade` su partita scheduled sia raggiungibile senza cookie da
+un'altra query. Non verificato.
+
+13.7 DA FARE ORA (vedi BRIEF_SONNET_QUERY_GRADE_FUTURO_2026-08-09.txt).
+
+
+14. SEGUITO 09/08/2026 ~10:45-11:05 Roma -- T1/T2 ESEGUITI (Sonnet,
+    BRIEF_SONNET_QUERY_GRADE_FUTURO_2026-08-09.txt)
+------------------------------------------------------------------------
+
+14.1 T1 RIPRODOTTO CON SUCCESSO, criterio secco soddisfatto: rilanciando
+`analisi_manager/grade_snapshot.py` (query FootballComposeBenchQuery, con
+cookie utente crowss) sulla leaderboard J1 League
+`football-7-11-aug-2026-seasonal-japan-in_season_japan_limited_pvp`,
+catturati alle 08:43 UTC (10:43 Roma), 17 minuti prima del kickoff
+2026-08-09T09:00:00Z (Tokyo Verdy-Kawasaki Frontale):
+
+  yasuto-wakizaka    kawasaki-frontale-kawasaki   grade C
+  yuki-yamamoto      kawasaki-frontale-kawasaki   grade C
+  tatsuya-ito        kawasaki-frontale-kawasaki   grade C
+  itsuki-someno      tokyo-verdy-tokyo             grade D
+  rei-hirakawa       tokyo-verdy-tokyo             grade D
+
+4 su 4 corrispondono ai grade osservati dall'utente a schermo. File:
+analisi_manager/dati/grade_snapshot_football-7-11-aug-2026_20260809_0843.json
+(13 righe totali, non solo i 5: bench limitata alle carte possedute
+dall'utente in quel ruolo/leaderboard, non tutta la rosa delle due squadre).
+
+Comando esatto (cookie/csrf passati come env var, non salvati su disco):
+  SORARE_COOKIE=... SORARE_CSRF=... python analisi_manager/grade_snapshot.py \
+    football-7-11-aug-2026-seasonal-japan-in_season_japan_limited_pvp
+
+14.2 T2: NEGATIVO, netto. Provato `anyPlayer(slug){ eligiblePlayerGameScores(...) }`
+senza cookie (query pubblica turchia_gk_discovery.graphql_query): errore
+GraphQL ripetuto su 5 tentativi:
+  "Field 'eligiblePlayerGameScores' doesn't exist on type 'AnyPlayerInterface'"
+Il campo esiste SOLO su `ComposeTeamBenchCard` (dentro
+`myFilteredBench`/`FootballComposeBenchQuery`), non su `anyPlayer` ne' su
+altri tipi provati. Conclusione: la query resta legata al cookie
+dell'utente e alla sua bench (carte possedute), NON e' raggiungibile in modo
+pubblico/bulk-per-fixture. Per uno snapshot di TUTTA la rosa (non solo le
+carte in bench dell'utente) servirebbe comunque il cookie, con
+myFilteredBench filtrato per squadra/ruolo invece che per le carte
+possedute -- non ancora tentato.
+
+14.3 LIMITE OPERATIVO OSSERVATO: il client pubblico
+(turchia_gk_discovery.graphql_query) ha preso 429 ripetuti con retry di
+195-300s durante i tentativi precedenti (query playerGameScores per
+giocatore singolo, ~240 chiamate in sessioni precedenti allo stesso
+minuto): MAI interrogare l'API giocatore per giocatore in bulk, usare
+sempre query aggregate per fixture/leaderboard/team come gia' scritto nel
+brief.
+
+14.4 T3 (snapshot pre/post ufficiali) IN CORSO: cattura pre-kickoff fatta
+(14.1, 08:43 UTC). Cattura post-kickoff programmata subito dopo le 09:00
+UTC, stesso comando, per il confronto sugli stessi 5 slug.
+
+
+15. VERIFICA DEI GREZZI DI T1/T2 FATTA DALL'ORCHESTRATORE (09/08/2026,
+    ~11:15 Roma). Un esito confermato e MEGLIORATO, un DIFETTO NUOVO trovato.
+------------------------------------------------------------------------
+
+15.1 T1 E' 5 SU 5, NON 4 SU 4. Sonnet ha scritto "4 su 4" perche' Wakizaka
+mancava nel dump DevTools. Ma nel file grezzo
+analisi_manager/dati/grade_snapshot_football-7-11-aug-2026_20260809_0843.json
+Wakizaka c'e' ed e' corretto. Le cinque righe lette dal JSON:
+
+  slug              grade   l10    squadra                      game_date
+  yasuto-wakizaka     C     52.0   kawasaki-frontale-kawasaki   2026-08-09T09:00:00Z
+  yuki-yamamoto       C     50.0   kawasaki-frontale-kawasaki   2026-08-09T09:00:00Z
+  tatsuya-ito         C     45.0   kawasaki-frontale-kawasaki   2026-08-09T09:00:00Z
+  itsuki-someno       D     45.0   tokyo-verdy-tokyo            2026-08-09T09:00:00Z
+  rei-hirakawa        D     44.0   tokyo-verdy-tokyo            2026-08-09T09:00:00Z
+
+Corrispondono TUTTE E CINQUE (grade e numero) a cio' che l'utente vedeva a
+schermo. Conferma anche §13.3: il numero viola della UI e' `l10`
+(lastTenPlayedSo5AverageScore), non una proiezione. 52/50/45/45/44 tornano
+uno per uno.
+
+15.2 DIFETTO NUOVO -- LA SQUADRA E' UNA PROPRIETA' DELLA CARTA, NON DEL
+GIOCATORE (stessa natura di D7, che riguarda il ruolo). Conseguenza:
+`own_win_odds_bp` e `opp_win_odds_bp` sono SBAGLIATI su una riga su
+quattro.
+
+Codice colpevole, analisi_manager/grade_snapshot.py righe 106 e 113-115:
+    team = (card.get('anyTeam') or {})          # squadra scritta sulla CARTA
+    is_home = team.get('slug') == home
+    own_odds = home_stats if is_home else away_stats
+Non c'e' nessun controllo che `team` sia una delle due squadre della
+partita. Se il giocatore e' stato trasferito dopo l'emissione della carta,
+`is_home` risulta False per esclusione e lo script assegna al giocatore le
+odds della squadra IN TRASFERTA, che non e' la sua. Non e' un caso limite:
+e' un fallback silenzioso, esattamente il tipo di errore che CLAUDE.md
+vieta ("spengo con un flag esplicito, mai con l'assenza di un dato").
+
+Casi reali nello snapshot di oggi (2 righe su 13):
+  Yoshinori Suzuki  carta shimizu-s-pulse-shizuoka
+     partita v-varen-nagasaki vs kyoto-sanga  -> own_win_odds_bp 3800 (falso)
+  Henrique Trevisan carta tokyo-tokyo
+     partita v-varen-nagasaki vs kyoto-sanga  -> own_win_odds_bp 3800 (falso)
+
+AMPIEZZA MISURATA su tutti gli snapshot in repo (righe con squadra della
+carta diversa sia da home sia da away):
+  grade_snapshot_ALL_LIMITED_football-4-7-aug-2026_20260806_1127   45/171  26,3%
+  grade_snapshot_football-4-7-aug-2026_20260806_1124               47/174  27,0%
+  grade_snapshot_football-4-7-aug-2026_20260806_1506               47/174  27,0%
+  grade_snapshot_football-4-7-aug-2026_20260806_1518               47/174  27,0%
+  grade_snapshot_football-4-7-aug-2026_20260806_1607               47/171  27,5%
+  grade_snapshot_football-7-11-aug-2026_20260809_0843               2/13   15,4%
+
+15.3 COSA NON E' TOCCATO DAL DIFETTO. Il `grade`, la `reliability`, le
+`starter_odds`, `l10`, `game_date`, `home_team`, `away_team` vengono da
+percorsi diversi (`projection`, `anyPlayerGameStats`, `anyGame`) e NON
+passano da `card.anyTeam`: sono corretti. Restano validi §13, §14.1 e tutte
+le misure sul grade fatte finora, che non leggono own/opp odds. Il difetto
+colpisce SOLO i due campi own_win_odds_bp / opp_win_odds_bp, che a oggi non
+risultano usati da nessuna analisi conclusa -- ma erano indicati in §13.5
+come campo nuovo da sfruttare: sfruttarlo cosi' com'e' avrebbe portato
+dentro un errore al 27%.
+
+15.4 FIX PROPOSTO (non applicato, non e' produzione): non dedurre la
+squadra dalla carta. Determinarla dal contesto della partita e, se non e'
+ne' home ne' away, scrivere own/opp a None piu' un campo
+`squadra_incoerente: true`, invece di indovinare. Esplicito, non silenzioso.
+
+15.5 STATO T2 E T3. T2 (grade pubblico senza cookie via anyPlayer) resta
+negativo: il campo `eligiblePlayerGameScores` esiste solo su
+`ComposeTeamBenchCard`. Nota per la decisione: NON e' un blocco per la
+produzione, perche' il generatore ha bisogno del grade solo per le carte
+POSSEDUTE, che sono esattamente quelle che la bench restituisce. E' un
+blocco per lo scouting (carte non possedute) e per i backtest su rose
+intere. T3 (cattura post-formazioni-ufficiali) era in corso al momento di
+questa verifica -- SUPERATO, vedi §16.
+
+
+16. SEGUITO 09/08/2026 ~10:55-11:08 Roma -- TROVATA LA VIA PUBBLICA VERA
+    (docs/handoff/ANALISI_DUMP_COMPOSEBENCH_2026-08-09.txt, punto 1)
+------------------------------------------------------------------------
+
+16.1 IL PUNTO 1 DI ANALISI_DUMP_COMPOSEBENCH E' RISOLTO: SI', FUNZIONA
+SENZA COOKIE. Query provata, criterio secco superato:
+
+  query GameProjection($id: ID!) {
+    anyGame(id: $id) {
+      date statusTyped
+      homeTeam { slug } awayTeam { slug }
+      playerGameScores {
+        anyPlayer { slug displayName }
+        scoreStatus
+        anyPlayerGameStats {
+          ... on PlayerGameStats {
+            fieldStatus
+            anyTeam { slug }
+            footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+          }
+        }
+        projection { grade reliabilityBasisPoints }
+      }
+    }
+  }
+
+Interrogata con turchia_gk_discovery.graphql_query (client SENZA cookie,
+lo stesso usato per discovery/L10/odds) sull'id della partita Tokyo
+Verdy-Kawasaki Frontale (Game:2811948e-5d53-49c5-8a27-4dc5259b8450,
+statusTyped scheduled): risposta 200, TUTTI i 72 giocatori delle due
+squadre con grade, fieldStatus, scoreStatus, starter odds. Nessun errore,
+nessun cookie, nessun CSRF.
+
+Differenza rispetto a T1/FootballComposeBenchQuery: questa non e' limitata
+alle carte POSSEDUTE dall'utente (bench), da' TUTTA la rosa delle due
+squadre. Chiude il limite di §15.5 per lo scouting: il grade su carte non
+possedute e sui backtest di rose intere e' raggiungibile senza cookie.
+
+Script permanente: analisi_manager/grade_snapshot_pubblico.py
+Uso: python analisi_manager/grade_snapshot_pubblico.py <game_id> [label]
+(il game_id si trova con so5Fixture(slug){anyGames{id date homeTeam{slug}
+awayTeam{slug}}}, query gia' usata in discovery_fixture.py).
+
+16.2 T3 FATTO: CONFRONTO PRE/POST KICKOFF, 72 GIOCATORI, STESSA PARTITA.
+  cattura 1: 2026-08-09T08:55:49Z (5 min prima del kickoff delle 09:00 UTC)
+    analisi_manager/dati/snapshot_public_game_tokyoverdy_kawasaki_20260809_0855Z.json
+  cattura 2: 2026-08-09T09:06:..Z (6 min dopo il kickoff)
+    analisi_manager/dati/snapshot_public_game_tokyoverdy_kawasaki_20260809_0906Z.json
+
+Risultato, giocatore per giocatore (72/72 confrontati):
+  grade cambiato:        0 su 72
+  fieldStatus cambiato:  0 su 72
+  scoreStatus cambiato: 50 su 72 (PENDING -> REVIEWING)
+
+I 50 che cambiano scoreStatus sono ESATTAMENTE i 50 che pre-kickoff NON
+erano ancora ON_FIELD (i 22 titolari ufficiali erano gia' REVIEWING prima
+del fischio). Interpretazione supportata dal dato: grade e fieldStatus si
+CONGELANO quando escono le formazioni ufficiali (gia' successo prima delle
+08:55, quindi non visibile in questo confronto), il kickoff in se' sposta
+solo lo scoreStatus da PENDING a REVIEWING per tutti (anche i non
+titolari). Non e' una prova che il grade NON cambi mai al fischio -- qui
+non e' cambiato perche' le ufficiali erano gia' uscite ben prima delle
+08:55; per catturare il momento del cambio serve uno snapshot che parta
+PRIMA dell'uscita delle ufficiali, non fatto oggi.
+
+16.3 DISTRIBUZIONE PRE-KICKOFF (08:55Z), per controllo:
+  fieldStatus: NOT_ON_GAME_SHEET 32, ON_FIELD 22, ON_BENCH 18
+  grade:       F 50, D 9, C 8, E 4, B 1
+Coerente: i NOT_ON_GAME_SHEET (probabile rosa allargata/giovanili non
+convocati) sono la maggioranza dei grade F.

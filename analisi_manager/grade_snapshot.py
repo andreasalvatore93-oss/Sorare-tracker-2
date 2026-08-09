@@ -110,9 +110,14 @@ def capture(so5_slug):
                 pgs = (sc.get('anyPlayerGameStats') or {}).get('footballPlayingStatusOdds') or {}
                 home = ag.get('homeTeam', {}).get('slug')
                 away = ag.get('awayTeam', {}).get('slug')
-                is_home = team.get('slug') == home
-                own_odds = (ag.get('homeStats') or {}).get('winOddsBasisPoints') if is_home else (ag.get('awayStats') or {}).get('winOddsBasisPoints')
-                opp_odds = (ag.get('awayStats') or {}).get('winOddsBasisPoints') if is_home else (ag.get('homeStats') or {}).get('winOddsBasisPoints')
+                card_team = team.get('slug')
+                squadra_incoerente = card_team not in (home, away)
+                if squadra_incoerente:
+                    own_odds = opp_odds = None
+                else:
+                    is_home = card_team == home
+                    own_odds = (ag.get('homeStats') or {}).get('winOddsBasisPoints') if is_home else (ag.get('awayStats') or {}).get('winOddsBasisPoints')
+                    opp_odds = (ag.get('awayStats') or {}).get('winOddsBasisPoints') if is_home else (ag.get('homeStats') or {}).get('winOddsBasisPoints')
                 game_date = ag.get('date')
                 minuti_al_fischio = None
                 if game_date:
@@ -138,6 +143,7 @@ def capture(so5_slug):
                     'away_team': away,
                     'own_win_odds_bp': own_odds,
                     'opp_win_odds_bp': opp_odds,
+                    'squadra_incoerente': squadra_incoerente,
                     'leaderboard_slug': so5_slug,
                     'captured_at_utc': now_utc.isoformat(),
                     'captured_at_roma': now_roma.isoformat(),
