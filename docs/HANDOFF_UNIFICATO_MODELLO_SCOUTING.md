@@ -1000,7 +1000,7 @@ localStorage. Commit `b1cbf53db6`.
 
 ---
 
-## 8septies. Il criterio di scelta fra tipi di arena ignora il costo (08/08, APERTO)
+## 8septies. Il criterio di scelta fra tipi di arena ignora il costo — CHIUSO (09/08)
 
 Osservazione dell'utente: su ~35 arene proposte, **34 erano cap 260 e quasi
 mai una cap 220**. Due riverifiche delle soglie non avevano trovato niente,
@@ -1119,7 +1119,8 @@ soglia di fragilità. Quello che si muove davvero è il **guadagno per punto**,
 in calo del 12-26% su tutti i tipi. Effetto su GW3: 24 arene invece di 23
 (+1 cap 220).
 
-**LIMITE APERTO, ed è il prossimo lavoro**: il campione dei **premi** non è
+*(storia, già superata: i premi veri sono stati scaricati e le soglie
+applicate — vedi in cima a questa sezione)* Il campione dei **premi** non era
 cresciuto — **199** osservazioni dopo deduplica (non 235: quel numero
 contava anche righe perse per uno slug duplicato nel file vecchio, vedi
 `docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt` §11), di cui **141**
@@ -1284,16 +1285,33 @@ tarare le loro soglie non contraddice il fatto che siano disattivate:
 sono valori pronti nel caso si riaccendano. **Tema minore, nessuna
 azione, non farne un filone.**
 
-**DIFETTO APERTO, scoperto il 09/08 e NON introdotto da noi**: il
-generatore è **non deterministico** run-to-run. Due esecuzioni identiche,
-a codice invariato, allocano diversamente le formazioni opzionali (pool
-residuo) perché Python randomizza l'ordine di set/dict a ogni processo.
-Con `PYTHONHASHSEED=0` le run tornano identiche. Due implicazioni
-separate: (a) fissarlo nell'ambiente di lancio costa nulla e rende i
-risultati riproducibili; (b) il fatto che l'ordine cambi il risultato
-dice che **lì il generatore non ha un criterio** e sceglie fra opzioni
-che considera equivalenti — capire perché è un filone a sé, e potrebbe
-valere essenze.
+**SOSPETTO, non un difetto accertato — declassato il 09/08 dall'utente.**
+In `HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt` (righe 771-781) è scritto
+che il generatore sarebbe non deterministico run-to-run: due esecuzioni
+identiche avrebbero allocato diversamente le formazioni opzionali (pool
+residuo) fra cap260/cap220/uncapped, per via della randomizzazione degli
+hash di Python su set/dict, e con `PYTHONHASHSEED=0` sarebbero tornate
+identiche.
+
+**Perché resta solo un sospetto**: cercato il 09/08, **i due output
+divergenti non esistono nel repo**. Non si sa quali arene siano cambiate
+né a che distanza di tempo le run siano state fatte. L'unico riscontro
+materiale sono `run154_231251` e `run155_231910` in
+`generatore_formazioni/output/`, a 6 minuti l'una dall'altra e identiche
+al byte (105.515) — cioè coerenti con le run fatte DOPO aver fissato il
+seme, non con quelle che divergevano.
+
+**Obiezioni dell'utente, che il documento non sa escludere**: fra due run
+a distanza di minuti può essere successo altro — un giocatore uscito dal
+pool, uno sceso sotto la soglia odds, uno che ha iniziato a giocare e
+l'altro no. E in ogni caso il generatore massimizza comunque l'atteso e
+resta dentro i vincoli di competizione e di cap: anche invertendo due
+carte non produce una formazione illegittima o irrazionale.
+
+**Decisione: non ci si spende tempo.** Se ricapita, l'utente se ne
+accorge. Chi volesse chiuderla davvero deve produrre il caso concreto
+(due run di fila sulla stessa giornata + diff degli output), non citare
+di nuovo questa voce.
 
 ---
 
@@ -1471,11 +1489,23 @@ Misurabile senza query: le starting odds sono salvate accanto al grade
 (`starter_odds_bp` in `analisi_manager/dati/storico_grade_*`); si innesta
 su `p20_g_odds_arene_backtest.py`, che già fa il regime allocazione.
 
-**3. Perché il generatore non ha un criterio nella fase opzionale.**
-Il non-determinismo `PYTHONHASHSEED` (§9) non è solo un fastidio di
-riproducibilità: dice che lì il modello sceglie fra opzioni che considera
-equivalenti. Fissare il seed costa nulla e va fatto comunque; capire cosa
-distingua quelle opzioni è il filone vero.
+**2bis. PORTIERE — `level_score` binario, DA RIVERIFICARE CON G**
+(deciso il 09/08). Il valore vero è 35 senza clean sheet e 60 con, mai
+intermedio; il modello ne prevede uno continuo (§5.6). **Precisazione
+dell'utente, che cambia come va letta la voce**: non è una svista
+rimasta lì — fu fatto un lavoro apposta e si decise di **tenere il
+valore "sbagliato" perché rendeva meglio**. Quella decisione però è
+stata presa **prima di G**. Ora che G è in produzione va riverificata:
+il grade porta informazione sulla titolarità, e sul portiere il salto
+"non gioca / gioca" è proprio dove il level score morde di più.
+Si misura sui game log, quindi **non dipende dall'archivio manager**
+messo da parte dalla regola in testata — è uno dei pochi filoni che
+quella regola non tocca.
+
+**3. Non-determinismo del generatore — DECLASSATO A SOSPETTO il 09/08,
+non è più una cosa da fare.** Il caso concreto non esiste nel repo e le
+spiegazioni alternative non sono escluse: vedi §9. Non riaprire senza
+due run di fila e il diff degli output.
 
 **4. Bonus 4% (cap L10) e 2% (anti-stack) fuori dall'arena, RIFATTI CON G.**
 Il generatore li tratta come informativi e non li insegue; test passati
@@ -1590,9 +1620,14 @@ l'artefatto di una discovery girata il 09/08 alle 14:00, a giornata quasi
 finita. **La copertura vera si misura su una discovery lanciata a
 giornata aperta e prima dei kickoff**, che e' il momento in cui il bot
 compone davvero le formazioni.
-DOMANDA APERTA, questa si' operativa: se il generatore gira per una
-giornata non ancora aperta, G e' inerte per costruzione (z=0 su tutti).
-Da capire quando gira davvero il bot rispetto all'apertura della GW.
+**CHIUSA il 09/08 dall'utente, che sa come lo lancia** (era: "se il
+generatore gira per una giornata non ancora aperta, G e' inerte per
+costruzione, z=0 su tutti"). Risposta: il bot gira prima dell'apertura
+**ma solo quando odds e grade sono gia' disponibili**, e gira **anche a
+giornata iniziata**, perche' le arene non hanno una deadline fissa come
+le altre competizioni — per questo esiste `ESCLUDI_LOCKATE` (§8quater.3),
+che scarta le carte gia' bloccate in formazioni non piu' modificabili.
+**Nessun problema: G non gira mai a vuoto.** Non riaprire.
 File: `analisi_manager/p21_grade_vs_kickoff.py` +
 `analisi_manager/dati/grade_vs_kickoff_20260809.json` (verifica nuova);
 `analisi_manager/diagnosi_buco_grade.py` +
