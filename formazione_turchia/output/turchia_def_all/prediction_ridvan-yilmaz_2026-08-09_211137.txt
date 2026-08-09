@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-04T12:34:56.861465Z
+Generato: 2026-08-09T21:11:37.114253Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) ridvan-yilmaz: 50 pt attesi (28-72)
-   ORDINAMENTO: 51.21
+1) ridvan-yilmaz: 52 pt attesi (30-74)
+   ORDINAMENTO: 53.13
    SQUADRA: besiktas-istanbul | AVVERSARIO: hradec-kralove-hradec-kralove
 ======================================================================
 
@@ -14,13 +14,13 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: ridvan-yilmaz (squadra: besiktas-istanbul)
-Generato: 2026-08-04T12:34:56.860733Z
+Generato: 2026-08-09T21:11:37.082222Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
-Partite considerate: 40
-Escluse (DID_NOT_PLAY): 13
-Escluse (minutaggio < 60', subentri): 2
+Partite considerate: 39
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 3
 Competizione partita target: uefa-europa-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
 Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2025-10-18 | BJK vs GNÇ | spor-toto-super-lig | score=51.3 | peso=0.574
@@ -52,37 +52,36 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 30.0 partite): 52.42
   di cui Punteggio decisivo (level_score) medio: 37.54 | Punteggio complessivo (granulari) medio: 14.88 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Gol subiti condizionato: delta venue +0.15, delta avversario +0.00 | Passaggio condizionato: delta venue -1.49, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.43, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+  Gol subiti condizionato: delta venue -0.12, delta avversario +0.00 | Passaggio condizionato: delta venue +1.12, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue -0.32, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
 Deviazione standard pesata: 22.21
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.0 - 73.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.80 (differenza: +3.41)
 Media score in casa: 54.16 | Media score fuori casa: 47.55
-Fattore casa/trasferta applicato: 0.997 (TRASFERTA nella prossima partita)
+Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 9.3
 Ranking prossimo avversario: None
 Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
-Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 1.000
-Fattore falli (casa/trasferta, da dati reali): 1.001
-Fattore duelli (casa/trasferta, da dati reali): 0.999
-Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
-Fattore passaggio (accurate_pass/final_third/att_assist): 0.993
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.006
 Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
-Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.005
-Fattore gol subiti (goals_conceded, con cap): 1.001
-Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.002
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.996
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.998
 Fattore trend (media ultime 5: 59.0 vs media 5 PRECEDENTI: 54.1): 1.000
-P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
 
 --- PROSSIMA PARTITA ---
-Data: 2026-08-06T17:00
-Casa: FC Hradec Králové | Trasferta: Beşiktaş Jimnastik Kulübü
+Data: 2026-08-13T17:00
+Casa: Beşiktaş Jimnastik Kulübü | Trasferta: FC Hradec Králové
 Competizione: uefa-europa-league
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 50.5 (range 28.0 - 71.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 51.2
+Score atteso: 52.4 (range 30.0 - 73.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 53.1
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 49.81
@@ -118,9 +117,9 @@ P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo sto
   21       21      64.2    73.6     +9.4    22.0        SI
   22       22      38.8    30.0     -8.8    22.3        SI
   23       23      36.6    54.9    +18.3    22.3        SI
-  24       24      36.1   100.0    +63.9    21.7        NO
+  24       24      37.7   100.0    +62.3    21.7        NO
 
-MAE (errore assoluto medio): 18.97
+MAE (errore assoluto medio): 18.88
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 73.7%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
