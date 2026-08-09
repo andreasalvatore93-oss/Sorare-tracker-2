@@ -635,3 +635,48 @@ PRIMA dell'uscita delle ufficiali, non fatto oggi.
   grade:       F 50, D 9, C 8, E 4, B 1
 Coerente: i NOT_ON_GAME_SHEET (probabile rosa allargata/giovanili non
 convocati) sono la maggioranza dei grade F.
+
+
+17. SEGUITO 09/08/2026 ~11:14 Roma -- SECONDO CASO: V-VAREN NAGASAKI-KYOTO
+    SANGA, CONFRONTO VERO PRE/POST UFFICIALI (a differenza del §16, qui le
+    ufficiali NON erano ancora uscite alla prima cattura)
+------------------------------------------------------------------------
+
+17.1 CATTURE. Kickoff 2026-08-09T10:00:00Z, game_id
+Game:ba56d093-63d4-404d-b5d6-24dd92109f3b.
+  pre-ufficiali:  2026-08-09T08:50Z circa (cattura T1/bench, solo 7 righe
+    delle carte possedute dall'utente per questa partita, dentro
+    analisi_manager/dati/grade_snapshot_football-7-11-aug-2026_20260809_0850.json)
+  post-ufficiali: 2026-08-09T09:14Z (cattura pubblica completa, 70 righe,
+    analisi_manager/dati/snapshot_public_game_vvaren_kyoto_20260809_0914Z.json)
+Conferma indipendente che le ufficiali sono uscite fra le due catture: le
+starter odds pre erano MISTE (9000/8000/4000/0, segno di incertezza),
+quelle post sono un netto 22 a 10000 / 48 a 0 (nessun valore intermedio).
+
+17.2 CONFRONTO SUI 6 GIOCATORI GIA' NOTI (slug, grade pre -> post, odds
+pre -> post, fieldStatus post):
+
+  yoshinori-suzuki             C -> F   9000 -> 0      ON_BENCH
+  henrique-de-souza-trevisan   B -> B   8000 -> 10000   ON_FIELD
+  shunya-yoneda                F -> F   4000 -> 0      NOT_ON_GAME_SHEET
+  rafael-elias-da-silva        B -> B   9000 -> 10000   ON_FIELD
+  thiago-santos-santana (x2)   D -> D   8000 -> 10000   ON_FIELD
+  marco-tulio-oliveira-lemos   F -> F   0 -> 0          NOT_ON_GAME_SHEET
+
+17.3 IL GRADE CAMBIA CON LE UFFICIALI -- CASO REALE, NON DEDOTTO. Yoshinori
+Suzuki passa da C (quando le odds di titolarita' erano 90%, incerto) a F
+(dopo, ON_BENCH, odds 0%). E' l'esatto contrario del §16.2 (dove grade e
+fieldStatus non si muovevano MAI, perche' le ufficiali erano gia' uscite
+PRIMA della prima cattura): qui la finestra giusta e' stata catturata, e il
+grade SI MUOVE quando la titolarita' passa da incerta a esclusa. Coerente
+con quanto gia' misurato al §9 (il grade F prevede soprattutto "non
+giocante", non "gioca male").
+
+Gli altri 5 non cambiano lettera: erano gia' probabili titolari (80-90%)
+prima, confermati titolari (100%) dopo -- la loro incertezza pre-ufficiali
+non attraversava un confine di lettera.
+
+17.4 DISTRIBUZIONE POST-UFFICIALI (70 giocatori):
+  fieldStatus: NOT_ON_GAME_SHEET 30, ON_FIELD 22, ON_BENCH 18
+  starter_odds_bp: 0 -> 48 righe, 10000 -> 22 righe (nessun valore
+  intermedio: a ufficiali uscite l'odds e' binaria).
