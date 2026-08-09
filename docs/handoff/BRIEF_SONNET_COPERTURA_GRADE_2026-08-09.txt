@@ -1,0 +1,169 @@
+BRIEF PER SONNET — COPERTURA DEL GRADE: UNA FORMULA CHE NON ESCLUDA
+NESSUNA CARTA
+Scritto dall'orchestratore il 09/08/2026 sera (Roma). SOLO MISURA.
+NESSUNA MODIFICA ALLA PRODUZIONE, NESSUN CAMBIO DI DEFAULT, NESSUNA
+QUERY, NESSUNA RUN GITHUB.
+DA PASSARE QUANDO L'ALTRO LAVORO (brief capitano) E' FINITO: stessa
+working tree, non lavorateci sopra in due.
+
+======================================================================
+0. COSA LEGGERE PRIMA (in quest'ordine)
+======================================================================
+1) CLAUDE.md — divieto di allucinazioni, pool vs slot, verifica
+   dell'interruttore, dump leggibile obbligatorio, come si riporta.
+2) docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §10bis.13 e §10bis.14
+   (scritti oggi: la diagnosi della copertura e il riesame del backtest
+   che ha scelto la formula). Indizio, non prova: verifica sul codice.
+3) IL CODICE, righe verificate dall'orchestratore il 09/08:
+   - generatore_formazioni/build_formazione_globale.py:505-549
+     `_apply_grade_group` — LA FORMULA IN PRODUZIONE. Gruppo = (lega,
+     ruolo). `z = (grade_num - media_gruppo) / sd_gruppo`, poi
+     `atteso_combinato = atteso + sd_attesi_gruppo * z`. Punti chiave:
+     riga 536 (servono >=2 carte col grade nel gruppo, altrimenti
+     gm=gsd=0) e riga 543 (se gsd==0 allora z=0 -> il voto non sposta
+     NULLA). Sono i due punti che escludono le carte.
+   - analisi_manager/p12_backtest_formazione_grade.py:14-20 (da dove
+     nasce la formula: somma di due z-score) e :221-229 `zscore_gruppo`
+     (ritorna zeri se n<2 o sd==0).
+   - analisi_manager/p20_gfisso_v2_backtest.py — il backtest della
+     RIVALE gia' esistente (tabella fissa lettera->punti): righe 36-58
+     (griglia di tabelle), 63-88 (popolazione P_noF), 99-104
+     (`scrivi_gf`: come si applica una tabella), 110-139 (astensione),
+     291-346 (il doppio ramo astensione/allocazione), 348-393 (il
+     criterio di decisione, che e' il punto in discussione).
+   - analisi_manager/p20_g_odds_arene_backtest.py:236-314
+     `esegui_allocazione` — il ramo allocazione (formazioni costruite
+     davvero con `build_one_lineup_with_growth`).
+
+======================================================================
+1. LA DOMANDA (una sola)
+======================================================================
+Esiste una forma del grade che NON lasci fuori nessuna carta col voto e
+che, misurata, non sia peggiore di quella in produzione?
+
+Contesto misurato oggi sulla produzione vera: delle 86 carte con odds
+vere della giornata aperta, tutte e 86 hanno la lettera, ma la lettera
+entra nel calcolo solo per **63**. Le altre 23 stanno in gruppi con UNA
+SOLA carta col voto (11 gruppi) o con tutte le lettere UGUALI (5 gruppi,
+es. mls_mid due D): in entrambi i casi z=0 e il voto viene buttato.
+
+TRE VARIANTI DA CONFRONTARE, tutte contro la produzione attuale:
+  (a) TABELLA FISSA pura: lettera -> punti, nessun gruppo. Copertura
+      100%. E' gia' implementata: riusa `scrivi_gf` e la griglia di
+      p20_gfisso_v2_backtest.py (scala_k con k in {0.5,1,2,4,8} e
+      'empirica'), sia raw sia centrata.
+  (b) IBRIDA: z-score se il gruppo ha >=2 lettere E sd>0; tabella fissa
+      per le carte dei gruppi che oggi finiscono a z=0. E' la variante
+      piu' vicina alla produzione: cambia SOLO il fallback, che oggi e'
+      "il voto non esiste".
+  (c) GRUPPO PIU' LARGO: stessa identica formula, ma gruppo = RUOLO su
+      tutte le leghe insieme, invece di (lega, ruolo). Non tocca la
+      matematica, toglie solo la fame di numerosita'.
+NOTA: (c) NON e' la "scala storica" gia' bocciata (§8bis): quella
+sostituiva media/sd con quelle storiche dello STESSO gruppo piccolo.
+Qui si allarga il gruppo. Se ti accorgi che e' la stessa cosa sotto
+mentite spoglie, fermati e dillo.
+
+======================================================================
+2. L'IPOTESI DELL'ORCHESTRATORE, PRIMA DEI NUMERI
+======================================================================
+Mi aspetto che (b) sia la piu' promettente: tocca solo le carte oggi
+buttate e lascia intatto il comportamento dove il gruppo regge, quindi
+il delta e' piccolo ma dovrebbe essere pulito. Su (c) ho un dubbio vero
+e va detto prima: allargare il gruppo mescola leghe con livelli diversi,
+e la sd degli ATTESI su tutte le leghe insieme e' piu' grande, quindi lo
+stesso voto sposterebbe PIU' punti di oggi — puo' migliorare la
+copertura e peggiorare la taratura nello stesso momento. Guarda sempre
+di quanti punti si sposta una carta, non solo l'esito in essenze.
+SE ESCE CHE NESSUNA BATTE LA PRODUZIONE, E' UN RISULTATO VALIDO E VA
+SCRITTO. In quel caso la risposta all'utente e' "la copertura si allarga
+ma non paga", che e' un'informazione, non un fallimento.
+
+======================================================================
+3. IL CAMPIONE E I NUMERI DI CONTROLLO
+======================================================================
+Stesso archivio arene gia' rodato: `p20_g_odds_arene_backtest.
+costruisci_unita` + `carica_classifiche` + `opportunita_gw_tipo`, come
+fa `p20_gfisso_v2_backtest.main()` (righe 198-220).
+NUMERI DI CONTROLLO da ritrovare (letti dall'orchestratore in
+`p20_gfisso_v2_backtest_out.json`, campo "controlli"):
+    pool totale 7619 carte, con grade 7381, F 778,
+    unita' in allocazione 53, che scendono ad astensione dopo il filtro F: 2.
+SE NON LI RITROVI, FERMATI E DILLO.
+Popolazioni: **P_noF primaria** (come la produzione dell'utente: niente
+carte F) e **P_ALL secondaria**, quest'ultima dichiarata come possibile
+limite superiore perche' sulle F il grade FINAL porta informazione
+post-partita (leakage §18/S2).
+Regimi: riporta SEMPRE astensione e allocazione separati, con la loro n.
+Non dare un verdetto che li pesa insieme.
+
+======================================================================
+4. IL METODO
+======================================================================
+File NUOVO: analisi_manager/p22_copertura_grade.py. Importa e riusa
+p20_g_odds_arene_backtest, p20_gfisso_v2_backtest, p20_gfisso_backtest,
+p12_backtest_formazione_grade. NON modificarli. Le formazioni si
+costruiscono solo con `build_one_lineup_with_growth` via
+`esegui_allocazione` (D7: mai un knapsack scritto per l'occasione).
+
+CONTROLLO DI COPERTURA — e' il cuore del brief, va PRIMA dei verdetti.
+Per ciascuna variante (produzione, a, b, c) conta e riporta:
+  - quante carte del pool hanno una lettera;
+  - quante di quelle ricevono uno spostamento DIVERSO DA ZERO;
+  - quante restano a zero e perche' (gruppo con 1 sola lettera / lettere
+    tutte uguali / nessuna lettera).
+Con la produzione attuale la terza voce deve essere > 0, altrimenti stai
+misurando un archivio dove il problema non esiste e il confronto e'
+nullo per costruzione: in quel caso FERMATI E DILLO.
+
+METRICA CHE DECIDE: essenze nette realizzate (premio - costo), delta =
+variante - produzione, sullo stesso campione e nello stesso run.
+Incertezza: bootstrap con cluster sul MANAGER (3000 ricampionamenti,
+IC95) — riusa lo schema gia' presente, non inventarne un altro.
+Entrambi i set di soglie (`SOGLIE_VECCHIE` e `SOGLIE_NUOVE`).
+Stratificazione per tipo di arena (CAP_TYPE_LABEL, p20_gfisso_v2 righe
+45-48), con la n di ogni riga.
+
+CRITERIO: una variante si considera migliore solo se il delta e'
+positivo con IC95 sopra zero su ENTRAMBI i set di soglie, nello stesso
+regime. Ma riporta TUTTE le celle, anche quelle che non passano: il
+riesame di oggi (§10bis.14) nasce proprio da un verdetto dato guardando
+una cella sola.
+
+======================================================================
+5. CONTROLLI OBBLIGATORI PRIMA DEI NUMERI DI SINTESI
+======================================================================
+C1 INTERRUTTORE SPENTO = IDENTITA': con la variante disattivata i numeri
+   devono essere identici alla produzione, riga per riga.
+C2 INTERRUTTORE ACCESO = SI MUOVE: quante carte cambiano punteggio e di
+   quanti punti (media e massimo). Se ~0, fermati.
+C3 PLACEBO: includi sempre la variante "nessun grade" (tabella di zeri /
+   z sempre 0). Deve andare PEGGIO. Se non peggiora, l'archivio non
+   distingue niente e nessun verdetto vale.
+C4 POOL vs SLOT sulle unita' di allocazione.
+C5 A/A: due run identiche, numeri identici (`PYTHONHASHSEED=0`,
+   dichiaralo).
+C6 DUMP LEGGIBILE consegnato coi numeri
+   (`analisi_manager/p22_copertura_grade_dump.txt`): un manager e una
+   giornata, col pool completo — slug, ruolo, lega, lettera, atteso
+   calibrato, spostamento applicato da OGNI variante, realizzato — e
+   almeno un gruppo che oggi finisce a z=0, per far vedere cosa cambia.
+
+======================================================================
+6. COSA NON FARE
+======================================================================
+- Non toccare la produzione ne' i default. Questa e' una misura.
+- Niente query, niente run GitHub.
+- Non "sistemare" difetti trovati per strada: annotali in fondo.
+- Non nascondere i risultati nulli o negativi.
+- Non scegliere la variante che vince in UNA cella: e' l'errore che
+  questo brief esiste per non ripetere.
+
+======================================================================
+7. DOVE SCRIVERE L'ESITO
+======================================================================
+In coda a docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md, dentro §10bis.14
+(non un file nuovo). Committa solo i tuoi file e fai push.
+All'utente in CINQUE righe: quante carte guadagnano il voto con ciascuna
+variante, il delta in essenze con IC95 della migliore, se passa il
+criterio su entrambi i set di soglie, e il percorso dei file.

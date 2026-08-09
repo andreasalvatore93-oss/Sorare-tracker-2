@@ -1423,6 +1423,64 @@ precedente: i conteggi restano validi, la loro INTERPRETAZIONE no).
 NOTA su un numero della prima stesura: diceva "Mls 19/45 con grade", ma
 19 e' il numero di CARTE mls_def. Il dato vero e' **11/45** (def 8/19,
 fwd 1/10, gk 0/6, mid 2/10).
+AGGIORNAMENTO 09/08 sera, misura sulla produzione vera (le sole carte con
+odds VERE, cioe' quelle della giornata aperta: 86): tutte e 86 hanno la
+lettera, ma la lettera **entra nel calcolo solo per 63** (16 gruppi su
+32). Le altre 23 sono lettere inerti: 11 gruppi hanno UNA SOLA carta con
+lettera (niente con cui confrontarla) e 5 gruppi hanno tutte le lettere
+UGUALI (mls_mid due D, belgio_def tre D, messico_mid tre C) -> sd=0 ->
+z=0. Non e' un buco di dati: e' la formula. Vedi §14.
+
+**14. IL MERITO DEL BACKTEST CHE HA SCELTO LA FORMULA — riesame
+dell'orchestratore, 09/08 sera** (richiesto dall'utente: "e' la
+combinazione migliore? non se ne puo' trovare una che non escluda
+carte?").
+COME E' STATA SCELTA LA FORMULA: non da un confronto fra alternative. E'
+un principio di disegno (`z(atteso) + z(grade)`, riportato in punti
+moltiplicando per la sd del gruppo, docstring di
+`p12_backtest_formazione_grade.py:14-20`), validato poi solo come
+BLOCCO (G acceso vs G spento), mai contro una formula rivale prima di
+essere messa in produzione il 07/08.
+L'UNICA RIVALE MAI TESTATA e' la tabella fissa lettera->punti ("G
+fisso", `p20_gfisso_v2_backtest.py`, 09/08) -- che e' proprio la forma
+che NON esclude nessuno, perche' non ha bisogno di un gruppo. Verdetto
+scritto: "GF NON VINCE". Riesaminando il grezzo
+(`p20_gfisso_v2_backtest_out.json`) quel verdetto e' vero SOLO nel
+riquadro in cui e' stato deciso, ed e' un riquadro stretto:
+  - criterio applicato: **solo P_noF, solo il ramo astensione**, su
+    entrambi i set soglie, e vincente sia raw sia centrata. In quel
+    riquadro n=111 righe e i delta (+-1.000/2.000 essenze) sono piu'
+    piccoli dell'incertezza (IC95 larghi +-2.000/6.000): non poteva
+    passare nessuno, nemmeno una formula buona.
+  - Nel resto della tabella la tabella fissa NON perde, vince:
+    su **P_ALL** (pool completo, F comprese) empirica fa AST +8.000
+    IC95[+1.700;+16.000] (soglie vecchie) e +4.700 [+500;+10.000]
+    (nuove); in ALLOCAZIONE +21.450 [+4.200;+39.800] e +17.200
+    [+4.850;+30.750]. Anche scala_k1 e k2 stanno sopra zero in
+    allocazione su entrambi i set.
+  - Il controllo che rende il dato credibile: il **placebo** (tabella di
+    zeri = nessun grade) va NEGATIVO e fuori da zero (-29.050
+    [-48.700;-13.300] in allocazione su P_ALL). Quindi in quel campione
+    il grade vale, e non e' un artefatto della meccanica.
+  - CAUTELA da non dimenticare: P_ALL contiene le carte F, e sulle F il
+    grade FINAL porta informazione post-partita (leakage §18/S2). Parte
+    del vantaggio su P_ALL puo' essere leakage. E' esattamente il motivo
+    per cui P_noF era stato scelto come primario. Quindi: **la tabella
+    fissa non e' dimostrata migliore, ma non e' affatto dimostrata
+    peggiore** -- e' stata archiviata da un gate troppo stretto.
+QUELLO CHE NESSUNO HA MAI TESTATO, ed e' la domanda dell'utente:
+una formula che **conservi lo z-score dove il gruppo regge e non escluda
+nessuno dove non regge**. Tre candidate, nessuna misurata:
+  (a) tabella fissa pura (copertura 100%, gia' implementata come GF);
+  (b) ibrida: z-score se il gruppo ha >=N lettere e sd>0, tabella fissa
+      altrimenti (oggi il fallback e' z=0, cioe' "il voto non esiste");
+  (c) gruppo piu' largo: z-score per RUOLO su tutte le leghe insieme
+      invece che per (lega, ruolo) -- non tocca la formula, toglie solo
+      la fame di numerosita'. Diversa dalla "scala storica" gia'
+      bocciata (§8bis), che sostituiva media/sd con quelle storiche
+      dello stesso gruppo piccolo.
+Sulla produzione di oggi le tre varianti porterebbero le carte col voto
+attivo da **63 su 86** a **86 su 86**.
 
 **In attesa, non indagare**: L10 incoerente lato Sorare (caso Jeppe
 Erenbjerg, run146): il bot legge `lastTenPlayedAvgScore` e copia
