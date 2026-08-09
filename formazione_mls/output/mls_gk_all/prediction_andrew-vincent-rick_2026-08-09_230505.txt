@@ -1,10 +1,11 @@
 ======================================================================
 CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-09T21:33:48.953936Z
+Generato: 2026-08-09T23:05:05.089564Z
 Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
-1) andrew-vincent-rick: 45 pt attesi (22-71)
-   SQUADRA: philadelphia-union-chester-pennsylvania | AVVERSARIO: necaxa-aguascalientes
+1) andrew-vincent-rick: 48 pt attesi (25-74)
+   SQUADRA: philadelphia-union-chester-pennsylvania | AVVERSARIO: santos-laguna-torreon
+   AMBIGUO_FIXTURE: si
 ======================================================================
 
 ######################################################################
@@ -13,7 +14,7 @@ Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: andrew-vincent-rick (squadra: philadelphia-union-chester-pennsylvania)
-Generato: 2026-08-09T21:33:48.952046Z
+Generato: 2026-08-09T23:05:05.087710Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -36,16 +37,16 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 6.0 partite): 40.44
   di cui Punteggio decisivo (level_score) medio: 40.26 | Punteggio complessivo (granulari) medio: 0.18 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Punteggio decisivo condizionato per forza prossimo avversario: 40.26 (delta +0.00 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
-  Gol subiti condizionato: delta venue +0.48, delta avversario +0.00 | Possesso condizionato per venue: delta -0.05 | Goalkeeping condizionato per venue: delta -0.70 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+  Punteggio decisivo condizionato per forza prossimo avversario: 39.38 (delta -0.88 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.48, delta avversario +0.48 | Possesso condizionato per venue: delta -0.05 | Goalkeeping condizionato per venue: delta -0.70 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
 Deviazione standard pesata: 22.88
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 17.4 - 66.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.02 (differenza: +6.85)
 Media score in casa: 37.60 | Media score fuori casa: 40.44
 Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 13.0
-Ranking prossimo avversario: 8
-Fattore forza avversario applicato: 0.815 (gol fatti reali dell'avversario, ultime 10; delta granulare parate -0.00 pt)
+Ranking prossimo avversario: 17
+Fattore forza avversario applicato: 1.473 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
 NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
 Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.000
 Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.004
@@ -56,14 +57,15 @@ Fattore trend (media ultime 5: 34.4 vs media 5 PRECEDENTI: 51.3): 1.000
 P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
 
 --- PROSSIMA PARTITA ---
-Data: 2026-08-09T23:30
-Casa: Philadelphia Union | Trasferta: Club Necaxa
+Data: 2026-08-13T23:00
+Casa: Philadelphia Union | Trasferta: Club Santos Laguna
 Competizione: leagues-cup-mls
+ATTENZIONE FIXTURE AMBIGUA: due partite future avevano GIA' le starter odds pubblicate insieme -- scelta quella piu' tardiva (caso limite mai visto prima del 10/08/2026, verificare a mano).
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 45.2 (range 22.2 - 70.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 47.9 (range 24.8 - 73.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 40.98
