@@ -14,260 +14,125 @@ tr:nth-child(even){background:#161922}
 .mia{color:#7ee787} .ko{color:#ff7b72} .warn{color:#ffa657} .muted{color:#6e7481}
 a{color:inherit;text-decoration:none;border-bottom:1px dotted #4a5164}
 a:hover{color:#8ab4ff}
-</style><style>
-  :root {
-    --bg: #0a0d12; --surface: #131a23; --surface-2: #1c2530; --stripe: #232d3a;
-    --text: #edf1f6; --muted: #8a93a6; --muted-2: #5f6879; --gold: #f4c542;
-    --border: rgba(255,255,255,0.08);
-  }
-  @media (prefers-color-scheme: light) {
-    :root {
-      --bg: #f3f4f7; --surface: #ffffff; --surface-2: #eef0f4; --stripe: #e3e6ec;
-      --text: #1a2029; --muted: #5b6474; --muted-2: #8a93a6; --border: rgba(20,25,35,0.08);
-    }
-  }
-  * { box-sizing: border-box; }
-  body {
-    background: var(--bg); color: var(--text);
-    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
-    padding: 40px 32px 64px; max-width: 1180px; margin: 0 auto;
-  }
-  h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 6px; }
-  .subhead { color: var(--muted); font-size: 0.85rem; margin: 0 0 32px; }
-  .lineup-row { display: flex; gap: 20px; align-items: flex-start; margin-bottom: 40px; }
-  .lineup-row .lineup-block { flex: 1 1 auto; min-width: 0; margin-bottom: 0; }
-  .alt-panel {
-    flex: 0 0 200px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; padding: 12px 14px; align-self: stretch;
-  }
-  .alt-panel-title {
-    font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-    color: var(--muted); margin-bottom: 10px; line-height: 1.4;
-  }
-  .alt-list { display: flex; flex-direction: column; gap: 10px; }
-  .alt-chip { display: flex; align-items: center; gap: 8px; cursor: grab; border-radius: 8px; padding: 2px; }
-  .alt-chip[draggable="true"]:active { cursor: grabbing; }
-  .pcard[draggable="true"] { cursor: grab; }
-  .pcard[draggable="true"]:active { cursor: grabbing; }
-  .pcard.drop-target, .alt-chip.drop-target {
-    outline: 2px dashed var(--gold); outline-offset: 2px;
-  }
-  .alt-circle {
-    flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; background: var(--surface-2);
-    border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
-    font-size: 0.62rem; font-weight: 700; color: var(--muted);
-  }
-  .alt-name { font-size: 0.72rem; font-weight: 600; line-height: 1.2; }
-  .alt-score { font-size: 0.64rem; color: var(--muted); }
-  .lineup-block { margin-bottom: 40px; }
-  .lineup-meta { margin-bottom: 12px; }
-  .lineup-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
-  .lineup-title span { color: var(--text); }
-  .card-strip { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
-  .pcard {
-    position: relative; flex: 0 0 104px; background: var(--surface);
-    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-  }
-  .pcard-stripe { height: 4px; width: 100%; }
-  .pcard-body { padding: 8px 6px 8px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
-  .pcard-role {
-    position: absolute; top: 6px; left: 6px; font-size: 0.52rem; font-weight: 700;
-    letter-spacing: 0.07em; text-transform: uppercase; color: var(--role-color);
-    background: color-mix(in srgb, var(--role-color) 16%, transparent);
-    padding: 1px 5px; border-radius: 4px;
-  }
-  .pcard-captain {
-    position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%;
-    background: var(--gold); color: #241c00; font-size: 0.58rem; font-weight: 800;
-    display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface);
-    /* 08/08: il capitano sta SEMPRE sopra la spunta verde di "copiata", che
-       occupava lo stesso identico angolo (top/right 5px) e lo nascondeva --
-       dopo aver copiato le 5 carte non si sapeva piu' chi fosse il capitano. */
-    z-index: 2;
-  }
-  .pcard-avatar {
-    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 0.72rem; color: var(--role-color);
-    background: color-mix(in srgb, var(--role-color) 18%, var(--surface-2));
-    border: 2px solid color-mix(in srgb, var(--role-color) 55%, transparent); margin-top: 8px;
-  }
-  .pcard-name { font-size: 0.62rem; font-weight: 650; line-height: 1.2; min-height: 1.6em; display: flex; align-items: center; }
-  .pcard-score { font-size: 1.15rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--role-color); }
-  .pcard-range { font-size: 0.55rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .pcard-l10 { font-size: 0.5rem; color: var(--muted-2); font-variant-numeric: tabular-nums; }
-  .pcard-match { font-size: 0.62rem; color: var(--text); opacity: 0.85; line-height: 1.3; text-align: center; }
-  .pcard-tags { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; min-height: 14px; }
-  .tag { font-size: 0.5rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; }
-  .tag-classic { background: rgba(240,168,59,0.16); color: #f0a83b; }
-  .tag-copies { background: var(--stripe); color: var(--muted); }
-  .tag-xpbonus { background: rgba(76,175,80,0.16); color: #4caf50; }
-  /* QOL 07/08 (richiesta utente: schierare ~300 giocatori a giornata facendo
-     avanti e indietro con Sorare, senza perdere il segno e senza sbagliare
-     formazione). Tre stati VISIBILI a colpo d'occhio:
-       - CLASSIC: contorno dorato. Sono quelle che pesano diversamente e vanno
-         distinte al volo dalle In Season, soprattutto quando si hanno 2 copie.
-       - carta GIA' COPIATA: si spegne, cosi' si sa dove si era arrivati.
-       - formazione GIA' SCHIERATA: si spegne tutta e si accascia in alto.
-     Lo stato vive in localStorage, per giornata: un refresh non lo perde. */
-  /* CLASSIC vs IN SEASON (rimarcato 08/08, richiesta esplicita utente: la
-     scritta "classic" da sola "e' poco intuitiva"). Tre segnali insieme,
-     leggibili senza rileggere il testo: contorno dorato DOPPIO (2px invece
-     di 1), striscia dorata in cima al posto del colore ruolo (il ruolo si
-     legge comunque nel badge in alto a sinistra), e il tag pieno d'oro con
-     un rombo davanti invece che scritta scolorita su fondo grigio. */
-  .pcard.is-classic { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold) inset, 0 1px 2px rgba(0,0,0,0.2); }
-  .pcard.is-classic .pcard-stripe { background: var(--gold) !important; height: 5px; }
-  .tag-classic { background: var(--gold); color: #241c00; font-weight: 800; }
-  .tag-classic::before { content: '\25C6'; margin-right: 3px; }
-  .tag-inseason { background: rgba(94,201,255,0.16); color: #5ec9ff; }
-  /* CARTA GIA' COPIATA (rivisto 08/08 su richiesta utente). Prima si spegneva
-     a opacity 0.38: illeggibile, e "non mi piace, diventano bui". Ora resta
-     LEGGIBILE (0.72) e il segnale di "fatto" e' il contorno verde piu' la
-     spunta, non il buio. Serve a sapere dove si era arrivati, non a
-     cancellare la carta: i numeri si devono poter ancora rileggere. */
-  .pcard.copiata { opacity: 0.72; }
-  .pcard.copiata .pcard-avatar { border-style: dashed; }
-  .pcard-fatto {
-    position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%;
-    background: #4caf50; color: #06210a; font-size: 0.62rem; font-weight: 800;
-    display: none; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface);
-  }
-  .pcard.copiata .pcard-fatto { display: flex; }
-  /* Contorno verde: si vede a colpo d'occhio anche senza spegnere la carta.
-     outline (non box-shadow) per non cancellare il bordo dorato delle
-     Classic, che usa gia' box-shadow inset. */
-  .pcard.copiata { outline: 2px solid #4caf50; outline-offset: -2px; }
-  /* Se la carta e' capitano, la spunta si sposta a fianco invece di finirgli
-     sotto. Con browser senza :has() resta sovrapposta, ma il capitano ha
-     z-index 2 e resta comunque visibile: nessun peggioramento. */
-  .pcard:has(.pcard-captain) .pcard-fatto { right: 25px; }
-  .lineup-block.schierata { opacity: 0.42; }
-  .lineup-block.schierata .lineup-title::after { content: ' — SCHIERATA'; color: #4caf50; font-weight: 800; }
-  .btn-schierata {
-    margin-left: 10px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.06em; padding: 3px 8px; border-radius: 5px; cursor: pointer;
-    background: var(--surface-2); color: var(--muted); border: 1px solid var(--border);
-  }
-  .btn-schierata:hover { color: var(--text); border-color: var(--gold); }
-  .lineup-block.schierata .btn-schierata { background: rgba(76,175,80,0.18); color: #4caf50; border-color: #4caf50; }
-  .lineup-total {
-    margin-top: 12px; display: inline-flex; align-items: center; gap: 14px; background: var(--surface);
-    border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; flex-wrap: wrap;
-    max-width: 100%;
-  }
-  .lineup-total .figure { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-  .lineup-total .figure.with-captain { color: var(--gold); }
-  .lineup-total .label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); display: block; margin-bottom: 2px; }
-  .lineup-total .divider { width: 1px; height: 30px; background: var(--border); }
-  .lineup-total .captain-note { font-size: 0.74rem; color: var(--muted); }
-  .lineup-total .captain-note b { color: var(--gold); font-weight: 700; }
-  .error-block { font-size: 0.82rem; color: var(--muted); padding: 12px 0; }
-  footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.7rem; color: var(--muted-2); line-height: 1.6; }
 </style></head><body>
 <h1>Scouting -- football-11-14-aug-2026</h1>
-<div class="meta">09/08/2026 18:57 UTC &middot; 88 candidati &middot; stati tutti, solo con limited in vendita, starter odds >= 80%</div>
+<div class="meta">09/08/2026 21:14 UTC &middot; 110 candidati &middot; stati tutti, solo con limited in vendita, starter odds >= 80%</div>
 <div class="meta">Prezzo = carta piu' economica di QUALUNQUE rarita' e stagione (non per forza
 una classic limited). Proj = proiezione di Sorare. L10 = media ultime 10 giocate.
 Atteso = il nostro modello, gia' calibrato su scala reale.</div>
 
-<h2>88 candidati &mdash; ordinati dal miglior affare</h2><div class='meta'>Verdetto sul rapporto <b>atteso / costo / essenze a giornata</b>. <span class='mia'>COMPRA</span> = rende e si ripaga in poche giornate; <span class='warn'>FORSE</span> = rende ma caro o prezzo ignoto; <span class='ko'>NO</span> = non rende piu' di uno slot medio. Clicca un'intestazione per riordinare.</div><div class='wrap'><table id='candidati'><tr><th>Conviene</th><th>Giocatore</th><th>R</th><th>Atteso</th><th>Prezzo</th><th title='Essenze in piu' a giornata rispetto a uno slot medio da 52.9 punti (scala calibrata, cap 260)'>Ess/GW</th><th title='In quante giornate le essenze guadagnate ripagano il prezzo pieno della carta'>Si ripaga in</th><th title='Starter odds Sorare'>Odds</th><th>Note</th></tr>
-<tr><td><span class='warn'><b>FORSE</b></span></td><td><a href='https://sorare.com/football/players/lautaro-blanco' target='_blank' rel='noopener'>Lautaro Blanco</a></td><td>DEF</td><td class='n'>57.1</td><td class='n'><a href='https://sorare.com/football/players/lautaro-blanco/cards' target='_blank' rel='noopener'>1.60&nbsp;&euro;</a></td><td class='n'><span class='mia'>+29</span></td><td class='n'>27&nbsp;GW</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='ko'><b>NO</b></span> <span class='muted'>non rende</span></td><td><a href='https://sorare.com/football/players/ryan-hollingshead' target='_blank' rel='noopener'>Ryan Hollingshead</a></td><td>DEF</td><td class='n'>52.2</td><td class='n'><a href='https://sorare.com/football/players/ryan-hollingshead/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'><span class='ko'>-5</span></td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 4</span></td></tr>
-<tr><td><span class='ko'><b>NO</b></span> <span class='muted'>non rende</span></td><td><a href='https://sorare.com/football/players/hugo-lloris' target='_blank' rel='noopener'>Hugo Lloris</a></td><td>GK</td><td class='n'>50.3</td><td class='n'><a href='https://sorare.com/football/players/hugo-lloris/cards' target='_blank' rel='noopener'>1.80&nbsp;&euro;</a></td><td class='n'><span class='ko'>-18</span></td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 2</span></td></tr>
-<tr><td><span class='ko'><b>NO</b></span> <span class='muted'>non rende</span></td><td><a href='https://sorare.com/football/players/miguel-angel-merentiel-serrano' target='_blank' rel='noopener'>Miguel Merentiel</a></td><td>FWD</td><td class='n'>50.2</td><td class='n'><a href='https://sorare.com/football/players/miguel-angel-merentiel-serrano/cards' target='_blank' rel='noopener'>1.76&nbsp;&euro;</a></td><td class='n'><span class='ko'>-19</span></td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='ko'><b>NO</b></span> <span class='muted'>non rende</span></td><td><a href='https://sorare.com/football/players/timothy-tillman' target='_blank' rel='noopener'>Timothy Tillman</a></td><td>MID</td><td class='n'>50.1</td><td class='n'><a href='https://sorare.com/football/players/timothy-tillman/cards' target='_blank' rel='noopener'>0.50&nbsp;&euro;</a></td><td class='n'><span class='ko'>-19</span></td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='ko'><b>NO</b></span> <span class='muted'>non rende</span></td><td><a href='https://sorare.com/football/players/wataru-harada' target='_blank' rel='noopener'>Wataru Harada</a></td><td>DEF</td><td class='n'>49.7</td><td class='n'><a href='https://sorare.com/football/players/wataru-harada/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'><span class='ko'>-22</span></td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='ko'><b>NO</b></span> <span class='muted'>non rende</span></td><td><a href='https://sorare.com/football/players/luis-ezequiel-unsain' target='_blank' rel='noopener'>Ezequiel Unsain</a></td><td>GK</td><td class='n'>49.2</td><td class='n'><a href='https://sorare.com/football/players/luis-ezequiel-unsain/cards' target='_blank' rel='noopener'>1.83&nbsp;&euro;</a></td><td class='n'><span class='ko'>-26</span></td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='ko'><b>NO</b></span> <span class='muted'>non rende</span></td><td><a href='https://sorare.com/football/players/xavier-ricardo-arreaga-bermello' target='_blank' rel='noopener'>Xavier Arreaga</a></td><td>DEF</td><td class='n'>48.8</td><td class='n'><a href='https://sorare.com/football/players/xavier-ricardo-arreaga-bermello/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'><span class='ko'>-29</span></td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='ko'><b>NO</b></span> <span class='muted'>non rende</span></td><td><a href='https://sorare.com/football/players/rei-hirakawa' target='_blank' rel='noopener'>Rei Hirakawa</a></td><td>MID</td><td class='n'>48.6</td><td class='n'><a href='https://sorare.com/football/players/rei-hirakawa/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'><span class='ko'>-30</span></td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='ko'><b>NO</b></span> <span class='muted'>non rende</span></td><td><a href='https://sorare.com/football/players/carlos-emilio-lampe-porras' target='_blank' rel='noopener'>Carlos Lampe</a></td><td>GK</td><td class='n'>48.5</td><td class='n'><a href='https://sorare.com/football/players/carlos-emilio-lampe-porras/cards' target='_blank' rel='noopener'>0.70&nbsp;&euro;</a></td><td class='n'><span class='ko'>-31</span></td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='ko'><b>NO</b></span> <span class='muted'>non rende</span></td><td><a href='https://sorare.com/football/players/jonathan-sirois' target='_blank' rel='noopener'>Jonathan Sirois</a></td><td>GK</td><td class='n'>48.5</td><td class='n'><a href='https://sorare.com/football/players/jonathan-sirois/cards' target='_blank' rel='noopener'>2.04&nbsp;&euro;</a></td><td class='n'><span class='ko'>-31</span></td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='ko'><b>NO</b></span> <span class='muted'>non rende</span></td><td><a href='https://sorare.com/football/players/jamiro-gregory-monteiro-alvarenga' target='_blank' rel='noopener'>Jamiro Monteiro</a></td><td>MID</td><td class='n'>47.9</td><td class='n'><a href='https://sorare.com/football/players/jamiro-gregory-monteiro-alvarenga/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'><span class='ko'>-35</span></td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 4</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/alexander-nubel' target='_blank' rel='noopener'>Alexander Nübel</a></td><td>GK</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/alexander-nubel/cards' target='_blank' rel='noopener'>6.10&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/alexandro-maidana-mendieta' target='_blank' rel='noopener'>Alexandro Maidana</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/alexandro-maidana-mendieta/cards' target='_blank' rel='noopener'>2.17&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/alvaro-david-montero-perales' target='_blank' rel='noopener'>Álvaro Montero</a></td><td>GK</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/alvaro-david-montero-perales/cards' target='_blank' rel='noopener'>5.68&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/amadou-ba-sy' target='_blank' rel='noopener'>Amadou Ba-Sy</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/amadou-ba-sy/cards' target='_blank' rel='noopener'>4.31&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/anderson-souza-conceicao' target='_blank' rel='noopener'>Talisca</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/anderson-souza-conceicao/cards' target='_blank' rel='noopener'>5.94&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/andrew-vincent-rick' target='_blank' rel='noopener'>Andrew Rick</a></td><td>GK</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/andrew-vincent-rick/cards' target='_blank' rel='noopener'>2.10&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 4</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/archie-brown' target='_blank' rel='noopener'>Archibald Brown</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/archie-brown/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/ashley-westwood' target='_blank' rel='noopener'>Ashley Westwood</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/ashley-westwood/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 2</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/beau-reus' target='_blank' rel='noopener'>Beau Reus</a></td><td>GK</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/beau-reus/cards' target='_blank' rel='noopener'>14.57&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/blair-spittal' target='_blank' rel='noopener'>Blair Spittal</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/blair-spittal/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/bryan-josias-ramirez-leon' target='_blank' rel='noopener'>Bryan Ramírez</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/bryan-josias-ramirez-leon/cards' target='_blank' rel='noopener'>1.60&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/bryan-linssen' target='_blank' rel='noopener'>Bryan Linssen</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/bryan-linssen/cards' target='_blank' rel='noopener'>0.49&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/calvin-miller' target='_blank' rel='noopener'>Calvin Miller</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/calvin-miller/cards' target='_blank' rel='noopener'>0.50&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/claudio-rafael-soares-braga' target='_blank' rel='noopener'>Cláudio Braga</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/claudio-rafael-soares-braga/cards' target='_blank' rel='noopener'>1.05&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/clement-bischoff' target='_blank' rel='noopener'>Clement Bischoff</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/clement-bischoff/cards' target='_blank' rel='noopener'>2.16&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/dairon-estibens-asprilla-rivas' target='_blank' rel='noopener'>Dairon Asprilla</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/dairon-estibens-asprilla-rivas/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/deveron-fonville' target='_blank' rel='noopener'>Deveron Fonville</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/deveron-fonville/cards' target='_blank' rel='noopener'>3.47&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/diego-luna-2003-09-07' target='_blank' rel='noopener'>Diego Luna</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/diego-luna-2003-09-07/cards' target='_blank' rel='noopener'>1.27&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/emir-han-topcu' target='_blank' rel='noopener'>Emirhan Topçu</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/emir-han-topcu/cards' target='_blank' rel='noopener'>1.25&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/ercan-kara' target='_blank' rel='noopener'>Ercan Kara</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/ercan-kara/cards' target='_blank' rel='noopener'>0.51&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/evan-louro' target='_blank' rel='noopener'>Evan Louro</a></td><td>GK</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/evan-louro/cards' target='_blank' rel='noopener'>0.90&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/freese-matthew' target='_blank' rel='noopener'>Matt Freese</a></td><td>GK</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/freese-matthew/cards' target='_blank' rel='noopener'>2.65&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 4</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/helibelton-palacios-zapata' target='_blank' rel='noopener'>Helibelton Palacios</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/helibelton-palacios-zapata/cards' target='_blank' rel='noopener'>0.38&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/hyun-gyu-oh' target='_blank' rel='noopener'>Hyeongyu Oh</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/hyun-gyu-oh/cards' target='_blank' rel='noopener'>0.83&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 3</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/itsuki-someno' target='_blank' rel='noopener'>Itsuki Someno</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/itsuki-someno/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/jader-rafael-obrian-arias' target='_blank' rel='noopener'>Jáder Obrian</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/jader-rafael-obrian-arias/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/jalil-juan-jose-elias' target='_blank' rel='noopener'>Jalil Elías</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/jalil-juan-jose-elias/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/jamie-mccart' target='_blank' rel='noopener'>Jamie Mccart</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/jamie-mccart/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/jordi-altena' target='_blank' rel='noopener'>Jordi Altena</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/jordi-altena/cards' target='_blank' rel='noopener'>1.75&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/jose-manuel-sanchez-guillen' target='_blank' rel='noopener'>Josema Sánchez</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/jose-manuel-sanchez-guillen/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/joshua-mcpake' target='_blank' rel='noopener'>Joshua McPake</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/joshua-mcpake/cards' target='_blank' rel='noopener'>0.56&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/juan-manuel-elordi' target='_blank' rel='noopener'>Juan Elordi</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/juan-manuel-elordi/cards' target='_blank' rel='noopener'>0.46&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/juan-manuel-sanabria-magole' target='_blank' rel='noopener'>Juan Sanabria</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/juan-manuel-sanabria-magole/cards' target='_blank' rel='noopener'>1.35&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/junior-olaitan-ishola' target='_blank' rel='noopener'>Junior Olaïtan</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/junior-olaitan-ishola/cards' target='_blank' rel='noopener'>1.00&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/kacper-urbanski' target='_blank' rel='noopener'>Kacper Urbański</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/kacper-urbanski/cards' target='_blank' rel='noopener'>0.38&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/kazuya-miyahara' target='_blank' rel='noopener'>Kazuya Miyahara</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/kazuya-miyahara/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/kevin-alexander-balanta-lucumi' target='_blank' rel='noopener'>Kevin Balanta</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/kevin-alexander-balanta-lucumi/cards' target='_blank' rel='noopener'>0.44&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/marco-asensio-willemsen' target='_blank' rel='noopener'>Marco Asensio</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/marco-asensio-willemsen/cards' target='_blank' rel='noopener'>3.10&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/mason-greenwood' target='_blank' rel='noopener'>Mason Greenwood</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/mason-greenwood/cards' target='_blank' rel='noopener'>8.75&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/matheus-caldeira-vidotto-de-oliveira' target='_blank' rel='noopener'>Matheus Vidotto</a></td><td>GK</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/matheus-caldeira-vidotto-de-oliveira/cards' target='_blank' rel='noopener'>2.16&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/mathieu-choiniere' target='_blank' rel='noopener'>Mathieu Choinière</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/mathieu-choiniere/cards' target='_blank' rel='noopener'>0.43&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 5</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/matias-alejandro-galarza' target='_blank' rel='noopener'>Matías Galarza</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/matias-alejandro-galarza/cards' target='_blank' rel='noopener'>1.35&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/matt-miazga' target='_blank' rel='noopener'>Matt Miazga</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/matt-miazga/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/matteo-guendouzi-olie' target='_blank' rel='noopener'>Mattéo Guendouzi</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/matteo-guendouzi-olie/cards' target='_blank' rel='noopener'>2.50&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/maximilian-dietz' target='_blank' rel='noopener'>Maximilian Dietz</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/maximilian-dietz/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/michael-amir-murillo-bermudez' target='_blank' rel='noopener'>Michael Murillo</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/michael-amir-murillo-bermudez/cards' target='_blank' rel='noopener'>0.55&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 3</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/miguel-rene-ortega-rodriguez' target='_blank' rel='noopener'>Miguel Ortega</a></td><td>GK</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/miguel-rene-ortega-rodriguez/cards' target='_blank' rel='noopener'>2.20&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/milan-skriniar' target='_blank' rel='noopener'>Milan Škriniar</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/milan-skriniar/cards' target='_blank' rel='noopener'>2.20&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/moulaye-haidara' target='_blank' rel='noopener'>Moulaye Haïdara</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/moulaye-haidara/cards' target='_blank' rel='noopener'>8.99&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/muhammed-kerem-akturkoglu' target='_blank' rel='noopener'>Kerem Aktürkoğlu</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/muhammed-kerem-akturkoglu/cards' target='_blank' rel='noopener'>2.30&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 2</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/naoki-hayashi' target='_blank' rel='noopener'>Naoki Hayashi</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/naoki-hayashi/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/nathan-ake' target='_blank' rel='noopener'>Nathan Aké</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/nathan-ake/cards' target='_blank' rel='noopener'>2.70&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/nathan-byrne' target='_blank' rel='noopener'>Nathan Byrne</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/nathan-byrne/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/nelson-cabral-semedo' target='_blank' rel='noopener'>Nelson Semedo</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/nelson-cabral-semedo/cards' target='_blank' rel='noopener'>0.55&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 3</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/nenad-n-cvetkovic' target='_blank' rel='noopener'>Nenad Cvetković</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/nenad-n-cvetkovic/cards' target='_blank' rel='noopener'>0.69&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/nikolaus-wurmbrand' target='_blank' rel='noopener'>Nikolaus Wurmbrand</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/nikolaus-wurmbrand/cards' target='_blank' rel='noopener'>1.56&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/nobuteru-nakagawa' target='_blank' rel='noopener'>Nobuteru Nakagawa</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/nobuteru-nakagawa/cards' target='_blank' rel='noopener'>1.00&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/noe-lebreton' target='_blank' rel='noopener'>Noé Lebreton</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/noe-lebreton/cards' target='_blank' rel='noopener'>1.99&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/oisin-mcentee' target='_blank' rel='noopener'>Oisin McEntee</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/oisin-mcentee/cards' target='_blank' rel='noopener'>0.50&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/orkun-kokcu' target='_blank' rel='noopener'>Orkun Kökçü</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/orkun-kokcu/cards' target='_blank' rel='noopener'>7.35&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 2</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/osaze-urhoghide' target='_blank' rel='noopener'>Osaze Urhoghide</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/osaze-urhoghide/cards' target='_blank' rel='noopener'>0.40&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/philippe-sandler' target='_blank' rel='noopener'>Philippe Sandler</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/philippe-sandler/cards' target='_blank' rel='noopener'>0.48&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/rick-jhonatan-lima-morais' target='_blank' rel='noopener'>Rick</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/rick-jhonatan-lima-morais/cards' target='_blank' rel='noopener'>624.71&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/ryan-porteous' target='_blank' rel='noopener'>Ryan Porteous</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/ryan-porteous/cards' target='_blank' rel='noopener'>2.43&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/ryota-inoue-2000-07-25' target='_blank' rel='noopener'>Ryota Inoue</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/ryota-inoue-2000-07-25/cards' target='_blank' rel='noopener'>0.45&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/salih-ozcan' target='_blank' rel='noopener'>Salih Özcan</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/salih-ozcan/cards' target='_blank' rel='noopener'>0.98&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/sami-ouaissa' target='_blank' rel='noopener'>Sami Ouaissa</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/sami-ouaissa/cards' target='_blank' rel='noopener'>2.59&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/samuel-mawuena-gidi' target='_blank' rel='noopener'>Samuel Gidi</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/samuel-mawuena-gidi/cards' target='_blank' rel='noopener'>1.44&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/santiago-lionel-ascacibar' target='_blank' rel='noopener'>Santiago Ascacíbar</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/santiago-lionel-ascacibar/cards' target='_blank' rel='noopener'>4.14&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/tiago-emanuel-embalo-djalo' target='_blank' rel='noopener'>Tiago Djaló</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/tiago-emanuel-embalo-djalo/cards' target='_blank' rel='noopener'>0.49&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/tim-ream' target='_blank' rel='noopener'>Tim Ream</a></td><td>DEF</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/tim-ream/cards' target='_blank' rel='noopener'>0.35&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 3</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/tom-renaud' target='_blank' rel='noopener'>Tom Renaud</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/tom-renaud/cards' target='_blank' rel='noopener'>6.50&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/tyler-miller' target='_blank' rel='noopener'>Tyler Miller</a></td><td>GK</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/tyler-miller/cards' target='_blank' rel='noopener'>0.48&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 2</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/tyrese-spicer' target='_blank' rel='noopener'>Tyrese Spicer</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/tyrese-spicer/cards' target='_blank' rel='noopener'>0.50&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>90%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/vaclav-cerny' target='_blank' rel='noopener'>Václav Černý</a></td><td>FWD</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/vaclav-cerny/cards' target='_blank' rel='noopener'>0.60&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
-<tr><td><span class='muted'><b>dati mancanti</b></span></td><td><a href='https://sorare.com/football/players/yoshio-koizumi' target='_blank' rel='noopener'>Yoshio Koizumi</a></td><td>MID</td><td class='n'>&mdash;</td><td class='n'><a href='https://sorare.com/football/players/yoshio-koizumi/cards' target='_blank' rel='noopener'>0.50&nbsp;&euro;</a></td><td class='n'>&mdash;</td><td class='n'>&mdash;</td><td class='n'><span class='mia'>80%</span></td><td><span class='mia'>ne ho 1</span></td></tr>
+<h2>110 candidati</h2><div class='meta'>A+G = atteso + effetto del grade dentro il gruppo lega/ruolo (stessa formula del generatore di formazioni). Ordinamento di default. Clicca un'intestazione per riordinare su un'altra colonna.</div><div class='wrap'><table id='candidati'><tr><th>Giocatore</th><th>R</th><th>Club</th><th title='Starter odds Sorare'>Odds</th><th>Prezzo</th><th title='Lettera Sorare A..F per la prossima partita classic'>Grade</th><th>Atteso</th><th title='Atteso + effetto del grade dentro il gruppo lega/ruolo'>A+G</th></tr>
+<tr><td><a href='https://sorare.com/football/players/orkun-kokcu' target='_blank' rel='noopener'>Orkun Kökçü</a></td><td>MID</td><td>besiktas-istanbul</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/orkun-kokcu/cards' target='_blank' rel='noopener'>7.50&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>65.6</td><td class='n'>71.8</td></tr>
+<tr><td><a href='https://sorare.com/football/players/ryan-porteous' target='_blank' rel='noopener'>Ryan Porteous</a></td><td>DEF</td><td>los-angeles-fc-los-angeles-california</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/ryan-porteous/cards' target='_blank' rel='noopener'>2.33&nbsp;&euro;</a></td><td class='n'>B</td><td class='n'>56.3</td><td class='n'>64.0</td></tr>
+<tr><td><a href='https://sorare.com/football/players/taiyo-koga' target='_blank' rel='noopener'>Taiyo Koga</a></td><td>DEF</td><td>kashiwa-reysol-kashiwa-chiba</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/taiyo-koga/cards' target='_blank' rel='noopener'>2.50&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>56.3</td><td class='n'>62.6</td></tr>
+<tr><td><a href='https://sorare.com/football/players/lautaro-blanco' target='_blank' rel='noopener'>Lautaro Blanco</a></td><td>DEF</td><td>boca-juniors-capital-federal-ciudad-de-buenos-aires</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/lautaro-blanco/cards' target='_blank' rel='noopener'>1.59&nbsp;&euro;</a></td><td class='n'>B</td><td class='n'>57.1</td><td class='n'>62.1</td></tr>
+<tr><td><a href='https://sorare.com/football/players/anto-grgic' target='_blank' rel='noopener'>Anto Grgić</a></td><td>MID</td><td>lugano-lugano</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/anto-grgic/cards' target='_blank' rel='noopener'>4.00&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>56.0</td><td class='n'>61.5</td></tr>
+<tr><td><a href='https://sorare.com/football/players/mason-greenwood' target='_blank' rel='noopener'>Mason Greenwood</a></td><td>FWD</td><td>fenerbahce-istanbul</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/mason-greenwood/cards' target='_blank' rel='noopener'>8.75&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>55.0</td><td class='n'>58.8</td></tr>
+<tr><td><a href='https://sorare.com/football/players/anderson-souza-conceicao' target='_blank' rel='noopener'>Talisca</a></td><td>MID</td><td>fenerbahce-istanbul</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/anderson-souza-conceicao/cards' target='_blank' rel='noopener'>5.94&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>52.3</td><td class='n'>58.5</td></tr>
+<tr><td><a href='https://sorare.com/football/players/daley-blind' target='_blank' rel='noopener'>Daley Blind</a></td><td>DEF</td><td>ajax-amsterdam</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/daley-blind/cards' target='_blank' rel='noopener'>3.20&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>53.8</td><td class='n'>57.2</td></tr>
+<tr><td><a href='https://sorare.com/football/players/emir-han-topcu' target='_blank' rel='noopener'>Emirhan Topçu</a></td><td>DEF</td><td>besiktas-istanbul</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/emir-han-topcu/cards' target='_blank' rel='noopener'>1.10&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>53.8</td><td class='n'>56.7</td></tr>
+<tr><td><a href='https://sorare.com/football/players/antonios-papadopoulos' target='_blank' rel='noopener'>Antonios Papadopoulos</a></td><td>DEF</td><td>lugano-lugano</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/antonios-papadopoulos/cards' target='_blank' rel='noopener'>4.07&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>53.0</td><td class='n'>56.7</td></tr>
+<tr><td><a href='https://sorare.com/football/players/steven-berghuis' target='_blank' rel='noopener'>Steven Berghuis</a></td><td>FWD</td><td>ajax-amsterdam</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/steven-berghuis/cards' target='_blank' rel='noopener'>3.80&nbsp;&euro;</a></td><td class='n'>B</td><td class='n'>52.6</td><td class='n'>56.3</td></tr>
+<tr><td><a href='https://sorare.com/football/players/kevin-behrens' target='_blank' rel='noopener'>Kevin Behrens</a></td><td>FWD</td><td>lugano-lugano</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/kevin-behrens/cards' target='_blank' rel='noopener'>2.18&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>53.4</td><td class='n'>56.1</td></tr>
+<tr><td><a href='https://sorare.com/football/players/matias-alejandro-galarza' target='_blank' rel='noopener'>Matías Galarza</a></td><td>MID</td><td>talleres-cordoba-ciudad-de-cordoba-provincia-de-cordoba</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/matias-alejandro-galarza/cards' target='_blank' rel='noopener'>1.35&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>51.6</td><td class='n'>56.1</td></tr>
+<tr><td><a href='https://sorare.com/football/players/yoshio-koizumi' target='_blank' rel='noopener'>Yoshio Koizumi</a></td><td>MID</td><td>kashiwa-reysol-kashiwa-chiba</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/yoshio-koizumi/cards' target='_blank' rel='noopener'>0.50&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>53.8</td><td class='n'>55.6</td></tr>
+<tr><td><a href='https://sorare.com/football/players/moussa-niakhate' target='_blank' rel='noopener'>Moussa Niakhaté</a></td><td>DEF</td><td>olympique-lyonnais-lyon</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/moussa-niakhate/cards' target='_blank' rel='noopener'>2.70&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>55.5</td><td class='n'>55.5</td></tr>
+<tr><td><a href='https://sorare.com/football/players/nobuteru-nakagawa' target='_blank' rel='noopener'>Nobuteru Nakagawa</a></td><td>MID</td><td>kashiwa-reysol-kashiwa-chiba</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/nobuteru-nakagawa/cards' target='_blank' rel='noopener'>1.00&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>53.0</td><td class='n'>54.8</td></tr>
+<tr><td><a href='https://sorare.com/football/players/jose-manuel-sanchez-guillen' target='_blank' rel='noopener'>Josema Sánchez</a></td><td>DEF</td><td>gornik-zabrze-zabrze</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/jose-manuel-sanchez-guillen/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>51.3</td><td class='n'>54.6</td></tr>
+<tr><td><a href='https://sorare.com/football/players/hannes-delcroix' target='_blank' rel='noopener'>Hannes Delcroix</a></td><td>DEF</td><td>lugano-lugano</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/hannes-delcroix/cards' target='_blank' rel='noopener'>0.47&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>50.5</td><td class='n'>54.2</td></tr>
+<tr><td><a href='https://sorare.com/football/players/marco-asensio-willemsen' target='_blank' rel='noopener'>Marco Asensio</a></td><td>MID</td><td>fenerbahce-istanbul</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/marco-asensio-willemsen/cards' target='_blank' rel='noopener'>3.25&nbsp;&euro;</a></td><td class='n'>B</td><td class='n'>53.0</td><td class='n'>54.0</td></tr>
+<tr><td><a href='https://sorare.com/football/players/mathieu-choiniere' target='_blank' rel='noopener'>Mathieu Choinière</a></td><td>MID</td><td>los-angeles-fc-los-angeles-california</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/mathieu-choiniere/cards' target='_blank' rel='noopener'>0.43&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>52.3</td><td class='n'>53.8</td></tr>
+<tr><td><a href='https://sorare.com/football/players/nenad-n-cvetkovic' target='_blank' rel='noopener'>Nenad Cvetković</a></td><td>DEF</td><td>rapid-wien-wien</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/nenad-n-cvetkovic/cards' target='_blank' rel='noopener'>0.76&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>53.8</td><td class='n'>53.8</td></tr>
+<tr><td><a href='https://sorare.com/football/players/naoki-hayashi' target='_blank' rel='noopener'>Naoki Hayashi</a></td><td>DEF</td><td>tokyo-verdy-tokyo</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/naoki-hayashi/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>53.0</td><td class='n'>53.6</td></tr>
+<tr><td><a href='https://sorare.com/football/players/ridvan-yilmaz' target='_blank' rel='noopener'>Rıdvan Yılmaz</a></td><td>DEF</td><td>besiktas-istanbul</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/ridvan-yilmaz/cards' target='_blank' rel='noopener'>0.50&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>50.5</td><td class='n'>53.4</td></tr>
+<tr><td><a href='https://sorare.com/football/players/ashley-westwood' target='_blank' rel='noopener'>Ashley Westwood</a></td><td>MID</td><td>charlotte-fc-charlotte-north-carolina</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/ashley-westwood/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>51.6</td><td class='n'>53.1</td></tr>
+<tr><td><a href='https://sorare.com/football/players/muhammed-kerem-akturkoglu' target='_blank' rel='noopener'>Kerem Aktürkoğlu</a></td><td>FWD</td><td>fenerbahce-istanbul</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/muhammed-kerem-akturkoglu/cards' target='_blank' rel='noopener'>2.20&nbsp;&euro;</a></td><td class='n'>B</td><td class='n'>51.8</td><td class='n'>53.1</td></tr>
+<tr><td><a href='https://sorare.com/football/players/diego-luna-2003-09-07' target='_blank' rel='noopener'>Diego Luna</a></td><td>MID</td><td>real-salt-lake-salt-lake-city-utah</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/diego-luna-2003-09-07/cards' target='_blank' rel='noopener'>1.27&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>56.0</td><td class='n'>53.0</td></tr>
+<tr><td><a href='https://sorare.com/football/players/baltazar-costa-rodrigues-de-oliveira' target='_blank' rel='noopener'>Baltazar Costa</a></td><td>MID</td><td>sion-martigny-croix</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/baltazar-costa-rodrigues-de-oliveira/cards' target='_blank' rel='noopener'>2.32&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>53.8</td><td class='n'>52.4</td></tr>
+<tr><td><a href='https://sorare.com/football/players/juan-manuel-sanabria-magole' target='_blank' rel='noopener'>Juan Sanabria</a></td><td>MID</td><td>real-salt-lake-salt-lake-city-utah</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/juan-manuel-sanabria-magole/cards' target='_blank' rel='noopener'>1.35&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>50.8</td><td class='n'>52.3</td></tr>
+<tr><td><a href='https://sorare.com/football/players/helibelton-palacios-zapata' target='_blank' rel='noopener'>Helibelton Palacios</a></td><td>DEF</td><td>santa-fe-bogota-d-c</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/helibelton-palacios-zapata/cards' target='_blank' rel='noopener'>0.38&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>49.7</td><td class='n'>52.2</td></tr>
+<tr><td><a href='https://sorare.com/football/players/chima-okoroji' target='_blank' rel='noopener'>Chima Okoroji</a></td><td>DEF</td><td>st-gallen-st-gallen</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/chima-okoroji/cards' target='_blank' rel='noopener'>1.32&nbsp;&euro;</a></td><td class='n'>B</td><td class='n'>50.5</td><td class='n'>52.0</td></tr>
+<tr><td><a href='https://sorare.com/football/players/sami-ouaissa' target='_blank' rel='noopener'>Sami Ouaissa</a></td><td>FWD</td><td>nec-nijmegen</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/sami-ouaissa/cards' target='_blank' rel='noopener'>&mdash;</a></td><td class='n'>C</td><td class='n'>51.8</td><td class='n'>51.8</td></tr>
+<tr><td><a href='https://sorare.com/football/players/tiago-emanuel-embalo-djalo' target='_blank' rel='noopener'>Tiago Djaló</a></td><td>DEF</td><td>besiktas-istanbul</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/tiago-emanuel-embalo-djalo/cards' target='_blank' rel='noopener'>0.50&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>48.8</td><td class='n'>51.7</td></tr>
+<tr><td><a href='https://sorare.com/football/players/corentin-tolisso' target='_blank' rel='noopener'>Corentin Tolisso</a></td><td>MID</td><td>olympique-lyonnais-lyon</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/corentin-tolisso/cards' target='_blank' rel='noopener'>3.30&nbsp;&euro;</a></td><td class='n'>B</td><td class='n'>50.1</td><td class='n'>51.7</td></tr>
+<tr><td><a href='https://sorare.com/football/players/timothy-tillman' target='_blank' rel='noopener'>Timothy Tillman</a></td><td>MID</td><td>los-angeles-fc-los-angeles-california</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/timothy-tillman/cards' target='_blank' rel='noopener'>0.50&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>50.1</td><td class='n'>51.6</td></tr>
+<tr><td><a href='https://sorare.com/football/players/tyrese-spicer' target='_blank' rel='noopener'>Tyrese Spicer</a></td><td>FWD</td><td>orlando-city-lake-mary-florida</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/tyrese-spicer/cards' target='_blank' rel='noopener'>0.54&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>51.0</td><td class='n'>51.0</td></tr>
+<tr><td><a href='https://sorare.com/football/players/noe-lebreton' target='_blank' rel='noopener'>Noé Lebreton</a></td><td>MID</td><td>nec-nijmegen</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/noe-lebreton/cards' target='_blank' rel='noopener'>1.99&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>50.8</td><td class='n'>50.8</td></tr>
+<tr><td><a href='https://sorare.com/football/players/osaze-urhoghide' target='_blank' rel='noopener'>Osaze Urhoghide</a></td><td>DEF</td><td>dallas-frisco-texas</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/osaze-urhoghide/cards' target='_blank' rel='noopener'>0.40&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>48.8</td><td class='n'>50.7</td></tr>
+<tr><td><a href='https://sorare.com/football/players/tim-ream' target='_blank' rel='noopener'>Tim Ream</a></td><td>DEF</td><td>charlotte-fc-charlotte-north-carolina</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/tim-ream/cards' target='_blank' rel='noopener'>0.35&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>48.8</td><td class='n'>50.7</td></tr>
+<tr><td><a href='https://sorare.com/football/players/milan-skriniar' target='_blank' rel='noopener'>Milan Škriniar</a></td><td>DEF</td><td>fenerbahce-istanbul</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/milan-skriniar/cards' target='_blank' rel='noopener'>2.20&nbsp;&euro;</a></td><td class='n'>B</td><td class='n'>49.7</td><td class='n'>50.7</td></tr>
+<tr><td><a href='https://sorare.com/football/players/anthony-racioppi' target='_blank' rel='noopener'>Anthony Racioppi</a></td><td>GK</td><td>sion-martigny-croix</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/anthony-racioppi/cards' target='_blank' rel='noopener'>10.00&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>50.3</td><td class='n'>50.3</td></tr>
+<tr><td><a href='https://sorare.com/football/players/juan-manuel-elordi' target='_blank' rel='noopener'>Juan Elordi</a></td><td>DEF</td><td>independiente-rivadavia-mendoza-provincia-de-mendoza</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/juan-manuel-elordi/cards' target='_blank' rel='noopener'>0.46&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>51.3</td><td class='n'>50.3</td></tr>
+<tr><td><a href='https://sorare.com/football/players/miguel-angel-merentiel-serrano' target='_blank' rel='noopener'>Miguel Merentiel</a></td><td>FWD</td><td>boca-juniors-capital-federal-ciudad-de-buenos-aires</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/miguel-angel-merentiel-serrano/cards' target='_blank' rel='noopener'>1.76&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>50.2</td><td class='n'>50.2</td></tr>
+<tr><td><a href='https://sorare.com/football/players/luis-ezequiel-unsain' target='_blank' rel='noopener'>Ezequiel Unsain</a></td><td>GK</td><td>talleres-cordoba-ciudad-de-cordoba-provincia-de-cordoba</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/luis-ezequiel-unsain/cards' target='_blank' rel='noopener'>1.83&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>49.8</td><td class='n'>50.1</td></tr>
+<tr><td><a href='https://sorare.com/football/players/hugo-lloris' target='_blank' rel='noopener'>Hugo Lloris</a></td><td>GK</td><td>los-angeles-fc-los-angeles-california</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/hugo-lloris/cards' target='_blank' rel='noopener'>2.10&nbsp;&euro;</a></td><td class='n'>B</td><td class='n'>50.3</td><td class='n'>49.8</td></tr>
+<tr><td><a href='https://sorare.com/football/players/jonathan-sirois' target='_blank' rel='noopener'>Jonathan Sirois</a></td><td>GK</td><td>dallas-frisco-texas</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/jonathan-sirois/cards' target='_blank' rel='noopener'>2.04&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>48.7</td><td class='n'>49.8</td></tr>
+<tr><td><a href='https://sorare.com/football/players/alexander-nubel' target='_blank' rel='noopener'>Alexander Nübel</a></td><td>GK</td><td>besiktas-istanbul</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/alexander-nubel/cards' target='_blank' rel='noopener'>6.10&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>49.5</td><td class='n'>49.5</td></tr>
+<tr><td><a href='https://sorare.com/football/players/ercan-kara' target='_blank' rel='noopener'>Ercan Kara</a></td><td>FWD</td><td>rapid-wien-wien</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/ercan-kara/cards' target='_blank' rel='noopener'>0.52&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>47.9</td><td class='n'>49.5</td></tr>
+<tr><td><a href='https://sorare.com/football/players/malick-martin-fofana' target='_blank' rel='noopener'>Malick Fofana</a></td><td>FWD</td><td>olympique-lyonnais-lyon</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/malick-martin-fofana/cards' target='_blank' rel='noopener'>3.40&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>47.9</td><td class='n'>49.5</td></tr>
+<tr><td><a href='https://sorare.com/football/players/tyler-morton' target='_blank' rel='noopener'>Tyler Morton</a></td><td>MID</td><td>olympique-lyonnais-lyon</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/tyler-morton/cards' target='_blank' rel='noopener'>3.77&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>49.4</td><td class='n'>49.4</td></tr>
+<tr><td><a href='https://sorare.com/football/players/jozo-stanic' target='_blank' rel='noopener'>Jozo Stanić</a></td><td>DEF</td><td>st-gallen-st-gallen</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/jozo-stanic/cards' target='_blank' rel='noopener'>0.40&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>49.7</td><td class='n'>49.0</td></tr>
+<tr><td><a href='https://sorare.com/football/players/blair-spittal' target='_blank' rel='noopener'>Blair Spittal</a></td><td>MID</td><td>hearts-edinburgh</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/blair-spittal/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>47.1</td><td class='n'>49.0</td></tr>
+<tr><td><a href='https://sorare.com/football/players/vaclav-cerny' target='_blank' rel='noopener'>Václav Černý</a></td><td>FWD</td><td>besiktas-istanbul</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/vaclav-cerny/cards' target='_blank' rel='noopener'>0.55&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>50.2</td><td class='n'>48.9</td></tr>
+<tr><td><a href='https://sorare.com/football/players/alvaro-david-montero-perales' target='_blank' rel='noopener'>Álvaro Montero</a></td><td>GK</td><td>boca-juniors-capital-federal-ciudad-de-buenos-aires</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/alvaro-david-montero-perales/cards' target='_blank' rel='noopener'>5.68&nbsp;&euro;</a></td><td class='n'>B</td><td class='n'>49.2</td><td class='n'>48.9</td></tr>
+<tr><td><a href='https://sorare.com/football/players/xavier-ricardo-arreaga-bermello' target='_blank' rel='noopener'>Xavier Arreaga</a></td><td>DEF</td><td>bolivar-la-paz</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/xavier-ricardo-arreaga-bermello/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>48.8</td><td class='n'>48.8</td></tr>
+<tr><td><a href='https://sorare.com/football/players/nico-maier' target='_blank' rel='noopener'>Nico Maier</a></td><td>MID</td><td>thun-thun</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/nico-maier/cards' target='_blank' rel='noopener'>0.99&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>50.1</td><td class='n'>48.7</td></tr>
+<tr><td><a href='https://sorare.com/football/players/dominik-greif' target='_blank' rel='noopener'>Dominik Greif</a></td><td>GK</td><td>olympique-lyonnais-lyon</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/dominik-greif/cards' target='_blank' rel='noopener'>11.85&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>48.7</td><td class='n'>48.7</td></tr>
+<tr><td><a href='https://sorare.com/football/players/miguel-rene-ortega-rodriguez' target='_blank' rel='noopener'>Miguel Ortega</a></td><td>GK</td><td>deportes-tolima-ibague</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/miguel-rene-ortega-rodriguez/cards' target='_blank' rel='noopener'>2.20&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>48.7</td><td class='n'>48.7</td></tr>
+<tr><td><a href='https://sorare.com/football/players/calvin-miller' target='_blank' rel='noopener'>Calvin Miller</a></td><td>FWD</td><td>hearts-edinburgh</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/calvin-miller/cards' target='_blank' rel='noopener'>0.50&nbsp;&euro;</a></td><td class='n'>E</td><td class='n'>48.6</td><td class='n'>48.6</td></tr>
+<tr><td><a href='https://sorare.com/football/players/claudio-rafael-soares-braga' target='_blank' rel='noopener'>Cláudio Braga</a></td><td>FWD</td><td>hearts-edinburgh</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/claudio-rafael-soares-braga/cards' target='_blank' rel='noopener'>1.05&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>48.6</td><td class='n'>48.6</td></tr>
+<tr><td><a href='https://sorare.com/football/players/itsuki-someno' target='_blank' rel='noopener'>Itsuki Someno</a></td><td>FWD</td><td>tokyo-verdy-tokyo</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/itsuki-someno/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>48.6</td><td class='n'>48.6</td></tr>
+<tr><td><a href='https://sorare.com/football/players/rick-jhonatan-lima-morais' target='_blank' rel='noopener'>Rick</a></td><td>FWD</td><td>talleres-cordoba-ciudad-de-cordoba-provincia-de-cordoba</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/rick-jhonatan-lima-morais/cards' target='_blank' rel='noopener'>624.71&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>48.6</td><td class='n'>48.6</td></tr>
+<tr><td><a href='https://sorare.com/football/players/carlos-emilio-lampe-porras' target='_blank' rel='noopener'>Carlos Lampe</a></td><td>GK</td><td>bolivar-la-paz</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/carlos-emilio-lampe-porras/cards' target='_blank' rel='noopener'>0.70&nbsp;&euro;</a></td><td class='n'>B</td><td class='n'>48.5</td><td class='n'>48.5</td></tr>
+<tr><td><a href='https://sorare.com/football/players/yanis-cimignani' target='_blank' rel='noopener'>Yanis Cimignani</a></td><td>MID</td><td>lugano-lugano</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/yanis-cimignani/cards' target='_blank' rel='noopener'>1.75&nbsp;&euro;</a></td><td class='n'>B</td><td class='n'>46.4</td><td class='n'>48.4</td></tr>
+<tr><td><a href='https://sorare.com/football/players/nathan-ake' target='_blank' rel='noopener'>Nathan Aké</a></td><td>DEF</td><td>fenerbahce-istanbul</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/nathan-ake/cards' target='_blank' rel='noopener'>2.65&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>51.3</td><td class='n'>48.4</td></tr>
+<tr><td><a href='https://sorare.com/football/players/ryan-hollingshead' target='_blank' rel='noopener'>Ryan Hollingshead</a></td><td>DEF</td><td>los-angeles-fc-los-angeles-california</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/ryan-hollingshead/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>52.2</td><td class='n'>48.3</td></tr>
+<tr><td><a href='https://sorare.com/football/players/ryota-inoue-2000-07-25' target='_blank' rel='noopener'>Ryota Inoue</a></td><td>DEF</td><td>tokyo-verdy-tokyo</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/ryota-inoue-2000-07-25/cards' target='_blank' rel='noopener'>0.45&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>50.5</td><td class='n'>48.2</td></tr>
+<tr><td><a href='https://sorare.com/football/players/evan-louro' target='_blank' rel='noopener'>Evan Louro</a></td><td>GK</td><td>cincinnati-cincinnati-ohio</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/evan-louro/cards' target='_blank' rel='noopener'>0.90&nbsp;&euro;</a></td><td class='n'>B</td><td class='n'>48.7</td><td class='n'>48.2</td></tr>
+<tr><td><a href='https://sorare.com/football/players/deveron-fonville' target='_blank' rel='noopener'>Deveron Fonville</a></td><td>DEF</td><td>nec-nijmegen</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/deveron-fonville/cards' target='_blank' rel='noopener'>3.85&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>49.7</td><td class='n'>48.0</td></tr>
+<tr><td><a href='https://sorare.com/football/players/jamiro-gregory-monteiro-alvarenga' target='_blank' rel='noopener'>Jamiro Monteiro</a></td><td>MID</td><td>pec-zwolle-zwolle</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/jamiro-gregory-monteiro-alvarenga/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>47.9</td><td class='n'>47.9</td></tr>
+<tr><td><a href='https://sorare.com/football/players/santiago-lionel-ascacibar' target='_blank' rel='noopener'>Santiago Ascacíbar</a></td><td>MID</td><td>boca-juniors-capital-federal-ciudad-de-buenos-aires</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/santiago-lionel-ascacibar/cards' target='_blank' rel='noopener'>4.14&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>50.1</td><td class='n'>47.8</td></tr>
+<tr><td><a href='https://sorare.com/football/players/matheus-caldeira-vidotto-de-oliveira' target='_blank' rel='noopener'>Matheus Vidotto</a></td><td>GK</td><td>tokyo-verdy-tokyo</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/matheus-caldeira-vidotto-de-oliveira/cards' target='_blank' rel='noopener'>2.16&nbsp;&euro;</a></td><td class='n'>B</td><td class='n'>47.7</td><td class='n'>47.7</td></tr>
+<tr><td><a href='https://sorare.com/football/players/wataru-harada' target='_blank' rel='noopener'>Wataru Harada</a></td><td>DEF</td><td>kashiwa-reysol-kashiwa-chiba</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/wataru-harada/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>49.7</td><td class='n'>47.4</td></tr>
+<tr><td><a href='https://sorare.com/football/players/beau-reus' target='_blank' rel='noopener'>Beau Reus</a></td><td>GK</td><td>hearts-edinburgh</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/beau-reus/cards' target='_blank' rel='noopener'>14.92&nbsp;&euro;</a></td><td class='n'>E</td><td class='n'>47.1</td><td class='n'>47.1</td></tr>
+<tr><td><a href='https://sorare.com/football/players/kacper-urbanski' target='_blank' rel='noopener'>Kacper Urbański</a></td><td>MID</td><td>gornik-zabrze-zabrze</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/kacper-urbanski/cards' target='_blank' rel='noopener'>0.38&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>47.1</td><td class='n'>47.1</td></tr>
+<tr><td><a href='https://sorare.com/football/players/michael-amir-murillo-bermudez' target='_blank' rel='noopener'>Michael Murillo</a></td><td>DEF</td><td>besiktas-istanbul</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/michael-amir-murillo-bermudez/cards' target='_blank' rel='noopener'>0.62&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>48.0</td><td class='n'>47.0</td></tr>
+<tr><td><a href='https://sorare.com/football/players/samuel-mawuena-gidi' target='_blank' rel='noopener'>Samuel Gidi</a></td><td>MID</td><td>cincinnati-cincinnati-ohio</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/samuel-mawuena-gidi/cards' target='_blank' rel='noopener'>1.44&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>49.4</td><td class='n'>46.4</td></tr>
+<tr><td><a href='https://sorare.com/football/players/bryan-linssen' target='_blank' rel='noopener'>Bryan Linssen</a></td><td>FWD</td><td>nec-nijmegen</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/bryan-linssen/cards' target='_blank' rel='noopener'>0.49&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>46.3</td><td class='n'>46.3</td></tr>
+<tr><td><a href='https://sorare.com/football/players/jader-rafael-obrian-arias' target='_blank' rel='noopener'>Jáder Obrian</a></td><td>FWD</td><td>santa-fe-bogota-d-c</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/jader-rafael-obrian-arias/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>46.3</td><td class='n'>46.3</td></tr>
+<tr><td><a href='https://sorare.com/football/players/jamie-mccart' target='_blank' rel='noopener'>Jamie Mccart</a></td><td>DEF</td><td>hearts-edinburgh</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/jamie-mccart/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'>E</td><td class='n'>46.3</td><td class='n'>46.3</td></tr>
+<tr><td><a href='https://sorare.com/football/players/philippe-sandler' target='_blank' rel='noopener'>Philippe Sandler</a></td><td>DEF</td><td>nec-nijmegen</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/philippe-sandler/cards' target='_blank' rel='noopener'>0.47&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>48.0</td><td class='n'>46.3</td></tr>
+<tr><td><a href='https://sorare.com/football/players/ainsley-maitland-niles' target='_blank' rel='noopener'>Ainsley Maitland-Niles</a></td><td>MID</td><td>olympique-lyonnais-lyon</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/ainsley-maitland-niles/cards' target='_blank' rel='noopener'>0.57&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>47.1</td><td class='n'>45.5</td></tr>
+<tr><td><a href='https://sorare.com/football/players/junior-olaitan-ishola' target='_blank' rel='noopener'>Junior Olaïtan</a></td><td>MID</td><td>besiktas-istanbul</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/junior-olaitan-ishola/cards' target='_blank' rel='noopener'>1.00&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>49.4</td><td class='n'>45.3</td></tr>
+<tr><td><a href='https://sorare.com/football/players/aliou-badara-balde' target='_blank' rel='noopener'>Aliou Baldé</a></td><td>FWD</td><td>st-gallen-st-gallen</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/aliou-badara-balde/cards' target='_blank' rel='noopener'>1.49&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>47.9</td><td class='n'>45.1</td></tr>
+<tr><td><a href='https://sorare.com/football/players/nelson-cabral-semedo' target='_blank' rel='noopener'>Nelson Semedo</a></td><td>DEF</td><td>fenerbahce-istanbul</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/nelson-cabral-semedo/cards' target='_blank' rel='noopener'>0.55&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>47.2</td><td class='n'>44.3</td></tr>
+<tr><td><a href='https://sorare.com/football/players/rei-hirakawa' target='_blank' rel='noopener'>Rei Hirakawa</a></td><td>MID</td><td>tokyo-verdy-tokyo</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/rei-hirakawa/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>47.9</td><td class='n'>44.2</td></tr>
+<tr><td><a href='https://sorare.com/football/players/clement-bischoff' target='_blank' rel='noopener'>Clement Bischoff</a></td><td>FWD</td><td>nec-nijmegen</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/clement-bischoff/cards' target='_blank' rel='noopener'>2.16&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>47.9</td><td class='n'>44.2</td></tr>
+<tr><td><a href='https://sorare.com/football/players/kazuya-miyahara' target='_blank' rel='noopener'>Kazuya Miyahara</a></td><td>DEF</td><td>tokyo-verdy-tokyo</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/kazuya-miyahara/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>46.3</td><td class='n'>44.0</td></tr>
+<tr><td><a href='https://sorare.com/football/players/alexandro-maidana-mendieta' target='_blank' rel='noopener'>Alexandro Maidana</a></td><td>DEF</td><td>talleres-cordoba-ciudad-de-cordoba-provincia-de-cordoba</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/alexandro-maidana-mendieta/cards' target='_blank' rel='noopener'>2.17&nbsp;&euro;</a></td><td class='n'>E</td><td class='n'>48.0</td><td class='n'>44.0</td></tr>
+<tr><td><a href='https://sorare.com/football/players/lukas-daschner' target='_blank' rel='noopener'>Lukas Daschner</a></td><td>MID</td><td>st-gallen-st-gallen</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/lukas-daschner/cards' target='_blank' rel='noopener'>0.40&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>48.6</td><td class='n'>43.8</td></tr>
+<tr><td><a href='https://sorare.com/football/players/jordi-altena' target='_blank' rel='noopener'>Jordi Altena</a></td><td>DEF</td><td>hearts-edinburgh</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/jordi-altena/cards' target='_blank' rel='noopener'>1.75&nbsp;&euro;</a></td><td class='n'>E</td><td class='n'>43.8</td><td class='n'>43.8</td></tr>
+<tr><td><a href='https://sorare.com/football/players/hyun-gyu-oh' target='_blank' rel='noopener'>Hyeongyu Oh</a></td><td>FWD</td><td>besiktas-istanbul</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/hyun-gyu-oh/cards' target='_blank' rel='noopener'>0.83&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>47.1</td><td class='n'>43.3</td></tr>
+<tr><td><a href='https://sorare.com/football/players/lois-openda' target='_blank' rel='noopener'>Loïs Openda</a></td><td>FWD</td><td>olympique-lyonnais-lyon</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/lois-openda/cards' target='_blank' rel='noopener'>3.50&nbsp;&euro;</a></td><td class='n'>E</td><td class='n'>44.7</td><td class='n'>43.1</td></tr>
+<tr><td><a href='https://sorare.com/football/players/nikolaus-wurmbrand' target='_blank' rel='noopener'>Nikolaus Wurmbrand</a></td><td>FWD</td><td>rapid-wien-wien</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/nikolaus-wurmbrand/cards' target='_blank' rel='noopener'>1.56&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>44.7</td><td class='n'>43.1</td></tr>
+<tr><td><a href='https://sorare.com/football/players/kevin-alexander-balanta-lucumi' target='_blank' rel='noopener'>Kevin Balanta</a></td><td>DEF</td><td>santa-fe-bogota-d-c</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/kevin-alexander-balanta-lucumi/cards' target='_blank' rel='noopener'>0.44&nbsp;&euro;</a></td><td class='n'>E</td><td class='n'>44.7</td><td class='n'>42.2</td></tr>
+<tr><td><a href='https://sorare.com/football/players/jalil-juan-jose-elias' target='_blank' rel='noopener'>Jalil Elías</a></td><td>MID</td><td>tigre-victoria-provincia-de-buenos-aires</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/jalil-juan-jose-elias/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>44.2</td><td class='n'>41.9</td></tr>
+<tr><td><a href='https://sorare.com/football/players/archie-brown' target='_blank' rel='noopener'>Archibald Brown</a></td><td>DEF</td><td>fenerbahce-istanbul</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/archie-brown/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>44.7</td><td class='n'>41.8</td></tr>
+<tr><td><a href='https://sorare.com/football/players/nathan-byrne' target='_blank' rel='noopener'>Nathan Byrne</a></td><td>DEF</td><td>charlotte-fc-charlotte-north-carolina</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/nathan-byrne/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>45.5</td><td class='n'>41.6</td></tr>
+<tr><td><a href='https://sorare.com/football/players/oisin-mcentee' target='_blank' rel='noopener'>Oisin McEntee</a></td><td>MID</td><td>hearts-edinburgh</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/oisin-mcentee/cards' target='_blank' rel='noopener'>0.50&nbsp;&euro;</a></td><td class='n'>E</td><td class='n'>43.4</td><td class='n'>41.5</td></tr>
+<tr><td><a href='https://sorare.com/football/players/maximilian-dietz' target='_blank' rel='noopener'>Maximilian Dietz</a></td><td>DEF</td><td>gornik-zabrze-zabrze</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/maximilian-dietz/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>44.7</td><td class='n'>41.4</td></tr>
+<tr><td><a href='https://sorare.com/football/players/marcos-robson-cipriano' target='_blank' rel='noopener'>Marquinhos Cipriano</a></td><td>DEF</td><td>sion-martigny-croix</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/marcos-robson-cipriano/cards' target='_blank' rel='noopener'>0.45&nbsp;&euro;</a></td><td class='n'>E</td><td class='n'>46.3</td><td class='n'>41.2</td></tr>
+<tr><td><a href='https://sorare.com/football/players/salih-ozcan' target='_blank' rel='noopener'>Salih Özcan</a></td><td>MID</td><td>besiktas-istanbul</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/salih-ozcan/cards' target='_blank' rel='noopener'>0.98&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>49.4</td><td class='n'>40.1</td></tr>
+<tr><td><a href='https://sorare.com/football/players/hugo-vandermersch' target='_blank' rel='noopener'>Hugo Vandermersch</a></td><td>DEF</td><td>st-gallen-st-gallen</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/hugo-vandermersch/cards' target='_blank' rel='noopener'>0.40&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>43.0</td><td class='n'>40.1</td></tr>
+<tr><td><a href='https://sorare.com/football/players/matt-miazga' target='_blank' rel='noopener'>Matt Miazga</a></td><td>DEF</td><td>cincinnati-cincinnati-ohio</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/matt-miazga/cards' target='_blank' rel='noopener'>0.33&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>43.0</td><td class='n'>39.1</td></tr>
+<tr><td><a href='https://sorare.com/football/players/andrew-vincent-rick' target='_blank' rel='noopener'>Andrew Rick</a></td><td>GK</td><td>philadelphia-union-chester-pennsylvania</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/andrew-vincent-rick/cards' target='_blank' rel='noopener'>2.10&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>&mdash;</td><td class='n'>&mdash;</td></tr>
+<tr><td><a href='https://sorare.com/football/players/dairon-estibens-asprilla-rivas' target='_blank' rel='noopener'>Dairon Asprilla</a></td><td>FWD</td><td>bolivar-la-paz</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/dairon-estibens-asprilla-rivas/cards' target='_blank' rel='noopener'>0.34&nbsp;&euro;</a></td><td class='n'>D</td><td class='n'>&mdash;</td><td class='n'>&mdash;</td></tr>
+<tr><td><a href='https://sorare.com/football/players/freese-matthew' target='_blank' rel='noopener'>Matt Freese</a></td><td>GK</td><td>new-york-city-new-york-new-york</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/freese-matthew/cards' target='_blank' rel='noopener'>2.65&nbsp;&euro;</a></td><td class='n'>B</td><td class='n'>&mdash;</td><td class='n'>&mdash;</td></tr>
+<tr><td><a href='https://sorare.com/football/players/joshua-mcpake' target='_blank' rel='noopener'>Joshua McPake</a></td><td>FWD</td><td>hearts-edinburgh</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/joshua-mcpake/cards' target='_blank' rel='noopener'>0.56&nbsp;&euro;</a></td><td class='n'>E</td><td class='n'>&mdash;</td><td class='n'>&mdash;</td></tr>
+<tr><td><a href='https://sorare.com/football/players/moulaye-haidara' target='_blank' rel='noopener'>Moulaye Haïdara</a></td><td>FWD</td><td>rapid-wien-wien</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/moulaye-haidara/cards' target='_blank' rel='noopener'>9.00&nbsp;&euro;</a></td><td class='n'>C</td><td class='n'>&mdash;</td><td class='n'>&mdash;</td></tr>
+<tr><td><a href='https://sorare.com/football/players/tom-renaud' target='_blank' rel='noopener'>Tom Renaud</a></td><td>MID</td><td>hearts-edinburgh</td><td class='n'><span class='mia'>80%</span></td><td class='n'><a href='https://sorare.com/football/players/tom-renaud/cards' target='_blank' rel='noopener'>6.54&nbsp;&euro;</a></td><td class='n'>E</td><td class='n'>&mdash;</td><td class='n'>&mdash;</td></tr>
+<tr><td><a href='https://sorare.com/football/players/tyler-miller' target='_blank' rel='noopener'>Tyler Miller</a></td><td>GK</td><td>charlotte-fc-charlotte-north-carolina</td><td class='n'><span class='mia'>90%</span></td><td class='n'><a href='https://sorare.com/football/players/tyler-miller/cards' target='_blank' rel='noopener'>0.49&nbsp;&euro;</a></td><td class='n'>A</td><td class='n'>&mdash;</td><td class='n'>&mdash;</td></tr>
 </table></div>
-<h2>Se le comprassi &mdash; arene ipotetiche</h2><div class='meta'>Costruite con lo stesso motore della produzione (cap L10, anti-stack, sinergie, capitano). Due avvertenze: <b>assumono che questi giocatori scendano in campo</b> &mdash; senza starter odds la titolarita' e' una scommessa &mdash; e sono carte che <b>non possiedi</b>: e' una simulazione d'acquisto.</div>
-<div class='wrap'><table><tr><th>Arena</th><th>Atteso</th><th title='Punti sopra la soglia di pareggio'>Margine</th><th title='Essenze nette attese, oltre l&apos;ingresso gia&apos; coperto dal pareggio'>Essenze</th><th title='Ingresso in essenze'>Ingresso</th><th title='Somma dei prezzi delle 5 carte'>Costo carte</th><th title='Essenze nette a giornata per euro speso: il rapporto che dice quale conviene'>Ess/&euro;</th><th>Verdetto</th></tr>
-<tr><td>Arena All Stars (cap 220)</td><td class='n'>260.4</td><td class='n'>+13.3</td><td class='n'>+68</td><td class='n'>200</td><td class='n'>5.45&nbsp;&euro;</td><td class='n'>13</td><td style='color:#7bd88f'>SCHIERA</td></tr>
-<tr><td><b>Tutte insieme</b></td><td colspan='2'></td><td class='n'><b>+68</b></td><td class='n'>200</td><td class='n'><b>5.45&nbsp;&euro;</b></td><td class='n'><b>13</b></td><td class='muted'>carte distinte, si sommano</td></tr>
-</table></div>
-<h3 style='font-size:14px;margin:14px 0 4px;color:#9aa0ad'>Arena All Stars (cap 220) &mdash; pareggio a 247.1</h3>
-<div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">Arena All Stars (cap 220) <span>#1</span></div></div><div class="card-strip"><div class="pcard is-classic" draggable="true" style="--role-color:#8b7cf6" data-slug="hugo-lloris" data-role="GK" data-score="50.3" data-xp-frac="0.0" data-name="Hugo Lloris" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;HL&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Hugo Lloris&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;50.3&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;42.1–56.9 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 43&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Los Angeles Fc vs Queretaro Queretaro&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">HL</div><div class="pcard-name">Hugo Lloris</div><div class="pcard-score">50.3</div><div class="pcard-range">42.1–56.9 pt</div><div class="pcard-l10">L10: 43</div><div class="pcard-match">Los Angeles Fc vs Queretaro Queretaro</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="ryan-hollingshead" data-role="DEF" data-score="52.2" data-xp-frac="0.0" data-name="Ryan Hollingshead" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;RH&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Ryan Hollingshead&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;52.2&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;42.2–63.8 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 45&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Los Angeles Fc vs Queretaro Queretaro&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF</span><span class="pcard-captain">C</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">RH</div><div class="pcard-name">Ryan Hollingshead</div><div class="pcard-score">52.2</div><div class="pcard-range">42.2–63.8 pt</div><div class="pcard-l10">L10: 45</div><div class="pcard-match">Los Angeles Fc vs Queretaro Queretaro</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="calvin-miller" data-role="MID" data-score="49.4" data-xp-frac="0.0" data-name="Calvin Miller" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;CM&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Calvin Miller&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;49.4&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;33.8–66.4 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 44&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Hearts Edinburgh vs Dundee United Dundee&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">CM</div><div class="pcard-name">Calvin Miller</div><div class="pcard-score">49.4</div><div class="pcard-range">33.8–66.4 pt</div><div class="pcard-l10">L10: 44</div><div class="pcard-match">Hearts Edinburgh vs Dundee United Dundee</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#ef5b5b" data-slug="miguel-angel-merentiel-serrano" data-role="FWD" data-score="50.2" data-xp-frac="0.0" data-name="Miguel Angel Merentiel Serrano" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;MA&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Miguel Angel Merentiel Serrano&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;50.2&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;39.2–68.4 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 46&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Boca Juniors Capital vs Deportivo Recoleta&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">MA</div><div class="pcard-name">Miguel Angel Merentiel Serrano</div><div class="pcard-score">50.2</div><div class="pcard-range">39.2–68.4 pt</div><div class="pcard-l10">L10: 46</div><div class="pcard-match">Boca Juniors Capital vs Deportivo Recoleta</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#ef5b5b" data-slug="claudio-rafael-soares-braga" data-role="FWD" data-score="47.9" data-xp-frac="0.0" data-name="Claudio Rafael Soares Braga" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;CR&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Claudio Rafael Soares Braga&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;47.9&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;32.9–63.6 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 40&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Hearts Edinburgh vs Dundee United Dundee&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">EXTRA · FWD</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">CR</div><div class="pcard-name">Claudio Rafael Soares Braga</div><div class="pcard-score">47.9</div><div class="pcard-range">32.9–63.6 pt</div><div class="pcard-l10">L10: 40</div><div class="pcard-match">Hearts Edinburgh vs Dundee United Dundee</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div></div><div class="lineup-total" data-captain-pct="0.2"><div><span class="label">Totale</span><span class="figure">250.0 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">260.0 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Ryan Hollingshead</b> <span class="cap-bonus">(+10 pt, +20%)</span></div><div class="captain-note">L10: 218.0 / 220.0 (entro budget)</div></div></div>
 
 <script>
 (function () {
@@ -319,273 +184,5 @@ Atteso = il nostro modello, gia' calibrato su scala reale.</div>
     });
   });
 })();
-</script>
-<script>
-// Drag&drop (28/07, richiesta esplicita utente): scambia un giocatore fra
-// una pcard schierata e un'alternativa (o un'altra pcard), stesso ruolo.
-// Puro swap di HTML/attributi gia' pronti lato server (data-body) -- NESSUN
-// ricalcolo di formula, NESSUNA persistenza (un refresh della pagina
-// riporta tutto allo stato generato). Limite noto: le note L10/cap/anti-stack
-// sotto ogni formazione restano quelle calcolate al momento della run, non
-// si aggiornano con lo scambio (solo totale e bonus capitano lo fanno).
-(function () {
-  var dragEl = null;
-
-  function isDraggable(el) {
-    return el && (el.classList.contains('pcard') || el.classList.contains('alt-chip'))
-      && el.getAttribute('draggable') === 'true';
-  }
-
-  document.addEventListener('dragstart', function (e) {
-    var el = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
-    if (!el) return;
-    dragEl = el;
-    e.dataTransfer.effectAllowed = 'move';
-    try { e.dataTransfer.setData('text/plain', 'x'); } catch (err) {}
-  });
-
-  document.addEventListener('dragover', function (e) {
-    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
-    if (!dragEl || !target || target === dragEl || target.dataset.role !== dragEl.dataset.role) return;
-    e.preventDefault();
-  });
-
-  document.addEventListener('dragenter', function (e) {
-    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
-    if (dragEl && target && target !== dragEl && target.dataset.role === dragEl.dataset.role) {
-      target.classList.add('drop-target');
-    }
-  });
-
-  document.addEventListener('dragleave', function (e) {
-    var target = e.target.closest('.pcard, .alt-chip');
-    if (target) target.classList.remove('drop-target');
-  });
-
-  document.addEventListener('dragend', function () {
-    document.querySelectorAll('.drop-target').forEach(function (el) { el.classList.remove('drop-target'); });
-    dragEl = null;
-  });
-
-  document.addEventListener('drop', function (e) {
-    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
-    if (!dragEl || !target || target === dragEl || target.dataset.role !== dragEl.dataset.role) return;
-    e.preventDefault();
-    target.classList.remove('drop-target');
-    swapPlayers(dragEl, target);
-    dragEl = null;
-  });
-
-  function initials(name) {
-    return (name || '').split(' ').filter(Boolean).slice(0, 2)
-      .map(function (w) { return w[0].toUpperCase(); }).join('') || '??';
-  }
-
-  function refresh(el) {
-    if (el.classList.contains('pcard')) {
-      var body = el.querySelector('.pcard-body');
-      if (body) body.innerHTML = el.dataset.body;
-    } else {
-      var circle = el.querySelector('.alt-circle');
-      var name = el.querySelector('.alt-name');
-      var score = el.querySelector('.alt-score');
-      if (circle) circle.textContent = initials(el.dataset.name);
-      if (name) name.textContent = el.dataset.name;
-      if (score) score.textContent = (parseFloat(el.dataset.score) || 0).toFixed(1) + ' pt · ' + el.dataset.role;
-    }
-  }
-
-  function swapPlayers(a, b) {
-    ['slug', 'score', 'name', 'body', 'xpFrac'].forEach(function (k) {
-      var tmp = a.dataset[k];
-      a.dataset[k] = b.dataset[k];
-      b.dataset[k] = tmp;
-    });
-    refresh(a);
-    refresh(b);
-    [a, b].forEach(function (el) {
-      var block = el.closest('.lineup-block');
-      if (block) recomputeTotal(block);
-    });
-  }
-
-  function recomputeTotal(block) {
-    var total = 0;
-    block.querySelectorAll('.pcard').forEach(function (c) { total += parseFloat(c.dataset.score) || 0; });
-    var totalEl = block.querySelector('.lineup-total');
-    if (!totalEl) return;
-    var figure = totalEl.querySelector('.figure:not(.with-captain)');
-    if (figure) figure.textContent = total.toFixed(1) + ' pt';
-    var capBadge = block.querySelector('.pcard-captain');
-    var capPct = parseFloat(totalEl.dataset.captainPct || '0.5');
-    var bonus = 0, capName = '';
-    if (capBadge) {
-      var capCard = capBadge.closest('.pcard');
-      // FIX 28/07 sera: data-score include GIA' il bonus xp/collezione/
-      // stagione (se applicabile) -- calcolare il +50% capitano su quel
-      // valore gonfiato lo applica in cascata invece che addizionato
-      // (stesso bug fixato lato Python in render_lineup_html). Si riporta
-      // al valore raw dividendo per (1+xpFrac) prima di applicare capPct.
-      var capScore = parseFloat(capCard.dataset.score) || 0;
-      var xpFrac = parseFloat(capCard.dataset.xpFrac) || 0;
-      var capRaw = xpFrac ? capScore / (1 + xpFrac) : capScore;
-      bonus = Math.round(capRaw * capPct);
-      capName = capCard.dataset.name || '';
-    }
-    var withCap = totalEl.querySelector('.figure.with-captain');
-    if (withCap) withCap.textContent = (total + bonus).toFixed(1) + ' pt';
-    var capNameEl = totalEl.querySelector('.cap-name');
-    if (capNameEl && capName) capNameEl.textContent = capName;
-    var capBonusEl = totalEl.querySelector('.cap-bonus');
-    if (capBonusEl) capBonusEl.textContent = '(+' + bonus + ' pt, +' + Math.round(capPct * 100) + '%)';
-  }
-})();
-</script><script>
-(function () {
-  // Click sul nome del giocatore = nome negli appunti, da incollare nella
-  // ricerca di Sorare (01/08, richiesta utente: i nomi coreani sono difficili
-  // da riscrivere a mano).
-  function copia(testo, el) {
-    var vecchio = el.textContent;
-    var ok = function () {
-      el.textContent = 'copiato!';
-      setTimeout(function () { el.textContent = vecchio; }, 800);
-    };
-    var fallback = function () {
-      var riuscito = false;
-      var ta = document.createElement('textarea');
-      ta.value = testo; document.body.appendChild(ta); ta.select();
-      try { riuscito = document.execCommand('copy'); } catch (e) {}
-      document.body.removeChild(ta);
-      if (riuscito) {
-        ok();
-      } else {
-        el.style.color = 'red';
-        el.textContent = 'copia non riuscita';
-        setTimeout(function () { el.textContent = vecchio; el.style.color = ''; }, 1200);
-      }
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(testo).then(ok, fallback);
-    } else {
-      fallback();
-    }
-  }
-  document.addEventListener('click', function (ev) {
-    // Si copia cliccando il CERCHIO con le iniziali oppure il nome (07/08,
-    // richiesta utente): il cerchio e' molto piu' grande e piu' facile da
-    // centrare quando si compongono decine di formazioni. Restano validi
-    // entrambi, cosi' chi e' abituato al nome non perde niente.
-    if (!ev.target || !ev.target.closest) return;
-    var punto = ev.target.closest('.pcard-avatar, .pcard-name');
-    if (!punto) return;
-    ev.preventDefault(); ev.stopPropagation();
-    var card = punto.closest('[data-name]') || punto.closest('[data-slug]')
-               || punto.closest('.pcard');
-    // Il messaggio ('copiato!'/'copia non riuscita') va SEMPRE sul nome, mai
-    // sul cerchio: li' dentro ci stanno due lettere e non si leggerebbe.
-    var el = (card && card.querySelector('.pcard-name')) || punto;
-    var testo = (card && (card.dataset.name || card.dataset.slug)) || el.textContent;
-    copia(testo.trim(), el);
-    segnaCopiata(card);   // avanzamento: da qui in poi si sa dove si era arrivati
-  }, true);
-  /* AVANZAMENTO (07/08). Il problema non e' copiare un nome, e' NON PERDERE
-     IL SEGNO: ~300 giocatori a giornata, avanti e indietro con Sorare, con il
-     rischio di rimettere un difensore nella formazione di un altro portiere.
-     Due memorie, per GIORNATA, in localStorage (un refresh non le perde):
-       - carta copiata -> si spegne e prende la spunta verde
-       - formazione schierata -> si spegne tutta, col tasto FATTA
-     Niente di tutto questo tocca i punteggi: e' solo stato di avanzamento. */
-  var CHIAVE = 'sorare-avanzamento::' + (document.title || 'gw');
-  function statoLeggi() {
-    try { return JSON.parse(localStorage.getItem(CHIAVE) || '{}'); }
-    catch (e) { return {}; }
-  }
-  function statoScrivi(s) {
-    try { localStorage.setItem(CHIAVE, JSON.stringify(s)); } catch (e) {}
-  }
-  function idCarta(card) {
-    var blocco = card.closest('.lineup-block');
-    var titolo = blocco ? (blocco.querySelector('.lineup-title') || {}).textContent : '';
-    return (titolo || '') + '|' + (card.dataset.slug || '') + '|' + (card.dataset.role || '');
-  }
-  function idBlocco(blocco) {
-    var t = blocco.querySelector('.lineup-title');
-    return 'BLOCCO|' + ((t && t.textContent) || '');
-  }
-  function applicaStato() {
-    var s = statoLeggi();
-    document.querySelectorAll('.pcard').forEach(function (c) {
-      c.classList.toggle('copiata', !!s[idCarta(c)]);
-    });
-    document.querySelectorAll('.lineup-block').forEach(function (b) {
-      b.classList.toggle('schierata', !!s[idBlocco(b)]);
-    });
-  }
-  function segnaCopiata(card) {
-    if (!card) return;
-    var s = statoLeggi();
-    s[idCarta(card)] = 1;
-    statoScrivi(s);
-    card.classList.add('copiata');
-  }
-  // Un tasto FATTA per formazione, piu' il ripristino
-  document.querySelectorAll('.lineup-block').forEach(function (b) {
-    var t = b.querySelector('.lineup-title');
-    if (!t) return;
-    var btn = document.createElement('span');
-    btn.className = 'btn-schierata';
-    btn.textContent = 'fatta';
-    btn.title = 'Segna questa formazione come gia\' schierata su Sorare';
-    btn.addEventListener('click', function (ev) {
-      ev.preventDefault(); ev.stopPropagation();
-      var s = statoLeggi();
-      var k = idBlocco(b);
-      if (s[k]) { delete s[k]; } else { s[k] = 1; }
-      statoScrivi(s);
-      applicaStato();
-    });
-    t.parentNode.appendChild(btn);
-  });
-  applicaStato();
-  var st = document.createElement('style');
-  st.textContent = '.pcard-name{cursor:copy} .pcard-name:hover{text-decoration:underline dotted}'
-                 + '.pcard-avatar{cursor:copy}'
-                 + '.pcard-avatar:hover{outline:2px solid currentColor;outline-offset:2px}';
-  document.head.appendChild(st);
-})();
-</script>
-<script>
-(function () {
-  var prezzi = {"alexander-nubel": 6.1, "alexandro-maidana-mendieta": 2.17, "alvaro-david-montero-perales": 5.68, "amadou-ba-sy": 4.31, "anderson-souza-conceicao": 5.94, "andrew-vincent-rick": 2.1, "archie-brown": 0.34, "ashley-westwood": 0.34, "beau-reus": 14.57, "blair-spittal": 0.33, "bryan-josias-ramirez-leon": 1.6, "bryan-linssen": 0.49, "calvin-miller": 0.5, "carlos-emilio-lampe-porras": 0.7, "claudio-rafael-soares-braga": 1.05, "clement-bischoff": 2.16, "dairon-estibens-asprilla-rivas": 0.34, "deveron-fonville": 3.47, "diego-luna-2003-09-07": 1.27, "emir-han-topcu": 1.25, "ercan-kara": 0.51, "evan-louro": 0.9, "freese-matthew": 2.65, "helibelton-palacios-zapata": 0.38, "hugo-lloris": 1.8, "hyun-gyu-oh": 0.83, "itsuki-someno": 0.34, "jader-rafael-obrian-arias": 0.33, "jalil-juan-jose-elias": 0.34, "jamie-mccart": 0.33, "jamiro-gregory-monteiro-alvarenga": 0.33, "jonathan-sirois": 2.04, "jordi-altena": 1.75, "jose-manuel-sanchez-guillen": 0.34, "joshua-mcpake": 0.56, "juan-manuel-elordi": 0.46, "juan-manuel-sanabria-magole": 1.35, "junior-olaitan-ishola": 1.0, "kacper-urbanski": 0.38, "kazuya-miyahara": 0.33, "kevin-alexander-balanta-lucumi": 0.44, "lautaro-blanco": 1.6, "luis-ezequiel-unsain": 1.83, "marco-asensio-willemsen": 3.1, "mason-greenwood": 8.75, "matheus-caldeira-vidotto-de-oliveira": 2.16, "mathieu-choiniere": 0.43, "matias-alejandro-galarza": 1.35, "matt-miazga": 0.33, "matteo-guendouzi-olie": 2.5, "maximilian-dietz": 0.33, "michael-amir-murillo-bermudez": 0.55, "miguel-angel-merentiel-serrano": 1.76, "miguel-rene-ortega-rodriguez": 2.2, "milan-skriniar": 2.2, "moulaye-haidara": 8.99, "muhammed-kerem-akturkoglu": 2.3, "naoki-hayashi": 0.34, "nathan-ake": 2.7, "nathan-byrne": 0.33, "nelson-cabral-semedo": 0.55, "nenad-n-cvetkovic": 0.69, "nikolaus-wurmbrand": 1.56, "nobuteru-nakagawa": 1.0, "noe-lebreton": 1.99, "oisin-mcentee": 0.5, "orkun-kokcu": 7.35, "osaze-urhoghide": 0.4, "philippe-sandler": 0.48, "rei-hirakawa": 0.34, "rick-jhonatan-lima-morais": 624.71, "ryan-hollingshead": 0.34, "ryan-porteous": 2.43, "ryota-inoue-2000-07-25": 0.45, "salih-ozcan": 0.98, "sami-ouaissa": 2.59, "samuel-mawuena-gidi": 1.44, "santiago-lionel-ascacibar": 4.14, "tiago-emanuel-embalo-djalo": 0.49, "tim-ream": 0.35, "timothy-tillman": 0.5, "tom-renaud": 6.5, "tyler-miller": 0.48, "tyrese-spicer": 0.5, "vaclav-cerny": 0.6, "wataru-harada": 0.34, "xavier-ricardo-arreaga-bermello": 0.34, "yoshio-koizumi": 0.5};
-  document.querySelectorAll('.lineup-block').forEach(function (blocco) {
-    var totale = 0, noti = 0, mancanti = 0;
-    blocco.querySelectorAll('.pcard[data-slug]').forEach(function (card) {
-      var p = prezzi[card.dataset.slug];
-      var riga = document.createElement('div');
-      riga.style.cssText = 'text-align:center;font-size:11px;padding:2px 0;font-weight:600';
-      if (p == null) { riga.textContent = 'prezzo n/d'; riga.style.color = '#8fa199'; mancanti++; }
-      else { riga.textContent = p.toFixed(2) + ' EUR'; riga.style.color = '#7ee787'; totale += p; noti++; }
-      card.appendChild(riga);
-    });
-    if (noti) {
-      var tot = document.createElement('div');
-      tot.style.cssText = 'margin:6px 0 2px;font-size:13px;font-weight:700;color:#e8b84b';
-      tot.textContent = 'Costo formazione: ' + totale.toFixed(2) + ' EUR'
-                      + (mancanti ? ' (+' + mancanti + ' senza prezzo)' : '');
-      blocco.appendChild(tot);
-    }
-  });
-})();
-</script>
-
-<script>
-document.querySelectorAll('.pcard[data-slug]').forEach(function (card) {
-  card.style.cursor = 'pointer';
-  card.title = 'Apri su Sorare';
-  card.addEventListener('click', function () {
-    window.open('https://sorare.com/it/football/players/' + card.dataset.slug, '_blank', 'noopener');
-  });
-});
 </script>
 </body></html>
