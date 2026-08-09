@@ -769,3 +769,99 @@ grade letto dopo. Serve uno storico di grade PRE-ufficiali, che oggi non
 esiste in repo (i grade_snapshot_* del 06/08 sono l'unico embrione).
 grade_snapshot_pubblico.py ora permette di costruirlo: e' l'asset da
 accumulare, una cattura per giornata a ridosso del lock.
+
+
+19. SEGUITO 09/08/2026 ~13:00 Roma -- INFRASTRUTTURA DI ACCUMULO (Sonnet,
+    BRIEF_SONNET_SNAPSHOT_ACCUMULO_2026-08-09.txt). SOLO MISURA/infrastruttura,
+    nessuna modifica alla produzione.
+----------------------------------------------------------------------------
+
+19.1 SCRIPT AGGIORNATO: analisi_manager/grade_snapshot_pubblico.py.
+Aggiunto campo `l10` (anyPlayer.averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE),
+stesso alias gia' usato in grade_snapshot.py). Tutti i campi richiesti dal
+brief erano gia' presenti (slug, squadra, game_id, game_date, captured_at_utc,
+grade, reliability_bp, fieldStatus, scoreStatus, starter_odds_bp).
+
+Aggiunta modalita' "tutta la giornata": `--fixture <slug>`. Risolve i game
+della fixture con una query (FixtureGamesStatus), filtra su statusTyped
+('scheduled', o anche 'started' con --include-live) e cattura ogni partita
+con una query dedicata. N partite = N+1 query totali, dichiarate a schermo.
+Istruzioni di ripetizione scritte in testa allo script (comando esatto,
+quando lanciarlo, nessun cookie).
+
+19.2 CATTURA DI TEST SULLA GW APERTA. Comando:
+  python analisi_manager/grade_snapshot_pubblico.py --fixture football-11-14-aug-2026
+Esito: 59 partite, 60 query totali, 4157 righe, salvate in
+analisi_manager/dati/snapshot_public_fixture_football-11-14-aug-2026_20260809_0928Z.json
+
+RISULTATO IMPORTANTE, DA NON NASCONDERE: grade, reliability_bp e
+starter_odds_bp sono NULL su TUTTE le 4157 righe (l10 invece e' sempre
+presente, e' uno storico, non una proiezione). Conferma quanto gia' scritto
+al §11: la projection non e' esposta per partite troppo lontane nel tempo
+(qui: partite dell'11/08, catturate il 09/08, 2-5 giorni prima). Lo script
+e la query funzionano (stessa query, stesso codice, che su §16/§17 ha
+restituito 70-72 righe piene su partite vicine al kickoff): il problema NON
+e' nello script, e' che la finestra di apertura della projection e' piu'
+stretta di quanto la GW aperta lasci pensare. Conseguenza operativa: la
+cattura "tutta la giornata" va ripetuta A RIDOSSO del kickoff di ciascuna
+partita (poche ore prima, non a inizio GW), non una volta sola all'apertura.
+Non e' ancora chiaro quanto in anticipo la finestra si apra: servirebbe un
+tentativo scalare (es. 6h, 3h, 1h prima) per misurarlo, non fatto qui
+(fuori scope, il brief chiedeva l'infrastruttura non la misura).
+
+19.3 PUNTO 6 (facoltativo) -- CENSIMENTO DI CIO' CHE GIA' ESISTE PRE-LOCK.
+Controllato timestamp cattura (captured_at_utc) contro game_date su tutti i
+file *snapshot* in analisi_manager/dati/:
+
+  file                                                    righe  grade  pre/post
+  grade_snapshot_football-4-7-aug-2026_20260806_1124        174    172  PRE (min 275min=4.6h prima del kickoff piu' vicino, scoreStatus tutto PENDING, starter_odds NON binarie: 9000/8000/ecc, non solo 0/10000)
+  grade_snapshot_ALL_LIMITED_..._20260806_1127               171    168  PRE (stesso pattern)
+  grade_snapshot_..._20260806_1506/1518/1607                 171-174 ~170 PRE (stesso pattern, catture successive stesso pomeriggio)
+  grade_snapshot_football-7-11-aug-2026_20260809_0843/0850    13     13  PRE (usati gia' in §17, 5-7 min prima)
+  snapshot_public_game_tokyoverdy_kawasaki_..._0855Z          72     72  POST-ufficiali (fieldStatus gia' congelato, vedi §16)
+  snapshot_public_game_tokyoverdy_kawasaki_..._0906Z          72     72  POST (6 min dopo kickoff)
+  snapshot_public_game_vvaren_kyoto_..._0914Z                 70     70  POST-ufficiali (vedi §17)
+  snapshot_score_grade_20260809_08{16,23,30}Z                396    234  non ispezionato oltre (fuori scope di questo brief)
+  snapshot_public_fixture_football-11-14-aug-2026_..._0928Z 4157      0  troppo presto (19.2)
+
+I file del 06/08 (grade_snapshot_football-4-7-aug-2026_*, 5 catture) sono il
+PRIMO MATTONE VERO del campione Q1: 173 coppie (slug, game_date) distinte,
+21 partite distinte, catturate 4.6h-24h prima del rispettivo kickoff,
+scoreStatus PENDING e starter_odds non binarie confermano che sono davvero
+pre-ufficiali (non solo pre-game_date).
+
+Punteggio realizzato reperibile in cache locale: 0 su 173 (controllato con
+backtest_arene_cache.CacheLocale.gamelog, match sulla data). Conferma quanto
+gia' scritto al §6: la cache di questa sessione non copre le partite del
+06-07/08/2026. Nessuna conclusione tratta, solo il conteggio richiesto dal
+brief: oggi queste 173 righe sono un campione senza `y` misurabile, non
+ancora utilizzabile per Q1 finche' la cache non viene aggiornata su quelle
+date.
+
+19.4 STATO ASSET Q1 A FINE SESSIONE: infrastruttura pronta e testata
+(19.1-19.2), un embrione di campione pre-lock gia' in repo ma senza
+realizzato abbinato (19.3), zero righe nuove utili aggiunte oggi (la
+cattura di test 19.2 e' vuota sul grade). Prossimo passo pratico: ripetere
+`--fixture football-11-14-aug-2026` piu' vicino al kickoff (l'11/08),
+possibilmente con piu' catture scalari nelle ore precedenti, per capire
+quando si apre la finestra e catturarla nel punto giusto.
+
+18.7 IL PROBLEMA DI 18.2 TOCCA ANCHE IL VERDETTO "G E' VALIDATO SULLE ARENE".
+Verificato oggi risalendo la catena delle fonti, non dedotto:
+  p20_g_odds_arene_backtest.py (il backtest che ha prodotto +29.050 /
+  +24.150 essenze per G) prende i grade da
+  p20_grade_arene_copertura_finale.indice_dopo_download() (riga 51 e 355-364),
+  che a sua volta legge storico_grade_Forward_ampio_20260806.json,
+  storico_grade_Goalkeeper_20260806.json e storico_grade_arene_2026-08-08.json
+  (righe 102-107) -- gli STESSI file post-partita di 18.2.
+  Quindi anche il +29.050 e' un LIMITE SUPERIORE, non il guadagno che il bot
+puo' realizzare al lock. Non e' annullato: il passaggio di consegne riporta
+gia' che circa META' del vantaggio resta anche imponendo un filtro di
+titolarita' perfetto, il che e' coerente con "una parte e' certezza
+post-ufficiali e una parte e' qualita' vera". Ma la frase "G e' VALIDATO
+anche sulle arene, chiuso e non da riaprire" va corretta in: "G e' validato
+come SEGNALE; il suo valore in essenze e' misurato con informazione che al
+lock non c'e', e va rimisurato sul grade pre-lock (Q1)".
+  Questa e' una correzione a un verdetto che io stesso avevo scritto come
+chiuso. Vale la regola del CLAUDE.md: quando documento e codice divergono
+vince il codice, e il documento si corregge nello stesso momento.

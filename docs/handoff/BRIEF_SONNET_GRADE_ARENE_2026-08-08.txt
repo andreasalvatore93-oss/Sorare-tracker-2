@@ -1,0 +1,319 @@
+BRIEF PER SONNET — RECUPERO GRADE SUL PERIMETRO ARENE (passo 1 di 2)
+Scritto dall'orchestratore (Opus) l'08/08/2026, 23:30 Roma (21:30 UTC).
+
+Chat pulita: qui c'e' tutto. Se una cosa non e' scritta, chiedila
+all'utente, non dedurla.
+
+QUESTO BRIEF FA SOLO IL PASSO 1: portare la copertura del grade al massimo
+sul perimetro definito, e verificare che il grade recuperato non sia
+contaminato. Il test vero e' il passo 2 e sara' un brief separato: non
+anticiparlo, non "portarti avanti".
+
+
+=====================================================================
+0. COSA LEGGERE PRIMA (in quest'ordine, niente altro)
+=====================================================================
+1. `CLAUDE.md` — regole vincolanti. In particolare: divieto assoluto di
+   stime a spanne, obbligo di consegnare i dati grezzi insieme ai numeri,
+   nessuna query senza il via dell'utente, un tema alla volta.
+2. `docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md` §8undecies — COME SI PARLA
+   CON L'API SORARE. Leggilo PRIMA di scrivere codice di rete: due
+   esecutori ci hanno perso ore e la risposta era gia' nel repo.
+3. CODICE, con le righe (verificate l'08/08):
+   - `analisi_manager/p12_raccolta_grade_backtest.py` — e' lo SCHELETRO da
+     riusare: query righe 19-41 (`anyPlayer.playerGameScores(last:15)` con
+     `projection{grade reliabilityBasisPoints}`), retry/backoff 44-60,
+     salvataggio incrementale e ripresa da file esistente 88-120.
+   - `generatore_formazioni/build_formazione_globale.py` righe 255-279 —
+     le costanti che definiscono le regole per tipo di competizione.
+Non leggere gli altri file di docs/handoff/: sono archivio e contengono
+verdetti superati scritti come se fossero attuali.
+
+
+=====================================================================
+1. LA DOMANDA (una sola)
+=====================================================================
+Quanto sale la copertura del grade sul perimetro ARENE delle ultime 6
+giornate, scaricando i giocatori che oggi non sono in archivio — e il
+grade cosi' recuperato e' lo stesso che era visibile PRIMA della partita?
+
+La seconda meta' della domanda non e' un dettaglio: se il grade riletto
+oggi per una partita gia' giocata riflettesse informazione emersa DOPO,
+qualunque test costruito su questi dati misurerebbe il futuro. Vedi §5.
+
+
+=====================================================================
+2. IL PERIMETRO — esatto, non interpretabile
+=====================================================================
+SOLO ARENE, solo competizioni limited, ultime 6 giornate. Il perimetro e'
+stato deciso dall'utente competizione per competizione: non aggiungere e
+non togliere niente di tua iniziativa.
+
+GIORNATE (le 6 piu' recenti presenti nei file manager):
+  football-4-7-aug-2026, football-31-jul-4-aug-2026,
+  football-28-31-jul-2026, football-24-28-jul-2026,
+  football-21-24-jul-2026, football-15-20-jul-2026
+
+COMPETIZIONI DENTRO — si identificano dallo slug della leaderboard, MAI
+dal campo `competizione` (inaffidabile: l'etichetta "Cap 260" copre cinque
+famiglie diverse, "In-Season" ne copre quattro; verificato l'08/08).
+Normalizzazione: togli il prefisso `<gw>-`, poi togli la coda `-<hash>` e
+`-division-<n>`. Restano queste sette:
+  A1 Cap 260   seasonal-all_star-all_seasons_all_star_arena_limited
+  A2 Cap 220   seasonal-all_star-all_seasons_all_star_arena_limited_cap_220
+  A3 Uncapped  seasonal-all_star-all_seasons_all_star_arena_limited_uncapped
+  A4 Beginner  seasonal-all_star-all_seasons_all_star_arena_limited_beginner
+  B  us        seasonal-us-all_seasons_us_arena_limited
+  B  korea     seasonal-korea-all_seasons_korea_arena_limited
+  B  scotland  seasonal-scotland-all_seasons_scotland_arena_limited
+ATTENZIONE: A1 e' un PREFISSO di A2/A3/A4 (`..._arena_limited` contro
+`..._arena_limited_cap_220`). Confronta per uguaglianza esatta dopo la
+normalizzazione, mai con "startswith"/"in", o A1 si mangia le altre tre.
+
+FUORI, per decisione dell'utente: Elite (96 formazioni, solo 2 manager,
+ingresso 800), arene super rare, tutte le competizioni rare/super
+rare/unique, Global Cup (`special-weekly-global-cup-26`, mescola 5 e 7
+carte nella stessa competizione), e TUTTO il non-arena (hot streak, pvp,
+contender, All Star, Under 23) — quello e' il passo 2, con un motivo
+tecnico serio spiegato al §7.
+
+REGOLA CHE NON DEVI APPLICARE: le carte RARE dentro una competizione
+limited RESTANO nel campione. Una carta rara schierata in un'arena limited
+prende gli stessi bonus di una limited e va contata come tale (regola di
+gioco, dichiarata dall'utente). Si escludono le COMPETIZIONI rare, non le
+carte rare.
+
+NUMERI DI CONTROLLO. Se non ritrovi esattamente questi, FERMATI e dillo:
+non proseguire, vorrebbe dire che stai selezionando altro.
+  A1 Cap260    326 formazioni  18 manager  206 arene distinte  579 slug
+  A2 Cap220    102 formazioni  16 manager   90 arene distinte  274 slug
+  A3 Uncapped   91 formazioni  13 manager   70 arene distinte  222 slug
+  A4 Beginner  260 formazioni  16 manager  234 arene distinte  558 slug
+  B  us         31 formazioni   9 manager   28 arene distinte   95 slug
+  B  korea      12 formazioni   4 manager   12 arene distinte   42 slug
+  B  scotland    3 formazioni   2 manager    3 arene distinte   15 slug
+  TOTALE       825 formazioni            906 slug distinti (unione)
+Ogni formazione ha 5 carte e 1 capitano: verificato su tutte e 825.
+
+
+=====================================================================
+3. QUANTI GRADE MANCANO E DA DOVE SI PARTE
+=====================================================================
+Archivio grade attuale = 4 file, 1.042 giocatori distinti:
+  analisi_manager/dati/storico_grade_backtest_20260806.json
+     (formato {'giocatori': [...]} con playerGameScores annidati)
+  analisi_manager/dati/storico_grade_Defender_20260806.json
+  analisi_manager/dati/storico_grade_Midfielder_20260806.json
+  analisi_manager/dati/storico_grade_Forward_20260806.json
+     (i tre per-ruolo sono LISTE PIATTE: un record per partita, con i campi
+      slug/grade/game_date, NON playerGameScores. Formati diversi, vanno
+      letti diversamente: chi legge solo il primo formato conta zero righe
+      sui tre per-ruolo — errore commesso dall'orchestratore l'08/08.)
+Un quinto file, `analisi_manager/p12_r5_gk_ampio.json` (60 elementi), ha
+un formato ancora diverso e non e' stato letto: guardalo, se contiene
+grade utili aggiungilo, altrimenti dichiara che l'hai escluso e perche'.
+
+SUL PERIMETRO ARENE (906 slug):
+  gia' in archivio  636
+  DA SCARICARE      270
+Per gruppo: Cap260 102, Beginner 143, Cap220 59, Uncapped 40, us 7,
+korea 8, scotland 4 (le somme per gruppo superano 270 perche' lo stesso
+giocatore compare in piu' gruppi: 270 e' l'unione, ed e' quella che conta).
+
+Se il tuo conteggio non da' 270, non scaricare: prima capisci perche'.
+
+
+=====================================================================
+4. COME SI SCARICA
+=====================================================================
+Riusa `p12_raccolta_grade_backtest.py`: stessa query, stessi campi, stessa
+gestione 429, stesso salvataggio incrementale. Cambia SOLO la lista di
+slug in ingresso e il file di uscita.
+
+File di uscita: NUOVO, `analisi_manager/dati/storico_grade_arene_2026-08-08.json`,
+stesso formato di `storico_grade_backtest_20260806.json` ({'giocatori':
+[...], 'errori': [...]}). NON sovrascrivere e NON modificare i quattro
+archivi esistenti: un rilancio parziale non deve poter azzerare niente
+(l'08/08 e' stato trovato un file di dati svuotato a 2 byte proprio cosi').
+
+Trasporto (§8undecies, i tre pezzi obbligatori): x-csrf-token su OGNI
+richiesta; sessione HTTP dedicata col barattolo cookie svuotato prima di
+ogni richiesta; header di client Web completi. Manca uno solo e prendi 429
+immediati che leggerai come rate limit mentre sei su sessione anonima.
+Probe PRIMA del batch: `{ currentUser { slug } }`, con retry (la probe
+stessa puo' prendere 429: senza retry un rate limit viene scambiato per
+sessione morta, errore reale del 07/08). Se torna lo slug sei autenticato;
+se torna null NON e' rate limit e nessun backoff ti salvera'.
+Le credenziali (cookie, csrf, fingerprint) le chiedi ALL'UTENTE. Non
+cercarle nel repo.
+
+IL VIA DELL'UTENTE: prima delle 270 query fai un giro di prova su 20 slug
+e riporta quanti 429, dopo quante richieste il primo, se il backoff li ha
+assorbiti. Poi aspetti il via per le restanti. L'utente ha detto che il
+tempo non e' un problema: vai lento, 1 secondo di pausa come lo script
+originale, non ottimizzare.
+
+
+=====================================================================
+5. IL CONTROLLO CHE VIENE PRIMA DI TUTTO: NON STIAMO LEGGENDO IL FUTURO
+=====================================================================
+Il grade e' una PREVISIONE fatta prima della partita. Noi lo stiamo
+rileggendo oggi per partite gia' giocate. Se Sorare lo aggiorna o lo
+ricalcola a posteriori, il valore che scarichi non e' quello che avevi
+davanti quando dovevi schierare — e ogni test costruito sopra misurerebbe
+informazione che al momento della scelta non esisteva.
+
+Il repo permette di verificarlo GRATIS, senza query aggiuntive: gli
+archivi del 06/08 contengono grade raccolti PRIMA di alcune delle partite
+del perimetro. Quindi:
+ 5a. Individua le coppie (slug, data partita) presenti sia nell'archivio
+     vecchio sia in quello che scarichi ora. Riporta QUANTE sono.
+ 5b. Confronta il grade vecchio col grade nuovo su quelle coppie:
+     quante coincidono, quante no, e la tabella completa dei disallineamenti
+     con entrambi i valori e la data.
+ 5c. Se i disallineamenti sono piu' che sporadici, FERMATI e riferisci:
+     non e' un dettaglio da annotare in fondo, e' il presupposto del passo 2.
+     Non "aggiustare" scegliendo il valore che ti sembra giusto.
+Questo controllo va consegnato PRIMA dei numeri di copertura, non dopo.
+
+
+=====================================================================
+6. COSA CONSEGNARE
+=====================================================================
+Ogni numero con la sua n. Niente stime.
+ 1. Esito del controllo §5 (coppie confrontate, coincidenze, tabella dei
+    disallineamenti). Per primo.
+ 2. Copertura PRIMA e DOPO il download, per gruppo (A1-A4, B) e in totale,
+    con lo stesso denominatore dei numeri di controllo del §2:
+      - % di CARTE schierate il cui giocatore ha grade in archivio;
+      - % di carte che hanno un grade nella FINESTRA di lookup vera
+        (partita piu' recente entro 6 giorni prima della fine fixture,
+        GRADE_WINDOW_GIORNI=6). Sono due numeri diversi: il secondo e'
+        quello che conta per il test, il primo e' solo un limite superiore.
+        Riportali entrambi, dichiarando quale e' quale.
+ 3. Distribuzione per formazione della copertura in finestra: quante delle
+    825 stanno sotto 50%, 50-70%, 70-90%, sopra 90%.
+ 4. Slug rimasti senza grade dopo il download, con il motivo (giocatore
+    non trovato, nessuna partita nella finestra, errore API): elenco, non
+    solo il conteggio.
+ 5. Un DUMP LEGGIBILE di un'arena completa: slug leaderboard, tipo,
+    manager, le 5 carte con nome, ruolo, grade recuperato e data della
+    partita da cui viene. Insieme ai numeri, non su richiesta.
+
+
+=====================================================================
+7. PERCHE' SOLO LE ARENE (contesto, cosi' non lo riproponi)
+=====================================================================
+Non e' una scelta di comodo. Le arene sono l'unico formato in cui il
+punteggio realizzato che sappiamo ricostruire coincide con quello vero:
+nessun bonus xp/power, nessun bonus anti-stack, nessun bonus cap, e il
+capitano vale un +20% fisso (`CAPTAIN_BONUS_BY_TYPE` = 0.2 per tutti i
+tipi arena, riga 274 e 277; `XP_BONUS_TYPES` e `STACK_GUARD_TYPES` non
+contengono nessun tipo arena, righe 257 e 270).
+
+Fuori dall'arena invece esistono due bonus che il backtest attuale NON
+calcola: +4% su ogni carta se la somma degli L10 sta sotto soglia (260 su
+5 carte, 370 su 7 — `CAP260_BONUS = 0.04` e `CAP260_L10_THRESHOLD_BY_TYPE`,
+`formazione_mls/build_formazione_finale.py` righe 1613-1617) e +2% se si
+rispetta il limite di due carte per squadra. Il realizzato dei backtest
+non-arena e' `somma punteggi + 50% del capitano` (p16/p17 righe 61-65):
+mancano entrambi. Non e' un errore che si annulla fra due rami, perche' il
+bonus dipende da quali carte scegli. Sistemare quel calcolo e' il passo 2,
+gia' deciso dall'utente, e non si tocca in questo brief.
+
+
+=====================================================================
+8. COSA NON FARE
+=====================================================================
+- Non toccare la produzione, non cambiare default, non committare file di
+  altri (piu' sessioni lavorano sullo stesso repo: committa solo i tuoi e
+  segnala gli altri senza toccarli).
+- Non lanciare il batch senza il via dell'utente.
+- Non allargare il perimetro. Se ti sembra che manchi qualcosa, chiedi.
+- Non stimare a spanne: se non hai la fonte, "non lo so, mi servirebbe X".
+- Non nascondere risultati negativi: se la copertura resta bassa anche
+  dopo il download, e' un esito valido e va scritto per primo.
+- Non "sistemare" difetti trovati per strada: annotali in fondo e prosegui.
+- Non riprovare l'introspezione GraphQL: e' disabilitata su Sorare.
+
+
+=====================================================================
+8bis. CORREZIONI AL BRIEF — 09/08/2026, 00:15 Roma. Due errori
+      dell'orchestratore, trovati grazie alla tua verifica. Leggi qui
+      PRIMA di scaricare qualunque cosa.
+=====================================================================
+
+**8bis.1 — IL NUMERO GIUSTO NON E' 270. E NON E' NEMMENO 208.**
+Hai ragione tu: il §3 di questo brief contava quattro file di archivio,
+mentre la funzione che conta davvero, `carica_indice_grade_esteso`
+(`analisi_manager/p12_backtest_manager_grade.py` righe 77-90, che a sua
+volta chiama `S21.carica_indice_grade`, `p12_backtest_formazione_grade.py`
+righe 184-214), ne legge SETTE:
+  p12_r5_gk_ampio.json
+  dati/storico_grade_{Defender,Midfielder,Forward}_20260806.json
+  dati/storico_grade_crowss_20260806.json
+  dati/storico_grade_crowss_20260807.json
+  dati/storico_grade_backtest_20260806.json
+L'orchestratore le aveva ricostruite con una ricerca testuale invece di
+leggere la funzione — esattamente l'errore che CLAUDE.md vieta (la fonte
+di verita' e' il codice in produzione, non la ricostruzione a memoria).
+Indice vero: 1.639 slug. Mancanti sul perimetro: **208**, non 270.
+
+Ma cercando la causa ne e' uscita un'altra: in `analisi_manager/dati/` ci
+sono file di grade che NESSUNA funzione legge, e contengono giocatori che
+non sono nell'indice:
+  storico_grade_Forward_ampio_20260806.json   500 slug, 332 fuori indice
+  storico_grade_Goalkeeper_20260806.json      175 slug, 101 fuori indice
+  grade_snapshot_*_football-4-7-aug-2026_*    (5 file)  59 fuori indice
+Sul nostro perimetro arene: **45 dei 208 mancanti sono gia' dentro questi
+file**. Quindi da scaricare resterebbero **163**.
+
+PRIMA DI SCARICARE, stabilisci se quei file sono scarti CONSAPEVOLI o
+raccolte DIMENTICATE. Indizio a favore della prima ipotesi: in
+`carica_indice_grade` c'e' il commento "FWD quello VALIDO (non _mirato)",
+quindi almeno una volta un file Forward e' stato escluso di proposito; e
+per i portieri la funzione usa `p12_r5_gk_ampio` invece di
+`storico_grade_Goalkeeper`. Come stabilirlo, in ordine di costo:
+  a) `git log` sui tre file e sul codice che li ha introdotti: il messaggio
+     di commit di solito lo dice;
+  b) confronto diretto: sugli slug presenti IN ENTRAMBI (indice vs file
+     non letto), i grade per la stessa data coincidono? Se coincidono, il
+     file e' buono e l'esclusione e' una dimenticanza. Se divergono,
+     c'e' un motivo e va capito prima di usarlo.
+Riporta l'esito con i numeri. Se risultano buoni, usali: sono 45 query
+risparmiate adesso e oltre 400 giocatori che l'indice sta ignorando in
+OGNI analisi che lo usa — che e' molto piu' importante di questo brief.
+Se risultano dubbi, NON usarli e scarica i 208: meglio pagare le query
+che avvelenare l'indice.
+
+**8bis.2 — IL CONTROLLO ANTI-CONTAMINAZIONE COSI' NON SI PUO' FARE.**
+Il §5 chiede di confrontare il grade vecchio col grade nuovo sulle coppie
+(slug, data) presenti in entrambi. Ma se scarichi SOLO i giocatori
+mancanti, coppie in comune non ce ne sono per costruzione: il controllo
+darebbe zero confronti e verrebbe archiviato come "fatto" senza aver
+verificato niente.
+Serve quindi **riscaricare di proposito un campione di giocatori che
+abbiamo gia'**: prendine ~50 fra quelli con partite dentro le 6 giornate
+del perimetro e con grade gia' in archivio, riscaricali, e confronta.
+Sono ~50 query in piu', ed e' l'unico modo di sapere se stiamo per
+testare G con informazione che al momento di schierare non avevamo.
+Se i grade riletti divergono da quelli di allora, FERMATI e riferisci:
+il passo 2 non si fa finche' non si capisce perche'.
+
+**Totale query previste**: ~163 mancanti (o 208 se i file non letti
+risultano inaffidabili) + ~50 di controllo. Il via dell'utente resta
+richiesto, e il giro di prova da 20 pure.
+
+
+=====================================================================
+9. DOVE SCRIVERE L'ESITO
+=====================================================================
+File nuovo, perche' il filone e' nuovo:
+`docs/handoff/HANDOFF_GRADE_ARENE_2026-08-08.txt`, con data e ora di Roma
+in testa e la struttura dell'handoff di fine sessione (CLAUDE.md).
+
+All'utente riferisci in CINQUE RIGHE: esito del controllo anti-contaminazione
+(§5), copertura in finestra prima/dopo per gruppo, quanti slug restano
+scoperti, il percorso del file. Tutto il resto sta nel file. Paga a token e
+ha una forma grave di ADHD: analisi, tabelle e ragionamenti non vanno in
+chat. Spiega i numeri con esempi banali, non con termini statistici.

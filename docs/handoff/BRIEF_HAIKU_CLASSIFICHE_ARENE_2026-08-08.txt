@@ -1,0 +1,131 @@
+BRIEF PER HAIKU — SCARICARE LE CLASSIFICHE COMPLETE DI 6.006 ARENE
+Scritto dall'orchestratore (Opus) l'08/08/2026, notte (Roma).
+Destinatario: Haiku, chat pulita. Compito meccanico e ripetitivo.
+
+E' un lavoro di SOLA RACCOLTA DATI. Non devi decidere niente, non devi
+analizzare niente, non devi toccare nessuno script di produzione.
+Fai N query, salvi il risultato, riporti gli errori.
+
+
+=====================================================================
+1. COSA SERVE E PERCHE' (contesto minimo, non ti serve altro)
+=====================================================================
+Nei file `dati_globali/manager_*.json` abbiamo 7.720 arene giocate da 54
+manager: per ognuna conosciamo il punteggio e il piazzamento del NOSTRO
+manager, ma NON i punteggi degli altri 9 partecipanti.
+Quei punteggi servono per ritarare le soglie delle arene. Oggi ne abbiamo
+solo 673 arene complete, e per un tipo (cap 220) appena 53: troppo poche.
+
+Devi scaricare la CLASSIFICA COMPLETA di 6.006 arene distinte.
+
+
+=====================================================================
+2. LA LISTA DELLE ARENE DA SCARICARE — come costruirla
+=====================================================================
+Da tutti i file `dati_globali/manager_*.json` (54 file; salta quelli che
+NON hanno la chiave 'giornate', ce n'e' 1), prendi ogni riga con:
+    riga['competizione'] in {'Cap 260','Cap 220','Uncapped','Beginner'}
+    E riga['tipo_arena'] in {'arena_limited','arena_limited_uncapped',
+                             'arena_limited_beginner'}
+e raccogli il campo `riga['leaderboard']` (lo slug della classifica).
+DEDUPLICA: lo stesso slug compare piu' volte quando due nostri manager
+erano nella stessa arena. Devi scaricare ogni slug UNA SOLA VOLTA.
+
+NUMERI DI CONTROLLO — se non ottieni questi, fermati e segnalalo:
+    righe totali ......................... 7.720
+    slug distinti da scaricare ........... 6.006
+      di cui Beginner 3.109 | Cap 260 1.801 | Cap 220 748 | Uncapped 348
+    slug con piu' di un nostro manager ... 1.207
+
+
+=====================================================================
+3. LA QUERY — NON inventarla, riusa quella che esiste
+=====================================================================
+L'introspezione GraphQL su Sorare e' DISABILITATA (`__type`/`__schema`
+danno errore): non provare a scoprire lo schema, e' tempo perso.
+La query per la classifica di una leaderboard esiste gia' nel repo: cercala
+in `ricostruisci_manager.py` (scarica arene e formazioni dei manager, e'
+la fonte dei file che stai leggendo) e negli script che citano
+`so5RankingsPaginated` o `so5Leaderboard`. Riusa quella, adattando solo lo
+slug e la paginazione.
+Se la query esistente non restituisce i punteggi di TUTTI i partecipanti,
+NON improvvisare varianti a caso: prova una query mirata e LEGGI IL
+MESSAGGIO D'ERRORE, che su Sorare elenca i campi validi. Riporta cosa hai
+provato.
+
+Per ogni arena servono, per ciascuno dei ~10 partecipanti:
+    - il punteggio della sua formazione
+    - la sua posizione in classifica
+e per l'arena: lo slug, il tipo, e se disponibile il premio incassato dai
+primi 3 (`so5Rewards` / `premio_essenze`) — se il premio non c'e', NON e'
+un problema: salvalo assente e vai avanti.
+
+
+=====================================================================
+4. COME SALVARE
+=====================================================================
+File: `dati_globali/classifiche_arene_2026-08-08.json`
+Formato, uno per arena:
+    {"slug": "...", "tipo": "Cap 220", "partecipanti": 10,
+     "punteggi": [281.4, 274.0, ...], "rank_premiati": {"1": 1000, ...}}
+`punteggi` = lista dei punteggi di TUTTI i partecipanti, ordinata dal primo
+all'ultimo. Nient'altro: non serve il nome dei manager.
+
+SALVA A BLOCCHI, non alla fine: ogni 200 arene riscrivi il file. Se il
+processo si interrompe a meta' non si perde tutto, e si puo' riprendere
+saltando gli slug gia' presenti. Rendi lo script RIPRENDIBILE: all'avvio
+legge il file esistente e scarica solo gli slug mancanti.
+
+
+=====================================================================
+5. RITMO E ERRORI (la parte che conta davvero in questo lavoro)
+=====================================================================
+- Vai PIANO. Sorare risponde 429 (troppe richieste) se si insiste: quando
+  arriva un 429, aspetta e riprova con attese crescenti (backoff). Un
+  lavoro che finisce in 2 ore va bene; uno che si fa bannare no.
+- Un 429 NON e' un dato mancante: e' una richiesta da rifare. Non
+  registrare mai un'arena come "vuota" dopo un 429.
+- Se un'arena fallisce 3 volte di fila per un motivo diverso dal 429,
+  saltala e ANNOTA slug + messaggio d'errore in una lista a parte.
+- Stampa l'avanzamento ogni 200 arene: quante fatte, quante fallite,
+  quanti 429 finora.
+
+
+=====================================================================
+6. CONTROLLO DI CORRETTEZZA — obbligatorio, ed e' gratis
+=====================================================================
+1.207 delle arene che scarichi contengono DUE O PIU' dei nostri manager, e
+di quei manager conosciamo gia' punteggio e piazzamento dai file
+`manager_*.json`.
+Per almeno 50 di quelle arene, verifica che nella classifica scaricata
+compaiano quei punteggi, alla posizione giusta (tolleranza 0,5 punti).
+Riporta: quante verificate, quante corrispondono, e 3 esempi di
+discrepanza se ce ne sono.
+SE PIU' DEL 5% NON CORRISPONDE, FERMATI e segnalalo: vuol dire che stai
+scaricando la cosa sbagliata, e continuare per 6.000 arene sarebbe tempo
+buttato. Fai questo controllo sulle PRIME 50 arene utili, non alla fine.
+
+
+=====================================================================
+7. COSA RIPORTARE ALLA FINE (5 righe, niente analisi)
+=====================================================================
+- quante arene scaricate su 6.006, divise per tipo
+- quante fallite e per quale motivo (elenco secco dei motivi con conteggio)
+- l'esito del controllo del punto 6
+- quanti 429 e quanto e' durato
+- il percorso del file prodotto
+NON calcolare soglie, ROI, medie o statistiche: non e' il tuo compito, se
+ne occupa un altro esecutore.
+
+
+=====================================================================
+8. COSA NON FARE
+=====================================================================
+- Non toccare nessun file esistente: crei solo il file nuovo del punto 4.
+- Non modificare `ricostruisci_manager.py` ne' altri script: leggi la
+  query e riusala nel TUO script nuovo.
+- Non lanciare niente su GitHub Actions senza il via dell'utente.
+- Non inventare punteggi, non stimare, non completare arene incomplete:
+  se un'arena torna con 6 partecipanti su 10, salvala com'e' e basta.
+- Non fermarti a chiedere conferma a meta' lavoro se sta andando: vai
+  avanti e riporta alla fine.

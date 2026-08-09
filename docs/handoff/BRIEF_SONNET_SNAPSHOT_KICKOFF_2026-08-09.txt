@@ -1,0 +1,59 @@
+BRIEF SONNET — CATTURA URGENTE: LA PROIEZIONE ESISTE GIA', NON E' NEL GAME-LOG
+Scritto 09/08/2026, ~10:30 Roma. Urgente: kickoff 11:00 Roma (09:00 UTC).
+
+FATTO NUOVO (fonte: screenshot dell'utente, non dedotto)
+--------------------------------------------------------
+L'utente VEDE ADESSO nella UI Sorare, per la partita "dom 11:00", sia la
+LETTERA sia un NUMERO su ogni carta. Quindi il dato esiste gia' ed e'
+pubblico nella UI: la tua conclusione "la finestra non si e' ancora aperta"
+e' SBAGLIATA come diagnosi. Il dato c'e'; NON sta in playerGameScores.
+Smetti di interrogare playerGameScores(last:N) per questa partita.
+
+I CINQUE CASI OSSERVATI (partita delle 11:00 Roma di oggi)
+----------------------------------------------------------
+squadra A (maglia azzurra, sponsor FUJITSU — probabile Kawasaki Frontale,
+CONFERMALA dalla fixture, non darla per buona):
+  Yasuto Wakizaka   numero 52   lettera C
+  Yuki Yamamoto     numero 50   lettera C
+  Tatsuya Ito       numero 45   lettera C
+squadra B (maglia verde, sponsor NICIGAS — risolvila dalla fixture):
+  Itsuki Someno     numero 45   lettera D
+  Rei Hirakawa      numero 44   lettera D
+
+OSSERVAZIONE CHE VALE DA SOLA IL TEST: due giocatori con lo STESSO numero
+mostrato (45) hanno lettere DIVERSE (C e D). Se il numero fosse solo una
+riscrittura della lettera non potrebbe succedere. E' coerente con il
+"mescolamento al confine fra lettere adiacenti" che l'utente aveva gia'
+osservato. Da verificare se il numero mostrato e' arrotondato (il grezzo
+potrebbe essere 45,4 vs 44,6).
+
+COSA DEVI FARE, IN ORDINE
+--------------------------
+1. Risolvi gli slug dei 5 giocatori sopra (query pubblica, niente cookie).
+2. Trova QUALE campo restituisce quel numero ADESSO. Candidati da provare
+   in ordine: `projection` (e i suoi sottocampi, `score` incluso) chiesto
+   sul contesto della FIXTURE/partita futura, non sull'ultima partita nota;
+   i campi upcoming/next game del player; il nodo card. Il criterio di
+   successo e' secco: devi ritrovare 52 / 50 / 45 / 45 / 44 sui cinque
+   giocatori giusti. Se non li ritrovi, NON hai trovato il campo giusto —
+   dillo, non adattare la lettura.
+3. Appena lo trovi, SNAPSHOT DATATO E SALVATO (file JSON in
+   analisi_manager/dati/, nome con data+ora UTC e slug fixture) di TUTTI i
+   giocatori delle rose delle due squadre: slug, lettera, numero, ora UTC
+   della cattura, ora del kickoff.
+4. Ripeti la cattura per la partita successiva della stessa giornata con
+   kickoff piu' tardi, PRIMA che escano le formazioni ufficiali. Serve a
+   separare "il numero cambia quando escono le ufficiali" da "il numero e'
+   gia' li' da prima".
+5. Commit + push dello snapshot e di questo esito. Scrivi l'esito in coda a
+   docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt come §13.
+
+COSA NON FARE
+-------------
+- Non toccare la produzione, nessuna modifica al generatore.
+- Non concludere "non disponibile" senza aver provato i candidati del
+  punto 2: l'utente lo vede a schermo, quindi c'e'.
+- Se resti bloccato, dillo SUBITO: l'utente puo' aprire DevTools -> Network
+  -> filtro graphql e leggerti il nome della query (operationName) che la
+  UI usa davvero. E' la via piu' rapida, non aspettare ore prima di
+  chiederla.

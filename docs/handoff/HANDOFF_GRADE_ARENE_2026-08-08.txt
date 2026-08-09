@@ -1,0 +1,543 @@
+HANDOFF GRADE-ARENE -- 09/08/2026, notte (Roma)
+Esecutore: Sonnet, da BRIEF_SONNET_GRADE_ARENE_2026-08-08.txt (passo 1 di 2).
+
+1. STATO REPO
+Branch main. Nessun file di produzione toccato, nessuna query di rete
+eseguita (mi sono fermato PRIMA del download, vedi punto 5). File nuovi,
+solo misura, NON committati (in attesa di ok utente):
+  analisi_manager/p20_grade_arene_perimetro.py
+  analisi_manager/p20_grade_arene_perimetro_out.json
+  analisi_manager/p20_grade_arene_slug_mancanti_produzione.json
+
+2. PERIMETRO -- VERIFICATO, MATCH ESATTO coi numeri di controllo del §2
+del brief:
+  A1 Cap260    326 formazioni  18 manager  206 arene distinte  579 slug
+  A2 Cap220    102 formazioni  16 manager   90 arene distinte  274 slug
+  A3 Uncapped   91 formazioni  13 manager   70 arene distinte  222 slug
+  A4 Beginner  260 formazioni  16 manager  234 arene distinte  558 slug
+  B  us         31 formazioni   9 manager   28 arene distinte   95 slug
+  B  korea      12 formazioni   4 manager   12 arene distinte   42 slug
+  B  scotland    3 formazioni   2 manager    3 arene distinte   15 slug
+  TOTALE       825 formazioni            906 slug distinti (unione)
+Tutte e 825 le formazioni hanno esattamente 5 carte e 1 capitano
+(verificato). Escluse correttamente: Elite (96 formazioni) e super_rare (3),
+confermando che la normalizzazione per-uguaglianza-esatta (non startswith)
+funziona come richiesto al §2.
+
+3. STOP PRIMA DEL DOWNLOAD -- il conteggio "270 da scaricare" del §3 NON
+torna con l'indice usato davvero a valle. Per regola esplicita del brief
+("se il tuo conteggio non da' 270, non scaricare: prima capisci perche'"),
+mi sono fermato qui e non ho lanciato nessuna query.
+
+CAUSA TROVATA: il §3 del brief definisce "archivio grade attuale" come 4
+file (storico_grade_backtest_20260806.json + i tre per-ruolo
+Defender/Midfielder/Forward), 1.042 giocatori distinti. Ricostruendo
+l'indice con SOLO questi 4 file ottengo ESATTAMENTE gli stessi numeri del
+brief: 636 slug del perimetro gia' coperti, 270 da scaricare -- il metodo
+del brief e' quindi riproducibile e corretto sui suoi termini.
+
+Ma la funzione REALMENTE usata a valle da ogni backtest/test grade
+(`p12_backtest_manager_grade.carica_indice_grade_esteso`, che a sua volta
+chiama `p12_backtest_formazione_grade.carica_indice_grade`) unisce SEI
+file, non quattro:
+  - p12_r5_gk_ampio.json (i 60 GK) -- il brief lo cita come "quinto file,
+    non ancora letto, guardalo tu": in realta' e' GIA' incluso nella
+    funzione di produzione (righe 184-189 di
+    p12_backtest_formazione_grade.py), non e' mai stato un file isolato.
+  - analisi_manager/dati/storico_grade_crowss_20260806.json -- non citato
+    nel brief.
+  - analisi_manager/dati/storico_grade_crowss_20260807.json (raccolta
+    "COMPLETATA 07/08 sul pool crowss", 3.745 righe/249 giocatori) -- non
+    citato nel brief.
+Con questo indice di produzione (1.639 slug distinti contro i 1.042 della
+definizione ristretta) il perimetro arene risulta coperto per 698/906 slug,
+non 636: DA SCARICARE realmente sono 208, non 270. La differenza (270-208
+=62 slug) sono giocatori gia' coperti da fonti che il brief non contava.
+
+QUESTO NON E' UN ERRORE MIO NE' DEL BRIEF: sono due definizioni diverse di
+"cosa e' gia' in archivio", ed e' la funzione carica_indice_grade_esteso()
+-- non la lista dei 4 file -- quella che decide davvero la copertura del
+test del passo 2. Scaricare la lista dei 270 del brief non farebbe danno
+(62 sarebbero query ridondanti su slug gia' coperti da altre fonti), ma
+scaricare i 208 mancanti veri e' la lista corretta per massimizzare la
+copertura con il minor numero di query.
+
+DECISIONE APERTA PER L'UTENTE: quale lista scaricare?
+  a) i 208 slug realmente mancanti dall'indice di produzione (meno query,
+     copertura upstream gia' massimizzata dove possibile) -- lista in
+     analisi_manager/p20_grade_arene_slug_mancanti_produzione.json;
+  b) i 270 del brief originale (piu' query, alcune ridondanti, ma segue
+     alla lettera l'istruzione scritta).
+Non ho scelto da solo: e' un cambio di perimetro di query, non un dettaglio.
+
+4. COPERTURA PRIMA DEL DOWNLOAD (§6.2 del brief), ENTRAMBE LE BASELINE,
+stesso denominatore (4.125 carte schierate nelle 825 formazioni, 906 slug):
+
+  baseline brief (SOLO 4 file, 1.042 slug):
+    in ARCHIVIO (qualunque data):     3.614/4.125 (87,6%)
+    in FINESTRA vera (<=6gg):         3.572/4.125 (86,6%)
+    per gruppo (finestra): A1 90,6%  A2 86,5%  A3 84,0%  A4 82,2%
+                            B-us 91,6%  B-korea 85,0%  B-scotland 73,3%
+
+  indice di PRODUZIONE (6 file, 1.639 slug, quello usato davvero a valle):
+    in ARCHIVIO (qualunque data):     3.742/4.125 (90,7%)
+    in FINESTRA vera (<=6gg):         3.698/4.125 (89,6%)
+    per gruppo (finestra): A1 92,1%  A2 88,8%  A3 87,3%  A4 87,0%
+                            B-us 94,2%  B-korea 95,0%  B-scotland 86,7%
+
+  "in ARCHIVIO" e' un limite superiore (basta una qualunque partita nota,
+  anche fuori finestra); "in FINESTRA vera" (<=GRADE_WINDOW_GIORNI=6 giorni
+  prima della fine fixture) e' il numero che conta per il test del passo 2.
+  Sono sempre leggermente piu' basso del primo (partite note ma troppo
+  lontane dalla giornata in esame).
+
+  DISTRIBUZIONE PER FORMAZIONE (copertura in finestra, n=825):
+    baseline brief:     <50% 41   50-70% 114   70-90% 186   >90% 484
+    indice produzione:  <50% 26   50-70% 87    70-90% 166   >90% 546
+
+5. COSA NON HO FATTO (per la regola dello STOP al §3, e per assenza di
+credenziali/via libera): nessuna query API, quindi:
+  - punto §5 del brief (controllo anti-contaminazione, coppie vecchio/nuovo
+    grade sulla stessa partita) NON eseguito: richiede il download.
+  - slug rimasti scoperti dopo il download: NON applicabile, nessun
+    download fatto.
+  - dump leggibile di un'arena completa con grade: rimandato, dipende dal
+    download.
+Questi tre punti (§5, §6.4, §6.5 del brief) restano aperti fino alla
+decisione del punto 3 e all'ok dell'utente per lanciare le query (col
+consueto giro di prova su 20 slug prima del batch, §4 del brief).
+
+6. FILE
+  analisi_manager/p20_grade_arene_perimetro.py (script, solo locale)
+  analisi_manager/p20_grade_arene_perimetro_out.json (numeri grezzi)
+  analisi_manager/p20_grade_arene_slug_mancanti_produzione.json (lista 208
+    slug, opzione (a) del punto 3)
+  docs/handoff/HANDOFF_GRADE_ARENE_2026-08-08.txt (questo file)
+
+7. DECISIONE APERTA (riassunto) -- SUPERATA DAL PUNTO 8, vedi sotto.
+Prima di scaricare qualunque cosa: 208 o 270 slug (punto 3)? Serve la
+risposta dell'utente, poi le credenziali (cookie/csrf/fingerprint, mai nel
+repo) e il via per il giro di prova su 20 slug.
+
+8. CORREZIONI §8bis DEL BRIEF (09/08/2026, notte, Roma) -- risposte alle
+due correzioni scritte dall'orchestratore nello stesso brief. Ancora
+nessuna query di rete: tutto quello che segue e' verificabile in locale.
+
+8.1 IL NUMERO GIUSTO (§8bis.1). Confermato 208 (non 270): la funzione di
+produzione legge davvero 6 file (non 4 come contato al punto 3, non 7
+come scritto nel brief -- ricontrollato riga per riga
+`p12_backtest_formazione_grade.carica_indice_grade` righe 184-214: sono
+p12_r5_gk_ampio.json + Defender/Midfielder/Forward_20260806 + 2 crowss =
+6, non 7; il settimo elencato nel brief non esiste come file separato nel
+codice). Indice di produzione: 1.639 slug distinti (invariato).
+
+I TRE FILE MAI LETTI DA NESSUNA FUNZIONE, confermati e controllati:
+  storico_grade_Forward_ampio_20260806.json  500 slug (332 fuori indice)
+  storico_grade_Goalkeeper_20260806.json     175 slug (101 fuori indice)
+  grade_snapshot_*football-4-7-aug-2026*     (5 file) 170 slug (61 fuori indice)
+
+CROSS-VALIDATION (opzione b del brief: sulle coppie slug+data presenti SIA
+nel file non letto SIA nell'indice di produzione, i grade coincidono?):
+  Forward_ampio:  2.507 coppie in comune, 2.507 coincidono, 0 divergenze
+  Goalkeeper:     1.108 coppie in comune, 1.108 coincidono, 0 divergenze
+  grade_snapshot:    24 coppie in comune,    13 coincidono, 11 divergenze
+                   (esempi: andrew-vincent-rick 2026-08-07 indice=B
+                   snapshot=D; mika-marcel-godts 2026-08-06 indice=A
+                   snapshot=C; altri 9 nel file json)
+
+VERDETTO (per i termini del brief, "buoni" vs "dubbi"): Forward_ampio e
+Goalkeeper sono BUONI -- zero divergenze su oltre 3.600 coppie confrontate,
+si possono usare. grade_snapshot e' DUBBIO -- quasi la meta' delle coppie
+in comune diverge (11/24, 45,8%): sono catture "compose" vicine al
+kickoff, il grade cambia nel tempo (coerente col sospetto del brief), NON
+vanno usate come se fossero il grade "di allora" senza sapere quando sono
+state catturate rispetto alla partita. Seguendo la regola del brief
+("se dubbi, non usarli, scarica i mancanti"): grade_snapshot ESCLUSO.
+
+RICALCOLO scaricabili risparmiati: dei 208 mancanti sul perimetro arene,
+Forward_ampio ne copre 29, Goalkeeper ne copre 10, unione 39 (il brief
+stimava "circa 45": vicino ma non identico, la stima era a spanne, il
+numero misurato e' 39). DA SCARICARE DAVVERO: 208-39 = **169** (il brief
+stimava ~163, stesso motivo). Lista salvata in
+analisi_manager/p20_grade_arene_slug_da_scaricare_169.json.
+
+8.2 CONTROLLO ANTI-CONTAMINAZIONE (§8bis.2). Confermato il problema
+sollevato dall'orchestratore: scaricando SOLO i 169 mancanti non ci sono
+coppie (slug,data) in comune con l'archivio per costruzione, quindi il
+controllo del §5 originale darebbe zero confronti. Serve un campione a
+parte di ~50 slug GIA' in archivio con partite dentro le 6 giornate del
+perimetro, da riscaricare apposta e confrontare. Non fatto: richiede
+query di rete (non fattibile in locale). Lista pronta da preparare non
+appena arrivano le credenziali.
+
+8.3 TOTALE QUERY AGGIORNATO: 169 (mancanti reali, dopo Forward_ampio +
+Goalkeeper) + ~50 (campione di controllo anti-contaminazione) = ~219.
+Resta necessario il via dell'utente, le credenziali (mai nel repo), e il
+giro di prova su 20 slug prima del batch.
+
+FILE AGGIUNTI:
+  analisi_manager/p20_grade_arene_cross_validation_out.json (numeri del
+    confronto 8.1, se prodotto -- vedi script)
+  analisi_manager/p20_grade_arene_slug_da_scaricare_169.json (lista finale
+    dei 169 slug da scaricare davvero)
+
+9. CORREZIONE DELL'UTENTE SUI grade_snapshot (09/08/2026, notte, Roma).
+Il punto 8.1 sopra classificava grade_snapshot come "dubbio" per il 45,8%
+di divergenze (11/24) confrontato con l'indice di produzione. Correzione
+dell'utente: quel confronto era snapshot-vs-archivio (due momenti diversi
+nel tempo, quindi il segnale che si sta cercando, non un difetto del
+file). Confrontati fra loro, i 5 file grade_snapshot concordano al
+98-100% (0/158, 0/158, 3/158, 1/153 sulle coppie in comune fra coppie di
+snapshot -- numero fornito dall'utente, non riverificato qui). CORREZIONE
+ACCETTATA: i grade_snapshot restano FUORI dall'indice di produzione
+(giusto cosi', mescolerebbero momenti diversi), ma vanno CONSERVATI: sono
+l'unica fotografia pre-partita esistente nel repo. Non cancellarli, non
+proporne la cancellazione.
+
+10. CONTROLLO ANTI-CONTAMINAZIONE ESEGUITO (09/08/2026, notte, Roma) --
+disegno dell'utente. STOP: IL GRUPPO 1 MOSTRA DIFFERENZE, IL PASSO 2 NON
+SI FA. Query di rete eseguite (uniche di questa sessione): probe
+currentUser (ok, slug=crowss), prova su 5 slug (0 errori, 0 429), poi 50
+slug del campione (0 errori, 0 429, ~55s). Nessun file di produzione
+toccato. File nuovi, non committati:
+  analisi_manager/p20_grade_arene_campione_contaminazione_50.json (i 50
+    slug scelti: da storico_grade_crowss_20260807.json, con almeno una
+    partita dentro le 6 giornate del perimetro arene, esclusi slug
+    malformati come "1993-01-17" trovati per strada nel file)
+  analisi_manager/p20_grade_arene_rilettura_50.json (risposta grezza
+    della query di oggi sui 50 slug, formato playerGameScores)
+  analisi_manager/p20_grade_arene_contaminazione_out.json (confronto
+    completo riga per riga, vecchio vs nuovo, entrambi i gruppi)
+
+METODO: per ogni coppia (slug,data) presente SIA nell'archivio del 07/08
+(storico_grade_crowss_20260807.json) SIA nella rilettura di oggi, separata
+in due gruppi in base a game_date rispetto al 2026-08-07 (data del file
+vecchio): Gruppo 1 = partita gia' giocata al 07/08 (attesa 0 differenze,
+qualunque scarto e' riscrittura retroattiva pura); Gruppo 2 = partita non
+ancora giocata al 07/08 (uno scarto qui e' affinamento legittimo, non
+contaminazione).
+
+RISULTATO:
+  slug riletti: 50/50 (0 errori)  coppie (slug,data) confrontabili: 749
+
+  GRUPPO 1 (gia' giocate al 07/08): n=729  differenze=3 (0,4%)
+    direzione: 2 verso l'ALTO (nuovo>vecchio)  1 verso il BASSO
+    (scala GRADE_NUM: F=1,E=2,D=3,C=4,B=5,A=6)
+      andrew-vincent-rick   2026-05-13  vecchio=4(C) nuovo=5(B)
+      bendeguz-bolla        2026-08-06  vecchio=2(E) nuovo=3(D)
+      brian-schwake         2026-08-06  vecchio=2(E) nuovo=1(F)
+
+  GRUPPO 2 (non ancora giocate al 07/08): n=5  differenze=1 (20,0%, n
+    troppo piccolo per dire alcunche')
+      andrew-vincent-rick   2026-08-07  vecchio=2(E) nuovo=3(D)
+
+DETTAGLIO scoreStatus sulle 3 righe del Gruppo 1 (verificato con una
+query aggiuntiva mirata, stessi 3 slug, stesse date, nessun altro slug
+toccato):
+  andrew-vincent-rick  2026-05-13  scoreStatus=FINAL  grade oggi=B(5)
+    (partita di quasi 3 mesi prima della raccolta 07/08: nessun alibi di
+    "match appena finito, grade non ancora assestato" -- e' una riscrittura
+    su una partita vecchia)
+  bendeguz-bolla       2026-08-06  scoreStatus=FINAL  grade oggi=D(3)
+    (partita del giorno prima della raccolta: potrebbe essere il caso
+    limite "raccolto prima che lo scoreStatus diventasse definitivo", ma
+    QUI scoreStatus e' gia' FINAL in entrambe le letture, quindi anche
+    questo e' un grade che e' cambiato mentre il match era gia' FINAL)
+  brian-schwake        2026-08-06  scoreStatus=DID_NOT_PLAY  grade oggi=F(1)
+    (il vecchio valore E(2) potrebbe riflettere una proiezione pre-match
+    non ancora aggiornata al DNP effettivo -- non verificato lo
+    scoreStatus della riga vecchia, il file storico_grade_crowss_20260807
+    non lo salva)
+
+VERDETTO (per costruzione del disegno dell'utente): il Gruppo 1 NON mostra
+zero differenze come atteso. Su un campione piccolo (n=729 coppie, 50
+slug) la percentuale e' bassa (0,4%), ma la regola dettata dall'utente era
+tassativa ("se il Gruppo 1 mostra differenze, fermati e riferisci: il
+passo 2 non si fa"), quindi: MI FERMO QUI. Non ho scaricato i 169 slug
+mancanti. Il caso piu' probante e' andrew-vincent-rick del 13 maggio: una
+partita vecchia di mesi il cui grade e' cambiato fra due letture, entrambe
+con scoreStatus FINAL. Non so IL PERCHE' (non e' nei dati che ho: nessuna
+informazione su QUANDO Sorare aggiorna/ricalcola il campo grade dopo il
+FINAL) -- non lo invento.
+
+11. DECISIONE APERTA (aggiornata, sostituisce il punto 7)
+Il download dei 169 slug mancanti E' BLOCCATO dal punto 10: procedere
+significherebbe testare G nel passo 2 con un rischio di contaminazione
+misurato (non ipotetico) e non quantificato nella sua causa. Serve una
+decisione dell'utente su come trattare il grade come fonte: e' congelato
+al FINAL oppure no? Se non lo e', ogni test costruito su una rilettura
+odierna di partite passate porta con se' questo stesso rischio, non solo
+sul perimetro arene.
+
+12. SBLOCCO E PRASSI DELL'UTENTE (09/08/2026, notte, Roma) -- dichiarata
+    dall'utente, non dedotta. Vale per OGNI test futuro su G e sulle odds.
+
+L'utente schiera SEMPRE dopo l'uscita delle starting odds, e il piu' tardi
+possibile: aspetta apposta fino a ridosso della partita perche' anche un
+giocatore dato titolare al 90% puo' saltare all'ultimo (sue parole:
+"magari stanotte gli viene la cacarella e domani non giocano"). Nella GW in
+corso stava ancora tenendo aperte le arene di giocatori non ancora scesi in
+campo.
+
+CONSEGUENZA CHE SBLOCCA IL PUNTO 10-11: il grade che l'utente aveva davanti
+al momento di schierare era gia' quello aggiornato post-odds, cioe' LO
+STESSO che rileggiamo oggi. Il rischio che il controllo doveva escludere
+-- testare G con informazione non disponibile al momento della scelta --
+non si realizza. Il download dei 169 e' sbloccato.
+
+Le 3 differenze su 729 del Gruppo 1 restano agli atti come RUMORE DI FONDO
+NOTO (0,4%): direzione bilanciata (2 su, 1 giu'), scarto di una lettera,
+due su tre spiegabili (DID_NOT_PLAY e partita del giorno prima). Il caso
+andrew-vincent-rick del 13 maggio resta anomalo e SENZA CAUSA NOTA: non e'
+stata inventata una spiegazione. Se in futuro ricapita su un campione piu'
+grande, va ripreso.
+
+ATTENZIONE PER I TEST FUTURI (verificato in diretta dall'utente): il grade
+si aggiorna all'uscita delle odds e sale per chi risulta titolare a
+sorpresa (caso osservato: F -> E). Quindi un test che usasse un grade
+raccolto PRIMA delle odds non misurerebbe quello che il bot usa davvero.
+E il grade e' della PARTITA, non del giocatore: lo stesso portiere aveva
+lettere diverse per due partite ravvicinate, entrambe non ancora giocate.
+
+13. DOWNLOAD ESEGUITO E CONSEGNA §6 PUNTI 2-5 (09/08/2026, notte, Roma).
+Query di rete di questa fase: giro di prova 20 slug (20/20 ok, 0 429,
+~23s), poi 169 slug del download vero (169/169 ok, 0 errori, 0 429,
+~190s, 1s di pausa fra richieste, salvataggio incrementale ogni 25).
+Nessun file di produzione toccato. File nuovi, non committati:
+  analisi_manager/dati/storico_grade_arene_2026-08-08.json (download, 169
+    giocatori, 2.533 playerGameScores, 0 errori -- file NUOVO, nessun
+    archivio esistente sovrascritto)
+  analisi_manager/p20_grade_arene_copertura_finale.py (script)
+  analisi_manager/p20_grade_arene_copertura_finale_out.json (numeri grezzi)
+  analisi_manager/p20_grade_arene_scoperti_dopo.json (elenco scoperti)
+  analisi_manager/p20_grade_arene_dump_esempio.txt (dump arena, punto 5)
+
+Indice DOPO = indice di produzione (6 file, 1.639 slug) + Forward_ampio +
+Goalkeeper (i due file "buoni" del punto 8.1) + il download di oggi.
+grade_snapshot resta ESCLUSO dal lookup (§9), ma non cancellato.
+Indice DOPO: 2.241 slug distinti (contro 1.639 di prima).
+
+13.1 COPERTURA PRIMA/DOPO (denominatore 4.125 carte, 825 formazioni,
+stesso identico campione, §6 punto 2):
+
+  PRIMA (indice produzione, senza Forward_ampio/Goalkeeper/download):
+    in ARCHIVIO:        3.742/4.125 (90,7%)
+    in FINESTRA (<=6gg): 3.698/4.125 (89,6%)
+    per gruppo (finestra): A1 92,1%  A2 88,8%  A3 87,3%  A4 87,0%
+                            B-us 94,2%  B-korea 95,0%  B-scotland 86,7%
+
+  DOPO (indice produzione + Forward_ampio + Goalkeeper + download 169):
+    in ARCHIVIO:        4.125/4.125 (100,0%)  -- copertura completa
+    in FINESTRA (<=6gg): 4.076/4.125 (98,8%)
+    per gruppo (finestra): A1 99,8%  A2 99,4%  A3 99,1%  A4 97,5%
+                            B-us 96,8%  B-korea 100,0%  B-scotland 100,0%
+
+  "in ARCHIVIO" ora e' 100%: ogni carta del perimetro ha ALMENO una
+  partita nota da qualche parte nell'indice. Il residuo 1,2% mancante in
+  FINESTRA (49 righe, vedi 13.3) e' tutto dello stesso tipo: partite note
+  ma troppo lontane nel tempo dalla fine fixture (>6 giorni), non buchi
+  nell'archivio.
+
+13.2 DISTRIBUZIONE PER FORMAZIONE (copertura in finestra, n=825, §6 punto 3):
+  PRIMA: <50% 26   50-70% 87   70-90% 166   >90% 546
+  DOPO:  <50%  4   50-70%  6   70-90%  22   >90% 793
+  Le formazioni sopra il 90% di copertura passano da 546 a 793 (66,2% ->
+  96,1% del totale). Restano 4 formazioni sotto il 50%: non indagate oltre
+  (fuori scope di questo passo), elencabili su richiesta dai dati grezzi.
+
+13.3 SLUG/RIGHE RIMASTI SCOPERTI DOPO IL DOWNLOAD, CON MOTIVO (§6 punto 4):
+  49 righe (carta,formazione) scoperte su 4.125 (1,2%), 31 slug distinti.
+  MOTIVO, UNICO per tutte e 49: 'partite_note_ma_fuori_finestra_6gg' --
+  zero casi di 'nessuna_partita_nota' (coerente con l'archivio al 100%).
+  Cioe': per questi 31 giocatori l'indice ha si' delle partite, ma nessuna
+  cade nei 6 giorni prima della fine della fixture in questione (es. un
+  infortunio lungo, o un giocatore comparso in formazione senza aver
+  giocato di recente). Lista completa in
+  analisi_manager/p20_grade_arene_scoperti_dopo.json. Esempi: thomas-muller
+  (football-15-20-jul-2026), anatolii-trubin e rafael-alexandre-fernandes-
+  ferreira-da-silva (football-4-7-aug-2026, compaiono 2 volte ciascuno --
+  in piu' di una formazione).
+
+13.4 DUMP LEGGIBILE DI UN'ARENA COMPLETA (§6 punto 5), salvato per intero
+in analisi_manager/p20_grade_arene_dump_esempio.txt:
+  arena football-31-jul-4-aug-2026-...-arena_limited_beginner-3787bf4e...
+  gruppo A4_beginner, manager angioletto33, gw football-31-jul-4-aug-2026
+    Stefan Cleveland   GK   grade=D(3)  partita usata=2026-08-02
+    Michael Boxall     DEF  grade=D(3)  partita usata=2026-08-02
+    Donis Avdijaj      MID  grade=D(3)  partita usata=2026-08-02
+    Lionel Messi       FWD  grade=F(1)  partita usata=2026-08-02 (CAPITANO)
+    Yaw Yeboah         MID  grade=C(4)  partita usata=2026-08-02
+  (scala GRADE_NUM: F=1,E=2,D=3,C=4,B=5,A=6 -- Messi con grade F sembra
+  contro-intuitivo mentre e' il capitano: NON verificato qui se sia un
+  dato corretto o un caso limite, riportato cosi' come letto)
+
+13.5 CARTE CON PIU' DI UNA PARTITA CANDIDATA NELLA FINESTRA 6 GIORNI (nuovo
+punto chiesto dall'utente, SOLO CONTEGGIO, nessuna modifica alla logica di
+grade_in_finestra): sulle 4.076 carte che hanno almeno una partita
+candidata in finestra, **1.499 (36,8%) ne hanno PIU' DI UNA** -- cioe' per
+piu' di 1 carta su 3, `grade_in_finestra()` sceglie fra due o piu' partite
+diverse dello stesso giocatore cadute entrambe dentro i 6 giorni, e prende
+sempre la PIU' RECENTE fra le candidate (per costruzione della funzione,
+non modificata). Non e' detto che la piu' recente sia sempre la partita
+"giusta" per quella carta/formazione: dipende da quale partita il
+giocatore ha effettivamente disputato nella finestra della fixture, cosa
+che qui non e' stata verificata riga per riga (fuori scope, solo
+conteggio). Esempio concreto: daniel-de-sousa-brito, formazione
+football-24-28-jul-2026 (fine 2026-07-28), due partite candidate
+2026-07-23 (grade C) e 2026-07-26 (grade C, stesso valore qui ma non
+sempre negli altri esempi: es. alvaro-barreal 2026-07-22 grade D vs
+2026-07-25 grade C, valori diversi). Altri 9 esempi nel file grezzo
+p20_grade_arene_copertura_finale_out.json (chiave 'ambigue'.'esempi').
+Concentrazione: quasi tutti gli esempi mostrati cadono sulla stessa
+giornata (football-24-28-jul-2026) -- non verificato se sia un pattern
+generale o un caso di quella sola finestra di calendario (partite
+ravvicinate in quella settimana).
+
+13.6 RIEPILOGO NUMERICO PER LA CHIAVE (§6 del brief, tutti i punti):
+  copertura archivio: 90,7% -> 100,0%
+  copertura in finestra: 89,6% -> 98,8%
+  formazioni >90% copertura: 546 -> 793 (di 825)
+  scoperti dopo: 49 righe / 31 slug distinti, tutti per finestra troppo
+    stretta (mai per assenza totale di dati)
+  carte con partita candidata ambigua (>1 nella finestra): 1.499/4.076
+    (36,8%) -- numero nuovo, segnalato dall'utente, non nel brief
+    originale, da tenere presente per il passo 2. CORRETTO al punto 14: il
+    36,8% e' sovrastimato, vedi sotto.
+
+14. CORREZIONE DELL'UTENTE SUL 36,8% (§13.5) E VERIFICA MESSI (09/08/2026,
+notte, Roma). Script: analisi_manager/p20_grade_arene_ambigue_fixture_out.json
+(nessun nuovo .py separato, calcolo fatto con le funzioni gia' scritte in
+p20_grade_arene_copertura_finale.py, importate). Nessuna query di rete
+(dati gia' scaricati).
+
+14.1 IL 36,8% ERA SOVRASTIMATO -- confermato. La finestra di 6 giorni
+sfonda all'indietro oltre l'inizio della fixture e pesca spesso la
+giornata PRECEDENTE (partita gia' conteggiata altrove): in quei casi
+`grade_in_finestra()` prendendo la piu' recente delle due sceglie
+correttamente quella dentro la fixture vera, non e' un'ambiguita' reale.
+
+RICALCOLATO usando l'intervallo VERO della fixture (M.parse_fixture_bounds,
+non la finestra 6gg):
+  carte con almeno 1 candidata DENTRO la fixture: 4.052
+  carte con >=2 candidate DENTRO la fixture (ambiguita' vera): 139 (3,4%)
+    di cui con grade DIVERSO fra le candidate: 94 (2,3% del totale,
+      67,6% delle 139 ambigue)
+    di cui con grade UGUALE (scelta indifferente, nessun problema): 45
+  Numero corretto da portare al passo 2: 94/4.052 (2,3%), non 36,8%.
+
+Pattern osservato (non spiegato, solo riportato) negli esempi con grade
+diverso: spesso la partita PIU' RECENTE dentro la fixture ha grade F(1)
+mentre quella precedente ha un grade piu' alto (es. miha-zajc 07-28=B(5)
+vs 07-31=F(1); scott-mckenna 07-28=C(4) vs 07-31=F(1)). Non verificato se
+sia scoreStatus/DID_NOT_PLAY o un pattern di matchup reale: fuori scope,
+segnalato per chi riprende il filone.
+
+14.2 VERIFICA LIONEL MESSI (dump §13.4, grade F(1) da capitano). Formazione:
+football-31-jul-4-aug-2026-...-arena_limited_beginner-3787bf4e..., fixture
+2026-07-31/2026-08-04. Tutte le 15 entries dell'indice per
+lionel-andres-messi-cuccittini:
+  2026-05-24 A(6)  2026-06-07 F(1)  2026-06-10 F(1)  2026-06-17 A(6)
+  2026-06-22 A(6)  2026-06-28 F(1)  2026-07-03 A(6)  2026-07-07 A(6)
+  2026-07-12 A(6)  2026-07-15 A(6)  2026-07-19 A(6)  2026-07-22 F(1)
+  2026-07-25 F(1)  2026-08-02 F(1)  2026-08-05 A(6)
+Dentro la fixture (07-31/08-04) c'e' UNA SOLA candidata: 2026-08-02,
+grade=F(1). Dentro la finestra 6gg da fine-fixture (08-04): stessa unica
+candidata, 08-02 (delta=2 giorni). NESSUNA AMBIGUITA': il lookup ha preso
+l'unica partita disponibile, quella giusta, e viene da dentro la fixture.
+NON e' un errore di lookup. E' un dato vero: Messi alterna A(6)/F(1) in
+modo netto (10 A, 5 F sulle 15 partite), mai un grade intermedio -- la
+lettera qui sembra fortemente bimodale/matchup-dipendente per questo
+giocatore specifico. Interessante ma NON approfondito oltre (fuori scope
+di questo brief): chi riprende il filone puo' partire da qui per capire
+se A/F si alternano con l'avversario o con qualcos'altro.
+
+14.3 FILE: analisi_manager/p20_grade_arene_ambigue_fixture_out.json
+(conteggio corretto + 15 esempi grade-diverso + 5 esempi grade-uguale).
+
+15. REGOLA DI GIOCO: DOPPIA PARTITA NELLA STESSA FIXTURE (09/08/2026,
+    dichiarata dall'utente, non dedotta). Chiude il dubbio del §13.5,
+    insieme alla misura del §14 (3,4% con >=2 candidate dentro la
+    fixture, 2,3% con grade diverso fra le candidate).
+
+Se un giocatore disputa DUE partite dentro la stessa fixture:
+  - lo si puo' schierare comunque UNA VOLTA SOLA (non due);
+  - il punteggio assegnato alla carta e' il PIU' ALTO fra i due (esempio
+    dell'utente: 40 in una e 50 nell'altra -> la carta prende 50).
+
+FREQUENZA: rarissima. Negli ultimi dodici mesi e' capitato UNA volta, in
+K-League, per 18 giocatori in tutto. Il motivo e' strutturale: i club non
+giocano quasi mai a meno di 48-72 ore di distanza.
+
+CONSEGUENZA SUL LOOKUP DEL GRADE: il 36,8% di carte "ambigue" del §13.5 e'
+un falso allarme -- quelle candidate multiple sono partite della GIORNATA
+PRECEDENTE, che entrano perche' la finestra di 6 giorni si misura dalla
+FINE della fixture e sfonda all'indietro oltre il suo inizio.
+`grade_in_finestra` prende la piu' recente, cioe' quella dentro la fixture:
+scelta corretta in tutti gli esempi ispezionati. I casi di vera ambiguita'
+(due partite ENTRAMBE dentro l'intervallo della fixture) sono quelli sopra,
+cioe' quasi mai.
+
+DECISIONE DELL'UTENTE: si accolla l'errore residuo, nessuna modifica al
+codice. NON riaprire questo punto.
+
+NOTA, non sfruttata e non urgente: siccome la carta prende il voto piu'
+alto fra due partite, un giocatore con doppio impegno ha un valore atteso
+piu' alto (massimo di due estrazioni invece di una). Il generatore calcola
+l'atteso su una partita sola, quindi in quei rarissimi casi sottostima.
+Valutato e ACCANTONATO dall'utente per frequenza trascurabile.
+
+16. PROVA DEFINITIVA: IL GRADE NON E' RISCRITTO IN BASE AL RISULTATO
+    (09/08/2026, notte Roma). CHIUDE il dubbio, non riaprire.
+
+DUBBIO DELL'UTENTE, testuale: "un giocatore predetto D fa 100 in quella
+partita; Sorare gli assegna retroattivamente una A. Siamo sicuri di non
+star backtestando con tutte A/B/C a seconda del voto preso?"
+
+PERCHE' I CONTROLLI PRECEDENTI NON BASTAVANO: il confronto del §10
+(archivio 07/08 contro rilettura odierna, 3 differenze su 729) mette a
+confronto DUE LETTURE ENTRAMBE POST-PARTITA. Se Sorare riscrivesse subito
+dopo il fischio finale, entrambe conterrebbero gia' il valore riscritto e
+il test non se ne accorgerebbe. Dimostrava stabilita' nel tempo, non
+fedelta' al valore pre-partita.
+
+IL TEST VERO: confrontare il grade PRE-partita (i 5 file
+`analisi_manager/dati/grade_snapshot_*`, catturati il 06/08 alle 11:24-16:07,
+prima delle partite del 6-7 agosto) con il grade POST (archivi + download
+09/08). Coppie (slug, data) confrontabili: 29. Identiche 20, diverse 9
+(8 verso l'alto, 1 verso il basso).
+
+I TRE CASI AGLI ESTREMI, con il punteggio reale e la titolarita'
+confermati dall'utente guardando la sua schermata Sorare:
+
+  giocatore          titolare?          punteggio   grade
+  Mika Godts         SI (poi uscito)    89 (alto)   C -> A  SALE
+  Anders Dreyer      SI                 45 (medio)  B -> A  SALE
+  Andreas Schjelderup NO (subentrato)   85 (alto)   D -> F  SCENDE
+
+VERDETTO, per controesempio diretto (non per statistica):
+  - se il grade seguisse il RISULTATO, Schjelderup con 85 punti sarebbe
+    salito, non crollato di due lettere;
+  - e Dreyer con 45 punti non sarebbe salito ad A.
+  Il punteggio non spiega nulla (89 sale, 45 sale, 85 scende); la
+  TITOLARITA' spiega tutti e tre i casi.
+  Caso Dreyer, ulteriore: la sua partita (07/08) NON si era ancora giocata
+  quando e' stata scattata la fotografia (06/08 mattina), quindi quel
+  cambiamento e' avvenuto PRIMA del match -- non c'entra ne' il risultato
+  ne' le formazioni ufficiali di quella partita.
+
+IL GRADE SEGUE LA TITOLARITA', MAI IL RISULTATO. Coerente con tutto il
+resto gia' raccolto: F->E all'uscita delle odds per il titolare a sorpresa
+(osservato in diretta dall'utente), Messi A->F su notizia extra-campo,
+level score ~35 per un minuto in campo (§11).
+
+RESIDUO ONESTO, non un difetto ma una cosa da sapere (a backlog, §10bis
+del riassunto unico): il grade che leggiamo nel backtest e' aggiornato
+alle formazioni ufficiali di TUTTE le partite della giornata. L'utente,
+quando schiera, ha le ufficiali solo delle partite piu' vicine; per quelle
+di due giorni dopo ha solo le starting odds. Quindi una parte del
+vantaggio di G resta informazione sulla titolarita' che al momento di
+schierare non era ancora disponibile. NON e' il risultato, ed e' molto
+meno grave. Il test del §12 (pool ripulito) copre solo in parte questo
+caso: toglieva chi non e' sceso in campo affatto, mentre un SUBENTRATO
+come Schjelderup contava come giocante. Per il numero pulito servirebbe
+distinguere i subentrati dai titolari.

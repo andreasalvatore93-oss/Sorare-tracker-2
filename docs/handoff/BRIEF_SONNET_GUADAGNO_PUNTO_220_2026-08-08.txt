@@ -1,0 +1,198 @@
+BRIEF PER SONNET — GUADAGNO_PER_PUNTO DELLA CAP 220 E' SOTTOSTIMATO?
+Scritto dall'orchestratore (Opus) l'08/08/2026, notte (Roma).
+Destinatario: Sonnet, chat pulita.
+
+ATTENZIONE, QUESTO E' DIVERSO DAI BRIEF PRECEDENTI DI OGGI: qui si mette in
+discussione un PARAMETRO DI PRODUZIONE, non un criterio isolato. Se il
+parametro cambia, per CLAUDE.md si muove tutta la catena
+(valori -> soglie arena -> scouting). Percio': in questo giro si MISURA e
+si RIPORTA, non si cambia niente. Nessun default toccato, nessun parametro
+riscritto, neanche dietro flag, finche' l'utente non decide.
+
+
+=====================================================================
+0. LEGGERE PRIMA
+=====================================================================
+1. CLAUDE.md nella radice — in particolare la CATENA DI PRODUZIONE e la
+   regola sui parametri (un parametro si giudica su MAE + correlazione +
+   lift INSIEME; qui non e' un parametro del modello predittivo ma un
+   parametro economico, vedi §4 per il metro giusto).
+2. Il CODICE: generatore_formazioni/build_formazione_globale.py righe
+   494-529 (PAREGGIO_ARENA e il commento che spiega da dove viene),
+   626-655 (GUADAGNO_PER_PUNTO, COSTO_INGRESSO, QUOTA_MINIMA),
+   1228-1290 (genera_arene_efficienti).
+3. consiglio_arena.py TUTTO — e' lo strumento ufficiale con cui soglie e
+   guadagni sono stati calcolati: funzioni campo_per_tipo(),
+   premi_osservati(), incasso_medio(), pareggio(), e la variabile SIGMA.
+4. docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8septies (il filone di
+   stanotte) e docs/handoff/HANDOFF_CRITERIO_ARENE_2026-08-08.txt (il test
+   del criterio 'capitale', che NON ha migliorato: e' il motivo per cui
+   siamo arrivati qui).
+
+
+=====================================================================
+1. LA DOMANDA
+=====================================================================
+Il bot non propone quasi mai una cap 220 (34 su 35 erano cap 260; nella run
+di stanotte 22 su 23). Il criterio di scelta confronta
+`(atteso - soglia) * GUADAGNO_PER_PUNTO[tipo]`, e quel moltiplicatore vale
+**7,9 per la cap 260 e 6,3 per la cap 220**: a parita' di margine la 220
+perde sempre, del 25%.
+
+Domanda: quel 6,3 e' tarato bene? Se il valore vero fosse ~7,8 come per la
+cap 260, il bot starebbe scartando le cap 220 per un difetto di taratura, e
+questo spiegherebbe perche' l'utente "a occhio" le trovava buone e il bot no.
+
+IPOTESI DELL'ORCHESTRATORE, SCRITTA PRIMA DEI NUMERI: credo che il 6,3 sia
+sottostimato e che il valore vero stia fra 7 e 8. Ma il mio conto e' grezzo
+(vedi §2) e potrebbe essere io a sbagliare metodo: il valore di produzione
+NON e' una pendenza empirica, viene da una simulazione che tiene conto
+dell'incertezza della previsione (SIGMA). Se il tuo lavoro conferma il 6,3,
+va scritto senza problemi: sarebbe una risposta utile.
+
+
+=====================================================================
+2. QUELLO CHE HO GIA' MISURATO IO (grezzo, da rifare con lo strumento vero)
+=====================================================================
+Fonte: dati_globali/manager_*.json, arene reali con punteggio ufficiale e
+piazzamento, premi BASE (golden non distinte). Pendenza = regressione del
+premio incassato sul punteggio, in una finestra centrata sul pareggio
+empirico (il punto dove il netto medio passa da negativo a positivo).
+
+  tipo      pareggio empirico   pendenza in +-15   n     valore in produzione
+  cap 260        ~285              7,85           540         7,9
+  cap 220        ~270              7,77           220         6,3
+
+Due cose, e la prima e' l'argomento piu' forte che ho:
+ (a) il mio metodo RIPRODUCE il valore di produzione della cap 260 (7,85
+     contro 7,9, scarto 0,6%). Se il metodo fosse sbagliato non lo
+     azzeccherebbe. Questo e' cio' che rende sospetto il 6,3.
+ (b) lo stesso metodo dice che nella cap 220 un punto vale praticamente
+     quanto nella cap 260 (7,77 vs 7,85).
+
+Con finestre piu' larghe entrambe le pendenze SALGONO (cap 260: 10,6 a
++-20, 11,3 a +-25; cap 220: 10,0 a +-20, 9,2 a +-25) perche' la curva
+dell'incasso e' convessa. Questa dipendenza dalla finestra e' il limite
+principale del mio conto.
+
+PERCHE' LA COSA E' PLAUSIBILE ANCHE A RAGIONAMENTO (misurato, non assunto):
+i premi della cap 220 sono piu' bassi in valore assoluto, ma
+ - in RAPPORTO all'ingresso il 1o posto rende PIU': 1000/200 = 5,0 volte
+   contro 1300/300 = 4,3 volte (2o e 3o leggermente meno: 2,5 vs 2,7 e
+   1,5 vs 1,7);
+ - il campo della cap 220 e' piu' FITTO, quindi un punto fa scavalcare piu'
+   avversari: distanza mediana fra 3o e 5o classificato 20,96 punti contro
+   22,87 della cap 260, con dispersione interna praticamente identica
+   (44,61 vs 44,39). Misurato su analisi_manager/p11_pool.json, 53 arene
+   cap 220 e 193 cap 260 con la classifica completa.
+Mettendo insieme premio marginale e densita', un punto nella cap 220
+dovrebbe valere fra l'88% e il 100% di quanto vale nella cap 260. La
+produzione usa l'80% (6,3/7,9): fuori dalla forchetta, dal lato che
+penalizza la 220.
+
+
+=====================================================================
+3. COSA DEVI FARE
+=====================================================================
+
+PASSO 1 — RICOSTRUIRE COME NASCE IL 6,3 (prima di giudicarlo).
+ Con consiglio_arena.py, ricalcola pareggio e guadagno-per-punto per cap
+ 260, cap 220 e uncapped, con lo STESSO metodo e gli STESSI ingressi con cui
+ sono stati prodotti i valori di produzione (SIGMA compresa: leggi nel
+ codice/commenti quale valore e' stato usato — il commento a riga 512-515
+ dice SIGMA cap 260 = 50,6 dalla validazione del 05/08).
+ Domande a cui rispondere con numeri:
+  1a. Riproduci i valori in produzione (259,5/7,9 per la 260;
+      244,1/6,3 per la 220)? Se NO, il valore di produzione non e'
+      riproducibile e questa e' la scoperta principale: fermati e dillo.
+  1b. Con che SIGMA e con che campo avversario e' stata calcolata la cap
+      220? **Sospetto specifico da verificare**: la validazione del 05/08 ha
+      corretto la SIGMA della cap 260 da 42,70 a 50,6, e da li' vengono i
+      suoi 259,5 e 7,9. La cap 220 ha ricevuto la stessa correzione, o e'
+      rimasta su una SIGMA vecchia/di default? Se la cap 220 e' ferma a una
+      SIGMA piu' bassa, il suo guadagno-per-punto e' sottostimato per
+      costruzione, e sarebbe la spiegazione completa.
+  1c. Quante arene cap 220 ci sono nel campione che consiglio_arena.py usa
+      per il campo avversario e per i premi? Se sono poche, il 6,3 poggia
+      su poco e va detto (n sempre dichiarata).
+
+PASSO 2 — MISURA INDIPENDENTE, con metodo dichiarato.
+ Rifai la stima empirica della pendenza (la mia, §2) in modo pulito:
+  - per ciascun tipo, pareggio empirico e pendenza a +-10, +-15, +-20, +-25,
+    con n per ogni finestra;
+  - una seconda versione con i premi GOLDEN distinti, se riesci a
+    identificarle (in p11_pool.json il premio osservato le contiene: le
+    golden sono i valori anomali, es. cap260 rank1 = 4000 invece di 1300);
+  - il rapporto cap220/cap260 della pendenza in ogni finestra: e' il numero
+    che conta (il livello assoluto dipende dalla finestra, il RAPPORTO molto
+    meno). Se il rapporto sta stabilmente sopra 0,88 in tutte le finestre,
+    il 6,3 (rapporto 0,80) e' fuori.
+
+PASSO 3 — SE IL 6,3 RISULTA SBAGLIATO, QUANTIFICA L'EFFETTO (senza
+ cambiare niente in produzione).
+  3a. Con il valore corretto, quante delle 23 arene della run di stanotte
+      diventerebbero cap 220? Rigioca in locale sugli stessi dati (come ha
+      fatto il test del criterio: stesso player_card_counts, nessuna nuova
+      query) passando il valore nuovo da variabile d'ambiente, NON
+      riscrivendo la costante.
+  3b. LA CATENA, come da CLAUDE.md — misura di quanto si muovono, non
+      cambiarli: (i) le soglie PAREGGIO_ARENA dei tre tipi ricalcolate con
+      consiglio_arena.py; (ii) lo scouting, che legge le soglie dal
+      generatore via getattr — quali candidati cambierebbero di
+      raccomandazione. Basta l'ordine di grandezza, ma serve dichiarato.
+
+PASSO 4 — CONTROLLO DI COERENZA CON LA REALTA'.
+ Il ROI storico per tipo (analisi_manager/p21_criterio_arene_roi.py, gia'
+ scritto) dice che le cap 220 rendono piu' delle cap 260 per essenza
+ investita: crowss +23,3% contro +0,9%; una fonte esterna dell'utente
+ +54,5% contro +20,0%. Se il parametro corretto rende le cap 220 piu'
+ attraenti, va nella stessa direzione di quel dato — e' un indizio di
+ coerenza, NON una prova (quei ROI sono gonfiati dal fatto che l'utente
+ giocava le 220 solo quando "vedeva un buon incastro": selezione a mano).
+ Dichiara sempre quel bias accanto al numero.
+
+
+=====================================================================
+4. IL METRO GIUSTO (non quello dei parametri del modello)
+=====================================================================
+Questo NON e' un parametro predittivo, quindi il metro MAE+correlazione+lift
+di CLAUDE.md non si applica. Un parametro economico si giudica su:
+ - riproducibilita': lo stesso metodo, sugli stessi dati, ridà lo stesso
+   numero (Passo 1a);
+ - coerenza interna: il rapporto fra i tipi regge al variare della finestra
+   e del trattamento delle golden (Passo 2);
+ - effetto a valle dichiarato: quanto muove le scelte e la catena (Passo 3).
+Se questi tre non sono tutti soddisfatti, non si tocca niente.
+
+
+=====================================================================
+5. COSA NON FARE
+=====================================================================
+- Non modificare GUADAGNO_PER_PUNTO, PAREGGIO_ARENA, COSTO_INGRESSO,
+  QUOTA_MINIMA. Nemmeno dietro flag, in questo giro.
+- Non accendere ARENA_CRITERIO='capitale' di default: e' stato misurato
+  stanotte e NON migliora (HANDOFF_CRITERIO_ARENE). Resta spento.
+- Non lanciare run GitHub ne' query Sorare senza il via dell'utente. Il
+  Passo 3a si fa in locale sui dati gia' scaricati.
+- Non riportare un numero senza la sua n e senza la finestra con cui e'
+  stato calcolato: e' l'errore che rende inconfrontabili le stime di questo
+  filone.
+- Se il 6,3 risulta corretto, dillo e chiudi: sarebbe la conferma che il bot
+  fa bene a preferire le cap 260 e che il ROI storico e' tutto bias di
+  selezione. Risultato utile, non un fallimento.
+
+
+=====================================================================
+6. DOVE SCRIVERE L'ESITO
+=====================================================================
+In coda a docs/handoff/HANDOFF_CRITERIO_ARENE_2026-08-08.txt, sezione nuova
+"9. GUADAGNO_PER_PUNTO DELLA CAP 220 (data, ora Roma)": e' lo stesso filone,
+non aprire un file nuovo. Committa solo i tuoi file, e includi nel commit
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md se risulta modificato e non
+committato (l'orchestratore lo ha aggiornato ma non ha i permessi git in
+questo ambiente).
+
+Riporta all'utente in cinque righe: se hai riprodotto il 6,3 (Passo 1a), con
+che SIGMA e' stata calcolata la cap 220 (Passo 1b), il rapporto
+cap220/cap260 delle pendenze (Passo 2) e quante arene cambierebbero
+(Passo 3a).

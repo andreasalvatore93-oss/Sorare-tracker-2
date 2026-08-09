@@ -1,0 +1,228 @@
+BRIEF PER SONNET — APPLICARE LE SOGLIE ARENA IN PRODUZIONE
+Scritto dall'orchestratore (Opus) il 09/08/2026, 02:30 Roma (00:30 UTC).
+
+ATTENZIONE, LEGGI QUESTO PER PRIMO: **questo brief TOCCA LA PRODUZIONE.**
+Non e' una misura. L'utente ha gia' deciso di applicare, il lavoro e' di
+esecuzione — ma proprio per questo ogni passo va verificato prima di
+scriverlo, e la catena va percorsa fino in fondo (§7). Nessun push senza
+il suo ok.
+
+
+=====================================================================
+0. COSA LEGGERE PRIMA (in quest'ordine, niente altro)
+=====================================================================
+1. `CLAUDE.md` — regole vincolanti. In particolare la **catena di
+   produzione**: valori di produzione -> soglie arena -> tool di
+   scouting. Chi tocca il primo anello deve verificare gli altri due.
+2. `docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt` §11-12 — da
+   dove vengono i numeri nuovi (archivio 2.125 arene, 5.031 premi veri).
+3. CODICE, con le righe (verificate l'08/08 dall'orchestratore):
+   - `generatore_formazioni/build_formazione_globale.py`:
+     righe 187-189 (`FORMATION_SHAPES`), 207-208 (nomi), 215
+     (`L10_CAP_BY_TYPE`), 238-239 (`VARIANCE_MODE_TYPES`), 255-279
+     (STACK_GUARD / CHECK_CAP260 / XP_BONUS / CAPTAIN_BONUS /
+     CAP260_THRESHOLD), 302 (elenco tipi), 308 (`POOL_LEAGUE_BY_TYPE`),
+     328 (funzione che riconosce i tipi arena), **569-578
+     (`PAREGGIO_ARENA`)**, **689-691 (`GUADAGNO_PER_PUNTO`)**,
+     694-698 (`COSTO_INGRESSO`), 1697-1705 (lettura env var).
+   - `consiglio_arena.py` righe 33-34 (env `ARCHIVIO_ARENE`), 36-66
+     (`REGOLE`), 113-153 (`premi_osservati`, `incasso_medio`).
+   - `analisi_manager/p25_archivio_v2.py` righe 112-124 (il bug di dedup
+     del §4).
+Non leggere gli altri file di docs/handoff/: archivio, con verdetti
+superati scritti come se fossero attuali.
+
+
+=====================================================================
+1. COSA SI APPLICA — gli otto valori, piu' il Beginner
+=====================================================================
+Origine: HANDOFF_SOGLIE_DEFINITIVE §12, archivio avversari 2.125 arene +
+premi VERI (5.031 osservazioni, contro le 141 su cui poggiavano i valori
+attuali). Split-half stabile (scarti 0,2-2,5 punti).
+
+`PAREGGIO_ARENA` (righe 569-578):
+  ARENA_ALLSTARS_260        259,5  ->  **264,5**
+  ARENA_ALLSTARS_220        244,1  ->  **247,1**
+  ARENA_ALLSTARS_UNCAPPED   288,3  ->  **279,6**
+  ARENA_ALLSTARS_ELITE      342,7  ->  INVARIATA (esclusa dal perimetro
+                                        per decisione dell'utente: non
+                                        ricalcolata, non toccare)
+  arene di lega singola     262,9  ->  **INVARIATO 262,9** (vedi §2)
+
+`GUADAGNO_PER_PUNTO` (righe 689-691):
+  ARENA_ALLSTARS_260          7,9  ->  **6,96**
+  ARENA_ALLSTARS_220          6,3  ->  **5,11**
+  ARENA_ALLSTARS_UNCAPPED     8,0  ->  **5,88**
+  ARENA_ALLSTARS_ELITE        9,1  ->  INVARIATO (come sopra)
+  arene di lega singola       8,8  ->  **6,96** (allineato a cap 260, §2)
+
+`COSTO_INGRESSO`: invariati (300 / 200 / 300 / 800, lega singola 300).
+
+Ogni valore che cambi va accompagnato da un commento di una riga con la
+data e la fonte, nello stile gia' usato in quel file. Chi legge fra un
+mese deve sapere da dove viene il numero senza aprire un handoff.
+
+
+=====================================================================
+2. LE ARENE DI LEGA SINGOLA — perche' i due valori si trattano diverso
+=====================================================================
+Decisione dell'utente, con la sua motivazione, da non reinterpretare:
+costo, premi e regole delle arene dedicate a un campionato sono IDENTICI
+alla cap 260. Ma il **pareggio non dipende dalle regole**: dipende da
+quanto e' forte il campo avversario, e li' il campo e' un po' piu' debole
+(262,9 fu MISURATO sulle 191 arene dedicate in archivio, non copiato).
+Quelle arene NON sono nel nuovo archivio, quindi non sono ricalcolabili
+coi premi veri.
+Percio': **guadagno/punto allineato** a cap 260 (l'8,8 e' un residuo della
+taratura vecchia, l'unico rimasto alto mentre tutti gli altri sono scesi
+del 20-25%), **pareggio lasciato a 262,9** perche' e' una misura vera su
+quel campo. Scrivilo nel commento, o la prossima sessione lo "aggiusta".
+
+
+=====================================================================
+3. IL BEGINNER — tipo NUOVO, non esisteva
+=====================================================================
+Oggi il Beginner non e' un tipo generabile: non ha chiavi da nessuna
+parte. L'utente ha deciso di aggiungerlo e ha dichiarato le regole (sue
+parole, non dedurre altro):
+
+  **Il Beginner e' identico alla Cap 260. Cambia SOLO il costo
+  d'ingresso (100) e i premi, che sono inferiori. E' la versione per
+  principianti della cap 260 standard.**
+  L'utente ha confermato di non avere vincoli: puo' giocarle.
+
+Quindi, tipo nuovo `ARENA_ALLSTARS_BEGINNER`:
+  - shape, pool, variance mode, regole di formazione: **come cap 260**
+  - cap L10: **260** (`L10_CAP_BY_TYPE`, riga 215)
+  - capitano: **0.2** (`CAPTAIN_BONUS_BY_TYPE`, riga 274)
+  - NON in `XP_BONUS_TYPES`, NON in `STACK_GUARD_TYPES`, NON in
+    `CHECK_CAP260_TYPES` (e' un'arena: niente xp, niente anti-stack,
+    niente bonus cap L10 — righe 255-270)
+  - `COSTO_INGRESSO`: **100**
+  - `PAREGGIO_ARENA`: **256,5**
+  - `GUADAGNO_PER_PUNTO`: **2,46**
+  - va aggiunto anche all'elenco tipi (riga 302), ai nomi (207-208), a
+    `POOL_LEAGUE_BY_TYPE` (308, 'mixed'), alla funzione di riga 328, e
+    alla lettura env var (1697-1705) sullo stesso schema degli altri.
+
+**TROVA TUTTI I POSTI, non fidarti di questo elenco.** Cerca nel file
+tutte le occorrenze di `ARENA_ALLSTARS_220` (che e' il tipo piu' simile
+per struttura) e verifica per ciascuna se serve una voce Beginner. Se ne
+trovi una che qui non e' elencata, aggiungila e SEGNALALA: significa che
+l'elenco dell'orchestratore era incompleto.
+
+**DIFETTO DA SANARE nello stesso giro** (trovato l'08/08): il default di
+`CAPTAIN_BONUS_BY_TYPE` non e' lo stesso nei due punti del codice — riga
+613 usa `.get(tipo, 0.2)`, il modulo di rendering usa `.get(tipo, 0.5)`
+(dichiarato al commento riga 283). Finche' ogni tipo e' in tabella non
+cambia nulla, ma un tipo dimenticato prende +20% in un posto e +50%
+nell'altro. Dopo aver aggiunto il Beginner, verifica che TUTTI i tipi
+arena siano esplicitamente in tabella e riporta l'esito.
+
+
+=====================================================================
+4. L'ARCHIVIO v3 — perche' i numeri restino riproducibili
+=====================================================================
+Problema (dichiarato dall'utente come da risolvere): le soglie nuove sono
+state calcolate con uno script scritto per l'occasione
+(`analisi_manager/p27_premi_veri_soglie.py`) che legge i premi veri, ma
+lo strumento ufficiale `consiglio_arena.py` legge ancora i premi dal
+vecchio archivio (141 osservazioni). Se fra un mese qualcuno rilancia
+`consiglio_arena` per ricontrollare, ottiene numeri diversi da quelli in
+produzione e nessuno capisce perche'. E' gia' successo a luglio.
+
+Costruisci `dati_globali/arene_storico_full_v3.json`: stesso formato di
+v2, con dentro anche i premi veri per posizione da
+`dati_globali/premi_arene_2026-08-08.json`. Poi fai in modo che
+`consiglio_arena.premi_osservati()` (righe 113-128) li usi quando
+l'archivio li contiene, **senza rompere il comportamento con gli archivi
+vecchi** (chi passa v2 o l'archivio storico deve continuare a funzionare
+come oggi).
+
+**Nello stesso giro correggi il bug di dedup** di
+`p25_archivio_v2.py` righe 112-124: costruendo il dict per slug tiene
+l'ULTIMA riga, e siccome il file vecchio ha 61 slug duplicati al suo
+interno, in 36 casi la riga scartata era quella col premio (235 -> 199).
+Deve tenere la riga CON il premio, non l'ultima. Verifica dopo la
+correzione che i premi osservati risalgano da 199 a 235.
+
+CONTROLLO OBBLIGATORIO: dopo aver costruito v3, rilancia
+`consiglio_arena.py` puntandolo a v3 (env `ARCHIVIO_ARENE`) e verifica
+che **riproduca i valori che stai mettendo in produzione** (264,5 /
+247,1 / 279,6 / 256,5 e 6,96 / 5,11 / 5,88 / 2,46). Se non li riproduce,
+FERMATI: o l'archivio e' costruito male, o i numeri del §1 non sono
+quelli giusti. Non applicare valori che il tool ufficiale non sa
+rifare — e' esattamente il problema che stiamo chiudendo.
+
+
+=====================================================================
+5. TEST PRIMA DI TOCCARE QUALUNQUE COSA
+=====================================================================
+ 5a. **A/A**: prima di ogni modifica, genera le formazioni della giornata
+     corrente e salva l'output. Ripeti la stessa generazione senza
+     modifiche: deve essere identica. Se non lo e', c'e' del non
+     determinismo e i confronti dopo non valgono niente.
+ 5b. Dopo le modifiche, rigenera e produci il **diff**: quali arene
+     cambiano (entrate/uscite), quali no. Atteso dal giro di misura: su
+     GW3 il cambio era di circa un'arena. Se cambia molto di piu',
+     fermati e riferisci prima di proseguire.
+ 5c. Verifica che il Beginner ora **venga effettivamente generato**
+     (prima non poteva esistere): quante formazioni Beginner compaiono, e
+     con che punteggio atteso contro la soglia 256,5. Se ne compaiono
+     zero, l'aggiunta non ha funzionato: non dichiarare fatto.
+ 5d. Test in LOCALE, veloci. Niente GitHub Actions.
+
+
+=====================================================================
+6. NOTA SUL BEGINNER — da riportare all'utente, non da decidere tu
+=====================================================================
+Dai dati storici il Beginner e' il tipo con il rendimento peggiore
+(ROI -20,9% misurato in un giro precedente) e il guadagno per punto piu'
+basso (2,46 contro 5-7 degli altri). Aggiungendolo, il bot inizia a
+considerarlo: con la soglia 256,5 ci entrera' solo quando conviene, che
+e' il punto delle soglie. Ma **riporta all'utente quante Beginner il bot
+sceglierebbe** sulla giornata corrente: se fossero molte, e'
+un'informazione che vuole avere prima di mandare in produzione.
+
+
+=====================================================================
+7. LA CATENA — non fermarti al primo anello
+=====================================================================
+Regola vincolante del CLAUDE.md:
+    valori di produzione -> soglie arena -> tool di scouting
+Lo scouting legge soglie e guadagno/punto dal generatore via `getattr` e
+si allinea da solo, MA questo va **verificato, non assunto**:
+ 7a. Rilancia lo scouting e verifica che legga i valori NUOVI (stampali).
+ 7b. Produci il diff dei consigli di acquisto prima/dopo: quali giocatori
+     entrano o escono dalla lista, e di quanto si muove l'efficienza
+     (`Ess/GW`, `€/EssGW`).
+ 7c. Se lo scouting NON si allinea da solo, fermati e riferisci: e' un
+     difetto piu' importante delle soglie stesse.
+
+
+=====================================================================
+8. COSA NON FARE
+=====================================================================
+- Non toccare l'Elite (esclusa per decisione dell'utente).
+- Non toccare `COSTO_INGRESSO` (invariati).
+- Non "ottimizzare" altro mentre sei li' dentro: solo quello che c'e'
+  scritto qui.
+- Non pushare senza l'ok dell'utente. Committa i tuoi file, e se trovi
+  commit locali di altre sessioni segnalali senza toccarli.
+- Non stimare a spanne: se un numero non torna, dillo.
+- Non dichiarare fatto un passo che non hai verificato con un test.
+
+
+=====================================================================
+9. DOVE SCRIVERE L'ESITO
+=====================================================================
+In coda a `docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt` come
+§13, con data e ora di Roma. **E aggiorna
+`docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md` §8octies**, che oggi dice
+"DA APPLICARE": dopo questo lavoro dira' cosa e' stato applicato, quando,
+e con quali valori. Se non lo aggiorni, la prossima sessione riapre il
+filone.
+
+All'utente in CINQUE RIGHE: valori applicati si/no, diff sulle arene
+della giornata, quante Beginner compaiono, esito della verifica sullo
+scouting, percorso del file. Il resto nel file.

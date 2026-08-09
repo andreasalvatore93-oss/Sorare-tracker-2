@@ -1,0 +1,177 @@
+BRIEF PER SONNET — LE FAVORITO ODDS COME SEGNALE, ORA CHE C'E' G
+Scritto dall'orchestratore (Opus) l'08/08/2026, notte (Roma).
+Destinatario: Sonnet, chat pulita.
+
+SI MISURA, NON SI APPLICA. Se serve un flag, spento di default. Nessun
+valore di produzione toccato in questo giro.
+
+
+=====================================================================
+0. LEGGERE PRIMA
+=====================================================================
+1. CLAUDE.md nella radice. In particolare due regole che qui sono il cuore
+   del problema:
+   - "un parametro si giudica su MAE + correlazione + lift INSIEME";
+   - "un bias marginale forte NON implica un buon criterio di scelta fra
+     candidati della stessa decisione: misurare sempre la POLICY, non il
+     bias astratto". E' costata diverse ipotesi false-positive nel filone
+     capitano, ed e' esattamente il fenomeno gia' visto sulle odds (§1).
+2. IL CODICE:
+   - `generatore_formazioni/build_formazione_globale.py` righe 452-491
+     (`_apply_grade_group`: come G entra oggi) e 1042-1091 (le STARTER odds
+     come tie-break, che NON sono l'oggetto di questo brief);
+   - `analisi_manager/p11_favorito_odds_confronto.py` righe 1-20: la
+     formula del segnale favorito-odds gia' usata nel test pre-G.
+3. `docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt` (il test pre-G) e
+   `docs/handoff/HANDOFF_GRADE_SCALA_2026-08-08.txt` (l'infrastruttura di
+   backtest non-arena + placebo scritta stanotte: p19, da riusare).
+
+
+=====================================================================
+1. LA DOMANDA E PERCHE' ORA
+=====================================================================
+DUE segnali diversi, da non confondere:
+ - **STARTER odds** = probabilita' che quel giocatore sia titolare. In
+   produzione e' un FILTRO (soglia 0.80 in discovery) piu' un TIE-BREAK a
+   parita' di atteso entro 1 punto. NON e' oggetto di questo brief e non si
+   tocca.
+ - **FAVORITO odds** = quanto la SQUADRA e' data favorita (differenziale
+   p_win_own - p_win_opp). E' quello che si voleva usare come SEGNALE.
+
+Storia, da trattare come ipotesi da riverificare e non come fatto: prima
+che G esistesse, il segnale favorito-odds sui DIFENSORI migliorava la
+previsione per-carta in modo netto (7 varianti su 9, intervalli che
+escludevano lo zero) ma **peggiorava lo schieramento**, e per questo non e'
+mai entrato in produzione. Il campione in formazione era debole: 2 soli
+mazzi con >=16 giornate, con pablo0078 che pesava un terzo delle arene.
+
+Cosa cambia oggi: **G e' in produzione ed e' un segnale vero** (placebo
+superato sul non-arena, §8bis del riassunto). Quindi la domanda non e' piu'
+"le odds servono?" ma:
+    **le favorito odds aggiungono qualcosa SOPRA G, o G ha gia' preso quel
+    posto?**
+Il ramo di confronto quindi e' G, non A.
+
+
+=====================================================================
+2. PASSO 0 — SONO LO STESSO SEGNALE? (prima di tutto il resto)
+=====================================================================
+Misura la correlazione fra grade e delta_favorito_odds, sulle stesse carte
+e sulle stesse giornate:
+ 0a. globale e **per ruolo** (GK, DEF, MID, FWD separati);
+ 0b. la tabella incrociata: grade medio per fascia di favorito-odds, con n.
+ 0c. dichiara la direzione: l'osservazione dell'utente su una schermata
+     reale e' che possono andare in verso OPPOSTO (portiere con grade A in
+     una squadra data al 20% di vittoria — per un GK una squadra sfavorita
+     significa piu' tiri da parare). Verifica se il dato lo conferma,
+     soprattutto sui GK.
+LETTURA: se la correlazione e' alta, "odds sopra G" e' in gran parte
+ridondante e il risultato del test va letto in quella luce. Se e' bassa o
+negativa, i due segnali sono indipendenti e c'e' spazio per informazione
+nuova. In entrambi i casi il test si fa: questo passo serve a INTERPRETARLO.
+
+
+=====================================================================
+3. IL TEST — QUATTRO RAMI, TUTTI E QUATTRO I RUOLI
+=====================================================================
+Base: la stessa base pulita non-arena della rivalidazione di G, dove
+abbiamo gia' metro, placebo e bootstrap funzionanti (riusa
+`analisi_manager/p19_nonarena_grade_scala.py`, non riscriverlo):
+    All Star + U23 a 7 carte, n=864, 13 manager
+    MLS Hot Streak a 5 carte, n=310, 10 manager
+
+Rami, sullo stesso campione e nello stesso run:
+    A    = baseline, nessun segnale
+    G    = solo grade (= PRODUZIONE DI OGGI)
+    O    = solo favorito odds
+    G+O  = entrambi
+Il numero che decide e' **G+O contro G**. A e O servono a capire da dove
+viene l'eventuale differenza.
+
+FORMULA del segnale odds: la stessa gia' usata nel test pre-G, non
+inventarne una nuova:
+    atteso_raw_adj = atteso_raw * (1 + k * delta_favorito_odds)
+applicata ad `atteso_raw` PRIMA della calibrazione, con
+`delta_favorito_odds` ricalcolato per (slug, ruolo, data PARTITA) — non
+data di cutoff.
+**ATTENZIONE, dichiaralo nel risultato**: le odds agiscono PRIMA della
+calibrazione, G agisce DOPO (su `atteso_cal`). Sono due punti diversi della
+catena e non sono intercambiabili: non "spostare" le odds dopo per
+comodita' senza dirlo.
+
+RUOLI: il test va fatto su **tutti e quattro**, non solo sui DEF. Procedura
+per non finire a pescare a caso in una griglia enorme:
+ 3a. un ruolo alla volta, k=0.2, gli altri a zero: quattro misure. Riporta
+     il delta contro G per ciascuna.
+ 3b. SOLO i ruoli che risultano positivi in 3a si combinano fra loro, e
+     solo allora si prova k in {0.1, 0.2, 0.3} sui ruoli sopravvissuti.
+ 3c. **Dichiara quante varianti hai provato in totale.** Provandone dodici
+     ne trovi una positiva anche se il segnale non esiste: senza quel
+     numero il risultato non e' leggibile.
+
+
+=====================================================================
+4. IL METRO — la trappola specifica di questo filone
+=====================================================================
+Il fenomeno gia' visto (migliora la carta, peggiora la formazione) e' il
+motivo per cui questo test va disegnato al contrario del solito:
+ 4a. **Il metro che decide e' il REALIZZATO DELLA FORMAZIONE**, non il lift
+     per-carta ne' il MAE. Un segnale puo' ordinare meglio le carte in
+     astratto e scegliere peggio le cinque da schierare.
+ 4b. Riporta comunque il lift per-carta ACCANTO al risultato di formazione:
+     se i due divergono di nuovo, e' l'informazione piu' interessante del
+     giro e va spiegata, non nascosta.
+ 4c. **PLACEBO obbligatorio** per ogni ramo che risulti positivo: permuta il
+     delta_favorito_odds fra le carte dello stesso gruppo, stessa struttura,
+     nessun legame vero. Il delta vero deve battere il 95% delle
+     permutazioni. Sul non-arena il placebo di G sta al 100esimo percentile
+     con mediana placebo NEGATIVA: e' il termine di paragone.
+     Se il costo computazionale obbliga a ridurre le permutazioni, dichiara
+     N e riporta la distanza fra il valore vero e il MASSIMO del placebo.
+ 4d. **Bootstrap sui MANAGER** (cluster), non sulle formazioni.
+ 4e. Stratifica per ruolo e per famiglia di competizione.
+
+
+=====================================================================
+5. CONTROLLI OBBLIGATORI
+=====================================================================
+ 5a. Il ramo G deve riprodurre i numeri noti: All Star+U23 delta +5,98 su
+     n=864, MLS Hot Streak +6,43 su n=310. Se non li ritrovi, la base non e'
+     la stessa: fermati e dillo.
+ 5b. Il ramo A con odds e grade spenti deve essere identico al ramo A di
+     p19. Test A/A.
+ 5c. Con k=0 il ramo O deve coincidere ESATTAMENTE con A: se non coincide,
+     il segnale entra da qualche parte che non hai previsto.
+ 5d. Quante carte hanno un delta_favorito_odds disponibile e quante no. Chi
+     non ce l'ha entra con delta=0 (nessun effetto): contale e dichiarale,
+     come si e' fatto per il grade.
+ 5e. DUMP leggibile di un caso completo (un manager, una giornata): nomi,
+     ruolo, grade, favorito odds, atteso nei quattro rami, realizzato, e chi
+     e' entrato in formazione in ciascun ramo.
+
+
+=====================================================================
+6. COSA NON FARE
+=====================================================================
+- Non toccare le STARTER odds: filtro e tie-break restano come sono.
+- Non modificare nulla in produzione; se serve un flag, spento di default.
+- Non concludere dal solo lift per-carta: e' l'errore che questo filone ha
+  gia' fatto una volta.
+- Non presentare come "positivo" un ramo che non ha passato il placebo.
+- Non nascondere il numero di varianti provate (3c).
+- Niente query a Sorare: tutto quello che serve e' in repo. Se ti sembra di
+  averne bisogno, fermati e segnalalo.
+
+
+=====================================================================
+7. DOVE SCRIVERE L'ESITO
+=====================================================================
+File nuovo: docs/handoff/HANDOFF_ODDS_SEGNALE_DOPO_G_2026-08-08.txt,
+struttura come da CLAUDE.md. Aggiorna in coda anche
+`docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt` con una riga che rimandi
+al nuovo esito, cosi' chi trova il vecchio file sa che e' stato superato.
+Committa solo i tuoi file.
+
+Riporta all'utente in cinque righe: la correlazione grade/odds del Passo 0,
+il delta G+O contro G sulle due basi, quante varianti hai provato, e
+l'esito del placebo.

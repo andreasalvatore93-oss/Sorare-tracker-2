@@ -1,0 +1,226 @@
+BRIEF PER SONNET -- TRE DIFETTI DEL GENERATORE: COPIA HTML, CAP SFORATI, L10 SBAGLIATA
+Scritto dall'orchestratore l'08/08/2026 (ora di Roma).
+Destinatario: Sonnet, chat pulita, che non sa nulla di questa sessione.
+
+===============================================================================
+0. LEGGI PRIMA QUESTI, IN QUEST'ORDINE
+===============================================================================
+1. git pull.
+2. CLAUDE.md in radice, TUTTO. Vincolanti soprattutto:
+   - "REGOLA SUPREMA -- RISPARMIO TOKEN";
+   - "DIVIETO TOTALE DI ALLUCINAZIONI E ASSUNZIONI" + "Checklist prima di
+     affermare un fatto";
+   - "Prima di misurare l'effetto di un componente, dimostro che
+     l'interruttore funziona";
+   - "La catena di produzione -- mai saltare un anello".
+3. docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md, §8quater (infrastruttura grade,
+   429, ESCLUDI_LOCKATE) e §10bis (backlog). Serve per NON riaprire cose gia'
+   chiuse.
+
+I tre problemi sono INDIPENDENTI come sintomo ma i punti 2 e 3 POTREBBERO
+essere lo stesso bug (vedi §3). Trattali in quest'ordine: 3 -> 2 -> 1, perche'
+il 3 e' la causa candidata del 2, e il 1 e' isolato.
+
+FLUSSO: test in locale, veloci. Se un fix funziona in locale, committalo
+(CLAUDE.md lo consente senza chiedere) e segnalalo. NESSUNA run su GitHub
+senza chiedere all'utente. Committa solo i file tuoi: sulla stessa working
+tree lavorano altre sessioni.
+
+===============================================================================
+1. PROBLEMA A -- ANNULLATO: GIA' RISOLTO. NON LAVORARCI.
+===============================================================================
+RETTIFICA dell'orchestratore, 08/08 (colpa mia: ho scritto il brief senza
+guardare il git log, che CLAUDE.md impone a inizio sessione).
+
+IL PROBLEMA A E' GIA' CHIUSO, commit b1cbf53db6 dell'08/08 alle 00:14.
+CAUSA VERA (dal messaggio di commit, verificata nel diff): nel tooltip del
+tasto "fatta" c'era un APOSTROFO NON ESCAPATO dentro una stringa JS a
+singoli apici -- `btn.title = 'Segna questa formazione come gia' schierata
+su Sorare';` -- che chiudeva la stringa a meta' e mandava in SyntaxError
+l'INTERO secondo <script> del report. Quindi nessun handler veniva mai
+registrato: non funzionava il clic sul cerchio, ne' quello sul nome, ne' il
+tasto FATTA, ne' l'avanzamento in localStorage. Fix: apostrofo escapato
+(`gia\\'`), una riga in formazione_mls/build_formazione_finale.py:2302.
+L'HTML run146 e' del 07/08 20:59, cioe' PRODOTTO PRIMA del fix: e' per
+questo che li' non funziona. Rigenerare il report basta.
+
+NON RIAPRIRE questo punto. Se il clic non funziona su un HTML NUOVO
+(generato dopo il commit b1cbf53db6), allora e' un difetto diverso e va
+segnalato come tale. Il testo che segue resta solo come storia.
+
+--- (testo originale, superato) ---
+SINTOMO (riferito dall'utente, 08/08): nell'HTML del generatore formazioni,
+cliccando il CERCHIO con le iniziali del giocatore non si copia piu' il nome.
+Non ho verificato se il clic sul NOME funzioni ancora: chiediglielo o provalo,
+serve a separare "handler morto del tutto" da "solo il cerchio non prende".
+
+DOVE STA IL CODICE (verificato da me, non dedotto):
+ - L'HTML del generatore e' prodotto da formazione_mls/build_formazione_finale.py
+   (NON esiste generatore_formazioni/*.py: la cartella generatore_formazioni/
+   contiene solo output/). Conferma: il markup .pcard/.pcard-avatar e il JS
+   stanno li'.
+ - Handler di copia: build_formazione_finale.py righe ~2214-2257.
+     riga ~2214  function copia(testo, el)      -> navigator.clipboard + fallback
+                                                   execCommand
+     riga ~2240  document.addEventListener('click', ..., true)
+     riga ~2246  var punto = ev.target.closest('.pcard-avatar, .pcard-name');
+     riga ~2249  var card = punto.closest('[data-name]') || ...
+     riga ~2253  var el = (card && card.querySelector('.pcard-name')) || punto;
+     riga ~2255  copia(testo.trim(), el); segnaCopiata(card);
+ - Il selettore '.pcard-avatar' e' stato AGGIUNTO il 07/08 su richiesta
+   dell'utente (commento nel codice alle righe 2241-2244). Quindi e' recente:
+   o non ha mai funzionato davvero, o qualcosa dopo lo ha rotto.
+ - FATTO MISURATO da me sull'output incriminato
+   (generatore_formazioni/output/generatore_formazioni_run146_2026-08-07_205901.html):
+   la classe 'pcard-avatar' compare 38 volte nel file. Quindi il markup C'E'.
+   Il difetto non e' "il cerchio non viene emesso".
+
+IPOTESI DA VERIFICARE (nessuna e' un fatto -- misurale, non sceglierne una):
+ a) il cerchio e' DENTRO data-body (attributo HTML escapato) e anche nel DOM
+    reale: verifica che l'elemento cliccato sia quello nel DOM e non solo nel
+    testo dell'attributo. Nel dump che ho letto compaiono ENTRAMBI.
+ b) qualcosa sopra il cerchio intercetta il clic (drag&drop: le pcard hanno
+    draggable="true"; o .pcard-stripe / pseudo-elementi / z-index / pointer-events).
+    Un handler drag che chiama preventDefault sul mousedown puo' impedire il click.
+ c) navigator.clipboard richiede un contesto sicuro (https o file://localhost).
+    L'utente apre l'HTML da raw.githack.com (https) e anche da file locale: se
+    fallisce solo in uno dei due, e' questo. VERIFICA IN ENTRAMBI I MODI e
+    riporta i due esiti separati.
+ d) un errore JS PRIMA di questo blocco (es. nel blocco AVANZAMENTO/localStorage
+    alle righe ~2258+) uccide l'intero script: in quel caso non funzionerebbe
+    nemmeno il nome. E' il primo controllo da fare: apri la console del browser
+    e riporta gli errori TESTUALI, non "sembra ok".
+
+CONSEGNA ATTESA: quale delle ipotesi e' vera (con l'evidenza: errore di console,
+o screenshot/log del test), il fix, e la prova che dopo il fix funzionano
+ENTRAMBI (cerchio e nome) senza rompere segnaCopiata()/l'avanzamento in
+localStorage, che l'utente usa davvero.
+
+===============================================================================
+2. PROBLEMA B -- ARENE GENERATE CHE SFORANO IL CAP
+===============================================================================
+SINTOMO (utente, 08/08): alcune arene generate sforano il cap L10 (es. cap 260).
+File di riferimento: quello sopra, run146.
+
+FATTO MISURATO DA ME sulle prime 6 arene "All Stars (cap 260)" del run146,
+sommando gli L10 mostrati nelle card (valori interi come stampati nell'HTML):
+    #1: 43+59+45+62+51 = 260
+    #2: 42+50+57+45+66 = 260
+    #3: 41+53+61+57+47 = 259
+    #4: 43+60+51+47+59 = 260
+    #5: 47+54+45+58+56 = 260
+    #6: 44+59+54+54+49 = 260
+Cioe': il generatore riempie il cap AL MILLIMETRO. Nessuna di queste sfora
+secondo i SUOI numeri. Conseguenza logica (questa e' una deduzione mia, da
+verificare, non un fatto): se anche un solo L10 usato e' piu' basso di quello
+vero, la formazione sfora nella realta' pur risultando a 260 nel modello.
+Ed e' esattamente il problema C.
+
+COSA VERIFICARE, in ordine:
+ B1. QUALI arene sforano DAVVERO. Chiedi all'utente quale/i arena del run146
+     Sorare ha rifiutato o mostrato oltre cap, oppure ricostruiscilo:
+     per ogni arena dell'HTML, prendi i 5 slug, chiedi a Sorare l'L10 VERA
+     (lastTenPlayedAvgScore, vedi §3) e risomma. Riporta la tabella:
+     arena | somma L10 modello | somma L10 vera | sfora si/no | di quanto.
+     E' il numero che decide se il problema e' isolato o sistematico.
+ B2. ARROTONDAMENTO. Nell'HTML gli L10 sono stampati INTERI. Verifica se il
+     vincolo interno lavora su float o su interi arrotondati: 5 arrotondamenti
+     per difetto da 0.4 fanno 2 punti di sforamento senza nessun dato sbagliato.
+     E' un candidato indipendente da C, e va escluso o confermato con i numeri.
+     Codice: build_formazione_globale.py L10_CAP_BY_TYPE (~riga 214),
+     build_one_lineup_with_growth (~riga 1123, parametro l10_cap) e
+     formazione_mls/build_formazione_finale.py::build_one_lineup.
+ B3. QUALE VALORE usa il vincolo: card_pool.l10(slug)
+     (formazione_mls/build_formazione_finale.py righe ~1015 e ~1021 set_l10).
+     Verifica che sia LO STESSO valore stampato nella card. Se il vincolo usa
+     un valore e la card ne stampa un altro, il conto sopra e' inutile e va
+     rifatto: dillo prima di proseguire.
+ B4. INTERRUTTORE (CLAUDE.md): prima di concludere qualunque cosa sul cap,
+     dimostra che il vincolo MORDE. Metti l10_cap a un valore assurdo (es. 100)
+     e verifica che le formazioni cambino. Se non cambiano, stai misurando un
+     vincolo inerte e tutto il resto e' aria.
+
+===============================================================================
+3. PROBLEMA C -- L10 SBAGLIATA (il caso Jeppe Erenbjerg)
+===============================================================================
+SEGNALAZIONE DELL'UTENTE: nella prima formazione del run146 l'L10 di Jeppe
+Erenbjerg risulta 61, mentre su Sorare (verificato da lui oggi) e' 66.
+
+PRECISAZIONE, dal dato grezzo che ho letto io nel file (importante, non
+saltarla): in quella card ci sono DUE numeri diversi.
+    data-score="61.03764064237744"  -> e' lo SCORE ATTESO del modello, 61.0
+    <div class="pcard-l10">L10: 62</div>  -> e' l'L10 mostrata, 62
+Quindi il 61 che l'utente ha visto e' probabilmente lo score, non l'L10.
+Ma la discrepanza ESISTE lo stesso: 62 (modello) contro 66 (Sorare oggi),
+4 punti. Non correggere l'utente prima di aver verificato tu stesso il valore
+vero via API: se l'L10 vera e' 66, ha ragione lui sul fatto che il numero e'
+sbagliato, e la confusione fra i due campi e' un problema a parte
+(eventualmente da segnalare, non da sistemare senza chiedere).
+
+C1. DA DOVE VIENE L'L10 (verificato da me):
+    - campo Sorare: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE),
+      alias lastTenPlayedAvgScore;
+    - discovery_fixture.py: la chiede dentro CARDS_QUERY (righe ~688, ~711,
+      ~745) e nella raccolta bulk (~1264-1265); esiste anche
+      l10_da_api(slug) alla riga ~772 per il singolo giocatore;
+    - viene scritta in player_card_counts.json, che e' lo stesso file che porta
+      le copie possedute (build_formazione_globale.py ~riga 703 e ~1633);
+    - TOP-UP L10 in build_formazione_globale.py righe ~1683-1713: per i
+      candidati senza L10 in cache la richiede a l10_da_api. Il commento dice
+      che il fix nacque il 03/08 perche' una L10 mancante veniva trattata come
+      0 e faceva passare formazioni sopra il cap "in silenzio". LEGGI QUEL
+      COMMENTO: dice che questo esatto tipo di bug e' gia' successo una volta.
+
+C2. LE DOMANDE, in ordine (rispondi con numeri, non con giudizi):
+    - Erenbjerg: quale L10 restituisce l'API OGGI per lo slug jeppe-erenbjerg?
+      E quale valore c'e' in player_card_counts.json usato dal run146?
+      Se coincidono col 62, il dato non e' stato corrotto dal nostro codice:
+      e' VECCHIO (il giocatore ha giocato un'altra partita e l'L10 e' salita).
+      Se non coincidono, e' un bug nostro.
+    - E' ISOLATO O SISTEMATICO? Questa e' la domanda dell'utente ed e' la piu'
+      importante. Prendi TUTTI gli slug delle arene del run146 (o almeno le
+      prime 10 formazioni), chiedi le L10 vere in BULK (CLAUDE.md: mai una
+      query a giocatore se esiste la via bulk -- CARDS_QUERY la prende in
+      blocco) e confronta con quelle stampate. Consegna:
+        n confrontati | n identici | n diversi | scarto medio | scarto max |
+        segno (il modello sottostima o sovrastima?).
+      Se il modello sottostima SISTEMATICAMENTE, il legame col problema B e'
+      dimostrato e le arene sforano per questo.
+    - DA COSA DIPENDE: freschezza (cache scritta prima dell'ultima giornata),
+      il top-up che non copre tutti, un 429 che tronca la raccolta (e' gia'
+      successo, §8quater del riassunto: paginazioni troncate indistinguibili
+      da risultati completi), o un join per slug sbagliato. NON sceglierne una
+      per plausibilita': distinguile con una misura.
+
+C3. TRAPPOLA GIA' PAGATA NEL REPO (§8quater): un dato mancante o parziale
+    prodotto da un 429 e' indistinguibile da un dato completo. Se trovi L10
+    mancanti o strane, guarda i log della run per i 429 PRIMA di concludere
+    che il campo non esiste.
+
+===============================================================================
+4. COSA CONSEGNARE
+===============================================================================
+ - Per A: causa con l'evidenza (errore di console / test), fix, prova che
+   cerchio E nome funzionano e che l'avanzamento non si e' rotto.
+ - Per C: la tabella L10 modello vs L10 vera su almeno 50 carte del run146,
+   con n, scarto medio, scarto max e segno. E la risposta secca: isolato o
+   sistematico?
+ - Per B: la tabella arena | somma modello | somma vera | sfora | di quanto,
+   piu' l'esito del test interruttore B4 e della verifica arrotondamento B2.
+ - Un DUMP LEGGIBILE di almeno un caso completo (una arena: 5 nomi, ruolo,
+   L10 modello, L10 vera, somma). CLAUDE.md lo pretende e senza non si consegna.
+ - Se qualcosa non lo sai, scrivi "non lo so, servirebbe X". E' una consegna
+   valida. Un numero plausibile e non verificato no.
+
+ATTENZIONE ALLA CATENA (CLAUDE.md): se il fix cambia l'L10 usata dal modello,
+NON cambia score_atteso ne' le soglie, ma cambia QUALI carte entrano nelle
+arene. Verificalo e dillo; non toccare PAREGGIO_ARENA / GUADAGNO_PER_PUNTO.
+
+===============================================================================
+5. QUANDO HAI FINITO
+===============================================================================
+ - Esito IN CODA A QUESTO FILE, non in un file nuovo.
+ - Aggiorna docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md (unico riassunto di
+   riferimento) con 10 righe secche su cosa era rotto e cosa e' stato corretto.
+ - In chat all'utente: poche righe, il percorso del file, e le domande che ti
+   bloccano. Ha l'ADHD e paga a token.

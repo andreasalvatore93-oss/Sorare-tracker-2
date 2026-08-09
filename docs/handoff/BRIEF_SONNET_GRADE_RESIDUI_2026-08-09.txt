@@ -1,0 +1,261 @@
+BRIEF — IL VALORE DEL GRADE AL NETTO DI QUELLO CHE IL MODELLO SA GIA'
+Opus, 09/08/2026. Seguito di BRIEF_SONNET_TABELLA_GRADE_2026-08-09.txt,
+esito in `docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt`.
+
+DUE PASSI, IN QUEST'ORDINE. Il secondo si fa SOLO se il primo dà un
+risultato non nullo — e lo decide l'utente, non tu.
+SOLO MISURA nel passo 1. Nessuna query: dati già sul disco.
+
+
+PERCHE' LA TABELLA DI IERI NON SI PUO' USARE COSI' COM'E'
+-----------------------------------------------------------
+Hai misurato che una A vale in media 57,4 punti e una D 49,3. Ma **una
+parte di quella differenza il modello la conosce già**: i giocatori forti
+prendono A più spesso, e `score_atteso` li stima già più alti. Applicare
+la differenza piena conterebbe due volte la stessa informazione — è lo
+stesso doppio conteggio che ha affossato il filone odds (§8nonies del
+riassunto unico).
+
+Il numero che serve alla produzione è il **residuo**: quanto una lettera
+fa MEGLIO O PEGGIO di quello che il modello già prevedeva.
+
+
+PASSO 1 — LA TABELLA DEI RESIDUI
+----------------------------------
+Stesso campione e stesse fonti di ieri (26.571 coppie con punteggio in
+cache; grade dall'unione validata; realizzato SEMPRE dalla cache game-log,
+mai il campo `punteggio` dei file manager, D6).
+
+Per ogni coppia (slug, partita) serve, oltre a grade e realizzato, **lo
+score_atteso che il modello avrebbe prodotto per quella carta in quella
+giornata**. Ricostruiscilo con le funzioni di produzione già usate nei
+backtest (`backtest_arene_previsioni.contesto` / la stessa catena di
+`p20_g_odds_arene_backtest.py`), **con il grade SPENTO** — deve essere
+l'atteso *prima* del contributo del grade, altrimenti il residuo è
+circolare. Dichiara quale funzione hai usato e verifica su qualche riga
+che l'atteso ricostruito coincida con quello dei backtest esistenti.
+
+Misura, per ogni lettera A→F:
+ 1a. **residuo medio** (realizzato − atteso), con n, mediana, sd e IC95
+     bootstrap. **Il cluster del bootstrap è il GIOCATORE**, non la riga:
+     lo stesso giocatore compare molte volte e ricampionare le righe
+     gonfia la precisione.
+ 1b. lo stesso **separando chi ha giocato da chi non ha giocato**
+     (realizzato ≤1). Sono due meccanismi diversi e vanno tenuti distinti:
+     il residuo di una F non-giocante è quasi tutto "l'atteso pieno andato
+     perso", quello di una F che gioca è informazione vera sul rendimento.
+ 1c. **stratificato per ruolo**, con la n di ogni cella. Non commentare
+     celle sotto le 30 osservazioni.
+ 1d. **test di monotonia sui residui**: devono crescere da F ad A. Se non
+     lo fanno, FERMATI e riporta: sarebbe più importante di tutto il resto.
+
+**SE I RESIDUI SONO VICINI A ZERO su tutte le lettere, il lavoro finisce
+qui** ed è un ottimo risultato: significa che il modello ha già dentro
+tutto quello che il grade sa, e la produzione non va toccata. Scrivilo per
+primo, non è un fallimento.
+
+
+PASSO 2 — SOLO SE IL PASSO 1 DA' RESIDUI NON NULLI, E SOLO COL VIA
+--------------------------------------------------------------------
+Implementazione dietro flag **spento di default**, sullo stesso schema di
+`GRADE_SCALE`: nuovo valore `GRADE_MODE='residui'` contro il default
+`'gruppo'` (comportamento di sempre). Con il default l'output deve essere
+identico bit per bit — verificalo e dichiaralo.
+
+Il contributo del grade diventa il residuo della sua lettera (dalla
+tabella del passo 1) invece di `sd_attesi_gruppo * z_grade`
+(`build_formazione_globale._apply_grade_group`, righe 505-548). Due cose
+che il meccanismo attuale NON sa fare e che qui vengono gratis:
+  - funziona anche quando nel gruppo (lega, ruolo) c'è **una carta sola**
+    — oggi in quel caso il grade è semplicemente ignorato, sul 23% delle
+    carte;
+  - rispetta la **forma vera** della scala. Lo z-score tratta tutti i
+    gradini come uguali, mentre i dati dicono che F→D vale 33 punti e
+    D→A tutti e tre insieme ne valgono 8.
+
+Misura con il backtest arene già rodato
+(`analisi_manager/p20_g_odds_arene_backtest.py`), stesso perimetro, stessi
+due regimi separati, stessa metrica in essenze nette col jackpot a parte.
+Rami: A (baseline), G (produzione, z-score di gruppo), G-residui (nuovo).
+Il confronto che decide è **G-residui contro G**.
+Controlli soliti: interruttore a flag spento identico bit per bit; pool
+contro slot; bootstrap sui 24 manager; placebo se esce un ramo positivo;
+dump di una formazione dove i due metodi scelgono carte diverse.
+
+
+UNA COSA DA NON CONFONDERE
+----------------------------
+La tabella dei residui e la tabella di ieri rispondono a domande diverse e
+serviranno a cose diverse. Quella di ieri dice **quanto rende una lettera**
+(utile per capire il fenomeno); questa dice **quanto una lettera aggiunge
+a ciò che sappiamo** (l'unica applicabile alla produzione). Non
+sostituirle l'una all'altra nell'handoff: tienile entrambe, con questa
+distinzione scritta.
+
+
+NON FARE
+---------
+- Niente query, niente modifiche di produzione nel passo 1.
+- Non riproporre `GRADE_SCALE='storica'`: misurata e scartata.
+- Non passare al passo 2 senza il via dell'utente.
+- Non stimare celle vuote: si dichiarano vuote.
+
+
+ALL'UTENTE, CINQUE RIGHE
+-------------------------
+La tabella dei residui (sei righe), se la monotonia regge, se i residui
+sono distinguibili da zero, e il percorso del file. Numeri con esempi
+banali, niente termini statistici.
+
+Esito in coda a `docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt` come
+§9, stesso file: è lo stesso filone.
+
+
+=====================================================================
+PASSO 1-bis — PRIMA DI IMPLEMENTARE: PIU' DATI E DUE DOMANDE NUOVE
+(aggiunto da Opus il 09/08 dopo aver letto il tuo §9. Il passo 2
+ resta sospeso: si fa dopo questi tre punti e col via dell'utente.)
+=====================================================================
+
+**0-PRE. DUE FONTI DEL GRADE: DANNO LO STESSO VALORE?** (2 query, e va
+fatto PRIMA del punto 0, perche' se le fonti divergono cambia quale grade
+dobbiamo misurare.)
+
+OSSERVAZIONE DELL'UTENTE, 09/08: per la STESSA partita (Greg Kiltie,
+Kilmarnock-Celtic) la pagina generica del giocatore mostra **C**, mentre la
+schermata di schieramento del pool arena mostra **D**. Due schermate aperte
+nello stesso momento.
+
+PERCHE' CI RIGUARDA: nel repo usiamo DUE fonti diverse, e nessuno ha mai
+verificato che coincidano.
+  - `anyPlayer(slug).playerGameScores.projection.grade` — fonte GENERICA,
+    quella con cui e' stato costruito TUTTO lo storico (la tabella del §2,
+    i residui del §9, il backtest arene del §9 di HANDOFF_G_ODDS_ARENE);
+  - `FootballComposeBenchQuery` (`analisi_manager/grade_snapshot.py`
+    righe 21-46) — contesto di SCHIERAMENTO, usata solo per le fotografie
+    pre-partita.
+
+DUE IPOTESI, nessuna verificata, e l'utente propende per la seconda:
+  (a) il grade dipende dal CONTESTO (competizione/leaderboard in cui stai
+      schierando), quindi le due fonti misurano cose diverse;
+  (b) e' un semplice disallineamento della UI: le due pagine sono state
+      caricate in momenti diversi e il grade si e' mosso nel frattempo
+      (sappiamo che si aggiorna, §16 di HANDOFF_GRADE_ARENE).
+
+IL TEST, secco: interroga **nello stesso istante** le due fonti per la
+STESSA coppia (giocatore, partita futura non ancora giocata), su una
+decina di giocatori. Se i valori coincidono -> ipotesi (b), disallineamento
+di UI, non ci riguarda: annotalo e prosegui. Se divergono in modo
+sistematico -> ipotesi (a): FERMATI e riferisci, perche' allora va deciso
+con l'utente **quale delle due fonti** modellare, e potremmo aver misurato
+finora un grade diverso da quello che lui vede quando schiera.
+Riporta la tabella dei confronti giocatore per giocatore, non un riassunto.
+
+NOTA: se emergesse (a), NON crolla la prova del §16 (grade legato alla
+titolarita' e non al risultato): quei tre casi restano coerenti. Cambia
+solo QUALE grade stiamo modellando.
+
+
+**0. PRIMA DI TUTTO IL RESTO: ESISTE UN VALORE PIU' FINE DELLA LETTERA?**
+(1-2 query, NESSUNA credenziale. Se la risposta e' si', A/B/C qui sotto
+cambiano di senso e meta' del lavoro sulla tabella diventa inutile.)
+
+OSSERVAZIONE DELL'UTENTE, 09/08, sul pool arena della GW in corso: ordinando
+i giocatori per grade decrescente, gli estremi sono blocchi PURI (prima solo
+B, alla fine solo C) ma **al confine le lettere si mescolano** — una C
+compare sopra cinque B, poi per un tratto B e C si alternano, poi riprende
+il blocco puro di C.
+LETTURA: se la lista fosse ordinata esattamente per la lettera non ci
+sarebbe nessun mescolamento; se fosse ordinata per qualcosa di scorrelato
+il mescolamento sarebbe ovunque. Che stia SOLO sul bordo indica due
+quantita' diverse ma molto correlate: la lettera, e cio' per cui la lista
+e' realmente ordinata.
+VERIFICATO GIA' DALL'ORCHESTRATORE, per escludere la spiegazione facile:
+NON e' `reliabilityBasisPoints` — su 10.124 righe vale 10000 per ogni
+lettera (solo qualche F a 7000), quindi non ordina nulla.
+
+COSA FARE: scoprire quali campi esistono dentro `projection`. L'introspezione
+GraphQL su Sorare e' disabilitata, ma **la validazione della query avviene
+PRIMA dell'autenticazione** (verificato piu' volte, e' la tecnica con cui e'
+stato trovato `rewardsConfig`): quindi si prova un campo inventato e si legge
+il messaggio d'errore, che elenca i campi validi. Nessun cookie, nessun
+rischio di rate limit serio.
+  query { anyPlayer(slug:"<uno_qualunque>") {
+            playerGameScores(last:1) { projection { grade xxx } } } }
+Prova poi i nomi plausibili che l'errore suggerisce (score/value/rating/
+projected*/percentile/rank...). Riporta il messaggio d'errore TESTUALE e
+l'elenco completo dei campi validi che restituisce.
+
+SE ESISTE UN VALORE CONTINUO: scaricalo per un campione piccolo (una
+giornata basta), verifica che ordinandolo riproduca l'ordine osservato
+dall'utente (lettere mescolate al confine) e FERMATI: si ridiscute tutto
+con l'utente prima di proseguire, perche' quel numero sostituirebbe la
+lettera e renderebbe inutile la tabella.
+SE NON ESISTE: dillo, e prosegui con A, B, C qui sotto. L'ipotesi di
+riserva — che la lettera sia gia' relativa a un gruppo (ruolo/lega/
+competizione) mentre l'ordinamento e' su un valore assoluto — resta non
+verificata: annotala, non indagarla adesso.
+
+
+**A. ALLARGA IL CAMPIONE — il collo di bottiglia e' il RUOLO, non il grade.**
+La tabella dei residui gira su 9.727 righe, ma il campione grezzo del §2
+ne aveva 26.571: le altre sono cadute solo perche' "il ruolo non e'
+ricostruibile dai file grade". Il ruolo pero' esiste altrove e non costa
+una query:
+  - `dati_globali/manager_*.json`: ogni carta schierata ha il campo
+    `ruolo` (e sono 54 file, 7.699 arene piu' il non-arena);
+  - `analisi_manager/dati/storico_grade_{Defender,Midfielder,Forward,
+    Goalkeeper}_*.json`: il ruolo e' nel nome del file e nel campo
+    `ruolo` delle righe;
+  - la cache game-log e le pipeline `formazione_<lega>/` sanno il ruolo
+    dei giocatori che predicono.
+Costruisci una mappa slug -> ruolo unendo queste fonti (dichiara le
+precedenze e cosa fai se due fonti dissentono: **il ruolo e' della CARTA,
+non del giocatore** — D7 di CLAUDE.md, lo stesso slug puo' avere ruoli
+diversi su carte diverse; se per uno slug trovi ruoli discordanti,
+contali e riportali invece di sceglierne uno a caso).
+Poi **rifai la tabella dei residui sul campione allargato**, con la stessa
+struttura del §9.2 (n, n_slug, media, mediana, sd, IC95 bootstrap sul
+giocatore). Riporta la tabella vecchia e la nuova affiancate.
+DOMANDA A CUI SERVE: l'inversione B/C (0,23 punti, IC sovrapposti) e'
+rumore o no? Con il campione allargato o si conferma o sparisce. **Non
+dichiarare che e' rumore: misuralo.**
+
+**B. QUALE POPOLAZIONE ARRIVA DAVVERO AL GENERATORE.**
+Il residuo di F e' −30,97 sul campione intero, ma dentro si spacca:
+F che NON gioca −48,80, F che gioca **−6,97**. In produzione il bot filtra
+gia' le starting odds a 0,80, quindi al generatore arrivano soprattutto F
+"che giocheranno": applicare −31 punirebbe due volte lo stesso rischio —
+una col filtro, una col grade. E' il doppio conteggio del filone odds,
+girato al contrario.
+Serve quindi sapere **su quale popolazione va calcolato il valore da
+applicare**. Attenzione: NON usare le `starter_odds` in cache per
+ricostruire chi sarebbe stato filtrato — sono contaminate (64,6% di valori
+0/100 esatti, riscritti dopo le formazioni ufficiali, §5.2 del riassunto
+unico). Usa invece il pool REALE dei backtest arene
+(`p20_g_odds_arene_backtest.py`), che e' composto da carte davvero
+schierate dai manager: e' la popolazione piu' vicina a quella che il
+generatore vede. Riporta la tabella dei residui **ristretta a quel pool**,
+con la sua n. Se le F la' dentro sono poche, dillo: e' un'informazione.
+
+**C. LA REGOLA SECCA — nasce da un'osservazione dell'utente.**
+L'utente ha raccontato di aver schierato, senza farci caso, un giocatore
+dato all'80% di starting odds ma con grade F/E. Sapendolo non lo avrebbe
+fatto. Questa e' un'ipotesi diversa da tutte quelle di questo brief, e
+piu' robusta, perche' **non dipende da azzeccare nessun coefficiente**:
+    non schierare MAI carte con grade F o E.
+Misurala come POLICY sul backtest arene gia' rodato, come ramo a se':
+  - ramo `G-noFE`: identico alla produzione di oggi (z-score di gruppo),
+    ma con le carte F ed E **escluse dal pool** prima della costruzione;
+  - confronto che decide: **G-noFE contro G**, due regimi separati,
+    metrica in essenze nette, bootstrap sui 24 manager.
+Riporta anche quante carte vengono escluse e in quante unita' il pool
+scende a pool<=slot (quelle escono dal regime allocazione, come gia'
+fatto al §12 dell'handoff arene).
+Se questa regola cattura gran parte del guadagno, il passo 2 diventa molto
+meno urgente: meglio una regola che non si puo' sbagliare di una tabella
+di coefficienti da mantenere.
+
+ORDINE: A prima (serve a tutto il resto), poi B e C in parallelo se il
+tempo lo consente. Il passo 2 (implementazione dietro flag) NON si tocca
+finche' l'utente non ha visto questi.

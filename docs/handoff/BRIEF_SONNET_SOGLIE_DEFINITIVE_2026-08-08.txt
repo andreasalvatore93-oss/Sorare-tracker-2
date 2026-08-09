@@ -1,0 +1,187 @@
+BRIEF PER SONNET — RITARATURA DEFINITIVA DELLE SOGLIE, TUTTI I TIPI DI ARENA
+Scritto dall'orchestratore (Opus) l'08/08/2026, notte (Roma).
+Destinatario: Sonnet, chat pulita.
+
+OBIETTIVO DELL'UTENTE, testuale: "riverificare in modo definitivo le soglie,
+per tutte le competizioni, incluse le beginner. Cosi' ci togliamo il
+pensiero e basta incertezze."
+
+SI MISURA, NON SI CAMBIA NIENTE. Nessun valore di produzione va toccato in
+questo giro, nemmeno dietro flag. Alla fine si consegnano i numeri nuovi
+accanto a quelli vecchi e decide l'utente. Se i numeri nuovi convincono,
+la catena di CLAUDE.md (valori -> soglie -> scouting) si percorre in un
+giro successivo, non in questo.
+
+
+=====================================================================
+0. LEGGERE PRIMA
+=====================================================================
+1. CLAUDE.md nella radice.
+2. consiglio_arena.py INTERO — e' lo strumento ufficiale. In particolare:
+   ARCHIVIO (riga 33), campo_per_tipo() (85-109), premi_osservati()
+   (112-127), incasso_medio(), pareggio(), SIGMA (riga 76).
+3. generatore_formazioni/build_formazione_globale.py righe 494-529
+   (PAREGGIO_ARENA e da dove viene) e 626-655 (GUADAGNO_PER_PUNTO,
+   COSTO_INGRESSO, QUOTA_MINIMA).
+4. analisi_manager/VALIDAZIONE_SOGLIE.md (la validazione del 05/08, da cui
+   vengono i valori attuali della cap 260).
+5. docs/handoff/HANDOFF_CRITERIO_ARENE_2026-08-08.txt sez.9 (il giro
+   precedente: perche' siamo arrivati qui).
+
+
+=====================================================================
+1. PERCHE' ESISTE QUESTO LAVORO — DUE COLLI DI BOTTIGLIA, NON UNO
+=====================================================================
+Le soglie di produzione non sono oggi riproducibili. Le cause sono due e
+vanno tenute distinte, perche' si riparano in modi diversi.
+
+COLLO 1 — L'ARCHIVIO CHE consiglio_arena.py LEGGE E' DIMAGRITO.
+`ARCHIVIO = dati_globali/arene_storico.json` contiene oggi **160 arene**
+(62 cap260, 16 cap220, 74 Beginner, 8 Uncapped), mentre i valori in
+produzione sono stati misurati su **673** (lo dice il commento a riga 494
+di build_formazione_globale.py). Con 160 arene consiglio_arena.py da'
+267,9 / 6,27 per la cap 260 e 240,9 / 5,89 per la cap 220, invece di
+259,5 / 7,9 e 244,1 / 6,3.
+**I DATI NON SONO PERSI**: `analisi_manager/p11_pool.json` contiene 673
+arene, TUTTE con i punteggi completi dei partecipanti, negli stessi campi
+che consiglio_arena.py si aspetta (`punteggi`, `mio_score`, `mio_rank`,
+`premio_essenze`, `rank_premiato`, `costo`, `tipo`, `slug`):
+    cap 260 194 | Beginner 182 | cap 220 53 | Uncapped 38
+    (+ 191 "arena division" e 15 "arena uncapped": formato VECCHIO, l'utente
+     non le gioca piu' — ESCLUDERLE, vedi §3)
+    di cui con premio osservato (rank_premiato + premio_essenze): 235 in
+    totale, e solo 20 per la cap 220 — limite da dichiarare.
+
+COLLO 2 — LA SIGMA DELLA CAP 220 POGGIA SU 8 OSSERVAZIONI.
+La sigma (errore della previsione) entra dritta nel calcolo del pareggio.
+Ricostruita da `dati_globali/backtest_arene_dettaglio_0805.json`:
+    cap 260 n=113 sigma=50,6 (corretta il 05/08 da 42,70)
+    cap 220 n=  8 sigma=41,9 (mai corretta: con n=8 "nessuna correzione"
+                              era la conclusione onesta, non un errore)
+    Uncapped n=31 sigma=42,9 | Beginner n=73 sigma=46,9
+Riparare solo l'archivio (collo 1) lascerebbe la cap 220 tarata su otto
+casi. **Questo e' il pezzo nuovo e piu' importante di questo brief.**
+
+
+=====================================================================
+2. IL LAVORO, IN ORDINE
+=====================================================================
+
+PASSO 1 — RICOSTRUIRE L'ARCHIVIO COMPLETO.
+ Da `p11_pool.json` produci un archivio nel formato che consiglio_arena.py
+ si aspetta (stesse chiavi di `arene_storico.json`: dict con 'aggiornato' e
+ 'arene'). NON sovrascrivere `arene_storico.json`: scrivi un file NUOVO
+ (es. `dati_globali/arene_storico_full.json`) e fai puntare
+ consiglio_arena.py li' con una variabile d'ambiente, lasciando il default
+ dov'e'.
+ 1a. Verifica di integrita' PRIMA di usarlo: quante arene per tipo, quante
+     con `punteggi` non vuoto, quante con premio osservato, quanti
+     partecipanti per arena (atteso ~10). Confronta col vecchio archivio e
+     dichiara la differenza. Se una qualunque arena ha meno di 5 punteggi,
+     scartala e dillo.
+ 1b. **Controllo obbligatorio**: le arene vanno tenute RAGGRUPPATE per
+     arena, mai mescolate in un calderone di punteggi sciolti. Il docstring
+     di `campo_per_tipo()` dice che col calderone l'errore misurato triplica
+     (+41,9 essenze contro +13,5 reali sul Beginner). Verifica che la tua
+     ricostruzione preservi il raggruppamento e dimostralo con un numero.
+
+PASSO 2 — RIMISURARE LA SIGMA PER TIPO SU UN CAMPIONE VERO.
+ E' il pezzo che sblocca tutto. La sigma e' la deviazione standard dei
+ residui fra punteggio ATTESO della formazione e punteggio REALIZZATO.
+ Oggi e' misurata su 8 arene per la cap 220; si puo' fare su migliaia.
+ Materiale gia' in repo: `dati_globali/manager_*.json` ha 7.699 arene con
+ punteggio ufficiale e tipo; l'atteso si calcola walk-forward con
+ `P.score_atteso(cache, slug, ruolo, fine)` + `bfg.calibra`, esattamente
+ come fanno gia' `p13_backtest_gw_crowss.py` e `p14_fronte2_astensioni_
+ arena.py` (riusa quelle funzioni, non riscriverle).
+ 2a. Per ogni arena ricostruibile: atteso di formazione (somma dei 5 attesi
+     calibrati + 0,20 x atteso del capitano del manager) contro punteggio
+     ufficiale. Residuo = realizzato - atteso.
+ 2b. Sigma per tipo = deviazione standard dei residui, CON LA n. Riporta
+     anche media dei residui (se e' diversa da zero c'e' un bias
+     sistematico di calibrazione, ed e' un'informazione a se').
+ 2c. Riproduci col tuo metodo la sigma nota della cap 260 (50,6 su n=113)
+     limitandoti allo stesso sottoinsieme: se non la ritrovi, il tuo metodo
+     differisce da quello del 05/08 e va capito PRIMA di fidarsi dei valori
+     nuovi. Questo e' il controllo che rende credibile tutto il resto.
+ 2d. Dichiara quante arene sono state scartate e perche' (carta senza
+     atteso, senza grezzo, formazione incompleta).
+
+PASSO 3 — RICALCOLARE SOGLIE E GUADAGNO/PUNTO PER TUTTI I TIPI.
+ Con consiglio_arena.py, archivio del Passo 1 e sigma del Passo 2, calcola
+ pareggio e guadagno-per-punto per: **cap 260, cap 220, Uncapped,
+ Beginner** (l'utente li vuole tutti, beginner compresa).
+ ESCLUDI dal calcolo "arena division" e "arena uncapped" (formato vecchio,
+ non piu' giocate) ma DICHIARA quante ne hai escluse.
+ Consegna una tabella sola, che e' il prodotto di questo brief:
+     tipo | n arene | n premi oss. | sigma (n) | pareggio VECCHIO -> NUOVO |
+     guadagno/pt VECCHIO -> NUOVO | costo ingresso
+ Valori vecchi di riferimento: cap260 259,5/7,9 | cap220 244,1/6,3 |
+ Uncapped 288,3/8,0 | Elite 342,7/9,1 | Beginner: NON ESISTE (e' il motivo
+ per cui il bot non puo' consigliarle, vedi backlog).
+ 3a. SENSIBILITA' (serve per sapere quanto fidarsi): rifai il calcolo con
+     sigma +-10% e riporta di quanto si muovono pareggio e guadagno/pt. Se
+     una soglia balla di piu' di 5 punti per un 10% di sigma, va detto che
+     e' fragile.
+
+PASSO 4 — EFFETTO A VALLE (misurare, non applicare).
+ 4a. Con le soglie nuove, rigioca IN LOCALE il generatore sui dati gia'
+     scaricati del run GitHub 31253830349 (GW3, stessi
+     player_card_counts.json, nessuna nuova query, override in memoria dei
+     valori dopo l'import — MAI scrivendo nel file, stesso pattern di p23).
+     Quante arene propone, con che mix, quante essenze impegna, rispetto
+     alle 23 attuali (22x cap260 + 1x cap220).
+ 4b. Le beginner entrerebbero nel mix, ora che hanno una soglia? E con che
+     margine? (Nota per contesto: dai dati reali le beginner sono il tipo
+     PEGGIORE per ROI, -20,9% sulla fonte esterna dell'utente e -3,7%/-17,4%
+     sui file del repo. Se il calcolo le rendesse attraenti, e' un campanello
+     d'allarme sul calcolo, non una buona notizia: verificalo due volte.)
+ 4c. SCOUTING: `scouting_gw.py` legge le soglie dal generatore via getattr.
+     Con i valori nuovi, quali candidati cambierebbero raccomandazione?
+     Basta l'ordine di grandezza, ma va dichiarato: e' l'ultimo anello
+     della catena di CLAUDE.md e nessuno lo puo' saltare.
+
+
+=====================================================================
+3. TRAPPOLE NOTE — non ricascarci
+=====================================================================
+- Non mescolare i punteggi degli avversari in un calderone (§2, Passo 1b).
+- "arena division" e "arena uncapped" sono il formato PRE-riforma: non
+  sono cap 260 ne' Uncapped di oggi. Escluderle, non riclassificarle.
+- Le GOLDEN non sono un tipo a parte: stesse regole, stesso ingresso,
+  premio moltiplicato. `premi_osservati()` le cattura gia' da sole alla
+  loro frequenza vera perche' legge i premi INCASSATI: non modellarle a
+  parte e non filtrarle via.
+- I punteggi nei file manager sono col bonus dentro: in arena il capitano
+  vale +20% e l'xp NON conta (verificato l'08/08 su 34 e 4.078 casi). Il
+  grezzo si LEGGE dalla cache game-log, non si ricostruisce dividendo (D4).
+- Ogni numero va con la sua n. Una sigma senza n non e' un dato.
+
+
+=====================================================================
+4. COSA NON FARE
+=====================================================================
+- Non modificare PAREGGIO_ARENA, GUADAGNO_PER_PUNTO, COSTO_INGRESSO,
+  QUOTA_MINIMA, ne' il default di ARCHIVIO in consiglio_arena.py.
+- Non sovrascrivere `dati_globali/arene_storico.json`.
+- Non lanciare run GitHub ne' query Sorare senza il via dell'utente: tutto
+  quello che serve e' gia' in repo.
+- Non consegnare una soglia nuova senza il suo controllo di riproducibilita'
+  (Passo 2c) e senza la sensibilita' alla sigma (Passo 3a).
+- Se un tipo non ha abbastanza dati per una stima seria, scrivilo invece di
+  produrre un numero fragile. "Per la cap 220 servono piu' arene" e' una
+  risposta accettabile e utile.
+
+
+=====================================================================
+5. DOVE SCRIVERE L'ESITO
+=====================================================================
+File nuovo: docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt,
+struttura come da CLAUDE.md. Aggiorna anche
+`analisi_manager/VALIDAZIONE_SOGLIE.md`, che e' il documento storico di
+questo tema e oggi contiene numeri superati.
+Committa solo i tuoi file.
+
+Riporta all'utente in cinque righe: la tabella del Passo 3 (vecchio ->
+nuovo per i quattro tipi), se hai riprodotto la sigma 50,6 della cap 260
+(Passo 2c) e quante arene cambierebbero sul mazzo di GW3 (Passo 4a).

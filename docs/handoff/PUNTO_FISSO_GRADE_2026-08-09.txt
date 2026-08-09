@@ -1,0 +1,178 @@
+PUNTO FISSO — FILONE GRADE. DOVE SIAMO, DOVE ANDIAMO, COSA E' APERTO
+Scritto dall'orchestratore (Opus) il 09/08/2026, ~12:00 Roma.
+Nasce da una domanda diretta dell'utente: "mi sto perdendo, qual e' lo scope".
+Tutto quello che segue e' VERIFICATO NEL CODICE o nei grezzi, con il
+riferimento accanto. Dove non l'ho verificato, lo dico.
+
+
+=====================================================================
+1. LO SCOPO, IN UNA FRASE
+=====================================================================
+Sorare pubblica una sua previsione su ogni giocatore (una lettera da A a F).
+Noi abbiamo la nostra (`score_atteso`). Lo scopo del filone e' usare la loro
+per migliorare la nostra, nel modo giusto e per quanto vale davvero.
+
+
+=====================================================================
+2. COSA FA OGGI LA PRODUZIONE (letto nel codice, non negli handoff)
+=====================================================================
+IL GRADE E' GIA' ACCESO IN PRODUZIONE. Non stiamo decidendo SE usarlo:
+stiamo decidendo COME.
+
+Catena reale:
+ a) `discovery_fixture.py` righe 1609-1628: durante la run, DOPO il filtro
+    starter-odds, chiama `fetch_grade_live(fixture_slug)` e scrive la lettera
+    dentro `player_card_counts.json` accanto alle starter odds.
+    NOTA IMPORTANTE (righe 63-70): e' la lettera della GW **CORRENTE APERTA**,
+    presa live. Quindi in produzione stiamo gia' leggendo il grade
+    PRE-LOCK, che e' la cosa giusta. Non e' recuperabile a ritroso: a
+    leaderboard chiusa la query torna 0 nodi.
+ b) `generatore_formazioni/build_formazione_globale.py`:
+    - riga 440: `GRADE_ENABLED` default **'1'** -> acceso.
+    - riga 442: `GRADE_NUM = {A:6, B:5, C:4, D:3, E:2, F:1}`.
+    - riga 460: `GRADE_SCALE` default **'gruppo'**.
+    - `_apply_grade_group` (505-549): prende le righe di un gruppo
+      (lega, ruolo), calcola media e deviazione degli ATTESI (`sd`), calcola
+      media e deviazione dei NUMERI DI GRADE dello stesso gruppetto
+      (`gm`, `gsd`), e fa:
+          atteso_combinato = atteso + sd * (grade_num - gm) / gsd
+      Poi, con GRADE_ENABLED, SOVRASCRIVE `atteso` e `sort_score`: e' questo
+      che il knapsack legge per scegliere.
+
+IL DIFETTO DI QUESTO MECCANISMO (gia' noto, e' il motivo per cui il filone
+esiste): il "cambio" fra lettera e punti viene reinventato ogni giornata sul
+gruppetto del giorno.
+  - se il gruppo ha meno di 2 righe con atteso -> nessun effetto (515-520);
+  - se `gsd` e' 0 (tutti la stessa lettera) -> z = 0, nessun effetto;
+  - su 57 gruppi reali, 19 hanno UN SOLO membro -> il grade e' ignorato sul
+    23% delle carte;
+  - con due membri lo spostamento e' meccanico e identico che le lettere
+    siano A e F oppure C e D.
+Esempio banale: e' come dare un voto "sopra o sotto la media della classe"
+invece che in trentesimi. In una classe di due persone, uno e' sempre il
+primo e uno sempre l'ultimo, anche se hanno preso 29 e 30.
+
+
+=====================================================================
+3. LA MODIFICA CHE STIAMO VALUTANDO
+=====================================================================
+Sostituire lo z-score di gruppo con una TABELLA FISSA lettera -> punti,
+dietro un flag `GRADE_MODE` (cosi' si puo' confrontare A/B col vecchio).
+Effetto: la lettera conterebbe SEMPRE (anche nei gruppi da uno) e conterebbe
+in proporzione a quanto vale davvero, non "±1 rispetto al vicino".
+
+
+=====================================================================
+4. LA MONOTONIA: A COSA SERVE DAVVERO (domanda dell'utente)
+=====================================================================
+Il test di monotonia (§12) ha dato: F -33,15 -> E -12,46 -> D +1,26 ->
+C +1,70 -> B +2,66 -> A +3,87, nessuna inversione, su 25.326 righe.
+
+A COSA SERVE: e' il PREREQUISITO della tabella fissa, non un risultato in
+se'. Se l'ordine delle lettere si ribaltasse da un campione all'altro, una
+tabella fissa sarebbe insensata per costruzione: staremmo incollando numeri
+a un'etichetta che non significa niente di stabile. Il test dice che
+l'etichetta e' stabile, quindi la tabella si puo' fare.
+Esempio banale: prima di stampare un listino prezzi devi sapere che il
+"grande" costa sempre piu' del "piccolo". La monotonia e' quello. Non ti
+dice ancora quanto costano.
+
+A COSA NON SERVE: non conferma i VALORI. E i valori sono il problema (§5).
+
+Aggiunta: ha anche chiuso una domanda tua ("l'inversione B/C e' un caso?").
+Risposta: era rumore. Su campione triplo B (+2,66) sta sopra C (+1,70).
+
+
+=====================================================================
+5. IL PROBLEMA SCOPERTO OGGI, CHE CAMBIA LE PRIORITA'
+=====================================================================
+(dettaglio e numeri in §18 di HANDOFF_TABELLA_GRADE_2026-08-09.txt)
+
+Verificato sui grezzi degli snapshot di Sonnet, 214 righe, zero eccezioni:
+DOPO l'uscita delle formazioni ufficiali il grade non e' piu' una
+previsione. `ON_FIELD` -> sempre B/C/D/E; panchina o fuori lista -> sempre F.
+Anche le starter odds diventano solo 0 o 100%.
+
+E i nostri `storico_grade_*.json` — la fonte su cui e' costruita TUTTA la
+tabella (§9, §12) — sono scaricati a partita conclusa (ogni nodo ha
+scoreStatus FINAL o DID_NOT_PLAY, ispezionato).
+
+CONSEGUENZA SECCA: i valori della tabella (soprattutto il -31/-33 delle F)
+misurano il valore di un'informazione che al momento del lock il bot NON
+HA. Caso reale di oggi: Suzuki era C con 90% di titolarita' e' diventato F
+solo con le ufficiali.
+
+ATTENZIONE A NON ESAGERARE NELLA CONCLUSIONE — la produzione fa gia' la cosa
+giusta (§2.a: legge il grade live, pre-lock). Il difetto NON e' nel bot:
+e' nella MISURA. Abbiamo un meccanismo corretto di cui non conosciamo il
+valore, perche' l'abbiamo pesato con dati presi dal futuro.
+
+
+=====================================================================
+6. LE QUESTIONI APERTE, TUTTE, IN UN ELENCO SOLO
+=====================================================================
+Q1 (NUOVA, ora la piu' importante) — quanto vale il grade LETTO AL LOCK,
+   sopra le starter odds che gia' usiamo? Nessuna misura esistente risponde.
+   Bloccata da: non esiste in repo uno storico di grade pre-ufficiali.
+   Sbloccabile: `analisi_manager/grade_snapshot_pubblico.py` (creato oggi da
+   Sonnet, query pubblica senza cookie) permette di iniziare ad accumularlo,
+   una cattura per giornata. E' l'unico punto in cui il tempo lavora contro
+   di noi: ogni giornata che passa senza cattura e' un dato perso per sempre
+   (la leaderboard chiusa non si interroga a ritroso).
+
+Q2 (era "traccia 2B") — su quale popolazione si applica la penalita' delle F:
+   -31 sul campione intero, -6,97 sui soli giocanti. In produzione il filtro
+   starter odds >= 0,80 ha gia' tolto parte dei non-giocanti, quindi
+   applicare -31 punirebbe due volte lo stesso rischio.
+   STATO: alla luce di §5 questa domanda e' in parte assorbita da Q1 — se
+   rimisuriamo sul grade pre-lock, la popolazione giusta viene da se'.
+
+Q3 (era "traccia 2C") — la tua regola secca: MAI schierare F o E, misurata
+   come policy (`G-noFE` contro `G`) sul backtest arene. Non richiede la
+   tabella e non richiede Q1: si puo' fare subito sui dati gia' in repo.
+   Se cattura gran parte del guadagno, la tabella diventa meno urgente.
+
+Q4 (era "traccia 3") — `projection.score` come giudizio esterno sul nostro
+   `score_atteso`. STATO CAMBIATO: nel dump reale della UI che mi hai
+   passato, `projection` contiene SOLO `grade` e `reliabilityBasisPoints`
+   (valore 10000 in tutti i casi visti). Nessun `score` continuo. Il numero
+   viola che vedi sulle carte e' `lastTenPlayedSo5AverageScore` (l'L10), non
+   una proiezione: me l'hai confermato tu e il dump lo conferma (filtro
+   `averageLimit: "LAST_10"`). NON posso dire che `projection.score` non
+   esista — posso dire che la UI non lo chiede. Priorita' scesa a bassa.
+
+Q5 — CAPITANO SCELTO COL GRADE. Fuori da questo filone ma in cima al backlog
+   per tua richiesta esplicita: il capitano moltiplica (+20% arena, +50%
+   fuori) e oggi `pick_captain()` ignora il grade. Non e' toccato da §5.
+
+Q6 — implementare la tabella dietro flag `GRADE_MODE`. NON si tocca finche'
+   Q1 o Q3 non danno un numero: implementeremmo coefficienti sbagliati.
+
+
+=====================================================================
+7. DOVE ANDIAMO ORA — LA PROPOSTA
+=====================================================================
+Due cose in parallelo, perche' una e' urgente per il tempo e l'altra no:
+
+ (1) SUBITO, PERCHE' IL DATO SCADE: far partire l'accumulo degli snapshot
+     pre-lock (Q1). E' poco lavoro e non decide niente oggi, ma senza
+     iniziare adesso fra due settimane saremo allo stesso punto.
+     -> brief: BRIEF_SONNET_SNAPSHOT_ACCUMULO_2026-08-09.txt
+
+ (2) POI, PER AVERE UN NUMERO SU CUI DECIDERE: Q3, la regola secca F/E.
+     E' l'unica domanda del filone a cui si puo' rispondere con i dati che
+     abbiamo gia', ed e' anche la piu' robusta: una regola binaria non si
+     puo' sbagliare a calibrare, una tabella di sei coefficienti si'.
+
+Q5 (capitano) resta il pezzo grosso successivo, ed e' indipendente: si puo'
+aprire quando vuoi senza aspettare nulla di quanto sopra.
+
+
+=====================================================================
+8. COSA NON E' COMMITTATO
+=====================================================================
+ docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt  (§18 aggiunta oggi)
+ docs/handoff/BRIEF_SONNET_SNAPSHOT_KICKOFF_2026-08-09.txt
+ docs/handoff/PUNTO_FISSO_GRADE_2026-08-09.txt  (questo)
+ docs/handoff/BRIEF_SONNET_SNAPSHOT_ACCUMULO_2026-08-09.txt
+L'orchestratore in Cowork non ha i permessi git: committa un esecutore o tu.

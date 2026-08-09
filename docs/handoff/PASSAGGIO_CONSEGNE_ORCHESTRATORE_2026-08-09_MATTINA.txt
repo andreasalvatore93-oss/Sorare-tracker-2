@@ -1,0 +1,198 @@
+PASSAGGIO DI CONSEGNE — PER IL PROSSIMO ORCHESTRATORE
+Scritto da Opus il 09/08/2026, mattina (Roma), a fine sessione.
+Sostituisce PASSAGGIO_CONSEGNE_ORCHESTRATORE_2026-08-09.txt (notte).
+
+Leggi QUESTO per primo, poi §4.0 e §10bis del riassunto unico. Non aprire
+gli altri file di docs/handoff/ se non quelli citati qui: sono archivio.
+
+
+=====================================================================
+0. COME SI APRE LA SESSIONE
+=====================================================================
+`git pull` -> `git log` -> il CODICE in produzione sul tema. Non gli
+handoff: un numero letto in un documento e' un'IPOTESI DA VERIFICARE.
+**In Cowork non hai i permessi git**: scrivi i file, il commit lo fa un
+esecutore o l'utente. L'utente fa da navetta fra te e Sonnet: gli agenti
+non si parlano.
+
+
+=====================================================================
+1. LO STATO IN DIECI RIGHE
+=====================================================================
+Sessione lunghissima (08-09/08), quattro filoni chiusi e uno aperto.
+
+CHIUSI E NON DA RIAPRIRE:
+- **G e' VALIDATO anche sulle arene**: batte il modello senza grade di
+  +29.050 / +24.150 essenze in allocazione, placebo al percentile 100 su
+  entrambi i set di soglie. Circa META' del vantaggio e' "evitare chi non
+  gioca", l'altra meta' resta anche con un filtro di titolarita' perfetto.
+- **Il grade NON e' riscritto in base al risultato**: dimostrato per
+  controesempio (Godts titolare 89pt sale, Dreyer titolare 45pt sale,
+  Schjelderup subentrato 85pt CROLLA). Segue la titolarita', mai il punteggio.
+- **Filone favorito-odds CHIUSO ovunque**: delta e livello assoluto,
+  non-arena e arena, due scale, due regimi. Non riaprire.
+- **Soglie arena APPLICATE in produzione** (commit `f9902af972`, gia'
+  pushato dall'utente) con il nuovo tipo Beginner.
+
+APERTO, ed e' dove sei tu: **normalizzare il grade**.
+
+
+=====================================================================
+2. IL PUNTO ESATTO IN CUI SIAMO
+=====================================================================
+PROBLEMA: il bot traduce la lettera del grade in punti reinventando il
+cambio ogni giornata sul gruppetto (lega, ruolo) del giorno. Su 57 gruppi
+reali, 19 hanno UN SOLO membro -> il grade viene ignorato sul 23% delle
+carte; con due membri lo spostamento e' ±1 meccanico, uguale che i voti
+siano A/F o C/D. (`build_formazione_globale._apply_grade_group`, righe
+505-548.)
+
+GIA' MISURATO (in `docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt`):
+- §2 quanto rende ogni lettera: F 15,9 / E 38,3 / D 49,3 / C 52,3 /
+  B 54,6 / A 57,4. Il salto vero e' F->D (33 punti); da D ad A tutti e tre
+  i gradini insieme fanno 8. Quota di non-giocanti: F 61,5%, D-A sotto lo 0,5%.
+- §9 il RESIDUO (quanto ogni lettera fa meglio/peggio di quanto il modello
+  gia' prevedeva — e' il numero applicabile alla produzione):
+  F −31,0 / E −15,9 / D +1,4 / C +2,4 / B +2,2 / A +3,9.
+  Il valore del grade sta nell'EVITARE, non nel premiare.
+- §10 **scoperto `projection.score`**: un valore CONTINUO dentro
+  `projection`, query pubblica senza cookie. Lettura (da confermare):
+  score = quanto e' forte il giocatore se gioca; grade = score + quanto e'
+  probabile che giochi. Sono due informazioni diverse, servono entrambe.
+
+DUE OSSERVAZIONI DELL'UTENTE ancora senza spiegazione (sue, da schermate
+reali, non dedotte):
+ (i) ordinando il pool per grade, al confine fra lettere adiacenti le
+     lettere si MESCOLANO (parecchio fra B e C, un caso solo fra C e D),
+     mentre agli estremi i blocchi sono puri;
+ (ii) la STESSA partita mostra grade diverso in due schermate (C sulla
+     pagina del giocatore, D nella schermata di schieramento). Puo' essere
+     contesto diverso o semplice disallineamento della UI.
+
+
+=====================================================================
+3. COSA STO ASPETTANDO DA SONNET (e cosa fare quando torna)
+=====================================================================
+Brief mandato: `docs/handoff/BRIEF_SONNET_SCORE_E_GRADE_2026-08-09.txt`.
+Tre tracce. L'esito andra' in coda a `HANDOFF_TABELLA_GRADE_2026-08-09.txt`
+(§11 traccia 1, §12 le A/B/C, §13 traccia 3).
+
+**TRACCIA 1 — rifare il test di `projection.score` sulle partite FUTURE.**
+Il primo tentativo aveva letto `playerGameScores(last:1)`, cioe' l'ultima
+partita nota (spesso gia' giocata): non era probante, e Sonnet lo ha
+dichiarato lui stesso. Aspetto: se ordinando per `score` le lettere
+formano blocchi con mescolamento solo al confine (come vede l'utente)
+oppure sono sparse. Piu' il confronto fra le due fonti nello stesso
+istante (punto ii sopra).
+ -> QUANDO TORNA: se l'ordine si riproduce, `score` e' cio' che ordina la
+    UI e va deciso con l'utente se usarlo AL POSTO della lettera. Se non si
+    riproduce, la lettura "score e grade sono due cose diverse" si rafforza
+    e si va avanti con la tabella. In entrambi i casi: **verifica i grezzi,
+    non il riassunto** — su cinque report di questa sessione, tre avevano
+    qualcosa da correggere.
+
+**TRACCIA 2 — A/B/C** (da `BRIEF_SONNET_GRADE_RESIDUI_2026-08-09.txt`):
+ A. allargare il campione recuperando il RUOLO dai file manager (da 9.727
+    righe verso ~26.000). Serve a stabilire se l'inversione B/C nei residui
+    (B +2,22 sotto C +2,45, IC sovrapposti) e' rumore. L'utente ci tiene:
+    "se si ripete non e' un caso".
+ B. su quale popolazione calcolare la penalita' delle F: −31 sul campione
+    intero, ma −6,97 sui soli giocanti. In produzione il filtro starting
+    odds a 0,80 ha gia' tolto parte dei non-giocanti, quindi applicare −31
+    punirebbe due volte lo stesso rischio.
+ C. la regola secca dell'utente: **mai schierare F o E**, misurata come
+    policy a se' (ramo `G-noFE` contro `G`) sul backtest arene.
+ -> QUANDO TORNA: se C cattura gran parte del guadagno, il passo 2
+    (sostituire lo z-score con la tabella, dietro flag `GRADE_MODE`)
+    diventa meno urgente. Una regola che non si puo' sbagliare vale piu' di
+    una tabella di coefficienti da mantenere.
+
+**TRACCIA 3 — `projection.score` come metro esterno.** Non urgente. E' il
+primo giudizio indipendente sullo stesso oggetto che stima il nostro
+`score_atteso`: correlazione fra i due, quale predice meglio il realizzato,
+dove divergono. Fino a ieri ci siamo sempre misurati solo con noi stessi.
+
+IL PASSO 2 (implementazione dietro flag) NON si tocca finche' l'utente non
+ha visto A/B/C. E' scritto anche nel brief.
+
+
+=====================================================================
+4. IL BACKLOG, IN ORDINE (dettaglio in §10bis del riassunto unico)
+=====================================================================
+1. **CAPITANO SCELTO COL GRADE** — messo in cima su richiesta esplicita
+   dell'utente. Il capitano MOLTIPLICA (+20% arena, +50% fuori): nessuna
+   altra decisione singola sposta tanto. Oggi `pick_captain()` ignora il
+   grade, e nel backtest la fascia era assegnata col criterio del baseline
+   in tutti i rami. Gerarchia voluta dall'utente: grade piu' alto ->
+   a parita', atteso piu' alto -> se anche gli attesi sono vicini, il ruolo.
+   Misurare separatamente PROTEZIONE (un capitano che non gioca azzera il
+   bonus) e SPINTA.
+2. Quanto vale G sopra il filtro starting odds (parzialmente risposto:
+   l'intervallo e' +25.750/+29.050 e +18.700/+24.150).
+3. Segregare il rischio DNP (idea dell'utente): le carte 70-80% tutte
+   insieme in una Beginner da 100 essenze invece che sparse. **L'utente
+   l'ha accantonata finche' non ha dati**: non riproporla, aspetta lui.
+4. Perche' il generatore non ha un criterio nella fase opzionale
+   (emerso dal non-determinismo `PYTHONHASHSEED`).
+5. Bonus 4% e 2% fuori dall'arena, rifatti CON G.
+
+
+=====================================================================
+5. COSA NON E' COMMITTATO (chiedilo all'utente subito)
+=====================================================================
+Scritti in questa sessione e MAI committati (l'orchestratore in Cowork non
+ha i permessi git):
+  docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md   (ripulito: 1.539 -> ~1.300
+    righe, §4.0 riscritta, §5 compressa, §8bis/§8nonies/§9/§10bis rifatte)
+  docs/handoff/BRIEF_SONNET_GRADE_ARENE_2026-08-08.txt
+  docs/handoff/BRIEF_SONNET_G_ODDS_ARENE_2026-08-09.txt
+  docs/handoff/BRIEF_SONNET_APPLICA_SOGLIE_2026-08-09.txt
+  docs/handoff/BRIEF_SONNET_G_SOPRA_ODDS_2026-08-09.txt
+  docs/handoff/BRIEF_SONNET_TABELLA_GRADE_2026-08-09.txt
+  docs/handoff/BRIEF_SONNET_GRADE_RESIDUI_2026-08-09.txt
+  docs/handoff/BRIEF_SONNET_SCORE_E_GRADE_2026-08-09.txt
+  docs/handoff/PASSAGGIO_CONSEGNE_ORCHESTRATORE_2026-08-09_MATTINA.txt (questo)
+Piu' le sezioni aggiunte agli handoff di filone (§12 e §16 di
+HANDOFF_GRADE_ARENE, §11 di HANDOFF_G_ODDS_ARENE).
+
+
+=====================================================================
+6. DOVE PUNTARE, IN UNA RIGA
+=====================================================================
+Aspetta i tre esiti di Sonnet, verifica i GREZZI e non i riassunti, e poi
+decidi con l'utente se il grade si usa come lettera (tabella dei residui)
+o come numero (`projection.score`). Subito dopo, il CAPITANO: e' la leva
+piu' grande rimasta e non e' mai stata provata col grade.
+
+
+=====================================================================
+7. COME LAVORARE CON QUESTO UTENTE
+=====================================================================
+- **Cinque righe in chat, il resto nei file.** Paga a token e ha una forma
+  grave di ADHD. Analisi, tabelle e ragionamenti non vanno in chat.
+- **Spiega i numeri con esempi banali**, mai con termini statistici. Ha una
+  laurea in legge. Se dice "non ho capito", riformula piu' STUPIDO.
+- **Il suo istinto e' ottimo e va assecondato muovendosi**, non frenando.
+  In questa sessione ha trovato lui: che il grade e' titolarita' (dal caso
+  Messi), il mescolamento delle lettere, `projection.score` (indirettamente),
+  la regola secca F/E, e ha corretto due miei errori di metodo.
+- **Ma verifica sempre l'argomento, anche quando la conclusione e' giusta.**
+- **Verifica i grezzi degli esecutori prima di riferire.** Su cinque report
+  di questa sessione, tre avevano qualcosa da correggere — e due volte e'
+  stato l'esecutore a correggere me.
+- Non dargli numeri che non hai misurato. "Non lo so, mi servirebbe X" e'
+  sempre preferibile a una stima travestita da misura.
+
+
+=====================================================================
+8. TRE ERRORI CHE HO FATTO IO
+=====================================================================
+- **Ho ricostruito le fonti del grade con una ricerca testuale** invece di
+  leggere la funzione che le usa: ne ho contate 4 su 6. Sonnet mi ha
+  corretto. Il codice si legge, non si deduce.
+- **Ho scritto nel brief una mediana calcolata su un insieme diverso** da
+  quello a cui la attribuivo (1,58 invece di 2,96). Anche qui mi ha
+  corretto l'esecutore.
+- **Ho dichiarato "il filone si chiude" ripetendo il verdetto di un
+  handoff**, senza avere il dato che ne era il presupposto. L'utente mi ha
+  fermato, giustamente.

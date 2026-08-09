@@ -1,0 +1,106 @@
+BRIEF SONNET — Q3: LA REGOLA SECCA "MAI SCHIERARE F O E" (ramo G-noFE)
+Orchestratore Opus, 09/08/2026 ~12:30 Roma. SOLO MISURA.
+NESSUNA MODIFICA ALLA PRODUZIONE, NESSUN COMMIT SUL GENERATORE.
+
+LEGGI PRIMA: CLAUDE.md; docs/handoff/PUNTO_FISSO_GRADE_2026-08-09.txt (Q3);
+§18 di docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt, in particolare
+18.2 e 18.7 — spiegano perche' questo test misura una cosa precisa e non
+un'altra. Se salti 18.7 rischi di riportare il numero sbagliato.
+
+
+LA DOMANDA, DETTA BENE
+----------------------
+L'utente ha una regola d'istinto: non schierare mai carte con grade F o E.
+Oggi il bot NON fa cosi': tratta la lettera come un gradiente continuo
+(z-score di gruppo, _apply_grade_group righe 505-549 di
+generatore_formazioni/build_formazione_globale.py), quindi una F non e'
+esclusa, e' solo spostata in basso — e nei gruppi da un membro non e'
+spostata affatto.
+
+DOMANDA: una SOGLIA secca cattura quanto cattura il GRADIENTE?
+Non "quanto vale il grade" (a quella risponde Q1, ed e' bloccata).
+
+PERCHE' QUESTA DOMANDA E' LEGITTIMA ANCHE CON I DATI CONTAMINATI — leggi
+con attenzione, e' il punto metodologico del brief.
+I grade del backtest vengono dagli storici post-partita (18.7): il ramo G
+misurato li' e' gonfiato, perche' una parte della sua F significa "sappiamo
+gia' che non ha giocato". MA il ramo G-noFE eredita ESATTAMENTE lo stesso
+handicap, dalla stessa fonte, sulle stesse righe. Quindi:
+  - il DELTA G-noFE contro G e' interpretabile: e' una domanda sulla FORMA
+    d'uso dell'informazione (soglia contro gradiente), non sul suo valore;
+  - il LIVELLO ASSOLUTO in essenze di entrambi NON e' interpretabile come
+    guadagno realizzabile, e va riportato con questa avvertenza scritta
+    accanto al numero, ogni volta.
+Vale la regola di CLAUDE.md "cosa deve riprodursi: il delta, non il valore
+assoluto".
+
+
+COSA FARE
+---------
+Base: analisi_manager/p20_g_odds_arene_backtest.py, gia' rodato (rami 'A',
+'G', 'GO', 825 formazioni, 90 unita' manager/gw, due regimi, due set di
+soglie, bootstrap per manager, placebo). NON riscriverlo: aggiungi un ramo.
+
+1. RAMO NUOVO 'G-noFE': identico a 'G' (stesso pool, stessa calibrazione,
+   stesso _zgrade, stesso build_one_lineup_with_growth) tranne che le carte
+   con grade F o E sono ESCLUSE DAL POOL prima della selezione.
+   Attenzione: escluse dal pool, non penalizzate. E' una regola, non un
+   coefficiente.
+
+2. RAMO DI CONTROLLO 'G-noF' (solo F escluse, E ammesse). Serve a sapere se
+   il valore sta tutto nelle F o anche nelle E. Dai residui le due lettere
+   sono molto diverse (F -33, E -12), quindi la risposta non e' ovvia.
+
+3. CONTROLLO OBBLIGATORIO PRIMA DI GUARDARE I RISULTATI (regola CLAUDE.md
+   sui backtest, non saltarla): per OGNI ramo e ogni unita', quante carte
+   contiene il pool contro quanti slot vanno riempiti. Escludere F ed E
+   RESTRINGE il pool: se in qualche unita' il pool scende al numero di slot
+   o sotto, in quelle unita' non c'e' piu' selezione da misurare e il
+   confronto e' nullo per costruzione.
+   -> Riporta in chiaro: quante unita' restano con pool > slot in ciascun
+      ramo, e quante carte in media si perdono escludendo F/E.
+   -> Se un'unita' diventa infattibile (non riesce a riempire le
+      formazioni), NON scartarla in silenzio: contala e dichiarala, perche'
+      "non poter schierare nessuno" e' un costo reale della regola secca,
+      non un dato mancante. Come la tratti (formazione saltata = zero
+      premi, oppure unita' esclusa da entrambi i rami) dichiaralo
+      esplicitamente e, se e' ambiguo, riporta i numeri in ENTRAMBI i modi.
+
+4. DUMP LEGGIBILE OBBLIGATORIO, consegnato insieme ai numeri: un manager,
+   una giornata, arena per arena — nomi giocatori, ruolo, grade, atteso,
+   punteggio reale, chi ha scelto G e chi ha scelto G-noFE, e le carte
+   scartate dalla regola. Serve a vedere con gli occhi cosa cambia.
+
+5. NUMERI DA RIPORTARE: per ciascun set di soglie e ciascun regime, essenze
+   di A / G / G-noF / G-noFE, il delta G-noFE meno G con bootstrap per
+   manager (stessa procedura gia' nel file), e la n di ogni confronto.
+   Nessun numero senza la sua n.
+
+
+IPOTESI DICHIARATA PRIMA DEI NUMERI (per non adattarla all'esito)
+-----------------------------------------------------------------
+Mi aspetto che G-noFE stia VICINO a G, perche' dai residui il grosso del
+segnale sta nell'evitare F ed E (-33 e -12) mentre da D ad A i tre gradini
+insieme valgono ~2,6 punti. Se G-noFE fosse molto PEGGIO di G, vorrebbe
+dire che il gradiente fra D e A conta piu' di quanto credo, oppure che il
+pool ristretto fa danni (controllo 3). Se fosse molto MEGLIO, sospetterei
+un errore: escludere non puo' aggiungere informazione, puo' solo usare
+meglio quella che c'e'.
+Scrivi l'esito che esce, non l'ipotesi.
+
+
+COSA NON FARE
+-------------
+- Non toccare _apply_grade_group ne' nessun file del generatore.
+- Non presentare il livello assoluto in essenze come guadagno realizzabile
+  (vedi il punto metodologico sopra): ogni volta che lo scrivi, scrivici
+  accanto che e' un limite superiore misurato su grade post-partita.
+- Non concludere "la regola vince/perde" da un solo set di soglie o un solo
+  regime: serve lo stesso segno su entrambi, come da regola del delta.
+
+DOVE SCRIVERE L'ESITO
+---------------------
+In coda a docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt come §20
+(il §19 e' riservato all'altro brief, sull'accumulo snapshot: se sei un
+esecutore diverso, non toccare i suoi file e segnalali senza modificarli).
+Poi commit + push dei TUOI file soltanto.

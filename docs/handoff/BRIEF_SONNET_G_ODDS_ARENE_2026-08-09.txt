@@ -1,0 +1,328 @@
+BRIEF PER SONNET — G + FAVORITO ODDS SULLE ARENE (il passo 2)
+Scritto dall'orchestratore (Opus) il 09/08/2026, 01:30 Roma (23:30 UTC).
+
+Chat pulita: qui c'e' tutto. Se una cosa non e' scritta, chiedila
+all'utente, non dedurla. SOLO MISURA: nessun file di produzione toccato,
+nessun commit senza ok.
+
+
+=====================================================================
+0. COSA LEGGERE PRIMA (in quest'ordine, niente altro)
+=====================================================================
+1. `CLAUDE.md` — regole vincolanti. In particolare: D7 (le formazioni si
+   costruiscono SOLO con `build_one_lineup_with_growth`, mai con un
+   knapsack scritto per l'occasione); divieto di stime a spanne; dump
+   grezzo insieme ai numeri; nessuna query senza il via dell'utente.
+2. `docs/handoff/HANDOFF_GRADE_ARENE_2026-08-08.txt` — il perimetro, la
+   copertura del grade e le regole di gioco raccolte (§12, §14, §15).
+3. CODICE:
+   - `analisi_manager/p13_backtest_gw_crowss.py` — il backtest arena
+     esistente: fa gia' pool/slot, mazzo fisso, generatore vero. Da
+     estendere, NON riscrivere.
+   - `analisi_manager/p20_odds_vs_grade.py` — l'impianto del ramo odds
+     (segnale, z-score, applicazione ad atteso_raw prima della calibrazione).
+   - `backtest_arene_previsioni.py` righe 527-546 (`_p_own_opp_odds`) e
+     549-574 (`delta_favorito_odds`).
+   - `consiglio_arena.py` righe 113-153 — come i premi entrano nel calcolo.
+Non leggere gli altri file di docs/handoff/: sono archivio e contengono
+verdetti superati scritti come se fossero attuali.
+
+
+=====================================================================
+1. LA DOMANDA (una sola)
+=====================================================================
+Nelle ARENE, aggiungere il segnale favorito-odds sopra G migliora il
+risultato economico rispetto a G da solo?
+
+DUE confronti, entrambi con dignita' piena, entrambi da riportare con la
+stessa cura (IC95 bootstrap sui manager, per regime, per tipo di arena):
+
+  **(1) G contro A** — G e' il modello IN PRODUZIONE oggi. Sulle arene
+  non e' mai stato dimostrato: il test precedente non lo distingueva dal
+  rumore (placebo al 65esimo percentile), ma girava su una copertura del
+  grade del 54,6% (cap 220: 42,9%). Ora la copertura e' **98,8%**. E' la
+  prima volta che G ha le condizioni per vedersi. Se emerge, e' la
+  validazione che manca; se NON emerge nemmeno adesso, il risultato pesa
+  molto piu' di prima, perche' non c'e' piu' l'alibi dei dati mancanti.
+  Questo confronto NON e' un contorno: e' la meta' del lavoro.
+
+  **(2) G+O contro G** — se il segnale odds aggiunga qualcosa sopra G.
+
+Riporta anche G+O contro A, che viene gratis.
+Non fondere i due confronti in un verdetto unico: possono avere esiti
+diversi (per esempio G positivo e O nullo, che e' l'esito che mi aspetto).
+
+Perche' proprio qui: sul non-arena il filone e' chiuso (ne' delta ne'
+livello assoluto battono G, misurato due volte con scale diverse). Sulle
+arene non e' MAI stato testato, in nessuna direzione. E le arene sono
+l'unico formato con il realizzato ricostruibile senza approssimazioni:
+niente bonus xp, niente anti-stack, niente bonus cap L10, capitano +20%
+fisso.
+
+
+=====================================================================
+2. L'IPOTESI, PRIMA DEI NUMERI (dichiarata dall'orchestratore)
+=====================================================================
+Non ho una misura: e' un'aspettativa, non un fatto.
+
+Mi aspetto che O aggiunga poco o nulla anche qui, per coerenza col
+non-arena. Ma c'e' una ragione seria per cui potrebbe andare diversamente:
+in arena il vincolo di cap L10 comprime le scelte verso carte simili, e un
+segnale che discrimina fra pari potrebbe pesare di piu' che altrove.
+
+**Non fidarti di questa aspettativa.** Se esce il contrario e' un risultato
+valido e va scritto per primo.
+
+
+=====================================================================
+3. IL CAMPIONE E I NUMERI DI CONTROLLO
+=====================================================================
+Se non ritrovi ESATTAMENTE questi numeri, fermati e dillo.
+
+Perimetro: sette competizioni arena limited, ultime 6 giornate,
+identificate dallo slug della leaderboard (MAI dal campo `competizione`,
+inaffidabile). Normalizza togliendo il prefisso `<gw>-`, la coda `-<hash>`
+e `-division-<n>`; confronta per uguaglianza ESATTA (A1 e' prefisso di
+A2/A3/A4: con `startswith` A1 si mangia le altre tre).
+  A1 Cap 260   ..._all_star_arena_limited              326 form  18 man
+  A2 Cap 220   ..._all_star_arena_limited_cap_220      102 form  16 man
+  A3 Uncapped  ..._all_star_arena_limited_uncapped      91 form  13 man
+  A4 Beginner  ..._all_star_arena_limited_beginner     260 form  16 man
+  B  us        seasonal-us-all_seasons_us_arena_limited  31 form   9 man
+  B  korea     seasonal-korea-..._korea_arena_limited    12 form   4 man
+  B  scotland  seasonal-scotland-..._arena_limited        3 form   2 man
+  TOTALE 825 formazioni, 4.125 carte (5 per formazione, 1 capitano ciascuna)
+Giornate: football-4-7-aug-2026, football-31-jul-4-aug-2026,
+football-28-31-jul-2026, football-24-28-jul-2026, football-21-24-jul-2026,
+football-15-20-jul-2026.
+
+FUORI: Elite, arene super rare, tutte le competizioni rare/unique, Global
+Cup, e tutto il non-arena. Le carte RARE dentro un'arena limited RESTANO
+(regola di gioco: si comportano come le limited).
+
+Copertura grade sul perimetro, gia' misurata: **98,8% in finestra**
+(4.076/4.125). Se ricalcolandola non ritrovi ~98,8%, stai usando un indice
+diverso: l'indice giusto e' quello di produzione (6 file) PIU'
+`storico_grade_Forward_ampio_20260806.json`,
+`storico_grade_Goalkeeper_20260806.json` e
+`storico_grade_arene_2026-08-08.json`. I `grade_snapshot_*` restano ESCLUSI.
+
+
+=====================================================================
+4. I DUE REGIMI — separati, bilanci mai sommati
+=====================================================================
+Il campione si divide in 90 unita' (manager, giornata). Il criterio e' il
+rapporto fra le carte disponibili e gli slot da riempire, dove il POOL
+sono **le carte che quel manager ha schierato in quella giornata, in
+qualunque competizione** (non le carte possedute: quelle non le abbiamo e
+non servono).
+
+  REGIME ASTENSIONE — 37 unita', pool = slot
+  REGIME ALLOCAZIONE — 53 unita', pool > slot
+     (mediana del rapporto pool/slot SULLE SOLE 53: **2,96x**, max 20,8x.
+      CORREZIONE 09/08: la prima stesura di questo brief scriveva 1,58x,
+      che e' la mediana su tutte e 90 le unita', comprese le 37 che valgono
+      1,00 per definizione. Numero sbagliato dell'orchestratore, segnalato
+      dall'esecutore. Se ricalcolando trovi 2,96 sulle 53, e' giusto.)
+
+Riporta i due bilanci SEMPRE separati. Non esiste un numero aggregato: le
+due domande sono diverse.
+
+**4a. REGIME ASTENSIONE (pool = slot).** Le carte sono inchiodate: stesse
+carte, stesse arene, stesse formazioni, stesso capitano del manager. Il
+bot non puo' scegliere niente se non **se entrare o no** in ciascuna
+arena. Il punteggio realizzato lo conosciamo gia'.
+Quattro esiti, tutti da contare:
+  entra + arena era da premio      -> incassa (premio - costo)
+  entra + arena non era da premio  -> perde (- costo)
+  NON entra + era da premio        -> mancato guadagno (conta NEGATIVO)
+  NON entra + non era da premio    -> risparmia (+ costo)
+La decisione di ingresso usa lo stesso criterio della produzione (atteso
+contro `PAREGGIO_ARENA`, con `GUADAGNO_PER_PUNTO`): vedi §6.
+
+**4b. REGIME ALLOCAZIONE (pool > slot).** Qui il bot e' LIBERO: sceglie
+quante arene giocare, di quale tipo, quali carte metterci e chi fa da
+capitano. **Non forzarlo** a giocare lo stesso numero o gli stessi tipi
+del manager: scegliere il tipo di arena e quante giocarne E' parte della
+sua bravura, e forzarlo misurerebbe un'altra cosa.
+Il fatto che possa giocarne meno non e' un buco del confronto: ogni arena
+costa l'ingresso, quindi giocarne di piu' e' un vantaggio solo se
+conviene davvero. E' la metrica (§5) a rendere il confronto onesto.
+Le formazioni si costruiscono con `build_one_lineup_with_growth`, mai con
+un knapsack scritto per l'occasione (D7). Verifica e dichiara: zero
+giocatori ripetuti nella stessa formazione, e lo stesso giocatore in piu'
+arene solo con carte diverse.
+
+
+=====================================================================
+5. LA METRICA — essenze nette, e il jackpot fuori
+=====================================================================
+NON misurare in punti. Con il mazzo fisso i punti sono conservati:
+spostare una carta da un'arena all'altra non cambia la somma, quindi un
+"oracolo" che rialloca sembrerebbe non ottimizzare nulla. Cambia invece
+QUANTE arene si vincono, perche' conta il punteggio di ciascuna contro i
+suoi avversari.
+
+Metrica: **essenze nette = premi incassati - costi d'ingresso**, arena per
+arena, usando le classifiche vere per sapere dove il punteggio si sarebbe
+piazzato.
+
+**PASSO PRELIMINARE OBBLIGATORIO (aggiunto il 09/08 dopo la tua
+segnalazione): mancano 374 classifiche.**
+`dati_globali/classifiche_arene_2026-08-08.json` copre solo 269 delle 643
+leaderboard del perimetro (41,8%), e in modo sbilanciato: Cap 220 e
+Uncapped al 100%, Cap 260 24,3%, Beginner 25,2%, arene di lega singola
+(us/korea/scotland) ZERO. Confermato dall'orchestratore sui dati.
+LA CAUSA NON E' UN BUG: `scarica_classifiche_v3.costruisci_lista` (righe
+177-186) prendeva TUTTE le Cap 220 e Uncapped ma solo
+`CAMPIONE_PER_FIXTURE` per Cap 260 e Beginner, e le arene di lega singola
+non erano nella lista. Era una scelta del giro precedente, che aveva un
+altro scopo.
+Quindi: **scarica le 374 leaderboard mancanti** prima di costruire il
+test. Riusa `scarica_classifiche_v3.py` cambiando SOLO la lista in
+ingresso e il file di uscita (nuovo, nessuna sovrascrittura: quel file
+l'08/08 e' gia' stato trovato svuotato a 2 byte da un rilancio parziale).
+ATTENZIONE, differenza rispetto al download dei premi: le classifiche
+(`so5RankingsPaginated`) **richiedono il cookie** — senza autenticazione
+la query risponde ma torna vuota. Chiedi le credenziali all'utente e fai
+la probe `{ currentUser { slug } }` con retry prima di partire (§8undecies
+del riassunto unico). Giro di prova da 20, poi il via dell'utente.
+I PREMI delle nuove arene NON servono: la metrica principale usa i premi
+standard per tipo (sotto), e il jackpot e' una colonna a parte che restera'
+calcolabile solo sulle arene gia' coperte — dichiaralo, non stimarlo.
+
+**Il jackpot va neutralizzato.** Il 5-6% delle arene paga il doppio o il
+triplo (misurato: Cap 220 46/748, Cap 260 12/271, Uncapped 19/348,
+Beginner 21/310) e non e' prevedibile da nessuno. La misura PRINCIPALE usa
+i premi STANDARD del tipo di arena; il jackpot si riporta in una colonna
+separata. Altrimenti su 90 unita' si misura chi e' stato piu' fortunato.
+Premi standard: Cap 260 e Uncapped 1300/800/500, Cap 220 1000/500/300,
+Beginner 500/250/150. Costi: 300 / 300 / 200 / 100. Le arene di lega
+singola (B) valgono come Cap 260.
+
+Riporta SEMPRE, per regime e per tipo di arena:
+  - essenze nette totali, bot contro manager;
+  - **quante arene ha giocato ciascuno** e il netto PER ARENA GIOCATA —
+    serve a vedere subito se una differenza nasce dal numero di arene o
+    dalla qualita' delle scelte, senza doverlo dedurre.
+
+
+=====================================================================
+6. LE SOGLIE: due colonne, non una
+=====================================================================
+La decisione di ingresso dipende da `PAREGGIO_ARENA` e
+`GUADAGNO_PER_PUNTO`, e quei valori stanno per essere aggiornati (lavoro
+parallelo, non ancora applicato). Gira il test con ENTRAMBI i set e
+riporta due colonne:
+  set VECCHIO (produzione oggi): pareggio 259,5 / 244,1 / 288,3 ;
+    guadagno 7,9 / 6,3 / 8,0   (cap260 / cap220 / uncapped)
+  set NUOVO (misurato su 2.125 arene e 5.031 premi veri):
+    pareggio 264,5 / 247,1 / 279,6 / 256,5 ;
+    guadagno 6,96 / 5,11 / 5,88 / 2,46   (cap260 / cap220 / uncapped / beginner)
+Il Beginner oggi non ha soglia in produzione: col set vecchio dichiara
+come lo tratti (escluso, o con quale valore), non inventare.
+Questo giro serve anche a sapere quanto le soglie nuove cambiano le
+decisioni su dati reali: riportalo come esito a se'.
+
+
+=====================================================================
+7. CONTROLLI OBBLIGATORI, PRIMA DEI NUMERI DI SINTESI
+=====================================================================
+ 7a. POOL CONTRO SLOT dichiarato per ogni unita': quante carte disponibili
+     contro quanti slot da riempire. E' il controllo che ha invalidato un
+     backtest intero: se il pool non e' piu' grande degli slot non c'e'
+     selezione da misurare, e infatti quelle unita' vanno nel regime
+     astensione, non in quello di allocazione.
+ 7b. INTERRUTTORE: con k=0 il ramo G+O deve coincidere ESATTAMENTE con G,
+     bit per bit. Col k scelto, quante carte cambiano atteso (mediana e
+     massimo dello scostamento) e in quante formazioni cambia almeno una
+     carta. Senza questi numeri il risultato non e' leggibile.
+ 7c. SCALA del segnale odds: dichiara quale forma usi (delta storico o
+     livello assoluto) e come scegli k. Se z-scori, dillo e di' su quale
+     gruppo. Non confrontare a parita' di k senza aver verificato che gli
+     effetti siano di grandezza confrontabile.
+ 7d. COPERTURA del segnale odds sul perimetro arene: quante carte hanno la
+     quota disponibile. Sul non-arena era il 60-88%; qui non e' noto.
+ 7e. BOOTSTRAP sui MANAGER (24 cluster), mai sulle formazioni.
+ 7f. PLACEBO su qualunque ramo risulti positivo: permuta il segnale fra le
+     carte dello stesso gruppo. Dichiara N.
+ 7g. DUMP LEGGIBILE di un caso completo per ciascun regime: manager,
+     giornata, arene giocate dal manager e dal bot, le 5 carte di ciascuna
+     con nome, ruolo, grade, segnale odds, atteso, realizzato, piazzamento
+     e premio. Consegnalo INSIEME ai numeri, non su richiesta.
+
+
+=====================================================================
+8. COSA NON FARE
+=====================================================================
+- Non toccare la produzione, non cambiare default, non committare file di
+  altri (piu' sessioni sullo stesso repo).
+- Non aggregare i due regimi in un numero solo.
+- Non forzare il bot a giocare le stesse arene del manager nel regime
+  allocazione.
+- Non misurare in punti (§5).
+- Non lasciare il jackpot nella metrica principale.
+- Non stimare a spanne: se non hai la fonte, "non lo so, mi servirebbe X".
+- Non nascondere risultati nulli o negativi.
+- Non "sistemare" difetti trovati per strada: annotali in fondo.
+
+
+=====================================================================
+10. CODA — PLACEBO SUL SET NUOVO E DUE LIMITI DA METTERE AGLI ATTI
+    (09/08/2026, dopo la consegna del §9. Richiesto dall'utente.)
+=====================================================================
+Il tuo §9 regge: l'orchestratore ha verificato i grezzi e i numeri
+tornano. Restano tre cose, poi la validazione di G e' chiusa.
+
+**10.1 PLACEBO SUL SET NUOVO.** Al §9.9 hai fatto il placebo solo sul set
+VECCHIO (delta vero +29.050, percentile 100, N=30) e hai dichiarato
+onestamente di non averlo rifatto sul nuovo. Rifallo, stesso identico
+metodo: ramo **G contro A, regime ALLOCAZIONE, set soglie NUOVO**, delta
+vero atteso **+24.150**. Permuta `_zgrade` dentro ogni gruppo
+(lega,codice) per unita', ricostruisci G da capo con l'obiettivo
+permutato, A resta fisso.
+Riporta: range del placebo, mediana, e il percentile del valore vero.
+Se i tempi lo consentono porta N da 30 a 100 e dillo; se resti a 30,
+dichiara N come hai gia' fatto. Non "assumere lo stesso esito del set
+vecchio": e' proprio quello che stiamo verificando.
+
+**10.2 DUE LIMITI TROVATI DALL'ORCHESTRATORE, da scrivere nell'handoff**
+(non vanno corretti, vanno SAPUTI da chi legge dopo — entrambi rendono il
+risultato CONSERVATIVO, cioe' se sbagliano e' a sfavore di G):
+  a) `rank_e_premio` (riga 104-114) calcola il piazzamento sulla
+     classifica COMPLETA, che contiene anche il punteggio del manager che
+     quell'arena l'aveva giocata davvero. Quando il bot entra in quella
+     stessa arena compete quindi contro un avversario in piu' rispetto
+     alla situazione reale. Penalizza il bot in tutti i rami allo stesso
+     modo (quindi il confronto FRA rami resta pulito), ma rende il
+     confronto bot-contro-manager leggermente sfavorevole al bot.
+  b) il CAPITANO e' scelto da `capitano_atteso()` sul campo `_cal` in
+     TUTTI i rami (l'hai gia' dichiarato al §9.1): quindi G e G+O non
+     usano il proprio ordinamento per scegliere la fascia. G e' misurato
+     senza uno dei vantaggi che avrebbe in produzione.
+  Scrivi entrambi nell'handoff con questa lettura: sono limiti che
+  COMPRIMONO il vantaggio di G, non che lo gonfiano.
+
+**10.3 VERIFICA GIA' FATTA, da riportare per completezza**: il riciclo
+delle leaderboard che avevi dichiarato come approssimazione al §9.1 vale
+lo **0,3-0,6%** delle arene giocate (2-3 righe su 578, misurato
+dall'orchestratore sul tuo file grezzo, contando le combinazioni
+(manager, gw, leaderboard) usate piu' di una volta). L'approssimazione
+non altera i risultati: mettilo nero su bianco cosi' nessuno la riapre.
+
+Esito in coda a `HANDOFF_G_ODDS_ARENE_2026-08-09.txt` come §10, stesso
+file. All'utente: TRE righe, il percentile del placebo e nient'altro.
+
+
+=====================================================================
+9. DOVE SCRIVERE L'ESITO
+=====================================================================
+File nuovo: `docs/handoff/HANDOFF_G_ODDS_ARENE_2026-08-09.txt`, data e ora
+di Roma in testa, struttura dell'handoff di fine sessione (CLAUDE.md).
+
+All'utente in CINQUE RIGHE: G+O contro G nei due regimi (due numeri, non
+uno), quante arene gioca il bot contro il manager, l'esito
+dell'interruttore, e il percorso del file. Tutto il resto nel file. Paga a
+token e ha una forma grave di ADHD: analisi, tabelle e ragionamenti non
+vanno in chat. Spiega i numeri con esempi banali, non con termini
+statistici.

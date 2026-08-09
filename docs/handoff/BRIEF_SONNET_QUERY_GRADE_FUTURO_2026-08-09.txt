@@ -1,0 +1,69 @@
+BRIEF SONNET — LA QUERY E' STATA TROVATA. SMETTI DI CERCARE.
+Scritto dall'orchestratore il 09/08/2026, ~10:50 Roma.
+
+LEGGI PRIMA: docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt §13
+(l'ho appena scritto io parsando il JSON grezzo che ha catturato l'utente
+dal DevTools; e' verificato, non riassunto).
+
+RIASSUNTO IN QUATTRO RIGHE
+--------------------------
+1. Il grade su partita FUTURA esiste e sta in
+   `ComposeTeamBenchCard.eligiblePlayerGameScores[].projection.grade`,
+   restituito da `FootballComposeBenchQuery`. NON sta in `playerGameScores`:
+   la tua diagnosi "la finestra non si e' ancora aperta" era sbagliata.
+2. `projection` NON ha il campo `score`: solo grade, id,
+   reliabilityBasisPoints. Il numero che si vede sulla carta e'
+   `lastTenPlayedSo5AverageScore` (media storica), non una proiezione.
+3. Il dump e' della partita Tokyo Verdy - Kawasaki Frontale,
+   2026-08-09T09:00:00Z, `statusTyped: "scheduled"`.
+4. Smetti di martellare l'API a giocatore singolo: ti sei preso dei 429 per
+   240 slug interrogati uno a uno. Si va in bulk, dalla fixture.
+
+COSA DEVI FARE, IN ORDINE DI PRIORITA'
+--------------------------------------
+T1. RIPRODUCI LA CHIAMATA. `FootballComposeBenchQuery` sembra richiedere il
+    cookie (nel dump compare `user.slug = "crowss"` e uno
+    `so5LeaderboardSlug`). Chiedi il cookie all'utente se ti serve: e'
+    previsto da CLAUDE.md, non arrangiarti.
+    Criterio di successo secco: devi ritrovare grade C per yuki-yamamoto e
+    tatsuya-ito, grade D per itsuki-someno e rei-hirakawa, sulla partita
+    2026-08-09T09:00:00Z. Se non li ritrovi, non hai riprodotto niente:
+    dillo, non adattare la lettura.
+
+T2. VERIFICA SE SERVE DAVVERO IL COOKIE. Prova a raggiungere lo stesso
+    `projection.grade` su una partita `scheduled` per via pubblica (dalla
+    fixture / dal player / dal game, non dalla bench). Se si puo' fare senza
+    cookie, cambia tutto per l'automazione. Riporta il risultato in
+    entrambi i casi, anche negativo.
+
+T3. SNAPSHOT DATATO. Appena hai la chiamata funzionante, salva in
+    analisi_manager/dati/ un JSON con nome contenente data+ora UTC della
+    cattura e slug fixture. Per ogni giocatore: slug, squadra, grade,
+    reliabilityBasisPoints, fieldStatus, starterOddsBasisPoints,
+    rawPlayerGameScores, lastTen/Five/Fifteen/Forty, seasonAverage,
+    ora UTC del kickoff, statusTyped.
+    Cattura DUE momenti sulla stessa partita: uno PRIMA che escano le
+    formazioni ufficiali e uno DOPO. Serve a rispondere alla domanda vera:
+    **il grade cambia quando escono le ufficiali?** Se cambia, il grade e'
+    in gran parte titolarita' (coerente con quanto gia' misurato: F −31 di
+    residuo, 61,5% di non-giocanti fra le F).
+
+T4. CAMPI NUOVI DA VALUTARE (vedi §13.5): `fieldStatus` ("ON_FIELD" =
+    titolare ufficiale, certezza e non probabilita'), `rawPlayerGameScores`
+    (ultime 5 partite in punteggio GREZZO, fonte pubblica che aggira il
+    difetto D4), `winOddsBasisPoints` per squadra. Limitati a documentare
+    che ci sono e come si leggono: NON aprire filoni di misura senza
+    conferma dell'utente.
+
+COSA NON FARE
+-------------
+- Nessuna modifica alla produzione, nessun cambio al generatore.
+- Non rifare il test di ordinamento delle lettere: e' rimandato (§13.4),
+  serve prima una schermata con mescolamento vero.
+- Non interrogare l'API giocatore per giocatore: bulk dalla fixture.
+
+CONSEGNA
+--------
+Esito in coda a docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt come §14.
+Poi commit + push (compresi lo snapshot, questo brief e il §13 gia'
+scritto). L'orchestratore in Cowork non ha i permessi git: committi tu.

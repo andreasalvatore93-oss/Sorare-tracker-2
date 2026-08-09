@@ -1,0 +1,120 @@
+BRIEF — QUANTO VALE OGNI LETTERA DEL GRADE, IN PUNTI
+Opus, 09/08/2026. SOLO MISURA. Nessuna query, nessun file di produzione.
+Passo 1 di 2: qui si costruisce la tabella. Se sostituirla al meccanismo
+attuale è il passo 2, e si decide dopo aver visto i numeri — non anticiparlo.
+
+
+IL PROBLEMA
+------------
+Oggi il grade entra così (`build_formazione_globale._apply_grade_group`,
+righe 505-548):
+    z = (grade_carta - media_grade_gruppo) / sd_grade_gruppo
+    atteso_combinato = atteso + sd_attesi_gruppo * z
+dove il gruppo è (lega, ruolo) **della singola giornata**. Conseguenze
+misurate: 19 gruppi su 57 hanno UN SOLO membro col grade → `gsd=0` → z=0 →
+**il grade viene ignorato sul 23% delle carte**; con esattamente 2 membri
+lo z vale ±1 per costruzione, quindi A-vs-F e C-vs-D producono lo STESSO
+spostamento. La conversione lettera→punti viene insomma re-inventata ogni
+giornata su 1-3 osservazioni.
+
+Cura già provata e SCARTATA: `GRADE_SCALE='storica'` (media e sd del grade
+dallo storico). Spostava anche il centro e peggiorava sulle Cap 260, il
+tipo più giocato. **Non riproporla.**
+
+L'IDEA NUOVA nasce da quanto verificato il 09/08 (§16 di
+`HANDOFF_GRADE_ARENE_2026-08-08.txt`): il grade segue la **titolarità**,
+mai il risultato. Quindi una F non significa "gioca male", significa
+"rischio di fare zero" — e fra 0 e i ~35 punti del level score c'è più
+distanza che fra un buono e un mediocre. Se è così, il grade ha un valore
+ASSOLUTO in punti, misurabile una volta per tutte, che non dipende da chi
+gli sta accanto nel gruppo di giornata.
+
+
+LA DOMANDA
+-----------
+Quanto vale, in punti realizzati, ciascuna lettera del grade?
+
+
+I DATI
+-------
+Tutto già in repo, nessuna query.
+- **Grade**: indice di produzione (`carica_indice_grade_esteso`, 6 file)
+  PIÙ `storico_grade_Forward_ampio_20260806.json`,
+  `storico_grade_Goalkeeper_20260806.json` e
+  `storico_grade_arene_2026-08-08.json` — la stessa unione validata nel
+  test del §13, 2.241 slug. I `grade_snapshot_*` restano ESCLUSI
+  dall'indice (mescolano un momento diverso), ma vedi il controllo 5.
+- **Punteggi realizzati**: dalla cache game-log condivisa, come già fa
+  `score_da_cache` — MAI il campo `punteggio` dei file manager, che
+  include xp e capitano fuori dall'arena (difetto D6, CLAUDE.md).
+- Lookup grade↔partita: `grade_in_finestra`, la stessa di produzione.
+
+
+COSA MISURARE
+--------------
+**1. La tabella base.** Per ogni lettera (A→F): quante osservazioni, media
+e mediana del punteggio realizzato, deviazione standard, e la quota di
+**non-giocanti** (realizzato ≤1, stesso criterio del §12). Quest'ultima
+colonna è centrale: se la F è soprattutto "non gioca", si deve vedere qui.
+
+**2. Stratificata**, perché è lì che si decide se una tabella unica basta:
+per RUOLO (GK/DEF/MID/FWD) e per LEGA (almeno le più popolose). Riporta
+la n di ogni cella e non commentare celle sotto le 30 osservazioni.
+
+**3. Il valore CONDIZIONATO all'aver giocato.** Rifai la tabella
+escludendo i non-giocanti. Serve a separare le due cose che il grade
+mescola: "quanto è probabile che giochi" e "quanto rende se gioca". È la
+misura che dice se il grade porta informazione oltre la titolarità —
+coerente con quanto trovato al §12, dove metà del vantaggio restava anche
+togliendo i non-giocanti.
+
+**4. Il confronto col meccanismo attuale.** Prendi il pool reale di
+qualche giornata e calcola, per ogni carta, lo spostamento che il codice
+di oggi applica (`sd_attesi_gruppo * z`) contro quello che applicherebbe
+la tabella (differenza fra il valore della sua lettera e il valore medio).
+Riporta: correlazione fra i due, mediana e massimo dello scarto, e su
+quante carte i due metodi **hanno segno opposto**. Quest'ultimo numero è
+il più informativo: dice quanto spesso oggi stiamo spingendo una carta
+nella direzione sbagliata.
+
+**5. Controllo anti-contaminazione (breve, il grosso è già fatto).** La
+tabella è costruita su grade riletti dopo le partite. Al §16 è dimostrato
+che non seguono il risultato, ma seguono la titolarità aggiornata alle
+formazioni ufficiali. Quindi: rifai la sola riga "quota non-giocanti"
+usando i 170 grade PRE-partita degli snapshot, e confrontala con la stessa
+riga della tabella principale. Se la quota di non-giocanti per lettera è
+molto più bassa nel pre, vuol dire che la tabella sovrastima quanto il
+grade sappia in anticipo — dichiaralo, non correggerlo.
+
+
+CONTROLLI
+----------
+- Ogni numero con la sua n. Niente celle sotto 30 osservazioni commentate.
+- Dichiara quante coppie (slug, partita) entrano in totale e quante sono
+  scartate, con il motivo.
+- Verifica che le sei lettere siano tutte rappresentate: se la A o la F
+  hanno pochissime osservazioni, è un limite della tabella e va detto.
+- **Test di monotonia**: il punteggio medio deve crescere da F ad A. Se
+  non lo fa, FERMATI e riporta — significa che il grade non è ordinabile
+  come pensiamo, ed è più importante di tutto il resto del brief.
+- Dump leggibile: 10 giocatori per ogni lettera, con nome, partita, grade,
+  realizzato e se ha giocato.
+
+
+NON FARE
+---------
+- Non toccare la produzione, non implementare la sostituzione: qui si
+  misura soltanto.
+- Non riproporre `GRADE_SCALE='storica'`: già misurata e scartata.
+- Non usare il campo `punteggio` dei file manager (D6).
+- Non stimare: se una cella è vuota, si scrive che è vuota.
+
+
+ALL'UTENTE, CINQUE RIGHE
+-------------------------
+La tabella lettera→punti (sei righe), la quota di non-giocanti per
+lettera, se la monotonia regge, su quante carte il metodo attuale e la
+tabella hanno segno opposto, e il percorso del file. Numeri spiegati con
+esempi banali, niente termini statistici.
+
+Esito in un file nuovo, `docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt`.

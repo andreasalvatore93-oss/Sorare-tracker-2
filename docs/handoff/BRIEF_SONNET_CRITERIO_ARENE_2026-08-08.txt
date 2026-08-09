@@ -1,0 +1,161 @@
+BRIEF PER SONNET — IL BOT SCEGLIE LE ARENE IGNORANDO QUANTO COSTA ENTRARCI
+Scritto dall'orchestratore (Opus) l'08/08/2026, notte (Roma).
+Destinatario: Sonnet, chat pulita.
+
+TOCCA LA PRODUZIONE. Stessa regola dei brief precedenti: si implementa
+dietro un FLAG spento di default, si misura, non si cambia il default
+finche' l'utente non decide.
+
+BUONA NOTIZIA sul rischio: questo cambio NON tocca score_atteso, NON tocca
+PAREGGIO_ARENA/GUADAGNO_PER_PUNTO, NON tocca lo scouting. Cambia solo
+l'ORDINE con cui genera_arene_efficienti mette in fila i tipi. La catena
+di CLAUDE.md (valori -> soglie -> scouting) resta ferma. Verificalo tu
+stesso e dichiaralo, non fidarti di questa riga.
+
+
+=====================================================================
+0. LEGGERE PRIMA
+=====================================================================
+1. CLAUDE.md nella radice.
+2. generatore_formazioni/build_formazione_globale.py:
+   righe 1267-1275 (genera_arene_efficienti, il confronto fra tipi),
+   516-529 (PAREGGIO_ARENA), 638-655 (GUADAGNO_PER_PUNTO, COSTO_INGRESSO,
+   QUOTA_MINIMA), 658-697 (_etichetta_arena, verdetto_arena).
+3. docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8quater punto 4 (l'indagine
+   del 07/08 sulle soglie cap 220: aveva concluso "non e' un difetto di
+   taratura" ed e' CORRETTA -- il difetto sta altrove, vedi sotto).
+
+
+=====================================================================
+1. IL PROBLEMA (verificato nel codice e misurato)
+=====================================================================
+Osservazione dell'utente: su ~35 arene proposte dal bot, 34 sono cap 260 e
+quasi mai una cap 220. Due riverifiche delle soglie non avevano trovato
+niente. Il motivo e' che le soglie NON sono il problema.
+
+ 1a. LE SOGLIE SONO BEN CALIBRATE FRA LORO (misurato sui file manager,
+     arene reali con punteggio ufficiale):
+       cap 260: punteggio medio reale 263,3 -- soglia 259,5
+       cap 220: punteggio medio reale 247,8 -- soglia 244,1
+     Distanza fra i punteggi medi: 15,5. Distanza fra le soglie: 15,4.
+     Le due arene stanno alla STESSA distanza dal proprio pareggio: non
+     c'e' nessuno sbilanciamento da correggere.
+
+ 1b. IL CRITERIO DI SCELTA IGNORA IL COSTO D'INGRESSO. Riga 1267:
+       resa = (atteso - soglia) * GUADAGNO_PER_PUNTO[tipo]
+     e si sceglie il tipo con la resa piu' alta. GUADAGNO_PER_PUNTO vale
+     7,9 per la cap 260 e 6,3 per la cap 220: a parita' di margine la 260
+     vince SEMPRE, del 25%. Ma la 260 costa 300 essenze e la 220 ne costa
+     200:
+       cap 260: 7,9 essenze per punto su 300 investiti = 2,6% per punto
+       cap 220: 6,3 essenze per punto su 200 investiti = 3,2% per punto
+     Sul capitale investito la cap 220 rende un quinto in piu'. Il
+     confronto fra tipi non ne tiene conto.
+
+ 1c. LA REALTA' CONFERMA, su due fonti indipendenti.
+     Sui file manager del repo (premi BASE, golden non distinte, quindi
+     ROI sottostimati ma confrontabili fra loro):
+       TUTTI I MANAGER (54): cap 260 n=2506 ROI -7,0% | cap 220 n=968
+         ROI -4,9% | uncapped n=415 -8,0% | beginner n=3703 -2,9%
+       SOLO crowss:          cap 260 n=146  ROI +1,6% | cap 220 n=45
+         ROI +23,3% | uncapped n=28 -2,4% | beginner n=137 -16,8%
+     Da un sito indipendente di tracking (screenshot fornito dall'utente,
+     dati suoi reali, 710 ingressi, ROI complessivo 11,79%):
+       cap 260 n=202 ROI +20,0% | cap 220 n=55 ROI +54,5% |
+       uncapped n=38 -8,8% | beginner n=194 -20,9%
+       per costo d'ingresso: 300 -> +17,5% | 200 -> +54,5% | 100 -> -14,7%
+     L'ORDINE dei tipi coincide fra le due fonti su tutti e quattro i tipi;
+     i livelli differiscono perche' i file del repo non distinguono le
+     golden. La cap 220 e' il tipo piu' redditizio per essenza investita.
+
+ 1d. DUE BIAS DA DICHIARARE SEMPRE INSIEME A QUEI NUMERI, non nasconderli:
+     - l'utente giocava le cap 220 solo "quando vedeva un buon incastro":
+       sono arene SELEZIONATE A MANO, mentre le 260 le giocava piu'
+       liberamente. Il +54,5% e' gonfiato da questa selezione.
+     - le cap 220 hanno molti meno ingressi (55 contro 202) perche' il
+       vincolo L10 <= 220 rende difficile trovare combinazioni valide.
+       Questo e' un fatto strutturale, non un difetto: qualunque criterio
+       nuovo trovera' comunque MENO cap 220 che cap 260.
+
+ 1e. QUAL E' LA RISORSA SCARSA (risposta dell'utente, oggi 08/08): ha
+     6.000 essenze in cassa e carte per oltre 40 arene. 6.000 essenze
+     comprano 20 ingressi da 300 oppure 30 da 200. Oggi il vincolo sono
+     le ESSENZE, non le carte. L'utente precisa pero' che "dipende dalla
+     giornata": a volte le essenze avanzano. Il criterio giusto quindi non
+     e' fisso, dipende da quale vincolo morde (vedi 2).
+
+
+=====================================================================
+2. COSA IMPLEMENTARE (dietro flag, default invariato)
+=====================================================================
+Variabile d'ambiente ARENA_CRITERIO:
+  'assoluto'  (DEFAULT, comportamento di oggi): resa = margine * essenze/pt
+  'capitale'  : resa = (margine * essenze/pt) / COSTO_INGRESSO[tipo]
+                cioe' essenze attese per essenza investita
+Nient'altro cambia: stessa soglia, stesso atteso, stesso ordine di
+generazione, stesso criterio di STOP (resa <= 0 -> ci si ferma).
+
+ATTENZIONE al criterio di stop: con 'capitale' la resa cambia scala, quindi
+la condizione "migliore[0] <= 0" resta valida (il segno non cambia,
+il costo e' sempre positivo) ma VERIFICALO esplicitamente e dillo.
+
+Opzionale, solo se viene naturale: un terzo valore 'budget' che riceve le
+essenze disponibili (variabile ESSENZE_DISPONIBILI) e usa 'capitale'
+finche' il budget e' vincolante, 'assoluto' quando non lo e'. Non e'
+obbligatorio in questo giro: se costa tempo, salta e segnalalo.
+
+
+=====================================================================
+3. I PASSI
+=====================================================================
+PASSO 0 — INTERRUTTORE. Con ARENA_CRITERIO='assoluto' l'output deve essere
+  IDENTICO a oggi (confronto diretto dei dump, come hai fatto per
+  GRADE_SCALE). Se non lo e', fermati.
+
+PASSO 1 — CONFRONTO DEI DUE MIX sul mazzo REALE di oggi.
+  Va lanciato con ESCLUDI_LOCKATE=1 (richiesta esplicita dell'utente: le
+  carte gia' schierate non devono rientrare nel mix). L'utente conferma
+  che questa funzione e' gia' configurata e funziona correttamente: NON
+  perdere tempo a riverificarla, accendila e basta. Nota operativa: fa una
+  query autenticata, quindi serve il cookie.
+  Per ciascuno dei due criteri riporta:
+   - quante arene propone, e il mix per tipo (260 / 220 / uncapped)
+   - essenze totali impegnate
+   - resa attesa totale, e resa attesa per essenza impegnata
+   - quante arene entrano/escono passando da un criterio all'altro
+   - il confronto a BUDGET FISSO 6.000 essenze: con quel budget, quante
+     arene e quale resa attesa totale con ciascun criterio
+
+PASSO 2 — CONTROLLO DI REALTA' RETROSPETTIVO (nessuna query).
+  Rifai il conto del punto 1c in modo pulito e completo: ROI per tipo e
+  per costo d'ingresso su TUTTI i manager e su crowss, con la n di
+  ciascuno, dichiarando i premi base e le golden non distinte. Serve a
+  fissare a repo il numero che oggi sta solo in uno screenshot.
+
+TRAPPOLA GIA' CADUTA, non ripeterla: sul mazzo di oggi la giornata non e'
+ancora giocata, quindi il Passo 1 dice SOLO quanto cambia il mix e quante
+essenze impegna. NON dice se guadagna. Non confrontare gli atteso fra i
+due criteri come se fosse un giudizio di qualita'. Il verdetto arriva a
+giornata giocata, oppure da un backtest storico che qui non e' previsto.
+
+
+=====================================================================
+4. COSA NON FARE
+=====================================================================
+- Non cambiare il default di ARENA_CRITERIO.
+- Non toccare soglie, GUADAGNO_PER_PUNTO, COSTO_INGRESSO, score_atteso,
+  scouting.
+- Non lanciare run su GitHub senza il via esplicito dell'utente.
+- Non presentare il ROI del sito indipendente come misura nostra: e' una
+  fonte esterna, si cita come tale (e concorda con la nostra, il che e' il
+  motivo per cui vale).
+- Non dimenticare i due bias del punto 1d in nessun output.
+
+
+=====================================================================
+5. DOVE SCRIVERE L'ESITO
+=====================================================================
+File nuovo: docs/handoff/HANDOFF_CRITERIO_ARENE_2026-08-08.txt, struttura
+come da CLAUDE.md. Committa solo i tuoi file.
+Riporta all'utente in cinque righe: il mix dei due criteri a budget 6.000,
+la resa attesa per essenza impegnata nei due casi, e l'esito del Passo 0.

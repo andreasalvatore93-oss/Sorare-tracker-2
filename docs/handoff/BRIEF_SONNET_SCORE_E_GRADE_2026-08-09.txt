@@ -1,0 +1,112 @@
+BRIEF — `projection.score`: CHIUDERE IL PUNTO 0 E SFRUTTARE LA SCOPERTA
+Opus, 09/08/2026 mattina. Seguito di HANDOFF_TABELLA_GRADE_2026-08-09 §10.
+
+DUE TRACCE IN PARALLELO, decise dall'utente:
+  TRACCIA 1 — rifare il test del punto 0 sulle PARTITE FUTURE (poche query).
+  TRACCIA 2 — proseguire con A/B/C del passo 1-bis, che non dipendono da 1.
+Falle in quest'ordine se sei da solo, ma la 2 non aspetta la 1.
+SOLO MISURA. Nessuna modifica di produzione.
+
+
+PREMESSA — IL TUO §10 REGGE, E IL TEST FALLITO NON ERA COLPA TUA
+------------------------------------------------------------------
+Hai trovato `projection.score`: e' la scoperta della sessione. Il fatto che
+non abbia riprodotto l'ordine osservato dall'utente **non prova niente**,
+per il limite che hai dichiarato tu stesso al 10.3: hai letto
+`playerGameScores(last:1)`, cioe' l'ULTIMA partita nota — spesso gia'
+giocata, molte con DID_NOT_PLAY. L'utente guardava invece la partita
+FUTURA della giornata in corso. Due popolazioni diverse: il test non era
+probante, non era sbagliato.
+
+La tua lettura (score = quanto e' forte se gioca; grade = score + quanto e'
+probabile che giochi) e' coerente con tutto quello che e' stato misurato in
+modo indipendente in questi giorni:
+  - il grade segue la TITOLARITA', mai il risultato (§16 di
+    HANDOFF_GRADE_ARENE: Godts titolare 89pt sale, Dreyer titolare 45pt
+    sale, Schjelderup subentrato 85pt CROLLA);
+  - una F non gioca nel 61,5% dei casi (§2 di questo handoff);
+  - il residuo di F passa da −31 a −7 togliendo i non-giocanti (§9.4).
+Se la lettura e' giusta, **score e grade non sono la stessa cosa a
+risoluzioni diverse: servono ENTRAMBI**, e la loro differenza isola proprio
+la componente titolarita', che e' la parte che vale.
+
+
+TRACCIA 1 — RIFARE IL TEST SULLE PARTITE FUTURE
+-------------------------------------------------
+Obiettivo: capire se, sulle partite NON ANCORA GIOCATE, `projection.score`
+riproduce l'ordine che l'utente vede nella schermata di schieramento.
+
+ 1a. Prendi una giornata **non ancora giocata** e leggi grade + score per
+     un insieme di giocatori (bulk, come hai gia' fatto). Usa
+     `playerGameScores` filtrando alla partita futura, non `last:1`:
+     dichiara come l'hai selezionata.
+ 1b. Ordina per `score` decrescente e guarda la sequenza delle lettere.
+     La domanda e' UNA: le lettere formano blocchi con mescolamento solo al
+     confine (come vede l'utente), oppure sono sparse su tutto il range
+     (come nel tuo test di ieri)?
+ 1c. Riporta la tabella (score, grade, slug) delle prime ~60 righe, non un
+     riassunto: l'utente vuole guardarla.
+ 1d. Se hai il cookie, leggi la stessa cosa da `FootballComposeBenchQuery`
+     (`analisi_manager/grade_snapshot.py` righe 21-46) e confronta le due
+     fonti sulla stessa coppia (giocatore, partita) NELLO STESSO ISTANTE —
+     e' il test 0-PRE mai eseguito. Se non hai il cookie, chiedilo
+     all'utente o dichiara che non l'hai fatto.
+
+**E COGLI L'OCCASIONE, perche' e' gratis**: quella giornata non e' ancora
+giocata, quindi stai registrando un grade/score PRE-partita. Salvalo in un
+file datato (stesso schema dei `grade_snapshot_*`, che restano l'unica
+fotografia pre-partita esistente nel repo). Fra qualche giorno varra' come
+verifica pulita di qualunque cosa: e' il modo per non ritrovarci di nuovo
+senza dati pre-partita, come e' successo al §6.
+
+
+TRACCIA 2 — A/B/C DEL PASSO 1-bis (invariati)
+-----------------------------------------------
+Restano come scritti in BRIEF_SONNET_GRADE_RESIDUI_2026-08-09.txt:
+  A. allargare il campione recuperando il RUOLO dai file manager
+     (da 9.727 righe verso ~26.000) e rifare la tabella dei residui:
+     serve a stabilire se l'inversione B/C e' rumore. MISURALA, non
+     dichiararla.
+  B. su quale popolazione va calcolata la penalita' delle F (intero
+     campione −31 contro solo-giocanti −7): usa il pool reale dei backtest
+     arene, MAI le `starter_odds` in cache (contaminate al 64,6%).
+  C. la regola secca dell'utente: **mai schierare F o E**, misurata come
+     policy a se' sul backtest arene (ramo `G-noFE` contro `G`).
+
+
+TRACCIA 3 — SOLO SE AVANZA TEMPO: SCORE COME METRO ESTERNO
+------------------------------------------------------------
+Non e' urgente e non blocca nulla, ma e' un uso che non avevamo previsto.
+`projection.score` e' un giudizio di Sorare sullo stesso oggetto che stima
+il nostro `score_atteso`: e' il primo metro **indipendente** che abbiamo
+mai avuto. Sul campione storico gia' in repo (dove abbiamo entrambi),
+misura:
+  - correlazione fra `projection.score` e il nostro `score_atteso`, per
+    ruolo, con n;
+  - quale dei due predice meglio il realizzato (MAE e correlazione),
+    sullo stesso campione;
+  - dove divergono di piu': c'e' un ruolo o una lega in cui il nostro
+    modello e' sistematicamente sopra o sotto?
+Serve a sapere se abbiamo qualcosa da imparare o se il nostro modello e'
+gia' allineato. Nessuna conclusione operativa da questa traccia: solo
+numeri.
+
+
+NON FARE
+---------
+- Niente modifiche di produzione in nessuna delle tracce.
+- Non usare `starter_odds` dalla cache per filtrare (contaminate).
+- Non riproporre `GRADE_SCALE='storica'` (misurata e scartata).
+- Batch grossi solo col via dell'utente; giro di prova da 20 prima.
+- Se un test non e' probante, dillo come hai fatto al 10.3 — quella nota
+  ha impedito all'orchestratore di trarre una conclusione sbagliata.
+
+
+ALL'UTENTE, CINQUE RIGHE
+-------------------------
+Se sulle partite future l'ordine per score riproduce i blocchi di lettere;
+se le due fonti coincidono; l'esito di A (inversione B/C rumore o no); il
+percorso dei file. Numeri con esempi banali.
+
+Esito in coda a `docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt` (§11
+per la traccia 1, §12 per A/B/C, §13 per la traccia 3).

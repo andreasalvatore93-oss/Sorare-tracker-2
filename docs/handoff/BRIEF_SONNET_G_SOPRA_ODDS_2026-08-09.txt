@@ -1,0 +1,99 @@
+BRIEF — QUANTO DEL VANTAGGIO DI G E' SOLO "EVITARE CHI NON GIOCA"
+Opus, 09/08/2026. Solo misura, nessuna query, nessun file di produzione.
+
+Riusi il tuo test di stanotte: `analisi_manager/p20_g_odds_arene_backtest.py`
++ `_report.py`, stesso perimetro, stesse 90 unita', stessi due regimi.
+Esito in coda a `docs/handoff/HANDOFF_G_ODDS_ARENE_2026-08-09.txt` (§12).
+
+
+LA DOMANDA
+-----------
+Stanotte G ha battuto A di +29.050 / +24.150 essenze in allocazione. Ma nel
+backtest il ramo A e' **cieco su chi gioca**, mentre il bot in produzione
+filtra gia' le starting odds a 0,80. Il grade e' in larga parte un
+indicatore di titolarita' (F->E all'uscita delle odds, Messi A->F su
+notizia extra-campo, level score ~35 per un minuto in campo).
+
+Quindi: **quanta parte di quel vantaggio e' informazione che in produzione
+il bot ha gia'?**
+
+
+IL TRANELLO — leggi prima di progettare
+----------------------------------------
+NON filtrare i rami usando `starter_odds` dalla cache storica. Quel campo
+e' contaminato: il 64,6% dei valori e' esattamente 0% o 100% perche' viene
+riscritto dopo l'annuncio delle formazioni (§5.2 del riassunto unico).
+Filtrare con quel dato = togliere dal pool esattamente chi non ha giocato =
+regalare ad A un oracolo che in produzione non ha. G perderebbe per
+costruzione e avremmo misurato nulla.
+Le uniche odds genuinamente pre-partita nel repo sono i cinque
+`analisi_manager/dati/grade_snapshot_*` e coprono una sola giornata: non
+bastano per il test, ma se ti servono per un controllo di scala, ci sono.
+Percio' il test qui sotto **non usa le odds**: usa chi ha giocato davvero.
+
+
+PASSO 1 — DECOMPORRE (conteggio, non un backtest nuovo)
+--------------------------------------------------------
+Sulle formazioni gia' costruite dal test di stanotte, ramo A e ramo G,
+regime allocazione, entrambi i set di soglie:
+ 1a. quante carte schierate **non hanno giocato** (definisci il criterio
+     nei dati e dichiaralo: realizzato nullo/assente, scoreStatus
+     DID_NOT_PLAY, o quello che il tuo pool espone — se ci sono piu' modi
+     riporta il conteggio con ciascuno e di' quale usi);
+ 1b. quante ne pesca A e quante ne pesca G, in assoluto e per formazione;
+ 1c. quanto costano: differenza di essenze nette fra le formazioni con
+     almeno un non-giocante e le altre, per ramo;
+ 1d. la quota del delta A->G (+29.050 / +24.150) attribuibile alle
+     formazioni che contengono almeno un non-giocante.
+Se A ne pesca molti piu' di G, il vantaggio e' in buona parte titolarita'.
+
+
+PASSO 2 — IL LIMITE SUPERIORE (questo e' il numero che decide)
+---------------------------------------------------------------
+Rifai il confronto **A contro G** identico a quello di stanotte, ma su un
+pool **ripulito dai non-giocanti veri** (non dalle odds): togli dal pool,
+prima della costruzione, tutte le carte che poi non hanno giocato.
+
+Non e' realismo, e' un caso estremo dichiarato: rappresenta un filtro di
+titolarita' PERFETTO, che toglie tutti e soli quelli che non giocheranno.
+Il filtro vero a 0,80 e' peggiore di cosi'.
+
+Riporta, per entrambi i set di soglie, regime ALLOCAZIONE:
+  - delta G contro A sul pool ripulito, con IC95 bootstrap sui 24 manager;
+  - quante carte sono state tolte dal pool e quante unita' restano;
+  - il confronto affiancato col risultato di stanotte (pool intero).
+Se G batte ancora A qui, porta informazione **oltre** la titolarita'. Se
+pareggia, il suo contributo e' tutto li'.
+
+Il valore vero in produzione sta **fra** questo numero e i +29.050. Non
+provare a stimare dove: dillo come intervallo e basta.
+
+Fai lo stesso anche sul regime ASTENSIONE se costa poco, ma senza
+insistere: li' non c'era nulla di significativo nemmeno prima.
+
+
+CONTROLLI
+----------
+- Il pool ripulito deve restare **piu' grande degli slot**: se togliendo i
+  non-giocanti qualche unita' scende a pool=slot, quella unita' esce dal
+  regime allocazione — dichiara quante e non tenerle dentro.
+- A/A: sul pool intero, senza modifiche, devi riprodurre +29.050 e +24.150.
+  Se non li ritrovi, fermati: stai girando su una base diversa.
+- Placebo solo se salta fuori un ramo positivo che prima non c'era.
+- Dump di una formazione dove A pesca un non-giocante e G no: nomi, grade,
+  atteso, realizzato. Insieme ai numeri.
+
+
+NON FARE
+---------
+- Non usare `starter_odds` dalla cache per filtrare (vedi tranello).
+- Non toccare la produzione, non committare file di altri, niente query.
+- Non stimare "quanto vale in produzione": si consegna un intervallo.
+- Se un risultato e' nullo, si scrive per primo.
+
+
+ALL'UTENTE, CINQUE RIGHE
+-------------------------
+Quanti non-giocanti pesca A contro G; il delta G-A sul pool ripulito con
+il suo IC; l'intervallo entro cui sta il valore in produzione; il percorso
+del file. Numeri con esempi banali, niente termini statistici.

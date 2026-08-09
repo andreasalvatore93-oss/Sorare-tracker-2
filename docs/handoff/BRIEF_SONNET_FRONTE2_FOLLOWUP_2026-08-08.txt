@@ -1,0 +1,156 @@
+BRIEF PER SONNET — FRONTE 2, FOLLOW-UP: IL RISULTATO E' VERO O E' RUMORE?
+Scritto dall'orchestratore (Opus) l'08/08/2026, sera (Roma).
+Destinatario: Sonnet, chat pulita.
+
+NESSUNA MODIFICA ALLA PRODUZIONE. NESSUN COMMIT su file di produzione.
+Solo misura. Riusa lo script gia' scritto, non riscriverlo da zero.
+
+
+=====================================================================
+0. LEGGERE PRIMA (in quest'ordine)
+=====================================================================
+1. CLAUDE.md nella radice del repo (regole vincolanti).
+2. docs/handoff/HANDOFF_G_ARENE_2026-08-08.txt, sezioni 11 e 12.
+3. docs/handoff/BRIEF_SONNET_FRONTE2_ASTENSIONI_2026-08-08.txt (il brief
+   del primo giro: disegno, contabilita', vincoli).
+4. analisi_manager/p14_fronte2_astensioni_arena.py (lo script del primo
+   giro) e analisi_manager/p14_full_run.log.
+
+
+=====================================================================
+1. PERCHE' ESISTE QUESTO SECONDO GIRO
+=====================================================================
+Il primo giro ha dato un risultato positivo per G (G-larga: saldo +2.900
+essenze contro il manager a -600, IC95 [+100, +7.700], positivo nel 97,5%
+dei resample). L'orchestratore ha ispezionato il log e il dump e ha
+trovato TRE cose che vanno chiuse prima di considerare quel numero
+acquisito. Il lavoro fatto e' buono: qui non si rifa', si mette alla prova.
+
+
+=====================================================================
+2. COMPITO A — CORREGGERE UN'AFFERMAZIONE SBAGLIATA NELLA SEZ. 12
+=====================================================================
+La sez.12 dell'handoff afferma: "nessuna delle 4 batte 'non gioca mai'
+(0)". E' FALSO, e il tuo stesso log lo smentisce (righe 50/58/66/74):
+  A-stretta  saldo_bot = +2.000   -> batte 0
+  G-stretta  saldo_bot = +2.600   -> batte 0
+  A-larga    saldo_bot =   -100   -> NON batte 0
+  G-larga    saldo_bot = +2.900   -> batte 0
+Tre rami su quattro battono il pavimento; solo A-larga no.
+La quadratura invece e' corretta su tutti e quattro (verificata a mano
+dall'orchestratore): il calcolo va bene, e' il commento a valle che sbaglia.
+Correggi quel passaggio in sez.12, in-place, senza riscrivere il resto.
+
+
+=====================================================================
+3. COMPITO B — G E' ACCESO O E' MEZZO SPENTO? (il punto piu' importante)
+=====================================================================
+Il log dice: 421 carte su 821 hanno z_grade = 0 (51,3%), di cui 398 perche'
+il gruppo (lega, ruolo) ha meno di 2 membri col grade.
+Nel dump si vede il problema anche dove G e' "acceso": Cucurella (grade D)
+-3,70 e Laporte (grade C) +3,70. Spostamenti identici e opposti, perche'
+con un gruppo di DUE membri lo z-score e' meccanicamente +1 e -1
+qualunque sia la distanza vera fra i due grade. Un grado di differenza
+produce lo stesso effetto che ne produrrebbero quattro.
+
+In produzione questo non succede: li' il pool e' l'intero mazzo piu' i
+candidati, e i gruppi (lega, ruolo) hanno molti membri.
+Sospetto dell'orchestratore, DA VERIFICARE (non e' un fatto): il fronte 2
+sta misurando una versione mutilata e rumorosa di G, non G.
+
+Misure richieste:
+
+ B1. ANATOMIA DEI GRUPPI nel test. Per ogni gruppo (lega, ruolo) usato nel
+     campione: quanti membri, quanti col grade. Consegna la distribuzione
+     (quanti gruppi da 1, da 2, da 3, da 4, da 5+ membri col grade) e la
+     quota di carte che sta in gruppi da esattamente 2.
+
+ B2. TERMINE DI PARAGONE CON LA PRODUZIONE. Prendi un output reale recente
+     del generatore (dati_globali/player_card_counts.json o l'output di una
+     run formazione_giornata) e misura la stessa distribuzione: in
+     produzione, quanti membri ha tipicamente un gruppo (lega, ruolo)?
+     Serve una riga sola: "in produzione mediana N membri, nel test
+     mediana M". Senza questo confronto non sappiamo quanto e' grave.
+
+ B3. DA DOVE VIENE IL DELTA. Rifai il conto del saldo separando le arene
+     in due insiemi: quelle in cui la decisione A/G differisce grazie a
+     carte in gruppi con >= 3 membri col grade, e quelle in cui differisce
+     solo grazie a gruppi da 2. Se il vantaggio di G viene tutto dai gruppi
+     da 2, il vantaggio e' rumore e va detto.
+
+
+=====================================================================
+4. COMPITO C — IL TEST PLACEBO (decisivo, farlo per primo se hai poco tempo)
+=====================================================================
+E' il modo piu' rapido per sapere se il vantaggio di G e' segnale o rumore.
+
+Rifai ESATTAMENTE il test del primo giro, ma con i grade PERMUTATI A CASO
+fra le carte dello stesso gruppo (lega, ruolo) della stessa coppia
+(manager, GW): stessa distribuzione di grade, stessa struttura dei gruppi,
+stesse dimensioni, ma nessun legame vero fra grade e giocatore.
+Ripeti la permutazione 200 volte con semi diversi e costruisci la
+distribuzione del delta (saldo_bot_placebo - saldo_manager).
+
+Poi rispondi a una domanda sola:
+  il delta di G vero (+3.500 sulla regola larga, +3.200 sulla stretta) sta
+  nella coda di quella distribuzione, o e' un valore qualunque fra quelli
+  che produce il caso?
+Riporta il percentile esatto del G vero dentro la distribuzione placebo,
+per entrambe le regole.
+
+Se il G vero sta al 50esimo percentile del placebo, il grade non c'entra
+niente: il vantaggio viene dal fatto stesso di perturbare gli attesi e
+quindi saltare qualche arena. Sarebbe un risultato importante e va scritto
+senza addolcirlo. Se sta oltre il 95esimo, il segnale e' vero.
+
+
+=====================================================================
+5. COMPITO D — LE 28 ARENE ESCLUSE (bias a favore del bot)
+=====================================================================
+Il campione passa da 170 arene valutabili a 142 per "carta senza atteso"
+(34 carte). Il saldo del manager passa da +800 (sulle 170) a -600 (sulle
+142): quelle 28 arene valevano +1.400 essenze, cioe' +50 a testa contro i
+-4 delle 142 rimaste. Erano le arene PIU' redditizie del campione.
+Escluderle sposta il test verso le arene perdenti, dove astenersi paga
+facile: e' un bias A FAVORE del bot, e nel primo giro non era segnalato.
+
+ D1. PERCHE' quelle 34 carte non hanno atteso? Elenca i motivi
+     (lega senza pipeline? giocatore assente dalla cache game-log? slug
+     non risolto?) con il conteggio per motivo e 5 esempi con nome.
+ D2. SONO RECUPERABILI? Se mancano solo dalla cache game-log condivisa e
+     la loro lega ha pipeline completa, dillo e quantifica quante query
+     servirebbero. NON lanciare l'estrazione: si decide con l'utente.
+     Se la lega non ha pipeline, dillo esplicitamente (e' l'informazione
+     che serve, non un fallimento).
+ D3. QUANTO PESANO SUL RISULTATO. Rifai il conto del saldo trattando le 28
+     arene nei due modi estremi: (a) il bot le gioca tutte, (b) il bot le
+     salta tutte. Il vero risultato sta in mezzo. Se anche nel caso
+     peggiore G resta sopra il manager, il risultato regge nonostante il
+     buco; se si ribalta, il risultato dipende dal buco e non vale.
+
+
+=====================================================================
+6. COSA NON FARE
+=====================================================================
+- Non toccare file di produzione, non cambiare soglie ne' parametri.
+- Non "aggiustare" la formula del grade per far funzionare i gruppi
+  piccoli: qui si MISURA quello che la produzione fa davvero. Se la
+  normalizzazione per gruppo e' fragile sui pool piccoli, e' una scoperta
+  da riportare, non un bug da tappare di nascosto.
+- Non lanciare query a Sorare senza il via dell'utente (vale per D2).
+- Non nascondere l'esito negativo del placebo se esce negativo. E'
+  esattamente il motivo per cui lo stiamo facendo.
+
+
+=====================================================================
+7. DOVE SCRIVERE L'ESITO
+=====================================================================
+In coda a docs/handoff/HANDOFF_G_ARENE_2026-08-08.txt, sezione nuova
+"13. FRONTE 2 — FOLLOW-UP (data, ora di Roma)". La correzione del compito A
+va fatta in-place dentro la sez.12, non in fondo.
+Nessun file nuovo di handoff. Lo script puo' essere un p15_*.py o
+un'estensione di p14 con un flag: scegli tu, ma committa solo i tuoi file.
+
+Riporta all'utente, in cinque righe: il percentile del placebo (compito C),
+la mediana dei gruppi test contro produzione (B2), e se il risultato regge
+nel caso peggiore delle 28 arene (D3). Tutto il resto nel file.

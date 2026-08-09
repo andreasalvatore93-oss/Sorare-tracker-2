@@ -1,0 +1,200 @@
+BRIEF PER SONNET — IL GRADE SI NORMALIZZA SU GRUPPI TROPPO PICCOLI
+Scritto dall'orchestratore (Opus) l'08/08/2026, sera (Roma).
+Destinatario: Sonnet, chat pulita.
+
+QUESTO BRIEF TOCCA POTENZIALMENTE LA PRODUZIONE. Regola vincolante:
+si implementa dietro un FLAG spento di default, si MISURA, e NON si
+cambia il default finche' l'utente non decide. Nessun commit che cambi
+il comportamento di produzione.
+
+
+=====================================================================
+0. LEGGERE PRIMA (in quest'ordine)
+=====================================================================
+1. CLAUDE.md nella radice (regole vincolanti del progetto). In
+   particolare: la CATENA DI PRODUZIONE (valori -> soglie arena ->
+   scouting), il divieto di affermare fatti non verificati, e
+   "spengo con un flag esplicito, mai con l'assenza di un dato".
+2. docs/handoff/HANDOFF_G_ARENE_2026-08-08.txt sezioni 12 e 13 (i due
+   giri del fronte 2, da cui nasce questo lavoro).
+3. IL CODICE, non i riassunti:
+   generatore_formazioni/build_formazione_globale.py righe 440-492
+   (_grade_per_riga, _apply_grade_group) e riga 942 (dove viene chiamata).
+
+
+=====================================================================
+1. IL PROBLEMA (verificato nel codice e misurato, non ipotizzato)
+=====================================================================
+Come funziona OGGI il grade in produzione (letto alle righe 452-491):
+  - il gruppo di normalizzazione e' (lega, ruolo): riga 942, dentro il
+    ciclo per lega/ruolo; il commento a riga 938 lo dichiara;
+  - si calcolano media e deviazione standard dei grade DI QUEL GRUPPO
+    (righe 478-482), su quella singola giornata;
+  - z = (grade - media_gruppo) / sd_gruppo (riga 485);
+  - atteso_combinato = atteso + sd_attesi_gruppo * z (riga 487).
+
+Due conseguenze, entrambe MISURATE:
+ (a) se il gruppo ha MENO DI 2 carte col grade, sd = 0 e z = 0: il grade
+     viene ignorato del tutto. Stessa cosa se tutte le carte del gruppo
+     hanno lo STESSO grade (sd = 0, riga 485).
+     Misurato in produzione su player_card_counts.json reale: 57 gruppi
+     lega/ruolo con grade, mediana 3 membri col grade, e 19 gruppi su 57
+     ne hanno UNO SOLO. Cioe' su circa un terzo dei gruppi G non agisce.
+ (b) se il gruppo ha ESATTAMENTE 2 carte col grade, gli z sono
+     meccanicamente +1 e -1 qualunque sia la distanza vera fra i due
+     grade: un grado di differenza produce lo stesso spostamento che ne
+     produrrebbero quattro. Nel campione del fronte 2 sono il 19,5%
+     delle carte col grade.
+
+Quanto vale la correzione che stiamo pagando cosi' cara (misurato
+dall'orchestratore sui grade in archivio, 5.792 osservazioni con lega
+nota):
+  per RUOLO: media da 2,22 (Forward) a 3,21 (Goalkeeper), sd interna ~1,5
+  per LEGA:  media da 2,60 (belgio, scozia) a 3,51 (argentina), sd ~1,6
+  complessivo: media 2,95, sd 1,65
+La correzione per lega e ruolo e' REALE ma vale poco piu' di mezza
+deviazione standard. Non giustifica di perdere il grade su un terzo dei
+gruppi.
+
+
+=====================================================================
+2. LA VARIANTE DA MISURARE ("scala storica")
+=====================================================================
+Si tiene la correzione per (lega, ruolo), ma media e deviazione del grade
+si prendono dallo STORICO invece che dalle 1-3 carte presenti in quella
+giornata:
+     z = (grade - media_storica[lega, ruolo]) / sd_storica[lega, ruolo]
+Il resto della formula NON cambia: atteso + sd_attesi_gruppo * z. La
+conversione in punti resta ancorata alla dispersione degli attesi del
+gruppo corrente, come oggi.
+
+Come costruire la scala storica:
+  - fonte: le stesse fonti dell'indice grade (analisi_manager/dati/
+    storico_grade_*.json + p12_r5_gk_ampio.json), mappa slug->lega con
+    analizza_gw.indice_lega();
+  - per ogni (lega, ruolo) con almeno 100 osservazioni: media e sd sue;
+  - fallback 1: (ruolo) con almeno 500 osservazioni;
+  - fallback 2: scala globale (media 2,95, sd 1,65 sui dati attuali --
+    RICALCOLALA, non copiarla da qui);
+  - dichiara in output quante coppie (lega,ruolo) usano ciascun livello.
+
+LEAKAGE, da gestire esplicitamente: lo storico raccolto il 06/08 contiene
+grade successivi alle GW su cui misureremo. Calcola la scala usando SOLO
+osservazioni con data ANTERIORE all'inizio della fixture in esame, e
+riporta anche la versione con tutto lo storico. Se i due risultati
+coincidono, il leakage non conta e lo si dichiara; se divergono, vale solo
+la versione walk-forward.
+
+IMPLEMENTAZIONE: variabile d'ambiente GRADE_SCALE, valori 'gruppo'
+(default, comportamento attuale) e 'storica'. Default INVARIATO: la
+produzione di oggi non deve cambiare di un bit.
+
+
+=====================================================================
+3. I PASSI, IN QUEST'ORDINE — non saltarne nessuno
+=====================================================================
+
+PASSO 0 — L'INTERRUTTORE (prima di qualunque misura di merito)
+ 0a. Con GRADE_SCALE='gruppo' i risultati devono essere IDENTICI a quelli
+     di oggi. Verificalo su un caso reale e dillo. Se non lo sono, hai
+     rotto qualcosa: fermati.
+ 0b. Con GRADE_SCALE='storica': quante carte cambiano z, e di quanto?
+     Riporta: quante carte passano da z=0 a z diverso da zero (sono il
+     guadagno atteso), la distribuzione degli |z| nei due modi, e quante
+     carte cambiano di piu' di mezza deviazione.
+ 0c. Su un mazzo reale: quanti gruppi passano da "grade ignorato" a
+     "grade attivo".
+
+PASSO 1 — IL NON-ARENA (e' qui che sta la prova solida di G, e va
+           protetta prima di toccare qualsiasi cosa)
+ La base pulita e' quella della rivalidazione del 07/08: All Star + U23
+ a 7 carte (n=864, A=424,57 G=430,55, delta +5,98 IC95 [+2,43, +9,68]) e
+ MLS Hot Streak a 5 carte (n=310, delta +6,43).
+ Ricostruiscila con gli stessi criteri (sezione "Come si costruisce una
+ base pulita" in docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8bis:
+ niente arene, tutte le carte limited filtrando sulla rarita' della
+ CARTA, somma punteggi = punteggio ufficiale entro 0,5, solo leaderboard
+ division-N per All Star/U23).
+ 1a. RIPRODUCI il numero attuale: A vs G-gruppo. Devi ritrovare +5,98 su
+     n=864. Se non lo ritrovi, fermati e segnala: significa che la base
+     non e' la stessa e ogni confronto successivo sarebbe falso.
+ 1b. Misura A vs G-storica sulla STESSA base, stesso run.
+ 1c. Misura G-gruppo vs G-storica (e' il delta che decide).
+ 1d. PLACEBO anche qui, 200 permutazioni, per entrambe le varianti. Non
+     e' mai stato fatto sul non-arena ed e' il controllo che manca a
+     tutto il filone G: se anche il +5,98 attuale sta nella nuvola del
+     caso, e' un'informazione che cambia tutto e va saputa subito.
+     ATTENZIONE: nel non-arena non c'e' decisione di ingresso, quindi
+     l'artefatto "salto arene a caso" non esiste; se il placebo esce
+     comunque positivo, c'e' un secondo artefatto da capire.
+ 1e. Incertezza con bootstrap sui MANAGER (cluster), non sulle formazioni.
+
+ FERMATI QUI E RIPORTA. Il passo 2 si fa solo dopo che l'utente ha visto
+ i numeri del passo 1.
+
+PASSO 2 — L'ARENA (solo dopo via libera)
+ Rifai il fronte 2 (p14/p15) con GRADE_SCALE='storica': matrice 2x2,
+ saldo in essenze, placebo, per entrambe le regole (stretta e larga).
+ Il confronto che interessa e' G-storica contro G-gruppo, a parita' di
+ tutto il resto.
+
+PASSO 3 — LA CATENA (solo dopo via libera, ma va PIANIFICATO da subito)
+ Se G-storica entrasse in produzione, cambia score_atteso, quindi per
+ CLAUDE.md vanno riverificati, in quest'ordine:
+   sigma di calibrazione -> PAREGGIO_ARENA e GUADAGNO_PER_PUNTO delle tre
+   arene -> scouting (che legge le soglie dal generatore via getattr).
+ Nel passo 3 si MISURA di quanto si muovono, non si cambiano.
+
+
+=====================================================================
+4. IL PEZZO LIVE (in parallelo, non blocca nulla)
+=====================================================================
+L'utente ha carte libere e puo' schierare arene oggi/domani. Il grade
+sparisce quando la partita inizia: e' l'unica occasione di registrarlo
+in avanti invece di rincorrere lo storico.
+
+Da fare per la GW corrente, SENZA cambiare cio' che l'utente schiera:
+ 4a. Snapshot dei grade della giornata (esiste gia'
+     analisi_manager/grade_snapshot.py — verificane il funzionamento
+     prima di usarlo, non fidarti del nome).
+ 4b. Genera le formazioni arena in tre varianti — A, G-gruppo,
+     G-storica — sullo stesso pool, e salva quale carta entra in quale
+     arena in ciascuna. NON serve che l'utente schieri la variante: serve
+     il confronto di SELEZIONE.
+ 4c. Riporta quanto si spostano le scelte fra le tre varianti (quante
+     carte diverse, quante arene cambiano tipo, quante cambiano
+     verdetto di ingresso).
+ TRAPPOLA GIA' CADUTA, non ripeterla: su una GW non ancora giocata NON
+ si puo' dire se una variante guadagna o peggiora, e confrontare gli
+ atteso_combinato fra varianti NON e' un giudizio di qualita' (e'
+ il punteggio di selezione, gonfiato per costruzione). Si misura solo
+ QUANTO SPOSTA. Il verdetto arriva quando la giornata sara' giocata.
+
+
+=====================================================================
+5. COSA NON FARE
+=====================================================================
+- Non cambiare il default di GRADE_SCALE. La produzione resta com'e'.
+- Non toccare soglie, calibrazione, scouting in questo giro.
+- Non "sistemare" altri difetti che incontri per strada: annotali in
+  fondo all'esito e vai avanti.
+- Non usare la scala storica calcolata su dati posteriori alla GW
+  misurata senza dichiararlo (vedi leakage, sez.2).
+- Niente query a Sorare senza il via dell'utente, tranne lo snapshot
+  grade del punto 4a se l'utente lo autorizza esplicitamente.
+- Se un numero non lo hai misurato, non scriverlo. "Non lo so" e' una
+  risposta accettabile; una stima travestita da misura no.
+
+
+=====================================================================
+6. DOVE SCRIVERE L'ESITO
+=====================================================================
+File nuovo: docs/handoff/HANDOFF_GRADE_SCALA_2026-08-08.txt (questo e' un
+tema nuovo, non un seguito del fronte 2). Struttura come da CLAUDE.md
+(stato repo, perche' esiste, cosa hai toccato, output numerico integrale
+compresi i risultati nulli, dubbi, decisione aperta, file di riferimento).
+Committa solo i tuoi file.
+
+Riporta all'utente in cinque righe: l'esito del PASSO 0b (quante carte si
+accendono), il numero del PASSO 1a (hai ritrovato +5,98 si'/no) e quello
+del PASSO 1c (G-storica contro G-gruppo). Il resto nel file.

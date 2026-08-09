@@ -1,0 +1,336 @@
+BRIEF PER SONNET — SCARICARE I PREMI DELLE ARENE E RITARARE LE SOGLIE
+Scritto dall'orchestratore (Opus) l'08/08/2026, 19:15 Roma (17:15 UTC).
+
+Sei un esecutore in una chat pulita: qui dentro c'e' tutto quello che ti
+serve. Se una cosa non e' scritta qui, chiedila all'utente, non dedurla.
+
+
+=====================================================================
+0. COSA LEGGERE PRIMA (in quest'ordine, niente altro)
+=====================================================================
+1. `CLAUDE.md` — le regole vincolanti. In particolare: divieto di stime a
+   spanne, obbligo di mostrare i dati grezzi, un tema alla volta.
+2. `docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md` §8undecies — COME SI PARLA
+   CON L'API SORARE. Leggilo PRIMA di scrivere una riga di codice di rete:
+   due esecutori ci hanno perso ore la notte scorsa e la risposta era gia'
+   nel repo.
+3. `docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt` §10 — il giro
+   precedente (soglie ricalcolate su 2.125 arene). E' l'handoff su cui
+   scriverai il tuo esito.
+4. CODICE, con le righe:
+   - `scarica_classifiche_v3.py` (tutto, 250 righe): e' lo scheletro da
+     riusare. Probe di autenticazione righe 132-139, query righe 142-154,
+     costruzione lista righe 157-188, salvataggio incrementale 201-206.
+   - `traccia_arene.py` righe 9-24 (le tre query catturate dalle DevTools),
+     92-122 (la query indice + il commento sulla validazione GraphQL),
+     216-250 (come si leggono oggi i premi).
+   - `consiglio_arena.py` righe 36-66 (REGOLE: costi e terna premi per
+     tipo), 113-153 (`premi_osservati()` e `incasso_medio()`: e' QUI che i
+     premi entrano nel calcolo), 156-164 (`pareggio()`).
+   - `analisi_manager/p25_archivio_v2.py` (unione degli archivi).
+
+Non leggere gli altri file di docs/handoff/: sono archivio e contengono
+verdetti superati scritti come se fossero attuali.
+
+
+=====================================================================
+1. LA DOMANDA (una sola)
+=====================================================================
+Quanto si incassa davvero, per posizione e per tipo di arena — misurato su
+un campione grande invece che sui pochi casi di oggi — e come cambiano
+pareggio e guadagno-per-punto quando si rifa' il calcolo con quei premi?
+
+Contesto in cinque righe: le soglie arena sono state ritarate su 2.125
+arene e i PAREGGI sono risultati solidi. Ma il calcolo ha due meta': quanto
+e' fitto il campo avversario (ora solidissima, 2.125 arene) e quanto si
+incassa arrivando in una certa posizione (ferma a pochissime osservazioni).
+La seconda meta' e' proprio quella da cui dipende il GUADAGNO PER PUNTO,
+cioe' il numero che decide quali arene giocare e che si e' mosso di piu'
+(-12/-26% fra un giro e l'altro). Finche' non e' solida, le soglie nuove
+non si applicano.
+
+
+=====================================================================
+2. L'IPOTESI, PRIMA DEI NUMERI (dichiarata dall'orchestratore)
+=====================================================================
+Non ho una misura: quella che segue e' una mia aspettativa, non un fatto.
+
+Mi aspetto che il guadagno per punto si muova PIU' del pareggio, perche' e'
+la meta' del calcolo che poggia su venti casi per la cap 220. Non so in
+quale direzione. **Non fidarti di questa aspettativa**: l'orchestratore
+precedente aveva ipotizzato, partendo da una pendenza empirica, che il
+guadagno/punto della cap 220 fosse sottostimato, e con il calcolo fatto per
+bene su 14 volte i dati l'ipotesi si e' rivelata SBAGLIATA.
+
+Se esce che i premi veri non spostano niente, e' un risultato valido, forse
+il piu' utile di tutti: significa che le soglie si possono applicare subito.
+Scrivilo com'e'.
+
+Avvertenza metodologica gia' pagata cara in questo repo: una pendenza
+misurata sui punteggi realizzati NON e' la stessa cosa del parametro di
+produzione, che viene da una simulazione con dentro l'incertezza della
+previsione. Non confonderle.
+
+
+=====================================================================
+3. FASE 1 — BLOCCANTE: LA QUERY DI PROVA (non saltarla)
+=====================================================================
+Prima di scrivere qualunque batch, devi stabilire SE i premi di un'arena
+altrui/chiusa siano leggibili. Oggi non lo sono: i premi che abbiamo sono
+solo quelli incassati dai NOSTRI manager, letti da `myEligibleOrSo5Rewards`
+(`traccia_arene.py` righe 109-118 e 229-245), che per costruzione non
+scala oltre le arene che abbiamo giocato noi.
+
+L'unica strada citata nel repo e' `rewardsConfig`, in un commento a
+`traccia_arene.py` riga 17:
+    so5LeaderboardContender(slug).so5Leaderboard.rewardsConfig
+        -> premi per posizione e punteggio di chi occupa quella posizione
+VERIFICATO DALL'ORCHESTRATORE: in tutto il repo `rewardsConfig` compare
+SOLO in quel commento. Non e' mai stata implementata. Quindi non sai se
+funziona: e' un'ipotesi da testare, non un fatto.
+
+Cosa fare, nell'ordine:
+a) UNA query su UNO slug di arena gia' chiusa (prendi il primo di
+   `dati_globali/classifiche_arene_2026-08-08.json`, campo `slug`), per
+   ciascuna forma candidata. L'introspezione GraphQL su Sorare e'
+   DISABILITATA (`__type`/`__schema` -> errore): non riprovarci mai. Lo
+   schema si scopre dal messaggio d'errore di una query mirata, che elenca
+   i campi validi.
+b) Sfrutta questo, che e' documentato e verificato nel repo
+   (`traccia_arene.py` righe 92-96): **la validazione GraphQL avviene PRIMA
+   dell'autenticazione**. Quindi la FORMA della query si prova anche senza
+   cookie, gratis e senza rischio di rate limit. Prima trovi la forma
+   valida, poi autentichi.
+c) Solo quando la forma e' valida, rifalla autenticato e guarda cosa torna
+   davvero per un'arena CHIUSA (le classifiche non sono pubbliche: senza
+   cookie la query risponde ma torna vuota).
+
+ESITI POSSIBILI E COSA FARE:
+- **Risponde con i premi per posizione** -> vai alla Fase 2.
+- **Il campo non esiste, o esiste ma torna vuoto/null per arene chiuse** ->
+  FERMATI. Riferisci all'utente cosa hai provato e cosa ha risposto, in
+  chiaro, con la query e l'errore testuali. NON ripiegare su una stima, NON
+  inventare un premio "presumibile", NON dedurre i premi dalla terna
+  dichiarata. Meglio un filone fermo che un numero inventato.
+- **Trovi un'altra strada** (un campo diverso che espone i premi) -> va
+  benissimo, ma documentala allo stesso modo e passa dal controllo §5b
+  prima di usarla.
+
+
+=====================================================================
+4. IL CAMPIONE E I NUMERI DI CONTROLLO
+=====================================================================
+Se non ritrovi ESATTAMENTE questi numeri, fermati e dillo. Non proseguire:
+vorrebbe dire che stai leggendo un file diverso da quello che credo.
+
+**A) `dati_globali/classifiche_arene_2026-08-08.json`** — dict con chiavi
+`aggiornato` e `arene`. `arene` e' una LISTA di 1.677 elementi. Ogni
+elemento: slug, tipo, partecipanti, punteggi (lista), rank_premiati (dict,
+oggi SEMPRE vuoto).
+   per tipo: Cap 220 = 748, Uncapped = 348, Beginner = 310, Cap 260 = 271.
+   ATTENZIONE, difetto reale: l'08/08 questo file e' stato trovato
+   SVUOTATO sul disco (2 byte, `{}`) mentre nel commit f3a71752ab contiene
+   1.677 arene. L'orchestratore lo ha riscritto dal commit e ne ha
+   verificato l'hash (b3a2cf60de93b49117b96ba81f13d52a991da085, identico a
+   HEAD). Qualcosa lo ha azzerato DOPO il commit — probabilmente un rilancio
+   parziale di `scarica_classifiche_v3.py`. Prima di lavorarci CONTA le
+   arene. E qualunque script tu scriva, non deve poter azzerare un file di
+   dati esistente (vedi §5c).
+
+**B) `dati_globali/arene_storico_full_v2.json`** — l'archivio unito usato
+per le soglie del giro precedente. 2.125 arene:
+   cap 220 = 755, Beginner = 427, cap 260 = 404, Uncapped = 354,
+   arena division = 171, arena uncapped = 14.
+   (gli ultimi due tipi restano ESCLUSI dal calcolo delle soglie)
+
+**C) I premi che abbiamo oggi — e qui c'e' una discrepanza da chiarire.**
+Contati dall'orchestratore l'08/08 sui file grezzi (righe con
+`rank_premiato` E `premio_essenze` valorizzati):
+   arene_storico_full.json (673 arene): **235** premi
+     cap 260 73 | Beginner 63 | arena division 60 | cap 220 20 |
+     Uncapped 12 | arena uncapped 7
+   arene_storico_full_v2.json (2.125 arene): **199** premi
+     cap 260 68 | arena division 52 | Beginner 42 | cap 220 20 |
+     Uncapped 11 | arena uncapped 6
+   arene_storico.json (160 arene, il default di produzione): 75 premi
+
+   DUE COSE, entrambe da riportare:
+   1. L'handoff §10 dice "n premi osservati INVARIATO (235 totali)" dopo
+      l'unione. Il grezzo dice 199. L'unione ha PERSO 36 premi (cap 260
+      -5, Beginner -21, arena division -8, Uncapped -1, arena uncapped -1),
+      nonostante `p25_archivio_v2.py` dichiari di tenere la riga vecchia
+      dove le due fonti si sovrappongono. **Verifica dove si perdono** —
+      e' il primo controllo da fare, prima di qualunque download: se
+      l'unione perde righe, le perdera' anche col file dei premi nuovo.
+   2. Tolti i due tipi esclusi dal calcolo, i premi che entrano davvero
+      nelle soglie sono **141** (68+42+20+11), non 235. Il campione vero e'
+      ancora piu' magro di come e' scritto nell'handoff. Correggi
+      l'handoff nello stesso momento in cui lo verifichi (regola CLAUDE.md:
+      quando documento e codice divergono vince il codice, e il documento si
+      corregge subito).
+
+
+=====================================================================
+5. IL METODO
+=====================================================================
+**a) Il trasporto.** NON costruire header o sessioni nuove. Riusa lo
+scheletro di `scarica_classifiche_v3.py`, che ha gia' tutti e tre i pezzi
+obbligatori (§8undecies): x-csrf-token su OGNI richiesta; sessione HTTP
+dedicata col barattolo dei cookie svuotato prima di ogni richiesta; header
+di client Web (sorare-client/version/build + Origin/Referer/sec-fetch-*).
+Manca uno solo dei tre e prendi 429 immediati, che leggerai come rate limit
+mentre invece sei su sessione anonima.
+Diagnosi in dieci secondi PRIMA di ogni batch: `{ currentUser { slug } }`.
+Se torna lo slug sei autenticato e i 429 sono veri (rallenta). Se torna
+`null` NON e' rate limit: nessun backoff ti salvera'. La probe stessa va
+fatta con retry, altrimenti un rate limit viene scambiato per sessione
+morta (errore reale del 07/08).
+Le credenziali (cookie, csrf, fingerprint) le chiedi ALL'UTENTE. Non
+cercarle nel repo.
+
+**a-bis) SE GIRI SENZA COOKIE (aggiunta dell'08/08, 21:30 Roma).** Se
+scopri che la query risponde anche su sessione anonima, il batch anonimo va
+benissimo — anzi è preferibile, perché non brucia la sessione dell'utente.
+Ma allora **la probe `currentUser` non ti serve a niente**: senza cookie
+torna `null` per costruzione, sempre, anche quando tutto funziona. Se la usi
+come semaforo leggerai "sessione morta" a ogni giro e ti fermerai per
+niente. La regola di §8undecies — "currentUser null NON è rate limit" — vale
+per il caso autenticato: in anonimo non si applica.
+
+Sostituiscila con una **CANARY**: uno slug di arena che hai già letto con
+successo nella Fase 1, di cui conosci la risposta esatta. Regola:
+- **prima** del batch la rilanci: deve tornare lo stesso premio di prima. Se
+  no, non partire: qualcosa è cambiato nella forma della query o negli
+  header, e scaricheresti 1.677 risposte sbagliate;
+- **ogni ~100 arene** la rilanci: se la canary continua a rispondere
+  correttamente mentre le altre falliscono, il problema è nei singoli slug
+  (arene non chiuse, non visibili) e devi proseguire annotandoli fra i
+  falliti; se fallisce anche la canary, sei bloccato lato Sorare — fermati,
+  non insistere con backoff infiniti, e riferisci quante ne hai fatte;
+- distingui e **conta separatamente** i tre casi: HTTP 429 (rate limit,
+  backoff crescente), risposta valida ma `rewardsConfig` null/vuoto (arena
+  senza premi leggibili: è un dato, non un errore), errore GraphQL (forma
+  della query: fermati subito, non è un problema di rete).
+
+**Prima delle 1.677, fai un giro di prova su 20 arene** e riporta: quanti
+429, dopo quante richieste il primo, se il backoff li ha assorbiti. È
+l'unico modo di sapere se il rubinetto anonimo regge un batch lungo, e
+costa venti richieste. Il via alle 1.677 arriva dopo aver visto quei numeri.
+
+Se le 20 di prova mostrano che l'anonimo NON regge, la via d'uscita è
+autenticarsi (credenziali dall'utente) e tornare alla probe `currentUser`
+con retry: da autenticato il semaforo funziona. Dichiara quale delle due
+strade hai preso.
+
+**b) IL CONTROLLO CHE DECIDE TUTTO: i premi nuovi coincidono con quelli
+veri?** Abbiamo 199 arene in cui sappiamo gia' quanto abbiamo incassato e
+in che posizione siamo arrivati (`rank_premiato`, `premio_essenze` in
+arene_storico_full_v2.json). Per quelle stesse arene, il premio letto dalla
+fonte nuova alla STESSA posizione deve coincidere. Riporta: quante
+sovrapposizioni hai trovato, in quante coincide, e la lista completa dei
+casi in cui NON coincide con entrambi i valori.
+Se non coincide, la fonte nuova sta misurando un'altra cosa (premio
+previsto invece che incassato, unita' diverse, frammenti invece di essenze)
+e non e' utilizzabile: fermati e dillo. Questo controllo viene PRIMA di
+qualunque numero di sintesi.
+
+**c) Il jackpot — non appiattirlo.** `consiglio_arena.premi_osservati()`
+(righe 113-128) pesca dai premi DAVVERO VISTI apposta: circa il 5% delle
+arene sono "jackpot" e pagano di piu' (misurato: 6,5% in cap 260, 4,8% in
+Beginner). Pescando dai premi osservati i jackpot entrano da soli alla loro
+frequenza vera, senza modellarli. Quindi: se la fonte nuova ti da' il
+premio VERO di quella specifica arena, ottimo, i jackpot ci sono dentro. Se
+ti da' una tabella nominale uguale per tutte, i jackpot spariscono e il
+calcolo PEGGIORA anche se la n cresce. Verificalo contando quante arene per
+tipo hanno premi diversi dalla terna standard di `consiglio_arena.REGOLE`
+(cap 260 e Uncapped 1300/800/500, cap 220 1000/500/300, Beginner
+500/250/150) e riportando la distribuzione. Se sono tutte identiche alla
+terna, dillo forte: e' un campanello.
+
+**d) Scrittura dei file. Non sovrascrivere niente.** I premi vanno in un
+file NUOVO (`dati_globali/premi_arene_2026-08-08.json` o simile), l'archivio
+arricchito in un altro file NUOVO (v3), con salvataggio incrementale su
+`.tmp` + `os.replace` come fa `scarica_classifiche_v3.py` righe 201-206, e
+lista separata dei falliti. Se il batch si interrompe a meta' non si deve
+perdere niente, e un rilancio non deve poter azzerare il file esistente:
+carica sempre l'esistente prima di scrivere (`carica_esistenti()`, righe
+191-198) e non scrivere mai un file piu' piccolo di quello che hai letto
+senza dirlo.
+
+**e) Il ricalcolo.** Usa gli stessi strumenti del giro precedente, non
+riscriverli: `consiglio_arena.py` (che legge l'archivio dalla env var
+`ARCHIVIO_ARENE`, riga 33-34) e `analisi_manager/p24_gw3_soglie_nuove.py`
+per l'effetto a valle. Sigma invariata dal giro precedente (cap260 50,52
+n=1356; cap220 46,70 n=251; Uncapped 53,72 n=288; Beginner 50,18 n=1472):
+non rifarla, viene da un'altra fonte e non c'entra con questo lavoro.
+
+
+=====================================================================
+6. IL VIA DELL'UTENTE — due volte
+=====================================================================
+1. Dopo la Fase 1 (query di prova), PRIMA del batch: dici all'utente quante
+   query servono, la pausa fra una e l'altra, il tempo stimato, e aspetti
+   il via. 1.677 arene sono 1.677 richieste: non si lanciano di iniziativa.
+2. Prima di toccare qualunque valore di produzione: non lo tocchi. Questo
+   brief e' SOLO MISURA. `PAREGGIO_ARENA`, `GUADAGNO_PER_PUNTO`,
+   `COSTO_INGRESSO` e l'archivio di default restano dove sono. L'utente ha
+   gia' deciso che le soglie si applicheranno, ma l'applicazione e' il
+   lavoro DOPO questo, e passa dalla catena completa
+   (valori di produzione -> soglie arena -> scouting).
+
+
+=====================================================================
+7. COSA CONSEGNARE
+=====================================================================
+Ogni numero con la sua n. Niente stime, niente "circa".
+
+1. Fase 1: le query provate testuali, le risposte/errori testuali, il
+   verdetto (si puo' / non si puo').
+2. Il controllo §5b: sovrapposizioni trovate, quante coincidono, elenco
+   completo dei disallineamenti.
+3. Il controllo §5c: distribuzione dei premi per (tipo, posizione), con
+   quante osservazioni e quante diverse dalla terna standard.
+4. La verifica §4C.1: dove si perdono i 36 premi nell'unione.
+5. Copertura del download: arene tentate, riuscite, fallite per motivo.
+6. Tabella soglie a TRE colonne per ciascuno dei quattro tipi:
+   produzione -> giro-2125 con premi vecchi -> giro-2125 con premi nuovi.
+   Sia pareggio sia guadagno/punto, con n arene e n premi accanto.
+7. Split-half (seme 42) e sensibilita' sigma +-10%, come nel giro
+   precedente, cosi' i numeri sono confrontabili.
+8. Effetto a valle su GW3: quante arene si giocherebbero, quali cambiano.
+9. Un DUMP LEGGIBILE di un caso completo: una singola arena con slug, tipo,
+   i dieci punteggi, la posizione del nostro manager, il premio che
+   sapevamo e il premio letto dalla fonte nuova. Consegnalo INSIEME ai
+   numeri, non su richiesta.
+
+
+=====================================================================
+8. COSA NON FARE
+=====================================================================
+- Non toccare la produzione, non cambiare default, non committare file di
+  altri (piu' sessioni lavorano sullo stesso repo: committa solo i tuoi e
+  segnala gli altri senza toccarli).
+- Non lanciare il batch senza il via dell'utente.
+- Non stimare a spanne. Se non hai la fonte, la risposta e' "non lo so, mi
+  servirebbe X", mai un numero.
+- Non nascondere i risultati nulli o negativi: se i premi nuovi non
+  spostano niente, e' un esito valido e va scritto per primo.
+- Non "sistemare" difetti trovati per strada: annotali in fondo e prosegui.
+- Non riprovare l'introspezione GraphQL: e' disabilitata.
+
+
+=====================================================================
+9. DOVE SCRIVERE L'ESITO
+=====================================================================
+In coda a `docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt`, come
+sezione 11, con data e ora di Roma in testa. MAI un file nuovo: le chat non
+condividono memoria, il repo si'.
+Se correggi il conteggio dei premi (§4C), correggi anche
+`docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md` §8octies nello stesso commit.
+
+All'utente riferisci in CINQUE RIGHE: si puo' o non si puo' leggere i
+premi; se si', quanto e' cresciuto il campione e se le soglie si sono
+mosse; il percorso del file. Tutto il resto sta nel file. Paga a token e ha
+una forma grave di ADHD: analisi, tabelle e ragionamenti non vanno in chat.
+Spiega i numeri con esempi banali, non con termini statistici: ha una
+laurea in legge, non in statistica.

@@ -1,0 +1,271 @@
+BRIEF PER SONNET — FRONTE 2: LA QUALITA' DELLE ASTENSIONI IN ARENA
+Scritto dall'orchestratore (Opus) l'08/08/2026, pomeriggio (Roma).
+Destinatario: Sonnet, chat pulita.
+
+NESSUNA MODIFICA ALLA PRODUZIONE. NESSUN COMMIT su file di produzione.
+E' un lavoro di sola misura. L'unico file che puoi scrivere e' lo script
+nuovo di analisi + l'esito in coda all'handoff (vedi punto 9).
+
+
+=====================================================================
+0. COSA LEGGERE PRIMA DI TOCCARE QUALSIASI COSA (in quest'ordine)
+=====================================================================
+1. CLAUDE.md nella radice del repo — sono le regole vincolanti del
+   progetto. In particolare: divieto di affermare fatti non verificati,
+   obbligo di dump leggibile prima dei numeri, controllo pool/slot,
+   "prima di misurare un componente dimostro che l'interruttore funziona".
+2. docs/handoff/HANDOFF_G_ARENE_2026-08-08.txt — sezione 11 (FRONTE 2).
+   Contiene il disegno completo, gia' discusso e approvato dall'utente.
+3. Il CODICE, non i riassunti:
+   - generatore_formazioni/build_formazione_globale.py righe 421-500
+     (grade G), 516-529 (PAREGGIO_ARENA), 638-697 (GUADAGNO_PER_PUNTO,
+     COSTO_INGRESSO, QUOTA_MINIMA, _etichetta_arena, verdetto_arena)
+   - analisi_manager/p13_backtest_gw_crowss.py — e' il backtest arena
+     esistente, da cui riusare le funzioni (grezzo dalla cache, atteso
+     walk-forward, z-grade per gruppo). NON riscriverle da zero.
+   - analisi_manager/p12_backtest_formazione_grade.py — carica_indice_grade(),
+     grade_in_finestra(), zscore_gruppo().
+
+Nota pratica: molti script in analisi_manager/ hanno path Windows
+hardcoded (r'C:\Users\Andrea\...'). Girano sulla macchina dell'utente.
+
+
+=====================================================================
+1. LA DOMANDA (una sola, non allargarla)
+=====================================================================
+Prendiamo le giornate in cui un manager ha schierato SOLO arene, cioe' le
+carte che possedeva-e-ha-usato coincidono esattamente con gli slot da
+riempire. In quel caso il bot non ha nessuna carta di scorta: non c'e'
+selezione da misurare.
+
+Ma resta una decisione, ed e' quella che misuriamo:
+  date ESATTAMENTE quelle 5 carte, in quella arena, il bot ci sarebbe
+  entrato? E aveva ragione?
+
+Vincoli decisi dall'utente, non negoziabili:
+  - le 5 carte restano inchiodate all'arena in cui il manager le ha messe:
+    NIENTE riallocazione fra arene dello stesso giorno;
+  - il CAPITANO e' identico a quello del manager: il bot non lo sceglie.
+
+Conseguenza da tenere bene a mente perche' e' il cuore del test: quando il
+bot decide di GIOCARE, la sua formazione e' identica a quella del manager,
+quindi stesso punteggio e stesso piazzamento, quindi voto ZERO. TUTTA la
+differenza fra bot e umano nasce dalle arene che il bot RIFIUTA.
+Stiamo misurando la qualita' delle astensioni, niente altro.
+
+IPOTESI DELL'ORCHESTRATORE, SCRITTA PRIMA DEI NUMERI (serve a non farsi
+influenzare dopo): mi aspetto che G rifiuti piu' arene di A, e che il saldo
+migliori rispetto al manager, perche' il manager le ha giocate tutte e ha
+chiuso in pareggio. Non ho nessuna aspettativa sul fatto che G batta A: la
+soglia potrebbe fare tutto il lavoro da sola. Se esce che G = A, e' un
+risultato valido e va scritto.
+
+
+=====================================================================
+2. IL CAMPIONE — come ricostruirlo, con i numeri di controllo
+=====================================================================
+Fonte: dati_globali/manager_*.json (55 file).
+
+Filtri, nell'ordine:
+ a) scarta i file che non hanno la chiave 'giornate' (ce n'e' 1:
+    manager_foreveryoung_predizioni_gw2.json). Restano 54.
+ b) arene ammesse: campo 'competizione' in {'Cap 260','Cap 220','Uncapped'}
+    E campo 'tipo_arena' in {'arena_limited','arena_limited_uncapped'}.
+    Le Beginner e le Elite sono ESCLUSE (decisione utente; le beginner
+    entreranno in un secondo giro, quando avranno una soglia).
+ c) per ogni coppia (manager, GW): pool = numero di CARTE DISTINTE (campo
+    'carta', non 'slug') schierate dal manager in QUALUNQUE competizione
+    di quella GW; slot = 5 x numero di arene ammesse.
+    Tieni la coppia solo se pool / slot <= 1,05.
+ d) copertura grade sul pool >= 70% (vedi punto 3 per l'indice).
+ e) scarta le formazioni che non hanno 5 carte e quelle in cui la somma dei
+    punteggi delle carte si discosta di piu' di 0,5 dal campo
+    piazzamento.punteggio.
+
+NUMERI DI CONTROLLO — se non ritrovi ESATTAMENTE questi, hai sbagliato a
+ricostruire il campione: fermati e dillo, non proseguire.
+  arene .................... 171
+  manager ..................  14
+  GW .......................  13
+  ripartizione ............. Cap 260 = 101, Cap 220 = 44, Uncapped = 26
+  manager principali ....... bxl-spartak 40, lairdinho 39, fins49 37,
+                             shirimimi 21, eoghankelly 11, qtn 9
+  piazzamenti a podio ......  54 su 171 (31,6%)
+  carte con grade .......... 815 su 855 (95,3%)
+  arene con tutte e 5 le carte col grade ... 146 su 171
+  saldo netto reale del manager (premi base, vedi punto 5) .... +500
+                             essenze in totale (+2,9 per arena)
+  ripartizione del saldo ... Cap 260 -4.400 | Cap 220 +2.600 |
+                             Uncapped +2.300
+
+
+=====================================================================
+3. L'INDICE GRADE
+=====================================================================
+Costruiscilo con analisi_manager/p12_backtest_formazione_grade.
+carica_indice_grade() PIU' analisi_manager/dati/
+storico_grade_backtest_20260806.json (cioe' l'equivalente di
+p12_backtest_manager_grade.carica_indice_grade_esteso()).
+Lookup: grade della partita piu' recente entro GRADE_WINDOW_GIORNI = 6
+giorni PRIMA della fine della fixture (grade_in_finestra), mai match esatto
+sulla data.
+
+Controllo: l'indice deve avere circa 1.639 slug e 24.529 coppie
+(slug, data), da 2025-07-13 a 2026-08-07. Stampalo.
+
+
+=====================================================================
+4. COME SI CALCOLA LA DECISIONE DEL BOT
+=====================================================================
+Per ogni arena del campione, con le 5 carte fisse del manager:
+
+ 4.1 atteso di ogni carta: P.score_atteso(cache, slug, ruolo, fine) con
+     fine = ultimo giorno della fixture, poi calibrato con bfg.calibra
+     (esattamente come p13_backtest_gw_crowss.costruisci_pool_rows).
+     Se una carta non ha atteso, l'arena non e' valutabile: scartala e
+     DICHIARA quante ne hai scartate e perche'.
+
+ 4.2 z-grade: come in produzione, per gruppo (lega, ruolo) dentro il pool
+     della coppia (manager, GW). zscore_gruppo() ritorna zeri se il gruppo
+     ha meno di 2 membri col grade: e' il comportamento giusto, non
+     correggerlo, ma CONTALO (vedi 6.1).
+     atteso_carta_G = atteso_calibrato + sd_gruppo x z_grade
+     atteso_carta_A = atteso_calibrato          (ramo senza grade)
+
+ 4.3 atteso della FORMAZIONE = somma dei 5 attesi + 0,20 x atteso della
+     carta che il MANAGER ha messo capitano (campo 'capitano': true).
+     Il capitano non si sceglie: e' quello del manager.
+
+ 4.4 tipo per le soglie: 'Cap 260' -> ARENA_ALLSTARS_260,
+     'Cap 220' -> ARENA_ALLSTARS_220, 'Uncapped' -> ARENA_ALLSTARS_UNCAPPED.
+     Leggi le costanti dal modulo di produzione con import, NON copiarle a
+     mano nello script (se un domani cambiano, il test deve seguirle).
+
+ 4.5 due regole di ingresso, entrambe da misurare:
+     REGOLA STRETTA (principale, e' quella che l'utente segue davvero):
+       entra solo se (atteso - PAREGGIO_ARENA[tipo]) x GUADAGNO_PER_PUNTO[tipo]
+       >= QUOTA_MINIMA x COSTO_INGRESSO[tipo]
+       (cioe' l'etichetta 'SCHIERA' di _etichetta_arena; 'MARGINALE' = NON
+       entra)
+     REGOLA LARGA (secondaria): entra se atteso >= PAREGGIO_ARENA[tipo]
+       (cioe' verdetto_arena)
+
+ Rami da produrre: G-stretta, G-larga, A-stretta, A-larga.
+
+
+=====================================================================
+5. CONTABILITA' IN ESSENZE (concordata con l'utente, non cambiarla)
+=====================================================================
+Premi BASE e costi d'ingresso:
+  Cap 260   ingresso 300   1o 1300   2o 800   3o 500   dal 4o 0
+  Cap 220   ingresso 200   1o 1000   2o 500   3o 300   dal 4o 0
+  Uncapped  ingresso 300   1o 1300   2o 800   3o 500   dal 4o 0
+Il rank vero e' in piazzamento.rank, gia' nei file: non serve nessuna
+query, nessuna estrazione.
+
+netto_arena = premio(tipo, rank) - costo(tipo). Esempio cap 260 arrivata
+terza: 500 - 300 = +200. Arrivata settima: 0 - 300 = -300.
+
+VOTO DEL BOT su ogni arena (e' la metrica principale):
+  bot GIOCA        -> 0   (formazione identica al manager: stesso esito)
+  bot NON GIOCA e netto_arena < 0  -> +|netto_arena|   (risparmio)
+  bot NON GIOCA e netto_arena > 0  -> -netto_arena     (mancato guadagno)
+
+Tieni RISPARMIO e MANCATO GUADAGNO come due contatori SEPARATI, non solo
+la somma: l'utente vuole vedere i due lati.
+
+QUADRATURA OBBLIGATORIA (se non torna, c'e' un errore di conto):
+  saldo_bot = saldo_manager + risparmio_totale - mancato_guadagno_totale
+dove saldo_bot = somma dei netti delle sole arene che il bot ha giocato, e
+saldo_manager = +500 (tutte le arene). Stampa i tre numeri e la verifica.
+
+LIMITE DA DICHIARARE NEL RISULTATO: non sappiamo quali arene fossero
+GOLDEN (premio moltiplicato, stesso ingresso; ~10% dei casi osservati in
+p11_pool.json). Coi premi base il valore assoluto delle essenze e' un
+limite INFERIORE, ma il giudizio giusto/sbagliato non cambia.
+Secondo limite: per l'Uncapped il premio del 1o e del 3o poggia su UNA
+sola osservazione ciascuno in archivio. Riporta l'Uncapped anche separato.
+
+
+=====================================================================
+6. CONTROLLI OBBLIGATORI — PRIMA dei numeri di sintesi
+=====================================================================
+6.1 L'INTERRUTTORE FUNZIONA? Conta quante arene su 171 cambiano verdetto
+    fra A e G (con la regola stretta e con la larga). Conta anche quante
+    carte finiscono con z_grade = 0 e perche' (gruppo con <2 membri col
+    grade / tutti lo stesso grade).
+    SE LE ARENE CHE CAMBIANO VERDETTO SONO ZERO O QUASI, FERMATI E DILLO:
+    non c'e' niente da misurare e qualunque delta sarebbe finto. Non
+    consegnare un risultato in quel caso: consegna il conteggio.
+
+6.2 TEST A/A: fai girare due volte il ramo A. Devono uscire numeri
+    identici. Se non lo sono, c'e' non determinismo e va trovato prima.
+
+6.3 POOL vs SLOT: ristampa la mediana e il massimo del rapporto pool/slot
+    sul campione (deve stare a ridosso di 1,00, per costruzione).
+
+6.4 DUMP LEGGIBILE, da consegnare INSIEME ai numeri, non su richiesta:
+    un manager, una GW, tutte le sue arene, e per ogni arena: nome carta,
+    giocatore, ruolo, grade (lettera), atteso A, atteso G, punteggio
+    realizzato, chi era capitano; poi per l'arena: atteso totale A e G,
+    soglia del tipo, verdetto A e G, rank reale, premio, netto, voto del
+    bot. Scegli un manager con almeno 3 arene e un mix di tipi.
+
+
+=====================================================================
+7. I NUMERI DA CONSEGNARE
+=====================================================================
+ 7.1 MATRICE 2x2, per ciascuno dei 4 rami (G-stretta, G-larga, A-stretta,
+     A-larga), in numero di arene:
+                       manager a podio      manager fuori podio
+       bot gioca            ...                   ...
+       bot non gioca        ...                   ...
+ 7.2 SALDO in essenze: saldo_bot, risparmio, mancato guadagno, e il
+     confronto col saldo del manager (+500) e col pavimento "non gioco
+     mai" (0 essenze).
+ 7.3 TASSO DI DECISIONI GIUSTE (le due caselle in diagonale / 171) per i 4
+     rami, piu' i due pavimenti: "gioca sempre" (= il manager) e "non
+     gioca mai".
+     ATTENZIONE: un modello che non batte "gioca sempre" non serve a
+     niente. Dillo esplicitamente se succede.
+ 7.4 Tutto quanto sopra STRATIFICATO per tipo (Cap 260 / Cap 220 /
+     Uncapped) e per manager (14 righe).
+ 7.5 INCERTEZZA: bootstrap ricampionando i 14 MANAGER (cluster), 2.000
+     resample, sul delta saldo_bot - saldo_manager. Riporta l'intervallo e
+     la frazione di resample col segno positivo.
+     NON ricampionare le singole arene: quelle dello stesso manager nella
+     stessa giornata non sono indipendenti e l'intervallo verrebbe fuori
+     falsamente stretto.
+ 7.6 Quante arene sono state scartate e per quale motivo (carta senza
+     atteso, senza grezzo, formazione non da 5, somma != ufficiale).
+
+
+=====================================================================
+8. COSA NON FARE
+=====================================================================
+- Non toccare nessun file di produzione (generatore_formazioni/,
+  formazione_*/, scouting_gw.py). Solo lettura.
+- Non modificare le soglie ne' i parametri del modello.
+- Non riscrivere il generatore: se serve costruire formazioni usa
+  build_one_lineup_with_growth. In questo fronte le formazioni sono date,
+  quindi probabilmente non serve affatto.
+- Non stimare, non arrotondare a spanne, non dire "circa": ogni numero
+  viene da un conteggio, e ogni numero va con la sua n.
+- Non nascondere i risultati negativi o nulli. Se G non fa niente, e' un
+  risultato: si scrive.
+- Niente query a Sorare: questo fronte non ne ha bisogno. Se ti sembra di
+  averne bisogno, ti sei allontanato dal disegno: fermati e segnalalo.
+
+
+=====================================================================
+9. DOVE SCRIVERE L'ESITO
+=====================================================================
+In coda a docs/handoff/HANDOFF_G_ARENE_2026-08-08.txt, in una sezione
+nuova intitolata "12. FRONTE 2 — ESITO (data, ora di Roma)".
+NON creare un file nuovo: le chat non condividono memoria, il repo si'.
+Lo script di analisi va in analisi_manager/ con un nome che dica cosa fa
+(suggerito: p14_fronte2_astensioni_arena.py), committato insieme
+all'esito. Committa SOLO i tuoi file.
+
+Riporta all'utente: il percorso del file, il numero di 7.2 e 7.3, e
+l'esito del controllo 6.1. Tutto il resto sta nel file.

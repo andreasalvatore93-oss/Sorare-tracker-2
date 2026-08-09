@@ -1,0 +1,152 @@
+BRIEF PER SONNET — URGENTE, FINESTRA DI POCHI MINUTI
+Scritto da Opus (orchestratore) il 09/08/2026, ore ~10:08 Roma (08:08 UTC).
+
+=====================================================================
+LEGGI PRIMA (5 minuti, non di piu' — il tempo e' il vincolo)
+=====================================================================
+- CLAUDE.md nella root del repo (regole di lavoro, divieto di assunzioni).
+- docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt, SOLO le sezioni 10 e 11.
+- analisi_manager/grade_snapshot.py (script gia' esistente, ma usa il COOKIE:
+  qui NON serve, vedi sotto).
+
+Non leggere altro. Se qualcosa non torna, fallo comunque e scrivilo nei limiti.
+
+
+=====================================================================
+PERCHE' ESISTE QUESTO BRIEF — IL VINCOLO E' L'OROLOGIO
+=====================================================================
+Sorare espone dentro `projection` due cose:
+  - `grade`: una LETTERA A-F (gia' studiata a fondo, vedi §9 dell'handoff);
+  - `score`: un numero CONTINUO (scoperto ieri, §10 dell'handoff).
+
+Serve capire se `score` e' il numero che sta DIETRO la lettera (e quindi
+ordina la UI come l'utente ha osservato), oppure e' un'altra informazione.
+
+Il test si puo' fare SOLO su partite non ancora giocate: a partita finita
+`projection` non e' piu' probante. Nel tentativo di stamattina (§11) la
+query e' partita 4-6 ore prima del kickoff e NESSUN giocatore aveva ancora
+il nodo `playerGameScores` della partita imminente: la finestra si apre
+piu' tardi, probabilmente intorno alle formazioni ufficiali.
+
+ADESSO LA FINESTRA E' APERTA. L'utente riferisce (fonte: lui, dalle sue
+schermate — non verificato da me):
+  - una partita con KICKOFF ALLE 11:00 (Roma) per cui le formazioni
+    UFFICIALI SONO GIA' USCITE;
+  - un'altra partita con KICKOFF ALLE 12:00 (Roma) per cui le ufficiali
+    NON sono ancora uscite.
+
+Questo e' il confronto migliore che avremo per giorni: due partite nello
+stesso istante, una con ufficiali note e una senza. Se `grade`/`score` si
+muovono con le ufficiali, si vede qui e solo qui.
+
+
+=====================================================================
+OBIETTIVO — IN UNA RIGA
+=====================================================================
+Salvare su file, PRIMA dei rispettivi kickoff, `grade` + `score` + starting
+odds + scoreStatus per tutti i giocatori delle squadre di quelle due
+partite. La priorita' assoluta e' CATTURARE IL DATO; l'analisi viene dopo.
+
+
+=====================================================================
+IPOTESI, SCRITTE PRIMA DI VEDERE I NUMERI (obbligatorio, CLAUDE.md)
+=====================================================================
+H1. Nella partita con ufficiali gia' uscite, i titolari annunciati avranno
+    grade alto (D o meglio) e i non convocati F/E. Nella partita senza
+    ufficiali la separazione sara' piu' sfumata.
+H2. Ordinando i giocatori per `score` decrescente, le lettere formeranno
+    blocchi con mescolamento SOLO al confine fra lettere adiacenti (e' cio'
+    che l'utente vede a schermo). Se invece le lettere risultano sparse,
+    `score` e `grade` sono due informazioni diverse.
+H3. `score` sara' presente (non-null) su piu' giocatori di quanti ne abbiano
+    un `grade` non-null, oppure viceversa: qualunque asimmetria e' un dato.
+Se i numeri smentiscono H1/H2/H3, SCRIVILO. Un'ipotesi smentita e' un
+risultato, non un fallimento.
+
+
+=====================================================================
+COSA FARE, IN ORDINE
+=====================================================================
+PASSO 0 (2 minuti). Trova le due partite. Query PUBBLICA, NESSUN COOKIE:
+  `so5Fixtures` per la GW in corso/aperta (`football-7-11-aug-2026` e
+  `football-11-14-aug-2026`), poi i `games` con la loro `date` e le due
+  squadre. Filtra per kickoff di OGGI 09/08 alle 09:00 UTC (= 11:00 Roma) e
+  10:00 UTC (= 12:00 Roma). Se i fusi non tornano, prendi TUTTE le partite
+  con kickoff nelle prossime 3 ore: meglio catturare troppo che perdere la
+  finestra.
+  NOTA: §11 dell'handoff dice che stamattina erano in programma partite di
+  Genk, Zulte-Waregem, Charleroi, OH Leuven (Belgio) e Motherwell, Falkirk,
+  Hearts, Dundee United (Scozia). Tratta questo come INDIZIO, non come
+  verita': ricava le squadre dalla query, non da qui.
+
+PASSO 1 (subito dopo, PRIMA delle 11:00 Roma). Per ogni squadra delle due
+partite, prendi la rosa via query pubblica `team(slug){ players }` e per
+ogni giocatore chiedi:
+
+    playerGameScores(last: 3) {
+      id
+      scoreStatus
+      anyGame { date homeTeam { slug } awayTeam { slug } }
+      anyPlayerGameStats {
+        ... on PlayerGameStats {
+          footballPlayingStatusOdds { starterOddsBasisPoints reliability }
+        }
+      }
+      projection { grade score reliabilityBasisPoints }
+    }
+
+  `last: 3` e non `last: 1`: e' l'errore che ha reso inconcludente il primo
+  tentativo (§10.3). Serve per pescare il nodo della partita FUTURA anche se
+  non e' l'ultimo restituito.
+  Salva TUTTI i nodi, anche quelli delle partite passate: si filtra dopo per
+  `anyGame.date` maggiore di adesso. Non buttare via niente in fase di
+  cattura.
+
+  Salva in: analisi_manager/dati/snapshot_score_grade_<AAAAMMGG>_<HHMM>Z.json
+  Ogni riga deve contenere: slug giocatore, nome, squadra, slug partita o
+  data partita, kickoff, scoreStatus, grade, score, starterOddsBasisPoints,
+  reliability, e l'ora UTC della cattura.
+
+PASSO 2 (se ci sono ancora minuti prima del kickoff delle 12:00 Roma).
+  RIPETI la cattura una seconda volta, in un file separato con timestamp
+  diverso, il piu' vicino possibile alle 12:00 Roma. Serve a vedere se i
+  valori CAMBIANO fra le due catture (per la partita delle 12:00, le
+  ufficiali potrebbero uscire in mezzo). Questo confronto vale piu' di
+  qualsiasi analisi: due foto dello stesso oggetto a due ore diverse.
+
+PASSO 3 (dopo i kickoff, con calma). Analisi:
+  a) quanti giocatori hanno `score` non-null e quanti `grade` non-null, per
+     ciascuna delle due partite separatamente;
+  b) ordina per `score` decrescente ed ELENCA la sequenza delle lettere
+     (es. AAAABBBACBBCC...). Dillo guardando la sequenza vera, non un
+     coefficiente: le lettere formano blocchi o sono sparse?
+  c) per ogni lettera, minimo/massimo/mediana di `score`: gli intervalli
+     delle lettere adiacenti si sovrappongono? Di quanto?
+  d) confronto fra le due catture del PASSO 1 e 2: quanti giocatori hanno
+     cambiato grade, quanti hanno cambiato score, e in che direzione.
+  e) confronto fra la partita CON ufficiali e quella SENZA (H1).
+
+
+=====================================================================
+COSA NON FARE
+=====================================================================
+- NON modificare nulla in generatore_formazioni/ ne' in produzione.
+- NON serve il cookie: tutto quanto sopra e' query pubblica. Se ti servisse
+  davvero, FERMATI e chiedilo all'utente — non inventare un fallback.
+- NON dedurre. Se un campo e' null, e' null: scrivi "null su N giocatori su
+  M", non "probabilmente non ancora disponibile".
+- NON aspettare per fare le cose in ordine: se sono gia' passate le 11:00,
+  cattura COMUNQUE e subito (la partita delle 12:00 e' ancora buona), e
+  segnala nel report quale finestra hai perso.
+
+
+=====================================================================
+DOVE SCRIVERE L'ESITO
+=====================================================================
+In coda a docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt, come
+sezione "14. SNAPSHOT PRE-KICKOFF 09/08/2026". Nessun file nuovo.
+Riporta i comandi esatti per rilanciare, i percorsi dei JSON salvati, e i
+numeri con la loro n. Anche i risultati nulli.
+
+Commit consentito (sono file di analisi, non produzione): committa SOLO i
+tuoi file e segnala senza toccare quelli altrui.

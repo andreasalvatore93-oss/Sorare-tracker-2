@@ -11,11 +11,24 @@ A differenza di grade_snapshot.py (FootballComposeBenchQuery, richiede
 cookie, limitato alle carte POSSEDUTE dall'utente), questo script legge
 TUTTI i giocatori della partita, titolari e non, di entrambe le squadre.
 
+RIPETIZIONE (accumulo pre-lock, brief BRIEF_SONNET_SNAPSHOT_ACCUMULO):
+  comando esatto:  python analisi_manager/grade_snapshot_pubblico.py --fixture <slug-fixture>
+  quando:          a ridosso del lock, PRIMA del primo kickoff della GW
+                   (le ufficiali congelano il grade, vedi §18 HANDOFF_TABELLA_GRADE)
+  cosa NON serve:  nessun cookie, nessuna APIKEY
+
 Uso:
   python grade_snapshot_pubblico.py <game_id> [label]
+      Un solo game_id (1 query). game_id es.
+      "Game:2811948e-5d53-49c5-8a27-4dc5259b8450".
 
-game_id: es. "Game:2811948e-5d53-49c5-8a27-4dc5259b8450" (si trova con
-una query so5Fixture(slug){anyGames{id date homeTeam{slug} awayTeam{slug}}}).
+  python grade_snapshot_pubblico.py --fixture <fixture_slug> [--include-live]
+      TUTTA LA GIORNATA: risolve tutti i game della fixture (1 query) e
+      cattura solo quelli con statusTyped=='scheduled' (non ancora iniziati,
+      quindi non ancora pre-ufficiali "scaduti"; con --include-live include
+      anche 'started'), un game per query (bulk per fixture, non per
+      giocatore: N partite = N+1 query totali, dichiarate a schermo).
+      Salva un unico file per tutta la giornata in analisi_manager/dati/.
 """
 import sys, os, io, json
 from datetime import datetime, timezone
@@ -34,7 +47,7 @@ query GameProjection($id: ID!) {
     homeTeam { slug }
     awayTeam { slug }
     playerGameScores {
-      anyPlayer { slug displayName }
+      anyPlayer { slug displayName l10: averageScore(type: LAST_TEN_PLAYED_SO5_AVERAGE_SCORE) }
       scoreStatus
       anyPlayerGameStats {
         ... on PlayerGameStats {
@@ -73,15 +86,65 @@ def capture(game_id):
             "starter_reliability": odds.get('reliability'),
             "grade": proj.get('grade'),
             "reliability_bp": proj.get('reliabilityBasisPoints'),
+            "l10": (sc.get('anyPlayer') or {}).get('l10'),
             "captured_at_utc": now_utc.isoformat(),
         })
     return rows
 
 
+_FIXTURE_GAMES_STATUS = """
+query FixtureGamesStatus($slug: String!) {
+  so5 {
+    so5Fixture(slug: $slug) {
+      anyGames {
+        id date statusTyped
+        homeTeam { ... on TeamInterface { slug } }
+        awayTeam { ... on TeamInterface { slug } }
+      }
+    }
+  }
+}
+"""
+
+
+def capture_fixture(fixture_slug, include_live=False):
+    """Cattura tutti i giocatori di TUTTE le partite 'scheduled' (non ancora
+    iniziate) di una fixture, in un colpo solo. 1 query per risolvere i
+    game_id + 1 query per ogni partita catturata (bulk per fixture, non per
+    giocatore)."""
+    d = base.graphql_query(_FIXTURE_GAMES_STATUS, {"slug": fixture_slug},
+                            operation_name="FixtureGamesStatus")
+    fx = (((d or {}).get('data') or {}).get('so5') or {}).get('so5Fixture') or {}
+    games = fx.get('anyGames') or []
+    stati_ok = {'scheduled'} | ({'started'} if include_live else set())
+    target = [g for g in games if g.get('statusTyped') in stati_ok and g.get('id')]
+    print(f"Fixture {fixture_slug}: {len(games)} partite totali, "
+          f"{len(target)} da catturare (statusTyped in {sorted(stati_ok)}). "
+          f"Query totali: 1 (lista) + {len(target)} (partite) = {1 + len(target)}.")
+    rows = []
+    for g in target:
+        rows.extend(capture(g['id']))
+    return rows, target
+
+
 def main():
     if len(sys.argv) < 2:
         print('Uso: python grade_snapshot_pubblico.py <game_id> [label]')
+        print('     python grade_snapshot_pubblico.py --fixture <fixture_slug> [--include-live]')
         sys.exit(1)
+    if sys.argv[1] == '--fixture':
+        if len(sys.argv) < 3:
+            print('Uso: python grade_snapshot_pubblico.py --fixture <fixture_slug> [--include-live]')
+            sys.exit(1)
+        fixture_slug = sys.argv[2]
+        include_live = '--include-live' in sys.argv[3:]
+        rows, target = capture_fixture(fixture_slug, include_live=include_live)
+        ts = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')
+        out_path = f'analisi_manager/dati/snapshot_public_fixture_{fixture_slug}_{ts}Z.json'
+        with open(out_path, 'w', encoding='utf-8') as fh:
+            json.dump(rows, fh, ensure_ascii=False, indent=1)
+        print(f'{len(rows)} righe ({len(target)} partite) salvate in {out_path}')
+        return
     game_id = sys.argv[1]
     label = sys.argv[2] if len(sys.argv) > 2 else game_id.split(':')[-1][:8]
     rows = capture(game_id)

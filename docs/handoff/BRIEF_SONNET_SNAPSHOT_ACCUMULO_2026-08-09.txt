@@ -1,0 +1,99 @@
+BRIEF SONNET — ACCUMULO STORICO GRADE PRE-LOCK (asset che scade)
+Orchestratore Opus, 09/08/2026 ~12:00 Roma.
+
+LEGGI PRIMA: CLAUDE.md; docs/handoff/PUNTO_FISSO_GRADE_2026-08-09.txt (Q1);
+§18 di docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt (la verifica dei
+grezzi che motiva questo brief — l'ho scritta io sui TUOI snapshot, e
+corregge/estende il tuo report: leggila, non fidarti del riassunto).
+
+NESSUNA MODIFICA ALLA PRODUZIONE. Nessun tocco al generatore.
+
+
+PERCHE' ESISTE QUESTO BRIEF
+---------------------------
+Ho verificato i tuoi snapshot riga per riga. Il caso Suzuki e' confermato,
+ma i grezzi dicono una cosa piu' grande: DOPO le ufficiali, su 214 righe e
+zero eccezioni, ON_FIELD -> sempre B/C/D/E e panchina/fuori-lista -> sempre
+F. Il grade post-ufficiali e' titolare-si'/no.
+E i nostri storico_grade_*.json sono scaricati a partita conclusa (ogni
+nodo FINAL o DID_NOT_PLAY: ispezionato). Quindi tutta la tabella dei
+residui e' calcolata su una lettera che il bot, al lock, non vede.
+
+La produzione invece fa gia' la cosa giusta: discovery_fixture.py righe
+1609-1628 chiama fetch_grade_live() sulla GW aperta, cioe' pre-lock.
+Quindi non abbiamo un bug: abbiamo un meccanismo corretto di cui non
+conosciamo il valore, perche' non esiste in repo uno storico di grade
+pre-lock su cui misurarlo.
+
+Questo dato SCADE: a leaderboard chiusa la query torna 0 nodi (commento
+gia' nel codice, righe 63-70 di discovery_fixture.py). Ogni giornata non
+catturata e' persa per sempre. Per questo il brief e' oggi e non dopo.
+
+
+OBIETTIVO
+---------
+Rendere ripetibile e automatica la cattura del grade PRE-LOCK, in modo che
+fra qualche giornata esista un campione su cui rispondere alla domanda Q1
+("quanto vale il grade letto al lock, SOPRA le starter odds").
+
+IPOTESI DICHIARATA PRIMA DEI NUMERI (cosi' non la si adatta all'esito):
+mi aspetto che il grade pre-lock valga MENO del -31/-33 misurato finora,
+perche' parte di quel valore e' certezza post-ufficiali. Mi aspetto pero'
+che non sia zero, perche' nelle 6 righe pre-ufficiali di §17 a parita' di
+odds la lettera cambia (9000 -> C e 9000 -> B; 8000 -> B e 8000 -> D).
+Se l'esito e' diverso, si scrive l'esito, non l'ipotesi.
+
+
+COSA FARE
+---------
+1. VERIFICA CHE grade_snapshot_pubblico.py SIA RIUSABILE COSI' COM'E'.
+   Deve accettare una fixture/lista di game_id e catturare TUTTI i
+   giocatori delle due rose, non solo il bench dell'utente. Per ogni riga
+   servono almeno: slug, squadra, game_id, game_date, ora UTC della
+   cattura, grade, reliabilityBasisPoints, fieldStatus, scoreStatus,
+   starter_odds_bp, l10 se disponibile.
+   Se manca qualcuno di questi campi, aggiungilo ora: rifare il giro dopo
+   non si puo'.
+
+2. AGGIUNGI LA MODALITA' "TUTTA LA GIORNATA": dato uno slug fixture (es.
+   football-11-14-aug-2026), risolve tutti i game 'scheduled' della
+   finestra e cattura tutti i giocatori di tutte le partite in un colpo.
+   Rispetta la regola bulk di CLAUDE.md: minimizza le query, non una per
+   giocatore. Dichiara quante query fa in totale.
+
+3. FAI UNA CATTURA ADESSO sulla GW aperta (football-11-14-aug-2026, apre
+   l'11/08) e salvala. Serve anche come test vero del punto 2.
+   Nome file coerente con quelli esistenti, con slug fixture + timestamp
+   UTC. Cartella: analisi_manager/dati/.
+
+4. SCRIVI LE ISTRUZIONI DI RIPETIZIONE in testa allo script, in tre righe:
+   comando esatto, quando lanciarlo (a ridosso del lock, prima del primo
+   kickoff della GW), e cosa NON serve (nessun cookie).
+
+5. NON costruire ancora la misura di Q1: con una sola giornata non c'e'
+   niente da misurare. Questo brief e' solo l'infrastruttura di raccolta.
+   Se ti avanza tempo, il lavoro utile e' il punto 6, non anticipare Q1.
+
+6. FACOLTATIVO, SE AVANZA TEMPO — verifica se esiste gia' in repo qualche
+   grade catturato pre-lock che non abbiamo censito (i grade_snapshot_*
+   del 06/08 sembrano esserlo: erano ~24h prima del game_date). Se sono
+   pre-ufficiali, sono il primo mattone del campione Q1 e vanno dichiarati
+   come tali: quante righe, quante partite, quanto prima del kickoff, e
+   quanti di quei giocatori hanno poi un punteggio realizzato reperibile.
+   Riportalo come conteggio, senza trarne conclusioni.
+
+
+COSA NON FARE
+-------------
+- Non implementare la tabella grade ne' toccare _apply_grade_group.
+- Non concludere niente sul valore del grade da una sola giornata.
+- Non presentare come "storico pre-lock" dei dati che non hai verificato
+  essere stati catturati prima delle ufficiali: controlla il timestamp
+  della cattura contro il game_date, e dichiaralo.
+
+DOVE SCRIVERE L'ESITO
+---------------------
+In coda a docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt come §19.
+Poi commit + push (io in Cowork non ho i permessi git; nel commit includi
+anche i file non committati elencati in §8 del PUNTO_FISSO, se sono ancora
+lì).
