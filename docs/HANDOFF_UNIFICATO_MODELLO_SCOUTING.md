@@ -11,17 +11,47 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 08/08/2026, sera/notte (Roma, CEST)** —
-rivalidazione di G sulle ARENE. Tre esiti, tutti in §8bis: (1) il **placebo**
-sul non-arena, mai fatto prima, **conferma che il grade è segnale vero** e
-irrobustisce il +5,98; (2) sull'arena G aiuta con la regola larga ma **non si
-distingue dal rumore con la regola stretta**, quella che l'utente usa; (3)
-scoperto un difetto strutturale — **G è ignorato sul 23% delle carte** perché
-normalizza su gruppi (lega,ruolo) troppo piccoli. La cura provata (scala
-storica) è stata misurata e **NON adottata**: §8bis. Filone aperto a fine
-sessione: il criterio di scelta fra tipi di arena ignora il costo d'ingresso
-(§8septies). **Nessuna modifica di produzione in questa sessione**: i due
-flag nuovi sono spenti di default.
+Ultimo aggiornamento: **sessione 09/08/2026, notte (Roma, CEST)**.
+
+**RIPARTIRE DA QUI**: il passaggio di consegne aggiornato è
+`docs/handoff/PASSAGGIO_CONSEGNE_ORCHESTRATORE_2026-08-09_MATTINA.txt` —
+dice il punto esatto in cui siamo, cosa si aspetta da Sonnet e cosa fare
+quando torna. Leggilo prima di questo file.
+
+**PUNTO FERMO DEL 09/08 — cosa è deciso e non si riapre:**
+
+1. **G è validato anche sulle ARENE** e resta in produzione. Con la
+   copertura del grade portata al 98,8%, batte il modello senza grade di
+   **+29.050 / +24.150 essenze** nel regime di allocazione, placebo al
+   percentile 100 su entrambi i set di soglie. Sul non-arena era già
+   dimostrato (+5,98). §8bis.
+2. **Il filone favorito-odds è CHIUSO, ovunque.** Delta storico e livello
+   assoluto, due scale diverse, non-arena e arena, regime astensione e
+   allocazione: non batte mai G. Non riaprirlo senza un'idea nuova. §8nonies.
+3. **Le soglie arena sono APPLICATE in produzione** (commit `f9902af972`),
+   ricalcolate su 2.125 arene e 5.031 premi veri, con il tipo **Beginner**
+   aggiunto al generatore. §8octies e §9.
+4. **L'archivio arena completo è `arene_storico_full_v3.json`**: com'è
+   composto, come si allarga e quali buchi ha sta in **§4.0** — leggerlo
+   prima di progettare qualunque misura sulle arene, per non ricostruirlo
+   a mano una quarta volta.
+5. **Il grade è in larga parte un indicatore di titolarità**, non di
+   qualità: sale all'uscita delle odds, crolla su notizie extra-campo, e
+   chi entra un minuto prende ~35 punti di level score. Da qui la riserva
+   aperta più importante: quanto vale G *sopra* il filtro starting odds a
+   0,80 che il bot già applica — mai misurato, §10bis.
+
+6. **Il grade è in corso di ri-normalizzazione, filone APERTO.** Misurato
+   quanto vale ogni lettera (§8bis) e quanto aggiunge al netto di ciò che
+   il modello sa già: F −31,0 / E −15,9 / D +1,4 / C +2,4 / B +2,2 /
+   A +3,9. Il valore sta nell'**evitare**, non nel premiare. Scoperto
+   `projection.score`, un valore continuo dentro `projection` (query
+   pubblica): la lettura da confermare è *score = quanto è forte se gioca,
+   grade = score + probabilità che giochi*. Dettaglio e stato in
+   `docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt`.
+
+Difetto scoperto e non corretto: il generatore **non è deterministico**
+run-to-run (`PYTHONHASHSEED`), §9.
 
 Aggiornamento precedente (08/08 mattina): consolidamento di tutto il
 materiale testuale del 06-07/08 (30+ file in
@@ -255,361 +285,216 @@ Season/All Star/Under 23, **+20% in arena**.
 
 ## 4. Dati costruiti (l'archivio su cui si misura tutto)
 
-### 4.0 QUALE ARCHIVIO ARENE USARE — leggere prima di ogni misura (08/08)
+### 4.0 GLI ARCHIVI ARENA — quale usare, com'è fatto (riscritto 09/08)
 
-Gli archivi arene sono **TRE**, con contenuti diversi. Confonderli è già
-costato tempo due volte: si sceglie in base a **cosa** si deve misurare.
+**Se devi misurare qualcosa sulle arene, parti da qui e non ricostruire
+niente a mano.** Gli archivi sono cinque e hanno contenuti diversi;
+confonderli è già costato tempo tre volte.
 
-| se devi misurare… | usa | cosa contiene |
+| file | cosa contiene | quando si usa |
 |---|---|---|
-| ROI, sigma, punteggi, backtest, distribuzioni | **`dati_globali/manager_*.json`** (54 file) | **7.699 arene** di 54 manager: punteggio ufficiale, piazzamento, le 5 carte con ruolo/capitano/xp/rarità. **NON ha i punteggi degli avversari.** È l'archivio più grande: il default per qualunque misura statistica |
-| campo avversario, premi osservati, soglie (`consiglio_arena.py`) | **`analisi_manager/p11_pool.json`** | **673 arene complete** (cap260 194, Beginner 182, cap220 53, Uncapped 38, + 206 del formato vecchio "division"/"arena uncapped" da ESCLUDERE): tutti i punteggi dei partecipanti, `premio_essenze` reale (golden incluse), `mio_rank`, `costo`. È l'unica fonte con la classifica completa |
-| — | `dati_globali/arene_storico.json` | **160 arene**, stesso formato di p11_pool ma ridotto. È quello che `consiglio_arena.py` legge di default (riga 33), ed è il motivo per cui oggi NON riproduce i valori di produzione (misurati su 673) |
+| **`dati_globali/arene_storico_full_v3.json`** | **L'ARCHIVIO COMPLETO.** 2.125 arene (cap220 755, Beginner 427, cap260 404, Uncapped 354, + 185 del formato vecchio "arena division"/"arena uncapped" da ESCLUDERE). Per ognuna: tutti i punteggi dei partecipanti, `mio_score`/`mio_rank`, `costo`. In più **`premi_veri_per_posizione` su 1.677 arene** (premio reale ai primi 3, jackpot inclusi) e `premio_essenze`/`rank_premiato` su 228 (il premio davvero incassato da un nostro manager) | **soglie, pareggio, guadagno/punto, campo avversario.** È il default per `consiglio_arena.py` via env `ARCHIVIO_ARENE` |
+| `dati_globali/classifiche_arene_2026-08-08.json` | 1.677 classifiche complete scaricate l'08/08 (cap220 748, Uncapped 348, Beginner 310, cap260 271) | fonte grezza del pezzo nuovo di v2/v3; serve se si vuole rifare l'unione |
+| `dati_globali/premi_arene_2026-08-08.json` | premi veri per posizione delle stesse 1.677 arene, **5.031 osservazioni** (1.677 × 3 posizioni), jackpot inclusi | fonte grezza dei premi; usato per costruire v3 |
+| `dati_globali/manager_*.json` (54 file) | le FORMAZIONI: punteggio ufficiale, piazzamento, le 5 carte con ruolo/capitano/xp/rarità. **Non ha i punteggi degli avversari** | qualunque misura statistica su carte, punteggi, ROI, backtest di selezione |
+| `dati_globali/arene_storico_full_v2.json` | come v3 ma **senza** i premi veri | solo per confronti storici con misure fatte prima del 09/08 |
 
-Regola pratica: **statistica → i 54 file manager; classifiche e premi → p11_pool.**
-`arene_storico.json` non va usato per nuove misure finché non è ripristinato.
+**Superati, non usare per misure nuove**: `analisi_manager/p11_pool.json`
+(673 arene, è il pezzo vecchio già dentro v2/v3) e
+`dati_globali/arene_storico.json` (160 arene, vecchio default di
+`consiglio_arena.py`).
 
-| file | contenuto |
-|---|---|
-| `dati_globali/arene_storico.json` | 673 arene reali dell'utente (giu 2025–lug 2026): tutti e 10 i punteggi, premi, piazzamento — **ATTENZIONE: oggi ne contiene 160, vedi §4.0** |
-| `dati_globali/arene_formazioni.json` | 593 formazioni schierate: giocatore/carta/ruolo/capitano/punteggio |
-| `dati_globali/manager_forever-young.json` | arene REALI di un altro manager (mazzo simile, non scelto per il risultato), 71 giornate, 3326 righe con carte |
-| `dati_globali/manager_crowss.json` | **ATTENZIONE: e' l'UTENTE STESSO** (nickname Sorare `Crowss`), NON un manager esterno. 72 giornate, 1332 formazioni usate nel filone capitano. La vecchia descrizione ("un manager Korea-centrico") era doppiamente sbagliata: non e' un terzo e non e' Korea-centrico. Da NON includere in nessun confronto "i pick dei manager vs il nostro atteso" (filone smart-money, §7): confrontarsi con se stessi falsa il verdetto. Verificare se il filone capitano e le analisi smart-money lo hanno incluso per errore. |
-| `dati_globali/backtest_arene_cache/` | storico giocatori necessario per rigiocare le formazioni col modello |
+**Come è composto v3**, così nessuno lo ricostruisce a mano:
+```
+p11_pool.json (673 arene, giro vecchio)
+   + classifiche_arene_2026-08-08.json (1.677 arene scaricate)
+   = arene_storico_full_v2.json (2.125, dedup per slug)   [p25_archivio_v2.py]
+   + premi_arene_2026-08-08.json (premi veri per posizione)
+   = arene_storico_full_v3.json                            [p28_archivio_v3.py]
+```
 
-ROI reale storico dell'utente: **+13.3%** (121.250 spese, 137.400 vinte),
-39.7% a premio contro il 30% di un manager medio — **tutto a mano**, il
-modello ha meno di due settimane di produzione, nessuna delle 673 arene è
-una sua scelta: base di confronto pulita.
+**Come si allarga, se un test futuro ha bisogno di altre arene:**
+- **classifiche** → `scarica_classifiche_v3.py` (cambia la lista slug in
+  ingresso e il file di uscita). **Richiede il cookie**: senza
+  autenticazione `so5RankingsPaginated` risponde ma torna vuoto.
+- **premi** → `scarica_premi_arene.py`, query `rewardsConfig`.
+  **NON richiede il cookie**: funziona su sessione anonima.
+- Poi si rifà l'unione con `p25_archivio_v2.py` + `p28_archivio_v3.py`.
 
-**Buco mai spiegato**: l'utente riporta 870 arene reali giocate in totale,
-`arene_storico.json` ne ha solo 673 (~197 mancanti). Non ignorarlo se si
-riprende il filone backtest.
+**Buchi noti di copertura** (da sapere prima di progettare un test):
+le classifiche del giro 08/08 furono raccolte con un criterio selettivo —
+**tutte** le cap 220 e Uncapped, ma solo un campione per giornata di
+cap 260 e Beginner, e **zero arene di lega singola** (us/korea/scotland).
+Sul perimetro delle ultime 6 GW questo si traduceva in 269 leaderboard
+coperte su 643 (41,8%); le 374 mancanti sono state scaricate il 09/08 per
+il test G+odds. Se un test nuovo esce da quel perimetro, ricontrolla la
+copertura **prima** di costruirlo.
+
+**Come `consiglio_arena.py` legge i premi** (righe 113-140, modificate il
+09/08): se l'archivio contiene almeno una riga con
+`premi_veri_per_posizione`, usa **solo** quelli per tutte le righe; se non
+ne contiene nessuna, ricade sul vecchio `rank_premiato`/`premio_essenze`.
+È **tutto o niente per archivio, mai mescolato riga per riga**: mescolare
+aggiungeva osservazioni fuori dal campione di misura e spostava il
+pareggio cap260 di 1,3 punti.
 
 ---
 
-## 5. Lo stato dell'arte — cosa è CHIUSO (non riproporre)
+## 5. Cosa è CHIUSO — non riproporre (compresso il 09/08)
 
-> **Nota 08/08**: il bug D6 sotto è STORIA (chiuso), riportato per capire
-> perché certi verdetti vecchi sono nulli. Lo stato vivo di G, delle soglie
-> arena e dell'infrastruttura di estrazione è in §8bis/§8quater, non qui.
->
-> 1. **BUG D6 — punteggi di formazione gonfiati.** Più script di backtest
->    (`p11_manager_confronto`, `p11_bloccato_tutti_mazzi`,
->    `p11_calib_fwd_confronto`) leggevano il punteggio realizzato dai file
->    manager (`c['punteggio']`), che include xp+capitano sulle righe
->    non-arena, invece che dalla cache game-log. Fino al 77% delle carte
->    gonfiate su crowss. **Tutti e tre fixati** (leggono sempre la cache).
->    Conseguenza: i verdetti di **formazione** su difensore e FWD costruiti
->    su quegli script sono NULLI e vanno rifatti (la griglia per-ruolo 4.1,
->    invece, era pulita — vedi punto 4). `p12_backtest_manager_full`
->    verificato: NON era un bug. Regola nuova in CLAUDE.md: l'orchestratore
->    verifica i dati grezzi di un commit esecutore, non solo il commento.
-> 2. **Metro premio-vero.** Il valore delle decisioni arena si misura ora dal
->    RANK reale + tabella premi reale dell'utente
->    (`backtest_arene_economia.tabella_premi`), non da stime proporzionali
->    (che divergevano di segno). È la misura più affidabile: non stima nulla
->    sopra soglia.
-> 3. **Decisione produzione.** Campione ampliato a 539 arene (crowss + 16
->    manager + satonio). Premio-vero netto: **A (produzione) +14.300 essenze,
->    G (produzione + grade) +18.900**, positivo per entrambe, G meglio. Oggi
->    si schiera con A + condotta arene (costo zero). **G va in produzione come
->    passo successivo, con la catena §1bis validata step per step** (non fatto
->    ancora). Cautela: il vantaggio di G viene dai mazzi forti (crowss,
->    satonio), non dai mediocri.
-> 4. **Griglia per-ruolo starter odds (favorito_odds) confermata PULITA** su
->    tutti e 4 i ruoli (numeri identici allo storico, D6 non la toccava):
->    **DEF passa forte** (7/9 varianti, dcorr +0.060, dlift +7.22), **GK e
->    MID mai** (0/9), **FWD al limite** (1/9). Il segnale DEF è reale e grosso
->    sull'ORDINAMENTO per-carta. In FORMAZIONE, però, il backtest FASE 3
->    (45 mazzi) è risultato NON PROBANTE: DEF bloccato sfiora zero senza
->    farcela, MID/D "significativi" solo nel delta pesato ma probabile
->    artefatto — e soprattutto il campione non è probante in profondità (solo
->    2 mazzi con ≥16 giornate; pablo0078 da solo pesa il 33% delle arene).
->    APERTO (non chiuso): l'utente NON accetta di relegare il DEF (e gli altri
->    ruoli) al solo scouting sulla base di 2 mazzi profondi. Prossimi passi:
->    allargare il campione PROFONDO e rifare il backtest formazione; fare la
->    FASE 4 scouting in parallelo (non come sostituto); verificare pablo0078.
->    Dettaglio: `HANDOFF_FAVORITO_ODDS_2026-08-06.txt` (FASI 1-3) e
->    `HANDOFF_ORCHESTRATORE_2026-08-07_SERA.txt` §4. Se le odds risultano
->    usabili, entrano nella STESSA catena di G.
+Verdetti di ricerca già pagati. Ognuno costa giorni a rifarlo: prima di
+aprire un filone, cercalo qui. Il dettaglio integrale sta nei file citati.
 
-- **Scomposizione degli all-around per categoria: CHIUSA (05/08, P8)**, anche
-  con misura diretta walk-forward (39.594 partite, 26 leghe, bootstrap
-  appaiato): nessuna forma soddisfa MAE+corr+lift insieme su nessun ruolo.
-  Corregge P3: la compressione trovata da P3 riguarda solo il DECISIVO
-  (`level_score`, scala a gradini), non si trasferisce agli all-around (già
-  somma continua). Dettaglio: `docs/handoff/REPORT_PASSAGGIO_2_OPUS_P8_2026-08-05.txt`.
-- **Trend recente** (`TREND_INTENSITY`): 0.0 su tutti i ruoli/leghe, monotono
-  verso il peggio in ogni test.
-- **`fattore_forza_avversario`**: RIMOSSO dal codice il 05/08 (passaggio 2,
-  P1/B19). Era calcolato e mai usato in `score_atteso`: verificato per
-  data-flow e con test A/A su `OPPONENT_SENSITIVITY=1e9`. Il condizionamento
-  sull'avversario che agisce davvero è `opponent_lambda_mult` + Stadio D.
-- **`level_score` portiere binario**: CHIUSO su decisione utente (02/08). Il
-  vero valore è 35.0 senza clean sheet / 60.0 con clean sheet, mai
-  intermedio — il modello ne prevede uno continuo. Mitigato dal blend
-  `GK_TEAM_CS_WEIGHT=0.5` con P(clean sheet) di squadra (lift misurato
-  0.3%→9.4%, correlazione x3), non risolto del tutto: resta la leva più
-  grande mai lasciata sul tavolo per il GK, richiederebbe più profondità.
-- **Blend GK: sotto-pesato, non sovra-pesato — `c` alzato 17.5→22 (05/08, P3
-  + P9-bis/ter, n=6.973 contesti GK, bootstrap appaiato su 120 giornate,
-  campione rigenerato e riverificato identico due volte)**. `c = WEIGHT×POINTS`
-  nel termine `c*(p-0.28)`; `GK_TEAM_CS_WEIGHT` 0.5→**0.63** (=22/35),
-  `GK_TEAM_CS_POINTS` invariato a 35 (è il coefficiente di scala, non un
-  valore in punti — conta solo il prodotto). La correlazione cresce monotona
-  con `c` (0.0347 a c=0 → 0.0674 a c=17.5 → 0.0707 a c=22 → 0.0756 a c=35),
-  il MAE peggiora monotono: **compromesso puro, nessun `c` dominante**. Scelto
-  22: dcorr vs 17.5 = +0.0033 (IC95 esclude zero), dMAE = +0.0227 (soglia di
-  guardia +0.05). Scartato 26 (misurato, poi rigettato in P9-ter): fra 22 e 26
-  il guadagno di corr è +0.0020 (rumore) mentre il degrado di MAE raddoppia e
-  il suo IC95 sfora la soglia (+0.0721). **Deroga al metro a tre gambe,
-  LIMITATA a questo parametro/ruolo**: per il GK conta l'ordinamento (se ne
-  schiera uno solo), non il voto — quindi si decide sulla correlazione con il
-  MAE come vincolo di guardia, non sulle tre gambe insieme. Prima deroga del
-  progetto al metro standard.
-  Le tre "correzioni ovvie" (`POINTS`→25, baseline per-portiere, `p_cal`
-  affine `0.130+0.460p`) restano **BOCCIATE**: tutte migliorano il MAE e
-  peggiorano la correlazione (IC95 esclude lo zero); `p_cal` è algebricamente
-  identico ad abbassare il peso — stessa operazione bocciata con un altro nome.
-  Il doppio conteggio del clean sheet (già dentro `level_score`, di nuovo nel
-  blend) esiste come meccanica ma **non è dannoso**: il riferimento globale 0.28
-  batte quello per-portiere a OGNI `c`, perché `level_score` comprime il segnale
-  al punto che il livello assoluto aggiunge ancora informazione vera. Quella
-  compressione riguarda **solo il decisivo**: P8 ha verificato che non si
-  estende agli all-around (voce sopra). Score_atteso GK a c=26 vs c=17.5:
-  media +0.16 pt, p95 +1.99, max +4.48 su soglia arena 259.5 — c=22 sposta meno
-  di così, sotto l'incertezza nota sulla soglia (±15 pt). **Verifica di catena
-  analitica, non un refit vero**: vedi pendenza sotto. Dettagli:
-  `docs/handoff/REPORT_PASSAGGIO_2_OPUS_P3_2026-08-05.txt`,
-  `REPORT_PASSAGGIO_2_SONNET_P9_2026-08-05.txt`,
-  `REPORT_PASSAGGIO_2_SONNET_P9BIS_2026-08-05.txt`.
-- **P10 (05/08)**: refit vero di `CALIB_PER_RUOLO` NON completato — trovato
-  lo script che rigenera i dati grezzi (`taratura_giocatore.raccogli`, 4 min,
-  nessuna rete) ma **manca nel repo lo script che calcola i 4 coefficienti
-  `CALIB_A/B_GK/DEF/MID/FWD`** (solo hardcoded in
-  `generatore_formazioni/build_formazione_globale.py:394-399`); la retta
-  "in produzione" 63.43+0.736x (`analisi_manager/valida_soglie.py`) non
-  coincide né col rigenerato vecchio (75k coppie: 40.64+0.823x) né nuovo
-  (82k coppie: 33.49+0.853x) — scollegata da tempo, non solo da P9. Backlog
-  aperto, sessione dedicata. **Anomalia capitano grezzo/calibrato (n=307,
-  confermato esatto)**: causa isolata — `pick_captain` vede attesi già
-  calibrati in produzione; su 42/307 casi discordanti il calibrato sceglie
-  DEF 35 volte (`CALIB_PER_RUOLO` DEF ha la pendenza più alta, 0.831), il
-  grezzo sceglie FWD/MID. Hit-rate 28.7% grezzo vs 25.1% calibrato, ma il
-  delta in punti sui discordanti (+5.2 pt) ha IC95 [-2.75,+13.14]: non
-  significativo. Chiusa, nessuna modifica. Dettaglio:
-  `docs/handoff/REPORT_PASSAGGIO_2_SONNET_P10_2026-08-05.txt`.
-- **Il lift di selezione non discrimina sui portieri**: IC95 dei delta larghi
-  4-8 punti su 120 giornate. Sul GK il metro a tre gambe è di fatto a due
-  (MAE + correlazione). Non costruire ora una terza metrica per aggirarlo:
-  decisione presa, non riproporre. Da sapere prima di leggere un lift GK come
-  segnale.
-- **D2 — misuratore e produzione non condividono lo stesso P(clean sheet)**:
-  `test_gk.py` (produzione) usa il cutoff esatto, `backtest_arene_previsioni.
-  _pcs_squadra` (misuratore) la griglia settimanale. Decisione: si lascia e si
-  documenta, non si allinea (costerebbe una `stima()` per ogni
-  giocatore-partita). Irrilevante per i confronti fra varianti (stesso `p` su
-  entrambi i lati del delta), rilevante per le stime ASSOLUTE di lift/corr sul
-  GK, che girano sul `p` vecchio.
-- **PENDENZA APERTA — refit vero di `CALIB_PER_RUOLO` dopo il blend GK**: la
-  verifica di catena §1bis fatta per c=22 è analitica (spostamento medio dello
-  score_atteso confrontato con l'incertezza nota sulla soglia), non un refit.
-  `taratura_formazioni_sintetiche.py` legge `dati_globali/taratura_coppie.json`
-  pre-calcolato con il vecchio coefficiente (0.5); nessuno script generatore di
-  quel file è stato trovato in due sessioni di ricerca. Da rifare come refit
-  vero alla prossima occasione in cui `taratura_coppie.json` viene comunque
-  rigenerato. Non è un blocco: lo spostamento è sotto l'incertezza nota.
-- **Regola nuova (dal 05/08)**: prima di riusare dati o script di una sessione
-  precedente, verificare che l'`n` coincida con quello dichiarato nel report
-  corrispondente, PRIMA di misurare qualunque cosa. Secondo caso in cui un
-  numero "già misurato" non era riproducibile dal materiale ereditato — il
-  primo è D2 sopra, il secondo è `p3_gk_righe.json` (1.487 righe invece di
-  6.973, frammento parziale rimasto in uno scratchpad).
-- **Compressione di scala** (portiere 4.8x, DEF/MID/FWD 2.5-2.9x): il
-  modello ORDINA bene dentro lo slot ma comprime la dispersione assoluta —
-  il danno è FUORI dallo slot (fascia capitano, quale competizione, soglie
-  d'ingresso), dove numeri di ruoli diversi si confrontano. Non risolto,
-  misurato e documentato.
-- **Piattezza del punto = VERITÀ del dato, non difetto del modello** (diagnosi
-  04/08, tutta su dati locali `dati_globali/errore_storico.json` 2690 partite
-  + walk-forward 87k oss, nessun rerun). Nata dall'osservazione utente "le
-  formazioni sembrano tutte identiche, gli attesi sono tutti 47-52 / 50-60".
-  Cinque misure, tutte concordi:
-  1. Spearman(atteso,reale) per ruolo 0.17 (GK 0.084, il peggiore) — BATTE
-     l'L10 grezzo (0.13), quindi il modello ordina davvero, ma la varianza
-     predicibile del voto è ~3% (il resto è rumore di singola partita).
-  2. Lift di selezione REALE grande: quintile-alto vs basso di atteso →
-     +11.5 pt reali (FWD +11, GK +6.5), boom(>75) 22.9% vs 9.9%, flop(<25)
-     0.9% vs 7.1%. **L'edge del modello è enorme negli ESITI, ma invisibile
-     nel numero** (std previsto ~4 contro std reale ~19). Il numero medio
-     appiattisce un ordinamento che invece funziona.
-  3. Screening segnali (`screening_segnali.json`, 73k partite, sessione
-     mattina 04/08): il residuo (reale−atteso) è predicibile a R²=0.008.
-     **ATTENZIONE — il "segnale forte starter_odds (corr 0.163)" è LEAKAGE,
-     non segnale** (accertato 06/08, vedi voce dedicata sotto): il campo in
-     cache viene riscritto dopo le formazioni ufficiali. Non usarlo come
-     riferimento di "quanto è forte un segnale". Casa +1.9pt, rank avversario,
-     favorito: tutti già dentro o nulli.
-     **Non c'è segnale-media libero da aggiungere con le feature disponibili.**
-- **`starter_odds` come variabile continua in `score_atteso`: CHIUSO (06/08),
-  per due ragioni indipendenti.**
-  1. *Non è una variabile nuova*: `p_gioca` era esattamente
-     `starterOddsBasisPoints/10000`, rimossa il 28/07 (commit `2c34af62f7`)
-     per **decisione di significato** dell'utente, non per una misura —
-     `score_atteso` deve dire "quanto rende SE gioca", il rischio presenza si
-     gestisce col filtro secco (`MIN_STARTER_ODDS`). Vedi
-     `RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md` §31.B/31.F ("NON riproporre").
-  2. *Il dato storico è contaminato*: **64.6% dei valori in cache (42.318 oss.)
-     sono 0% o 100% esatti**, perché il campo viene riscritto dopo l'annuncio
-     delle formazioni. Su 230 coppie con quote raccolte prima della deadline,
-     solo il 6.1% coincide col valore poi salvato in cache, e il 77.8% dei
-     valori post è più alto. In PRODUZIONE non c'è problema (si legge prima
-     della deadline); nel BACKTEST è quasi la conferma di chi ha giocato.
-     Qualunque griglia su questo campo misurerebbe leakage.
-  Se un giorno lo si volesse davvero misurare, l'unica via è **registrare le
-  starter odds pre-deadline in avanti**, GW per GW, come per la lettera A→F.
-  4. Calibrazione OLS reale=a+b·atteso: b<1 per DEF/MID/GK (0.72/0.71/0.58),
-     b=1.15 solo FWD. Cioè per 3 ruoli su 4 il punto è già leggermente
-     SOVRA-disperso: **espandere i numeri per "differenziare" li allontana dal
-     realizzato, peggiora. NON farlo.**
-     **ATTENZIONE (06/08): questi 4 coefficienti NON sono riproducibili dal
-     repo.** Verificato: `screening_segnali.py`/`.json` non li ha mai
-     calcolati in nessuna versione della sua storia git, e non contengono
-     nessun campo OLS reale=a+b·atteso per ruolo. L'unica occorrenza nel repo
-     è una citazione "dal brief" in `REPORT_PASSAGGIO_1_2026-08-05.txt:171`,
-     testo esterno mai riprodotto da uno script. Resta aperta anche la Q4 di
-     quella sessione: misurati sul grezzo o sul calibrato? Finché non si sa
-     da dove vengono, **non usarli come conferma indipendente di nulla** (già
-     costato un falso collegamento col refit FWD del 06/08). La conclusione
-     operativa della voce (non espandere i numeri) resta valida perché
-     poggia anche sui punti 1-3 e 5, non solo su questi coefficienti.
-  5. Range/dispersione per-giocatore NON calibrato (walk-forward 87k): pred_std
-     va da 7 a 22, ma |errore| reale resta 15-17 piatto e boom% non si muove
-     (GK addirittura invertito). **Il range mostrato nel report è decorativo,
-     non usarlo come segnale di volatilità/boom.**
-  Conclusione operativa: fra i probabili titolari (= ciò che il generatore
-  schiera, `p_gioca` rimosso da score_atteso il 28/07) i giocatori SONO quasi
-  equivalenti in attesa, ed è la verità del calcio. L'unico differenziatore
-  affidabile è la MEDIA atteso, che ordina anche i boom. Non esiste un modo
-  onesto di farli sembrare più diversi migliorando la formula. **Chiuso:
-  inseguire "più differenziazione del punto" è un vicolo cieco dimostrato.**
-- **Bonus additivi vs moltiplicativi**: chiuso, la formula additiva è
-  verificata al centesimo (§3).
-- **Quote bookmaker come segnale**: la chiusura del 02/08 ("infattibile, non
-  copre tutti i campionati") era SBAGLIATA e va considerata SUPERATA. Il
-  filone e' stato riaperto e portato fino al backtest di formazione la notte
-  del 05-06/08. In sintesi: le 1X2 sono dentro Sorare
+### 5.1 Il punto è piatto, ed è la verità del calcio — non un difetto
+Diagnosi 04/08 su 87k osservazioni walk-forward, cinque misure concordi.
+Il modello **ordina** (Spearman atteso↔reale 0,17 per ruolo, batte l'L10
+grezzo a 0,13) ma la varianza predicibile del singolo voto è ~3%: il resto
+è rumore di partita. Eppure **il vantaggio negli esiti è enorme**: fra
+quintile alto e basso di atteso ci sono +11,5 punti reali, i boom passano
+da 9,9% a 22,9% e i flop da 7,1% a 0,9%. L'edge c'è, è solo invisibile nel
+numero medio (std previsto ~4 contro std reale ~19).
+Conseguenze operative, tutte dimostrate:
+- **non espandere i numeri per "differenziarli"**: la calibrazione OLS dà
+  b<1 su DEF/MID/GK, cioè il punto è già leggermente sovra-disperso;
+- il **range/dispersione per-giocatore non è calibrato** (pred_std 7→22
+  mentre l'errore reale resta piatto a 15-17): è decorativo, non usarlo
+  come segnale di volatilità;
+- il residuo (reale−atteso) è predicibile a R²=0,008: **non esiste un
+  segnale-media libero da aggiungere** con le feature disponibili.
+**Inseguire "più differenziazione del punto" è un vicolo cieco dimostrato.**
+- **Compressione di scala** (GK 4,8x, altri ruoli 2,5-2,9x): il modello
+  ordina bene *dentro* lo slot ma comprime la dispersione assoluta. Il
+  danno è **fuori** dallo slot — fascia capitano, scelta della competizione,
+  soglie d'ingresso — dove si confrontano numeri di ruoli diversi. Misurato
+  e documentato, non risolto.
+
+### 5.2 Segnali provati e bocciati
+- **`starter_odds` come variabile continua in `score_atteso`: CHIUSO**, per
+  due motivi indipendenti. (1) Non è una variabile nuova: era `p_gioca`,
+  rimossa il 28/07 per **decisione di significato** dell'utente —
+  `score_atteso` dice "quanto rende SE gioca", il rischio presenza si
+  gestisce col filtro secco `MIN_STARTER_ODDS`. (2) **Il dato storico è
+  contaminato**: il 64,6% dei valori in cache è 0% o 100% esatto perché il
+  campo viene riscritto dopo l'annuncio delle formazioni. In produzione
+  nessun problema (si legge prima della deadline), nel backtest è quasi la
+  conferma di chi ha giocato. **Qualunque griglia su quel campo misura
+  leakage** — e per la stessa ragione il "segnale forte starter_odds
+  (corr 0,163)" di un vecchio screening NON è un segnale.
+- **Quote bookmaker (favorito odds)**: le 1X2 sono dentro Sorare
   (`Game.homeStats/awayStats.winOddsBasisPoints`), bulk per fixture,
-  copertura piena (unico buco eliteserien), persistenti da ~18/11/2025,
-  nessun leakage (favorito vince 65.3% su n=118). `favorito_odds` batte
-  nettamente il "favorito" interno e ne **assorbe** il segnale insieme a
-  `rank_avversario` e `casa`. Sul **DEF** il metro a tre gambe passa con
-  margine (mult k=0.2: dMAE −0.197, dcorr +0.060, dlift +7.22, tutti gli
-  IC95 lontani da zero, 7 varianti su 9); su GK/MID/FWD **non** passa
-  (sempre il lift). **In formazione il guadagno NON e' dimostrato** su 880
-  arene e due mazzi indipendenti: i ruoli competono per lo slot libero e
-  l'effetto sparisce nel rumore (σ≈50 pt/arena; servirebbero ~2.500 arene).
-  **CHIUSO il 06/08 per la FORMAZIONE: effetto ESCLUSO, non "non dimostrato".**
-  Su ~37 mazzi indipendenti e ~7.000 arene il delta pesato ha IC95 di
-  ampiezza ~1.3 pt con limite superiore mai oltre **+0.8**, che ESCLUDE sia
-  il +2.98 di forever-young sia il +3.33 delle arene sintetiche (entrambi
-  risultati isolati e non replicati). Esclusi anche i due bias sospettati
-  (cecita' al rischio panchina, capitano che cambia). Il massimo guadagno
-  compatibile coi dati (<4 essenze/arena) non giustifica di toccare la
-  produzione. **Non riproporre l'adozione in formazione senza dati nuovi di
-  natura diversa.** Restano veri e non smentiti i numeri per-ruolo sul DEF.
-  Bocciate nella stessa sessione anche: **`p_draw`** (quota di pareggio,
-  testata con variabile centrata e griglia riscalata sulla sua SD, come da
-  correzione di scala: **2 PASS su 64 varianti, entrambi FWD e non
-  indipendenti** — additiva k=−21.17 e moltiplicativa k=−0.353 sono lo stesso
-  punto in due forme, fragili fuori da lì. Con 64 test al 95% il caso ne
-  produce ~3: 2 e' SOTTO l'atteso da rumore puro. DEF/GK/MID bocciati, segno
-  spesso opposto all'atteso. Il segno negativo su FWD e' l'unica cosa
-  coerente con l'ipotesi — partita bloccata penalizza l'attaccante — ma
-  dcorr +0.005 e' 12x piu' piccolo del +0.060 di `favorito_odds` sul DEF,
-  che gia' non arrivava a spostare un punto in formazione), il capitano
-  scelto con la p_win di mercato (che chiude
-  definitivamente l'ultima ipotesi capitano rimasta aperta), e tre ipotesi
-  strutturali su dimensione/dispersione/concentrazione del pool.
-  Unica strada mai misurata: lo **scouting**, dove si confrontano carte
-  dentro lo stesso ruolo e non c'e' competizione fra ruoli. Dettaglio
-  integrale, tabelle e falsi allarmi:
-  `docs/handoff/HANDOFF_FAVORITO_ODDS_2026-08-06.txt`.
-- **Lettera "Potenziale della GW" (grade A→F)**: individuata
-  (`So5Score.projection.grade` + `reliabilityBasisPoints`, solo nel contesto
-  compose-team, NON in `searchPlayers` — il sort `projected_grade.<fixture>`
-  e' ignorato in silenzio, testato, non riprovare). E' per giocatore-partita,
-  non e' P(gioca) ne' L10 ne' un grado per ruolo. **Nessuno storico: sparisce
-  al fischio d'inizio**, quindi non backtestabile — va registrata in avanti.
-  Nessuna domanda di ricerca ancora definita: definirla PRIMA di accendere
-  qualunque registratore.
-- **Capitano DEF/MID/FWD**: 8 ipotesi testate su 3130 formazioni reali
-  (bias di ruolo, volatilità, forma grezza L5/L10/L40, margine-soglia,
-  stabilità per lega, favorita/sfavorita, combinazioni, profondità storico,
-  rischio sostituito presto, ambiente gol partita) — **tutte chiuse,
-  `pick_captain()` non va toccato**. Unico segnale mai vicino alla
-  significatività: favorita/sfavorita (IC95% [-0.0015,+0.14]), riprovabile
-  SOLO con altro campione reale.
-- **Capitano per tipo di competizione** (arene vs classifiche grandi):
-  nessuna prova che la regola debba cambiare. Segno concorde (favorire
-  varianza) ma magnitudine trascurabile (+1.6 essenze su 245, IC quasi a
-  zero) — il capitano cambia il premio in <2% delle arene.
-- **Formazione concentrata per il capitano** (carta forte + riempitivi vs 5
-  carte equivalenti): correlazione -0.006, indifferente.
-- **Regole di decisione (allocazione, soglie a gradini)**: DIMOSTRATO (non
-  solo misurato) che sono un vicolo cieco. Massimizzare il PREMIO atteso è
-  identico a massimizzare i PUNTI attesi (5768/5768 confronti concordi,
-  0 contraddizioni) perché l'incertezza sul totale formazione (σ=49.4 pt) è
-  troppo grande perché la non-linearità del premio (a gradini per rank)
-  conti in pratica. **La regola attuale del bot (massimizza i punti attesi)
-  è già quella giusta.**
-- **Arene dedicate per lega**: disattivate di default nel generatore (04/08,
-  vedi §9) — non un filone di ricerca chiuso, una scelta operativa.
-- **BLOCCO BOOM — tutto CHIUSO (05/08, tre passaggi).** "Boom" = carta con
-  realizzato ≥75. I boom decidono il podio (0 boom → podio 7.6%, 1 → 35.7%,
-  2 → 68.0%, n=442 formazioni, riverificato in P11), ma **non sono una leva
-  separata**: sono una conseguenza del punteggio alto.
-  1. *Come metrica per scegliere in QUALE arena entrare*: bocciata. Non batte
-     `sum_atteso` né `max_atteso` (tutti ~−0.05 centrati per competizione),
-     `PATTERN_ARENE.md`.
-  2. *Come classifier dedicato*: l'evento è debolmente predicibile (OOF AUC
-     0.658) ma `atteso` fa quasi tutto (+0.025 dal modello completo);
-     `in_casa` non predice (0.466). Eterogeneità per RUOLO — logistica su
-     82.282 coppie al valore di produzione (P11): pendenza FWD 0.145,
-     MID 0.098, DEF 0.088, **GK 0.027**; AUC fuori campione FWD 0.671,
-     MID 0.648, DEF 0.603, **GK 0.514 = caso**. L'edge boom vive negli
-     attaccanti, sul portiere non esiste.
-  3. *Come FUNZIONE OBIETTIVO per COSTRUIRE la formazione* (**P11, la domanda
-     vera**): bocciata. Massimizzare `P(≥1 boom)` invece della somma degli
-     attesi, sul mazzo reale dell'utente, coi vincoli veri e lo stesso
-     knapsack (obiettivo lineare `Σ−log(1−p_i)`): pareggia col mazzo fisso
-     (Δrank +0.02, IC95 contiene zero, 228 arene) e **perde** ad arene
-     isolate (Δrank +0.381 IC95 [+0.025,+0.725]; Δpunti −6.04 IC95
-     [−11.63,−0.35]; 244 arene, bootstrap appaiato). Le due policy divergono
-     davvero (sovrapposizione 1.3–3.5 carte su 5): non era nullo per
-     costruzione. **Causa**: dentro un ruolo p è monotona nell'atteso → stesso
-     ordinamento; tutta la differenza è cross-ruolo, e la pendenza ripida dei
-     FWD sposta lo slot EXTRA da MID a FWD (1.02 → 1.59 attaccanti). Risultato:
-     più boom (0.93 vs 0.82) ma **concentrati**, e la P(almeno uno)
-     *realizzata* scende (54.5% vs 57.0%). In più, ottimizzare direttamente su
-     `p̂` raccoglie l'errore di stima (maledizione dell'ottimizzatore: scarto
-     previsto−realizzato −0.141 per B contro −0.097 per A).
-     → **massimizzare la somma degli attesi è già la policy giusta.**
-     Dettaglio: `docs/handoff/REPORT_PASSAGGIO_2_OPUS_P11_2026-08-05.txt`,
-     script `analisi_manager/p11_*.py`.
-  4. *Covarianza fra compagni*: phi ≈0 per squadra (+0.012, replicato);
-     condizionata ai `p_i` dentro formazione +0.0315 IC95 [+0.0000,+0.0642] →
-     l'indipendenza regge come approssimazione, ma il prodotto dei
-     complementari **sovrastima** P(≥1 boom) di ~3.5 pp (osservata 0.468 vs
-     modello 0.504). Sul punteggio continuo la covarianza c'è (+0.13 vs 0.03
-     di controllo) ma non arriva al boom.
-- **DIFETTO APERTO (trovato in P11, non corretto)**:
-  `backtest_arene_previsioni.py:257-260` ha ancora default
-  `GK_TEAM_CS_WEIGHT=0.5` con il commento "come produzione" — **falso dopo
-  P9-ter** (22/35). Chi usa quel modulo senza esportare la variabile misura un
-  modello che non esiste più. Correggere al prossimo commit sul file (meglio:
-  leggerlo da `test_gk` invece di duplicarlo).
+  persistenti da ~18/11/2025 (buco: eliteserien). Per-carta il **DEF passa
+  il metro a tre gambe con margine** (7 varianti su 9), GK/MID/FWD mai.
+  **In FORMAZIONE l'effetto è ESCLUSO**, non "non dimostrato": su ~37 mazzi
+  e ~7.000 arene l'IC95 del delta pesato ha limite superiore mai oltre
+  +0,8, che esclude i due risultati isolati (+2,98 e +3,33) mai replicati.
+  Il filone come segnale **sopra G** è chiuso a parte, §8nonies.
+- **`p_draw`** (quota pareggio): 2 PASS su 64 varianti, entrambi FWD e non
+  indipendenti fra loro — con 64 test al 95% il caso ne produce ~3, quindi
+  2 è *sotto* il rumore atteso. Bocciato.
+- **Trend recente** (`TREND_INTENSITY`): 0,0 su tutti i ruoli e leghe,
+  monotono verso il peggio in ogni test.
+- **Scomposizione degli all-around per categoria**: nessuna forma soddisfa
+  MAE + correlazione + lift insieme, su nessun ruolo (39.594 partite, 26
+  leghe, bootstrap appaiato). La compressione che l'aveva motivata riguarda
+  solo il `level_score` (scala a gradini), non gli all-around.
+- **`fattore_forza_avversario`**: era calcolato e **mai usato**. Rimosso il
+  05/08. Il condizionamento sull'avversario che agisce davvero è
+  `opponent_lambda_mult` + Stadio D.
+- **Bonus additivi vs moltiplicativi**: la formula additiva è verificata al
+  centesimo (§3).
+
+### 5.3 Capitano — otto ipotesi, tutte chiuse
+Testate su 3.130 formazioni reali: bias di ruolo, volatilità, forma
+L5/L10/L40, margine-soglia, stabilità per lega, favorita/sfavorita,
+combinazioni, profondità storico, rischio sostituzione precoce, ambiente
+gol. **`pick_captain()` non si tocca.** Unico segnale mai vicino alla
+significatività: favorita/sfavorita (IC95 [−0,0015, +0,14]), riprovabile
+solo con un altro campione reale. Chiuse anche: capitano per tipo di
+competizione (il capitano cambia il premio in <2% delle arene), capitano
+scelto con la p_win di mercato, formazione concentrata per il capitano
+(correlazione −0,006, indifferente).
+
+### 5.4 Boom — tutto chiuso
+"Boom" = realizzato ≥75. I boom **decidono il podio** (0 boom → podio
+7,6%, 1 → 35,7%, 2 → 68,0%) ma **non sono una leva separata**: sono una
+conseguenza del punteggio alto.
+- come metrica per scegliere l'arena: non batte `sum_atteso` né `max_atteso`;
+- come classifier: l'evento è debolmente predicibile (AUC 0,658) e l'atteso
+  fa quasi tutto. Forte eterogeneità per ruolo: l'edge vive sui FWD
+  (AUC 0,671), sul **GK non esiste** (0,514 = caso);
+- **come funzione obiettivo per costruire la formazione** (la domanda vera):
+  bocciata. Massimizzare `P(≥1 boom)` pareggia col mazzo fisso e **perde**
+  ad arene isolate (Δpunti −6,04, IC95 [−11,63, −0,35]). Le due policy
+  divergono davvero (sovrapposizione 1,3-3,5 carte su 5), quindi non era
+  nullo per costruzione: la pendenza ripida dei FWD sposta lo slot extra da
+  MID a FWD, si ottengono più boom ma **concentrati**, e la P(almeno uno)
+  realizzata scende. In più ottimizzare su `p̂` raccoglie l'errore di stima.
+  → **massimizzare la somma degli attesi è già la policy giusta.**
+- covarianza fra compagni: ≈0 per squadra; il prodotto dei complementari
+  sovrastima P(≥1 boom) di ~3,5 punti percentuali. L'indipendenza regge
+  come approssimazione.
+
+### 5.5 Regole di decisione e allocazione
+**Dimostrato** (non solo misurato) che le soglie a gradini sono un vicolo
+cieco: massimizzare il PREMIO atteso è identico a massimizzare i PUNTI
+attesi — 5.768 confronti su 5.768 concordi, zero contraddizioni — perché
+l'incertezza sul totale formazione (σ=49,4 pt) è troppo grande perché la
+non-linearità del premio conti in pratica. La regola attuale del bot è già
+quella giusta.
+
+### 5.6 Portiere — i parametri e la deroga al metro
+- **`level_score` binario**: il valore vero è 35 senza clean sheet e 60 con,
+  mai intermedio; il modello ne prevede uno continuo. Mitigato dal blend con
+  la P(clean sheet) di squadra, non risolto: **resta la leva più grande mai
+  lasciata sul tavolo per il GK**.
+- **Blend GK, `c` alzato da 17,5 a 22** (`GK_TEAM_CS_WEIGHT` 0,5→0,63): la
+  correlazione cresce monotona con `c`, il MAE peggiora monotono —
+  compromesso puro, nessun valore dominante. Scelto 22 (dcorr +0,0033 con
+  IC che esclude lo zero, dMAE +0,0227 contro una guardia di +0,05);
+  scartato 26 perché il guadagno diventa rumore mentre il degrado raddoppia.
+  **Prima e unica deroga al metro a tre gambe**, limitata a questo
+  parametro: per il GK conta l'ordinamento (se ne schiera uno solo), non il
+  voto. Bocciate le tre "correzioni ovvie" (POINTS→25, baseline
+  per-portiere, `p_cal` affine): migliorano il MAE e peggiorano la
+  correlazione, e `p_cal` è algebricamente identico ad abbassare il peso.
+- **Il lift di selezione non discrimina sui portieri** (IC larghi 4-8 punti
+  su 120 giornate): sul GK il metro è di fatto a due gambe. Non costruire
+  una terza metrica per aggirarlo — deciso, non riproporre.
+
+### 5.7 Difetti nati qui e ancora aperti
+- **Refit vero di `CALIB_PER_RUOLO` mai completato (P10)**: manca nel repo
+  lo script che calcola i 4 coefficienti `CALIB_A/B_*` (esistono solo
+  hardcoded, `build_formazione_globale.py:394-399`), e la retta "in
+  produzione" 63,43+0,736x non coincide né col rigenerato vecchio
+  (40,64+0,823x) né col nuovo (33,49+0,853x). Scollegata da tempo. La
+  verifica di catena fatta per il blend GK è **analitica, non un refit**:
+  da rifare alla prossima occasione in cui `taratura_coppie.json` viene
+  comunque rigenerato. Non blocca: lo spostamento è sotto l'incertezza nota.
+- **`backtest_arene_previsioni.py:257-260`** ha ancora default
+  `GK_TEAM_CS_WEIGHT=0.5` col commento "come produzione" — **falso** dopo il
+  passaggio a 22/35. Chi usa quel modulo senza esportare la variabile misura
+  un modello che non esiste più. Meglio leggerlo da `test_gk` che duplicarlo.
+- **I 4 coefficienti OLS reale=a+b·atteso NON sono riproducibili dal repo**:
+  nessuno script li ha mai calcolati, l'unica occorrenza è una citazione in
+  un report. Non usarli come conferma indipendente di nulla (è già costato
+  un falso collegamento). La conclusione che ne dipendeva — non espandere i
+  numeri — resta valida perché poggia su altre quattro misure.
+- **D2 — misuratore e produzione non condividono la stessa P(clean sheet)**:
+  `test_gk.py` usa il cutoff esatto, `_pcs_squadra` la griglia settimanale.
+  Si lascia e si documenta (allinearlo costerebbe una `stima()` per ogni
+  giocatore-partita): irrilevante per i confronti fra varianti, rilevante
+  per le stime assolute di lift/correlazione sul GK.
+
+### 5.8 Due trappole di metodo, pagate care
+- **BUG D6 (storia, chiuso)**: tre script di backtest leggevano il punteggio
+  realizzato dai file manager invece che dalla cache game-log, e quel campo
+  include xp+capitano sulle righe non-arena — fino al 77% delle carte
+  gonfiate. I verdetti di *formazione* costruiti su quegli script sono
+  NULLI. Da qui la regola in CLAUDE.md: l'orchestratore verifica i dati
+  grezzi di un esecutore, non il suo commento.
+- **Prima di riusare dati o script di una sessione precedente, verifica che
+  l'`n` coincida** con quello dichiarato nel report. Due casi reali di
+  numeri "già misurati" non riproducibili dal materiale ereditato.
 
 ## 6. Il numero da portarsi via
 
@@ -754,168 +639,92 @@ sottostimati +4.9** (n71, da riverificare). Accumulare altre GW rende poco
 
 ---
 
-## 8bis. Grade G — stato al 08/08/2026 mattina (IN PRODUZIONE, filone APERTO)
+## 8bis. Grade G — VALIDATO il 09/08, resta in produzione
 
-**Cos'è**: `So5Score.projection.grade` (A→F), voto per giocatore-partita che
-Sorare pubblica prima del fischio d'inizio (non è P(gioca), non è L10, non è
-un grado per ruolo — sparisce a partita iniziata, quindi non backtestabile
-sullo storico se non registrandolo in avanti o via `playerGameScores(last:15)`
-per il passato). **Non è legato alle carte possedute**: si legge con
-`anyPlayer(slug).playerGameScores.projection.grade`, query pubblica —
-verificato su giocatori non posseduti (Charly Nouck, Matthew Hoppe → grade D
-anche da non posseduti).
+**Cos'è**: `So5Score.projection.grade` (A→F), voto per giocatore-partita
+pubblicato prima del fischio d'inizio. Si legge con
+`anyPlayer(slug).playerGameScores.projection.grade` — query pubblica, vale
+anche per giocatori non posseduti. **È il voto della PARTITA, non del
+giocatore**: lo stesso giocatore ha lettere diverse per due partite
+ravvicinate entrambe da giocare.
+
+**Cosa misura davvero (chiarito il 09/08, e cambia la lettura di tutto):**
+il grade è in larga parte un **indicatore di titolarità**, non di qualità.
+Prove: sale all'uscita delle odds per chi risulta titolare a sorpresa
+(F→E, osservato in diretta); Messi ha 10 A e 5 F su 15 partite, mai un
+voto intermedio, ed è passato da A a F su una notizia extra-campo. Si
+tiene insieme con il **level score**: chi entra anche un solo minuto
+prende ~35 punti, quindi la distanza fra "non gioca" e "gioca" è più
+grande di quella fra una prestazione mediocre e una buona.
 
 **Formula in produzione** (per gruppo lega/ruolo):
-`atteso_combinato = atteso_calibrato + sd_gruppo × z_grade`. Il grade
-**sposta la selezione**, non è un tie-break come le odds. Non reinventarla:
-riferimento `analisi_manager/p12_backtest_formazione_grade.py`. Fonte in
-produzione: `discovery_fixture.py::fetch_grade_live()` fa la fetch DOPO il
-filtro starter-odds, sui `kept_slugs`, sulla leaderboard aperta della GW, e
-scrive il grade in `player_card_counts.json`; il generatore lo legge da lì.
+`atteso_combinato = atteso_calibrato + sd_gruppo × z_grade`. Sposta la
+selezione, non è un tie-break. Riferimento:
+`analisi_manager/p12_backtest_formazione_grade.py`. In produzione dal
+07/08 (`GRADE_ENABLED` default `'1'`, rollback con `=0`); la fetch sta in
+`discovery_fixture.py::fetch_grade_live()`, dopo il filtro starter-odds.
 
-**Timeline**: entrato in produzione il 07/08 (`GRADE_ENABLED` default `'1'`
-in `build_formazione_globale.py`, rollback immediato con `GRADE_ENABLED=0`),
-per DECISIONE dell'utente (segno positivo ovunque, downside nullo), non
-perché un IC statistico lo imponesse — vedi i numeri sotto. Bloccato per
-mezza giornata da un bug di sessione anonima (§8quater), poi ottimizzato
-nelle performance (stessa sezione). Rivalidato il 07/08 notte su una base
-ricostruita da capo con l'utente, criterio per criterio. Numeri:
+**NON-ARENA — dimostrato**: +5,98 su 864 formazioni (All Star + U23),
++6,46 su 310 (MLS Hot Streak). Placebo: il grade vero batte tutte le
+permutazioni (percentile 100), e **la mediana placebo è negativa** (−1,51
+e −3,72) — dare voti a caso peggiora, che è la firma di un'informazione
+vera. Bootstrap sui manager: IC [+4,87, +10,38] e [+2,58, +12,12].
 
-| campione | n | A | G | delta | IC95 |
-|---|---|---|---|---|---|
-| 7 carte (All Star + U23) | 864 | 424,57 | 430,55 | **+5,98** | [+2,43, +9,68] |
-| 5 carte (MLS Hot Streak) | 310 | 314,49 | 320,93 | +6,43 | [−0,09, +12,85] |
+**ARENE — dimostrato il 09/08, dopo due tentativi inconcludenti.** I test
+precedenti non distinguevano G dal rumore, ma giravano su una copertura
+del grade del 54,6% (cap 220: 42,9%). Portata al **98,8%**, il risultato
+esce netto. Campione: 825 formazioni, 24 manager, 6 GW, sette competizioni
+arena limited. Metrica in **essenze nette** (premi standard, jackpot in
+colonna a parte), due regimi separati:
+- **allocazione** (53 unità, pool > slot): G batte A di **+29.050**
+  essenze col set di soglie vecchio e **+24.150** col nuovo. Placebo al
+  percentile 100 su entrambi (il massimo del rumore è 12 volte più
+  piccolo del valore vero). Il bot gioca **meno** arene del manager (547
+  contro 617) e guadagna: concentra invece di spalmare;
+- **astensione** (37 unità, pool = slot): nessun ramo significativo.
+Tre limiti noti **comprimono** il vantaggio invece di gonfiarlo: il rank
+si calcola sulla classifica completa (il bot compete anche col manager che
+c'era davvero), il capitano è scelto col criterio del baseline in tutti i
+rami, e le formazioni senza arena reale a cui assegnarle contano come non
+premiate. Dettaglio: `docs/handoff/HANDOFF_G_ODDS_ARENE_2026-08-09.txt`.
 
-Sul caso a 7 carte l'IC **esclude lo zero** e le due famiglie concordano
-(All Star +5,82, U23 +6,24). Sul caso a 5 l'IC tocca lo zero per un soffio, ma
-è una competizione molto vincolata (solo carte MLS, ≥4 in season): il modello
-ha poca scelta — solo il 6,5% delle formazioni resta identico contro il 40%
-delle 7 carte — e che l'effetto regga lì è un buon segnale.
+**LA RISERVA CHE RESTA, mai misurata**: in produzione il bot filtra già le
+starting odds a 0,80, che catturano la stessa informazione di titolarità.
+Quanto di quel +29.050 sopravvive sopra quel filtro non lo sa nessuno —
+voce a backlog (§10bis).
 
-**Come si costruisce una base pulita** (vale per qualunque analisi sui file
-manager, non solo per G): niente arene; **tutte** le carte di rarità
-`limited`, filtrando sulla rarità della CARTA e non sull'etichetta della
-competizione; somma dei punteggi delle carte uguale al punteggio **ufficiale
-di Sorare** entro 0,5 — è l'unica verifica che non dipende da teorie sui
-bonus; e per All Star/U23 solo leaderboard con `division-N`.
+**DIFETTO STRUTTURALE, ancora aperto**: il grade entra come confronto coi
+pari dentro il gruppo (lega, ruolo) di quella giornata
+(`_apply_grade_group`, righe 452-491). Se il gruppo ha meno di 2 carte col
+grade, o se hanno tutte lo stesso voto, **il grade viene ignorato**: su un
+mazzo reale, 19 gruppi su 57 hanno un solo membro, e il grade sposta
+qualcosa sul 77% delle carte, viene ignorato sul 23%. La cura provata
+(**scala storica**, flag `GRADE_SCALE`, default spento) è stata **misurata
+e scartata**: pareggia sul non-arena e sull'arena peggiora proprio sulle
+Cap 260, il tipo più giocato. Non riproporla senza un'idea nuova.
+Riserva collegata mai misurata: dove il gruppo ha esattamente 2 carte col
+grade lo spostamento è meccanico ±1 sd.
 
-**Difetto di fondo scoperto qui, con effetti oltre G:** il campo `in_season`
-nei file manager è letto **al momento dell'estrazione**
-(`ricostruisci_manager.py:279`), quindi dice se la carta è in season *oggi*,
-non se lo era quando la formazione fu schierata. Le competizioni il cui
-vincolo dipende da quel campo **non sono ricostruibili a ritroso**.
+**Catena soglie/scouting per G — verificata e chiusa**: σ di calibrazione
+A=48,13 vs G=49,32 (IC sovrapposti), soglie arena delta <1,1 pt. G non
+muove nessuno dei due anelli a valle.
 
-**IL PLACEBO (08/08 notte) — il controllo che mancava a tutto il filone.**
-Mai fatto prima d'ora. Si rifà il backtest identico ma con i grade
-PERMUTATI a caso dentro il gruppo: stessa struttura, nessun legame vero
-grade↔giocatore. Sul NON-ARENA, su entrambe le basi pulite, il grade vero
-batte **tutte** le permutazioni (percentile 100 su 30 e 60 permutazioni),
-e — dato che conta più del percentile — **la mediana placebo è NEGATIVA**
-(−1,51 All Star, −3,72 MLS): dare voti a caso *peggiora* rispetto a non
-usarli. È la firma di un'informazione vera. Il +5,98 non è un artefatto.
-Rimisurata anche l'incertezza col bootstrap **sui manager** (cluster)
-invece che sulle formazioni, che è il modo corretto: gli IC si
-restringono e ora escludono lo zero su entrambe le basi — All Star
-[+4,87, +10,38], MLS Hot Streak [+2,58, +12,12] (prima toccava lo zero).
+**Trappola sul metro di qualità**: confrontare `atteso_combinato` A vs G
+NON è un giudizio di qualità — è il punteggio di selezione, gonfiato per
+costruzione quando G è acceso. Il metro vero è il **realizzato** su GW già
+giocate.
 
-**SULLE ARENE — rivalidato l'08/08 su base pulita, esito a metà.**
-Campione: 3.965 arene Cap 260/220/Uncapped in archivio (54 file manager,
-43 GW, 50 manager); filtrando per copertura grade ≥70% e pool>slot restano
-746 arene / 18 manager / 22 GW. Verifiche di integrità superate: 5 carte
-per formazione, capitano ×1,20 in 34 casi su 34, **xp non applicato in
-arena** (4.078 casi di carte diverse dello stesso giocatore, differenza
-mediana 0,00), somma carte = punteggio ufficiale in 4.999 righe su 5.095.
-REGOLA DI GIOCO (data dall'utente): nelle arene limited **si possono
-schierare carte rare**, che si comportano esattamente come le limited —
-nessun bonus o punteggio diverso. Non vanno filtrate.
+**Base pulita, come si costruisce** (vale per ogni analisi sui file
+manager): niente arene; tutte le carte di rarità `limited` filtrando sulla
+CARTA e non sull'etichetta della competizione; somma dei punteggi = punteggio
+ufficiale Sorare entro 0,5; per All Star/U23 solo leaderboard `division-N`.
+**Difetto con effetti oltre G**: il campo `in_season` nei file manager è
+letto al momento dell'estrazione (`ricostruisci_manager.py:279`), quindi dice
+se la carta è in season *oggi*, non quando fu schierata — le competizioni con
+quel vincolo non sono ricostruibili a ritroso.
 
-Misurato il **fronte "astensioni"** (171 arene dove il pool coincide con
-gli slot: carte inchiodate e capitano identico al manager, quindi l'unica
-variabile è entrare o no). Su 142 arene valutabili, contro un manager che
-in quel sottoinsieme perdeva 600 essenze:
-| ramo | saldo | placebo |
-|---|---|---|
-| A-stretta | +2.000 | — |
-| G-stretta | +2.600 | percentile 57-65 → **rumore** |
-| A-larga | −100 | — |
-| G-larga | +2.900 | percentile 97-98 → **segnale vero** |
-Con la **regola stretta** (quella che l'utente segue: salta le marginali)
-G non si distingue da un grade a caso. Con la larga sì. ATTENZIONE
-metodologica emersa qui: in arena il placebo ha mediana POSITIVA (+2.500),
-perché perturbare gli attesi fa saltare qualche arena e in un campione di
-arene perdenti questo guadagna da solo — il pavimento vero non è "gioca
-sempre" ma "salta a caso". Nel non-arena questo artefatto non esiste
-(nessuna decisione di ingresso), ed è il motivo per cui quel risultato è
-più solido di questo.
-
-**IL DIFETTO STRUTTURALE DI G, scoperto l'08/08 (vale in PRODUZIONE, non
-solo nei test).** Il grade non è un voto assoluto: entra come confronto coi
-pari, cioè quanto una carta sta sopra la **media dei grade del suo gruppo
-(lega, ruolo)** in quella giornata (`_apply_grade_group`, righe 452-491;
-il gruppo è fissato a riga 942). Se il gruppo ha **meno di 2 carte col
-grade**, la deviazione è zero e **il grade viene ignorato**; stessa cosa se
-tutte le carte del gruppo hanno lo stesso grade. Misurato su un mazzo reale
-di produzione: 57 gruppi lega/ruolo con grade, **mediana 3 membri**, e 19
-gruppi su 57 ne hanno **uno solo**. In termini di carte: il grade sposta
-qualcosa sul **77%** e viene ignorato sul **23%**. Non produce nessun
-errore visibile, per questo non se n'era accorto nessuno.
-Copertura del DATO (cosa diversa): 242 slug su 266 hanno il grade nella
-discovery reale = 91%; i 24 mancanti sono quasi tutti MLS (13) e Messico
-(6). Buco piccolo rispetto a quello d'uso: non è lì la priorità.
-
-**LA CURA PROVATA E SCARTATA — scala storica (`GRADE_SCALE`).** Idea:
-tenere la correzione per (lega, ruolo) ma prendere media e sd del grade
-dallo STORICO (centinaia di osservazioni) invece che dalle 1-3 carte della
-giornata. Implementata dietro flag `GRADE_SCALE` in
-`build_formazione_globale.py`, **default `'gruppo'` = comportamento di
-sempre, verificato identico bit per bit**. Misure: accende il grade su 13
-carte su 250 e non ne spegne **nessuna** (5 gruppi su 38 riattivati), ma
-sul non-arena **pareggia** (−0,43 e +1,07, IC includono zero) e sull'arena
-il guadagno aggregato (+1.000 stretta, +600 larga) viene **tutto dalle 24
-arene Uncapped**, mentre sulle **Cap 260 peggiora** (−900 stretta, −1.300
-larga) — e le Cap 260 sono il tipo che l'utente gioca quasi sempre, oltre
-a essere 84 arene su 142 nel campione. Sulla regola stretta il placebo sale
-da 57,5 a 82,5 ma non raggiunge la soglia del 95.
-**DECISIONE DELL'UTENTE (08/08): non si adotta, il flag resta spento.** Il
-difetto resta documentato qui in attesa di una normalizzazione migliore.
-Non riproporre la scala storica senza un'idea nuova: è già stata misurata.
-
-**Catena soglie/scouting per G — VERIFICATA E CHIUSA, non si tocca**: σ
-calibrazione A=48.13 vs G=49.32 (IC sovrapposti), soglie arena delta <1.1pt
-(<0.4%, sotto il tremolio fra campioni) → `PAREGGIO_ARENA`/
-`GUADAGNO_PER_PUNTO` restano quelli di produzione; scouting legge le soglie
-dal generatore via `getattr` (nessuna copia propria) → invariato per
-costruzione. G non muove nessuno dei due anelli a valle.
-
-**Trappola da NON ripetere sul metro di qualità**: confrontare
-`atteso_combinato` A vs G (il totale mostrato dal generatore) NON è un
-giudizio di qualità — è il punteggio di SELEZIONE, gonfiato dal boost per
-costruzione quando G è acceso. Il metro vero è il REALIZZATO (backtest su
-GW già giocate). Su GW future non ancora giocate non esiste modo di dire se
-G "guadagna" o "peggiora": si può solo misurare quanto SPOSTA la selezione
-(es. test GW3: 6/7 formazioni cambiate quasi integralmente con copertura
-93%, composizione per ruolo invariata in tutte e 7).
-
-**Le 3 anomalie non-arena** (Hot Streak con 1 classic e lega singola forzate,
-famiglia "Limited" che mischia formazioni da 7 e da 5 carte, bonus XP non
-applicato nel backtest) sono **CHIUSE l'08/08 su indicazione dell'utente**:
-facevano parte del consolidamento di G e sono state risolte lì. Non
-riaprirle. Storico:
-`docs/handoff/BRIEF_ANOMALIE_COMPETIZIONI_NONARENA_2026-08-07.txt`.
-
-**Verdetto d'insieme su G (08/08): si tiene acceso.** Il beneficio è
-dimostrato sul non-arena e ora regge anche al placebo; sull'arena non è
-dimostrato ma **non è mai risultato dannoso** in nessuna misura. La logica
-con cui è entrato in produzione il 07/08 (segno positivo ovunque, downside
-nullo) regge. Unica riserva mai misurata: dove il gruppo ha esattamente 2
-carte col grade lo spostamento è meccanico ±1 sd, e nessuno ha verificato
-se lì G peggiori la selezione.
-
-Dettaglio completo: `docs/handoff/HANDOFF_G_ARENE_2026-08-08.txt` (censimento
-arene, fronte astensioni, placebo, i due brief e i due follow-up) e
-`docs/handoff/HANDOFF_GRADE_SCALA_2026-08-08.txt` (difetto dei gruppi, scala
-storica, Passi 0-1-2). Storico: `BRIEF_SONNET_RIVALIDAZIONE_G_2026-08-07.txt`,
-`BRIEF_SONNET_CATENA_G_2026-08-07.txt`.
+**Chiuse, non riaprire**: le 3 anomalie non-arena (Hot Streak con 1 classic,
+famiglia "Limited" mista 7/5 carte, bonus XP nel backtest), risolte l'08/08.
 
 ---
 
@@ -1226,48 +1035,44 @@ Dettaglio: `docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt` §10.
 
 ---
 
-## 8nonies. Favorito odds come segnale SOPRA G (09/08) — pareggio, aperto un filone nuovo
+## 8nonies. Favorito odds sopra G — FILONE CHIUSO (09/08)
 
-Le **starter odds** (probabilità che il giocatore sia titolare) restano quel
-che erano: filtro a 0,80 in discovery più tie-break a parità di atteso entro
-1 punto. Non si toccano. Qui si parla delle **favorito odds** (quanto la
-squadra è data favorita), che erano state provate come segnale *prima* di G
-e mai adottate.
+Le **starter odds** (probabilità che il giocatore sia titolare) restano
+quello che erano e **non si toccano**: filtro a 0,80 in discovery più
+tie-break a parità di atteso entro 1 punto. Qui si parla delle **favorito
+odds** (quanto la squadra è data favorita).
 
-**Esito: pareggio vero, non test nullo.** Su entrambe le basi pulite
-non-arena, in nessun ruolo il ramo G+odds batte G: gli intervalli non
-escludono mai lo zero. E l'interruttore è stato verificato per bene — con
-k=0 il ramo coincide col baseline su 43.000 righe, con k=0,2 si muove il
-57-86% delle carte e **cambia almeno una carta nel 50-71% delle formazioni**.
-Quindi le odds riordinano moltissimo e in media azzeccano quanto sbagliano.
-Correlazione grade↔odds: +0,09 globale, mai sopra +0,21 — **non sono
-ridondanti**, semplicemente il residuo informativo non si traduce in punti.
+**Esito finale: non aggiunge nulla sopra G, in nessuna condizione
+provata.** Non è un test nullo — l'interruttore è stato verificato ogni
+volta (a k=0 coincide col baseline bit per bit; acceso, riordina il 57-94%
+delle carte e cambia almeno una carta nel 50-71% delle formazioni). Le
+odds riordinano moltissimo e in media azzeccano quanto sbagliano.
 
-**Due cose emerse strada facendo, entrambe aperte:**
+Cosa è stato provato, tutto negativo o nullo:
+- **delta storico** (scarto dalla media del giocatore) sul non-arena: mai
+  IC positivo in nessun ruolo;
+- **livello assoluto** (la quota della partita, senza storico) sul
+  non-arena: idem, con due scelte di scala diverse (z-score per gruppo, e
+  grezzo con k calibrato a parità di effetto). In più risolveva un difetto
+  reale — il delta dà segnali opposti a due giocatori della stessa partita
+  — e alzava la copertura dal 59,9% al 77,5%: **la copertura maggiore non
+  si è tradotta in punti**;
+- **sopra G nelle arene** (09/08, il test più pulito): G+O contro G è
+  sempre negativo come stima (−4.000 e −8.550) e mai significativo.
 
-1. **Il metodo è discutibile, e l'utente ha sollevato un'obiezione fondata.**
-   Il segnale usato è `delta_favorito_odds` = scarto fra la quota di questa
-   partita e la **media storica** del giocatore. La ragione sta nel codice
-   (`backtest_arene_previsioni.py` riga 550): evitare il doppio conteggio
-   con lo storico dei punteggi, già dentro lo `score_atteso`. Ma così due
-   giocatori che affrontano la **stessa** partita al 50% ricevono segnali
-   opposti a seconda di chi hanno incontrato prima. Va testato il **livello
-   assoluto**: brief pronto in
-   `docs/handoff/BRIEF_SONNET_ODDS_LIVELLO_ASSOLUTO_2026-08-09.txt`.
-2. **La copertura delle quote parte da metà novembre 2025.**
-   `_p_own_opp_odds` (righe 527-546) legge le quote 1X2 da SorareInside via
-   `winOddsBasisPoints`, e l'archivio è persistente solo da ~18/11/2025
-   (eliteserien sempre esclusa). Perciò il 40% delle carte su All Star+U23
-   non ha il delta — non perché manchino le odds oggi, ma perché mancano
-   nello storico. **Il dato è per SQUADRA, non per giocatore** (undici
-   giocatori della stessa squadra condividono il valore): recuperarlo
-   costerebbe una manciata di chiamate per giornata, non centinaia. Da
-   verificare con **una singola query** se `winOddsBasisPoints` risponda
-   ancora per partite già giocate.
-   NOTA: il livello assoluto non richiede le 5 partite storiche, quindi da
-   solo porterebbe la copertura dal 60% a quasi il 100%.
+Perché non funziona, per quanto si può dire: il livello assoluto è più
+correlato allo `score_atteso` di quanto lo sia il delta (+0,22 contro
++0,09), quindi porta informazione che il modello ha già — è il doppio
+conteggio che aveva motivato la scelta del delta a suo tempo.
 
-Dettaglio: `docs/handoff/HANDOFF_ODDS_SEGNALE_DOPO_G_2026-08-08.txt`.
+**Buco di copertura che resta**, se un giorno serve per altro: l'archivio
+quote parte da ~18/11/2025 (eliteserien sempre esclusa), e il mancante è
+**al 100%** dovuto a quello, non ad altri difetti — misurato. Le quote
+sono per SQUADRA, non per giocatore, quindi recuperarle costerebbe una
+manciata di chiamate per giornata.
+
+Dettaglio: `docs/handoff/HANDOFF_ODDS_SEGNALE_DOPO_G_2026-08-08.txt` §9-12
+e `docs/handoff/HANDOFF_G_ODDS_ARENE_2026-08-09.txt`.
 
 ---
 
@@ -1334,44 +1139,47 @@ di *fingerprint*, non sta delirando — serve davvero, ma **esiste già** in
   arena senza dover leggere i 30+ file sorgente in `docs/handoff/`, che
   restano solo come archivio/dettaglio.
 
-## 9. Ultima modifica di produzione — NESSUNA nella sessione 08/08
+## 9. Modifiche di produzione — cronologia compressa
 
-La sessione dell'08/08 (sera/notte) **non ha cambiato niente in produzione**.
-Sono stati aggiunti due interruttori, entrambi **spenti di default**:
-`GRADE_SCALE` (default `'gruppo'` = comportamento di sempre, §8bis) e
-`ARENA_CRITERIO` (default `'assoluto'`, §8septies). Per entrambi è stato
-verificato che col default l'output è identico a prima. In più:
-`DUMP_JSON_CANDIDATI` (dump diagnostico di tutti i candidati, non solo di
-quelli schierati; costo zero se non impostato).
+**09/08/2026 — SOGLIE ARENA APPLICATE + tipo Beginner** (commit
+`f9902af972`). `PAREGGIO_ARENA`: cap260 259,5→**264,5**, cap220
+244,1→**247,1**, Uncapped 288,3→**279,6**, Beginner **256,5** (nuovo),
+Elite invariata 342,7, arene di lega singola invariate 262,9.
+`GUADAGNO_PER_PUNTO`: cap260 7,9→**6,96**, cap220 6,3→**5,11**, Uncapped
+8,0→**5,88**, Beginner **2,46** (nuovo), Elite invariata 9,1, arene di
+lega singola 8,8→**6,96** (allineate a cap260: stesse regole, stessi
+premi; il pareggio invece resta 262,9 perché è misurato sul loro campo,
+più debole). `COSTO_INGRESSO` Beginner **100**. Effetto misurato: +1 arena
+giocata su 16. Dettaglio in `HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt` §13.
 
-## 9bis. Modifica di produzione precedente (07/08/2026)
+**08/08/2026 — nessuna modifica.** Aggiunti due interruttori **spenti di
+default**: `GRADE_SCALE` (default `'gruppo'`) e `ARENA_CRITERIO` (default
+`'assoluto'`), più `DUMP_JSON_CANDIDATI`. Entrambe le cure che
+implementavano sono state misurate e **scartate**: non riproporle.
 
-**Grade G portato in produzione** (`GRADE_ENABLED` default `'1'`,
-`build_formazione_globale.py`), con fetch automatica integrata in
-`discovery_fixture.py` — dettaglio completo, formula e numeri in §8bis.
-Insieme, nello stesso giro: fix bug sessione anonima/CSRF, ottimizzazione
-performance (429/tempi), `ESCLUDI_LOCKATE` per le carte bloccate — tutti in
-§8quater. Nessuno di questi tre tocca `score_atteso`/soglie/scouting salvo
-G stesso (catena verificata, §8bis).
+**07/08/2026 — Grade G in produzione** (`GRADE_ENABLED` default `'1'`),
+con fetch automatica in `discovery_fixture.py`. Insieme: fix sessione
+anonima/CSRF, ottimizzazione 429, `ESCLUDI_LOCKATE` (§8quater).
 
-## 9ter. Modifica precedente (05/08/2026, compresso)
+**05/08/2026** — 16 commit (`e2fe378376`): rimosso
+`fattore_forza_avversario` (era morto), scouting su scala calibrata, fix
+L10 nel knapsack, tie-break odds, gradino `-3:0` in `LEVEL_TABLE`, blend
+GK `GK_TEAM_CS_WEIGHT` 0,5→0,63 propagato a tutte le leghe.
 
-Passaggio 2, 16 commit pushati (`e2fe378376`): rimosso
-`fattore_forza_avversario` morto, scouting su scala calibrata, fix L10 nel
-knapsack, tie-break odds vero, gradino `-3:0` in `LEVEL_TABLE`; blend GK
-`GK_TEAM_CS_WEIGHT` 0.5→0.63 (c=17.5→22, dettaglio §5), propagato a tutte le
-leghe. Difetto minore aperto: `formazione_mls/predict/test_gk.py:1632` cita
-ancora `GK_TEAM_CS_WEIGHT=0.5`, stantio — correggere al prossimo commit sul
-file.
+**04/08/2026** — arene dedicate per lega disattivate di default
+(`ARENA_LEAGUES` vuota, riattivabile con `ARENA_LEAGUES_ENABLED`), commit
+`ee4c2deec2`.
 
----
-
-## 9quater. Modifica precedente (04/08/2026)
-
-**Arene dedicate per lega disattivate di default** (`ARENA_LEAGUES` vuota in
-`generatore_formazioni/build_formazione_globale.py`, riattivabile con
-`ARENA_LEAGUES_ENABLED`): venivano proposte come più efficienti senza sapere
-se la GW le rendeva schierabili. Commit `ee4c2deec2`.
+**DIFETTO APERTO, scoperto il 09/08 e NON introdotto da noi**: il
+generatore è **non deterministico** run-to-run. Due esecuzioni identiche,
+a codice invariato, allocano diversamente le formazioni opzionali (pool
+residuo) perché Python randomizza l'ordine di set/dict a ogni processo.
+Con `PYTHONHASHSEED=0` le run tornano identiche. Due implicazioni
+separate: (a) fissarlo nell'ambiente di lancio costa nulla e rende i
+risultati riproducibili; (b) il fatto che l'ordine cambi il risultato
+dice che **lì il generatore non ha un criterio** e sceglie fra opzioni
+che considera equivalenti — capire perché è un filone a sé, e potrebbe
+valere essenze.
 
 ---
 
@@ -1392,102 +1200,123 @@ se la GW le rendeva schierabili. Commit `ee4c2deec2`.
 
 ---
 
-## 10bis. COSE DA FARE — in ordine di priorità (aggiornato 09/08 notte)
+## 10bis. COSE DA FARE — riscritto il 09/08 notte
 
-**I TRE LAVORI APERTI, in sequenza.** Sono collegati: 1 e 2 chiudono le
-soglie, 3 è un filone a sé che può ripartire in parallelo.
+**Tutto quello che era in cima a questa lista il 09/08 mattina è FATTO**:
+premi scaricati, soglie applicate, G validato sulle arene, filone odds
+chiuso. Quello che segue è quello che resta, in ordine di interesse.
 
-1. **Scaricare i PREMI incassati** (§8octies). È il collo di bottiglia
-   rimasto: il campione premi è fermo a 235 osservazioni, **20 per la cap
-   220**, mentre le classifiche sono passate a 2.125. Il guadagno per punto
-   — il numero che si muove di più e che decide quale arena giocare —
-   dipende proprio da quella metà. Si usa la stessa tecnica della raccolta
-   classifiche (`dati_globali/classifiche_arene_2026-08-08.json`), che ha
-   funzionato: stessa lista di slug, si aggiunge il campo dei premi.
-   **ATTENZIONE al trasporto**: servono tutti e tre i pezzi, vedi §8undecies.
-2. **Applicare le soglie nuove** (§8octies), dopo il punto 1. Decisione
-   dell'utente già presa: si applicano. Non toccano `score_atteso`, quindi
-   il modello predittivo non si muove — ma **toccano lo scouting**, che
-   legge soglie e guadagno/punto dal generatore via `getattr` e si allinea
-   da solo. Va percorsa la catena fino allo scouting incluso.
-3. **Favorito odds, livello assoluto contro delta** (§8nonies). Brief già
-   scritto e **non ancora mandato**:
-   `docs/handoff/BRIEF_SONNET_ODDS_LIVELLO_ASSOLUTO_2026-08-09.txt`. In
-   coda, una singola query di prova per capire se `winOddsBasisPoints`
-   risponda per partite già giocate: se sì, le quote storiche si recuperano
-   in bulk (per SQUADRA, non per giocatore) e i backtest si allargano alle
-   giornate prima di novembre 2025.
-4. **Normalizzazione del grade** (§8bis): il difetto è documentato e la
-   prima cura (scala storica) è stata misurata e scartata. Serve un'idea
-   NUOVA, non ripetere quella. Non urgente: G resta acceso e funziona.
-3. **Le due verifiche mancanti su G**, entrambe economiche: (a) dove il
-   gruppo ha esattamente 2 carte col grade lo spostamento è meccanico ±1 sd
-   — nessuno ha misurato se lì G peggiori la selezione; (b) il secondo
-   placebo, permutando i grade **fra giornate dello stesso giocatore**
-   invece che fra giocatori: risponde alla domanda se il segnale sia "questo
-   giocatore è forte" o "questa partita andrà bene".
-4. **Beginner nel fronte astensioni**: il campione salirebbe da 171 a 258
-   arene, ma **il bot non ha una soglia per le beginner** (`PAREGGIO_ARENA`
-   non ha la chiave). Va derivata con `consiglio_arena.py`, lo stesso
-   strumento con cui sono state calcolate le altre tre — servirebbe comunque
-   se un giorno si vuole che il bot consigli anche le beginner. Nota: dai
-   dati reali le beginner sono il tipo **peggiore** (ROI −20,9%).
-5. **Fronte 1 arena (selezione, non astensione)**: 746 arene / 18 manager /
-   22 GW già individuate, ma richiede di estrarre le classifiche di 577
-   arene per conoscere i punteggi degli avversari. L'utente è dubbioso sulla
-   pulizia del confronto (il bot sceglie carte diverse, quindi arene
-   diverse): valutare se vale la spesa — §8bis, `HANDOFF_G_ARENE`.
-6. **Decisione grade nello scouting**: usare il grade storico
-   (`playerGameScores(last:15)`) anche per candidati non posseduti, o
-   lasciare lo scouting senza grade? — §8ter.
-7. **Odds+4ruoli — allargare il campione profondo**: solo 2 mazzi con ≥16
-   giornate, pablo0078 pesa il 33%; il DEF non si può ancora relegare allo
-   scouting su questa base — §8quinquies.
-8. **L10 incoerente lato SORARE (non nostro) — in attesa, non indagare**:
-   caso Jeppe Erenbjerg (run146, 07/08). L'utente ha contato a mano le ultime
-   dieci: media **66**. La schermata principale di Sorare mostra **62**; la
-   stessa carta schierata in ARENA torna a mostrare **66**. Il bot legge
-   `lastTenPlayedAvgScore` e prende 62, cioè copia fedelmente quello che
-   l'API espone: **non è un bug nostro**. Decisione dell'utente (08/08):
-   isolato, si tratta solo se ricapita. ATTENZIONE però se ricapita: se
-   l'arena di Sorare conta 66 dove noi contiamo 62, il cap L10 può sforare
-   davvero — le arene cap 260 del run146 erano riempite a 260 esatti.
-9. **Buco tabella premi Uncapped rank 1/3**: il premio del 1° e del 3° posto
-   poggia su **una sola osservazione** ciascuno in archivio. Non è un
-   dettaglio: è su Uncapped che si concentrava tutto il presunto guadagno
-   della scala storica (§8bis). Servono più arene Uncapped a podio.
-10. **21 script con path Windows hardcoded** in `analisi_manager/`: girano
-    solo sulla macchina dell'utente, meccanico — §8quinquies.
+**PRIORITARIO — CAPITANO SCELTO COL GRADE** (idea dell'utente 09/08,
+messa in cima su sua richiesta). Il capitano MOLTIPLICA il punteggio: +20%
+in arena, +50% fuori. Su una carta da 80 punti sono 16 o 40 punti su una
+decisione sola — nessun altro parametro del modello sposta tanto con una
+scelta singola.
+Oggi `pick_captain()` sceglie sull'atteso e **ignora completamente il
+grade**: nel backtest del §9 la fascia era assegnata col criterio del
+baseline in TUTTI i rami, quindi G non l'ha mai usata — è uno dei tre
+limiti che comprimevano il suo vantaggio misurato.
+Gerarchia proposta dall'utente: **fascia al grade più alto; a parità di
+grade, all'atteso più alto; se anche gli attesi sono vicini o uguali, si
+sceglie per ruolo.**
+Due effetti da misurare SEPARATAMENTE, perché sono meccanismi diversi:
+  - **protezione**: un capitano che non gioca non costa solo i suoi punti,
+    azzera il moltiplicatore. Il grade è bravissimo proprio a dire chi non
+    gioca (una F non gioca nel 61,5% dei casi, e il suo residuo è −31);
+  - **spinta**: a parità di titolarità, il grade ordina ancora (residui da
+    +1,4 di D a +3,9 di A) — ma qui i margini sono piccoli.
+Da sapere: sul capitano sono già state chiuse otto ipotesi (§5.3), ma
+**nessuna con il grade**, che è arrivato dopo. Non è una voce bruciata.
+Si misura sul backtest arene già rodato, come ramo a sé.
 
-**BACKLOG APERTO IL 09/08 (non lavorare, solo registrato):**
+**1. Quanto vale G sopra il filtro starting odds?** È la riserva più
+importante ed è aperta. Il grade è in larga parte un indicatore di
+titolarità (§8bis); il bot in produzione filtra già a 0,80 di starting
+odds, che misura la stessa cosa. Nel backtest il ramo A è invece
+completamente cieco su chi gioca, quindi una fetta del +29.050 potrebbe
+essere un vantaggio che in produzione è già stato incassato dal filtro.
+Da misurare rifacendo il confronto **dopo** aver applicato il filtro a
+entrambi i rami. Nessuna query, dati già in repo.
 
-- **Il grade e' in buona parte un indicatore di TITOLARITA', non di
-  qualita'.** Fatti: sale all'uscita delle odds per chi risulta titolare a
-  sorpresa (F->E, osservato in diretta dall'utente); Messi ha 10 A e 5 F su
-  15 partite, mai un voto intermedio; il 09/08 e' passato da A a F dopo la
-  morte del padre, cioe' su una notizia extra-campo che riguarda se
-  giochera', non come giochera'. CONTROLLO DA FARE nel test G sulle arene:
-  **G batte ancora A dopo aver gia' filtrato per starting odds >=0,80?**
-  Se il vantaggio sparisce, G non e' un segnale sulla qualita' ma un
-  secondo filtro di titolarita' sovrapposto a uno che il bot ha gia'.
-- **Bonus 4% (cap L10) e 2% (anti-stack) fuori dall'arena**: il generatore
-  li tratta come informativi e non li insegue, e test passati dicevano che
-  inseguirli peggiorava il totale -- ma erano test SENZA G. Da rifare con G.
-  Serve anche sistemare il realizzato dei backtest non-arena, che oggi non
-  li calcola (p16/p17 righe 61-65).
-- **Correlazione grade <-> punteggio realizzato della stessa partita**:
-  numero mai misurato, costa zero query. Serve come limite superiore alla
-  contaminazione possibile (se fosse >0,8 il grade sarebbe una rilettura
-  del risultato; un pronostico onesto sta molto piu' in basso).
-- **Caso andrew-vincent-rick 13/05/2026**: grade cambiato fra due letture
-  con scoreStatus FINAL in entrambe, senza causa nota. 1 su 729. Riprendere
-  solo se ricapita su un campione piu' grande.
+**2. Segregare il rischio DNP** (idea dell'utente, 09/08). Oggi lui non
+schiera sotto l'80% di starting odds e si mangia tutta la fascia 60-80%.
+Alternativa: il bot continua a giocare 80+ nelle arene che contano, e le
+carte 70+ ad alto potenziale finiscono **tutte insieme in una sola
+Beginner** (100 essenze): un DNP rovina una formazione già dichiarata
+precaria invece di una buona. Non riduce i DNP, cambia dove cadono.
+Misurabile senza query: le starting odds sono salvate accanto al grade
+(`starter_odds_bp` in `analisi_manager/dati/storico_grade_*`); si innesta
+su `p20_g_odds_arene_backtest.py`, che già fa il regime allocazione.
 
-**Voci chiuse, non riaprire**: soglie cap 220 come difetto di taratura
-(non lo sono, §8septies); buco dati `arene_storico.json`; 3 anomalie
-non-arena; fix HTML della copia/incolla e del tasto "fatta" (commit
-`b1cbf53db6`, **verificato in produzione dall'utente l'08/08**); scala
-storica del grade (misurata e scartata, §8bis).
+**3. Perché il generatore non ha un criterio nella fase opzionale.**
+Il non-determinismo `PYTHONHASHSEED` (§9) non è solo un fastidio di
+riproducibilità: dice che lì il modello sceglie fra opzioni che considera
+equivalenti. Fissare il seed costa nulla e va fatto comunque; capire cosa
+distingua quelle opzioni è il filone vero.
+
+**4. Bonus 4% (cap L10) e 2% (anti-stack) fuori dall'arena, RIFATTI CON G.**
+Il generatore li tratta come informativi e non li insegue; test passati
+dicevano che inseguirli peggiorava il totale, ma erano **senza G**. Serve
+anche sistemare il realizzato dei backtest non-arena, che oggi non li
+calcola affatto (p16/p17 righe 61-65).
+
+**5. Normalizzazione del grade** (§8bis): il grade è ignorato sul 23%
+delle carte perché i gruppi (lega, ruolo) sono troppo piccoli. La prima
+cura (scala storica) è stata misurata e scartata: serve un'idea NUOVA. Non
+urgente, G funziona così com'è.
+
+**6. Due verifiche economiche su G**: (a) dove il gruppo ha esattamente 2
+carte col grade lo spostamento è meccanico ±1 sd, mai misurato se lì G
+peggiori; (b) placebo permutando i grade **fra giornate dello stesso
+giocatore** invece che fra giocatori — risponde se il segnale sia "questo
+giocatore è forte" o "questa partita andrà bene".
+
+**7. Correlazione grade ↔ punteggio realizzato della stessa partita**: mai
+misurata, zero query. Limite superiore alla contaminazione possibile.
+
+**8. Decisione grade nello scouting** (§8ter): usare il grade storico
+anche per candidati non posseduti, o lasciare lo scouting senza grade?
+
+**9. Odds+4ruoli, campione profondo**: solo 2 mazzi con ≥16 giornate,
+pablo0078 pesa il 33% — il DEF non si può relegare allo scouting su questa
+base (§8quinquies).
+
+**10. Buco tabella premi Uncapped rank 1/3**: un'osservazione sola
+ciascuno nell'archivio vecchio. Con i premi veri (§4.0) probabilmente è
+già risolto: **da riverificare su v3 prima di rimetterci mano.**
+
+**11. 21 script con path Windows hardcoded** in `analisi_manager/`:
+girano solo sulla macchina dell'utente. Meccanico.
+
+**In attesa, non indagare**: L10 incoerente lato Sorare (caso Jeppe
+Erenbjerg, run146): il bot legge `lastTenPlayedAvgScore` e copia
+fedelmente l'API, non è un bug nostro. Se ricapita, attenzione: se l'arena
+di Sorare conta 66 dove noi contiamo 62, il cap L10 può sforare davvero.
+E il caso `andrew-vincent-rick` 13/05 (grade cambiato fra due letture con
+scoreStatus FINAL, 1 su 729, senza causa nota).
+
+**REGOLE DI GIOCO raccolte il 09/08** (dichiarate dall'utente, non
+dedotte — servono a chi progetta i prossimi test):
+- **Level score**: chi entra anche un solo minuto prende ~35 punti. Il
+  salto vero è fra "non gioca" e "gioca", non fra giocare bene o male.
+- **Doppia partita nella stessa fixture**: la carta si schiera una volta
+  sola e prende il punteggio **più alto** dei due. Rarissimo (18 giocatori
+  in dodici mesi, K-League): errore accettato dall'utente, non correggere.
+- **Le starting odds non sono di Sorare**: vengono da un fornitore esterno
+  (Sorare non ha interesse a farti vincere). Anche loro sbagliano: una
+  quota di DNP è un danno strutturale, non un difetto del nostro modello.
+- **Formazioni ufficiali / full stack**: per alcune competizioni si può
+  schierare a formazioni già annunciate, rischio DNP zero, ma si è
+  vincolati a pescare dentro un solo undici. Mai valutato se convenga.
+- **Carte rare in competizioni limited**: si comportano esattamente come
+  le limited, si contano come limited. Si escludono le *competizioni*
+  rare, non le carte.
+
+**Voci chiuse, non riaprire**: filone favorito-odds (§8nonies, chiuso su
+tutti i fronti); scala storica del grade; soglie cap 220 come difetto di
+taratura; buco dati `arene_storico.json`; 3 anomalie non-arena; fix HTML
+copia/incolla e tasto "fatta" (commit `b1cbf53db6`, verificato in
+produzione dall'utente l'08/08); criterio arene a rendimento sul capitale
+(§8septies, misurato e scartato).
 
 ---
 

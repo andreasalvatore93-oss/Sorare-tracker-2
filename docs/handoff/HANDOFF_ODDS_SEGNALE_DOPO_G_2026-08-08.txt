@@ -332,10 +332,100 @@ pena del costo.
      Base confermata identica in entrambi i giri (§10 originale e questo
      follow-up), nessuna deriva.
 
-11.5 VERDETTO FOLLOW-UP: nessuno dei quattro punti ribalta il §10. Il
-     livello grezzo con k calibrato a parita' di effetto (11.1) da' lo
-     stesso esito nullo dello z-scorato. Il mancante e' spiegato al 100%
-     da quote di partita assenti (11.2), non da altri difetti strutturali.
-     Il n=310/311 e' un artefatto benigno dell'intersezione fra due rami
-     diversi, non un bug (11.3). Il controllo 4c e' confermato per
-     iscritto su entrambe le basi (11.4). Filone chiuso.
+11.5 STATO DOPO IL FOLLOW-UP: in sospeso in attesa della copertura grade
+     (§12). I punti 11.1-11.4 non mostrano problemi nuovi (livello grezzo
+     stesso esito nullo dello z-scorato; mancante spiegato al 100% da quote
+     assenti; n=310/311 e' un artefatto benigno; controllo 4c confermato),
+     ma NON chiudono il filone da soli: manca ancora la misura di quanto
+     G stesso sia coperto da grade nelle formazioni testate (§12), che puo'
+     cambiare la lettura del test G+D/G+L contro G.
+
+12. COPERTURA GRADE E RITEST SUL SOTTOINSIEME >=70% (09/08/2026, notte,
+    Roma). SOLO MISURA, nessun verdetto qui. Script nuovo:
+    analisi_manager/p20_copertura_grade.py + output
+    analisi_manager/p20_copertura_grade_out.json. Non committati, in
+    attesa di ok utente. Riusa il campo `_grade` gia' scritto da
+    T13.costruisci_pool_rows (stesso field, stesso rapporto con/candidati
+    di p12_backtest_formazione_grade.py righe 253-275/326/401,
+    `copertura_grade_pct`), nessuna riscrittura.
+
+12.1 COPERTURA GLOBALE (stesso denominatore del CONTROLLO 4b, per riga di
+     pool_rows):
+       allstar_u23:   11.186/28.786 (38,9%)
+         ruolo GK 42,7%  DEF 36,4%  MID 39,8%  FWD 37,8%
+         lega (estremi): italia 15,5%, francia 21,1%, spagna2 0,0% (n=9)
+         peru 100,0% (n=5), colombia 71,4% (n=7), kleague 68,9%, mls 65,3%
+       mls_hotstreak: 10.134/14.425 (70,3%)
+         ruolo GK 74,9%  DEF 66,2%  MID 71,9%  FWD 69,1%
+         lega (estremi): spagna2 0,0% (n=4), francia 26,9%, italia 32,4%
+         danimarca 90,5%, scozia 92,3%, mls 80,1%
+     mls_hotstreak ha quasi il doppio della copertura grade di allstar_u23
+     (70,3% vs 38,9%): le leghe piccole/minori (peru, colombia, kleague,
+     giappone100) tendono alla copertura piu' alta, le big5 (italia,
+     francia, spagna, inghilterra, germania) alla piu' bassa.
+
+12.2 DISTRIBUZIONE PER FORMAZIONE (% di grade disponibile nel sottoinsieme
+     di pool_rows visibile allo slot: 'mixed' = tutto il pool dell'unita',
+     lega singola = solo quella lega):
+       allstar_u23  (n=875 formazioni):  <50% 465 (53,1%)  50-70% 186 (21,3%)
+         70-90% 199 (22,7%)  >90% 25 (2,9%)
+       mls_hotstreak (n=314 formazioni): <50% 15 (4,8%)  50-70% 32 (10,2%)
+         70-90% 172 (54,8%)  >90% 95 (30,3%)
+     Formazioni con copertura per-formazione >=70%:
+       allstar_u23:   224/875  (25,6%)
+       mls_hotstreak: 267/314  (85,0%)
+     Su allstar_u23 il filtro >=70% scarta quasi 3 formazioni su 4;
+     su mls_hotstreak ne scarta 1 su 7.
+
+12.3 RITEST G+D_z vs G e G+L_z vs G, SOLO sul sottoinsieme >=70%, k=0.2
+     per ruolo (z-scorato, stessa scala del §10), IC95 bootstrap sui
+     manager filtrati alle sole formazioni incluse:
+
+       allstar_u23 (n~221-224, sceso da 864):
+         GK   D=-2.173 [-4.269,-0.680]   L=-0.541 [-1.577,+0.052]
+         DEF  D=-4.037 [-8.126,+0.794]   L=-3.549 [-11.519,+1.294]
+         MID  D=+3.644 [-2.359,+6.492]   L=+0.471 [-5.384,+4.760]
+         FWD  D=-2.323 [-6.176,+1.850]   L=+1.220 [-4.824,+4.729]
+
+       mls_hotstreak (n~263-264, sceso da 311):
+         GK   D=+1.072 [-0.775,+2.602]   L=-0.101 [-1.631,+1.613]
+         DEF  D=-0.645 [-2.903,+1.749]   L=-2.457 [-4.108,-0.790]
+         MID  D=+2.986 [+0.430,+5.107]   L=+1.095 [-2.155,+3.827]
+         FWD  D=-1.020 [-2.691,+0.369]   L=+0.627 [-2.162,+2.852]
+
+     Confronto con §10 (test non filtrato, stessa scala k=0.2 z-scorato):
+     su allstar_u23 la n scende dell'74% (864->221-224, il filtro >=70%
+     scarta la maggioranza delle formazioni di quella base, vedi 12.2); il
+     segno di ogni ruolo resta lo stesso del test non filtrato per D e per
+     L, con IC95 piu' larghi (coerente con la n piu' piccola). Su
+     mls_hotstreak la n scende del 15% (311->263-264); l'unico ruolo con
+     IC95 tutto positivo nel test non filtrato (D-MID, +2,983
+     [+1,255,+4,722]) resta con IC95 tutto positivo anche filtrato a
+     >=70% (+2,986 [+0,430,+5,107]), numero quasi identico. Nessun altro
+     ruolo, per D o per L, ha IC95 tutto positivo nel sottoinsieme filtrato,
+     su nessuna delle due basi.
+
+13. CONCENTRAZIONE MANAGER SU D-MID (09/08/2026, notte, Roma). SOLO
+    MISURA, nessun verdetto. Richiesta esplicita dell'utente: il segnale
+    D-MID (l'unico con IC95 tutto positivo trovato finora, mls_hotstreak,
+    k=0.2) e' trainato da un solo manager grosso?
+
+    Le 311 formazioni (ris_G non-None) di mls_hotstreak vengono da 10
+    manager distinti su 69 unita' (manager,gw):
+      forever-young      68  (21,9%)
+      crowss             54  (17,4%)
+      lafindubal         49  (15,8%)
+      tijmenmaaktpap     49  (15,8%)
+      satonio            20  (6,4%)
+      nivenzg            17  (5,5%)
+      angioletto33       15  (4,8%)
+      cedric9093         14  (4,5%)
+      john942            13  (4,2%)
+      keano88            12  (3,9%)
+    Il piu' grosso, forever-young, pesa 21,9% del totale (68/311).
+
+    D-MID k=0.2, IC95 bootstrap sui manager:
+      tutti i manager:          delta=+2,983  IC95=[+1,255,+4,722]  n=311
+      escluso forever-young:    delta=+3,052  IC95=[+0,809,+5,146]  n=243
+    Togliendo il manager piu' grosso il delta NON scende (anzi sale
+    leggermente, +3,052 contro +2,983) e l'IC95 resta tutto positivo.

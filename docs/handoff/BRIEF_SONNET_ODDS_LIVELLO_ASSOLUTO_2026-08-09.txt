@@ -10,6 +10,26 @@ impianto, si aggiunge una variante. Non riscrivere niente da capo.
 
 
 =====================================================================
+0. COSA LEGGERE PRIMA (chat pulita: qui c'e' tutto, non dedurre il resto)
+=====================================================================
+1. `CLAUDE.md` — regole vincolanti. In particolare: divieto assoluto di
+   stime a spanne (se non hai la fonte, la risposta e' "non lo so, mi
+   servirebbe X"), obbligo di consegnare il dump grezzo insieme ai numeri,
+   nessuna modifica alla produzione senza il via dell'utente.
+2. `docs/handoff/HANDOFF_ODDS_SEGNALE_DOPO_G_2026-08-08.txt` — l'esito del
+   giro precedente e il posto dove scriverai il tuo (sezione 10).
+3. CODICE, con le righe (verificate l'08/08, sono giuste):
+   `backtest_arene_previsioni.py` 527-546 (`_p_own_opp_odds`, la fonte del
+   livello assoluto), 549-574 (`delta_favorito_odds`, il segnale di oggi;
+   riga 572 e' il requisito delle 5 partite storiche che il livello elimina).
+   `analisi_manager/p20_odds_vs_grade.py` — l'impianto da riusare.
+Non leggere gli altri file di docs/handoff/: sono archivio e contengono
+verdetti superati scritti come se fossero attuali.
+
+Credenziali: non servono, questo giro non tocca la rete (§6).
+
+
+=====================================================================
 1. DA DOVE NASCE (obiezione dell'utente, e ha un fondamento)
 =====================================================================
 Oggi il segnale odds usato nel test e' `delta_favorito_odds`: lo SCARTO fra
@@ -159,3 +179,86 @@ niente file nuovo. Committa solo i tuoi file.
 Riporta all'utente in cinque righe: la copertura del livello contro quella
 del delta (4b), il delta G+L contro G sulle due basi, il confronto G+L
 contro G+D, quante varianti hai provato e l'esito dell'interruttore.
+
+
+=====================================================================
+8. FOLLOW-UP — richiesto dall'utente l'08/08/2026, 22:00 Roma, dopo la
+   verifica del §10 dell'handoff. Quattro cose, poi il filone si chiude.
+=====================================================================
+Il tuo lavoro regge: ho riletto il codice (`p20_odds_livello_assoluto.py`
+righe 77-95 e 121-140) e l'output grezzo, il livello e' implementato come
+chiesto e il controllo 4c e' passato. Restano quattro punti prima di
+chiudere. Tutti e quattro si fanno rilanciando lo stesso script, nessuna
+query di rete.
+
+**8.1 — IL LIVELLO GREZZO, non z-scorato. E' il punto vero.**
+Hai preso la strada §2c (z-score dentro il gruppo (lega,codice)), che era
+consentita e l'hai dichiarata. Ma il centraggio non e' neutro: la media del
+livello e' +0,189, quindi dopo lo z-score una partita **equilibrata** (L=0)
+riceve un valore NEGATIVO, cioe' un malus. Col livello grezzo, invece, L=0
+significa "nessun aggiustamento" e solo le partite davvero favorevoli
+prendono un bonus. Sono due segnali diversi, e quello grezzo e' proprio
+quello che l'utente aveva in mente quando ha sollevato l'obiezione.
+
+Rifai il PASSO 3 **solo per il ramo L**, con `_livello_odds` grezzo al
+posto di `_livello_z`, scegliendo k con la strada §2b: il k tale che lo
+scostamento MEDIANO di `atteso` sia dello stesso ordine di quello prodotto
+dal ramo z a k=0.2. Dichiara il k che ne esce e come l'hai ricavato.
+Stessi controlli: interruttore a k=0 (deve coincidere bit per bit),
+quante carte cambiano, IC95 bootstrap sui manager, e placebo SOLO se un
+ruolo esce con IC tutto positivo.
+La mia aspettativa, dichiarata come tale e non come misura: non si
+ribaltera' niente, gli IC di L sono larghi e lontani dallo zero positivo.
+Se esce il contrario e' un risultato valido e va scritto per primo.
+
+**8.2 — PERCHE' manca il 22,5%.** Hai misurato la copertura del livello
+(77,5% su allstar_u23) ma non hai detto **perche'** il resto manca. Il
+brief si aspettava quasi il 100% eliminando il vincolo delle 5 partite:
+il fatto che si fermi al 77,5% significa che il tetto e' altrove. Scomponi
+le righe SENZA livello in tre gruppi e contale:
+  (a) partita anteriore all'inizio dell'archivio quote (~18/11/2025);
+  (b) eliteserien (esclusa per costruzione dall'indice);
+  (c) tutto il resto — e se (c) e' grosso, dimmi cos'e', perche' non me
+      lo so spiegare.
+Questo numero decide un lavoro separato gia' sul tavolo dell'utente (se
+valga recuperare le quote storiche in bulk): se il grosso e' (a), recuperare
+le storiche alza la copertura; se e' (c), no.
+
+**8.3 — n=310 contro n=311.** La base mls_hotstreak dichiara n=310 e il
+`delta_G_A` e' calcolato su 310, ma i confronti del passo 3a girano su 311.
+Una formazione di differenza non cambia nessun verdetto, ma voglio sapere
+da dove viene: se e' un filtro applicato in un punto e non nell'altro,
+potrebbe valere anche altrove.
+
+**8.4 — Scrivi nel §10 il controllo 4c che HAI fatto ma non hai
+riportato**: `delta_G_A` = 5,9785 (n=864) e 6,4627 (n=310), entrambi
+coincidenti con i valori attesi dal brief. Un controllo eseguito e non
+scritto, per chi legge dopo, e' un controllo non fatto.
+
+**8.5 — LA COPERTURA DEL GRADE SULLE DUE BASI NON-ARENA.** Domanda
+dell'utente, e non risulta misurata da nessuna parte. Sulle ARENE si sa
+(54,6% sulle carte schierate, Cap 220 addirittura 42,9% —
+`HANDOFF_G_ARENE_2026-08-08.txt` §4) e c'e' un filtro esplicito che tiene
+solo le arene con copertura >=70%. Sulle non-arena **non c'e' nessun
+filtro del genere**: `p16._base_pulita` (righe 149-163) filtra su
+competizione, 7 carte limited, coerenza col punteggio ufficiale e
+division, ma non guarda il grade.
+
+Conta e riporta, per ciascuna delle due basi:
+  - % di righe del pool con `_grade` non nullo (il denominatore e' lo
+    stesso che usi per la copertura odds al §4b, cosi' i tre numeri —
+    grade, delta, livello — sono confrontabili fra loro);
+  - la stessa % spezzata per ruolo e per lega;
+  - la distribuzione per formazione: quante formazioni hanno copertura
+    <50%, 50-70%, 70-90%, >90%.
+Serve a sapere se il +5,98 di G poggia su un pool ben coperto o se anche
+li' dentro ci sono formazioni dove G e' quasi cieco. Se emergesse che una
+quota rilevante di formazioni sta sotto il 50%, non cambiare niente e non
+rifare il test: annotalo e basta, lo decide l'utente.
+Riferimento: sul dump di una singola formazione che hai consegnato
+(`p20_livello_dump_esempio.txt`) la copertura e' 71/91 = 78%, ma e' un
+caso solo e non vale come misura.
+
+Esito in coda al §10 come "10bis", stesso file, stesso filone. Cinque
+righe all'utente: se il livello grezzo cambia il verdetto (si'/no), il k
+usato, la scomposizione del 22,5% e la copertura grade sulle due basi.
