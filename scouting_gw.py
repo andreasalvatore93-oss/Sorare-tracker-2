@@ -294,6 +294,17 @@ query ScoutingGiornata($page: Int!, $pageSize: Int!,
         lastFiveSo5Appearances
         lastFifteenSo5Appearances
         lastFortySo5Appearances
+        # `nextClassicFixtureProjectedGrade` e' la prossima partita DEL
+        # GIOCATORE, non della fixture che stiamo interrogando (trappola
+        # generale sui campi `next*`, vedi HANDOFF_UNIFICATO_MODELLO_
+        # SCOUTING.md §8 trappola 17). Regge SOLO perche' il refinement
+        # `playing_next=<fixture_target>` (vedi _refinements) filtra a
+        # monte chi gioca in quella fixture: verificato 09/08/2026 che
+        # anche i club con una GW precedente ancora da chiudere (18 casi,
+        # 8 con carta nel bench per il confronto) danno lo stesso grade
+        # del bench di produzione scoped alla fixture target (116/117
+        # identici in totale, 8/8 sul sottoinsieme a rischio) -- §8ter.
+        # Non riusare questo campo SENZA lo stesso filtro playing_next.
         ... on Player { age ownedCardsCount nextClassicFixtureProjectedScore
           nextClassicFixtureProjectedGrade { grade } }
         lowestPriceAnyCard(rarity: limited) {
@@ -1650,40 +1661,71 @@ def _escape(testo):
     return (testo.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;'))
 
 
+def _riga_minimale(g, atteso):
+    prezzo = ('&mdash;' if g.get('prezzo_eur') is None
+              else '%.2f&nbsp;&euro;' % g['prezzo_eur'])
+    odds_txt = ('&mdash;' if g.get('starter_odds') is None
+                else "<span class='%s'>%.0f%%</span>"
+                     % ('mia' if g['starter_odds'] >= 0.8 else 'warn',
+                        g['starter_odds'] * 100))
+    grade = g.get('grade') or '&mdash;'
+    return (
+        "<tr>"
+        f"<td><a href='https://sorare.com/football/players/{g['slug']}' "
+        f"target='_blank' rel='noopener'>{(g.get('nome') or g['slug'])}</a></td>"
+        f"<td>{'/'.join(g['ruoli'])}</td>"
+        f"<td>{(g.get('club') or '')}</td>"
+        f"<td class='n'>{odds_txt}</td>"
+        f"<td class='n'><a href='https://sorare.com/football/players/{g['slug']}/cards' "
+        f"target='_blank' rel='noopener'>{prezzo}</a></td>"
+        f"<td class='n'>{'&mdash;' if atteso is None else '%.1f' % atteso}</td>"
+        f"<td class='n'>{grade}</td>"
+        "</tr>")
+
+
 def _tabella_minimale(pool, attesi):
     """Tabella semplificata (09/08/2026, richiesta utente): solo giocatore,
     ruolo, club, odds, prezzo, atteso, grade -- niente essenze/GW ne' arene.
-    Ordinata per atteso decrescente, unico criterio semplice e leggibile."""
-    righe = sorted(pool['giocatori'], key=lambda g: -(attesi.get(g['slug']) or -1e9))
+
+    DUE tabelle, non una (09/08 notte, terzo giro): con l'atteso presente
+    solo su una minoranza (predict non ancora lanciato per tutti), una
+    sola tabella ordinata per atteso relegava la maggioranza in fondo,
+    a valori vuoti, illeggibile. I COMPLETI (hanno l'atteso) stanno primi,
+    ordinati per atteso decrescente; gli INCOMPLETI stanno in una seconda
+    tabella separata, col motivo (nessuna pipeline per la lega, oppure
+    predict non ancora fatto per questa giornata)."""
+    completi = [g for g in pool['giocatori'] if attesi.get(g['slug']) is not None]
+    incompleti = [g for g in pool['giocatori'] if attesi.get(g['slug']) is None]
+    completi.sort(key=lambda g: -attesi[g['slug']])
+
     pezzi = [
-        f"<h2>{len(righe)} candidati</h2>"
+        f"<h2>{len(completi)} candidati con Atteso</h2>"
         "<div class='wrap'><table id='candidati'>"
         "<tr><th>Giocatore</th><th>R</th><th>Club</th>"
         "<th title='Starter odds Sorare'>Odds</th><th>Prezzo</th>"
         "<th>Atteso</th><th title='Lettera Sorare A..F per la prossima "
         "partita classic'>Grade</th></tr>"]
-    for g in righe:
-        atteso = attesi.get(g['slug'])
-        prezzo = ('&mdash;' if g.get('prezzo_eur') is None
-                  else '%.2f&nbsp;&euro;' % g['prezzo_eur'])
-        odds_txt = ('&mdash;' if g.get('starter_odds') is None
-                    else "<span class='%s'>%.0f%%</span>"
-                         % ('mia' if g['starter_odds'] >= 0.8 else 'warn',
-                            g['starter_odds'] * 100))
-        grade = g.get('grade') or '&mdash;'
-        pezzi.append(
-            "<tr>"
-            f"<td><a href='https://sorare.com/football/players/{g['slug']}' "
-            f"target='_blank' rel='noopener'>{(g.get('nome') or g['slug'])}</a></td>"
-            f"<td>{'/'.join(g['ruoli'])}</td>"
-            f"<td>{(g.get('club') or '')}</td>"
-            f"<td class='n'>{odds_txt}</td>"
-            f"<td class='n'><a href='https://sorare.com/football/players/{g['slug']}/cards' "
-            f"target='_blank' rel='noopener'>{prezzo}</a></td>"
-            f"<td class='n'>{'&mdash;' if atteso is None else '%.1f' % atteso}</td>"
-            f"<td class='n'>{grade}</td>"
-            "</tr>")
+    for g in completi:
+        pezzi.append(_riga_minimale(g, attesi.get(g['slug'])))
     pezzi.append("</table></div>")
+
+    if incompleti:
+        pezzi.append(
+            f"<h2>{len(incompleti)} candidati SENZA Atteso</h2>"
+            "<div class='meta'>Predict non ancora fatto per questa giornata, o "
+            "nessuna pipeline per la loro lega. Stessi dati, nessun numero "
+            "inventato al posto dell'atteso mancante.</div>"
+            "<div class='wrap'><table id='incompleti'>"
+            "<tr><th>Giocatore</th><th>R</th><th>Club</th>"
+            "<th title='Starter odds Sorare'>Odds</th><th>Prezzo</th>"
+            "<th>Atteso</th><th title='Lettera Sorare A..F per la prossima "
+            "partita classic'>Grade</th><th>Motivo</th></tr>")
+        for g in incompleti:
+            riga = _riga_minimale(g, None)
+            motivo = ('nessuna pipeline per la lega' if not g.get('cartella')
+                      else 'predict non ancora fatto')
+            pezzi.append(riga.replace('</tr>', f"<td class='muted'>{motivo}</td></tr>"))
+        pezzi.append("</table></div>")
     return pezzi
 
 
@@ -1699,6 +1741,20 @@ def scrivi_html(pool, dest, formazioni=(), minimal=False):
             f"scouting ricadono sui vecchi valori grezzi/statici.")
         gg = None
     attesi = _atteso_dai_consigli(pool, gg)
+
+    # Copertura di ogni run, sempre in log (09/08/2026 notte, terzo giro):
+    # senza questo numero l'utente non sa se una colonna sara' piena o
+    # quasi vuota finche' non apre l'HTML e conta a occhio.
+    n_pool = len(pool['giocatori'])
+    n_odds = sum(1 for g in pool['giocatori'] if g.get('starter_odds') is not None)
+    n_grade = sum(1 for g in pool['giocatori'] if g.get('grade'))
+    n_atteso = sum(1 for g in pool['giocatori'] if attesi.get(g['slug']) is not None)
+    n_prezzo = sum(1 for g in pool['giocatori'] if g.get('prezzo_eur') is not None)
+    def _pct(n):
+        return f"{n}/{n_pool} ({100*n/n_pool:.0f}%)" if n_pool else f"{n}/0"
+    log(f"COPERTURA -- pool: {n_pool} | odds pubblicate: {_pct(n_odds)} | "
+        f"grade: {_pct(n_grade)} | atteso: {_pct(n_atteso)} | prezzo: {_pct(n_prezzo)}")
+
     slot_medio, per_punto = _slot_medio_e_per_punto(gg)
     filtri = pool.get('filtri') or {}
     testa = _HTML_TESTA % {

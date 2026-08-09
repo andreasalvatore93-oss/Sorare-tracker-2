@@ -189,6 +189,13 @@ Client usato: `_client_ritmato()` (bot_profit), come da brief.
  `myFilteredBench` (carte possedute), gia' documentato in §8ter come
  irraggiungibile per lo scouting.
 
+ >>> SMENTITA nel secondo giro (vedi "ESITO SECONDO GIRO" piu' sotto):
+ >>> l'ultima riga era falsa. Esiste una rotta pubblica per il futuro,
+ >>> `nextClassicFixtureProjectedGrade`. L'errore qui sopra era aver
+ >>> concluso "non esiste una rotta" dal fallimento di UN argomento
+ >>> (`playerGameScores(last:N)`, che guarda solo indietro per
+ >>> definizione) invece di provarne altri prima di arrendersi.
+
 COMPITO 2 -- VERIFICATO sul codice, nessuna modifica.
 `_prezzo_eur()` (scouting_gw.py:462) legge `lowestPriceAnyCard` dal
 payload di `searchPlayers` (stesso oggetto `anyPlayer` di L5/L10/odds

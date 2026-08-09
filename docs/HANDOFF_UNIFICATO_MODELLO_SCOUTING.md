@@ -693,6 +693,19 @@ sottostimati +4.9** (n71, da riverificare). Accumulare altre GW rende poco
     riusabile) e `.cache/<slug>_detail_cache.json` (dettaglio per-partita,
     riempito solo se la predizione va a buon fine). Il criterio di "dato gia'
     raccolto" e' il gamelog, non il detail_cache.
+17. **I campi `next*` di Sorare (`nextClassicFixtureProjectedScore`,
+    `nextClassicFixtureProjectedGrade`, ecc.) sono la prossima partita DEL
+    GIOCATORE, non della giornata che stai analizzando** (09/08/2026 sera).
+    Con due fixture consecutive aperte (una in corso, la prossima non ancora
+    iniziata) un giocatore il cui club deve ancora chiudere la partita
+    corrente avrebbe, in teoria, quella come "prossima" — mostrare il campo
+    per la giornata successiva sarebbe silenziosamente la partita sbagliata.
+    Verificato pero' che nello scouting lo scudo regge (§8ter): il
+    refinement `playing_next=<fixture_target>` di `searchPlayers` filtra a
+    monte solo chi gioca in QUELLA fixture, e il valore letto dopo coincide
+    col bench scoped alla stessa fixture (116/117, incluso 8/8 sul
+    sottoinsieme a rischio). Non estendere per analogia ad altri usi di
+    campi `next*` senza rifare la stessa verifica.
 
 ---
 
@@ -845,14 +858,30 @@ aggiunge una query autenticata, ricade nello stesso bug. Le odds sono già in
 bulk dal 03/08. `ESCLUDI_LOCKATE` non lo riguarda (scrive solo
 `player_slugs.json`, mai `player_card_counts.json`).
 
-**Il grade non c'è, per un motivo strutturale non una dimenticanza**: quello
-di produzione viene da `myFilteredBench` (carte POSSEDUTE); per una carta da
-comprare quella via non esiste. Esiste un'alternativa
-(`anyPlayer.playerGameScores(last:15).projection.grade`, verificato
-funzionante su carte non possedute — vedi §8bis) ma dà il grade STORICO
-delle partite passate, non una proiezione per la giornata da giocare.
-**Decisione aperta con l'utente**: non è ovvio che un segnale per-giornata
-debba pesare su una decisione d'acquisto pluri-giornata.
+**SUPERATO il 09/08/2026 sera — il grade C'È, anche su carte non possedute.**
+Il campo giusto è `anyPlayer` → `... on Player { nextClassicFixtureProjectedGrade
+{ grade } }` (oggetto `PlayerGameScoreProjection`, trovato per tentativi mirati:
+l'introspezione è disabilitata, si legge il messaggio d'errore — vedi §8undecies
+per il metodo). Arriva **gratis** dentro la stessa `SEARCH_QUERY` di
+`scouting_gw.py` (nessuna chiamata in più): aggiunto in produzione il 09/08,
+`pool_da_search` lo scrive come `g['grade']`.
+Verifica di correttezza (non basta che il campo esista, deve essere la
+lettera della fixture GIUSTA — vedi trappola nuova in §8): confrontato con
+`discovery_fixture.fetch_grade_live()` (produzione, bench posseduto,
+esplicitamente scoped alla fixture target) su 117 slug in comune —
+**116/117 identici (99,1%)**, incluso il sottoinsieme a rischio (8 club con
+una partita della GW precedente ancora da giocare: **8/8 identici**), unico
+scarto di una lettera adiacente compatibile col movimento del grade vicino
+al lock (§8bis). Lo "scudo" del refinement `playing_next=<fixture>` regge:
+il campo riflette la fixture richiesta, non una partita precedente del
+giocatore. Nessun uso ancora nel punteggio/ordinamento (resta colonna
+mostrata) — **decisione aperta con l'utente**: non è ovvio che un segnale
+per-partita debba pesare su una decisione d'acquisto pluri-giornata.
+(Storico, superato: si era prima provato
+`anyPlayer.playerGameScores(last:N).projection.grade`, che passa la query ma
+dà SOLO lo storico — 0/50 casi coprivano la fixture futura, perché `last:N`
+guarda per costruzione indietro, mai in avanti. Non era la dimostrazione che
+mancasse una rotta per il futuro: era l'argomento sbagliato.)
 
 **Altro aperto, minore**: leghe senza pipeline (`nb-i`, `nb-ii`,
 `premier-division-ie`, `premier-league-am`, `super-liga-sk`, `virsliga`) non
@@ -1527,13 +1556,14 @@ giocatore è forte" o "questa partita andrà bene".
 **7. Correlazione grade ↔ punteggio realizzato della stessa partita**: mai
 misurata, zero query. Limite superiore alla contaminazione possibile.
 
-**8. Decisione grade nello scouting** (§8ter) — **VERIFICATO sul codice
-il 09/08: il grade nello scouting NON c'è.** `scouting_gw.py` non
-contiene nessuna occorrenza della parola "grade" (zero). L'utente
-riteneva fosse già stato allineato: non lo è. La decisione resta aperta
-com'era — usare il grade storico anche per i candidati non posseduti, o
-lasciare lo scouting senza grade? È una scelta di significato (un voto
-per-giornata su una decisione d'acquisto pluri-giornata), non una misura.
+**8. Decisione grade nello scouting** (§8ter) — **SUPERATA il 09/08 sera:
+il grade C'È e si vede.** Trovato `nextClassicFixtureProjectedGrade` dentro
+`searchPlayers`, gratis, verificato 116/117 contro il bench di produzione
+(incluso il sottoinsieme a rischio "fixture consecutive", 8/8). Colonna
+Grade mostrata in `scouting_gw.py` per ogni candidato, posseduto o no. Quello
+che resta aperto è **solo** come deve PESARE: un voto per-partita su una
+decisione d'acquisto pluri-giornata è una scelta di significato, non una
+misura — non ancora usato nel punteggio/ordinamento delle sezioni esistenti.
 
 **9. e 10. — ELIMINATE il 09/08 per decisione dell'utente.** La 9
 (odds+4ruoli, campione profondo) cade col filone favorito-odds, chiuso

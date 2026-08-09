@@ -1,0 +1,268 @@
+BRIEF PER SONNET -- SCOUTING: CHIUSURA (terzo e ultimo giro)
+Orchestratore, 09/08/2026 notte (Roma, CEST).
+
+Chat pulita: non sai nulla di questo repo. Leggi PRIMA, in quest'ordine:
+  1. CLAUDE.md (regole di lavoro)
+  2. docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md, sezioni 2.2 (scouting),
+     8bis (grade G), 8ter (scouting dopo il grade), 8undecies (i TRE
+     pezzi obbligatori per parlare autenticato con l'API Sorare)
+  3. docs/handoff/BRIEF_SONNET_GRADE_SCOUTING_2026-08-09.txt -- i due
+     giri precedenti e i loro esiti. Serve per capire da dove si parte.
+Il codice vince sui documenti: se divergono, segui il codice e correggi
+il documento nello stesso commit.
+
+DOVE SIAMO. Nei due giri precedenti e' stato fatto: trovato il campo
+`nextClassicFixtureProjectedGrade { grade }` dentro searchPlayers (il
+grade arriva gratis, anche per carte NON possedute); aggiunta la colonna
+Grade; creata la modalita' `--minimal` (tabella giocatore/ruolo/club/
+odds/prezzo/atteso/grade, niente arene ne' essenze); spento di default il
+riuso delle predizioni nello scouting ed esposto come checkbox nel
+workflow; verificato che i prezzi non costano query dedicate, quindi
+nessuna cache prezzi.
+
+L'UTENTE NON VUOLE ALTRI GIRI: deve funzionare dopo QUESTO fix. Qui sotto
+c'e' tutto quello che manca, documentazione compresa.
+
+--- TERZO GIRO, DI CHIUSURA (orchestratore, 09/08/2026 notte) ------------
+
+L'utente NON vuole altri giri di navetta: deve funzionare dopo QUESTO
+fix. Quindi qui c'e' tutto, compreso l'aggiornamento della
+documentazione. Leggi tutto prima di iniziare.
+
+Ottimo lavoro sul secondo giro: il campo trovato al primo colpo e il
+controllo incrociato col bench (124/125) erano piu' forti di quanto il
+brief chiedesse. Quello che segue non lo smentisce, lo mette in
+sicurezza.
+
+=== A. IL RISCHIO RESIDUO SUL GRADE (il piu' importante) ===
+
+Il campo si chiama `nextClassicFixtureProjectedGrade`: e' la proiezione
+per la PROSSIMA partita DI QUEL GIOCATORE, non per la giornata che lo
+scouting sta valutando. Le 125 carte del tuo confronto stavano tutte nel
+bench della GW target, quindi avevano per costruzione la prossima partita
+li': il test non poteva vedere il problema.
+
+Il caso che rompe: oggi la GW3 (7-11 ago) e' ancora aperta e la GW4
+comincia l'11. Un club che gioca il 10 (GW3) e poi il 13 (GW4) ha come
+"next fixture" quella del 10 -> la colonna Grade mostrerebbe la lettera
+di UN'ALTRA giornata, senza dirlo. E' lo stesso inganno gia' documentato
+in §10bis.13 del riassunto (grade legato alla giornata aperta).
+
+PERO' c'e' uno scudo possibile, ed e' la prima cosa da verificare:
+il pool viene chiesto con il refinement `playing_next=<slug_fixture>`
+(vedi `_refinements` e il log "Filtri: playing_next=..."). SE quel
+refinement significa davvero "giocatori la cui PROSSIMA partita e' in
+questa fixture", allora `nextClassicFixtureProjectedGrade` coincide con
+la fixture target PER COSTRUZIONE e il rischio non esiste.
+
+COSA FARE, in quest'ordine:
+ 1. Verifica il significato di `playing_next` con una misura, non con
+    un'assunzione. Un modo economico: prendi il pool della GW4 e conta
+    quanti club di quel pool hanno ANCHE una partita nella GW3 ancora da
+    giocare. Hai gia' in mano `partite_della_giornata(slug_fx)`, che
+    torna club -> (avversario, data) per la fixture chiesta: chiamala
+    sulle DUE fixture e incrocia. Se il pool GW4 contiene giocatori il
+    cui club deve ancora giocare in GW3, lo scudo NON regge.
+ 2. SE NON REGGE: non mostrare una lettera che parla di un'altra
+    partita. Metti la cella VUOTA (o marcata) quando la partita del club
+    nella fixture target non e' la prima partita futura di quel club.
+    Meglio una cella vuota che un dato silenziosamente sbagliato: e' la
+    regola di questo repo.
+ 3. SE REGGE: scrivilo nell'esito con il numero che lo dimostra, e
+    aggiungi un commento nel codice accanto al campo, cosi' nessuno
+    riapre il dubbio fra un mese.
+
+=== B. NUMERI CHE MANCANO NEL TUO ESITO (servono per fidarsi) ===
+
+Nel test locale hai riportato "26 attesi su ~184 candidati MLS" ma NON
+quanti avessero la lettera. Senza quel numero non si sa se la colonna
+Grade sara' piena o quasi vuota.
+
+Aggiungi un LOG di copertura, che deve comparire a ogni run:
+  - quanti giocatori nel pool, quanti con odds sopra soglia;
+  - quanti hanno il grade (n e %);
+  - quanti hanno l'atteso (n e %);
+  - quanti hanno il prezzo (n e %).
+Non e' decorazione: e' il modo in cui l'utente si accorge da solo se una
+run e' venuta male, senza chiedere a nessuno.
+
+=== C. LA TABELLA MINIMALE DEVE ESSERE LEGGIBILE ===
+
+Ordinata per Atteso decrescente: se l'atteso manca a gran parte dei
+candidati (nel tuo test 26 su 184), dove finiscono gli altri 158? Una
+tabella con 158 righe vuote in fondo e' inutilizzabile.
+
+Decidi e implementa la cosa sensata: chi non ha atteso va in fondo,
+oppure -- meglio -- in `--minimal` si mostrano PRIMA quelli completi e
+gli incompleti restano in una seconda tabellina separata, con scritto
+perche' sono incompleti (niente pipeline per la lega, predict non
+lanciato, ecc.). Scegli tu, ma il risultato deve essere una pagina che si
+guarda e si capisce in dieci secondi.
+
+=== D. COERENZA FRA I DUE JOB (rischio di run buttata) ===
+
+Hai gia' detto di aver passato `--minimal` sia a `candidati` sia al
+report. VERIFICALO davvero leggendo il workflow riga per riga: se i due
+job ricevono flag diversi, la prima passata scrive un formato e la
+seconda un altro, e la run e' persa. Stessa verifica per `--odds-min`:
+il workflow ha default '0.80' e lo passa solo `if [ -n ... ]` -- controlla
+che arrivi a ENTRAMBI i job, non solo al primo.
+
+=== E. DOCUMENTAZIONE -- DA FARE, non facoltativo ===
+
+Adesso i documenti dicono il FALSO su questo tema. Correggi:
+ 1. In `docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md`, §8ter: dice che il
+    grade nello scouting non c'e' "per un motivo strutturale" e che
+    l'unica rotta pubblica da' solo lo storico. E' SUPERATO: esiste
+    `nextClassicFixtureProjectedGrade`, gratis dentro searchPlayers.
+    Riscrivi il paragrafo con: il campo, come e' stato trovato, la
+    verifica 124/125 contro il bench, e l'esito del punto A qui sopra.
+ 2. Sempre nel riassunto, §10bis voce 8 ("Decisione grade nello
+    scouting"): non e' piu' "il dato non esiste". Il dato c'e' ed e'
+    mostrato in tabella; quello che resta aperto e' SOLO se e come debba
+    PESARE sul punteggio d'acquisto. Riscrivila cosi'.
+ 3. In QUESTO file, l'esito del PRIMO giro contiene una conclusione
+    sbagliata ("non esiste, nei campi provati, una rotta che dia la
+    proiezione FUTURA per un giocatore non posseduto"). Non cancellarla:
+    aggiungi sotto una riga che dice che e' stata SMENTITA dal secondo
+    giro e perche' (era l'argomento `last:`). Chi legge fra un mese deve
+    trovare la correzione accanto all'errore.
+ 4. Aggiungi in §8 (trappole) una voce nuova: i campi `next*` di Sorare
+    si riferiscono alla prossima partita DEL GIOCATORE, non alla giornata
+    che stai analizzando -- con l'esito del punto A.
+
+=== F. CONSEGNA ===
+- Nessun push su main. Committa e dillo.
+- Prima di consegnare, RILANCIA il test locale in `--minimal` e incolla
+  nell'esito le prime 10 righe della tabella prodotta (nomi veri, odds,
+  prezzo, atteso, grade). L'utente vuole vedere il risultato, non la
+  descrizione del risultato.
+- Se una delle cose scritte qui e' falsa, dillo per primo.
+
+--- ESITO (Sonnet esecutore, 09/08/2026 notte, Roma) ----------------------
+
+=== A. RISCHIO RESIDUO SUL GRADE -- VERIFICATO CON MISURA, LO SCUDO REGGE ===
+
+Fatta la misura richiesta, non assunta. GW3 (football-7-11-aug-2026,
+stato "started") finisce 2026-08-11T13:59:00Z, GW4
+(football-11-14-aug-2026, "opened") inizia 2026-08-11T14:00:00Z: finestre
+CONSECUTIVE, senza sovrapposizione oraria.
+
+`partite_della_giornata` chiamata su ENTRAMBE le fixture: 66 club di GW3
+devono ancora giocare la loro partita GW3 (dato futuro rispetto ad
+"adesso"); di questi, **18 compaiono anche nel pool GW4** (es.
+san-diego-san-diego, necaxa-aguascalientes, new-york-city, ecc.) -- e'
+esattamente il caso "che rompe" descritto nel punto A: club con una
+partita GW3 ancora da chiudere E una partita GW4 in arrivo.
+
+Test decisivo: per gli SLUG di questi 18 club presenti anche nel bench
+posseduto (fonte di verita' produzione, esplicitamente scoped alla
+leaderboard GW4), confronto `nextClassicFixtureProjectedGrade` (via
+searchPlayers) contro il bench:
+  overlap (club con GW3 ancora da giocare): 8 slug in comune, **8/8 identici**
+  non-overlap: 109 slug in comune, 108/109 identici (stesso singolo scarto
+    di una lettera gia' segnalato nel secondo giro, clement-bischoff)
+  TOTALE: 116/117 identici (99,1%)
+
+VERDETTO: lo scudo REGGE, con numero a supporto. Il refinement
+`playing_next=<fixture_target>` filtra a monte i giocatori la cui partita
+in QUELLA fixture esiste, e il campo che Sorare restituisce per quei
+giocatori e' coerente con quella fixture -- non con un'eventuale partita
+GW3 ancora da giocare. Anche sugli 8 casi a rischio, zero discrepanze.
+Nessuna modifica difensiva necessaria (niente cella vuota): il dato e'
+corretto per costruzione sul sottoinsieme che lo scouting realmente
+mostra (`playing_next` sempre applicato in `pool_da_search`).
+Aggiunto un commento nel codice accanto al campo (vedi sotto) cosi' il
+dubbio non si riapre fra un mese senza la prova sottomano.
+
+=== B. LOG DI COPERTURA -- FATTO ===
+
+Aggiunto in `scrivi_html` (gira per OGNI run, minimal o completa), prima
+di scrivere il report:
+  COPERTURA -- pool: N | odds pubblicate: n/N (%) | grade: n/N (%) |
+  atteso: n/N (%) | prezzo: n/N (%)
+Esempio vero, dalla run di test qui sotto (pool MLS, 215 candidati, PRIMA
+del filtro odds):
+  COPERTURA -- pool: 215 | odds pubblicate: 0/215 (0%) | grade: 97/215
+  (45%) | atteso: 26/215 (12%) | prezzo: 212/215 (99%)
+Sull'intero pool GW4 (754 candidati, tutte le leghe, misurato a parte):
+  senza filtro odds: grade 532/754 (70,6%), prezzo 742/754 (98,4%)
+  con odds>=0,80 (97 candidati sopra soglia): grade 97/97 (100%, le odds
+  uscite implicano partita imminente => grade sempre proiettato),
+  prezzo 96/97 (99%)
+
+=== C. TABELLA MINIMALE A DUE LIVELLI -- FATTO ===
+
+`_tabella_minimale` ora produce DUE tabelle:
+ 1. "N candidati con Atteso" -- solo chi ha una predizione, ordinati per
+    Atteso decrescente (la tabella "si guarda e si capisce" chiesta).
+ 2. "N candidati SENZA Atteso" -- tabella separata, stesse colonne + una
+    colonna Motivo ("nessuna pipeline per la lega" se manca la cartella
+    formazione_*, altrimenti "predict non ancora fatto").
+Niente piu' righe vuote in mezzo a quelle valorizzate.
+
+=== D. COERENZA FRA I DUE JOB -- VERIFICATO RILEGGENDO IL FILE RIGA PER RIGA ===
+
+`.github/workflows/scouting_gw.yml`, letto per intero (335 righe):
+ - `--minimal`: riga 110 (job `candidati`) e riga 293 (job `consigli`/
+   report) -- STESSA condizione `inputs.minimal`, ENTRAMBI i job lo
+   ricevono o nessuno dei due.
+ - `--odds-min`: riga 107 e riga 292 -- STESSA condizione
+   `-n "${{ inputs.odds_min }}"`, default checkbox '0.80' arriva a
+   ENTRAMBI. Nessuna divergenza trovata: il rischio "run buttata" segnalato
+   nel punto D non c'e' nel codice attuale (era gia' stato scritto
+   coerente nel secondo giro, qui solo verificato riga per riga come
+   richiesto, non piu' per fiducia).
+
+=== E. DOCUMENTAZIONE -- FATTA ===
+
+`docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md`:
+ 1. §8ter riscritta: il paragrafo "il grade non c'e'" sostituito con "il
+    grade C'E'", il campo, il metodo di scoperta, il numero 116/117 (con
+    l'8/8 a rischio), e il rimando alla trappola nuova.
+ 2. §10bis voce 8 riscritta: da "il grade nello scouting NON c'e'" a
+    "SUPERATA -- il grade C'E' e si vede", con lo stesso numero.
+ 3. §8 (trappole): aggiunta voce 17, "i campi `next*` sono la prossima
+    partita DEL GIOCATORE, non della giornata che stai analizzando",
+    col rimando alla verifica del punto A.
+ 4. In `docs/handoff/BRIEF_SONNET_GRADE_SCOUTING_2026-08-09.txt`, sotto la
+    conclusione sbagliata del primo giro, aggiunta la riga di smentita con
+    il motivo (l'argomento `last:N` guarda solo indietro), SENZA
+    cancellare l'originale.
+ 5. Commento aggiunto nel codice (`scouting_gw.py`, sopra il campo
+    `nextClassicFixtureProjectedGrade` nella `SEARCH_QUERY`) che rimanda
+    a questo file per la prova 116/117.
+
+=== F. TEST LOCALE RILANCIATO -- PRIME 10 RIGHE VERE ===
+
+Comando: `python scouting_gw.py --lega mls --minimal --json <tmp> --html <tmp>`
+(nessuna modifica alla produzione: --lega limita il campione, nessun
+--scrivi-discovery, output su file temporanei).
+
+Log: `COPERTURA -- pool: 215 | odds pubblicate: 0/215 (0%) | grade:
+97/215 (45%) | atteso: 26/215 (12%) | prezzo: 212/215 (99%)`
+
+Tabella "26 candidati con Atteso" (Giocatore | R | Club | Odds | Prezzo |
+Atteso | Grade), prime 10 righe, ordinate per Atteso decrescente:
+
+ Malte Amundsen      | DEF | columbus-crew-columbus-ohio                          | -- | 0.49 EUR | 55.5 | --
+ Antoine Griezmann    | FWD | orlando-city-lake-mary-florida                       | -- | 5.85 EUR | 54.2 | D
+ Morgan Guilavogui    | FWD | real-salt-lake-salt-lake-city-utah                   | -- | 0.50 EUR | 54.2 | E
+ Thomas Muller        | FWD | vancouver-whitecaps-vancouver-british-columbia       | -- | 1.65 EUR | 54.2 | --
+ Nkosi Tafari         | DEF | los-angeles-fc-los-angeles-california                | -- | 0.33 EUR | 53.8 | F
+ Ryan Hollingshead    | DEF | los-angeles-fc-los-angeles-california                | -- | 0.34 EUR | 52.2 | D
+ Jeevan Badwal        | MID | vancouver-whitecaps-vancouver-british-columbia       | -- | 2.82 EUR | 51.6 | --
+ Pep Biel             | MID | charlotte-fc-charlotte-north-carolina                | -- | 2.60 EUR | 51.6 | F
+ Anthony Markanich    | DEF | minnesota-united-minneapolis-saint-paul-minnesota    | -- | 1.02 EUR | 51.3 | --
+ Ivan Angulo          | MID | orlando-city-lake-mary-florida                       | -- | 0.50 EUR | 50.8 | D
+
+Odds tutte "--" in questo campione: normale, sono a >48h dal kickoff GW4
+(non ancora pubblicate da Sorare per queste partite), non un difetto del
+codice -- si vede anche dal log (0/215 con odds pubblicate).
+
+File toccati in questo giro: `scouting_gw.py` (log copertura + tabella a
+due livelli + commento sul campo grade), `docs/HANDOFF_UNIFICATO_MODELLO_
+SCOUTING.md` (§8ter, §10bis.8, §8 trappola 17), `docs/handoff/
+BRIEF_SONNET_GRADE_SCOUTING_2026-08-09.txt` (correzione del primo giro),
+questo file. Nessun push su main -- committato in locale, il push lo fa
+l'utente.
