@@ -1,0 +1,187 @@
+PASSAGGIO DI CONSEGNE — PER IL PROSSIMO ORCHESTRATORE
+Scritto da Opus il 09/08/2026, sera (Roma), a fine sessione.
+Sostituisce PASSAGGIO_CONSEGNE_ORCHESTRATORE_2026-08-09_MATTINA.txt.
+
+Leggi QUESTO per primo. Gli altri file di docs/handoff/ sono archivio,
+tranne i tre citati qui dentro per nome.
+
+
+=====================================================================
+0. COME SI APRE LA SESSIONE
+=====================================================================
+`git pull` -> `git log` -> il CODICE in produzione sul tema. Non gli
+handoff: un numero letto in un documento e' un'IPOTESI DA VERIFICARE.
+In Cowork NON hai i permessi git: scrivi i file, il commit lo fa un
+esecutore o l'utente. L'utente fa da navetta fra te e Sonnet.
+REGOLA CHE L'UTENTE HA CHIESTO ESPLICITAMENTE OGGI: **chiedi a lui PRIMA di
+scrivere un brief**. Molte domande le risolve lui in dieci secondi perche'
+ha la UI di Sorare davanti. Io ho scritto due brief senza chiedere e me
+l'ha fatto notare, giustamente: uno dei due (regola F/E) e' finito nel
+cestino perche' la risposta ce l'aveva lui.
+
+
+=====================================================================
+1. LE QUATTRO SCOPERTE DI OGGI (tutte verificate, con dove guardare)
+=====================================================================
+S1. **Il grade post-ufficiali e' titolare-si'/no.** Su 214 righe di
+    snapshot pubblici, ZERO eccezioni: ON_FIELD -> sempre B/C/D/E;
+    panchina o fuori lista -> sempre F. Anche le starter odds diventano
+    solo 0 o 10000. (§18.1 di HANDOFF_TABELLA_GRADE_2026-08-09.txt)
+
+S2. **Tutti i nostri numeri sul grade sono misurati su grade post-partita.**
+    Gli storico_grade_*.json hanno ogni nodo con scoreStatus FINAL o
+    DID_NOT_PLAY. Quindi il residuo F = -31/-33 non e' il valore di una
+    previsione, e' il valore di una constatazione. Vale anche per il
+    +29.050 essenze di G sulle arene: e' un LIMITE SUPERIORE, non il
+    guadagno realizzabile. Ho dovuto correggere un verdetto che avevo
+    scritto io come "chiuso e non da riaprire". (§18.2 e §18.7)
+
+S3. **Sopra odds 0.80 non esiste una sola F.** Misurato sulle 155 righe
+    pre-lock del 06/08: 0 F su 52 carte sopra 0.80; le E invece ci sono
+    (4 su 52), e l'utente conferma di vederne regolarmente nella GW
+    corrente. Siccome la produzione filtra a MIN_STARTER_ODDS=0.80
+    (discovery_fixture.py righe 31-34), le F al generatore non arrivano
+    mai. Conseguenza pratica: tutto il valore "evitare le F" che i nostri
+    numeri attribuiscono al grade e' gia' catturato dal filtro odds.
+    Quello che resta al grade in produzione e' solo il tratto D->A, che
+    dai residui vale ~2,6 punti in tutto.
+
+S4. **G FISSO NON BATTE G VARIABILE.** Esito del backtest di stasera, con
+    la mia rilettura critica: §20 (Sonnet) e §21 (io). Dettagli in §2 qui
+    sotto — leggi il §21, non il §20, perche' il verdetto del §20 e'
+    sbagliato.
+
+
+=====================================================================
+2. IL FILONE "TABELLA FISSA" E' CHIUSO. PERCHE'.
+=====================================================================
+Domanda dell'utente: dare un valore FISSO a ogni lettera batte il
+meccanismo attuale (z-score sul gruppetto lega/ruolo del giorno)?
+Backtest fatto sullo stesso archivio del test G-vs-A (825 formazioni,
+90 unita' manager/gw): analisi_manager/p20_gfisso_backtest.py.
+
+Sonnet ha concluso "V2 vince". NON REGGE, per due motivi che ho verificato
+nel JSON grezzo:
+ a) **i due rami non giocano lo stesso numero di arene** (allocazione:
+    G su 547 arene, GF su 692). La tabella ha valori quasi tutti positivi
+    sul tratto frequente, quindi alza l'atteso medio, quindi piu' arene
+    superano la soglia e il bot entra di piu'. In un regime profittevole,
+    entrare di piu' rende di piu' anche senza scegliere meglio. Tutti i
+    delta di allocazione misurano questo.
+ b) **l'unico confronto a parita' di arene e' l'astensione** (n=154 in
+    entrambi i rami), e li' la variante pulita V1 (tabella solo su D-A)
+    PEGGIORA: -2500 e -3000, segno stabile su entrambi i set di soglie.
+    La variante che vince (V2) e' quella che include le F, e vince solo
+    grazie all'affossamento delle F post-partita — che in produzione,
+    per S3, non servono a niente.
+
+DECISIONE: si tiene il meccanismo attuale. NON e' chiusa la questione a
+monte (il 23% di carte su cui il grade non incide perche' il gruppo ha meno
+di 2 membri): resta aperta, ma la tabella S1 non e' la risposta.
+
+VINCOLO PER CHIUNQUE RIFACCIA UN BACKTEST SU QUESTO FILONE (§21.7):
+i rami devono giocare lo STESSO numero di arene, oppure si confronta in
+essenze PER ARENA con la n dichiarata. E ogni tabella che alza
+sistematicamente l'atteso va confrontata anche nella versione CENTRATA
+(tabella meno la sua media), altrimenti si confonde "ordinare meglio" con
+"spingere in su tutti". Questa omissione nel brief e' colpa mia.
+
+
+=====================================================================
+3. IL BACKLOG, IN ORDINE
+=====================================================================
+1. **CAPITANO SCELTO COL GRADE — DA FARE COMUNQUE, INDIPENDENTE DA TUTTO
+   IL RESTO.** Richiesta esplicita e ripetuta dell'utente. Il capitano
+   MOLTIPLICA (+20% arena, +50% fuori): nessuna altra decisione singola
+   sposta tanto. Oggi `pick_captain()` ignora il grade, e nel backtest la
+   fascia era assegnata col criterio del baseline in TUTTI i rami — quindi
+   non e' mai stato misurato. Gerarchia voluta dall'utente: grade piu' alto
+   -> a parita', atteso piu' alto -> se anche gli attesi sono vicini, il
+   ruolo. Misurare SEPARATAMENTE due cose: PROTEZIONE (un capitano che non
+   gioca azzera il bonus) e SPINTA (un capitano piu' forte rende di piu').
+   Attenzione: la protezione e' proprio la parte esposta al leakage di S2,
+   la spinta molto meno. Vale il vincolo §21.7 sulle n.
+
+2. **Escludere le E dal pool** — l'ipotesi piu' promettente uscita oggi,
+   e non e' stata misurata. Nel ramo V3 togliere E ed F dal pool faceva
+   +29.000 essenze, ma su n diverse e con dentro il leakage delle F. Le E
+   pero' sopravvivono al filtro 0.80 (S3), quindi la domanda pulita e':
+   "escludere le carte con grade E, a parita' di arene giocate, migliora?"
+   (§21.6)
+
+3. **Accumulo grade PRE-LOCK.** E' l'unico asset che SCADE: a leaderboard
+   chiusa la query torna 0 nodi. Script pronto e funzionante:
+   analisi_manager/grade_snapshot_pubblico.py (pubblico, senza cookie,
+   modalita' --fixture). Vincolo scoperto oggi: la projection non e'
+   esposta per partite lontane — la cattura del 09/08 sulla GW dell'11/08
+   ha dato grade null su tutte le 4157 righe. Va lanciata A RIDOSSO del
+   kickoff (poche ore), non all'apertura della GW. Quanto in anticipo si
+   apra la finestra non lo sappiamo: servirebbero catture scalari (6h, 3h,
+   1h). Materiale gia' in repo: 173 righe pre-lock del 06/08, senza
+   realizzato in cache — ma il realizzato di quelle partite E' RECUPERABILE
+   con la stessa query degli storici, e nessuno l'ha ancora fatto. Sarebbe
+   il primo campione, piccolo ma vero, per rimisurare il grade come lo vede
+   il bot. (§19, §21.6)
+
+4. Perche' il generatore non ha un criterio nella fase opzionale (emerso
+   dal non-determinismo PYTHONHASHSEED).
+
+5. Bonus 4% e 2% fuori dall'arena, rifatti CON G.
+
+ACCANTONATO DALL'UTENTE, NON RIPROPORRE: segregare il rischio DNP (carte
+70-80% tutte in una Beginner). Aspetta che lo riapra lui.
+FUORI SCOPE PER SUA SCELTA: le carte sotto 0.80 non le schiera, punto.
+Anche se oggi e' emerso che a odds 0.70 ci sono carte con grade A/B/C che
+buttiamo via, lui ha detto di lasciar perdere per ora.
+
+
+=====================================================================
+4. STATO DEI FILE
+=====================================================================
+Aggiornati oggi e da committare (io in Cowork non ho i permessi git):
+  docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt  (§18, §19, §20, §21)
+  docs/handoff/PUNTO_FISSO_GRADE_2026-08-09.txt      (mappa del filone)
+  docs/handoff/PASSAGGIO_CONSEGNE_ORCHESTRATORE_2026-08-09_SERA.txt (questo)
+  docs/handoff/BRIEF_SONNET_GFISSO_2026-08-09.txt
+  docs/handoff/BRIEF_SONNET_SNAPSHOT_ACCUMULO_2026-08-09.txt
+  docs/handoff/BRIEF_SONNET_SNAPSHOT_KICKOFF_2026-08-09.txt
+  docs/handoff/BRIEF_SONNET_REGOLA_NOFE_2026-08-09.txt (MAI INVIATO, tenuto
+    solo come archivio: spiega perche' quella strada e' stata assorbita)
+Da verificare col git status: alcuni potrebbero essere gia' stati
+committati dagli esecutori insieme ai loro script.
+
+DA CORREGGERE NEL RIASSUNTO UNICO (docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md),
+non l'ho fatto per mancanza di tempo: la frase "G e' validato anche sulle
+arene, chiuso e non da riaprire" va sostituita con "G e' validato come
+SEGNALE; il suo valore in essenze e' un limite superiore misurato su grade
+post-partita, da rimisurare pre-lock". Vedi §18.7.
+
+
+=====================================================================
+5. COME LAVORARE CON QUESTO UTENTE
+=====================================================================
+- **Cinque righe in chat, il resto nei file.** Paga a token e ha una forma
+  grave di ADHD.
+- **CHIEDI PRIMA DI SCRIVERE UN BRIEF.** Vedi §0.
+- **Una cosa alla volta.** Se gli arrivano due filoni insieme si perde, e
+  te lo dice. Oggi e' successo e aveva ragione.
+- **Spiega i numeri con esempi banali**, mai con termini statistici. Laurea
+  in legge, non formazione statistica. Se dice "non ho capito", non
+  riformulare piu' preciso: riformula piu' STUPIDO. Oggi ha funzionato
+  l'analogia dei camerieri e delle referenze.
+- **Il suo istinto e' ottimo.** Oggi ha trovato lui che i numeri viola sono
+  gli L10 (io li avevo scambiati per una proiezione e avevo scritto un
+  brief sbagliato), ha catturato la query FootballComposeBenchQuery da
+  DevTools sbloccando l'impasse, e ha confermato dall'esperienza diretta
+  che le E a 0.80 esistono mentre le F no.
+- **Verifica sempre i grezzi degli esecutori prima di riferire.** Oggi il
+  verdetto del §20 era sbagliato e me ne sono accorto solo aprendo il JSON.
+  Su tutti i report di oggi, la maggioranza aveva qualcosa da correggere.
+- Non dargli numeri che non hai misurato.
+
+
+=====================================================================
+6. DOVE PUNTARE, IN UNA RIGA
+=====================================================================
+Il capitano col grade: e' la leva piu' grande rimasta, non e' mai stata
+misurata, e non dipende da niente di quanto sopra. Parti da li'.

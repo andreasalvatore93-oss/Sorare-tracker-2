@@ -955,3 +955,111 @@ LIMITI DI QUESTA MISURA (dichiarati, non nascosti):
 
 Commit: analisi_manager/p20_gfisso_backtest.py, p20_gfisso_backtest_out.json,
 p20_gfisso_dump.txt, questo handoff.
+
+
+21. VERIFICA DELL'ORCHESTRATORE SUL §20 -- IL VERDETTO "V2 VINCE" NON REGGE.
+LETTURA CORRETTA: G FISSO NON BATTE G VARIABILE.
+Scritta il 09/08/2026 sera (Roma), leggendo p20_gfisso_backtest_out.json
+riga per riga, non il riassunto. Il lavoro di Sonnet e' corretto
+nell'esecuzione e nei controlli (C0-C4 fatti bene, limiti dichiarati);
+l'errore e' nell'interpretazione, e nasce da un difetto di disegno del
+confronto che nessuno dei due aveva previsto nel brief.
+
+21.1 IL DIFETTO: I DUE RAMI NON GIOCANO LO STESSO NUMERO DI ARENE.
+Letto nel JSON grezzo, regime allocazione:
+    set vecchio: G n=547   GF-V1 n=692   GF-V2 n=657   (V3: n_G=482 n_GF=654)
+    set nuovo:   G n=564   GF-V1 n=715   GF-V2 n=680   (V3: n_G=492 n_GF=678)
+Il valore di G usato nel delta (12100 / 16700) e' quello misurato su 547 e
+564 arene; GF e' misurato su 692 e 715. Il delta confronta due totali di
+essenze calcolati su campioni DIVERSI: GF gioca fino a 145 arene in piu' e
+incassa di piu' anche solo per questo. Il numero non e' interpretabile come
+"sceglie meglio".
+  V3 dichiara le due n separate (n_G/n_GF), gli altri rami no: il campo si
+chiama `n` e riporta quella di GF. Chi legge solo il riassunto non lo vede.
+
+21.2 PERCHE' SUCCEDE -- ed e' strutturale, non un bug.
+Lo z-score attuale e' CENTRATO per costruzione: z = (gn - gm)/gsd ha media
+zero dentro il gruppo, quindi sd*z non alza sistematicamente nessun atteso.
+La tabella S1 invece ha valori quasi tutti POSITIVI sul tratto frequente
+(D +1,26  C +1,70  B +2,66  A +3,87) e negativi solo su E/F, che sono
+l'11,7% del pool (C4). Risultato: GF alza l'atteso medio del pool, piu'
+formazioni superano la soglia di convenienza, e il bot entra in piu' arene.
+  In un regime dove entrare nelle arene e' mediamente profittevole
+(allocazione: G = +12100 / +16700), entrare di piu' produce piu' essenze
+INDIPENDENTEMENTE dal fatto che si scelga meglio. E' questo che il delta di
+allocazione sta misurando, in tutti e tre i rami V1/V2/V3.
+
+21.3 IL CONFRONTO PULITO ESISTE GIA' NEI DATI: E' L'ASTENSIONE.
+In regime astensione la n e' IDENTICA fra i rami (154 contro 154, letto nel
+JSON): li' il confronto e' a parita' di arene giocate, quindi e' l'unico
+numero di questa tabella che misura davvero la qualita' della scelta.
+Esito, sui due set di soglie:
+    V1 (tabella solo D-A, il tratto che la produzione usa davvero):
+        set vecchio  G -2200 -> GF -4700   delta -2500
+        set nuovo    G  +300 -> GF -2700   delta -3000
+      SEGNO NEGATIVO E STABILE SU ENTRAMBI I SET. Non e' "non concludente"
+      come scritto al §20: e' un risultato negativo, e il criterio del
+      delta di CLAUDE.md (stesso segno in entrambi gli ambienti) e'
+      soddisfatto -- solo che e' soddisfatto contro la tabella.
+    V2 (tabella su tutte e sei): +8000 e +4700, positivi.
+    V3 (E/F fuori dal pool): +1800 e 0.
+
+21.4 DA DOVE VIENE TUTTO IL VANTAGGIO DI V2: DALLE F.
+Il contrasto V1/V2 e' la risposta, ed e' netto. Le due varianti
+differiscono SOLO per il trattamento di E ed F. V1, che lascia E/F allo
+z-score, peggiora. V2, che le abbassa con la tabella (F -33,15), guadagna.
+Quindi il vantaggio di V2 non viene dal tratto D-A: viene interamente
+dall'affossare le F.
+  Il dump lo mostra a occhio (p20_gfisso_dump.txt): Messi grade F, cal 67,2
+-> G 62,2 -> GF-V2 34,1.
+  Ma quelle F sono POST-PARTITA (§18): "F" li' significa in larga parte
+"sappiamo gia' che non ha giocato". E in produzione il filtro
+MIN_STARTER_ODDS=0.80 (discovery_fixture.py righe 31-34) le ha gia' tolte
+tutte: sulle 155 righe pre-lock del 06/08, sopra 0.80 le F sono ZERO su 52
+(le E invece esistono, 4 su 52; l'utente conferma di vederne regolarmente).
+  Conclusione: V2 vince facendo bene una cosa che in produzione non c'e'
+piu' niente da fare.
+
+21.5 IL VERDETTO CORRETTO
+Sulla domanda posta dall'utente ("un valore fisso batte il meccanismo
+variabile?"), la risposta che i dati sostengono e': NO, non sul tratto che
+il bot usa davvero.
+ - unico confronto a parita' di arene (astensione), unico tratto pulito
+   (V1, D-A): la tabella PEGGIORA, con segno stabile su entrambi i set;
+ - la variante che vince (V2) vince grazie a informazione post-partita che
+   in produzione e' gia' filtrata a monte;
+ - tutti i confronti in allocazione sono viziati dalla n diversa.
+DECISIONE CONSEGUENTE: si tiene il meccanismo attuale (z-score di gruppo).
+Il filone "sostituire lo z-score con una tabella fissa" si chiude COSI'
+COM'E' POSTO. NON si chiude la questione a monte (il 23% di carte su cui il
+grade non incide): quella resta aperta, ma la tabella S1 non e' la
+soluzione.
+
+21.6 QUELLO CHE IL TEST HA TROVATO SENZA CERCARLO, E CHE VALE PIU' DEL TEST
+Regime allocazione, ramo V3: escludendo E ed F DAL POOL, il ramo G da solo
+passa da +12100 a +41300 (set vecchio) e da +16700 a +45700 (set nuovo).
+Cioe' ~+29.000 essenze senza cambiare nulla nel modo di usare il grade:
+solo non mettendo quelle carte nel pool.
+  CAUTELE, entrambe serie: (a) le n sono diverse (547->482, 564->492),
+quindi vale la stessa obiezione del 21.1 e il numero non e' preso per buono;
+(b) gran parte dell'effetto sara' di nuovo leakage delle F post-partita.
+  MA la parte sulle E potrebbe essere reale e utilizzabile, perche' le E a
+odds >= 0.80 ESISTONO (4 su 52 nel campione pre-lock; l'utente ne vede
+anche nella GW corrente) mentre le F no. E' l'ipotesi piu' promettente
+uscita da questa giornata, ed e' formulabile in modo pulito:
+      "escludere dal pool le carte con grade E, a parita' di arene giocate,
+       migliora il risultato?"
+Non e' stata misurata. Va misurata con n VINCOLATA (vedi 21.7).
+
+21.7 COME SI RIFA' UN CONFRONTO CHE SIGNIFICHI QUALCOSA
+Vincolo da imporre a qualunque prossimo backtest su questo filone:
+i due rami devono giocare LO STESSO NUMERO DI ARENE, oppure il confronto va
+fatto in essenze PER ARENA con la n dichiarata riga per riga. In
+alternativa (piu' pulito): fissare l'insieme delle arene giocate al ramo
+baseline e lasciare variare solo QUALI CARTE si schierano dentro quelle
+arene -- cosi' si misura la selezione e non la propensione a entrare.
+  Ogni tabella che alza sistematicamente l'atteso va inoltre confrontata
+nella sua versione CENTRATA (tabella meno la sua media sul pool), altrimenti
+si confondono due effetti: "ordinare meglio" e "spingere in su tutti".
+Questo controllo non era nel brief: e' una mia omissione, ed e' la ragione
+per cui questo giro va in parte rifatto.
