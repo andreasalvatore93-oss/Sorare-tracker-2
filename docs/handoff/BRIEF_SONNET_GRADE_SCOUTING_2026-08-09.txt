@@ -247,3 +247,91 @@ toccati -- decide l'utente quali gli servono in mano):
 File toccati: `scouting_gw.py`, `.github/workflows/scouting_gw.yml`.
 Nessun push su main (regola di consegna). Nessuna modifica alla
 produzione del generatore di formazioni.
+
+
+--- SECONDO GIRO (orchestratore, 09/08/2026 notte) -----------------------
+--- LO SCOUTING SEMPLIFICATO + IL GRADE C'E', E' SOLO DA TROVARE ---------
+
+FATTO NUOVO, DETTO DALL'UTENTE E DECISIVO: il grade della GW4 (fixture
+che inizia l'11/08) e' GIA' VISIBILE su Sorare ADESSO, sia nella pagina
+"Scouting" (la lista filtrabile) sia nella scheda del singolo giocatore.
+Quindi il dato ESISTE gia' per giocatori NON posseduti.
+
+CONSEGUENZA SUL COMPITO 1 DEL PRIMO GIRO: quello 0/50 non dimostra che la
+lettera non sia raggiungibile. E' un artefatto dell'argomento usato:
+`playerGameScores(last: 3)` chiede per definizione le partite PIU'
+RECENTI, cioe' guarda indietro. Il dato futuro non e' stato cercato e non
+trovato: non poteva comparire. La conclusione "non esiste una rotta per i
+non posseduti" NON e' dimostrata e va considerata sospesa.
+
+INDIZIO FORTE, da cui partire: dentro SEARCH_QUERY c'e' gia'
+`... on Player { age ownedCardsCount nextClassicFixtureProjectedScore }`.
+Quel campo e' il punteggio PROIETTATO per la PROSSIMA fixture: il
+concetto giusto, ma il numero. E' molto probabile che accanto esista il
+grade (nome tipo `nextClassicFixtureProjectedGrade`, oppure un oggetto
+`projection { grade score }` sullo stesso Player). Inoltre `searchPlayers`
+E' LA QUERY DELLA PAGINA SCOUTING DI SORARE (§2.2): se quella pagina
+mostra la lettera all'utente, il campo e' raggiungibile da li'.
+
+METODO (l'introspezione e' disabilitata, vedi CLAUDE.md): si chiede un
+campo plausibile e SI LEGGE IL MESSAGGIO D'ERRORE, che elenca/suggerisce
+i campi validi ("Did you mean ..."). E' il modo gia' usato con successo
+in questo repo. Prova in quest'ordine, una alla volta, su UNA pagina:
+  1. `nextClassicFixtureProjectedGrade` (simmetrico al campo esistente);
+  2. `projection { grade score }` sullo stesso `... on Player`;
+  3. `playerGameScores` con argomento IN AVANTI invece di `last:`
+     (`first:`, o senza argomento) -- e riporta quali argomenti l'errore
+     dichiara ammessi;
+  4. qualunque nome suggerito dagli errori dei tentativi 1-3.
+Riporta il TESTO ESATTO degli errori: e' li' che sta l'informazione.
+
+QUANDO LO TROVI: verifica su 20-30 giocatori che la lettera restituita sia
+davvero quella della GW4 e non di una partita passata. Il controllo si fa
+chiedendo anche la data/fixture della partita a cui la proiezione si
+riferisce, e confrontandola con la finestra della GW4. Se non riesci a
+farti dire la partita, DILLO invece di assumere: e' esattamente l'errore
+che ha reso ambiguo il primo giro.
+
+--- COSA VUOLE L'UTENTE: UNO SCOUTING SEMPLIFICATO ----------------------
+
+Testuale: "al momento il tool fa anche le formazioni, guadagno per
+essenze eccetera; a me interessa semplificarlo e farlo funzionare, poi
+sistemiamo il resto".
+
+Per la GW selezionata (adesso la 4) il tool deve rispondere a due
+domande, in quest'ordine:
+
+ 1. CHI HA STARTER ODDS >= SOGLIA. Default 0.80.
+    ATTENZIONE, richiesta esplicita dell'utente: la soglia va PASSATA
+    ESPLICITAMENTE, non lasciata implicita, altrimenti il test fallisce.
+    Verifica come lo scouting applica oggi `--odds-min` (filtro dentro i
+    `refinements` di searchPlayers, oppure filtro dopo aver ricevuto le
+    righe?) e scrivilo nell'esito: cambia quante pagine si scaricano.
+
+ 2. PER QUEI GIOCATORI, tre informazioni e basta:
+      - prezzo minimo (gia' disponibile: `lowestPriceAnyCard`, gratis
+        dentro la stessa query);
+      - ATTESO, cioe' la predizione che il generatore fa oggi (e' il
+        percorso gia' esistente, quello che la UI chiama "far girare il
+        modello sui candidati");
+      - GRADE, se il passo precedente lo ha reso raggiungibile.
+
+OUTPUT: una tabella minima -- giocatore, ruolo, club, odds, prezzo,
+atteso, grade. NIENTE arene, niente essenze/GW, niente "si ripaga in",
+niente sezione formazioni.
+
+COME FARLO SENZA ROMPERE NIENTE (vincolo):
+ - NON cancellare le sezioni esistenti. Mettile dietro un interruttore
+   (es. `--minimal` da riga di comando + checkbox nel workflow, default
+   della modalita' semplificata da concordare) in modo che il tool
+   completo resti disponibile e riaccendibile.
+ - Il resto del comportamento (client ritmato, filtri, leghe senza
+   pipeline) non si tocca.
+
+--- CONSEGNA ------------------------------------------------------------
+- Esito in coda a QUESTO file.
+- Nessun push su main.
+- Se il campo grade NON esiste in searchPlayers, dillo con gli errori in
+  chiaro: l'utente vede la lettera sul sito, quindi in quel caso la
+  domanda diventa "da quale altra query la prende il sito?", e la si
+  affronta al giro dopo. Non inventare un ripiego silenzioso.
