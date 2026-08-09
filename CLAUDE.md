@@ -342,6 +342,23 @@ L'utente paga a token e non vuole leggere prosa lunga in chat.
 - Limite duro: massimo 5 righe per messaggio di chat. Analisi, tabelle e
   numeri non compaiono mai in chat, solo in docs/handoff/.
 
+## Comunicazioni in chat ridotte al minimo assoluto (09/08/2026)
+
+Vale per TUTTI gli agenti, orchestratore incluso. Ogni singola riga di chat
+viene riletta ad ogni turno e consuma la sessione in fretta. Quindi:
+- In chat SOLO e SOLTANTO i messaggi essenziali al buon esito della sessione.
+  Niente saluti, niente "ciao", niente cortesie, niente preamboli/postamboli
+  se possono essere evitati.
+- Risposte piu' lunghe sono tollerate SOLO quando l'utente fa una domanda che
+  le richiede.
+- Se conosco gia' la preferenza dell'utente, NON faccio la domanda: bypasso e
+  procedo direttamente scrivendo i file.
+- I file per cui l'utente fa da navetta si INDICANO soltanto: nessun prompt o
+  wall of text in chat. Scrivo il brief nel file, poi in chat dico solo quale
+  file, a quale esecutore (Haiku/Sonnet/Opus) e con quale grado di impegno.
+- Se sono l'orchestratore, ogni volta che l'utente deve passare file a un
+  esecutore gli RICORDO di farli pushare (altrimenti se ne dimentica).
+
 ## Handoff Cerbero: file unico
 
 Per il filone Cerbero l'handoff di riferimento è UNO SOLO:

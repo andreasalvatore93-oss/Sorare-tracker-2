@@ -1063,3 +1063,79 @@ nella sua versione CENTRATA (tabella meno la sua media sul pool), altrimenti
 si confondono due effetti: "ordinare meglio" e "spingere in su tutti".
 Questo controllo non era nel brief: e' una mia omissione, ed e' la ragione
 per cui questo giro va in parte rifatto.
+
+
+22. SECONDA VERIFICA DELL'ORCHESTRATORE (nuova sessione, 09/08/2026 sera/notte
+Roma). L'utente ha chiesto di NON chiudere il filone finche' non si controllano
+i grezzi contro i SUOI criteri di pulizia, non solo contro il verdetto §20/§21.
+Fatto: riletto p20_gfisso_backtest_out.json + il codice di
+p20_gfisso_backtest.py + le fonti grade. Esito: il test NON e' pulito secondo i
+tre criteri che l'utente ha posto. Va rifatto prima di chiudere. Dettaglio:
+
+22.1 IL GRADE E' POST-PARTITA, NON POST-ODDS. (anomalia decisiva)
+Requisito utente, testuale: "Il grade considerato da entrambe deve essere
+quello catturato post odds: quindi esattamente quando io schiero." Verificato
+sui grezzi: l'indice grade che alimenta ENTRAMBI i rami e'
+P20G.GG.indice_dopo_download(), costruito da:
+  - dati/storico_grade_Forward_ampio_20260806.json
+  - dati/storico_grade_Goalkeeper_20260806.json
+  - dati/storico_grade_arene_2026-08-08.json
+Contati gli scoreStatus dei nodi in quei file:
+  Forward: FINAL 3928, DID_NOT_PLAY 1002, REVIEWING 70
+  Goalkeeper: FINAL 1613, DID_NOT_PLAY 981, REVIEWING 17
+  arene: FINAL 1887, DID_NOT_PLAY 607, REVIEWING 39
+Cioe' il grade e' quasi tutto FINAL/DID_NOT_PLAY = constatato A PARTITA
+FINITA. Nessuna riga e' un grade catturato al lock (post-odds). Quindi il
+test NON misura la cosa che l'utente vuole misurare: misura due modi di usare
+un grade che al momento dello schieramento NON si conosce ancora in quella
+forma. Questo da solo basta a dichiarare il test non conforme, a prescindere
+dal dibattito V1/V2 del §21. Il §21 lo cita come "caveat da rimisurare
+pre-lock" ma poi chiude lo stesso: per il criterio dell'utente non si chiude.
+
+22.2 LA COPERTURA GRADE NON E' LA STESSA NEI DUE RAMI. (anomalia)
+Requisito utente: "la copertura delle g deve essere la medesima su entrambi
+nei limiti del possibile". Verificato leggendo annota_gf() + il ricalcolo di
+gruppo: il ramo G VARIABILE (_combinato, z-score) sposta l'atteso SOLO quando
+il gruppo (lega,ruolo,giornata) ha >=2 membri con grade (regola dello z-score,
+ricalcola_combinato_gruppo righe 54-61: se len(gp)<2 -> zgrade=0, cioe' non
+tocca la carta). Il ramo G FISSO (GF-V1/V2) applica la tabella a OGNI carta con
+grade noto, senza soglia di gruppo (annota_gf righe 76-88, per-carta). Quindi
+GF agisce su un insieme di carte PIU' AMPIO di G: parte del delta misurato non
+e' "fisso batte variabile a parita' di carte", e' "fisso tocca anche le carte
+che il variabile lascia stare". Sono due domande diverse e il test le mischia.
+Il C4 del §20 misura la copertura ma NON la pareggia fra i rami: e' il "qualcosa
+che Sonnet ha tralasciato" che l'utente sospettava. Nota: la maggiore copertura
+di GF e' proprio il motivo per cui il filone esiste (coprire il 23% che lo
+z-score perde), ma per DECIDERE "fisso vs variabile" i due vanno confrontati a
+copertura pari; il guadagno da copertura extra e' una domanda SEPARATA.
+
+22.3 IL PEZZO "OGNI LETTERA HA UN VALORE FISSO? RICOSTRUISCI IL PATTERN" NON
+E' STATO FATTO. (incompletezza)
+Requisito utente: il test doveva anche "provare se ogni lettera ha
+effettivamente un valore fisso, e se cosi fosse, provare a ricostruire un
+pattern e dedurla". Sonnet stesso dichiara NON FATTO (§20): "griglia S2 (k
+lineare), popolazioni P2 (solo scesi in campo) e P3 (placebo su GF)". Quindi
+la domanda se la lettera abbia un valore stabile e' rimasta aperta: si e'
+usata UNA tabella fissa (residui post-partita) senza verificare che quei
+valori reggano fuori da quel campione.
+
+22.4 CONFERMA DELL'ANOMALIA N (gia' §21.1): letta nel JSON, regime
+allocazione, i due rami giocano un numero di arene diverso (G 547/564 vs GF
+657-715): quel confronto resta non interpretabile. L'unico a parita' di arene
+e' l'astensione (154=154), dove V1 (tratto D-A) PEGGIORA. Su questo il §21 e'
+corretto e verificato.
+
+22.5 CONCLUSIONE DELLA SECONDA VERIFICA.
+Per il criterio dell'utente il test NON e' pulito: grade post-partita invece
+che post-odds (22.1, decisiva), copertura non pareggiata (22.2), valore-fisso
+per lettera non verificato (22.3). Quindi NON si chiude il filone su questo
+test: andrebbe RIFATTO conforme.
+OSTACOLO REALE: il test conforme richiede grade PRE-LOCK/post-odds, che oggi
+in repo NON esiste su scala (solo 173 righe pre-lock del 06/08, §19/§3.3, senza
+realizzato ancora agganciato). Senza quel dato il test pulito non e' eseguibile
+adesso. Decisione da prendere con l'utente (vedi chat): (a) recuperare il
+realizzato delle 173 righe pre-lock e rifare in piccolo ma pulito; (b) aprire
+l'accumulo pre-lock a ridosso dei kickoff e rimandare; (c) considerare il
+filone "tabella fissa" non decidibile ora e passare al capitano. In tutti i
+casi il verdetto "G fisso non batte G variabile" NON e' provato: e' solo NON
+provato il contrario. Il §21 va letto con questa correzione.

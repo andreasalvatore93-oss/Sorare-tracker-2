@@ -1,0 +1,38 @@
+BRIEF SONNET -- CATTURA GRADE POST-UFFICIALI: Genk vs Zulte-Waregem
+Scritto dall'orchestratore (Opus) 09/08/2026. ESECUTORE: Sonnet. IMPEGNO: BASSO
+(cattura meccanica + verifica). NON toccare la produzione, nessun modello.
+Parti SOLO quando l'utente ti da' il via ("le ufficiali sono uscite").
+
+LEGGERE PRIMA: CLAUDE.md. Nient'altro serve.
+
+PERCHE'. Verifica live del filone grade. Abbiamo gia' il grade PRE-ufficiali
+(post-odds) di questa partita, trascritto a mano dall'utente in
+  analisi_manager/dati/snapshot_manual_zultewaregem_genk_20260809_pre_ufficiali.json
+Ora serve il grade POST-ufficiali (stessa partita, dopo la pubblicazione delle
+formazioni ufficiali, PRIMA/attorno al kickoff). Confrontando i due si vede
+quali carte cambiano grade con le ufficiali (i "crolli" F). A partita finita
+(~18:30 Roma) arriva il realizzato e si chiude il confronto.
+
+PARTITA. Genk vs Zulte-Waregem, Jupiler Pro League (Belgio).
+Kickoff: 16:00 Roma = 14:00Z, 09/08/2026. Fixture: football-7-11-aug-2026.
+
+COMANDO (lo script esiste gia', query PUBBLICA, nessun cookie):
+  python analisi_manager/grade_snapshot_pubblico.py --fixture football-7-11-aug-2026
+Se la partita e' gia' iniziata quando lo lanci (dopo le 16:00 Roma) aggiungi:
+  python analisi_manager/grade_snapshot_pubblico.py --fixture football-7-11-aug-2026 --include-live
+Lo script salva UN file in analisi_manager/dati/ (snapshot_public_fixture_...Z.json)
+e cattura tutti i game 'scheduled' (con --include-live anche gli 'started').
+
+VERIFICHE OBBLIGATORIE (riporta i numeri, non solo "fatto"):
+1. Il file prodotto CONTIENE il game Genk/Zulte-Waregem: conta le righe con
+   quelle due squadre e stampa la distribuzione dei grade (quanti A,B,C,D,E,F).
+2. Confronta a occhio col pre-ufficiali (il file manuale sopra): elenca i
+   giocatori il cui grade e' CAMBIATO fra pre e post ufficiali, con vecchio->nuovo
+   e le starter odds. Atteso: i crolli (odds ->0) diventano F.
+3. Se il file NON contiene la partita (gia' 'started' senza flag, o fixture
+   sbagliato), NON inventare: dillo e riprova con --include-live.
+
+CONSEGNA. Committa il file JSON prodotto + una riga di esito in coda a
+  docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt
+(sezione nuova "23. CATTURA LIVE GENK-ZULTE post-ufficiali"). POI FAI git push.
+Senza push il file non arriva alle altre sessioni.
