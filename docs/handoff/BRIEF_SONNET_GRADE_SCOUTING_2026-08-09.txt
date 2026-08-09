@@ -150,3 +150,100 @@ Inoltre:
 - Se scopri che una cosa scritta in questo brief e' falsa, dillo per
   primo: l'orchestratore preferisce essere smentito subito. E' gia'
   successo oggi due volte, ed e' stato utile entrambe le volte.
+
+--- ESITO (Sonnet esecutore, 09/08/2026 notte, Roma) -------------------
+
+COMPITO 1 -- MISURATO, nessuna modifica al codice. L'utente ha fornito il
+cookie di sessione via file locale (Downloads), usato solo in memoria per
+il test, MAI scritto nel repo.
+
+Aggiunto a `anyPlayer` dentro SEARCH_QUERY (query esatta, nessuna
+riscrittura): `playerGameScores(last: 3) { projection { grade } }`.
+Client usato: `_client_ritmato()` (bot_profit), come da brief.
+
+ a) La query e' ACCETTATA, zero errori, su pagina 1 E su pagina 2/3
+    (testato pageSize 50, query completa con tutti i campi gia' in
+    produzione + il nuovo). Nessun segnale di "depth/complexity" fino
+    alla pagina 3. Quindi si': il grade arriva SENZA query aggiuntive.
+
+ b) MA il dato e' inutile per lo scopo dello scouting. Verificato
+    aggiungendo anche `anyGame { date }` e `scoreStatus`:
+    `playerGameScores(last:N)` e' STRETTAMENTE STORICO -- ordina i
+    game-score dal piu' RECENTE (compreso quello in corso oggi, status
+    REVIEWING) a ritroso, MAI in avanti. Su un campione di 50 giocatori
+    del pool (fixture target football-11-14-aug-2026, finestra
+    2026-08-11T14:00Z / 2026-08-14T13:59Z), **0/50** hanno la partita
+    piu' recente restituita dentro quella finestra: la piu' recente era
+    sempre una partita del 06-09/08 (la giornata CORRENTE/precedente,
+    gia' iniziata o finita), mai quella futura che lo scouting sta
+    valutando. Conferma sul campo esattamente quello che §8ter gia'
+    diceva ("storico, non proiezione per la giornata da giocare") --
+    non era un'ipotesi da riverificare, era gia' vera.
+
+ VERDETTO: tecnicamente gratis, ma DA NON USARE cosi' com'e' -- darebbe
+ il grade di una partita diversa da quella su cui si sta decidendo
+ l'acquisto, silenziosamente sbagliato se qualcuno lo prendesse per
+ buono. Nessuna implementazione fatta (come richiesto). Non esiste,
+ nei campi provati, una rotta che dia la proiezione FUTURA per un
+ giocatore non posseduto: l'unica che Sorare espone per il futuro resta
+ `myFilteredBench` (carte possedute), gia' documentato in §8ter come
+ irraggiungibile per lo scouting.
+
+COMPITO 2 -- VERIFICATO sul codice, nessuna modifica.
+`_prezzo_eur()` (scouting_gw.py:462) legge `lowestPriceAnyCard` dal
+payload di `searchPlayers` (stesso oggetto `anyPlayer` di L5/L10/odds
+ecc.). Cercato in tutto `scouting_gw.py`: nessuna occorrenza di
+`liveSingleSaleOffers` (plurale, query dedicata) ne' di nessun'altra
+chiamata GraphQL per prezzi -- solo `liveSingleSaleOffer` (singolare)
+dentro lo stesso campo `lowestPriceAnyCard` della query unica.
+CONTEGGIO QUERY DEDICATE AI PREZZI IN UNA RUN DI SCOUTING: ZERO.
+Conclusione: NESSUNA cache prezzi implementata. Aggiungerne una non
+risparmierebbe query (i prezzi arrivano gia' gratis dentro le ~12
+chiamate di searchPlayers) e in cambio darebbe prezzi vecchi su una
+decisione d'acquisto -- esattamente il rischio che il brief segnalava.
+
+COMPITO 3 -- FATTO, modifica applicata e committata (non pushata).
+ a) Nuovo flag `SCOUTING_RIUSA_PREDIZIONI` in scouting_gw.py, default
+    '0' (SPENTO). Non tocca `best_five.RIUSA_PREDIZIONI` ne' il suo env
+    var `BEST_FIVE_RIUSA_PREDIZIONI`: il generatore di formazioni resta
+    con riuso acceso di default come prima. La `bf` che
+    `_predizioni_gia_fatte` importa e' un'istanza fresca creata da
+    `_import()` (spec_from_file_location per ogni chiamata): spegnere
+    il riuso li' non tocca nessun altro import di best_five.
+    Verificato che il gate giusto e' proprio qui: il job matrice della
+    workflow (`predict`, chiama `test_gk.py`/`test_def.py`/ecc. per
+    singolo giocatore) e i `build_consiglio_*.py` NON contengono nessun
+    controllo di riuso proprio -- l'unico punto che decide chi va
+    ripredetto e' `_predizioni_gia_fatte`/`_scrivi_lavori`, che scrive
+    `dati_globali/scouting_lavori.txt` da cui la workflow costruisce la
+    matrice. Spegnerlo li' e' sufficiente: a riuso spento TUTTI i
+    candidati finiscono in `scouting_lavori.txt` e vengono ricalcolati.
+ b) Aggiunto input `riusa_predizioni` (checkbox, default `false`) a
+    `.github/workflows/scouting_gw.yml`, con testo "Riusa le previsioni
+    gia' calcolate per questa giornata (piu' veloce, ma non ricalcola
+    con G)". Passato al job `candidati` come
+    `SCOUTING_RIUSA_PREDIZIONI: ${{ inputs.riusa_predizioni && '1' || '0' }}`.
+ - Log aggiunto in `_predizioni_gia_fatte`: sempre stampa se il riuso e'
+   ACCESO o SPENTO e quante previsioni su quante totali sarebbero state
+   riusabili (a riuso spento, dice esplicitamente "vengono RIFATTE per
+   questo motivo"). Testato in locale con lista vuota: log corretto,
+   default confermato SPENTO (`sg.SCOUTING_RIUSA_PREDIZIONI == False`).
+
+ALTRI INTERRUTTORI NON ESPOSTI NELLA UI DEL WORKFLOW (elencati, non
+toccati -- decide l'utente quali gli servono in mano):
+ - `SCOUTING_STATI` (default 'starter,regular'): quali playing_status
+   considerare titolari nel filtro searchPlayers.
+ - `SCOUTING_IDONEI_SU` / `SCOUTING_PARTITE` / `SCOUTING_MINUTI`: i
+   parametri del controllo 2-su-3 (oggi la UI ha solo l'on/off
+   "screma", non le sue soglie).
+ - `SCOUTING_ARENE_PER_EURO` (default acceso): ordina le arene per
+   essenze-per-euro invece che per essenze pure.
+ - `SCOUTING_PREZZO_IGNOTO` (default 25 EUR): il prezzo assunto per
+   candidati senza prezzo noto, penalita' che decide se restano in
+   classifica.
+ - `SCOUTING_EURO_1000_ESSENZE` (default 2): il cambio essenze->euro
+   usato per calcolare le "GW di rientro".
+
+File toccati: `scouting_gw.py`, `.github/workflows/scouting_gw.yml`.
+Nessun push su main (regola di consegna). Nessuna modifica alla
+produzione del generatore di formazioni.

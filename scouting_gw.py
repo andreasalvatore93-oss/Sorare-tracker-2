@@ -1068,6 +1068,18 @@ def scrivi_discovery(pool, leghe=None, limite_per_ruolo=None):
 # di ore -- una previsione vale se e solo se la partita che predice cade dentro
 # la giornata corrente, quindi scade da sola quando la giornata chiude, senza
 # che nessuna soglia debba indovinare quando.
+#
+# SPENTO DI DEFAULT PER LO SCOUTING (09/08/2026, richiesta esplicita
+# dell'utente): finche' il grade G non e' innestato con sicurezza nello
+# scouting, una previsione salvata prima potrebbe essere stata calcolata
+# senza G o con un grade diverso e verrebbe riusata in silenzio. Questo NON
+# tocca `best_five.RIUSA_PREDIZIONI` (che resta '1' per il generatore di
+# formazioni): `bf` qui e' un'istanza fresca caricata da `_import`, spegnere
+# il riuso qui non spegne nient'altro che importi best_five altrove.
+SCOUTING_RIUSA_PREDIZIONI = os.environ.get(
+    'SCOUTING_RIUSA_PREDIZIONI', '0').strip() not in ('0', 'false', 'no', '')
+
+
 def _predizioni_gia_fatte(coppie):
     """(da_fare, gia_fatte) sulla lista di (lega, ruolo_dir, slug)."""
     try:
@@ -1076,12 +1088,23 @@ def _predizioni_gia_fatte(coppie):
         log(f"ATTENZIONE: riuso predizioni non disponibile ({e}), le rifaccio tutte.")
         return list(coppie), []
     da_fare, gia = [], []
+    n_riusabili = 0
     for lega, ruolo, slug in coppie:
         try:
             riusabile, _kickoff, _path = bf._predizione_riutilizzabile(lega, ruolo, slug)
         except Exception:
             riusabile = False
-        (gia if riusabile else da_fare).append((lega, ruolo, slug))
+        if riusabile:
+            n_riusabili += 1
+        (gia if (riusabile and SCOUTING_RIUSA_PREDIZIONI) else da_fare).append(
+            (lega, ruolo, slug))
+    if SCOUTING_RIUSA_PREDIZIONI:
+        log(f"[riuso] ACCESO (SCOUTING_RIUSA_PREDIZIONI=1): {n_riusabili}/{len(coppie)} "
+            f"previsioni riusate da disco.")
+    else:
+        log(f"[riuso] SPENTO per lo scouting (default, SCOUTING_RIUSA_PREDIZIONI=0): "
+            f"{n_riusabili}/{len(coppie)} previsioni erano riusabili ma vengono "
+            f"RIFATTE per questo motivo.")
     return da_fare, gia
 
 
