@@ -1344,6 +1344,24 @@ già risolto: **da riverificare su v3 prima di rimetterci mano.**
 **11. 21 script con path Windows hardcoded** in `analisi_manager/`:
 girano solo sulla macchina dell'utente. Meccanico.
 
+**12. SONDA 09/08 — il grade di una partita GIA' GIOCATA e' recuperabile
+dall'API anche a posteriori**: risposta SI', su 5 righe verificate.
+Metodo: `anyPlayer(slug).playerGameScores(last:40)` (stessa rotta di
+`raccolta_grade_storico.py`, non l'`anyGame` usato per le partite future),
+5 giocatori/partite scelti dagli snapshot storici
+(`analisi_manager/dati/storico_grade_*.json`) con grade non nullo e
+scoreStatus FINAL, ripetuti il 09/08 con
+`analisi_manager/sonda_grade_passato_recupero.py`. Risultato: 5/5 righe
+rispondono, 5/5 con grade presente oggi, 5/5 identico allo storico
+(incluso un caso a 5 mesi di distanza, 09/03 -> 09/08). Nessun caso NULLO
+o diverso. Dettaglio in
+`analisi_manager/dati/sonda_grade_passato_recupero_20260809.json`.
+Campione piccolo (5 righe, un solo giorno): non dimostra che valga SEMPRE
+(vedi caso `andrew-vincent-rick` sotto, 1/729 grade cambiato), ma la
+domanda "sparisce dopo la partita?" ha risposta NO su questo campione.
+Costo di un'estrazione vera per riempire lo storico: 1 query per
+giocatore (stessa rotta), decide l'utente se/quando farla — NON avviata.
+
 **In attesa, non indagare**: L10 incoerente lato Sorare (caso Jeppe
 Erenbjerg, run146): il bot legge `lastTenPlayedAvgScore` e copia
 fedelmente l'API, non è un bug nostro. Se ricapita, attenzione: se l'arena
