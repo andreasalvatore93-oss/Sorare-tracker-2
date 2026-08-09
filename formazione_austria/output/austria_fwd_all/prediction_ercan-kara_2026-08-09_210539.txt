@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-09T21:05:39.360162Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) ercan-kara: 50 pt attesi (34-72)
+   ORDINAMENTO: 49.38
+   SQUADRA: rapid-wien-wien | AVVERSARIO: paide-tallinn
+======================================================================
+
+######################################################################
+# GIOCATORE: ercan-kara
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ercan-kara (squadra: rapid-wien-wien)
+Generato: 2026-08-09T21:05:39.358957Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 47
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 20
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-14 | DUU vs SCR | uefa-europa-conference-league | score=68.1 | peso=0.088
+  2025-08-17 | SCR vs ALT | austrian-bundesliga | score=34.9 | peso=0.099
+  2025-10-23 | SCR vs FIO | uefa-europa-conference-league | score=31.7 | peso=0.111
+  2025-10-26 | SVR vs SCR | austrian-bundesliga | score=62.0 | peso=0.125
+  2025-11-02 | SCR vs STU | austrian-bundesliga | score=60.0 | peso=0.140
+  2025-11-06 | SCR vs UCR | uefa-europa-conference-league | score=39.1 | peso=0.157
+  2025-11-23 | SCR vs GAK | austrian-bundesliga | score=69.0 | peso=0.177
+  2025-11-27 | RAK vs SCR | uefa-europa-conference-league | score=29.7 | peso=0.198
+  2025-12-11 | SCR vs OMO | uefa-europa-conference-league | score=66.9 | peso=0.223
+  2025-12-14 | BWL vs SCR | austrian-bundesliga | score=34.2 | peso=0.250
+  2025-12-18 | ZRI vs SCR | uefa-europa-conference-league | score=47.9 | peso=0.281
+  2026-02-21 | SCR vs WAC | austrian-bundesliga | score=31.4 | peso=0.315
+  2026-04-19 | HTB vs SCR | austrian-bundesliga | score=30.8 | peso=0.354
+  2026-04-22 | SCR vs HTB | austrian-bundesliga | score=51.2 | peso=0.397
+  2026-05-04 | ASK vs SCR | austrian-bundesliga | score=71.4 | peso=0.445
+  2026-05-17 | STU vs SCR | austrian-bundesliga | score=37.1 | peso=0.500
+  2026-05-22 | SVR vs SCR | austrian-bundesliga | score=44.5 | peso=0.561
+  2026-05-25 | SCR vs SVR | austrian-bundesliga | score=42.2 | peso=0.630
+  2026-07-23 | FSC vs SCR | uefa-europa-conference-league | score=33.8 | peso=0.707
+  2026-07-29 | SCR vs FSC | uefa-europa-conference-league | score=100.0 | peso=0.794
+  2026-08-02 | SCR vs ALT | austrian-bundesliga | score=32.1 | peso=0.891
+  2026-08-09 | SVR vs SCR | austrian-bundesliga | score=29.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 46.74
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=22): 49.58 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 43.06 | Punteggio complessivo (granulari) medio: 3.68 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 1.74 (delta -0.25) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 21.16
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.8 - 69.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.08 (differenza: +8.08)
+Media score in casa: 50.77 | Media score fuori casa: 44.45
+Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.1
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.009
+Fattore duelli (casa/trasferta, da dati reali): 1.007
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore trend (media ultime 5: 47.5 vs media 5 PRECEDENTI: 47.0): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-12T16:00
+Casa: SK Rapid Wien | Trasferta: Paide Linnameeskond
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.8 (range 33.9 - 72.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.06
+Punteggio REALE ottenuto in quella partita: 29.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -19.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.0    69.0    +24.0    15.9        NO
+   7        7      53.1    29.7    -23.4    17.0        NO
+   8        8      48.9    66.9    +18.0    18.5        SI
+   9        9      57.1    34.2    -22.9    18.6        NO
+  10       10      48.4    47.9     -0.5    18.6        SI
+  11       11      38.6    31.4     -7.2    17.1        SI
+  12       12      50.0    30.8    -19.2    17.3        NO
+  13       13      48.0    51.2     +3.2    17.2        SI
+  14       14      32.3    71.4    +39.1    16.2        NO
+  15       15      42.7    37.1     -5.6    18.3        SI
+  16       16      48.2    44.5     -3.7    17.6        SI
+  17       17      48.7    42.2     -6.5    16.5        SI
+  18       18      45.8    33.8    -12.0    15.5        SI
+  19       19      45.1   100.0    +54.9    15.3        NO
+  20       20      48.4    32.1    -16.3    25.2        SI
+  21       21      50.1    29.5    -20.6    24.7        SI
+
+MAE (errore assoluto medio): 17.32
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
