@@ -1362,6 +1362,59 @@ domanda "sparisce dopo la partita?" ha risposta NO su questo campione.
 Costo di un'estrazione vera per riempire lo storico: 1 query per
 giocatore (stessa rotta), decide l'utente se/quando farla — NON avviata.
 
+**13. DIAGNOSI 09/08 — perche' il 66% delle carte non ha il grade**
+(BRIEF_SONNET_PERCHE_MANCA_LETTERA, primo passo a rete spenta, zero
+query). Riscontrati al centesimo i numeri dell'orchestratore: 41 gruppi
+(lega,ruolo) con >=2 carte, 243 carte, 82 con grade (33,7%), 20 gruppi
+inerti (grade<2 -> z=0 fallback), 104 carte in quei gruppi. Su TUTTI i 55
+gruppi (anche quelli con 1 sola carta, dove il grade non serve comunque
+allo z-score): 257 carte, 86 con grade (33,5%), 171 senza.
+Incrocio col `consiglio_*.txt` piu' recente di ciascuna lega/ruolo: 163
+carte su 171 senza grade (95%) COMPAIONO nel consiglio, cioe' hanno una
+partita nella finestra della giornata. **Ipotesi (b) "niente partita"
+ESCLUSA per la stragrande maggioranza**: non e' un problema di finestra
+temporale.
+Dal codice (`discovery_fixture.py:298-345,443-479`, letto riga per riga,
+nessuna query): il grade arriva SOLO se una carta e' (i) nel bench di una
+delle tre leaderboard (All Star arena limited, All Star limited, Korea
+in-season limited pvp) **E** (ii) ha `eligiblePlayerGameScores` NON VUOTO
+per QUELLA leaderboard specifica (riga 461: il loop su
+`eligiblePlayerGameScores` semplicemente non produce nulla se e' vuoto,
+in silenzio, anche se la carta e' contata nel totale nodi bench). Sono
+due condizioni distinte: **IPOTESI PRINCIPALE CONFERMATA COME PLAUSIBILE
+DAL CODICE** (non da una query: nessun log/dump locale mostra i nodi
+bench veri), con una seconda faglia possibile scoperta leggendo il
+codice, non ipotizzata a priori.
+Indizio numerico che rafforza il sospetto sulla leaderboard Korea
+dedicata: **kleague ha 0 carte con grade su TUTTI e 4 i ruoli (38/38)**,
+nonostante il codice preveda ESPLICITAMENTE una leaderboard dedicata
+(`...-korea-in_season_korea_limited_pvp`) proprio per coprire quella
+competizione (commento riga 75-76: "korea in_season copre la competizione
+dedicata K League"). Zero su 38 con una leaderboard dedicata e' piu'
+estremo di quanto ci si aspetterebbe se fosse solo eleggibilita' bassa:
+IPOTESI AGGIUNTIVA (mia, da verificare, NON confermata) e' che lo slug di
+quella leaderboard, costruito concatenando il fixture_slug GLOBALE
+multi-lega (`f'{fixture_slug}-seasonal-korea-...'`), non corrisponda al
+vero fixture Korea in-season (che altrove nel repo ha una pipeline/slug
+dedicati, `inseason_kleague`), rendendo quella leaderboard sistematicamente
+vuota o inesistente per K League — un possibile bug di costruzione slug,
+non solo un limite di copertura. Mls invece HA copertura parziale (19/45
+con grade), quindi il canale FUNZIONA per almeno una lega: non e' un
+fallimento totale del meccanismo.
+**Non verificabile oltre senza query o log della run GitHub** (i log con
+le righe `[grade] <leaderboard>: N nodi bench` non sono in repo, girano
+solo su GH Actions): serve o (a) rilanciare la discovery con log visibile,
+o (b) 2-3 query mirate come la sonda del punto 12 ma sul bench delle tre
+leaderboard per un giocatore K League noto. NON avviato, serve il via
+libera dell'utente.
+**Valore di chiudere il buco**: se il canale coprisse tutte le carte
+eleggibili con partita in finestra, i 20 gruppi oggi inerti (104 carte)
+diventerebbero attivi con lo z-score del grade; il kleague da solo vale 4
+gruppi/38 carte su questi 20.
+File: `analisi_manager/diagnosi_buco_grade.py` (script),
+`analisi_manager/dati/diagnosi_buco_grade_20260809.json` (dump completo,
+tabella per lega/ruolo + dump di esempio mls/mid).
+
 **In attesa, non indagare**: L10 incoerente lato Sorare (caso Jeppe
 Erenbjerg, run146): il bot legge `lastTenPlayedAvgScore` e copia
 fedelmente l'API, non è un bug nostro. Se ricapita, attenzione: se l'arena
