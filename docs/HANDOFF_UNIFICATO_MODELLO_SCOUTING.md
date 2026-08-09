@@ -1237,53 +1237,69 @@ chiuso. **Aggiunto 09/08 sera**: filone "tabella fissa per lettera" testato
 pulito e CHIUSO (non batte lo z-score, §8bis); resta produzione lo z-score.
 Quello che segue è quello che resta, in ordine di interesse.
 
-**PRIORITARIO — CAPITANO SCELTO COL GRADE** (idea dell'utente 09/08,
-messa in cima su sua richiesta). Il capitano MOLTIPLICA il punteggio: +20%
-in arena, +50% fuori. Su una carta da 80 punti sono 16 o 40 punti su una
-decisione sola — nessun altro parametro del modello sposta tanto con una
-scelta singola.
-Oggi `pick_captain()` sceglie sull'atteso e **ignora completamente il
-grade**: nel backtest del §9 la fascia era assegnata col criterio del
-baseline in TUTTI i rami, quindi G non l'ha mai usata — è uno dei tre
-limiti che comprimevano il suo vantaggio misurato.
-Gerarchia proposta dall'utente: **fascia al grade più alto; a parità di
-grade, all'atteso più alto; se anche gli attesi sono vicini o uguali, si
-sceglie per ruolo.**
-Due effetti da misurare SEPARATAMENTE, perché sono meccanismi diversi:
-  - **protezione**: un capitano che non gioca non costa solo i suoi punti,
-    azzera il moltiplicatore. Il grade è bravissimo proprio a dire chi non
-    gioca (una F non gioca nel 61,5% dei casi, e il suo residuo è −31);
-  - **spinta**: a parità di titolarità, il grade ordina ancora (residui da
-    +1,4 di D a +3,9 di A) — ma qui i margini sono piccoli.
-Da sapere: sul capitano sono già state chiuse otto ipotesi (§5.3), ma
-**nessuna con il grade**, che è arrivato dopo. Non è una voce bruciata.
-Si misura sul backtest arene già rodato, come ramo a sé.
+**CHIUSO 09/08 notte — CAPITANO SCELTO COL GRADE: GRADE NON VINCE.**
+Testato da Sonnet con `analisi_manager/p21_capitano_grade_backtest.py`
+(nuovo file, riusa build_one_lineup_with_growth/S21.costruisci, nessuna
+modifica alla produzione). Gerarchia implementata: (1) fascia alla lettera
+più alta A>B>C>D>E; (2) a parità, atteso_cal più alto; (3) se gli attesi
+sono entro un margine M, si sceglie per ruolo; (4) le carte senza lettera
+(e le F, escluse dal livello 1) competono normalmente sull'atteso TRANNE
+quando la lettera migliore presente è A o B, che allora vince sempre
+(interpretazione dell'orchestratore sul caso non coperto letteralmente dal
+brief, annotata nel codice).
 
-**COME E SU QUALE ARCHIVIO — impostazione (orchestratore 09/08 sera; l'utente
-la conferma/rifinisce a inizio sessione PRIMA che si scriva il brief a Sonnet,
-perché voleva illustrarla lui).**
-- Archivio PULITO: lo stesso delle arene (`p20_g_odds_arene_backtest.costruisci_
-  unita` / `p20_gfisso_v2_backtest.py`, 90 unità manager×GW, 6 GW), popolazione
-  **P_noF** = pool senza carte F (= proxy titolarità ≥0,80, la sola che l'utente
-  schiera; sopra 0,80 il grade al lock = grade final, verificato live §8bis, quindi
-  archivio pulito senza leakage). Realizzato dalla cache game-log condivisa.
-- Regime: **allocazione** (pool>slot), perché lì c'è una scelta VERA di capitano fra
-  più candidati; in astensione la formazione è fissa e la fascia non si sceglie.
-- Confronto a parità di formazione e di arene: ramo BASELINE (`pick_captain()`
-  attuale, fascia sull'atteso) contro ramo GRADE (gerarchia dell'utente qui sopra:
-  grade più alto → a parità atteso più alto → a parità ruolo). Cambia SOLO chi porta
-  la fascia; tutto il resto identico. Metrica: essenze REALIZZATE, delta = grade −
-  baseline, bootstrap per manager IC95, ENTRAMBE le soglie, segno stabile per decidere.
-- Misurare SEPARATE **protezione** e **spinta** (già spiegate sopra). Attenzione al
-  leakage §18/S2: la protezione usa "chi non gioca", che nel grade FINAL è
-  informazione post-partita — misurabile pulita SOLO sulla popolazione ≥0,80 (dove
-  lock=final, §8bis); fuori di lì è un limite superiore, dirlo.
-- Vincoli di metodo (dal filone tabella, §21.7/§26): i due rami devono giocare lo
-  STESSO numero di arene (o confronto per-arena con n dichiarata); **stratificare per
-  tipo di arena** (cap220/cap260/uncapped/beginner/arene-paese) e NON dare un
-  verdetto che pesa insieme tipi diversi; separare pool=slot e pool>slot e riportare
-  anche la vista insieme; ogni n dichiarata riga per riga. Ispezionare i grezzi (non
-  il riassunto dell'esecutore) prima di chiudere.
+Numeri di controllo (§3 del brief) VERIFICATI identici: pool 7619 carte,
+con grade noto 7381, F 778, unità in allocazione prima del filtro F 53,
+scendono ad astensione dopo il filtro 2. Manager distinti/GW: vedi JSON
+(`controlli.manager_distinti`/`gw_distinte`). C1 (interruttore spento =
+identità alla baseline, bit per bit) **PASS** su tutte le 4 combinazioni
+popolazione×soglie. C2 (la fascia cambia carta davvero): 164-247 arene su
+460-564 a seconda del ramo — l'interruttore si muove, non è rumore.
+
+**Confronto (A) primario, P_noF (M=1, ordine FWD>MID>DEF>GK, di
+riferimento — griglia completa nel JSON):**
+| soglie | n | netto base | netto grade | delta | IC95 |
+|---|---|---|---|---|---|
+| vecchie | 460 | 40700 | 39250 | **−1450** | [−3850; +800] |
+| nuove | 476 | 44800 | 43300 | **−1500** | [−5050; +1600] |
+
+Delta negativo su entrambi i set soglie, IC95 attraversa lo zero in
+entrambi → **GRADE NON VINCE** per il criterio del brief (§6). Il segno è
+STABILE negativo su P_noF (non solo "non distinguibile da zero" positivo
+come ipotizzato dall'orchestratore in partenza — l'ipotesi era sbagliata
+nel segno, dichiarato come da regola CLAUDE.md).
+
+Su P_ALL (secondario, limite superiore per leakage) il segno si INVERTE:
++1150/+2450 essenze, ma anche lì IC95 attraversa lo zero. Non decisivo, e
+comunque non è la popolazione che decide (§6 del brief).
+
+Protezione (soglia reale≤1) quasi vuota su P_noF come previsto (n=2-5):
+nessun verdetto costruibile lì. Spinta (n=453-539, quasi tutto il
+campione) porta lo stesso delta negativo del totale: il danno non viene da
+mancata protezione, viene da come si sceglie fra capitani che GIOCANO
+entrambi — la distribuzione delle lettere lo conferma: il ramo GRADE
+concentra la fascia su A/B molto più del baseline (es. soglie vecchie:
+baseline A=245/B=118, grade A=350/B=103 — il grade sposta la fascia dalle
+carte C/D/E-ma-più-attese verso le A/B anche quando l'atteso reale
+(realizzato) di quelle A/B è più basso in quella giornata specifica).
+
+Griglia M×ordine ruoli (livello 3): scatta raramente a M piccolo (1-3
+arene a M=0) e sale con M (fino a ~200-250 a M=5), ma il SEGNO del delta
+resta negativo su P_noF per quasi tutta la griglia — la conclusione non
+dipende dalla scelta di M/ordine. Con M=5 e ordine MID>FWD>DEF>GK il delta
+si avvicina a zero (−400/−800) ma resta negativo: non decisivo, non
+inverte il verdetto.
+
+Confronto (B) secondario (ogni ramo decide libero, celle appaiate per
+conteggio arene): stesso segno negativo su P_noF (−1300/−2300), coerente
+col confronto (A).
+
+File prodotti: `analisi_manager/p21_capitano_grade_backtest.py`,
+`analisi_manager/p21_capitano_grade_out.json` (tutti i numeri, griglia
+completa), `analisi_manager/p21_capitano_grade_dump.txt` (un manager/gw
+completo, 20 arene, pool e capitani dei due rami).
+**Non applicare la gerarchia grade al capitano di produzione**
+(`pick_captain()` resta con l'atteso, invariato).
 
 **1. Quanto vale G sopra il filtro starting odds?** È la riserva più
 importante ed è aperta. Il grade è in larga parte un indicatore di
