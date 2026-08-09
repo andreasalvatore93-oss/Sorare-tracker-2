@@ -1,0 +1,134 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-09T21:05:35.131134Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) miguel-rene-ortega-rodriguez: 49 pt attesi (32-70)
+   SQUADRA: deportes-tolima-ibague | AVVERSARIO: independiente-del-valle-sangolqui
+======================================================================
+
+######################################################################
+# GIOCATORE: miguel-rene-ortega-rodriguez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: miguel-rene-ortega-rodriguez (squadra: deportes-tolima-ibague)
+Generato: 2026-08-09T21:05:35.130393Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 37
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: conmebol-libertadores (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | EQU vs LLA | primera-a | score=37.7 | peso=0.035
+  2025-08-23 | LLA vs PAS | primera-a | score=33.3 | peso=0.039
+  2025-08-29 | JUN vs LLA | primera-a | score=22.8 | peso=0.044
+  2025-09-06 | LLA vs TOL | primera-a | score=62.6 | peso=0.050
+  2025-09-14 | PER vs LLA | primera-a | score=71.7 | peso=0.056
+  2025-09-20 | LLA vs ADR | primera-a | score=72.6 | peso=0.062
+  2025-10-04 | LLA vs FOR | primera-a | score=67.5 | peso=0.070
+  2025-10-12 | SFE vs LLA | primera-a | score=60.4 | peso=0.079
+  2025-10-19 | LLA vs ONC | primera-a | score=63.4 | peso=0.088
+  2025-10-25 | BUC vs LLA | primera-a | score=56.7 | peso=0.099
+  2025-10-31 | LLA vs NAC | primera-a | score=38.3 | peso=0.111
+  2025-11-08 | TOL vs LLA | primera-a | score=26.4 | peso=0.125
+  2026-01-24 | LLA vs BUC | primera-a | score=54.9 | peso=0.140
+  2026-01-27 | FOR vs LLA | primera-a | score=43.9 | peso=0.157
+  2026-02-02 | LLA vs ADR | primera-a | score=50.8 | peso=0.177
+  2026-02-07 | TOL vs LLA | primera-a | score=77.0 | peso=0.198
+  2026-02-10 | LLA vs PAS | primera-a | score=47.6 | peso=0.223
+  2026-02-14 | MIL vs LLA | primera-a | score=45.4 | peso=0.250
+  2026-02-20 | LLA vs MED | primera-a | score=32.8 | peso=0.281
+  2026-03-05 | LLA vs EQU | primera-a | score=35.3 | peso=0.315
+  2026-03-09 | LLA vs JAG | primera-a | score=75.7 | peso=0.354
+  2026-03-14 | NAC vs LLA | primera-a | score=29.6 | peso=0.397
+  2026-03-17 | LLA vs CUC | primera-a | score=31.6 | peso=0.445
+  2026-03-26 | AME vs LLA | primera-a | score=77.2 | peso=0.500
+  2026-03-30 | LLA vs ONC | primera-a | score=35.5 | peso=0.561
+  2026-04-01 | SFE vs LLA | primera-a | score=67.6 | peso=0.630
+  2026-07-26 | TOL vs JUN | primera-a | score=43.4 | peso=0.707
+  2026-08-01 | PET vs TOL | primera-a | score=39.7 | peso=0.794
+  2026-08-04 | TOL vs MED | primera-a | score=27.8 | peso=0.891
+  2026-08-08 | TOL vs EQU | primera-a | score=47.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 46.45
+  di cui Punteggio decisivo (level_score) medio: 40.65 | Punteggio complessivo (granulari) medio: 5.80 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 40.32 (delta -0.33 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -1.02, delta avversario -2.65 | Possesso condizionato per venue: delta +0.26 | Goalkeeping condizionato per venue: delta +0.12 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 15.90
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.6 - 67.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.38 (differenza: +1.52)
+Media score in casa: 44.34 | Media score fuori casa: 51.15
+Fattore casa/trasferta applicato: 0.979 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.9
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.992 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.001
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.000
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.997
+Tasso storico clean sheet (porta inviolata nei primi 60'): 26.7% (bonus atteso incorporato nella media pesata: ~6.7pt)
+Fattore trend (media ultime 5: 43.9 vs media 5 PRECEDENTI: 49.2): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-12T00:30
+Casa: Club Deportes Tolima SA | Trasferta: CSD Independiente del Valle
+Competizione: conmebol-libertadores
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.9 (range 32.1 - 70.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.37
+Punteggio REALE ottenuto in quella partita: 47.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +0.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      62.6    67.5     +4.9    22.7        SI
+   7        7      62.6    60.4     -2.2    21.4        SI
+   8        8      62.6    63.4     +0.8    19.4        SI
+   9        9      62.6    56.7     -5.9    17.9        SI
+  10       10      62.6    38.3    -24.3    16.5        NO
+  11       11      54.8    26.4    -28.4    17.2        NO
+  12       12      71.3    54.9    -16.4    19.6        SI
+  13       13      72.1    43.9    -28.2    18.3        NO
+  14       14      70.7    50.8    -19.9    17.2        NO
+  15       15      29.9    77.0    +47.1    16.0        NO
+  16       16      58.9    47.6    -11.3    18.2        SI
+  17       17      58.1    45.4    -12.7    17.1        SI
+  18       18      57.0    32.8    -24.2    16.3        NO
+  19       19      54.4    35.3    -19.1    16.9        NO
+  20       20      52.5    75.7    +23.2    16.7        NO
+  21       21      56.2    29.6    -26.6    18.8        NO
+  22       22      53.4    31.6    -21.8    19.4        NO
+  23       23      51.2    77.2    +26.0    19.3        NO
+  24       24      55.0    35.5    -19.5    21.4        SI
+  25       25      53.2    67.6    +14.4    20.8        SI
+  26       26      64.9    43.4    -21.5    20.8        NO
+  27       27      65.7    39.7    -26.0    19.7        NO
+  28       28      36.2    27.8     -8.4    19.0        SI
+  29       29      42.9    47.1     +4.2    19.4        SI
+
+MAE (errore assoluto medio): 18.21
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 45.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
