@@ -1,0 +1,294 @@
+BRIEF PER SONNET — CAPITANO SCELTO COL GRADE (backtest arene)
+Scritto dall'orchestratore il 09/08/2026 (Roma). SOLO MISURA.
+NESSUNA MODIFICA ALLA PRODUZIONE. NESSUNA QUERY SORARE SENZA IL VIA
+DELL'UTENTE. NESSUNA RUN GITHUB.
+
+======================================================================
+0. COSA LEGGERE PRIMA (in quest'ordine)
+======================================================================
+1) CLAUDE.md (radice del repo) — regole vincolanti: divieto di
+   allucinazioni, obbligo di dump leggibile, pool vs slot, verifica
+   dell'interruttore, come si riporta un esito.
+2) docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md — sezioni §5.3 (capitano:
+   otto ipotesi gia' chiuse, NESSUNA con il grade), §8bis (il grade e' in
+   larga parte un indicatore di titolarita'), §10bis (voce "PRIORITARIO —
+   CAPITANO SCELTO COL GRADE"). Leggilo come INDIZIO, non come prova: la
+   fonte di verita' e' il codice.
+3) IL CODICE, con le righe (queste le ho verificate io il 09/08):
+   - analisi_manager/p12_backtest_formazione_grade.py:73-86
+     `capitano_atteso(formazione)` — SCEGLIE SU `atteso_cal`, che e'
+     SEMPRE `_cal` (l'atteso calibrato di baseline) qualunque sia il ramo
+     in corso. E' il motivo per cui nel backtest del §9 la fascia era
+     identica in tutti i rami. `realizzato()` aggiunge (1.2-1.0)*cap.
+   - analisi_manager/p20_g_odds_arene_backtest.py:190-194
+     `punti_da_righe(rows, cap_idx, campo)` — somma + 0.2*capitano.
+   - analisi_manager/p20_g_odds_arene_backtest.py:236-314
+     `esegui_allocazione(...)` — il ramo che ci interessa. Righe chiave:
+       278  cap_row = S21.capitano_atteso(formazione)
+       284-285 atteso_sum = somma('atteso') + 0.2*cap_row['atteso']
+       286-288 se atteso_sum < soglia_dec -> NON entra e si ferma
+       296-297 real_points = somma('reale') + 0.2*cap_row['reale']
+     Nota: `cap_row` e' scelto su `atteso_cal`, ma poi entra
+     nell'`atteso_sum` col campo del ramo (`atteso`). Cambiare regola di
+     capitano cambia quindi ANCHE la decisione di entrare: e' il
+     confondimento che il punto 4 di questo brief neutralizza.
+   - analisi_manager/p20_gfisso_v2_backtest.py:63-88
+     `costruisci_popolazione_noF(unita)` — costruisce P_noF (pool senza
+     carte F) e ricalcola lo z-score del grade sul pool ridotto
+     (`_combinato_noF`). Da RIUSARE cosi' com'e', non riscrivere.
+   - analisi_manager/p13_backtest_gw_crowss.py:187-232
+     `costruisci_pool_rows` — da dove vengono i campi delle righe:
+     `_grade` (NUMERO 6..1), `_cal`, `_zgrade`, `_combinato`, `reale`
+     (punteggio GREZZO letto dalla cache game-log condivisa, mai
+     ricostruito dividendo per il bonus), `codice` (ruolo della CARTA).
+   - analisi_manager/p20_gfisso_backtest.py:34
+     `NUM_LETTERA` = mappa 6->A ... 1->F.
+
+======================================================================
+1. LA DOMANDA (una sola)
+======================================================================
+Assegnare la fascia di capitano col GRADE invece che con l'atteso fa
+guadagnare essenze nette realizzate, a parita' di formazione e di arene?
+
+Gerarchia dettata dall'utente (09/08), da implementare alla lettera:
+  (1) fascia alla LETTERA piu' alta (A > B > C > D > E);
+  (2) a parita' di lettera, ATTESO piu' alto;
+  (3) se anche gli attesi sono "vicini o uguali" (margine M, vedi §4),
+      si sceglie per RUOLO.
+  (4) carte SENZA lettera: normalmente competono sull'atteso come le
+      altre; MA se fra le carte con lettera la migliore e' una A o una B,
+      la fascia va a quella (A prima di B) e le carte senza lettera non
+      la prendono. Se ci sono piu' A (o piu' B) fra loro si applica il
+      livello (2) e poi il (3).
+  [Questa e' la lettura dell'orchestratore della regola dell'utente sulle
+   carte neutre. Se implementandola trovi un caso che la regola non copre,
+   NON inventare: annotalo nell'esito e usa il livello (2).]
+
+L'ordine dei ruoli al livello (3) e il valore di M NON sono decisi:
+l'utente ha detto esplicitamente "scopriamolo con il test". Vedi §4.
+
+======================================================================
+2. L'IPOTESI DELL'ORCHESTRATORE, PRIMA DEI NUMERI
+======================================================================
+Mi aspetto un guadagno PICCOLO e forse non distinguibile da zero sulla
+popolazione P_noF, per un motivo strutturale: P_noF esclude gia' le carte
+F, cioe' proprio quelle che il grade e' bravissimo a scartare. Quindi
+l'effetto "protezione" (non dare la fascia a chi non gioca) e' in gran
+parte gia' incassato dalla costruzione della popolazione, e resta solo la
+"spinta" (residui da +1,26 di D a +3,87 di A sulla tabella empirica), che
+su una sola carta moltiplicata per 0,2 vale pochi decimi di punto per
+arena.
+Mi aspetto invece un effetto piu' grande e visibile su P_ALL (pool con le
+F dentro), ma li' il numero e' un LIMITE SUPERIORE, non una misura pulita
+(vedi §5, leakage).
+SE ESCE IL CONTRARIO, E' UN RISULTATO VALIDO E VA SCRITTO. Se esce zero
+secco, si scrive zero secco: non cercare la variante che fa vincere il
+grade.
+
+======================================================================
+3. IL CAMPIONE E I NUMERI DI CONTROLLO
+======================================================================
+Archivio: lo stesso gia' rodato per le arene. Si costruisce con
+`p20_g_odds_arene_backtest.costruisci_unita(...)` esattamente come fa
+`p20_gfisso_v2_backtest.main()` (righe 198-220): stessa `carica_classifiche`,
+stessa `opportunita_gw_tipo`, stessa `costruisci_popolazione_noF`.
+
+NUMERI DI CONTROLLO che devi ritrovare (li ho letti io il 09/08 da
+analisi_manager/p20_gfisso_v2_backtest_out.json, campo "controlli"):
+    pool totale ................................ 7619 carte
+    di cui con grade noto ...................... 7381 (96,9%)
+    di cui F ................................... 778
+    unita' in regime allocazione (prima del filtro F) ... 53
+    unita' che scendono ad astensione dopo il filtro F ... 2
+SE NON RITROVI ESATTAMENTE QUESTI NUMERI, FERMATI E DILLO, NON PROSEGUIRE.
+
+Dichiara inoltre nell'esito (li stampa lo script, non sono nel JSON
+vecchio, quindi li verifichi tu): numero di unita' totali (manager x gw),
+numero di manager distinti, numero di GW distinte, e la ripartizione
+astensione/allocazione. L'handoff dice "90 unita', 6 GW": trattalo come
+ipotesi da verificare, non come fatto.
+
+REGIME: si misura SOLO in ALLOCAZIONE (pool > slot). In astensione la
+formazione e' quella reale del manager e la fascia e' gia' assegnata dal
+manager: non c'e' nessuna scelta di capitano da misurare. Dichiara, per
+le unita' di allocazione, quante carte ha il pool contro quanti slot
+vanno riempiti (regola CLAUDE.md: se il pool non e' piu' grande degli
+slot, il test e' nullo per costruzione).
+
+POPOLAZIONE PRIMARIA: P_noF (pool senza carte F, proxy di "titolarita'
+>= 0,80", la sola che l'utente schiera davvero). Il campo atteso del ramo
+e' `_combinato_noF`, come in p20_gfisso_v2.
+POPOLAZIONE SECONDARIA: P_ALL (campo `_combinato`), riportata a parte e
+dichiarata come limite superiore.
+
+======================================================================
+4. IL METODO
+======================================================================
+Scrivi un file NUOVO: analisi_manager/p21_capitano_grade_backtest.py.
+NON modificare p20_g_odds_arene_backtest.py, p20_gfisso_v2_backtest.py,
+p12_backtest_formazione_grade.py: importali e riusali (come fa
+p20_gfisso_v2_backtest.py alle righe 28-31). Le formazioni si costruiscono
+SOLO con `build_one_lineup_with_growth` via `S21.costruisci` /
+`esegui_allocazione` — mai con un knapsack scritto per l'occasione (D7 di
+CLAUDE.md: il ruolo e' della carta, e il generatore e' l'unico che
+garantisce niente doppioni di giocatore).
+
+DUE RAMI, stessa formazione, cambia SOLO chi porta la fascia:
+  - BASELINE: `capitano_atteso()` attuale (sceglie su `atteso_cal`).
+  - GRADE: la gerarchia del §1.
+
+IMPORTANTE — su quale atteso lavora il livello (2) del ramo GRADE:
+usa `atteso_cal`, LO STESSO CAMPO del baseline. Cosi' l'unica differenza
+fra i due rami e' che la lettera viene prima; se usassi il campo del ramo
+(`atteso`) mescoleresti due cambiamenti in un solo delta e il numero non
+direbbe piu' di chi e' il merito.
+
+M (margine del livello 3) e ORDINE DEI RUOLI: non si sceglie a priori, si
+misura. Fai girare M su una griglia {0 (pareggio esatto), 0,5, 1, 2, 5}
+punti attesi, e per ciascun M riporta:
+  - quante volte il livello (3) e' davvero SCATTATO (cioe' quante arene
+    hanno avuto due o piu' candidati a pari lettera e con |delta atteso|
+    <= M): e' il numero che dice se l'ordine dei ruoli conta qualcosa;
+  - il delta di essenze per i due ordini FWD>MID>DEF>GK e MID>FWD>DEF>GK.
+Se il livello (3) scatta meno di 30 volte, NON dare un verdetto
+sull'ordine dei ruoli: riporta la n e scrivi "non decidibile su questo
+campione". L'utente si aspetta che sia un evento raro: se lo e' davvero,
+dirlo con il numero e' gia' la risposta.
+
+DUE CONFRONTI SEPARATI (l'utente li ha chiesti entrambi):
+ (A) PRIMARIO — decisione d'ingresso CONGELATA sul baseline.
+     Le arene giocate, le formazioni e il consumo del pool sono quelli
+     decisi dal ramo BASELINE (`atteso_sum` calcolato col capitano del
+     baseline, righe 284-288). Il ramo GRADE eredita le stesse identiche
+     formazioni e le stesse identiche arene, e cambia solo `cap_row` nel
+     calcolo di `real_points` (righe 296-297). Le due n sono uguali per
+     costruzione. Il delta misura il capitano e nient'altro.
+ (B) SECONDARIO — ogni ramo decide libero (ognuno col proprio
+     `atteso_sum`). Qui i due rami possono giocare un numero diverso di
+     arene: si misurano SOLO le celle (manager, gw, gruppo) in cui i due
+     rami hanno giocato lo STESSO numero di arene. Dichiara quante celle
+     hai tenuto e quante scartate, e ricorda nell'esito che questo
+     confronto e' meno attendibile del (A).
+
+PROTEZIONE e SPINTA, misurate SEPARATAMENTE (sono meccanismi diversi):
+  - PROTEZIONE = sottoinsieme delle arene in cui il capitano del BASELINE
+    non ha giocato. Definizione operativa di "non ha giocato": punteggio
+    grezzo `reale` < 20. Deriva da una regola di gioco dichiarata
+    dall'utente ("chi entra anche un solo minuto prende ~35 punti"), non
+    da una misura: percio' riporta la stessa cifra anche con soglia < 10 e
+    < 30 e dichiara se il verdetto cambia.
+  - SPINTA = sottoinsieme delle arene in cui HANNO GIOCATO entrambi i
+    capitani (baseline e grade), cioe' `reale` >= 20 per tutti e due.
+  - Le due n devono sommare al totale meno il caso "gioca il grade, non il
+    baseline": riporta anche quello, separato.
+  - Su P_noF la protezione e' quasi vuota per costruzione (le F sono gia'
+    fuori): se la n e' piccola, dillo e non ci costruire sopra un verdetto.
+    Su P_ALL la protezione e' misurabile ma e' un LIMITE SUPERIORE, perche'
+    "chi non gioca" nel grade FINAL e' informazione post-partita (leakage
+    §18/S2 dell'handoff). Scrivilo esplicitamente accanto al numero.
+
+======================================================================
+5. I CONTROLLI OBBLIGATORI, PRIMA DEI NUMERI DI SINTESI
+======================================================================
+C1 INTERRUTTORE SPENTO = IDENTITA'. Con la regola grade disattivata
+   (flag off) il ramo GRADE deve produrre numeri IDENTICI al baseline,
+   bit per bit (stesso `real_points`, stesso rank, stesso premio, su
+   tutte le righe). Se non lo sono, c'e' un bug: fermati.
+C2 INTERRUTTORE ACCESO = SI MUOVE. Conta in quante arene la fascia
+   CAMBIA DAVVERO carta fra i due rami, e su quante arene totali. Se e'
+   ~0, il test misurerebbe rumore: fermati e dillo. Riporta anche la
+   distribuzione delle lettere dei capitani nei due rami (quante A, B,
+   C, D, E, senza-lettera portano la fascia in ciascun ramo): e' il
+   controllo piu' leggibile che la regola stia facendo quello che dice.
+C3 POOL vs SLOT: per le unita' di allocazione, carte disponibili contro
+   slot da riempire. Se non c'e' margine, non c'e' selezione: dillo.
+C4 A/A: due run identiche devono dare numeri identici. Il §9 dell'handoff
+   segnala non-determinismo da PYTHONHASHSEED nella fase opzionale del
+   generatore: fissa il seed (`PYTHONHASHSEED=0`) e DICHIARA di averlo
+   fatto. Se le due run non coincidono, riportalo, non nasconderlo.
+C5 DUMP LEGGIBILE, consegnato INSIEME ai numeri (non su richiesta):
+   analisi_manager/p21_capitano_grade_dump.txt, un manager e una giornata
+   completi, con:
+     - il pool: nome, slug, ruolo, lega, lettera, `_cal`, `reale`;
+     - arena per arena: le 5 carte scelte, chi porta la fascia nel ramo
+       BASELINE e chi nel ramo GRADE, il punteggio realizzato dei due
+       rami, rank e premio dei due rami.
+
+======================================================================
+6. COSA CONSEGNARE (ogni numero con la sua n)
+======================================================================
+Metrica che decide: ESSENZE NETTE REALIZZATE (premio_std - costo, come
+alle righe 307-310 di p20_g_odds_arene_backtest.py).
+Delta = ramo GRADE - ramo BASELINE.
+Incertezza: bootstrap con cluster sul MANAGER (non sulla singola
+formazione: le arene dello stesso manager non sono indipendenti), 3000
+ricampionamenti, IC95. Puoi riusare lo schema di
+p20_gfisso_v2_backtest.bootstrap_delta_astensione (righe 144-163),
+adattato al confronto appaiato per arena.
+
+Da riportare, sempre con n dichiarata riga per riga:
+  - delta totale su P_noF, confronto (A), per ENTRAMBI i set di soglie
+    (`P20G.SOGLIE_VECCHIE` e `P20G.SOGLIE_NUOVE`);
+  - stesso su confronto (B), con celle tenute/scartate;
+  - stesso su P_ALL (secondario, dichiarato come limite superiore);
+  - stratificazione per TIPO DI ARENA (cap260 / cap220 / uncapped /
+    beginner / arena_paese: usa CAP_TYPE_LABEL di
+    p20_gfisso_v2_backtest.py righe 45-48). NON dare un verdetto che pesa
+    insieme tipi diversi;
+  - protezione / spinta / caso misto, separati, con le tre soglie DNP;
+  - griglia di M e conteggio degli scatti del livello (3), con i due
+    ordini di ruolo;
+  - distribuzione delle lettere dei capitani nei due rami (C2).
+
+CRITERIO DI DECISIONE (non negoziabile, dal filone tabella): il grade
+vince solo se, sul confronto (A) e sulla popolazione P_noF, il delta e'
+POSITIVO e l'estremo basso dell'IC95 e' SOPRA ZERO su ENTRAMBI i set di
+soglie. Se passa su un set solo, la risposta e' "non vince".
+
+======================================================================
+7. COSA NON FARE
+======================================================================
+- Non toccare la produzione. `pick_captain()` in formazione_*/ e
+  `capitano_atteso()` in p12 NON si modificano.
+- Non cambiare nessun default, nessuna soglia, nessun parametro.
+- Nessuna query all'API Sorare e nessuna run GitHub senza il via
+  esplicito dell'utente. Tutti i dati servono sono gia' in repo.
+- Niente stime a spanne: se un numero non l'hai misurato, scrivi "non
+  misurato".
+- Non nascondere i risultati nulli o negativi: sono il risultato.
+- Se trovi per strada un difetto (un bug, un buco di copertura), NON
+  sistemarlo: annotalo in fondo all'esito e prosegui.
+
+======================================================================
+8. DOVE SCRIVERE L'ESITO
+======================================================================
+In coda a docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md, come nuova
+sottosezione del filone grade (NON creare un file di handoff nuovo: il
+filone esiste gia'). Aggiorna anche la voce "PRIORITARIO — CAPITANO
+SCELTO COL GRADE" del §10bis con l'esito, invece di lasciarla scritta
+come se il test non fosse stato fatto.
+File tuoi da committare (solo questi):
+  analisi_manager/p21_capitano_grade_backtest.py
+  analisi_manager/p21_capitano_grade_out.json
+  analisi_manager/p21_capitano_grade_dump.txt
+  docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md
+Se vedi altri file modificati nella working tree, NON toccarli e
+segnalali. Committa e FAI PUSH (un lavoro non pushato non esiste per le
+altre sessioni).
+
+All'utente riferisci in CINQUE RIGHE: verdetto secco (vince / non vince /
+non decidibile), il delta con la sua n e l'IC95 sul confronto (A) in
+P_noF, quante volte la fascia cambia davvero, e il percorso dei file. Il
+resto sta nel file.
+
+======================================================================
+9. APPENDICE — una domanda dell'utente, da NON eseguire senza il suo via
+======================================================================
+L'utente ha chiesto se il buco delle carte senza lettera si possa coprire
+a monte. Dato misurato: sull'archivio arene il buco e' il 3,1% (238 carte
+su 7619), non il 23% citato nell'handoff — quel 23% riguarda un'altra
+cosa (lo z-score del grade ignorato quando il gruppo lega+ruolo ha meno
+di 2 carte con grade, p13_backtest_gw_crowss.py:221-229), non la lettera.
+Resta aperto se il grade di una partita GIA' GIOCATA sia ancora servito
+dall'API (recuperabile a posteriori) oppure no. E' UNA QUERY SOLA, ma
+NON farla senza che l'utente dica di si'.
