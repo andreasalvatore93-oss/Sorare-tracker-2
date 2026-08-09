@@ -1498,6 +1498,69 @@ nessuno dove non regge**. Tre candidate, nessuna misurata:
 Sulla produzione di oggi le tre varianti porterebbero le carte col voto
 attivo da **63 su 86** a **86 su 86**.
 
+**MISURATO 09/08 notte (esecutore Sonnet, `analisi_manager/p22_copertura_grade.py`,
+nuovo file, riusa senza modificare P20G/GF2/GF1/S21, nessuna query, nessuna
+run GitHub).** Controlli C0 IDENTICI al brief (pool 7619, con grade 7381, F
+778, unita' allocazione 53, scendono 2). C1 (interruttore spento=identita')
+e C5 (A/A) **PASS**, ma solo dopo aver corretto un bug reale nel primo giro:
+la prima versione raggruppava (b)/(c) su TUTTO l'archivio appiattito invece
+che unita' per unita' (manager/gw), mischiando i pool di giornate diverse
+nello stesso gruppo — il ricontrollo contro produzione dava max_diff=21.96
+invece di 0. Corretto (gruppo sempre dentro la singola unita', come fa la
+produzione), poi max_diff=0.0000000000 su entrambe le popolazioni.
+
+COPERTURA (carte col voto che ricevono uno spostamento diverso da zero,
+P_noF, 6603 carte con lettera):
+| variante | non-zero | a zero | perche' |
+|---|---|---|---|
+| produzione (z-score, gruppo lega+ruolo) | 5085 (77%) | 1518 | 712 gruppo_1_lettera, 642 lettere_uguali, 164 z legittimo=0 |
+| (a) tabella fissa pura | 6603 (100%) | 0 | — |
+| (b) ibrida (z-score + fallback tabella) | 6602 (99,98%) | 1 | solo z legittimo=0 (nessuna esclusione residua) |
+| (c) gruppo largo (ruolo, tutte le leghe, stessa unita') | 6483 (98%) | 120 | 48 z=0 legittimo, 35 lettere_uguali, 37 gruppo_1_lettera |
+
+(b) elimina la copertura mancante quasi del tutto (164 residui sono z=0
+legittimi, non esclusioni: la carta e' esattamente sulla media del suo
+gruppo). (c) migliora ma non chiude (restano gruppi piccoli anche allargando
+alla lega intera, dentro la stessa unita' manager/gw).
+
+ESSENZE NETTE, delta = variante−produzione, bootstrap IC95 cluster-manager,
+criterio del brief (delta>0 e IC95>0 su ENTRAMBI i set soglie, STESSO
+regime):
+
+P_noF (primaria), astensione: (b) vecchie +2550 IC95[-250;+6600], nuove
++450 IC95[-1900;+3200] — non passa. (c) vecchie +1300 IC95[-800;+3800],
+nuove -1000 IC95[-4600;+2900] — non passa.
+P_noF, allocazione: (b) vecchie +1200 IC95[-20000;+21850], nuove -1950
+IC95[-20000;+15450] — non passa. (c) vecchie -13400 IC95[-30400;+2300],
+nuove -8900 IC95[-23800;+3750] — non passa.
+P_ALL (secondaria, limite superiore per leakage F), astensione: entrambe
+non passano (IC95 sempre a cavallo di zero). Allocazione: (b) vecchie
++15950 IC95[+300;+32550] passa da sola, ma nuove +12650 IC95[-4750;+29600]
+no — criterio pieno non soddisfatto (serve ENTRAMBI i set soglie).
+
+**VERDETTO: NE' (b) NE' (c) passa il criterio pieno, su nessuna
+popolazione, in nessun regime.** Nessuna e' peggio della produzione in modo
+sistematico (i segni sono quasi tutti positivi per (b), misti per (c)), ma
+gli intervalli sono troppo larghi rispetto al campione (n=111-154 astensione,
+460-572 allocazione) per decidere. La copertura si allarga (63/86 -> quasi
+100% dei casi non gia' coperti da produzione) ma **non si dimostra che
+paghi**: e' un'informazione, non un fallimento (come da §2 del brief).
+Placebo (produzione G contro nessun grade A, riusato da
+`p20_g_odds_arene_backtest_out.json`, non ricalcolato): G batte A su
+entrambi i regimi ed entrambi i set soglie — l'archivio distingue qualcosa,
+il problema e' la potenza statistica per differenziare fra formule di G,
+non l'assenza di segnale.
+
+File: `analisi_manager/p22_copertura_grade.py`,
+`analisi_manager/p22_copertura_grade_out.json` (tutti i numeri, stratificati
+per cap_type),
+`analisi_manager/p22_copertura_grade_dump.txt` (un manager/gw, 78 carte,
+pool completo con PROD/B/C affiancati e la ragione dello zero, piu' un
+gruppo di esempio a z=0 in produzione).
+**Nessuna modifica alla produzione. Da decidere: (b) resta la piu' pulita
+concettualmente (tocca solo i casi oggi buttati) ma serve piu' campione
+(altre GW) prima di poterla applicare — non e' una decisione per stanotte.**
+
 **In attesa, non indagare**: L10 incoerente lato Sorare (caso Jeppe
 Erenbjerg, run146): il bot legge `lastTenPlayedAvgScore` e copia
 fedelmente l'API, non è un bug nostro. Se ricapita, attenzione: se l'arena

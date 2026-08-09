@@ -1,0 +1,999 @@
+{
+ "controlli": {
+  "pool_totale": 7619,
+  "con_grade": 7381,
+  "F": 778,
+  "unita_allocazione_prima_filtro_F": 53,
+  "scendono_ad_astensione": 2
+ },
+ "popolazioni": {
+  "P_ALL": {
+   "copertura_produzione": {
+    "con_lettera": 7381,
+    "spostamento_non_zero": 5896,
+    "a_zero": 1485,
+    "a_zero_per_ragione": {
+     "gruppo_1_lettera": 741,
+     "lettere_uguali": 599,
+     "zscore": 145
+    }
+   },
+   "copertura_produzione_max_diff_check": 0.0,
+   "varianti": {
+    "a_tabella_fissa_empirica": {
+     "copertura": {
+      "con_lettera": 7381,
+      "spostamento_non_zero": 7381,
+      "a_zero": 0,
+      "a_zero_per_ragione": {}
+     },
+     "essenze": "vedi p20_gfisso_v2_backtest_out.json (gia misurato, non riprodotto)"
+    },
+    "b_ibrida": {
+     "copertura": {
+      "con_lettera": 7381,
+      "spostamento_non_zero": 7236,
+      "a_zero": 145,
+      "a_zero_per_ragione": {
+       "zscore": 145
+      }
+     },
+     "essenze": {
+      "vecchio": {
+       "astensione": {
+        "n": 154,
+        "netto_base": -2200.0,
+        "netto_variante": 100.0,
+        "delta": 2300.0,
+        "bootstrap_ic95": [
+         -1600.0,
+         7700.0
+        ],
+        "per_cap_type_base": {
+         "cap260": {
+          "n": 62,
+          "tot": -1200.0
+         },
+         "cap220": {
+          "n": 38,
+          "tot": -200.0
+         },
+         "uncapped": {
+          "n": 7,
+          "tot": -600.0
+         },
+         "arena_paese": {
+          "n": 11,
+          "tot": -1000.0
+         },
+         "beginner": {
+          "n": 36,
+          "tot": 800.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap260": {
+          "n": 62,
+          "tot": 200.0
+         },
+         "cap220": {
+          "n": 38,
+          "tot": -400.0
+         },
+         "uncapped": {
+          "n": 7,
+          "tot": 500.0
+         },
+         "arena_paese": {
+          "n": 11,
+          "tot": -700.0
+         },
+         "beginner": {
+          "n": 36,
+          "tot": 500.0
+         }
+        }
+       },
+       "allocazione": {
+        "n_base": 547,
+        "n_variante": 558,
+        "netto_base": 12100,
+        "netto_variante": 28050,
+        "delta": 15950,
+        "bootstrap_ic95": [
+         300.0,
+         32550.0
+        ],
+        "zero_ripetuti_variante": true,
+        "per_cap_type_base": {
+         "cap260": {
+          "n": 340,
+          "tot": 16100.0
+         },
+         "beginner": {
+          "n": 138,
+          "tot": -2500.0
+         },
+         "cap220": {
+          "n": 25,
+          "tot": -3400.0
+         },
+         "uncapped": {
+          "n": 42,
+          "tot": 1700.0
+         },
+         "arena_paese": {
+          "n": 2,
+          "tot": 200.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap260": {
+          "n": 340,
+          "tot": 29000.0
+         },
+         "uncapped": {
+          "n": 52,
+          "tot": 2300.0
+         },
+         "beginner": {
+          "n": 136,
+          "tot": -2650.0
+         },
+         "cap220": {
+          "n": 29,
+          "tot": -300.0
+         },
+         "arena_paese": {
+          "n": 1,
+          "tot": -300.0
+         }
+        }
+       }
+      },
+      "nuovo": {
+       "astensione": {
+        "n": 154,
+        "netto_base": 300.0,
+        "netto_variante": 1400.0,
+        "delta": 1100.0,
+        "bootstrap_ic95": [
+         -1800.0,
+         4400.0
+        ],
+        "per_cap_type_base": {
+         "cap260": {
+          "n": 62,
+          "tot": -1900.0
+         },
+         "cap220": {
+          "n": 38,
+          "tot": 800.0
+         },
+         "uncapped": {
+          "n": 7,
+          "tot": 500.0
+         },
+         "arena_paese": {
+          "n": 11,
+          "tot": 200.0
+         },
+         "beginner": {
+          "n": 36,
+          "tot": 700.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap260": {
+          "n": 62,
+          "tot": -200.0
+         },
+         "cap220": {
+          "n": 38,
+          "tot": 700.0
+         },
+         "uncapped": {
+          "n": 7,
+          "tot": 500.0
+         },
+         "arena_paese": {
+          "n": 11,
+          "tot": -100.0
+         },
+         "beginner": {
+          "n": 36,
+          "tot": 500.0
+         }
+        }
+       },
+       "allocazione": {
+        "n_base": 564,
+        "n_variante": 572,
+        "netto_base": 16700,
+        "netto_variante": 29350,
+        "delta": 12650,
+        "bootstrap_ic95": [
+         -4750.0,
+         29600.0
+        ],
+        "zero_ripetuti_variante": true,
+        "per_cap_type_base": {
+         "cap260": {
+          "n": 311,
+          "tot": 20900.0
+         },
+         "uncapped": {
+          "n": 77,
+          "tot": 200.0
+         },
+         "beginner": {
+          "n": 159,
+          "tot": -2100.0
+         },
+         "cap220": {
+          "n": 17,
+          "tot": -2300.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap260": {
+          "n": 320,
+          "tot": 29300.0
+         },
+         "uncapped": {
+          "n": 87,
+          "tot": 2600.0
+         },
+         "beginner": {
+          "n": 147,
+          "tot": -1650.0
+         },
+         "cap220": {
+          "n": 18,
+          "tot": -900.0
+         }
+        }
+       }
+      }
+     },
+     "criterio_passa": {
+      "astensione": false,
+      "allocazione": false
+     }
+    },
+    "c_gruppo_largo": {
+     "copertura": {
+      "con_lettera": 7381,
+      "spostamento_non_zero": 7197,
+      "a_zero": 184,
+      "a_zero_per_ragione": {
+       "zscore": 114,
+       "gruppo_1_lettera": 37,
+       "lettere_uguali": 33
+      }
+     },
+     "essenze": {
+      "vecchio": {
+       "astensione": {
+        "n": 154,
+        "netto_base": -2200.0,
+        "netto_variante": -800.0,
+        "delta": 1400.0,
+        "bootstrap_ic95": [
+         -2300.0,
+         5600.0
+        ],
+        "per_cap_type_base": {
+         "cap260": {
+          "n": 62,
+          "tot": -1200.0
+         },
+         "cap220": {
+          "n": 38,
+          "tot": -200.0
+         },
+         "uncapped": {
+          "n": 7,
+          "tot": -600.0
+         },
+         "arena_paese": {
+          "n": 11,
+          "tot": -1000.0
+         },
+         "beginner": {
+          "n": 36,
+          "tot": 800.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap260": {
+          "n": 62,
+          "tot": -1100.0
+         },
+         "cap220": {
+          "n": 38,
+          "tot": 500.0
+         },
+         "uncapped": {
+          "n": 7,
+          "tot": 500.0
+         },
+         "arena_paese": {
+          "n": 11,
+          "tot": -1000.0
+         },
+         "beginner": {
+          "n": 36,
+          "tot": 300.0
+         }
+        }
+       },
+       "allocazione": {
+        "n_base": 547,
+        "n_variante": 550,
+        "netto_base": 12100,
+        "netto_variante": 28250,
+        "delta": 16150,
+        "bootstrap_ic95": [
+         -1250.0,
+         31550.0
+        ],
+        "zero_ripetuti_variante": true,
+        "per_cap_type_base": {
+         "cap260": {
+          "n": 340,
+          "tot": 16100.0
+         },
+         "beginner": {
+          "n": 138,
+          "tot": -2500.0
+         },
+         "cap220": {
+          "n": 25,
+          "tot": -3400.0
+         },
+         "uncapped": {
+          "n": 42,
+          "tot": 1700.0
+         },
+         "arena_paese": {
+          "n": 2,
+          "tot": 200.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap260": {
+          "n": 342,
+          "tot": 26900.0
+         },
+         "uncapped": {
+          "n": 54,
+          "tot": 4000.0
+         },
+         "beginner": {
+          "n": 132,
+          "tot": -2650.0
+         },
+         "cap220": {
+          "n": 20,
+          "tot": 600.0
+         },
+         "arena_paese": {
+          "n": 2,
+          "tot": -600.0
+         }
+        }
+       }
+      },
+      "nuovo": {
+       "astensione": {
+        "n": 154,
+        "netto_base": 300.0,
+        "netto_variante": 200.0,
+        "delta": -100.0,
+        "bootstrap_ic95": [
+         -2500.0,
+         2300.0
+        ],
+        "per_cap_type_base": {
+         "cap260": {
+          "n": 62,
+          "tot": -1900.0
+         },
+         "cap220": {
+          "n": 38,
+          "tot": 800.0
+         },
+         "uncapped": {
+          "n": 7,
+          "tot": 500.0
+         },
+         "arena_paese": {
+          "n": 11,
+          "tot": 200.0
+         },
+         "beginner": {
+          "n": 36,
+          "tot": 700.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap260": {
+          "n": 62,
+          "tot": -1100.0
+         },
+         "cap220": {
+          "n": 38,
+          "tot": 600.0
+         },
+         "uncapped": {
+          "n": 7,
+          "tot": 500.0
+         },
+         "arena_paese": {
+          "n": 11,
+          "tot": -100.0
+         },
+         "beginner": {
+          "n": 36,
+          "tot": 300.0
+         }
+        }
+       },
+       "allocazione": {
+        "n_base": 564,
+        "n_variante": 554,
+        "netto_base": 16700,
+        "netto_variante": 29550,
+        "delta": 12850,
+        "bootstrap_ic95": [
+         -4750.0,
+         28250.0
+        ],
+        "zero_ripetuti_variante": true,
+        "per_cap_type_base": {
+         "cap260": {
+          "n": 311,
+          "tot": 20900.0
+         },
+         "uncapped": {
+          "n": 77,
+          "tot": 200.0
+         },
+         "beginner": {
+          "n": 159,
+          "tot": -2100.0
+         },
+         "cap220": {
+          "n": 17,
+          "tot": -2300.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap260": {
+          "n": 317,
+          "tot": 31500.0
+         },
+         "uncapped": {
+          "n": 79,
+          "tot": 2400.0
+         },
+         "beginner": {
+          "n": 148,
+          "tot": -4150.0
+         },
+         "cap220": {
+          "n": 10,
+          "tot": -200.0
+         }
+        }
+       }
+      }
+     },
+     "criterio_passa": {
+      "astensione": false,
+      "allocazione": false
+     }
+    }
+   }
+  },
+  "P_noF": {
+   "copertura_produzione": {
+    "con_lettera": 6603,
+    "spostamento_non_zero": 5085,
+    "a_zero": 1518,
+    "a_zero_per_ragione": {
+     "gruppo_1_lettera": 712,
+     "lettere_uguali": 642,
+     "zscore": 164
+    }
+   },
+   "copertura_produzione_max_diff_check": 0.0,
+   "varianti": {
+    "a_tabella_fissa_empirica": {
+     "copertura": {
+      "con_lettera": 6603,
+      "spostamento_non_zero": 6603,
+      "a_zero": 0,
+      "a_zero_per_ragione": {}
+     },
+     "essenze": "vedi p20_gfisso_v2_backtest_out.json (gia misurato, non riprodotto)"
+    },
+    "b_ibrida": {
+     "copertura": {
+      "con_lettera": 6603,
+      "spostamento_non_zero": 6439,
+      "a_zero": 164,
+      "a_zero_per_ragione": {
+       "zscore": 164
+      }
+     },
+     "essenze": {
+      "vecchio": {
+       "astensione": {
+        "n": 111,
+        "netto_base": 4550.0,
+        "netto_variante": 7100.0,
+        "delta": 2550.0,
+        "bootstrap_ic95": [
+         -250.0,
+         6600.0
+        ],
+        "per_cap_type_base": {
+         "cap220": {
+          "n": 23,
+          "tot": 1600.0
+         },
+         "cap260": {
+          "n": 36,
+          "tot": 1700.0
+         },
+         "uncapped": {
+          "n": 6,
+          "tot": -600.0
+         },
+         "arena_paese": {
+          "n": 6,
+          "tot": -100.0
+         },
+         "beginner": {
+          "n": 40,
+          "tot": 1950.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap220": {
+          "n": 23,
+          "tot": 2000.0
+         },
+         "cap260": {
+          "n": 36,
+          "tot": 2900.0
+         },
+         "uncapped": {
+          "n": 6,
+          "tot": 500.0
+         },
+         "arena_paese": {
+          "n": 6,
+          "tot": -100.0
+         },
+         "beginner": {
+          "n": 40,
+          "tot": 1800.0
+         }
+        }
+       },
+       "allocazione": {
+        "n_base": 460,
+        "n_variante": 489,
+        "netto_base": 40700,
+        "netto_variante": 41900,
+        "delta": 1200,
+        "bootstrap_ic95": [
+         -20000.0,
+         21850.0
+        ],
+        "zero_ripetuti_variante": true,
+        "per_cap_type_base": {
+         "cap260": {
+          "n": 310,
+          "tot": 35300.0
+         },
+         "beginner": {
+          "n": 102,
+          "tot": 400.0
+         },
+         "uncapped": {
+          "n": 36,
+          "tot": 4100.0
+         },
+         "cap220": {
+          "n": 12,
+          "tot": 900.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap260": {
+          "n": 318,
+          "tot": 34500.0
+         },
+         "beginner": {
+          "n": 105,
+          "tot": 300.0
+         },
+         "cap220": {
+          "n": 15,
+          "tot": 1000.0
+         },
+         "uncapped": {
+          "n": 51,
+          "tot": 6100.0
+         }
+        }
+       }
+      },
+      "nuovo": {
+       "astensione": {
+        "n": 111,
+        "netto_base": 5250.0,
+        "netto_variante": 5700.0,
+        "delta": 450.0,
+        "bootstrap_ic95": [
+         -1900.0,
+         3200.0
+        ],
+        "per_cap_type_base": {
+         "cap220": {
+          "n": 23,
+          "tot": 1800.0
+         },
+         "cap260": {
+          "n": 36,
+          "tot": 800.0
+         },
+         "uncapped": {
+          "n": 6,
+          "tot": 500.0
+         },
+         "arena_paese": {
+          "n": 6,
+          "tot": 200.0
+         },
+         "beginner": {
+          "n": 40,
+          "tot": 1950.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap220": {
+          "n": 23,
+          "tot": 1900.0
+         },
+         "cap260": {
+          "n": 36,
+          "tot": 1600.0
+         },
+         "uncapped": {
+          "n": 6,
+          "tot": 500.0
+         },
+         "arena_paese": {
+          "n": 6,
+          "tot": -100.0
+         },
+         "beginner": {
+          "n": 40,
+          "tot": 1800.0
+         }
+        }
+       },
+       "allocazione": {
+        "n_base": 476,
+        "n_variante": 495,
+        "netto_base": 44800,
+        "netto_variante": 42850,
+        "delta": -1950,
+        "bootstrap_ic95": [
+         -20000.0,
+         15450.0
+        ],
+        "zero_ripetuti_variante": true,
+        "per_cap_type_base": {
+         "cap260": {
+          "n": 267,
+          "tot": 37000.0
+         },
+         "uncapped": {
+          "n": 66,
+          "tot": 5200.0
+         },
+         "beginner": {
+          "n": 135,
+          "tot": 2500.0
+         },
+         "cap220": {
+          "n": 8,
+          "tot": 100.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap260": {
+          "n": 294,
+          "tot": 33400.0
+         },
+         "beginner": {
+          "n": 120,
+          "tot": 550.0
+         },
+         "uncapped": {
+          "n": 71,
+          "tot": 7900.0
+         },
+         "cap220": {
+          "n": 10,
+          "tot": 1000.0
+         }
+        }
+       }
+      }
+     },
+     "criterio_passa": {
+      "astensione": false,
+      "allocazione": false
+     }
+    },
+    "c_gruppo_largo": {
+     "copertura": {
+      "con_lettera": 6603,
+      "spostamento_non_zero": 6483,
+      "a_zero": 120,
+      "a_zero_per_ragione": {
+       "zscore": 48,
+       "lettere_uguali": 35,
+       "gruppo_1_lettera": 37
+      }
+     },
+     "essenze": {
+      "vecchio": {
+       "astensione": {
+        "n": 111,
+        "netto_base": 4550.0,
+        "netto_variante": 5850.0,
+        "delta": 1300.0,
+        "bootstrap_ic95": [
+         -800.0,
+         3800.0
+        ],
+        "per_cap_type_base": {
+         "cap220": {
+          "n": 23,
+          "tot": 1600.0
+         },
+         "cap260": {
+          "n": 36,
+          "tot": 1700.0
+         },
+         "uncapped": {
+          "n": 6,
+          "tot": -600.0
+         },
+         "arena_paese": {
+          "n": 6,
+          "tot": -100.0
+         },
+         "beginner": {
+          "n": 40,
+          "tot": 1950.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap220": {
+          "n": 23,
+          "tot": 1700.0
+         },
+         "cap260": {
+          "n": 36,
+          "tot": 2200.0
+         },
+         "uncapped": {
+          "n": 6,
+          "tot": 500.0
+         },
+         "arena_paese": {
+          "n": 6,
+          "tot": -100.0
+         },
+         "beginner": {
+          "n": 40,
+          "tot": 1550.0
+         }
+        }
+       },
+       "allocazione": {
+        "n_base": 460,
+        "n_variante": 454,
+        "netto_base": 40700,
+        "netto_variante": 27300,
+        "delta": -13400,
+        "bootstrap_ic95": [
+         -30400.0,
+         2300.0
+        ],
+        "zero_ripetuti_variante": true,
+        "per_cap_type_base": {
+         "cap260": {
+          "n": 310,
+          "tot": 35300.0
+         },
+         "beginner": {
+          "n": 102,
+          "tot": 400.0
+         },
+         "uncapped": {
+          "n": 36,
+          "tot": 4100.0
+         },
+         "cap220": {
+          "n": 12,
+          "tot": 900.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap260": {
+          "n": 305,
+          "tot": 25300.0
+         },
+         "beginner": {
+          "n": 93,
+          "tot": -3100.0
+         },
+         "uncapped": {
+          "n": 49,
+          "tot": 5700.0
+         },
+         "cap220": {
+          "n": 6,
+          "tot": -300.0
+         },
+         "arena_paese": {
+          "n": 1,
+          "tot": -300.0
+         }
+        }
+       }
+      },
+      "nuovo": {
+       "astensione": {
+        "n": 111,
+        "netto_base": 5250.0,
+        "netto_variante": 4250.0,
+        "delta": -1000.0,
+        "bootstrap_ic95": [
+         -4600.0,
+         2900.0
+        ],
+        "per_cap_type_base": {
+         "cap220": {
+          "n": 23,
+          "tot": 1800.0
+         },
+         "cap260": {
+          "n": 36,
+          "tot": 800.0
+         },
+         "uncapped": {
+          "n": 6,
+          "tot": 500.0
+         },
+         "arena_paese": {
+          "n": 6,
+          "tot": 200.0
+         },
+         "beginner": {
+          "n": 40,
+          "tot": 1950.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap220": {
+          "n": 23,
+          "tot": 800.0
+         },
+         "cap260": {
+          "n": 36,
+          "tot": 900.0
+         },
+         "uncapped": {
+          "n": 6,
+          "tot": 500.0
+         },
+         "arena_paese": {
+          "n": 6,
+          "tot": 500.0
+         },
+         "beginner": {
+          "n": 40,
+          "tot": 1550.0
+         }
+        }
+       },
+       "allocazione": {
+        "n_base": 476,
+        "n_variante": 465,
+        "netto_base": 44800,
+        "netto_variante": 35900,
+        "delta": -8900,
+        "bootstrap_ic95": [
+         -23800.0,
+         3750.0
+        ],
+        "zero_ripetuti_variante": true,
+        "per_cap_type_base": {
+         "cap260": {
+          "n": 267,
+          "tot": 37000.0
+         },
+         "uncapped": {
+          "n": 66,
+          "tot": 5200.0
+         },
+         "beginner": {
+          "n": 135,
+          "tot": 2500.0
+         },
+         "cap220": {
+          "n": 8,
+          "tot": 100.0
+         }
+        },
+        "per_cap_type_variante": {
+         "cap260": {
+          "n": 273,
+          "tot": 26900.0
+         },
+         "beginner": {
+          "n": 111,
+          "tot": 500.0
+         },
+         "uncapped": {
+          "n": 76,
+          "tot": 9500.0
+         },
+         "cap220": {
+          "n": 5,
+          "tot": -1000.0
+         }
+        }
+       }
+      }
+     },
+     "criterio_passa": {
+      "astensione": false,
+      "allocazione": false
+     }
+    }
+   }
+  }
+ },
+ "C1_identita_max_diff": 0.0,
+ "C5_AA_max_diff": 0.0,
+ "C3_placebo_G_vs_A": {
+  "vecchio": {
+   "astensione_netA": -3350.0,
+   "astensione_netG": -2200.0,
+   "G_meglio_di_A_astensione": true,
+   "allocazione_nettoA": -16950,
+   "allocazione_nettoG": 12100,
+   "G_meglio_di_A_allocazione": true
+  },
+  "nuovo": {
+   "astensione_netA": -150.0,
+   "astensione_netG": 300.0,
+   "G_meglio_di_A_astensione": true,
+   "allocazione_nettoA": -7450,
+   "allocazione_nettoG": 16700,
+   "G_meglio_di_A_allocazione": true
+  }
+ }
+}
