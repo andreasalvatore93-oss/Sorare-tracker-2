@@ -1398,9 +1398,15 @@ multi-lega (`f'{fixture_slug}-seasonal-korea-...'`), non corrisponda al
 vero fixture Korea in-season (che altrove nel repo ha una pipeline/slug
 dedicati, `inseason_kleague`), rendendo quella leaderboard sistematicamente
 vuota o inesistente per K League — un possibile bug di costruzione slug,
-non solo un limite di copertura. Mls invece HA copertura parziale (19/45
-con grade), quindi il canale FUNZIONA per almeno una lega: non e' un
-fallimento totale del meccanismo.
+non solo un limite di copertura. Mls invece HA copertura parziale **11/45
+con grade** (def 8/19, fwd 1/10, gk 0/6, mid 2/10), quindi il canale
+FUNZIONA per almeno una lega: non e' un fallimento totale del meccanismo.
+[CORREZIONE dell'orchestratore, 09/08: la prima stesura di questa voce
+diceva "19/45", ma 19 e' il numero di CARTE mls_def, non quelle col
+grade. Il dato grezzo in `diagnosi_buco_grade_20260809.json` (campo
+`tabella`) dice 8+1+0+2 = 11, riscontrato con un conteggio indipendente
+sui `player_card_counts.json`. La conclusione qualitativa non cambia, la
+cifra si'.]
 **Non verificabile oltre senza query o log della run GitHub** (i log con
 le righe `[grade] <leaderboard>: N nodi bench` non sono in repo, girano
 solo su GH Actions): serve o (a) rilanciare la discovery con log visibile,
