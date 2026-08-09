@@ -172,11 +172,15 @@ DUE CONFRONTI SEPARATI (l'utente li ha chiesti entrambi):
 
 PROTEZIONE e SPINTA, misurate SEPARATAMENTE (sono meccanismi diversi):
   - PROTEZIONE = sottoinsieme delle arene in cui il capitano del BASELINE
-    non ha giocato. Definizione operativa di "non ha giocato": punteggio
-    grezzo `reale` < 20. Deriva da una regola di gioco dichiarata
-    dall'utente ("chi entra anche un solo minuto prende ~35 punti"), non
-    da una misura: percio' riporta la stessa cifra anche con soglia < 10 e
-    < 30 e dichiara se il verdetto cambia.
+    non ha giocato. Definizione operativa PRIMARIA: punteggio grezzo
+    `reale` <= 1 — e' la convenzione gia' usata nel repo (§12 e
+    docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt riga 31: "non-giocante
+    = punteggio realizzato <=1", che comprende lo status DID_NOT_PLAY), e
+    tenerla uguale rende i numeri confrontabili con la tabella
+    lettera->punti gia' misurata. Riporta in PIU', come controllo di
+    sensibilita', la stessa cifra con soglia < 20 (dalla regola di gioco
+    dichiarata dall'utente: "chi entra anche un solo minuto prende ~35
+    punti") e dichiara se il verdetto cambia.
   - SPINTA = sottoinsieme delle arene in cui HANNO GIOCATO entrambi i
     capitani (baseline e grade), cioe' `reale` >= 20 per tutti e due.
   - Le due n devono sommare al totale meno il caso "gioca il grade, non il
