@@ -1,6 +1,6 @@
 ======================================================================
 CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-09T21:09:55.171578Z
+Generato: 2026-08-09T21:35:34.203103Z
 Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 1) blair-spittal: 48 pt attesi (34-63)
@@ -13,7 +13,7 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: blair-spittal (squadra: hearts-edinburgh)
-Generato: 2026-08-09T21:09:55.170415Z
+Generato: 2026-08-09T21:35:34.202179Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -43,14 +43,14 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 Media pesata esponenziale (half-life 25.0 partite): 49.77
   di cui Punteggio decisivo (level_score) medio: 38.07 | Punteggio complessivo (granulari) medio: 11.70 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
   Punteggio decisivo condizionato per venue: 39.94 (delta +1.87)
-  Efficacia offensiva condizionata: delta venue +0.58, delta avversario -0.12 | Passaggio condizionato: delta venue -0.44, delta avversario -0.31 | Gol subiti condizionato: delta venue +0.98, delta avversario -0.53 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+  Efficacia offensiva condizionata: delta venue +0.58, delta avversario -0.19 | Passaggio condizionato: delta venue -0.44, delta avversario -0.72 | Gol subiti condizionato: delta venue +0.98, delta avversario -0.33 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
 Deviazione standard pesata: 12.72
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.6 - 64.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.85 (differenza: +1.88)
 Media score in casa: 53.69 | Media score fuori casa: 46.24
 Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
-Ranking medio avversari affrontati (storico): 5.1
-Ranking prossimo avversario: 9
+Ranking medio avversari affrontati (storico): 4.9
+Ranking prossimo avversario: 6
 Fattore forza avversario applicato: 0.826 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 1.005
 Fattore duelli (casa/trasferta, da dati reali): 0.997
@@ -96,10 +96,10 @@ P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo sto
   11       11      45.6    35.3    -10.3    14.3        SI
   12       12      55.7    45.3    -10.4    14.8        SI
   13       13      47.3    60.1    +12.8    14.2        SI
-  14       14      58.8    32.9    -25.9    13.9        NO
-  15       15      62.5    44.7    -17.8    14.5        NO
+  14       14      53.6    32.9    -20.7    13.9        NO
+  15       15      62.9    44.7    -18.2    14.5        NO
 
-MAE (errore assoluto medio): 14.46
+MAE (errore assoluto medio): 13.97
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
