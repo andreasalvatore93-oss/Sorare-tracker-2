@@ -1438,7 +1438,7 @@ h1{font-size:18px;margin:0 0 4px} h2{font-size:15px;margin:22px 0 8px;color:#8ab
 table{border-collapse:collapse;width:100%%;min-width:640px}
 th,td{padding:6px 8px;text-align:left;border-bottom:1px solid #232733;white-space:nowrap}
 th{position:sticky;top:0;background:#1a1d26;color:#9aa0ad;font-weight:600;font-size:12px}
-td.n{text-align:right;font-variant-numeric:tabular-nums}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 tr:nth-child(even){background:#161922}
 .mia{color:#7ee787} .ko{color:#ff7b72} .warn{color:#ffa657} .muted{color:#6e7481}
 a{color:inherit;text-decoration:none;border-bottom:1px dotted #4a5164}
@@ -1447,7 +1447,6 @@ a:hover{color:#8ab4ff}
   padding:4px 10px;font-size:12px;cursor:pointer}
 .btn-scelta:hover{border-color:#4a5164;color:#e6e8ee}
 .btn-scelta.attivo{background:#2a3550;color:#8ab4ff;border-color:#8ab4ff}
-.best5-row td{background:rgba(255,215,100,0.10)!important}
 </style></head><body>
 <h1>Scouting -- %(fixture)s</h1>
 <div class="meta">%(quando)s &middot; %(n)d candidati &middot; %(filtri)s</div>
@@ -1729,45 +1728,59 @@ _HTML_CONTROLLI_MINIMALE = """
     return prezzo / punteggio;
   }
 
-  // --- Filtro ruolo: bottoni "Mostra solo" -----------------------------
-  var btnRuoli = Array.prototype.slice.call(document.querySelectorAll('.btn-ruolo'));
-  btnRuoli.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      btnRuoli.forEach(function (b) { b.classList.remove('attivo'); });
-      btn.classList.add('attivo');
-      var scelto = btn.dataset.ruolo;
-      righe().forEach(function (tr) {
-        var mostra = (scelto === 'TUTTI') || (ruoliDi(tr).indexOf(scelto) !== -1);
-        tr.style.display = mostra ? '' : 'none';
-      });
-    });
-  });
-
-  // --- Best Five / Best per ruolo ---------------------------------------
+  // --- Vista attiva: 'TUTTI' | 'GK' | 'DEF' | 'MID' | 'FWD' | 'BEST5' |
+  // 'BESTROLE'. Una sola alla volta: cliccare una vista nasconde TUTTE le
+  // righe che non ci appartengono (09/08/2026 notte, richiesta esplicita:
+  // "deve mostrare solo e soltanto i 5, non gli altri" -- prima erano solo
+  // evidenziate in mezzo alle altre).
   var COLORI_RUOLO = { GK: '#8ab4ff', DEF: '#7ee787', MID: '#ffa657', FWD: '#ff7b72' };
+  var btnRuoli = Array.prototype.slice.call(document.querySelectorAll('.btn-ruolo'));
   var btnBest5 = document.getElementById('btn-best5');
   var btnBestRole = document.getElementById('btn-bestrole');
-  var attivo5 = false, attivoRuolo = false;
+  var vista = 'TUTTI';
 
-  function pulisci() {
-    righe().forEach(function (tr) {
-      tr.classList.remove('best5-row');
-      tr.style.borderLeft = '';
-      tr.style.background = '';
-    });
+  function pulisciStiliRiga(tr) {
+    tr.style.borderLeft = '';
+    tr.style.background = '';
+  }
+
+  function aggiornaBottoniAttivi() {
+    btnRuoli.forEach(function (b) { b.classList.toggle('attivo', b.dataset.ruolo === vista); });
+    if (btnBest5) btnBest5.classList.toggle('attivo', vista === 'BEST5');
+    if (btnBestRole) btnBestRole.classList.toggle('attivo', vista === 'BESTROLE');
   }
 
   function applica() {
-    pulisci();
-    var conRapporto = righe().map(function (tr) {
+    aggiornaBottoniAttivi();
+    var tutte = righe();
+    tutte.forEach(pulisciStiliRiga);
+
+    if (vista === 'TUTTI') {
+      tutte.forEach(function (tr) { tr.style.display = ''; });
+      return;
+    }
+    if (vista === 'GK' || vista === 'DEF' || vista === 'MID' || vista === 'FWD') {
+      tutte.forEach(function (tr) {
+        tr.style.display = (ruoliDi(tr).indexOf(vista) !== -1) ? '' : 'none';
+      });
+      return;
+    }
+    var conRapporto = tutte.map(function (tr) {
       return { tr: tr, r: rapporto(tr) };
     }).filter(function (x) { return x.r !== null; });
 
-    if (attivo5) {
-      conRapporto.slice().sort(function (a, b) { return a.r - b.r; })
-        .slice(0, 5).forEach(function (x) { x.tr.classList.add('best5-row'); });
+    if (vista === 'BEST5') {
+      var scelti = conRapporto.slice().sort(function (a, b) { return a.r - b.r; }).slice(0, 5);
+      var scelteTr = scelti.map(function (x) { return x.tr; });
+      tutte.forEach(function (tr) {
+        var dentro = scelteTr.indexOf(tr) !== -1;
+        tr.style.display = dentro ? '' : 'none';
+        if (dentro) { tr.style.background = 'rgba(255,215,100,0.10)'; }
+      });
+      return;
     }
-    if (attivoRuolo) {
+    if (vista === 'BESTROLE') {
+      var scelteTr2 = [];
       ['GK', 'DEF', 'MID', 'FWD'].forEach(function (ruolo) {
         var candidati = conRapporto.filter(function (x) { return ruoliDi(x.tr).indexOf(ruolo) !== -1; });
         if (!candidati.length) return;
@@ -1775,18 +1788,26 @@ _HTML_CONTROLLI_MINIMALE = """
         var migliore = candidati[0].tr;
         migliore.style.borderLeft = '4px solid ' + COLORI_RUOLO[ruolo];
         migliore.style.background = 'rgba(255,255,255,0.05)';
+        scelteTr2.push(migliore);
+      });
+      tutte.forEach(function (tr) {
+        tr.style.display = (scelteTr2.indexOf(tr) !== -1) ? '' : 'none';
       });
     }
   }
 
+  btnRuoli.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      vista = btn.dataset.ruolo;
+      applica();
+    });
+  });
   if (btnBest5) btnBest5.addEventListener('click', function () {
-    attivo5 = !attivo5;
-    btnBest5.classList.toggle('attivo', attivo5);
+    vista = (vista === 'BEST5') ? 'TUTTI' : 'BEST5';
     applica();
   });
   if (btnBestRole) btnBestRole.addEventListener('click', function () {
-    attivoRuolo = !attivoRuolo;
-    btnBestRole.classList.toggle('attivo', attivoRuolo);
+    vista = (vista === 'BESTROLE') ? 'TUTTI' : 'BESTROLE';
     applica();
   });
 })();
