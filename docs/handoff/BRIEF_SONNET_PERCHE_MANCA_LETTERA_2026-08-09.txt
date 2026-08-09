@@ -1,0 +1,165 @@
+BRIEF PER SONNET — PERCHE' IL 66% DELLE MIE CARTE NON HA LA LETTERA
+(grade assente in produzione)
+Scritto dall'orchestratore il 09/08/2026 (Roma). SOLO DIAGNOSI.
+NESSUNA MODIFICA ALLA PRODUZIONE. NESSUNA QUERY SORARE E NESSUNA RUN
+GITHUB SENZA IL VIA ESPLICITO DELL'UTENTE: il primo passo si fa a rete
+spenta, coi file gia' sul disco.
+
+======================================================================
+0. COSA LEGGERE PRIMA (in quest'ordine)
+======================================================================
+1) CLAUDE.md (radice) — divieto di allucinazioni e di assunzioni, dovere
+   di dichiarare le n, minimizzare le query, mostrare i dati e non i
+   riassunti dei dati.
+2) IL CODICE, con le righe (verificate dall'orchestratore il 09/08):
+   - discovery_fixture.py:364-394 `fetch_grade_live(fixture_slug)` — da
+     dove nasce il grade. Se `FETCH_GRADE=0` non si scarica niente e G
+     resta in fallback z=0 (riga 370-372). L'artifact `pool_gw.json` e'
+     della singola run e viene IGNORATO se e' di un'altra giornata
+     (righe 381-394).
+   - discovery_fixture.py:443-447 — LE TRE LEADERBOARD da cui si pesca il
+     grade:
+        <fixture>-seasonal-all_star-all_seasons_all_star_arena_limited
+        <fixture>-seasonal-all_star-all_seasons_all_star_limited
+        <fixture>-seasonal-korea-in_season_korea_limited_pvp
+   - discovery_fixture.py:450-472 — il grade si legge dal BENCH di quelle
+     leaderboard (`myFilteredBench`, quindi LE MIE carte eleggibili li'
+     dentro), campo `eligiblePlayerGameScores[].projection.grade`.
+   - discovery_fixture.py:474-477 — se una leaderboard torna 0 nodi la
+     discovery NON si ferma: logga un avviso e il grade resta assente per
+     tutti quelli che dipendevano da quella leaderboard.
+   - discovery_fixture.py:400-442 — probe di autenticazione: `myFilteredBench`
+     e' una query "my" e senza sessione autenticata risponde 200 con
+     `nodes: []`, indistinguibile da "leaderboard chiusa". Un 429 NON e'
+     una sessione morta.
+   - generatore_formazioni/build_formazione_globale.py:505-549
+     `_apply_grade_group` — dove il grade viene usato: gruppo = (lega,
+     ruolo), z-score del voto, `atteso_combinato = atteso + sd_attesi * z`.
+     Serve ad ANNOTARE l'effetto del buco, non e' oggetto di modifica.
+
+======================================================================
+1. LA DOMANDA (una sola)
+======================================================================
+Perche' la maggior parte delle carte dell'utente arriva in produzione
+SENZA lettera di grade? Qual e' la causa principale, e con quali numeri?
+
+======================================================================
+2. QUELLO CHE E' GIA' MISURATO (non rifarlo, ma VERIFICALO se ti serve)
+======================================================================
+Misure fatte dall'orchestratore il 09/08 sui `player_card_counts.json`
+di tutte le `formazione_*/output/*_discovery/` (ultima discovery: file
+aggiornati il 09/08 alle 14:00 Roma):
+  - 41 gruppi (lega, ruolo) hanno almeno 2 carte dell'utente;
+  - in quei gruppi: 243 carte, di cui 82 con lettera = 33,7%;
+  - in 20 gruppi su 41 (49%) le carte con lettera sono meno di 2, quindi
+    il grade e' IGNORATO del tutto (z=0): sono 104 carte su 243 (43%);
+  - solo 16 gruppi su 41 hanno 3 o piu' carte con lettera;
+  - distribuzione delle 82 lettere: A 3, B 7, C 28, D 37, E 6, F 1.
+INDIZIO IMPORTANTE, gia' verificato: in
+`formazione_mls/output/mls_mid_discovery/player_card_counts.json` tutte
+e 10 le carte hanno `starter_odds`, ma solo 2 hanno `grade` (entrambe D).
+Le odds arrivano da un canale diverso dal grade: quindi la discovery
+QUELLE carte le ha viste eccome. Non e' un buco di copertura della
+discovery, e' un buco del canale grade.
+
+======================================================================
+3. L'IPOTESI DELL'ORCHESTRATORE, PRIMA DEI NUMERI
+======================================================================
+IPOTESI PRINCIPALE (mia, da verificare, NON un fatto): il grade si pesca
+solo dal bench di TRE leaderboard (All Star arena limited, All Star
+limited, Korea in-season limited pvp). Una carta che non e' eleggibile in
+nessuna delle tre non compare in nessun bench e quindi resta senza
+lettera, per costruzione — anche se la discovery la vede benissimo e le
+assegna le odds.
+IPOTESI RIVALI, da tenere aperte e da distinguere coi dati:
+  (b) la carta non ha partita nella finestra della giornata (allora e'
+      giusto che non abbia grade, e non e' un buco);
+  (c) una delle tre leaderboard e' tornata 0 nodi in quella run (GW
+      chiusa, slug sbagliato, sessione non autenticata, 429): allora il
+      buco e' un incidente della run, non strutturale;
+  (d) Sorare non pubblica il grade per quel giocatore/partita.
+Se esce che la causa principale e' una rivale, e' un risultato valido e
+va scritto. NON scegliere l'ipotesi principale perche' e' mia.
+
+======================================================================
+4. IL METODO — PRIMO PASSO A RETE SPENTA
+======================================================================
+Tutto quello che segue si fa coi file gia' in repo, zero query.
+1) Costruisci una tabella per (lega, ruolo) con: n carte nel counts, n
+   con `starter_odds`, n con `grade`, e i nomi delle carte SENZA grade.
+2) Per ogni carta senza grade, incrocia col file `consiglio_*` piu'
+   recente della stessa lega/ruolo (`formazione_<lega>/output/<lega>_
+   <ruolo>_all/consiglio_*.txt`, formato: riga "N) slug: XX pt" +
+   SQUADRA/AVVERSARIO/KICKOFF). Se la carta compare li', HA una partita
+   in finestra: l'ipotesi (b) e' esclusa per quella carta. Conta quante
+   carte senza grade hanno comunque la partita: e' il numero che separa
+   "buco vero" da "nessuna partita".
+3) Spacca il risultato per LEGA e guarda se il buco segue una linea
+   riconoscibile (es. tutte le leghe che non sono All Star/Korea).
+   Attenzione: e' un indizio, non una prova — le tre leaderboard sono
+   nel codice, ma QUALI carte siano eleggibili li' dentro non e' scritto
+   nei file locali. Dillo esplicitamente invece di dedurlo.
+4) Cerca i log della discovery: la riga `[grade] <leaderboard>: N nodi
+   bench` e `[grade] da artifact pool_gw.json: N slug con grade` dicono
+   se una leaderboard e' tornata vuota. Se i log non sono in repo (girano
+   su GitHub Actions), NON lanciare una run: scrivi che servono e
+   CHIEDILO all'utente.
+
+SECONDO PASSO (solo se il primo non basta, e SOLO col via dell'utente):
+poche query mirate su 2-3 carte senza lettera, per vedere se il grade
+esiste per quella partita quando lo si chiede per slug — la rotta
+`anyPlayer(slug).playerGameScores` usata da
+`analisi_manager/sonda_grade_passato_recupero.py` (funziona: sonda del
+09/08, 5/5). Se il grade c'e' per slug ma non arriva dal bench, allora il
+buco e' nel CANALE (le tre leaderboard), non nel dato: sarebbe la
+scoperta piu' importante di questo brief, perche' significa che il grade
+si puo' prendere per tutte le carte cambiando strada.
+
+======================================================================
+5. CONTROLLI OBBLIGATORI
+======================================================================
+- Ritrova i numeri del §2 (243 carte, 82 con grade, 41 gruppi). Se non
+  li ritrovi, FERMATI E DILLO: vuol dire che stai leggendo altri file o
+  che una discovery e' girata nel frattempo (in quel caso dichiara la
+  data dei file che hai letto).
+- Distingui sempre "campo assente" da "campo vuoto" da "carta assente
+  dal file": sono tre cose diverse e vanno contate separate.
+- Un 429 non e' un dato mancante: e' una richiesta da rifare.
+- Dump leggibile, consegnato INSIEME ai numeri: per almeno un gruppo
+  (lega, ruolo) l'elenco completo delle carte con slug, odds, grade,
+  presenza nel consiglio.
+
+======================================================================
+6. COSA CONSEGNARE
+======================================================================
+- La tabella per (lega, ruolo): carte / con odds / con grade / senza
+  grade ma con partita in finestra.
+- Il verdetto sulla causa PRINCIPALE, con la n che lo sostiene, e cosa
+  resta non spiegato (la quota "non lo so" va dichiarata, non riempita).
+- Quante carte e quanti gruppi cambierebbero stato se il buco si
+  chiudesse: cioe' quanti dei 20 gruppi oggi inerti (meno di 2 lettere)
+  passerebbero ad avere il grade attivo. E' la misura di quanto vale
+  risolvere.
+- Se scopri che il canale e' il problema, la strada alternativa in tre
+  righe (quale rotta, quante query per giornata) — SENZA implementarla.
+
+======================================================================
+7. COSA NON FARE
+======================================================================
+- Non modificare discovery_fixture.py ne' il generatore. Questa e' una
+  diagnosi: si guarda, non si tocca.
+- Niente query e niente run GitHub senza via libera dell'utente.
+- Non dedurre l'eleggibilita' di una carta a una leaderboard da quello
+  che "di solito" e' vero: se non l'hai letta da qualche parte, e'
+  un'ipotesi e va scritta come tale.
+- Non nascondere il risultato nullo: se il buco resta senza spiegazione,
+  si scrive che resta senza spiegazione.
+
+======================================================================
+8. DOVE SCRIVERE L'ESITO
+======================================================================
+In coda a docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md (filone grade),
+come voce numerata nel §10bis. Committa solo i tuoi file e fai push.
+All'utente riferisci in CINQUE righe: la causa principale con la sua n,
+quante carte/gruppi guadagnerebbero il grade se si chiudesse, se serve
+una query o un log per andare avanti, e il percorso dei file.
