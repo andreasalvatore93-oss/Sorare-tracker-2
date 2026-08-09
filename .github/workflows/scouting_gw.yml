@@ -65,6 +65,11 @@ on:
         required: false
         default: false
         type: boolean
+      minimal:
+        description: 'Tabella minima: giocatore/ruolo/club/odds/prezzo/atteso/grade (niente arene ne'' essenze/GW)'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -102,6 +107,7 @@ jobs:
           if [ -n "${{ inputs.odds_min }}" ]; then ARGS="$ARGS --odds-min ${{ inputs.odds_min }}"; fi
           if [ "${{ inputs.screma }}" = "true" ]; then ARGS="$ARGS --screen"; fi
           if [ "${{ inputs.predict }}" = "true" ]; then ARGS="$ARGS --scrivi-discovery"; fi
+          if [ "${{ inputs.minimal }}" = "true" ]; then ARGS="$ARGS --minimal"; fi
           python scouting_gw.py $ARGS --html generatore_formazioni/output/scouting_ultimo.html
 
       # Le discovery vanno su main PRIMA della matrice: ogni job della matrice
@@ -284,6 +290,7 @@ jobs:
           ARGS=""
           if [ -n "${{ inputs.gameweek }}" ]; then ARGS="$ARGS --gameweek ${{ inputs.gameweek }}"; fi
           if [ -n "${{ inputs.odds_min }}" ]; then ARGS="$ARGS --odds-min ${{ inputs.odds_min }}"; fi
+          if [ "${{ inputs.minimal }}" = "true" ]; then ARGS="$ARGS --minimal"; fi
           python scouting_gw.py $ARGS --riusa-pool --html generatore_formazioni/output/scouting_ultimo.html
 
       - name: Commit di report, consigli e cache

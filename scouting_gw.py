@@ -294,7 +294,8 @@ query ScoutingGiornata($page: Int!, $pageSize: Int!,
         lastFiveSo5Appearances
         lastFifteenSo5Appearances
         lastFortySo5Appearances
-        ... on Player { age ownedCardsCount nextClassicFixtureProjectedScore }
+        ... on Player { age ownedCardsCount nextClassicFixtureProjectedScore
+          nextClassicFixtureProjectedGrade { grade } }
         lowestPriceAnyCard(rarity: limited) {
           rarityTyped
           liveSingleSaleOffer {
@@ -574,6 +575,7 @@ def pool_da_search(gameweek=None, fixture_slug=None,
                 'carte_mie': p.get('ownedCardsCount'),
                 'infortunato': bool(p.get('activeInjuries')),
                 'proiezione_sorare': p.get('nextClassicFixtureProjectedScore'),
+                'grade': (p.get('nextClassicFixtureProjectedGrade') or {}).get('grade'),
                 'prezzo_eur': round(prezzo, 2) if prezzo is not None else None,
                 'prezzo_valuta_originale': valuta,
                 'prezzo_rarita': (p.get('lowestPriceAnyCard') or {}).get('rarityTyped'),
@@ -1648,7 +1650,44 @@ def _escape(testo):
     return (testo.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;'))
 
 
-def scrivi_html(pool, dest, formazioni=()):
+def _tabella_minimale(pool, attesi):
+    """Tabella semplificata (09/08/2026, richiesta utente): solo giocatore,
+    ruolo, club, odds, prezzo, atteso, grade -- niente essenze/GW ne' arene.
+    Ordinata per atteso decrescente, unico criterio semplice e leggibile."""
+    righe = sorted(pool['giocatori'], key=lambda g: -(attesi.get(g['slug']) or -1e9))
+    pezzi = [
+        f"<h2>{len(righe)} candidati</h2>"
+        "<div class='wrap'><table id='candidati'>"
+        "<tr><th>Giocatore</th><th>R</th><th>Club</th>"
+        "<th title='Starter odds Sorare'>Odds</th><th>Prezzo</th>"
+        "<th>Atteso</th><th title='Lettera Sorare A..F per la prossima "
+        "partita classic'>Grade</th></tr>"]
+    for g in righe:
+        atteso = attesi.get(g['slug'])
+        prezzo = ('&mdash;' if g.get('prezzo_eur') is None
+                  else '%.2f&nbsp;&euro;' % g['prezzo_eur'])
+        odds_txt = ('&mdash;' if g.get('starter_odds') is None
+                    else "<span class='%s'>%.0f%%</span>"
+                         % ('mia' if g['starter_odds'] >= 0.8 else 'warn',
+                            g['starter_odds'] * 100))
+        grade = g.get('grade') or '&mdash;'
+        pezzi.append(
+            "<tr>"
+            f"<td><a href='https://sorare.com/football/players/{g['slug']}' "
+            f"target='_blank' rel='noopener'>{(g.get('nome') or g['slug'])}</a></td>"
+            f"<td>{'/'.join(g['ruoli'])}</td>"
+            f"<td>{(g.get('club') or '')}</td>"
+            f"<td class='n'>{odds_txt}</td>"
+            f"<td class='n'><a href='https://sorare.com/football/players/{g['slug']}/cards' "
+            f"target='_blank' rel='noopener'>{prezzo}</a></td>"
+            f"<td class='n'>{'&mdash;' if atteso is None else '%.1f' % atteso}</td>"
+            f"<td class='n'>{grade}</td>"
+            "</tr>")
+    pezzi.append("</table></div>")
+    return pezzi
+
+
+def scrivi_html(pool, dest, formazioni=(), minimal=False):
     # gg (generatore) caricato qui, non a livello modulo: stesso schema di
     # componi_arene, cosi' calibrazione (CALIB_PER_RUOLO) e soglie
     # (PAREGGIO_ARENA/GUADAGNO_PER_PUNTO) vengono da un solo posto invece di
@@ -1672,6 +1711,16 @@ def scrivi_html(pool, dest, formazioni=()):
     }
     scremati = any('idoneo' in g for g in pool['giocatori'])
     pezzi = [testa]
+    if minimal:
+        pezzi += _tabella_minimale(pool, attesi)
+        pezzi.append(_HTML_CODA)
+        documento = '\n'.join(pezzi)
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        with open(dest, 'w', encoding='utf-8') as f:
+            f.write(documento)
+        log(f"Report HTML MINIMALE: {dest}" + (f" ({len(attesi)} attesi dai consigli)" if attesi
+                                              else " (nessun consiglio trovato: colonna Atteso vuota)"))
+        return
     # Una tabella SOLA, non una per ruolo (richiesta dell'utente 02/08): il
     # ruolo diventa una colonna, e l'ordinamento si fa cliccando le
     # intestazioni. Cosi' si confrontano fra loro anche giocatori di ruoli
@@ -1913,6 +1962,11 @@ def main():
     ap.add_argument('--html', default=None,
                     help="report HTML (default con --scrivi-discovery: "
                          "generatore_formazioni/output/scouting_<fixture>.html)")
+    ap.add_argument('--minimal', action='store_true',
+                    help="tabella minima: giocatore/ruolo/club/odds/prezzo/atteso/grade, "
+                         "niente arene ne' essenze/GW (09/08/2026, richiesta utente: "
+                         "'a me interessa semplificarlo e farlo funzionare'). Le sezioni "
+                         "complete restano nel codice e si riaccendono senza questo flag")
     ap.add_argument('--riusa-pool', action='store_true',
                     help="il report riusa lo STESSO pool gia' scritto dal job "
                          "candidati (dati_globali/scouting_<fixture>.json) invece "
@@ -2051,10 +2105,14 @@ def main():
         # Le formazioni si possono comporre solo quando i consigli esistono
         # gia': alla prima passata (quella che SCRIVE la discovery) non ci
         # sono ancora, e la sezione semplicemente non compare.
-        formazioni = () if args.scrivi_discovery else componi_arene(pool)
+        # --minimal: niente arene in nessun caso, la modalita' semplificata
+        # non le mostra.
+        formazioni = (() if (args.scrivi_discovery or args.minimal)
+                     else componi_arene(pool))
         scrivi_html(pool, args.html or os.path.join(
             REPO_ROOT, 'generatore_formazioni', 'output',
-            f"scouting_{pool['fixture']['slug']}.html"), formazioni)
+            f"scouting_{pool['fixture']['slug']}.html"), formazioni,
+            minimal=args.minimal)
     return 0
 
 

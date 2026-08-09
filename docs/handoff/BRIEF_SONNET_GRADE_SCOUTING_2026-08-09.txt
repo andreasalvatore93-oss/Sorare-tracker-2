@@ -335,3 +335,93 @@ COME FARLO SENZA ROMPERE NIENTE (vincolo):
   chiaro: l'utente vede la lettera sul sito, quindi in quel caso la
   domanda diventa "da quale altra query la prende il sito?", e la si
   affronta al giro dopo. Non inventare un ripiego silenzioso.
+
+--- ESITO SECONDO GIRO (Sonnet esecutore, 09/08/2026 notte, Roma) --------
+
+L'UTENTE AVEVA RAGIONE. Il campo esiste ed e' esattamente quello giusto.
+
+CAMPO TROVATO (metodo: campo plausibile + lettura errore, introspezione
+disabilitata, esattamente come indicato):
+  `... on Player { nextClassicFixtureProjectedGrade { grade } }`
+Primo tentativo, primo colpo: l'errore su `nextClassicFixtureProjectedGrade`
+senza selezione ("Field must have selections... Did you mean
+'nextClassicFixtureProjectedGrade { ... }'?") confermava che il campo
+esiste ed e' un oggetto (`PlayerGameScoreProjection`). Aggiunta la
+selezione `{ grade }`, la query passa pulita.
+
+VERIFICA CHE SIA LA GW GIUSTA (non una passata) -- fatta con un metodo
+piu' forte di quello che il brief suggeriva (non c'e' un campo data su
+`PlayerGameScoreProjection`: provato `anyGame`/`game`/`fixture`/
+`anyFixture`/`so5Fixture`/`anyPlayerGameStats`, tutti "doesn't exist on
+type PlayerGameScoreProjection"). Uso invece la fonte di verita' gia' in
+produzione: `discovery_fixture.fetch_grade_live(slug_fx)`, che legge il
+grade DALLA STESSA fixture (football-11-14-aug-2026) via
+`myFilteredBench` sulle carte POSSEDUTE (217 slug, sessione autenticata
+crowss). Confronto sugli slug in comune fra il pool `searchPlayers` e
+quel bench:
+  slug in comune: 125
+  grade IDENTICO: 124/125 (99.2%)
+  unico diverso: clement-bischoff, D (searchPlayers) vs E (bench) --
+  scarto di una lettera adiacente, compatibile con le due query lanciate
+  a pochi secondi di distanza l'una dall'altra (il grade puo' muoversi
+  vicino al lock, vedi §8bis "verifica live 09/08"), non con una partita
+  diversa (li' i disaccordi sarebbero massicci e casuali, non 1/125).
+VERDETTO: `nextClassicFixtureProjectedGrade.grade` E' la proiezione per
+la fixture target, raggiungibile anche su carte NON possedute, e arriva
+GRATIS nella stessa query searchPlayers (nessuna chiamata in piu',
+verificato di nuovo su 3 pagine da 50 con tutti i campi + questo).
+
+IMPLEMENTATO (query di misura promossa a modifica, coerente col nuovo
+esito):
+ - `SEARCH_QUERY`: aggiunto `nextClassicFixtureProjectedGrade { grade }`
+   sull'`... on Player`.
+ - `pool_da_search`: nuovo campo `g['grade']` nel dizionario per
+   giocatore.
+ - Nessun uso del grade nel punteggio/ordinamento delle sezioni
+   esistenti (arene/essenze) -- resta solo dato mostrato, come da brief
+   del primo giro ("come deve PESARE e' una decisione dell'utente").
+
+--- SCOUTING SEMPLIFICATO -- FATTO ---------------------------------------
+
+Verificato PRIMA come richiesto: `--odds-min` filtra DOPO aver scaricato
+il pool (`filtra_per_odds`, righe 883-909) -- le odds arrivano in blocco
+da `discovery_fixture.odds_per_giornata` (~37 query per TUTTA la
+giornata, non per candidato) e si applicano sul pool gia' scaricato da
+searchPlayers. La soglia NON riduce le pagine scaricate (le ~12 chiamate
+restano le stesse), riduce solo l'elenco finale. La soglia va sempre
+passata esplicitamente con `--odds-min X` (nessun default nel codice,
+`default=None`): senza, tutto il pool resta senza filtro odds.
+
+Aggiunto, dietro flag, senza toccare il comportamento di default:
+ - CLI: `--minimal` (scouting_gw.py). Con questo flag:
+    - le arene NON si compongono (formazioni = () sempre, anche col
+      report finale, non solo con --scrivi-discovery);
+    - l'HTML mostra UNA tabella sola: Giocatore, R(uolo), Club, Odds,
+      Prezzo, Atteso, Grade -- ordinata per Atteso decrescente. Niente
+      Ess/GW, niente "Si ripaga in", niente verdetto Conviene/NO,
+      niente sezione arene ipotetiche.
+    - nuova funzione `_tabella_minimale()`, non tocca la tabella
+      completa esistente ne' `componi_arene`: il tool completo resta
+      raggiungibile lanciando senza `--minimal` (default `False`).
+ - Workflow: nuovo input checkbox `minimal` (default `false`) in
+   `scouting_gw.yml`, passato come `--minimal` sia al job `candidati`
+   che al job `consigli`/report (deve essere coerente sui due, altrimenti
+   la prima passata scrive un pool/HTML e la seconda un altro formato).
+
+TESTATO IN LOCALE (nessuna modifica alla produzione: `--lega mls`,
+output su file in scratchpad, NIENTE `--scrivi-discovery` quindi
+`player_slugs.json` di produzione non toccato):
+  `python scouting_gw.py --lega mls --minimal --json <tmp> --html <tmp>`
+Esito: nessun errore, tabella scritta con 26 attesi su ~184 candidati
+MLS, colonna Grade valorizzata per una parte dei giocatori (es. D/E/F
+osservati, oltre a "&mdash;" per chi non ha proiezione, coerente coi
+casi gia' visti nel primo giro dove score/grade sono null insieme).
+
+DEFAULT DELLA MODALITA' SEMPLIFICATA: lasciato SPENTO (`--minimal`
+assente di default, checkbox default `false`) -- il brief diceva "da
+concordare", quindi non ho deciso al posto dell'utente. Se la vuole di
+default, e' un cambio di una riga (default del checkbox + eventualmente
+invertire la logica in scouting_gw.py).
+
+File toccati in questo giro: `scouting_gw.py`,
+`.github/workflows/scouting_gw.yml`, questo brief. Nessun push su main.
