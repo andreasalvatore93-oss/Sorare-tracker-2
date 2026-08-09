@@ -1175,3 +1175,162 @@ fatto sul JSON pubblico catturato, non sullo screenshot.
 NON FATTO: aggancio del realizzato (partita in corso alle 15:52, a fine
 partita ~18:30 Roma va ripetuta la cattura o letta la cache game-log per
 chiudere il confronto pre/post/realizzato).
+
+
+25. G FISSO v2 PULITO (P_noF, griglia, centrata) -- 09/08/2026 ~16:35 Roma
+    (Sonnet, esecutore, BRIEF_SONNET_GFISSO_V2_PULITO_2026-08-09.txt)
+----------------------------------------------------------------------------
+Script nuovo: analisi_manager/p20_gfisso_v2_backtest.py (non tocca
+p20_gfisso_backtest.py ne' p20_g_odds_arene_backtest.py, li importa e riusa).
+Output: p20_gfisso_v2_backtest_out.json, dump p20_gfisso_v2_dump.txt, log
+p20_gfisso_v2_run.log.
+
+25.1 CONTROLLI (fatti prima dei risultati, come richiesto)
+C0 pool totale: 7619 carte, 7381 con grade noto (96,9%), 778 F (10,2%).
+C1 pool vs slot dopo filtro F: 53 unita' erano in allocazione col pool
+  intero; tolte le F, 2/53 scendono a pool<=slot (astensione) -- escluse
+  dalla misura di allocazione P_noF, dichiarato.
+C2 interruttore A/A: tabella=0 -> GF torna identico a _cal (True). Tabella
+  =+5000 -> GF si sposta di +5000 su tutte le 28/30 carte con grade nel
+  campione di prova (True). Interruttore funziona.
+C3 (D7, zero ripetuti): zero_ripetuti=True su OGNI ramo allocazione
+  misurato (var e GF, tutte le tabelle, tutti i set soglie) -- controllo
+  automatico dentro il loop, mai fallito.
+C4 (n identica G_var/GF in astensione): garantito per costruzione (la
+  stessa funzione astensione_generica calcola var e gf sulle stesse righe/
+  stesso riga_per_carta), verificato: n=154 su TUTTE le tabelle in P_ALL,
+  n=111 su TUTTE le tabelle in P_noF. Mai divergente.
+
+25.2 LE DUE POPOLAZIONI
+P_ALL: 90 unita' (37 astensione, 53 allocazione), pool intero, F incluse.
+P_noF: le carte F tolte DAL POOL per entrambi i rami (anche G VARIABILE
+  ricalcolato sul pool ridotto, campo _combinato_noF, stesso schema di
+  p20_gfisso_backtest.ricalcola_combinato_gruppo) -- 90 unita' totali, di
+  cui 39 astensione (37+2 scese dal filtro) e 51 allocazione.
+  n astensione P_noF = 111 (contro 154 di P_ALL): 43 formazioni reali in
+  meno superstiti quando si toglie l'F dal pool -- coerente con l'idea che
+  l'F e' quasi sempre un card 'saltata' post-partita.
+
+25.3 RISULTATO DECISIVO: P_noF, REGIME ASTENSIONE (primario, n=111 su
+ENTRAMBI i rami, parita' di arene giocate), essenze nette, delta=GF-G_var,
+bootstrap IC95 per manager:
+
+  tabella              set vecchio (var=4550)        set nuovo (var=5250)
+  scala_k0.5   raw      gf=4100  delta=-450  [-2550;1500]   gf=4400  delta=-850  [-3150;1450]
+  scala_k0.5   centr.   gf=4350  delta=-200  [-2100;1600]   gf=3050  delta=-2200 [-6000;1300]
+  scala_k1     raw      gf=4400  delta=-150  [-2400;1800]   gf=5200  delta=-50   [-3050;3500]
+  scala_k1     centr.   gf=4850  delta=+300  [-2000;1900]   gf=4250  delta=-1000 [-4000;1900]
+  scala_k2     raw      gf=6000  delta=+1450 [-1450;4650]   gf=5100  delta=-150  [-3100;3350]
+  scala_k2     centr.   gf=4250  delta=-300  [-4300;2200]   gf=3550  delta=-1700 [-4300;900]
+  scala_k4     raw      gf=6400  delta=+1850 [-1100;5000]   gf=4800  delta=-450  [-3700;3300]
+  scala_k4     centr.   gf=4050  delta=-500  [-2600;1300]   gf=3150  delta=-2100 [-8000;3000]
+  scala_k8     raw      gf=6750  delta=+2200 [-200;5400]    gf=5050  delta=-200  [-2500;2400]
+  scala_k8     centr.   gf=2900  delta=-1650 [-6200;1850]   gf=3800  delta=-1450 [-7050;3500]
+  empirica     raw      gf=5400  delta=+850  [-3750;6700]   gf=4600  delta=-650  [-4650;3550]
+  empirica     centr.   gf=4550  delta=+0    [-1800;1800]   gf=3850  delta=-1400 [-3800;1400]
+  placebo (degenere, NON conta per la decisione): delta -450/-1350 su
+    entrambi i set -- e' _cal (tabella zero) contro G_var (z-score attuale),
+    non una misura da 0: mostra che G_var batte gia' _cal grezzo di suo.
+
+NESSUNA tabella ha delta positivo con IC95>0 su ENTRAMBI i set soglie
+contemporaneamente: dove il set vecchio e' positivo (scala_k2/k4/k8,
+empirica), il set nuovo e' negativo o ~0, e viceversa mai il contrario.
+Il segno NON e' stabile: criterio del delta (CLAUDE.md) non soddisfatto da
+NESSUNA tabella, ne' raw ne' centrata.
+
+25.4 VERDETTO PROGRAMMATICO: "GF NON VINCE".
+tabelle_che_passano_il_criterio_pieno (raw E centrata, entrambi i set,
+IC95>0): [] (nessuna). Anche allargando al criterio piu' debole (raw O
+centrata, singolarmente): [] (nessuna tabella passa nemmeno quello).
+Conferma, su una popolazione piu' pulita (F escluse da entrambi i rami,
+copertura pareggiata, come chiesto dall'utente in §22.2), lo stesso
+verdetto del §21: IL MECCANISMO ATTUALE (z-score di gruppo) NON VIENE
+BATTUTO da una tabella fissa, a nessuna magnitudine testata (k 0,5-8) ne'
+con la tabella empirica misurata sui residui (§12).
+
+25.5 ALLOCAZIONE (secondario, cautela: n diversa fra var e GF anche qui,
+riportata sempre separata). Su P_noF il quadro e' anzi negativo per GF: la
+baseline G_var (n=460/476, +40700/+44800) e' gia' molto piu' alta della
+baseline P_ALL (n=547/564, +12100/+16700) -- l'escludere le F alza da solo
+il rendimento di G_var, coerente col §21.6 gia' notato la scorsa sessione.
+Contro questa baseline piu' alta, quasi TUTTE le tabelle GF perdono (delta
+negativo, spesso con IC95 tutto sotto zero: scala_k4/nuovo -19550
+[-37600;-5100], scala_k8 -24200/-27150 con IC95 tutto negativo, placebo
+-15150/-16200 con IC95 quasi tutto negativo). Solo empirica_centrata/nuovo
+e scala_k1_centrata/vecchio danno un delta debolmente positivo ma con IC95
+che attraversa zero: non concludente e comunque isolato (non ripetuto
+sull'altro set soglie). L'allocazione conferma quindi la lettura
+dell'astensione: nessuna evidenza che il fisso batta il variabile.
+
+25.6 P_ALL (per trasparenza, NON e' la popolazione decisiva): qui invece
+diverse tabelle vincono chiaramente in astensione (scala_k2/k4/k8, empirica:
+delta positivo e IC95>0 su ENTRAMBI i set, sia raw che centrata) -- e questo
+e' esattamente il pattern gia' diagnosticato al §21.4: il guadagno viene
+dalle F (che in P_ALL restano nel pool e vengono affossate dalla tabella),
+non dal tratto A-E che l'utente schiera davvero. Confrontare 25.3 (P_noF,
+nessuna tabella vince) con questo paragrafo (P_ALL, molte tabelle vincono)
+e' la prova diretta che il vantaggio precedente era leakage delle F.
+
+25.7 STRATIFICAZIONE PER TIPO ARENA (dettaglio completo nel JSON, campi
+per_cap_type_var/per_cap_type_gf per ogni tabella/set/regime). Esempio,
+P_noF/empirica/vecchio/astensione (n totale 111):
+  cap220 (n=23): var=1600 gf=1500  |  cap260 (n=36): var=1700 gf=3100
+  uncapped (n=6): var=-600 gf=500  |  beginner (n=40): var=1950 gf=700
+  arena_paese/US-Korea-Scozia (n=6): var=-100 gf=-400
+Celle piccole (uncapped, arena_paese: n=6): NON concludenti da sole, solo
+riportate. Nessuna cella singola inverte il verdetto complessivo (25.4).
+
+25.8 VISTA INSIEME (astensione+allocazione sommate, informativa, MAI
+decisiva): presente nel JSON per ogni combinazione (campo
+insieme_informativo). Non riportata qui numero per numero per non
+appesantire: e' dominata dall'allocazione (n molto piu' grande), quindi
+eredita lo stesso quadro del §25.5.
+
+25.9 EXTRA -- residuo (reale - _cal) per lettera, spaccato per lega e per
+ruolo (richiesto per verificare se "ogni lettera ha un valore fisso"):
+dettaglio integrale in p20_gfisso_v2_backtest_out.json (residui_extra_per_
+lega/ruolo, solo celle con n>=5). Esempio lettera A: mls +11,75 (n=696),
+kleague +2,52 (n=319), spagna +20,68 (n=14), cina -12,09 (n=16), italia
+-24,6 (n=5), argentina -3,71 (n=68). Per ruolo, lettera A: GK -0,97 (n=425),
+DEF +2,12 (n=311), MID +14,20 (n=445), FWD +12,18 (n=341). LA LETTERA NON
+HA UN VALORE STABILE: oscilla da -24,6 a +20,68 per lega e da -0,97 a
++14,20 per ruolo sulla stessa lettera A. Questo e' un dato in piu' a favore
+del verdetto 25.4: anche se una tabella isolata avesse vinto, un valore
+fisso per lettera e' un'approssimazione grossolana di un effetto che varia
+molto per contesto -- coerente col perche' lo z-score di GRUPPO (che si
+adatta a lega/ruolo/giornata) tende a fare meglio.
+
+25.10 DUMP (p20_gfisso_v2_dump.txt): manager angioletto33, gw
+football-31-jul-4-aug-2026, popolazione P_noF, tabella scala_k8 (quella col
+delta astensione piu' alto sul set vecchio, scelta automaticamente dallo
+script solo per illustrare -- NON e' la tabella vincente, nessuna tabella
+vince). Pool 78 carte (5 slot reali, regime allocazione), esempio: Evander
+grade A cal=62.1 G_var=70.1 GF(k8)=78.1 reale=100.0; Kai Wagner grade A
+cal=58.3 G_var=66.2 GF=74.3 reale=96.1. Arena-per-arena incluso (una
+formazione A4_beginner con Messi capitano).
+
+25.11 LIMITI DICHIARATI (non nascosti)
+- Il grade resta POST-PARTITA (§22.1), non pre-lock/post-odds: l'esclusione
+  delle F e' un PROXY del filtro reale >=0.80 titolarita', giustificato
+  dalla cattura live §23 (18/18 lettere stabili sopra 0.80) ma non e' il
+  test perfetto che richiederebbe grade catturato al lock su scala.
+- P_noF include ancora carte non-F con grade basso (es. un C al 60% di
+  titolarita') che il filtro esatto >=0.80 toglierebbe: limite superiore
+  dichiarato nel brief, non risolvibile con l'archivio attuale.
+- Bootstrap per manager, B=3000, seed=51 (astensione) / seed di
+  p20_gfisso_backtest.bootstrap_delta_allocazione (allocazione) -- stesso
+  schema gia' validato nel filone.
+
+25.12 DECISIONE CONSEGUENTE: anche col test pulito richiesto dall'utente
+(popolazione pareggiata, griglia di magnitudini, versione centrata,
+stratificazione arena/ruolo/lega), il filone "tabella fissa per lettera al
+posto dello z-score di gruppo" NON regge. Si conferma la chiusura gia'
+proposta al §21.5: si tiene il meccanismo attuale (z-score di gruppo). Resta
+aperta, come gia' notato, la domanda "conviene escludere le carte E dal
+pool anche in produzione" (§21.6) -- non toccata da questo test, che ha
+misurato SOLO fisso-vs-variabile a parita' di pool, non l'effetto
+dell'esclusione E in se'.
+
+Commit: analisi_manager/p20_gfisso_v2_backtest.py,
+p20_gfisso_v2_backtest_out.json, p20_gfisso_v2_dump.txt,
+p20_gfisso_v2_run.log, questo handoff.

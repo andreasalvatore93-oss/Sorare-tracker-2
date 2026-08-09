@@ -1,0 +1,164 @@
+BRIEF SONNET -- G FISSO vs G VARIABILE, TEST PULITO v2 (popolazione di produzione)
+Orchestratore (Opus), 09/08/2026. ESECUTORE: Sonnet. IMPEGNO: MEDIO (segui il
+disegno, ma serve giudizio sulla griglia e sui controlli). SOLO MISURA: nessuna
+modifica alla produzione, nessun commit sui modelli. Nuovo script, non toccare
+p20_gfisso_backtest.py ne' p20_g_odds_arene_backtest.py (importali e riusali).
+
+LEGGERE PRIMA: CLAUDE.md. Poi, come INDIZI da verificare (non come verita'):
+HANDOFF_TABELLA_GRADE_2026-08-09.txt §20 (Sonnet), §21 e §22 (orchestratore,
+perche' il test precedente non era pulito), §23 (cattura live) e la sezione qui
+sotto. Il verdetto precedente "G fisso non batte G variabile" e' NON PROVATO,
+non acquisito: questo giro serve a deciderlo pulito.
+
+============================================================
+LA DOMANDA (una sola)
+============================================================
+Sulla popolazione che l'utente schiera davvero, dare a ogni lettera del grade un
+VALORE FISSO batte il meccanismo attuale (z-score di gruppo, "G variabile"),
+misurato in ESSENZE REALIZZATE, a PARITA' di arene giocate?
+Non sappiamo quanto pesi davvero G: la tabella fissa NON e' nota, va CERCATA a
+griglia (sotto), non assunta.
+
+============================================================
+IL MATERIALE (verificato sui grezzi dall'orchestratore)
+============================================================
+- Archivio: p20_g_odds_arene_backtest.costruisci_unita -> 90 unita' (manager,gw)
+  su GW chiuse, ~825 formazioni. Ogni carta (pool_rows) ha: slug, codice(ruolo),
+  atteso_raw, _cal (atteso calibrato = S21.bfg.calibra), _combinato (G z-score),
+  _grade (grade FINAL da indice_dopo_download), reale (punteggio realizzato dalla
+  cache game-log condivisa), l10. Regime 'astensione' se pool<=slot, 'allocazione'
+  altrimenti.
+- Grade: FINAL (storico_grade_*, scoreStatus FINAL/DID_NOT_PLAY). Lo stesso input
+  per ENTRAMBI i rami: quindi per il confronto testa-a-testa il fatto che sia
+  post-partita NON e' un confounder differenziale (una F e' F per tutti e due).
+- COSA MANCA (importante): l'archivio NON ha lo starter-odds (titolarita') per
+  carta al lock. Percio' il filtro "odds >= 0.80" NON e' applicabile direttamente.
+  Le odds gia' nello script (_delta_odds) sono quelle del FAVORITO della partita,
+  non la titolarita' del giocatore: NON usarle per filtrare la popolazione.
+
+============================================================
+POPOLAZIONE: come approssimare "cio' che l'utente schiera" (>=0.80)
+============================================================
+L'utente schiera solo carte con titolarita' >=0.80. Non avendo quelle odds
+nell'archivio, il proxy pulito e' ESCLUDERE LE F dal pool:
+ - sopra 0.80 le F non esistono (S3: 0 F su 52 pre-lock; l'utente conferma);
+ - la cattura live 09/08 (§23) mostra che a >=0.80 il grade non si muove fra
+   pre e post ufficiali (18/18 stabili), quindi togliere le F non scarta per
+   sbaglio carte che lui gioca.
+MODO di escludere le F (scelta dell'orchestratore, la piu' pulita): togliere le
+carte F DAL POOL del tutto (nessuno dei due rami le vede). NON lasciarle nel pool
+"non pesate": lasciarle reintrodurrebbe un confronto sporco (lo z-score le
+sposterebbe comunque, la tabella no).
+Esegui il test su DUE popolazioni, per trasparenza:
+  P_ALL  = pool intero, tutte le lettere (il punto 1 dell'utente);
+  P_noF  = pool senza le carte F (il punto 2 = proxy della popolazione di
+           produzione). >>> E' P_noF quella che decide per la produzione. <<<
+LIMITE da dichiarare nell'output: P_noF tiene dentro anche carte <0.80 non-F
+(es. un C al 60%) che le odds al lock toglierebbero; l'archivio non permette di
+toglierle. Il filtro >=0.80 ESATTO e' possibile solo sui campioni live piccoli
+(vedi sotto), da usare come conferma, non come test principale.
+
+============================================================
+I DUE MODELLI A CONFRONTO
+============================================================
+- G VARIABILE = _combinato (z-score di gruppo attuale). Baseline di produzione.
+- G FISSO = _cal + valore_fisso(lettera). Il valore per lettera NON e' noto:
+  provalo a GRIGLIA. Griglia minima richiesta (monotona A>=B>=C>=D>=E, le F sono
+  fuori pool in P_noF; in P_ALL dai alle F il loro posto in fondo):
+    (i)  SCALA DEDOTTA MONOTONA a piu' magnitudini: base b={A:+2,B:+1,C:0,D:-1,
+         E:-2} (F:-4 solo in P_ALL) moltiplicata per k in {0.5,1,2,4,8}. Serve a
+         vedere se esiste UNA magnitudine a cui il fisso batte il variabile.
+    (ii) TABELLA EMPIRICA A-E: i residui per lettera gia' misurati su questo
+         archivio (vedi p20_grade_residui_allargato_out.json / §12), ristretti
+         ad A-E. In P_ALL includi la F.
+    (iii)PLACEBO: tabella tutta a 0 (deve dare delta ~0: test dell'interruttore).
+  Per OGNI tabella della griglia, prova ANCHE la versione CENTRATA (tabella meno
+  la sua media sul pool). Motivo: una tabella non centrata alza l'atteso medio e
+  fa entrare il bot in piu' arene -> in allocazione "guadagna di piu'" solo perche'
+  entra di piu', non perche' sceglie meglio (§21.2/21.7). La versione centrata
+  separa "ordina meglio" da "spinge su tutti".
+
+============================================================
+REGIME: dove si legge il verdetto
+============================================================
+- ASTENSIONE = PRIMARIO. Le arene sono quelle reali del manager, quindi i due
+  rami giocano LO STESSO numero di arene (n identica): e' l'unico confronto a
+  parita' di arene, misura pura di "chi sceglie meglio". Il verdetto di produzione
+  si legge QUI, su P_noF.
+- ALLOCAZIONE = secondario e da leggere con cautela: i due rami entrano in un
+  numero DIVERSO di arene (§21.1). Riporta SEMPRE le due n separate e le essenze
+  PER ARENA, non solo il totale. La tabella centrata qui e' obbligatoria.
+
+============================================================
+STRATIFICAZIONE (richiesta esplicita dell'utente 09/08)
+============================================================
+A) SOLO ARENE. L'archivio e' arena-only (verificato: raccogli_formazioni scarta
+   ogni formazione senza tipo_arena, riga 76). Non mescolare MAI con competizioni
+   non-arena: non ce ne sono, ma se in futuro ne entrano, vanno tenute fuori.
+B) TIPI DI ARENA DISTINTI. Dentro le arene ci sono tipi diversi (cap260, cap220,
+   uncapped, beginner, e arene-paese: US/Korea/Scotland -- vedi GRUPPI in
+   p20_grade_arene_copertura_finale.py). L'utente li vuole DISTINTI: riporta il
+   delta GF-G_var separatamente per cap-type (cap260/cap220/uncapped/beginner; le
+   arene-paese raggruppale a parte). NON dare un verdetto che pesa insieme tipi
+   diversi come se fosse uno. La vista pooled su tutte le arene la puoi dare come
+   riferimento secondario, ma etichettala "mescola i tipi" e non ci si decide.
+   Riporta la n per ogni cella: dove e' troppo piccola per concludere, dillo e
+   basta, non pooolare per fare numero.
+C) POOL=SLOT vs POOL>SLOT, SEPARATE + INSIEME (richiesta utente). Nell'archivio:
+   - pool<=slot = regime 'astensione' (nessuna scelta da fare, decide entra/salta);
+   - pool>slot  = regime 'allocazione' (scelta vera fra le carte).
+   Entrambi presenti. Analizzali SEPARATI (e' gia' cosi') MA aggiungi anche una
+   vista INSIEME (astensione + allocazione nello stesso conteggio) come l'utente
+   chiede. Ricorda pero': il verdetto di SELEZIONE si legge solo dove c'e' scelta
+   e a parita' di arene (astensione), la vista-insieme e' informativa, non
+   decisiva.
+
+============================================================
+CONTROLLI OBBLIGATORI (riporta in chiaro, prima dei risultati)
+============================================================
+C1 pool vs slot dopo il filtro F: quante unita' scendono a pool<=slot (test nullo
+   per costruzione, escludile e dillo).
+C2 interruttore A/A: la tabella placebo (tutta 0) deve dare GF==G_var? No: GF con
+   tabella 0 == _cal. Verifica che a tabella 0 il ramo GF coincida con _cal e che
+   a tabella grande si muova. (come il C2 del §20).
+C3 zero giocatori ripetuti: costruisci le formazioni col generatore vero, non con
+   un knapsack ad hoc (D7 in CLAUDE.md). Riporta zero_ripetuti per ogni ramo.
+C4 n per ramo: in astensione DEVE essere identica fra G_var e GF; se non lo e',
+   c'e' un bug, fermati.
+Extra (domanda S2 "ogni lettera ha un valore fisso?"): calcola il residuo
+   realizzato medio per lettera (reale - _cal, su A-E) SPACCATO per lega e per
+   ruolo, e riporta quanto varia. Se il valore di una lettera oscilla molto fra
+   leghe/ruoli, "fisso" e' dubbio: e' un dato che serve, riportalo, non decidere
+   tu.
+
+============================================================
+METRICA E CRITERIO DI DECISIONE
+============================================================
+Essenze nette realizzate. delta = GF - G_var. Bootstrap per manager IC95.
+Fai girare tutto sui DUE set di soglie (SOGLIE_VECCHIE e SOGLIE_NUOVE).
+Regola del delta (CLAUDE.md): il fisso "vince" solo se, su P_noF in astensione,
+il delta ha lo STESSO segno positivo su ENTRAMBI i set di soglie, con IC95 che
+non attraversa lo zero, per almeno una tabella della griglia NON degenere (k>0)
+E anche nella sua versione centrata. Se vince solo non-centrato, e' spinta di
+livello, non selezione: dillo. Se il segno cambia fra i due set, o serve la
+versione non centrata, il fisso NON vince.
+
+============================================================
+CAMPIONI LIVE (solo come CONFERMA, non test principale)
+============================================================
+Se avanza tempo: sui campioni con grade+odds al LOCK veri (analisi_manager/dati/
+snapshot_manual_zultewaregem_genk_..., snapshot_public_game_*_2026*.json J-League,
+e le 173 righe pre-lock del 06/08) si puo' filtrare >=0.80 ESATTO. n piccolo, ma
+e' l'unico posto dove il filtro e' vero. Non e' il test che decide; e' la
+conferma che il proxy "escludi F" non mente. Solo se avanza tempo.
+
+============================================================
+CONSEGNA
+============================================================
+Nuovo script: analisi_manager/p20_gfisso_v2_backtest.py (importa P20G/P13/S21).
+Output: p20_gfisso_v2_out.json + un DUMP LEGGIBILE di un'unita' (una giornata di
+un manager): nomi, ruolo, grade, _cal, G_var, GF(migliore tabella), reale, arena
+per arena, piu' pool vs slot (obbligo del §BACKTEST in CLAUDE.md).
+Scrivi l'esito in coda a HANDOFF_TABELLA_GRADE_2026-08-09.txt, sezione nuova
+"25. G FISSO v2 PULITO (P_noF, griglia, centrata)". Numeri integrali, anche i
+nulli, con le n. Committa script+json+dump+handoff e FAI git push.
