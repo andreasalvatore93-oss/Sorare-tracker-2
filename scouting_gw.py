@@ -1443,6 +1443,11 @@ tr:nth-child(even){background:#161922}
 .mia{color:#7ee787} .ko{color:#ff7b72} .warn{color:#ffa657} .muted{color:#6e7481}
 a{color:inherit;text-decoration:none;border-bottom:1px dotted #4a5164}
 a:hover{color:#8ab4ff}
+.btn-scelta{background:#1a1d26;color:#9aa0ad;border:1px solid #2a2f3d;border-radius:4px;
+  padding:4px 10px;font-size:12px;cursor:pointer}
+.btn-scelta:hover{border-color:#4a5164;color:#e6e8ee}
+.btn-scelta.attivo{background:#2a3550;color:#8ab4ff;border-color:#8ab4ff}
+.best5-row td{background:rgba(255,215,100,0.10)!important}
 </style></head><body>
 <h1>Scouting -- %(fixture)s</h1>
 <div class="meta">%(quando)s &middot; %(n)d candidati &middot; %(filtri)s</div>
@@ -1696,6 +1701,99 @@ def _atteso_combinato_per_gruppo(pool, attesi, gg):
     return combinato
 
 
+# Filtro ruolo (bottoni "Mostra solo") + Best Five/Best per ruolo, tutto su
+# data-* nelle righe (mai testo da riparsare -- l'unico script che parsava il
+# testo delle celle e' quello di ordinamento generico, invariato). Standalone,
+# incluso solo dentro la tabella minimale.
+_HTML_CONTROLLI_MINIMALE = """
+<script>
+(function () {
+  var tab = document.getElementById('candidati');
+  if (!tab) return;
+  var righe = function () { return Array.prototype.slice.call(tab.querySelectorAll('tr')).slice(1); };
+
+  function numAttr(tr, nome) {
+    var v = tr.getAttribute(nome);
+    if (v === null || v === '') return null;
+    var n = parseFloat(v);
+    return isNaN(n) ? null : n;
+  }
+  function ruoliDi(tr) {
+    return (tr.getAttribute('data-ruoli') || '').split(',').filter(Boolean);
+  }
+  function rapporto(tr) {
+    var prezzo = numAttr(tr, 'data-prezzo');
+    var punteggio = numAttr(tr, 'data-ag');
+    if (punteggio === null) punteggio = numAttr(tr, 'data-atteso');
+    if (prezzo === null || punteggio === null || prezzo <= 0 || punteggio <= 0) return null;
+    return prezzo / punteggio;
+  }
+
+  // --- Filtro ruolo: bottoni "Mostra solo" -----------------------------
+  var btnRuoli = Array.prototype.slice.call(document.querySelectorAll('.btn-ruolo'));
+  btnRuoli.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      btnRuoli.forEach(function (b) { b.classList.remove('attivo'); });
+      btn.classList.add('attivo');
+      var scelto = btn.dataset.ruolo;
+      righe().forEach(function (tr) {
+        var mostra = (scelto === 'TUTTI') || (ruoliDi(tr).indexOf(scelto) !== -1);
+        tr.style.display = mostra ? '' : 'none';
+      });
+    });
+  });
+
+  // --- Best Five / Best per ruolo ---------------------------------------
+  var COLORI_RUOLO = { GK: '#8ab4ff', DEF: '#7ee787', MID: '#ffa657', FWD: '#ff7b72' };
+  var btnBest5 = document.getElementById('btn-best5');
+  var btnBestRole = document.getElementById('btn-bestrole');
+  var attivo5 = false, attivoRuolo = false;
+
+  function pulisci() {
+    righe().forEach(function (tr) {
+      tr.classList.remove('best5-row');
+      tr.style.borderLeft = '';
+      tr.style.background = '';
+    });
+  }
+
+  function applica() {
+    pulisci();
+    var conRapporto = righe().map(function (tr) {
+      return { tr: tr, r: rapporto(tr) };
+    }).filter(function (x) { return x.r !== null; });
+
+    if (attivo5) {
+      conRapporto.slice().sort(function (a, b) { return a.r - b.r; })
+        .slice(0, 5).forEach(function (x) { x.tr.classList.add('best5-row'); });
+    }
+    if (attivoRuolo) {
+      ['GK', 'DEF', 'MID', 'FWD'].forEach(function (ruolo) {
+        var candidati = conRapporto.filter(function (x) { return ruoliDi(x.tr).indexOf(ruolo) !== -1; });
+        if (!candidati.length) return;
+        candidati.sort(function (a, b) { return a.r - b.r; });
+        var migliore = candidati[0].tr;
+        migliore.style.borderLeft = '4px solid ' + COLORI_RUOLO[ruolo];
+        migliore.style.background = 'rgba(255,255,255,0.05)';
+      });
+    }
+  }
+
+  if (btnBest5) btnBest5.addEventListener('click', function () {
+    attivo5 = !attivo5;
+    btnBest5.classList.toggle('attivo', attivo5);
+    applica();
+  });
+  if (btnBestRole) btnBestRole.addEventListener('click', function () {
+    attivoRuolo = !attivoRuolo;
+    btnBestRole.classList.toggle('attivo', attivoRuolo);
+    applica();
+  });
+})();
+</script>
+"""
+
+
 def _tabella_minimale(pool, attesi, gg=None):
     """Tabella semplificata (09/08/2026, richiesta utente): SOLO giocatore,
     ruolo, club, odds, prezzo, grade, atteso, A+G -- niente arene, niente
@@ -1714,24 +1812,44 @@ def _tabella_minimale(pool, attesi, gg=None):
         "lega/ruolo (stessa formula del generatore di formazioni). Ordinamento "
         "di default. Clicca un'intestazione per riordinare su un'altra "
         "colonna.</div>"
+        "<div class='meta'>Mostra solo: "
+        "<button type='button' class='btn-scelta btn-ruolo attivo' data-ruolo='TUTTI'>Tutti</button> "
+        "<button type='button' class='btn-scelta btn-ruolo' data-ruolo='GK'>GK</button> "
+        "<button type='button' class='btn-scelta btn-ruolo' data-ruolo='DEF'>DEF</button> "
+        "<button type='button' class='btn-scelta btn-ruolo' data-ruolo='MID'>MID</button> "
+        "<button type='button' class='btn-scelta btn-ruolo' data-ruolo='FWD'>FWD</button>"
+        "</div>"
+        "<div class='meta'>"
+        "<button type='button' id='btn-best5' class='btn-scelta'>Best Five</button> "
+        "<button type='button' id='btn-bestrole' class='btn-scelta'>Best per ruolo</button> "
+        "<span class='muted'>rapporto prezzo/A+G (prezzo/Atteso se manca il grade), "
+        "piu' basso e' meglio -- esclusi i candidati senza prezzo o senza atteso.</span>"
+        "</div>"
         "<div class='wrap'><table id='candidati'>"
         "<tr><th>Giocatore</th><th>R</th><th>Club</th>"
-        "<th title='Starter odds Sorare'>Odds</th><th>Prezzo</th>"
-        "<th title='Lettera Sorare A..F per la prossima partita classic'>Grade</th>"
-        "<th>Atteso</th>"
-        "<th title='Atteso + effetto del grade dentro il gruppo lega/ruolo'>A+G</th></tr>"]
+        "<th class='n' title='Starter odds Sorare'>Odds</th><th class='n'>Prezzo</th>"
+        "<th class='n' title='Lettera Sorare A..F per la prossima partita classic'>Grade</th>"
+        "<th class='n'>Atteso</th>"
+        "<th class='n' title='Atteso + effetto del grade dentro il gruppo lega/ruolo'>A+G</th></tr>"]
     for g in righe:
         atteso = attesi.get(g['slug'])
         ag = combinato.get(g['slug'])
-        prezzo = ('&mdash;' if g.get('prezzo_eur') is None
-                  else '%.2f&nbsp;&euro;' % g['prezzo_eur'])
+        prezzo_num = g.get('prezzo_eur')
+        prezzo = ('&mdash;' if prezzo_num is None
+                  else '%.2f&nbsp;&euro;' % prezzo_num)
         odds_txt = ('&mdash;' if g.get('starter_odds') is None
                     else "<span class='%s'>%.0f%%</span>"
                          % ('mia' if g['starter_odds'] >= 0.8 else 'warn',
                             g['starter_odds'] * 100))
         grade = g.get('grade') or '&mdash;'
+        # data-* robusti (non testo da riparsare) per filtro ruolo e bottoni
+        # Best Five/Best per ruolo -- niente fragilita' sul formato mostrato.
         pezzi.append(
-            "<tr>"
+            "<tr"
+            f" data-ruoli='{','.join(g['ruoli'])}'"
+            f" data-prezzo='{'' if prezzo_num is None else prezzo_num}'"
+            f" data-atteso='{'' if atteso is None else atteso}'"
+            f" data-ag='{'' if ag is None else ag}'>"
             f"<td><a href='https://sorare.com/football/players/{g['slug']}' "
             f"target='_blank' rel='noopener'>{(g.get('nome') or g['slug'])}</a></td>"
             f"<td>{'/'.join(g['ruoli'])}</td>"
@@ -1744,6 +1862,7 @@ def _tabella_minimale(pool, attesi, gg=None):
             f"<td class='n'>{'&mdash;' if ag is None else '%.1f' % ag}</td>"
             "</tr>")
     pezzi.append("</table></div>")
+    pezzi.append(_HTML_CONTROLLI_MINIMALE)
     return pezzi
 
 
