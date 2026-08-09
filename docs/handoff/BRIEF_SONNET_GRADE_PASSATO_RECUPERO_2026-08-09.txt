@@ -1,0 +1,89 @@
+BRIEF PER SONNET — IL GRADE DI UNA PARTITA GIA' GIOCATA E' ANCORA
+RECUPERABILE DALL'API?
+Scritto dall'orchestratore il 09/08/2026 (Roma).
+SONDA, non estrazione massiva. NESSUNA MODIFICA ALLA PRODUZIONE.
+L'utente ha gia' autorizzato le POCHE query di questa sonda (2-3 al
+massimo). Se serve un'estrazione vera, la si CHIEDE prima, non la si fa.
+
+======================================================================
+0. COSA LEGGERE PRIMA
+======================================================================
+- CLAUDE.md (radice): divieto di allucinazioni, minimizzare le query,
+  l'introspezione GraphQL su Sorare e' DISABILITATA (`__type`/`__schema`
+  danno errore: non riprovarci, si scopre lo schema con una query mirata
+  leggendo il messaggio d'errore).
+- analisi_manager/p12_lettera_grade.py:90-113 — query gia' funzionante
+  che legge `proj.get('grade')` e `starterOddsBasisPoints` da
+  playerGameStats. E' il modello da riusare.
+- analisi_manager/grade_snapshot_pubblico.py:75-95 — stessa cosa, versione
+  che salva lo snapshot pubblico (campi: grade, reliability_bp,
+  starter_odds_bp, scoreStatus, l10, game_date).
+- analisi_manager/p12_backtest_manager_full.py:79-95
+  `trova_grade_finestra(...)` — come il grade viene cercato in una
+  finestra di date; e' il consumatore dei dati storici.
+
+======================================================================
+1. LA DOMANDA (una sola)
+======================================================================
+Per una partita GIA' GIOCATA e conclusa (scoreStatus FINAL), l'API
+Sorare restituisce ANCORA il `grade` del giocatore per quella partita?
+
+Contesto: il grade viene raccolto oggi solo con snapshot presi PRIMA
+della partita. Se l'API lo servisse anche dopo, si potrebbero riempire i
+buchi dello storico a posteriori, senza aspettare le giornate future.
+
+======================================================================
+2. L'IPOTESI DELL'ORCHESTRATORE, PRIMA DEI NUMERI
+======================================================================
+Non lo so, e non voglio dedurlo: gli snapshot esistenti si spiegano
+ugualmente bene sia che il campo sopravviva sia che sparisca. Se esce che
+NON e' recuperabile, e' un risultato valido e va scritto: chiude la
+questione e si smette di sperarci.
+Attenzione a un errore classico: `grade` = None puo' voler dire "non c'e'
+piu'" oppure "non c'e' mai stato per quel giocatore". Distingui i due
+casi usando giocatori di cui SAPPIAMO che il grade c'era, perche' e'
+salvato nei nostri snapshot storici (vedi §3).
+
+======================================================================
+3. IL METODO (poche query, mirate)
+======================================================================
+1) Scegli dai nostri snapshot storici (analisi_manager/dati/storico_grade_*)
+   3-5 righe di giocatori con: grade NON nullo, partita in una data
+   PASSATA di almeno una settimana, scoreStatus FINAL. Annota slug, data
+   partita, grade salvato, starter_odds_bp salvato.
+2) Rifai per quegli stessi giocatori/partite la query di
+   p12_lettera_grade.py (o grade_snapshot_pubblico.py) e guarda cosa
+   torna oggi nel campo `grade` (e in `reliabilityBasisPoints`,
+   `starterOddsBasisPoints`).
+3) Confronta riga per riga: il grade di oggi coincide con quello salvato
+   allora? E' nullo? E' diverso?
+4) Se serve il cookie/credenziali Sorare, CHIEDILO all'utente. Se prendi
+   429, non e' un dato mancante: e' una richiesta da rifare.
+
+Numeri di controllo da dichiarare: quante righe hai provato, quante
+hanno risposto, quante col grade presente, quante col grade identico a
+quello storico, quante diverse. Se una sola riga risponde, dillo e non
+generalizzare.
+
+Nota gia' nota, da tenere presente ma non da indagare: esiste un caso
+(`andrew-vincent-rick`, 13/05) in cui il grade e' CAMBIATO fra due
+letture entrambe con scoreStatus FINAL — 1 caso su 729, causa ignota.
+Quindi una singola differenza non dimostra nulla: servono piu' righe.
+
+======================================================================
+4. COSA NON FARE
+======================================================================
+- Niente estrazione massiva: questa e' una sonda da 2-3 query. Se la
+  risposta e' "si', si recupera", NON partire a riempire lo storico:
+  scrivilo nell'esito e lascia decidere all'utente quanto/quando.
+- Niente modifiche alla produzione, niente run GitHub.
+- Niente introspezione GraphQL.
+- Non stimare a spanne: se l'API non risponde, si scrive "non risposto".
+
+======================================================================
+5. DOVE SCRIVERE L'ESITO
+======================================================================
+In coda a docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md (filone grade), con
+la tabella riga per riga dei confronti. Committa solo i tuoi file e fai
+push. All'utente riferisci in TRE righe: si'/no/parziale, con quante
+righe l'hai verificato, e cosa costerebbe riempire lo storico.
