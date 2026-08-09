@@ -13,10 +13,50 @@ come riferimento corrente):
 
 Ultimo aggiornamento: **sessione 09/08/2026, notte (Roma, CEST)**.
 
-**RIPARTIRE DA QUI**: il passaggio di consegne aggiornato è
-`docs/handoff/PASSAGGIO_CONSEGNE_ORCHESTRATORE_2026-08-09_MATTINA.txt` —
-dice il punto esatto in cui siamo, cosa si aspetta da Sonnet e cosa fare
-quando torna. Leggilo prima di questo file.
+## REGOLA NUOVA — I BACKTEST SONO IL MODELLO CONTRO SE STESSO (09/08/2026, decisa dall'utente)
+
+**Sovrascrive il modo in cui sono stati fatti TUTTI i backtest fino a
+oggi. Vale da adesso in avanti, senza eccezioni.**
+
+Fino al 09/08 i backtest confrontavano il nostro modello con le scelte di
+altri manager Sorare (24 manager, 6 GW, file `dati_globali/manager_*.json`).
+Quella strada ha prodotto confusione strutturale: archivi misti, campioni
+di provenienza diversa, competizioni mescolate, criteri di schieramento
+ignoti (di 23 manager su 24 non sappiamo con che regola scegliessero), e
+verdetti che l'utente non ha mai potuto controllare fino in fondo. Da qui
+la sua sfiducia dichiarata verso i backtest — motivata, non un capriccio.
+
+**Da adesso:**
+
+1. **Il modello si misura contro SE STESSO**, non contro altri manager.
+   La domanda di ogni backtest diventa "questa variante batte la versione
+   che gira oggi in produzione, sulle stesse giornate?", non "battiamo i
+   manager?".
+2. **L'unico archivio di riferimento sono le giornate dell'UTENTE**
+   (manager `crowss`). Sono le sole su cui ha controllo totale: conosce le
+   dinamiche, i voti, le formazioni, il perché di ogni scelta.
+3. **Punto di partenza: la fixture 7-11 agosto 2026.** Da quella giornata
+   in poi le formazioni sono schierate col modello **G**. È la prima
+   finestra in cui ciò che è in campo coincide con ciò che si vuole
+   misurare.
+4. **Gli archivi multi-manager restano come storia, non come base di
+   misura.** Non si aprono nuovi filoni su quel materiale, e i verdetti
+   già presi lì non si estendono a nuove decisioni. Se una misura passata
+   serve, si cita dicendo che veniva da lì.
+5. Conseguenza pratica sulla potenza statistica: le giornate dell'utente
+   crescono di una alla volta. Un test che ha bisogno di centinaia di
+   osservazioni per decidere **non si può fare adesso** — e va detto
+   subito invece di girarlo su un campione sbagliato. Meglio aspettare
+   giornate vere che decidere su dati che non ci appartengono.
+
+---
+
+**COME SI RIPARTE** (aggiornato 09/08 notte): NON da un passaggio di
+consegne. Come dice CLAUDE.md: `git pull`, `git log`, poi il CODICE in
+produzione sul tema. Questo file serve a cercare un dettaglio o a sapere
+cosa è già chiuso — come indizio da verificare, mai come prova.
+`docs/handoff/PASSAGGIO_CONSEGNE_ORCHESTRATORE_2026-08-09_MATTINA.txt` è
+superato dai lavori del 09/08 sera-notte: non usarlo.
 
 **PUNTO FERMO DEL 09/08 — cosa è deciso e non si riapre:**
 
@@ -37,9 +77,10 @@ quando torna. Leggilo prima di questo file.
    a mano una quarta volta.
 5. **Il grade è in larga parte un indicatore di titolarità**, non di
    qualità: sale all'uscita delle odds, crolla su notizie extra-campo, e
-   chi entra un minuto prende ~35 punti di level score. Da qui la riserva
-   aperta più importante: quanto vale G *sopra* il filtro starting odds a
-   0,80 che il bot già applica — mai misurato, §10bis.
+   chi entra un minuto prende ~35 punti di level score. La riserva che ne
+   discendeva ("quanto vale G sopra il filtro 0,80") è stata
+   **ridimensionata il 09/08 notte**: poggiava su una premessa falsa sul
+   pool del backtest — §10bis voce 1.
 
 6. **Il grade è in corso di ri-normalizzazione, filone APERTO.** Misurato
    quanto vale ogni lettera (§8bis) e quanto aggiunge al netto di ciò che
@@ -688,10 +729,13 @@ c'era davvero), il capitano è scelto col criterio del baseline in tutti i
 rami, e le formazioni senza arena reale a cui assegnarle contano come non
 premiate. Dettaglio: `docs/handoff/HANDOFF_G_ODDS_ARENE_2026-08-09.txt`.
 
-**LA RISERVA CHE RESTA, mai misurata**: in produzione il bot filtra già le
-starting odds a 0,80, che catturano la stessa informazione di titolarità.
-Quanto di quel +29.050 sopravvive sopra quel filtro non lo sa nessuno —
-voce a backlog (§10bis).
+**LA RISERVA CHE RESTA — RIDIMENSIONATA il 09/08 notte**: si diceva che
+il +29.050 potesse sparire sopra il filtro starting odds 0,80 che il bot
+applica in produzione. Falso come premessa: il pool del backtest è fatto
+delle carte REALMENTE SCHIERATE dai manager, quindi già filtrate per
+titolarità a monte, e P_noF è già proxy di quel filtro. Resta aperto solo
+il pezzo stretto (i 23 manager con criterio di filtro ignoto): dettaglio
+e trappola-leakage in §10bis voce 1.
 
 **DIFETTO STRUTTURALE, ancora aperto**: il grade entra come confronto coi
 pari dentro il gruppo (lega, ruolo) di quella giornata
@@ -1016,7 +1060,9 @@ finali in `generatore_formazioni/build_formazione_globale.py`
 Fonte: premi VERI via rewardsConfig, 1.677 arene scaricate, 5.031
 osservazioni (contro le 141 precedenti). Catena verificata fino allo
 scouting incluso (legge i valori via `getattr(gg, ...)`, nessuna modifica
-necessaria in scouting_gw.py). Non pushato su main, in attesa dell'utente.
+necessaria in scouting_gw.py). **PUSHATO**: verificato il 09/08 notte che
+`f9902af972` è in `origin/main` (`git branch -r --contains`). La riga
+precedente diceva "non pushato, in attesa dell'utente": era stale.
 
 --- SEZIONE STORICA (09/08 sera, superata dall'applicazione sopra) ---
 
@@ -1237,6 +1283,46 @@ chiuso. **Aggiunto 09/08 sera**: filone "tabella fissa per lettera" testato
 pulito e CHIUSO (non batte lo z-score, §8bis); resta produzione lo z-score.
 Quello che segue è quello che resta, in ordine di interesse.
 
+### INDICE DEI FILONI APERTI (orchestratore, 09/08 notte)
+
+Ricognizione fatta dopo la chiusura di capitano-grade (`2da426e987`) e
+copertura-grade (`de527216e8`). Raggruppati per natura, così si sceglie
+sapendo che tipo di lavoro si compra.
+
+**A. Bloccati dalla POTENZA STATISTICA, non dall'idea.** Tre filoni di G
+(copertura b/c, capitano, tabella fissa) sono finiti con IC95 larghi
+±20-30k in allocazione su 6 GW e 24 manager. Nessuno dei tre si sblocca
+rifacendo i conti sugli stessi dati: o si allarga il campione, o si
+misura sulle giornate reali dell'utente (strada che ha indicato lui).
+**Prima di aprire un altro test-di-formula su questo archivio, chiedersi
+se ha la potenza per rispondere** — le ultime tre volte non l'aveva.
+Voci: 5, 6, 14. La voce 1 (G sopra il filtro odds) è stata
+**ridimensionata**: poggiava su una premessa falsa sul pool, vedi lì.
+
+**B. Misurabili subito, dati già in repo, nessuna query.** Voci 2
+(segregare il rischio DNP in una Beginner), 7 (correlazione grade ↔
+realizzato: limite superiore alla contaminazione), 3 (perché il
+generatore non ha un criterio nella fase opzionale).
+
+**C. Difetti noti, costo basso, nessuna ricerca.** `PYTHONHASHSEED=0`
+nell'ambiente di lancio (§9); default fasullo `GK_TEAM_CS_WEIGHT=0.5` in
+`backtest_arene_previsioni.py:257-260` (§5.7); 21 script con path Windows
+hardcoded (voce 11); Russia coperta ma non popolata (§7). Sono tutti
+"si fa e si chiude", non producono conoscenza.
+
+**D. Aperti che richiedono dati NUOVI (query/run).** Voce 9 (odds+4ruoli,
+serve campione profondo), voce 10 (buco premi Uncapped rank 1/3, forse
+già chiuso da v3 — **verificare prima di lavorarci**), voce 12
+(estrazione grade storico, 1 query/giocatore), voce 8 (decisione grade
+nello scouting, che è una scelta di significato più che una misura).
+
+**E. Il tetto vero.** §5.1 resta il vincolo di fondo: il punto è piatto e
+la leva rimasta è la PRECISIONE (§6, 1 punto = ~4,7 essenze). I filoni
+sopra sono quasi tutti su *come si usa* la previsione, non su quanto è
+buona. L'unica leva grossa mai raccolta sul lato precisione è il
+**`level_score` binario del portiere** (§5.6), dichiarata "la più grande
+lasciata sul tavolo" e mai ripresa.
+
 **CHIUSO 09/08 notte — CAPITANO SCELTO COL GRADE: GRADE NON VINCE.**
 Testato da Sonnet con `analisi_manager/p21_capitano_grade_backtest.py`
 (nuovo file, riusa build_one_lineup_with_growth/S21.costruisci, nessuna
@@ -1301,14 +1387,40 @@ completo, 20 arene, pool e capitani dei due rami).
 **Non applicare la gerarchia grade al capitano di produzione**
 (`pick_captain()` resta con l'atteso, invariato).
 
-**1. Quanto vale G sopra il filtro starting odds?** È la riserva più
-importante ed è aperta. Il grade è in larga parte un indicatore di
-titolarità (§8bis); il bot in produzione filtra già a 0,80 di starting
-odds, che misura la stessa cosa. Nel backtest il ramo A è invece
-completamente cieco su chi gioca, quindi una fetta del +29.050 potrebbe
-essere un vantaggio che in produzione è già stato incassato dal filtro.
-Da misurare rifacendo il confronto **dopo** aver applicato il filtro a
-entrambi i rami. Nessuna query, dati già in repo.
+**1. Quanto vale G sopra il filtro starting odds? — RIDIMENSIONATA il
+09/08 notte, era scritta su una premessa FALSA.**
+
+Come era scritta (sbagliata): "nel backtest il ramo A è completamente
+cieco su chi gioca, quindi una fetta del +29.050 potrebbe essere un
+vantaggio che in produzione il filtro 0,80 ha già incassato".
+
+Perché è falsa (letto nel codice, `p20_g_odds_arene_setup.py:29-39`,
+non nei documenti; obiezione sollevata dall'utente): il **pool di ogni
+unità è l'insieme delle carte che quel manager ha REALMENTE SCHIERATO
+quella giornata**, in qualunque competizione — non il suo mazzo. Quindi
+il pool ha già attraversato il filtro di titolarità di chi lo ha
+schierato. A non applica un filtro odds nel proprio codice, ma non può
+nemmeno schierare i DNP che G eviterebbe: nel pool in gran parte non ci
+sono mai entrati. Le 778 carte F su 7.619 (10,2%) sono verosimilmente
+proprio i casi in cui quel filtro ha fallito (dato titolare, poi non
+gioca).
+In più la popolazione primaria di tutti i test recenti, **P_noF, è già
+dichiarata proxy del filtro ≥0,80** (§8bis, blocco tabella fissa): il
+test qui proposto è in buona parte già stato fatto senza chiamarlo così.
+
+Cosa resta davvero aperto, ed è molto più stretto: dei 24 manager del
+perimetro solo `crowss` schierava a 0,80 per regola dichiarata; degli
+altri 23 il criterio di filtro è IGNOTO, quindi il filtro implicito nel
+pool esiste ma non è uniforme e non è mai stato misurato quanto sia
+stretto. Chi volesse riaprire misuri PRIMA quello (distribuzione di
+`starter_odds_bp` da cattura live sulle carte del perimetro, per
+manager), non il delta.
+**Attenzione se lo si fa**: le odds pre-partita NON sono recuperabili a
+ritroso (§8bis, congelate a 0/10000 su partita chiusa). Filtrare con
+quelle significherebbe filtrare su "ha giocato" — leakage puro, il ramo
+filtrato diventa un oracolo. L'unica fonte lecita è la cattura live in
+`analisi_manager/dati/storico_grade_*`, di cui la copertura sul
+perimetro arene non è mai stata contata.
 
 **2. Segregare il rischio DNP** (idea dell'utente, 09/08). Oggi lui non
 schiera sotto l'80% di starting odds e si mangia tutta la fascia 60-80%.

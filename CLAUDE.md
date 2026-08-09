@@ -6,6 +6,33 @@ spendendo meno token: se esiste, uso quello. Non eseguo un'operazione costosa
 (run, query, lettura di file grossi, fetch) quando una via piu' economica da'
 la stessa risposta. Questa regola viene prima di ogni altra in questo file.
 
+# I BACKTEST SONO IL MODELLO CONTRO SE STESSO (09/08/2026)
+
+Regola nuova, dettata dall'utente. Sovrasta il modo in cui sono stati
+impostati TUTTI i backtest fino a oggi.
+
+Fino al 09/08 si misurava il nostro modello contro le scelte di altri
+manager Sorare (24 manager, 6 GW, dati_globali/manager_*.json). Quella
+strada ha prodotto archivi misti, competizioni mescolate, criteri di
+schieramento ignoti (di 23 manager su 24 non sappiamo con che regola
+scegliessero) e verdetti che l'utente non ha mai potuto controllare. Da
+qui la sua sfiducia verso i backtest: e' motivata.
+
+Da adesso:
+1. Il modello si misura CONTRO SE STESSO. La domanda di ogni backtest e'
+   "questa variante batte la versione in produzione, sulle stesse
+   giornate?", mai "battiamo i manager?".
+2. L'unico archivio di riferimento sono le giornate dell'UTENTE (manager
+   crowss): le sole su cui ha controllo totale, di cui conosce dinamiche,
+   voti e formazioni.
+3. Si parte dalla fixture 7-11 agosto 2026: da li' le formazioni sono
+   schierate col modello G.
+4. Gli archivi multi-manager restano come STORIA, non come base di misura.
+   Non aprire nuovi filoni su quel materiale.
+5. Le giornate dell'utente crescono una alla volta: se un test ha bisogno
+   di centinaia di osservazioni per decidere, NON si puo' fare adesso e lo
+   dico subito, invece di girarlo su un campione che non ci appartiene.
+
 # LA FONTE DI VERITA' E' IL CODICE IN PRODUZIONE, NON I RIASSUNTI (08/08/2026)
 
 Regola nuova, dettata dall'utente. Sovrasta tutte le regole precedenti che
