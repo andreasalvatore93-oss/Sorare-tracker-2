@@ -1,0 +1,203 @@
+BRIEF SONNET — G VARIABILE (produzione) CONTRO G FISSO (tabella)
+Orchestratore Opus, 09/08/2026 pomeriggio (Roma). SOLO MISURA.
+NESSUNA MODIFICA ALLA PRODUZIONE, NESSUN COMMIT SUL GENERATORE.
+
+Disegno deciso dall'utente, non dall'orchestratore. Dove ho aggiunto io un
+controllo, lo dico.
+
+SOSTITUISCE il brief BRIEF_SONNET_REGOLA_NOFE_2026-08-09.txt, che NON e'
+mai stato inviato: la regola secca F/E e' stata assorbita qui come una
+delle varianti (V1), dopo aver verificato che sopra 0.80 le F non
+compaiono (vedi §PERCHE' sotto).
+
+
+=====================================================================
+LEGGI PRIMA
+=====================================================================
+CLAUDE.md (regole sui backtest: pool contro slot, dump leggibile, D7).
+docs/handoff/PUNTO_FISSO_GRADE_2026-08-09.txt (contesto del filone).
+§18 e §19 di docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt.
+NON prendere per buono nessun numero di quei file: sono ipotesi da
+verificare, come da regola.
+
+
+=====================================================================
+LA DOMANDA
+=====================================================================
+Oggi il bot traduce la lettera in punti reinventando il cambio ogni
+giornata sul gruppetto (lega, ruolo): `_apply_grade_group`, righe 505-549
+di generatore_formazioni/build_formazione_globale.py. Formula reale:
+
+    atteso_combinato = atteso + sd * (grade_num - gm) / gsd
+
+dove sd = deviazione degli ATTESI del gruppo, gm/gsd = media e deviazione
+dei NUMERI DI GRADE dello stesso gruppetto (GRADE_NUM = A6 B5 C4 D3 E2 F1).
+Due difetti noti, speculari:
+ - dove il gruppo ha meno di 2 membri con atteso (19 gruppi su 57, il 23%
+   delle carte) il grade non sposta NIENTE;
+ - dove il gruppo e' affollato, lo spostamento e' proporzionale a sd, che
+   non ha niente a che vedere con quanto la lettera vale davvero: il grade
+   puo' spostare molto piu' di quanto merita.
+
+DOMANDA: un valore FISSO per lettera batte questo meccanismo variabile?
+Se peggiora, si tiene l'attuale e il filone si chiude. Se migliora, vale
+la pena allargare la copertura al 100% delle carte.
+
+
+=====================================================================
+PERCHE' IL CONFRONTO E' LECITO ANCHE SE I GRADE SONO POST-PARTITA
+=====================================================================
+Punto metodologico, non saltarlo.
+§18 ha stabilito che gli storico_grade_*.json sono scaricati a partita
+conclusa, e che dopo le ufficiali il grade e' quasi titolare-si'/no.
+Questo NON impedisce questo test, perche' i due rami a confronto usano lo
+STESSO grade, dalla STESSA fonte, sulle STESSE righe: il delta misura la
+FORMA d'uso (variabile contro fisso), non il valore dell'informazione.
+Vale la regola di CLAUDE.md "cosa deve riprodursi: il delta, non il valore
+assoluto".
+CONSEGUENZA VINCOLANTE: il livello assoluto in essenze di ogni ramo NON e'
+il guadagno realizzabile in produzione, ed e' un limite superiore. Ogni
+volta che scrivi un numero in essenze, scrivi accanto questa avvertenza.
+
+Dato di contesto misurato dall'orchestratore sulle 155 righe PRE-lock del
+06/08 (grade_snapshot_football-4-7-aug-2026_*), utile a interpretare:
+sopra odds 0.80 non compare NESSUNA F (0 casi su 52), mentre le E ci sono
+(4 su 52). L'utente conferma dall'esperienza diretta: F a 0.80 non ne ha
+mai viste, D ed E a 0.80 sono frequenti e ne vede anche in questa GW.
+Quindi la differenza fra le varianti V1 e V2 qui sotto si giochera' quasi
+tutta sulle E, non sulle F.
+
+
+=====================================================================
+IL CAMPIONE — NON CAMBIARLO
+=====================================================================
+Lo stesso, identico, di p20_g_odds_arene_backtest.py: 825 formazioni,
+90 unita' manager/gw, due regimi separati, due set di soglie, bootstrap
+per manager, placebo gia' implementato. Nessun nuovo download.
+Scelta esplicita dell'utente: si fida di quell'archivio perche' e' gia'
+scremato da dati errati e regole sbagliate.
+Non riscrivere lo script: aggiungi rami.
+
+
+=====================================================================
+I RAMI DA MISURARE
+=====================================================================
+Baseline: 'G' = il meccanismo attuale (z-score di gruppo), gia' nel file.
+
+Ramo nuovo 'GF' = G FISSO. Sostituisce lo z-score con un valore fisso per
+lettera, sommato all'atteso:  atteso_combinato = atteso + valore(lettera).
+
+Due SCALE, entrambe da provare:
+
+ S1 — MISURATA. I residui gia' calcolati (§12, campione allargato 25.326
+      righe, bootstrap cluster=giocatore):
+         F -33,15   E -12,46   D +1,26   C +1,70   B +2,66   A +3,87
+      Zero parametri tarati su questo test: se vince, vince onestamente.
+
+ S2 — LINEARE A UN PARAMETRO.  valore = (grade_num - 3) * k
+      (cioe' D=0, C=+k, B=+2k, A=+3k, E=-k, F=-2k), con k su una griglia
+      (proposta: 0,25 / 0,5 / 0,75 / 1,0 / 1,5 / 2,0 — se ne servono altri
+      dillo, ma dichiara la griglia PRIMA di guardare gli esiti).
+      NON serve a scegliere il k migliore: quello sarebbe barare. Serve a
+      sapere se GF vince su TUTTA la griglia (robusto) o solo per un k
+      preciso (fragile). Riporta la curva intera, anche i k che perdono.
+
+Tre VARIANTI sul trattamento di E ed F, tutte e tre richieste dall'utente
+("nessuna esclusione a prescindere"):
+
+ V1 — la tabella si applica solo a D/C/B/A; su E ed F resta lo z-score
+      attuale. Isola il tratto che si vuole cambiare.
+ V2 — la tabella si applica a tutte e sei le lettere.
+ V3 — E ed F escluse dal POOL in ENTRAMBI i rami (G e GF), cosi' il
+      confronto avviene su un pool identico e ripulito.
+      ATTENZIONE su V3: restringe il pool. Vedi il controllo C1: se in
+      qualche unita' il pool scende al numero di slot o sotto, in quelle
+      unita' non c'e' piu' selezione e il confronto e' nullo per
+      costruzione. Non nasconderlo: contale e dichiarale.
+
+Combinazioni: 3 varianti x 2 scale. Se e' troppo pesante da girare, fai
+PRIMA tutte e tre le varianti con S1 (che e' il test onesto), poi la
+griglia S2. Non tagliare le varianti.
+
+
+=====================================================================
+LE TRE POPOLAZIONI (richieste dall'utente)
+=====================================================================
+P1 — tutti i giocatori del pool.
+P2 — solo i giocatori effettivamente scesi in campo.
+P3 — test dell'assurdo (placebo): il meccanismo di permutazione del grade
+     e' gia' nel file (permuta_grade, righe 445+). Applicalo anche a GF.
+     Se GF batte il proprio placebo tanto quanto G batte il suo, il
+     vantaggio non viene dal grade ma dalla forma della formula: dillo.
+
+
+=====================================================================
+CONTROLLI OBBLIGATORI, DA RIPORTARE IN CHIARO PRIMA DEI RISULTATI
+=====================================================================
+C0 — LA SCALA DELL'ATTESO. Verifica che l'`atteso` usato dentro
+     p20_g_odds_arene_backtest.py sia lo STESSO oggetto su cui sono stati
+     calcolati i residui di §12 (stessa unita', stessa definizione, stessa
+     fonte di punteggio grezzo). Se sono due scale diverse, sommare
+     +3,87 a quell'atteso non significa niente e il test nasce morto:
+     FERMATI E DILLO, non aggiustare con un fattore inventato.
+     Questo controllo viene PRIMA di ogni run.
+
+C1 — POOL CONTRO SLOT, per ogni ramo e ogni unita': quante carte contiene
+     il pool contro quanti slot vanno riempiti. Se il pool non e' piu'
+     grande degli slot il test e' nullo per costruzione (CLAUDE.md).
+     Riporta quante unita' restano valide in ciascuna variante.
+
+C2 — L'INTERRUTTORE FUNZIONA (CLAUDE.md, test A/A). Prima di misurare
+     qualunque delta: metti il valore fisso a 0 per tutte le lettere e
+     verifica che GF riproduca ESATTAMENTE il baseline senza grade; poi
+     mettilo a un valore assurdo (es. A=+1000) e verifica che i numeri si
+     muovano tanto. Se non si muovono, il ramo e' inerte e tutto il resto
+     e' rumore. Riporta l'esito dei due estremi.
+
+C3 — D7: le formazioni si costruiscono con build_one_lineup_with_growth
+     (il generatore vero), mai con un knapsack scritto per l'occasione.
+     Verifica zero giocatori ripetuti nella stessa formazione e riportalo.
+
+C4 — COPERTURA. Quante carte del pool hanno un grade, in totale e per
+     variante. E' il numero che dice se il "23% scoperto" si vede anche
+     qui.
+
+
+=====================================================================
+COSA CONSEGNARE
+=====================================================================
+1. Gli esiti dei controlli C0-C4, PRIMA dei risultati.
+2. Per ogni set di soglie, ogni regime, ogni popolazione: essenze di
+   G e di GF (per variante e scala), il delta GF-G col bootstrap per
+   manager, e la n di ogni confronto. Nessun numero senza la sua n.
+   Riporta anche i risultati nulli e quelli negativi.
+3. DUMP LEGGIBILE, consegnato insieme ai numeri, non su richiesta: un
+   manager, una giornata, arena per arena — nomi, ruolo, grade, atteso,
+   valore aggiunto dal ramo, punteggio reale, chi ha scelto G e chi GF,
+   e le carte su cui i due rami hanno deciso diversamente. Serve a vedere
+   con gli occhi cosa cambia.
+4. Verdetto in una riga, con il segno del delta su ENTRAMBI i set di
+   soglie: se il segno non e' lo stesso, il verdetto e' "non concludente",
+   non "leggermente meglio".
+
+
+=====================================================================
+COSA NON FARE
+=====================================================================
+- Non toccare _apply_grade_group ne' alcun file del generatore.
+- Non scegliere il k migliore e presentarlo come risultato.
+- Non presentare il livello assoluto in essenze come guadagno realizzabile.
+- Non scartare in silenzio unita' diventate infattibili: contale.
+- Se un controllo C0-C3 fallisce, FERMATI e riportalo: un test costruito
+  sopra un interruttore rotto e' peggio di nessun test.
+
+DOVE SCRIVERE L'ESITO
+---------------------
+In coda a docs/handoff/HANDOFF_TABELLA_GRADE_2026-08-09.txt come §20.
+Poi commit + push dei tuoi file (l'orchestratore in Cowork non ha i
+permessi git). Nel commit includi anche, se ancora non committati:
+  docs/handoff/PUNTO_FISSO_GRADE_2026-08-09.txt
+  docs/handoff/BRIEF_SONNET_GFISSO_2026-08-09.txt
+  docs/handoff/BRIEF_SONNET_SNAPSHOT_KICKOFF_2026-08-09.txt
+  docs/handoff/BRIEF_SONNET_REGOLA_NOFE_2026-08-09.txt (mai inviato,
+    tenuto come archivio: dice perche' quella strada e' stata assorbita)

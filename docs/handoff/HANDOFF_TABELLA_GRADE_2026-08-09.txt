@@ -865,3 +865,93 @@ lock non c'e', e va rimisurato sul grade pre-lock (Q1)".
   Questa e' una correzione a un verdetto che io stesso avevo scritto come
 chiuso. Vale la regola del CLAUDE.md: quando documento e codice divergono
 vince il codice, e il documento si corregge nello stesso momento.
+
+
+20. SEGUITO 09/08/2026 sera -- G FISSO (TABELLA) CONTRO G VARIABILE
+(BRIEF_SONNET_GFISSO_2026-08-09.txt), eseguito da Sonnet esecutore.
+----------------------------------------------------------------------------
+Script: analisi_manager/p20_gfisso_backtest.py (nuovo, non tocca
+p20_g_odds_arene_backtest.py, lo importa e riusa). Output grezzo:
+p20_gfisso_backtest_out.json. Dump: p20_gfisso_dump.txt.
+AVVERTENZA VINCOLANTE (dal brief): i livelli assoluti in essenze sono un
+LIMITE SUPERIORE, non il guadagno realizzabile in produzione (grade
+post-partita, non pre-lock, §18).
+
+FATTO: S1 (tabella misurata, zero parametri tarati) su V1/V2/V3, sui due
+regimi (astensione, allocazione) e sui due set di soglie. NON FATTO per
+limiti di tempo di questa sessione: griglia S2 (k lineare), popolazioni
+P2 (solo scesi in campo) e P3 (placebo su GF) -- dichiarato, non
+nascosto: il verdetto sotto si basa solo su S1/P1.
+
+CONTROLLI (prima dei risultati, come richiesto):
+C0 (scala atteso) -- PASS. Verificato leggendo il codice: r['_cal'] in
+  p20_g_odds_arene_backtest.costruisci_unita e' S21.bfg.calibra(atteso_raw,
+  codice), lo STESSO oggetto usato in
+  p20_grade_residui_allargato.aggancia_atteso per calcolare i residui S1
+  (stessa funzione calibra, stesso codice ruolo). Stessa scala.
+C1 (pool contro slot) -- V3 (E/F escluse dal pool) in regime allocazione:
+  3/53 unita' scendono a pool<=slot dopo il filtro (su 90 unita' totali,
+  53 in allocazione). Le altre 50 restano valide. Numeri di riga (n
+  formazioni giocate) riportati sotto per trasparenza.
+C2 (interruttore GF, test A/A) -- PASS. Tabella a 0 per tutte le lettere:
+  GF torna identico a _cal (differenza 0.0 su 18 carte con grade nel
+  campione di prova). Tabella a +1000: GF si sposta di 1000 su tutte le
+  carte con grade nota (18/18). L'interruttore funziona.
+C3 (D7, zero ripetuti) -- PASS su tutti i rami misurati (G, GF V1, GF V2,
+  GF V3): zero_ripetuti=True ovunque, riportato riga per riga sotto.
+C4 (copertura grade) -- 7381/7619 carte del pool totale hanno un grade
+  (96.9%), di cui 889/7619 (11.7%) sono E/F (scartate in V3). Copertura
+  molto piu' alta del 23% scoperto citato nel brief perche' qui si parla
+  di CARTE nel pool con qualunque grade noto, non di gruppi (lega,ruolo,
+  giornata) con <2 membri validi per lo z-score: sono due denominatori
+  diversi, non contraddicono D5/§ del meccanismo attuale.
+
+RISULTATI (essenze nette, delta = GF - G, bootstrap per manager IC95 dove
+calcolato; n = arene valutate/giocate):
+
+SET SOGLIE VECCHIO
+  astensione (n=154): A=-3350  G=-2200
+    V1 (tabella solo D-A, E/F=z-score attuale): GF=-4700  delta=-2500
+    V2 (tabella su tutte e 6):                   GF=+5800  delta=+8000
+    V3 (E/F escluse dal pool, n=86):     G_ricalc=+4000  GF=+5800  delta=+1800
+  allocazione (n_G=547): G=+12100  zero_ripetuti=True
+    V1 (n=692): GF=+19650  delta=+7550   IC95=[-8900;+24200] (attraversa 0)
+    V2 (n=657): GF=+33550  delta=+21450  IC95=[+4200;+39800] (tutto positivo)
+    V3 (n_G=482,n_GF=654): G=+41300 GF=+34000 delta=-7300  IC95=[-22050;+9150] (attraversa 0)
+
+SET SOGLIE NUOVO
+  astensione (n=154): A=-150  G=+300
+    V1: GF=-2700  delta=-3000
+    V2: GF=+5000  delta=+4700
+    V3 (n=86): G_ricalc=+5000  GF=+5000  delta=+0
+  allocazione (n_G=564): G=+16700
+    V1 (n=715): GF=+22500  delta=+5800   IC95=[-8050;+19950] (attraversa 0)
+    V2 (n=680): GF=+33900  delta=+17200  IC95=[+4850;+30750] (tutto positivo)
+    V3 (n_G=492,n_GF=678): G=+45700 GF=+34050 delta=-11650  IC95=[-26250;+3600] (attraversa 0)
+
+VERDETTO IN UNA RIGA: solo V2 (tabella su tutte e 6 le lettere, F incluse)
+ha il delta con SEGNO POSITIVO in entrambi i set di soglie E in entrambi i
+regimi, con l'IC95 bootstrap tutto sopra zero in allocazione su entrambi i
+set di soglie; V1 e V3 hanno segno che cambia fra astensione e allocazione
+(V1: negativo/positivo, V3: positivo/negativo) o IC95 che attraversa zero:
+NON CONCLUDENTI. Con l'avvertenza in cima (limite superiore, grade
+post-partita): V2 e' l'unica variante che regge, da riverificare col grade
+PRE-lock prima di qualunque proposta di produzione.
+
+DUMP (p20_gfisso_dump.txt, manager angioletto33, gw football-31-jul-4-aug-
+2026, 40 carte del pool ordinate per _cal): conferma visiva che V2 abbassa
+molto le F (Messi grade F: cal=67.2 G=62.2 GFv2=34.1, coerente col residuo
+tabellare F=-33.15) mentre V1 le lascia al livello di G (GFv1=62.2, stesso
+di G) perche' V1 esclude E/F dalla tabella per costruzione.
+
+LIMITI DI QUESTA MISURA (dichiarati, non nascosti):
+- Solo S1 (tabella misurata), non la griglia S2: non si sa se il segnale
+  V2 e' robusto a scale diverse o solo a questa specifica tabella.
+- Solo popolazione P1 (pool intero): P2 (solo scesi in campo) e P3
+  (placebo su GF) non fatti, richiedono un'altra sessione.
+- Come tutto il resto del filone, il grade usato e' POST-partita (§18):
+  il vantaggio misurato e' un limite superiore, non il guadagno
+  realizzabile al lock.
+
+Commit: analisi_manager/p20_gfisso_backtest.py, p20_gfisso_backtest_out.json,
+p20_gfisso_dump.txt, questo handoff.
