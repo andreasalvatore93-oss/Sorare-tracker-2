@@ -1515,13 +1515,30 @@ P_noF, 6603 carte con lettera):
 |---|---|---|---|
 | produzione (z-score, gruppo lega+ruolo) | 5085 (77%) | 1518 | 712 gruppo_1_lettera, 642 lettere_uguali, 164 z legittimo=0 |
 | (a) tabella fissa pura | 6603 (100%) | 0 | — |
-| (b) ibrida (z-score + fallback tabella) | 6602 (99,98%) | 1 | solo z legittimo=0 (nessuna esclusione residua) |
+| (b) ibrida (z-score + fallback tabella) | 6439 (97,5%) | 164 | solo z legittimo=0 (nessuna esclusione residua) |
 | (c) gruppo largo (ruolo, tutte le leghe, stessa unita') | 6483 (98%) | 120 | 48 z=0 legittimo, 35 lettere_uguali, 37 gruppo_1_lettera |
 
 (b) elimina la copertura mancante quasi del tutto (164 residui sono z=0
 legittimi, non esclusioni: la carta e' esattamente sulla media del suo
 gruppo). (c) migliora ma non chiude (restano gruppi piccoli anche allargando
 alla lega intera, dentro la stessa unita' manager/gw).
+[CORREZIONE orchestratore, verifica sui grezzi: la riga (b) della tabella
+diceva "6602 / 1". Il campo `copertura` del JSON dice **6439 non-zero e
+164 a zero** su P_noF (145 su P_ALL). Il testo qui sotto era gia' giusto
+(cita 164): sbagliata solo la riga della tabella, ora corretta.]
+
+**DECISIONE DELL'UTENTE, 09/08 notte: NON SI ACCENDE NIENTE.**
+(c) scartata (perde in allocazione su P_noF con entrambe le soglie).
+(b) NON attivata, nemmeno dietro flag: l'orchestratore l'aveva proposta
+sostenendo che "non fa danni", l'utente ha obiettato che senza un
+guadagno dimostrato non c'e' motivo di accendere, e ha ragione — fra le
+celle misurate di (b) ce n'e' una negativa (allocazione P_noF soglie
+nuove, -1950), quindi il segno resta IGNOTO, non buono. L'unico argomento
+a favore era "G e' stato acceso con prove altrettanto deboli": e' un
+argomento sul passato, non una prova. La produzione resta com'e'.
+STRADA INDICATA DALL'UTENTE: misurare il grade sulle SUE giornate reali
+man mano che arrivano, invece di decidere su 6 giornate che non
+distinguono niente.
 
 ESSENZE NETTE, delta = variante−produzione, bootstrap IC95 cluster-manager,
 criterio del brief (delta>0 e IC95>0 su ENTRAMBI i set soglie, STESSO

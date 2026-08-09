@@ -1,0 +1,144 @@
+HANDOFF -- GRADE: COPERTURA, CAPITANO, E IL MERITO DELLA FORMULA
+Sessione del 09/08/2026, pomeriggio-notte (Roma). Orchestratore: Opus.
+Esecutori: Sonnet (tre brief).
+
+1. STATO DEL REPO
+-----------------
+Branch: main. Tutto committato e PUSHATO. Ultimo commit di questa
+sessione in coda a: de527216e8 (copertura), 2da426e987 (capitano),
+0004a9a84b (riesame merito + brief copertura), 53f094d19e (causa del
+buco grade), 9ba6c4e5be (correzione 11/45), e62f552804 / b489dc5cea /
+31810e0f7f (i tre brief), 69382a0bc0 + d0c1496c7a (esiti Sonnet).
+NIENTE E' STATO MESSO IN PRODUZIONE. Nessun default cambiato, nessuna
+run GitHub lanciata, nessuna query oltre le 5 autorizzate della sonda.
+
+2. PERCHE' ESISTEVA QUESTO LAVORO
+---------------------------------
+Si doveva scrivere un brief per testare il capitano scelto col grade.
+Preparandolo e' emerso che il 66% delle carte non aveva la lettera, e
+l'utente ha chiesto di capire prima la copertura: il grade sposta molto
+e nella giornata in corso gli stava dando risultati sopra la norma.
+Da li' sono nate tre domande: (i) il grade di una partita passata si
+recupera? (ii) perche' manca la lettera? (iii) la formula che converte
+la lettera in punti e' la migliore, visto che a volte esclude carte?
+
+3. COSA E' STATO COSTRUITO
+--------------------------
+Brief (docs/handoff/): BRIEF_SONNET_CAPITANO_GRADE_2026-08-09.txt,
+BRIEF_SONNET_GRADE_PASSATO_RECUPERO_2026-08-09.txt,
+BRIEF_SONNET_PERCHE_MANCA_LETTERA_2026-08-09.txt,
+BRIEF_SONNET_COPERTURA_GRADE_2026-08-09.txt.
+Script (analisi_manager/, tutti locali, ~2-60s, nessuna rete tranne la
+sonda): p21_grade_vs_kickoff.py (orchestratore),
+sonda_grade_passato_recupero.py, diagnosi_buco_grade.py,
+p21_capitano_grade_backtest.py, p22_copertura_grade.py (Sonnet).
+Output in analisi_manager/dati/ e analisi_manager/*_out.json.
+
+4. OUTPUT NUMERICO INTEGRALE
+----------------------------
+4a. IL BUCO DI COPERTURA NON ERA UN BUCO -- era il momento della misura.
+Grade contro data della prossima partita, su tutte le carte dell'utente:
+    kickoff 09/08 ....... 71 carte, 71 col voto (100%)
+    kickoff 10/08 ....... 13 carte, 13 col voto (100%)
+    kickoff 11-16/08 ... 163 carte,  0 col voto (0%)
+    senza kickoff ....... 10 carte,  2 col voto
+84/84 le carte della giornata APERTA hanno la lettera; 0/163 quelle
+della giornata successiva. kleague 0/38 si spiega cosi' (gioca il
+15-16/08): NESSUN bug di slug leaderboard, filone chiuso.
+Smentita l'ipotesi dell'esecutore. Corretto anche un suo numero: MLS
+11/45 col grade, non 19/45 (19 sono le CARTE mls_def).
+
+4b. QUELLO CHE RESTA VERO SULLA COPERTURA. Con odds pubblicate tutte le
+carte hanno la lettera, ma la lettera entra nel calcolo solo per una
+parte: oggi 63 carte su 86 (16 gruppi su 32). Le altre 23 stanno in
+gruppi con UNA sola lettera (11 gruppi) o con lettere tutte uguali (5).
+Sull'archivio arene: 5085 carte su 6603 ricevono uno spostamento, 1518
+no (712 gruppo con 1 lettera, 642 lettere uguali, 164 z=0 legittimo).
+Non e' un difetto dei dati: e' la formula.
+
+4c. IL GRADE DI UNA PARTITA PASSATA SI RECUPERA (sonda, 5 righe, 5/5
+identiche allo storico, una a 5 mesi di distanza). LIMITE non scritto
+dall'esecutore e aggiunto dall'orchestratore: gli snapshot di
+riferimento erano stati raccolti dopo quelle partite, quindi il
+confronto era post-partita contro post-partita. Dimostra che il campo
+non sparisce, NON che il voto recuperato sia quello pre-lock. Riempire
+lo storico a posteriori e' pulito solo sopra 0,80 di starting odds.
+NOTA collegata: le "odds" a 1,0 nei file di oggi sono valori RISCRITTI
+dopo le formazioni ufficiali (verificato: chang-yong-lee e
+young-gwon-kim avevano 0,8 il 07/08 per la partita dell'8, oggi 1,0).
+Un 1,0 li' dentro non significa "titolare sicuro".
+
+4d. CAPITANO COL GRADE: NON VINCE (p21_capitano_grade_backtest.py).
+P_noF, formazioni e arene congelate (confronto A):
+    soglie vecchie: n=460, delta -1450, IC95 [-3850; +800]
+    soglie nuove:   n=476, delta -1500, IC95 [-5050; +1600]
+Confronto B (ingresso libero, solo celle con pari numero di arene):
+    -1300 e -2300. Quattro celle su quattro NEGATIVE, nessuna esclude 0.
+L'interruttore funzionava: fascia cambia carta in 164/460 e 187/476;
+C1 identita' PASS. Perche' non serve: il baseline sceglie GIA' un
+capitano A in 245 casi su 460 (53%), la regola grade porta a 350 ma
+sono scambi marginali. Nel dump: fascia spostata da B a A, totale da
+246,3 a 248,0, rank 8 e premio 0 in entrambi i rami (il premio e' a
+gradini). Protezione non misurabile qui: n=2 su P_noF (le F sono fuori
+per costruzione), n=15 su P_ALL con delta esattamente 0.
+Limite del campione: nel dump il pool e' 296 carte per 245 slot = 1,2
+carte per slot. C'e' selezione, ma poca.
+
+4e. MERITO DEL BACKTEST CHE HA SCELTO LA FORMULA (riesame). La formula
+non e' stata scelta confrontando alternative: e' un principio di
+disegno (z(atteso)+z(grade)), validato solo come blocco G on/off su
+un mazzo (crowss, 230 arene: +2,81 punti IC95[-1,13;+6,59]) e 5 manager
+(59 righe: +8,15 IC95[-16,46;+29,92]). Nessun intervallo esclude zero, e
+poche ore prima la stessa misura diceva il contrario (bug di join sulle
+date, copertura 4,6%). L'unica rivale mai testata (tabella fissa) era
+stata archiviata con "GF non vince": vero solo su P_noF/astensione
+(n=111, delta piu' piccoli dell'incertezza). Su P_ALL vinceva
+(astensione +8000 IC95[+1700;+16000], allocazione +21450
+IC95[+4200;+39800], placebo negativo) -- ma P_ALL ha il leakage delle F.
+
+4f. COPERTURA, TRE VARIANTI (p22_copertura_grade.py). Copertura: (a)
+tabella fissa 6603/6603; (b) ibrida 6439 non-zero, 164 a zero; (c)
+gruppo largo 6483, 120 a zero. Essenze su P_noF:
+    (b) astensione +2550 [-250;+6600] / +450 [-1900;+3200]
+        allocazione +1200 [-20000;+21850] / -1950 [-20000;+15450]
+    (c) astensione +1300 [-800;+3800] / -1000 [-4600;+2900]
+        allocazione -13400 [-30400;+2300] / -8900 [-23800;+3750]
+Su P_ALL entrambe positive in allocazione (b: +15950 [+300;+32550]).
+Controlli: C1 identita' 0,0; C5 A/A 0,0; placebo (G contro nessun
+grade) -16950 contro +12100 in allocazione, quindi il grade vale.
+Nota: l'esecutore ha trovato e corretto un bug suo (raggruppava su tutto
+l'archivio invece che dentro la singola unita' manager/gw).
+
+5. COSE DA SAPERE PRIMA DI DECIDERE
+-----------------------------------
+- Due volte su tre gli esiti degli esecutori avevano un numero sbagliato
+  nel TESTO mentre il dato grezzo era giusto (MLS 19/45 invece di 11/45;
+  copertura (b) 6602/1 invece di 6439/164). Entrambe corrette
+  dall'orchestratore leggendo il JSON. Continuare a controllare i grezzi.
+- L'archivio arene (6 GW, 24 manager, 1,2 carte per slot) non ha la
+  potenza per distinguere effetti piccoli: quasi tutti gli IC sono larghi
+  migliaia di essenze. Non e' colpa delle varianti.
+- P_ALL da' quasi sempre segni positivi ma contiene le carte F, dove il
+  grade FINAL porta informazione post-partita: non usarlo come prova.
+
+6. DECISIONE PRESA (dall'utente)
+--------------------------------
+NON si accende niente. (c) scartata perche' perde in allocazione con
+entrambe le soglie. (b) non attivata nemmeno dietro flag: senza un
+guadagno dimostrato non c'e' motivo, e fra le sue celle ce n'e' una
+negativa, quindi il segno e' ignoto. Il capitano col grade e' chiuso
+come negativo. La produzione resta esattamente com'e'.
+APERTO, indicato dall'utente come strada giusta: misurare il grade sulle
+sue giornate reali man mano che arrivano, invece di decidere su 6 GW.
+APERTO, non indagato: se convenga riempire lo storico grade a posteriori
+(si puo', 1 query per giocatore, pulito solo sopra 0,80 di odds).
+
+7. FILE DI RIFERIMENTO
+----------------------
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §10bis.12/13/14 (stato vero)
+analisi_manager/p21_grade_vs_kickoff.py + dati/grade_vs_kickoff_20260809.json
+analisi_manager/p21_capitano_grade_backtest.py + _out.json + _dump.txt
+analisi_manager/p22_copertura_grade.py + _out.json + _dump.txt
+analisi_manager/sonda_grade_passato_recupero.py + dati/sonda_*_20260809.json
+analisi_manager/diagnosi_buco_grade.py + dati/diagnosi_buco_grade_20260809.json
+docs/handoff/BRIEF_SONNET_*_2026-08-09.txt (i quattro brief)
