@@ -237,7 +237,7 @@ categoria è stata rimisurata e bocciata anche in forma diretta: vedi §5.
 peggio, chiuso definitivamente il 03/08. `opponent_sensitivity=29.0` è
 l'unico parametro mai risultato instabile in nessun ruolo/lega.
 
-### 2.2 Scouting acquisti (`scouting_gw.py`)
+### 2.2 Scouting acquisti (`scouting_gw.py`) — RISCRITTA IN MODALITA' MINIMALE (09-10/08/2026)
 
 Risolve il problema opposto al generatore: il generatore parte dalle carte
 POSSEDUTE, per COMPRARE serve sapere con giorni di anticipo chi scenderà in
@@ -245,22 +245,51 @@ campo, comprese carte non possedute — prima che Sorare pubblichi le starter
 odds (24-48h dal kickoff).
 
 Trovato che la query giusta è `searchPlayers` (la stessa della pagina
-"Scouting" di Sorare): una query paginata, ~12 chiamate/7 secondi, porta già
-L5/L10/L40, presenze, infortuni, proiezione Sorare, carte possedute e prezzo
-minimo — sostituisce 75 query di roster + migliaia di scrematura.
+"Scouting" di Sorare): una query paginata, ~12-34 chiamate a seconda del
+filtro, porta già L5/L10/L40, presenze, infortuni, proiezione Sorare, carte
+possedute, prezzo minimo (`lowestPriceAnyCard`, MAI cachato: costa zero
+query in più, un prezzo vecchio su una decisione d'acquisto sarebbe un
+rischio inutile) e **grade** (`nextClassicFixtureProjectedGrade`, §8ter) —
+sostituisce 75 query di roster + migliaia di scrematura.
+
+**Modalità di default ora è `--minimal`** (checkbox `minimal` nel workflow,
+richiesta esplicita dell'utente 09/08 sera: "voglio semplificarlo"). NIENTE
+arene, niente essenze/GW, niente "si ripaga in". Una lista sola:
+Giocatore/Ruolo/Club/Odds/Prezzo/Grade/Atteso/**A+G**, dove A+G =
+`atteso + sd_gruppo × z_grade` (STESSA formula del generatore,
+`_apply_grade_group`, gruppo = lega+ruolo primario fra chi ha un atteso —
+non reinventata). Ordinata per A+G decrescente, colonne cliccabili per
+riordinare. Tre bottoni:
+- **Mostra solo** (Tutti/GK/DEF/MID/FWD): filtro esclusivo, nasconde tutto
+  il resto (non solo evidenzia).
+- **Best Five**: i 5 candidati con rapporto prezzo/A+G più basso (prezzo/
+  Atteso se manca il grade), esclusivo (mostra SOLO quei 5).
+- **Best per ruolo**: il migliore per ciascun ruolo con lo stesso rapporto,
+  un colore diverso a ruolo, esclusivo (mostra SOLO quei 4).
+Tutto calcolato lato client su attributi `data-*` nelle righe (prezzo/
+atteso/A+G/ruoli), mai testo riparsato — robusto a formattazione/valuta.
+Log di copertura ad ogni run (pool/odds/grade/atteso/prezzo, n e %) e
+avviso (badge ⚠️ in tabella + riga in log) per candidati con "fixture
+ambigua" (§9, voce fix Freese).
 
 Output: `generatore_formazioni/output/scouting_ultimo.html` (committato,
-notificato su Telegram), colonne `Ess/GW` = `(atteso − 51.8) × 7.65`
-(vantaggio in essenze a giornata su uno slot medio) e `€/EssGW` = prezzo
-diviso essenze-GW, che è la colonna giusta per **ordinare** i candidati (il
-valore in euro dell'essenza non serve a scegliere fra candidati, è un
-fattore comune). Workflow `scouting_gw.yml`, input `gameweek`/`per_ruolo`/
-`odds_min`/`predict`/`screma`.
+notificato su Telegram). Workflow `scouting_gw.yml`, input `gameweek`/
+`odds_min`/`predict`/`screma`/`riusa_predizioni`/`minimal`.
 
-Riusa la cache del generatore (stessa cartella `<lega>_<ruolo>_all`) e il
-meccanismo di riuso previsione ereditato da Best Five (§2.3): un giocatore
-con previsione già scritta per la finestra della fixture corrente non
-rigenera nemmeno il job.
+**Riuso predizioni SPENTO di default** (`SCOUTING_RIUSA_PREDIZIONI=0`,
+checkbox `riusa_predizioni` default `false` — richiesta esplicita
+dell'utente finché G non è "innestato con sicurezza": ogni candidato viene
+ripredetto da zero ad ogni run, mai una previsione vecchia riusata in
+silenzio). NON tocca `best_five.RIUSA_PREDIZIONI` (resta acceso per il
+generatore): `bf` in scouting è un'istanza fresca (`_import`), spegnerlo lì
+non spegne nient'altro. Log sempre presente: quante previsioni sarebbero
+state riusabili e vengono rifatte per questo motivo.
+
+Cache generatore (`<lega>_<ruolo>_all`) riusata per L5/L10 storico come
+sempre; NESSUNA cache prezzi nella pipeline scouting (verificato sul
+codice: quella di `best_five.py`, TTL 5gg, la usa solo `esegui_consiglio`,
+mai chiamata da qui né dal job "Consigli" del workflow, che lancia gli
+script leggeri `build_consiglio_*.py`, solo lettura locale).
 
 ### 2.3 Best Five / Contender (`best_five.py`) — SUPERATO, non più in uso
 
@@ -1277,6 +1306,35 @@ di *fingerprint*, non sta delirando — serve davvero, ma **esiste già** in
 
 ## 9. Modifiche di produzione — cronologia compressa
 
+**10/08/2026 — Fix "fixture ambigua" su TUTTI i predict (212 file) +
+scouting riscritto in modalità minimale** (commit `8e6e1df8a7`,
+`1dc1b81438`, `7b71e5638b`, `548242f743`, `282a974482`, `0582a7a836`).
+Bug reale (caso Matt Freese): quando il club di un giocatore ha due
+partite future ravvicinate di competizioni diverse (Leagues Cup + MLS),
+`test_{gk,def,mid,mls_fwd_all}.py` prendeva sempre `future_games[0]`
+(la più vicina), anche se apparteneva a una giornata diversa da quella
+target — Freese predetto sul 9/08 (Leagues Cup) invece del 13/08 (GW4
+vera). Fix (idea dell'utente): se ≥2 partite future hanno GIÀ le starter
+odds pubblicate insieme, si schiera sempre sull'ULTIMA con odds, mai
+sulla prima (nel caso normale, solo una ha odds, comportamento
+invariato — zero rischio). Nuova funzione `_prossima_partita_vera()`,
+propagata identica a tutti i 212 file (stesso pattern duplicato per
+lega, non condiviso). Marker `AMBIGUO_FIXTURE: si` nel file di
+predizione quando scatta, letto da scouting per un badge ⚠️ non
+bloccante (badge lato generatore, catena consiglio→finale→card HTML su
+26 leghe, **NON fatto**, vedi §10bis). Testato con query reali su 7
+giocatori/4 leghe: nessuna regressione, Freese corretto.
+
+Insieme, stessa sessione: grade trovato e verificato
+(`nextClassicFixtureProjectedGrade`, §8ter/§8bis), scouting riscritto
+`--minimal` con colonna A+G, filtro ruolo esclusivo, Best Five/Best per
+ruolo (§2.2), riuso predizioni spento di default nello scouting.
+**Identificato ma NON risolto**: collo di bottiglia nel workflow
+`scouting_gw.yml`, job `predict` — 60-80% del tempo per job è contesa
+git (20 job paralleli che pushano sullo stesso branch), non calcolo
+(predict vero 2-6s). Fix proposto (artifact per job + un commit solo a
+fine matrice) non ancora implementato, vedi §10bis.
+
 **09/08/2026 — SOGLIE ARENA APPLICATE + tipo Beginner** (commit
 `f9902af972`). `PAREGGIO_ARENA`: cap260 259,5→**264,5**, cap220
 244,1→**247,1**, Uncapped 288,3→**279,6**, Beginner **256,5** (nuovo),
@@ -1362,6 +1420,32 @@ di nuovo questa voce.
 ---
 
 ## 10bis. COSE DA FARE — riscritto il 09/08 notte
+
+**Aperto 10/08 notte: collo di bottiglia git push nel job `predict`.**
+Misurato su log reali (4 job campione): checkout ~15s, pip ~3s, predict
+vero 2-6s, **commit+push con retry 40-90s (60-80% del tempo del job)** —
+20 job paralleli che scrivono sullo stesso branch, 2-3 tentativi falliti
+a job con sleep 5-17s ciascuno. Fix proposto (non implementato): ogni job
+della matrice carica un **artifact** invece di pushare, un job unico a
+fine matrice scarica tutti gli artifact (`actions/download-artifact@v4`,
+`merge-multiple: true`) e fa **un solo commit**. Attenzione se lo si
+riprende: verificare se `prediction_log.json` (scritto da più job dello
+stesso lega/ruolo) ha voci che si sovrascrivono a vicenda con
+`merge-multiple` (con la sequenza push-per-job attuale, il conflitto lo
+risolve git riga per riga; con gli artifact, l'ultimo scaricato vince
+per intero sul file, rischio di perdita silenziosa se il file non è
+append-only riga per riga).
+
+**Aperto 10/08 notte: badge "fixture ambigua" solo in scouting, non nel
+generatore** (scelta dell'utente, non dimenticanza). Il fix
+(`_prossima_partita_vera`) è propagato a tutti i 212 predict, ma
+l'avviso visivo nelle card del generatore richiederebbe toccare
+`build_consiglio_<ruolo>.py` (duplicato per lega) →
+`best_five.py._parse_consiglio_calibrato` →
+`build_formazione_finale.py.parse_consiglio` (duplicato in 26 leghe) →
+template HTML — ~130 file in più. Il marker `AMBIGUO_FIXTURE: si` è già
+scritto nel file di predizione (§9): se si vuole il badge anche lì, la
+strada è già mappata, va solo eseguita.
 
 **PRIORITARIO (aggiunto 10/08 notte, richiesta esplicita dell'utente):
 gruppo del grade esteso a TUTTA LA GIORNATA per ruolo, non per (lega,
