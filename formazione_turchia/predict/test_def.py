@@ -1675,11 +1675,47 @@ def club_da_sorare(player_slug):
     return _CLUB_NOTI.get(player_slug)
 
 
+def _prossima_partita_vera(future_games):
+    """Fra le partite future, sceglie quella giusta quando una giornata sta per
+    chiudersi mentre escono gia' le odds di quella successiva (10/08/2026,
+    caso reale Matt Freese/GK, lo stesso principio vale per ogni ruolo: club
+    con una partita di un'altra competizione ancora da giocare prima della
+    vera giornata target -- lo script prendeva sempre future_games[0], cioe'
+    la piu' vicina, sbagliando target).
+
+    Regola (idea dell'utente): le starter odds di una partita successiva non
+    escono MAI insieme a quelle della partita immediatamente precedente,
+    tranne nella finestra in cui la precedente sta per concludersi. Quindi:
+    se >=2 partite future hanno GIA' le odds pubblicate insieme, si schiera
+    sempre sull'ULTIMA con odds, mai sulla prima. Altrimenti (il caso
+    normale: solo la piu' vicina ha odds, o nessuna le ha ancora)
+    comportamento INVARIATO -- resta la prima partita futura, stesso ordine
+    di sempre. Non tocca nessun'altra logica: riordina solo la lista cosi'
+    che future_games[0] sia gia' quella giusta ovunque venga letto.
+
+    Ritorna (future_games_riordinata, ambiguo) -- 'ambiguo' e' True quando
+    la scelta e' stata fatta su un caso limite: chi consuma la predizione
+    (generatore, scouting) lo scrive come AVVISO non bloccante in HTML,
+    perche' un caso mai visto prima potrebbe rompere l'euristica (10/08/2026,
+    richiesta esplicita dell'utente: "sicurezza estrema")."""
+    con_odds = []
+    for n in future_games:
+        odds = (((n.get('playerGameScore') or {}).get('anyPlayerGameStats') or {})
+                .get('footballPlayingStatusOdds') or {})
+        if odds.get('starterOddsBasisPoints') is not None:
+            con_odds.append(n)
+    if len(con_odds) >= 2 and con_odds[-1] is not future_games[0]:
+        scelta = con_odds[-1]
+        return [scelta] + [n for n in future_games if n is not scelta], True
+    return future_games, False
+
+
 def build_prediction(player_slug):
     global _STRUCTURAL_INSUFFICIENCY
     _STRUCTURAL_INSUFFICIENCY = False
     log("[FASE 1/4] Avvio recupero game log...")
     past_games, future_games, live_team_slug = fetch_game_log_incremental(player_slug, target_window_size=WINDOW_SIZE)
+    future_games, _fixture_ambigua = _prossima_partita_vera(future_games)
     # Finestra temporale massima per lo storico (28/07, richiesta esplicita
     # utente dopo un caso reale: Alejandro Alvarado Jr aveva 1 sola partita
     # "piena" utilizzabile su 27 esaminate, alcune vecchie di oltre un anno --
@@ -2376,6 +2412,7 @@ def build_prediction(player_slug):
         'range_low': range_low,
         'range_high': range_high,
         'next_game': next_game,
+        'fixture_ambigua': _fixture_ambigua,
         'backtest_last_real_score': last_real_score,
         'backtest_media_pesata_precedente': backtest_media,
         'rigorous_backtest': rigorous_bt,
@@ -2469,6 +2506,10 @@ def format_output(result):
     lines.append(f"Casa: {(ng.get('homeTeam') or {}).get('name', '?')} | "
                  f"Trasferta: {(ng.get('awayTeam') or {}).get('name', '?')}")
     lines.append(f"Competizione: {(ng.get('competition') or {}).get('slug', '?')}")
+    if result.get('fixture_ambigua'):
+        lines.append("ATTENZIONE FIXTURE AMBIGUA: due partite future avevano GIA' le "
+                     "starter odds pubblicate insieme -- scelta quella piu' tardiva "
+                     "(caso limite mai visto prima del 10/08/2026, verificare a mano).")
 
     lines.append("")
     lines.append("=" * 70)
@@ -2677,7 +2718,7 @@ def main():
         summary_rows.append((slug, 'OK', result.get('score_atteso'), result.get('range_low'),
                               result.get('range_high'), result.get('target_competition', ''),
                               result.get('player_team_slug'), result.get('next_opponent_team_slug'),
-                              result.get('score_ordinamento')))
+                              result.get('score_ordinamento'), result.get('fixture_ambigua', False)))
         log(f"[{slug}] OK: score atteso {result.get('score_atteso'):.1f} "
             f"(range {result.get('range_low'):.1f} - {result.get('range_high'):.1f})")
 
@@ -2708,7 +2749,7 @@ def main():
                          f"range_mult={RANGE_MULTIPLIER}, min_starter_odds={MIN_STARTER_ODDS:.0%}")
     summary_lines.append("=" * 70)
     for idx, (slug, status, atteso, range_low, range_high, note, team_slug, opp_slug,
-              ordinamento) in enumerate(ok_rows, 1):
+              ordinamento, fixture_ambigua) in enumerate(ok_rows, 1):
         low = round(range_low)
         high = round(range_high)
         summary_lines.append(f"{idx}) {slug}: {round(atteso)} pt attesi ({low}-{high})")
@@ -2723,6 +2764,8 @@ def main():
         # build_formazione_finale.py (evitare di schierare insieme portiere
         # e giocatore di movimento le cui squadre si affrontano).
         summary_lines.append(f"   SQUADRA: {team_slug or 'N/D'} | AVVERSARIO: {opp_slug or 'N/D'}")
+        if fixture_ambigua:
+            summary_lines.append("   AMBIGUO_FIXTURE: si")
     if other_rows:
         summary_lines.append("")
         summary_lines.append("--- Esclusi / non disponibili ---")

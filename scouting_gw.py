@@ -1540,7 +1540,12 @@ def _atteso_dai_consigli(pool, gg=None):
     applica la STESSA calibrazione (gg.calibra, CALIB_PER_RUOLO) prima di
     restituire il valore, cosi' la tabella confronta ruoli sulla stessa scala
     del generatore -- se gg non e' disponibile si ricade sul grezzo
-    (comportamento INVARIATO, nessuna regressione per chi non ha il generatore)."""
+    (comportamento INVARIATO, nessuna regressione per chi non ha il generatore).
+
+    Ritorna (per_slug, ambigui) -- 'ambigui' e' l'insieme degli slug il cui
+    file predizione porta 'AMBIGUO_FIXTURE: si' (10/08/2026, caso Matt Freese:
+    due partite future con odds pubblicate insieme -- vedi _prossima_partita_
+    vera in test_gk.py e affini). Informativo, non filtra nulla da solo."""
     ruolo_per_slug = {}
     for g in pool['giocatori']:
         if g.get('slug') and g.get('ruoli'):
@@ -1563,7 +1568,7 @@ def _atteso_dai_consigli(pool, gg=None):
                 continue
             if slug not in ultimo or ts > ultimo[slug][0]:
                 ultimo[slug] = (ts, path)
-    per_slug, fuori_giornata = {}, 0
+    per_slug, ambigui, fuori_giornata = {}, set(), 0
     for slug, (_ts, path) in ultimo.items():
         try:
             with open(path, encoding='utf-8') as f:
@@ -1580,13 +1585,19 @@ def _atteso_dai_consigli(pool, gg=None):
                        r':\s*([0-9]+(?:\.[0-9]+)?)\s*pt', testo, re.M)
         if ms:
             per_slug[slug] = float(ms.group(1))
+            if re.search(r'^\s*AMBIGUO_FIXTURE:\s*si\s*$', testo, re.M):
+                ambigui.add(slug)
     if fuori_giornata:
         log(f"Attesi: {fuori_giornata} predizioni con kickoff fuori da "
             f"{inizio}..{fine} (altre giornate, scartate).")
+    if ambigui:
+        log(f"AVVISO: {len(ambigui)} candidati con fixture ambigua (due GW con odds "
+            f"pubblicate insieme, vedi HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §10bis): "
+            f"{', '.join(sorted(ambigui))}")
     if gg is not None and hasattr(gg, 'calibra'):
         per_slug = {slug: gg.calibra(v, ruolo_per_slug.get(slug)) if v is not None else v
                     for slug, v in per_slug.items()}
-    return per_slug
+    return per_slug, ambigui
 
 
 def _script_delle_carte(bf):
@@ -1815,7 +1826,7 @@ _HTML_CONTROLLI_MINIMALE = """
 """
 
 
-def _tabella_minimale(pool, attesi, gg=None):
+def _tabella_minimale(pool, attesi, gg=None, fixture_ambigue=frozenset()):
     """Tabella semplificata (09/08/2026, richiesta utente): SOLO giocatore,
     ruolo, club, odds, prezzo, grade, atteso, A+G -- niente arene, niente
     essenze/GW, niente "si ripaga in". UNA lista sola, ordinata per A+G
@@ -1863,6 +1874,12 @@ def _tabella_minimale(pool, attesi, gg=None):
                          % ('mia' if g['starter_odds'] >= 0.8 else 'warn',
                             g['starter_odds'] * 100))
         grade = g.get('grade') or '&mdash;'
+        avviso_ambiguo = (
+            " <span class='warn' title=\"Due partite future avevano gia' le "
+            "starter odds pubblicate insieme: scelta la piu' tardiva. "
+            "Verifica a mano se e' quella giusta (caso limite, vedi HANDOFF_"
+            "UNIFICATO_MODELLO_SCOUTING.md §8bis).\">⚠️</span>"
+        ) if g['slug'] in fixture_ambigue else ''
         # data-* robusti (non testo da riparsare) per filtro ruolo e bottoni
         # Best Five/Best per ruolo -- niente fragilita' sul formato mostrato.
         pezzi.append(
@@ -1872,7 +1889,7 @@ def _tabella_minimale(pool, attesi, gg=None):
             f" data-atteso='{'' if atteso is None else atteso}'"
             f" data-ag='{'' if ag is None else ag}'>"
             f"<td><a href='https://sorare.com/football/players/{g['slug']}' "
-            f"target='_blank' rel='noopener'>{(g.get('nome') or g['slug'])}</a></td>"
+            f"target='_blank' rel='noopener'>{(g.get('nome') or g['slug'])}</a>{avviso_ambiguo}</td>"
             f"<td>{'/'.join(g['ruoli'])}</td>"
             f"<td>{(g.get('club') or '')}</td>"
             f"<td class='n'>{odds_txt}</td>"
@@ -1898,7 +1915,7 @@ def scrivi_html(pool, dest, formazioni=(), minimal=False):
         log(f"ATTENZIONE: generatore non caricabile ({e}), atteso/soglie "
             f"scouting ricadono sui vecchi valori grezzi/statici.")
         gg = None
-    attesi = _atteso_dai_consigli(pool, gg)
+    attesi, fixture_ambigue = _atteso_dai_consigli(pool, gg)
 
     # Copertura di ogni run, sempre in log (09/08/2026 notte, terzo giro):
     # senza questo numero l'utente non sa se una colonna sara' piena o
@@ -1926,7 +1943,7 @@ def scrivi_html(pool, dest, formazioni=(), minimal=False):
     scremati = any('idoneo' in g for g in pool['giocatori'])
     pezzi = [testa]
     if minimal:
-        pezzi += _tabella_minimale(pool, attesi, gg)
+        pezzi += _tabella_minimale(pool, attesi, gg, fixture_ambigue)
         pezzi.append(_HTML_CODA)
         documento = '\n'.join(pezzi)
         os.makedirs(os.path.dirname(dest), exist_ok=True)
