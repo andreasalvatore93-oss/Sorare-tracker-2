@@ -265,13 +265,23 @@ def main():
     print(f'  A (entra {n_A}/{n_tot}):        {tot_A:+.0f}')
     print(f'  G (entra {n_G}/{n_tot}):        {tot_G:+.0f}')
 
-    n_diverse = sum(1 for r in tutti_risultati if r['entra_A'] != r['entra_G'])
-    print(f'\n  decisioni A/G diverse: {n_diverse}/{n_tot}')
+    discordanti = [r for r in tutti_risultati if r['entra_A'] != r['entra_G']]
+    n_diverse = len(discordanti)
+    contributi = [
+        (r['premio_netto'] if r['entra_G'] else -r['premio_netto']) for r in discordanti]
+    delta_totale = sum(contributi)
+    top3_pro_g = sorted([c for c in contributi if c > 0], reverse=True)[:3]
+    delta_senza_top3_pro_g = delta_totale - sum(top3_pro_g)
+
+    print(f'\n  *** la n vera del confronto G-vs-A e\' {n_diverse} (decisioni discordanti), non {n_tot} ***')
+    print(f'  delta G-A totale: {delta_totale:+.0f}  |  delta G-A senza le 3 decisioni pro-G piu\' pesanti: {delta_senza_top3_pro_g:+.0f}')
 
     out_path = os.path.join(ARCHIVIO_ROOT, 'aggregato', 'binario1_out.json')
     with open(out_path, 'w', encoding='utf-8') as fh:
         json.dump({'per_gw': per_gw, 'tot_M': tot_M, 'tot_A': tot_A, 'tot_G': tot_G,
-                   'n_entra_A': n_A, 'n_entra_G': n_G, 'n_totale': n_tot}, fh,
+                   'n_entra_A': n_A, 'n_entra_G': n_G, 'n_totale': n_tot,
+                   'n_discordanti': n_diverse, 'delta_G_A_totale': delta_totale,
+                   'delta_G_A_senza_top3_pro_g': delta_senza_top3_pro_g}, fh,
                   ensure_ascii=False, indent=1)
     print(f'\ndettaglio scritto in {out_path}')
 
