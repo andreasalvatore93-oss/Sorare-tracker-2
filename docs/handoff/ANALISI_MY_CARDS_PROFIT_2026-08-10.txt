@@ -123,3 +123,46 @@ Cron (idea A) SCARTATO su indicazione dell'utente: lancia il workflow a mano
    piu' rilevante ora che si copre tutto in un giro.
 
 File toccati: scanners/my_cards_profit.py, .github/workflows/my_cards_profit.yml
+
+== ITERAZIONE 2 (stessa sessione, 10/08) ==
+
+Richiesta utente: notifiche in un solo report HTML (non piu' blocchi Telegram
+per carta), con link cliccabile alla carta, prezzo d'acquisto (se c'e') e
+margine; per le carte craft solo il margine (non pagate).
+
+IMPLEMENTATO:
+- generate_and_send_report/build_html_report: un solo file HTML statico
+  (scanners/output/my_cards_profit_report.html, committato dal workflow),
+  tabella unica ordinata per margine decrescente. Un solo messaggio Telegram
+  con link cliccabile via raw.githack.com (stesso schema gia' collaudato in
+  produzione da bot_profit_telegram_notify.py, non inventato da zero).
+- Link carta CORRETTO su richiesta utente: puntava a
+  market/shop/manager-sales/<player>/... (la vetrina del mercato), ora punta
+  a my-cards/cards/limited?card=<slug> (la carta posseduta), come indicato
+  dall'utente con l'esempio sergi-dominguez-viloria-2026-limited-121.
+
+BUG REALE TROVATO E CORRETTO ispezionando il primo caso del report
+(dong-kyung-lee-2026-limited-104, richiesta esplicita utente "verifichiamolo
+sul mercato vero"): get_market_min_price leggeva SOLO
+receiverSide.amounts.eurCents, ignorando gli annunci prezzati in
+USD/GBP/ETH/SOL (che tornano eurCents=null, non "annuncio assente"). STESSO
+bug gia' documentato e risolto in track.py il 17/07 (caso Jhegson Sebastian
+Mendez, eur_price_from_amounts) ma mai applicato a questo file. Risultato
+pratico: il market minimo per dong-kyung-lee-2026-limited-104 risultava
+25.00€ (unico annuncio EUR-nativo) mentre il vero minimo, verificato sulla
+pagina mercato reale di Sorare, era 15.08€ (annuncio non-EUR, invisibile
+alla vecchia query) -- un profit gonfiato di quasi 10€ su una singola carta.
+Fix: query aggiornata con tutti i campi valuta (eurCents/wei/usdCents/
+gbpCents/lamport) e uso di track.eur_price_from_amounts (stessa funzione
+condivisa, gia' testata) invece di leggere eurCents a mano. Verificato dopo
+il fix: stessa carta ora restituisce 15.11€ (coerente col mercato reale).
+
+IMPATTO: questo bug era presente ANCHE nella versione con cui ho fatto i
+primi test (batch 15/200 carte) -- quei numeri di margine erano quindi
+sovrastimati in un numero non noto di casi (ogni volta che l'offerta piu'
+economica in_season/classic per un giocatore era in valuta non-EUR). Non
+riguardava code diverso da questo file (my_cards_profit.py ha sempre avuto
+la sua query market-price separata, non condivisa con track.py fino ad
+oggi).
+
+File toccati (oltre ai precedenti): stessi due file, nessun file nuovo.

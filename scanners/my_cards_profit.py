@@ -36,6 +36,11 @@ FIX 10/08 (richiesta esplicita dell'utente, 3 modifiche testate in locale sull'a
    timeout del workflow sono stati alzati di conseguenza per fare un giro completo ad ogni run
    invece che a rotazione su piu' run (l'utente lancia il workflow manualmente ~1 volta a
    settimana, niente cron).
+4) Le notifiche non sono piu' blocchi di messaggi Telegram (uno per carta) ma UN report HTML
+   statico con tutte le carte in un'unica tabella (link cliccabile alla carta, prezzo
+   d'acquisto se noto, margine) -- vedi generate_and_send_report/build_html_report. Il file
+   viene committato dal workflow e il messaggio Telegram contiene solo il link (stesso schema
+   raw.githack.com gia' collaudato in produzione da bot_profit_telegram_notify.py).
 """
 import os
 import json
@@ -49,9 +54,6 @@ MANAGER_SLUG = 'crowss'
 # .yml mappa i secret BUNDLE_TELEGRAM_TOKEN/BUNDLE_TELEGRAM_CHAT_ID su QUELLE env var (non su
 # BUNDLE_TELEGRAM_TOKEN/BUNDLE_TELEGRAM_CHAT_ID), cosi' i messaggi arrivano nello stesso canale
 # del bundle scanner senza bisogno di kwargs custom qui.
-
-BLOCK_SIZE = 10
-BLOCK_SEPARATOR = "\n" + "=" * 50 + "\n"
 
 # Salva SOLO le carte gia' trovate in profitto e notificate (skip permanente -- non ha senso
 # ri-notificare la stessa carta ad ogni run).
@@ -245,7 +247,7 @@ def build_purchase_price_map():
     return price_map
 
 
-def get_market_min_price(player_slug, season_type):
+def get_market_min_price(player_slug, season_type, eth_rate):
     """Ottieni il prezzo più basso del mercato per questo giocatore, tra gli
     annunci aperti con la stessa categoria (in_season/classic) -- stesso schema query di
     track.py (fetch_all_live_offers/get_live_min_offer): la carta messa in vendita sta in
@@ -270,7 +272,15 @@ def get_market_min_price(player_slug, season_type):
     FIX 10/08 (richiesta esplicita dell'utente): il chiamante ha GIA' player_slug (viene dalla
     stessa query bulk di get_all_my_cards, campo anyPlayer.slug) -- prima si rifaceva una query
     anyCard(slug)->anyPlayer.slug per ritrovare un dato gia' in mano, raddoppiando le chiamate
-    GraphQL per ogni carta processata. Ora si passa player_slug direttamente."""
+    GraphQL per ogni carta processata. Ora si passa player_slug direttamente.
+    FIX 10/08 bis (bug reale trovato ispezionando dong-kyung-lee-2026-limited-104 sul mercato
+    vero: la pagina mostrava annunci in_season a 15.08€/16.09€/17.30€, ma questa funzione
+    restituiva 25.00€ come minimo): la query leggeva SOLO receiverSide.amounts.eurCents,
+    ignorando gli annunci prezzati in USD/GBP/ETH/SOL (eurCents torna null in quel caso, non
+    "annuncio assente" -- STESSO bug gia' documentato e risolto in track.py il 17/07, caso
+    Jhegson Sebastian Mendez, mai applicato pero' a questo file). Ora si richiedono tutti i
+    campi valuta e si usa track.eur_price_from_amounts (stessa funzione, stessa conversione)
+    invece di leggere eurCents a mano."""
     try:
         offers_query = """
         query LiveOffers($slug: String!, $n: Int!) {
@@ -280,7 +290,7 @@ def get_market_min_price(player_slug, season_type):
                 status
                 sender { ... on User { slug } }
                 receiverSide {
-                  amounts { eurCents }
+                  amounts { eurCents wei usdCents gbpCents lamport }
                   anyCards { slug }
                 }
                 senderSide {
@@ -332,9 +342,9 @@ def get_market_min_price(player_slug, season_type):
                 break
             if not match:
                 continue
-            eur_cents = node.get('receiverSide', {}).get('amounts', {}).get('eurCents')
-            if eur_cents:
-                prices.append(eur_cents / 100)
+            price = track.eur_price_from_amounts(node.get('receiverSide', {}).get('amounts'), eth_rate)
+            if price:
+                prices.append(price)
 
         return min(prices) if prices else None
     except Exception as e:
@@ -389,6 +399,9 @@ def run_profit_scan():
     # Prezzi di acquisto per TUTTE le carte in un colpo solo (query bulk), invece di una query
     # per carta come nella versione precedente (rotta e comunque inefficiente su 1900+ carte).
     purchase_price_map = build_purchase_price_map()
+    # Tasso ETH/EUR preso una volta sola (FIX 10/08: serve a track.eur_price_from_amounts per
+    # convertire gli annunci prezzati in ETH/USD/GBP/SOL, vedi docstring get_market_min_price).
+    eth_rate = track.get_eth_rate()
 
     profitable = []
     craft_value = []
@@ -420,7 +433,7 @@ def run_profit_scan():
         # ririchiesto con una query separata (vedi docstring get_market_min_price).
         season_name = (card.get('sportSeason') or {}).get('name', 'unknown')
         season_type = track.season_type_for_card(card, season_name)
-        market_price = get_market_min_price(player_slug, season_type)
+        market_price = get_market_min_price(player_slug, season_type, eth_rate)
 
         if purchase_price is None:
             # Carta senza acquisto attribuibile: probabile craft/premio (vedi docstring sopra).
@@ -497,77 +510,130 @@ def run_profit_scan():
 
     log(f"Totale carte con profit: {len(profitable)}, carte craft/premio di valore: "
         f"{len(craft_value)}")
-    if profitable:
-        send_notifications(profitable)
-    if craft_value:
-        send_craft_notifications(craft_value)
+    generate_and_send_report(profitable, craft_value)
 
 
-def send_notifications(profit_cards):
-    """Manda notifiche Telegram in blocchi da BLOCK_SIZE."""
-    blocks = [profit_cards[i:i+BLOCK_SIZE] for i in range(0, len(profit_cards), BLOCK_SIZE)]
-
-    for block_num, block in enumerate(blocks, 1):
-        msg = f"<b>💰 Carte con Profit (Blocco {block_num}/{len(blocks)})</b>\n\n"
-
-        for card in block:
-            season_label = f"{card['season']} {'(In Season)' if card['in_season'] else '(Classic)'}"
-            # FIX 18/07 (richiesta esplicita, link portava al mercato generale invece che alla
-            # carta): stesso schema corretto gia' applicato in my_cards_underpriced.py, verificato
-            # in produzione da track.py (send_instant_alert/evaluate_player_offer).
-            player_slug = card.get('player_slug')
-            if player_slug:
-                card_link = (f"https://sorare.com/it/football/market/shop/manager-sales/"
-                             f"{player_slug}/limited?card={card['slug']}")
-            else:
-                card_link = f"https://sorare.com/it/football/market/shop/{card['slug']}"
-            msg += (
-                f"<b>{card['slug']}</b>\n"
-                f"Acquistato: {card['purchase_price']:.2f}€\n"
-                f"Market min: {card['market_price']:.2f}€\n"
-                f"<b>Profit: +{card['profit']:.2f}€ ({card['profit_percent']:+.1f}%)</b>\n"
-                f"Stagione: {season_label}\n"
-                f"👉 <a href='{card_link}'>Vedi la carta</a>\n"
-                f"\n"
-            )
-
-        msg = msg.rstrip() + BLOCK_SEPARATOR
-        track.send_telegram_msg(msg)
-        log(f"Notifica blocco {block_num} inviata")
+def _card_link(player_slug, card_slug):
+    # FIX 10/08 (richiesta esplicita dell'utente): il link deve portare alla MIA carta (la
+    # pagina "my-cards" della propria collezione, stesso pattern indicato dall'utente per
+    # sergi-dominguez-viloria-2026-limited-121), non alla vetrina del mercato -- quella mostra
+    # tutti gli annunci del giocatore, non la carta specifica posseduta.
+    return f"https://sorare.com/it/football/my-cards/cards/limited?card={card_slug}"
 
 
-def send_craft_notifications(craft_cards):
-    """Manda notifiche Telegram per le carte senza acquisto attribuibile (probabile
-    craft/premio) che hanno comunque un valore di mercato sopra soglia. Non e' un "profit" in
-    senso stretto (nessun costo in EUR noto), quindi messaggio e struttura separati da
-    send_notifications -- vedi docstring di run_profit_scan per il ragionamento."""
-    blocks = [craft_cards[i:i+BLOCK_SIZE] for i in range(0, len(craft_cards), BLOCK_SIZE)]
+def _season_label(card):
+    return f"{card['season']} {'(In Season)' if card['in_season'] else '(Classic)'}"
 
-    for block_num, block in enumerate(blocks, 1):
-        msg = f"<b>\U0001F528 Carte Craft/Premio di Valore (Blocco {block_num}/{len(blocks)})</b>\n\n"
 
-        for card in block:
-            season_label = f"{card['season']} {'(In Season)' if card['in_season'] else '(Classic)'}"
-            player_slug = card.get('player_slug')
-            if player_slug:
-                card_link = (f"https://sorare.com/it/football/market/shop/manager-sales/"
-                             f"{player_slug}/limited?card={card['slug']}")
-            else:
-                card_link = f"https://sorare.com/it/football/market/shop/{card['slug']}"
-            pack_note = ("pacchetto acquistato, probabilmente NON craft" if card['likely_pack']
-                         else "nessun pacchetto rilevato, craft/premio plausibile")
-            msg += (
-                f"<b>{card['slug']}</b>\n"
-                f"Nessun acquisto trovato ({pack_note}, indizio non certo)\n"
-                f"<b>Market min: {card['market_price']:.2f}€</b>\n"
-                f"Stagione: {season_label}\n"
-                f"👉 <a href='{card_link}'>Vedi la carta</a>\n"
-                f"\n"
-            )
+def build_html_report(profit_cards, craft_cards):
+    """Un solo file HTML statico e autosufficiente (dati incorporati, nessun caricamento
+    esterno) con tutte le carte trovate in un'unica tabella -- richiesta esplicita dell'utente
+    (10/08): prima arrivavano blocchi di messaggi Telegram separati per carta, uno scomodo da
+    scorrere. Colonne: carta (link cliccabile alla carta su Sorare), prezzo di acquisto (solo
+    se noto -- per le carte craft/premio resta '—', non l'hanno pagate), prezzo di mercato,
+    margine. Righe ordinate per margine decrescente (l'affare piu' grande in cima)."""
+    rows = []
+    for c in profit_cards:
+        rows.append({
+            'slug': c['slug'], 'player_slug': c['player_slug'],
+            'tipo': 'Acquistata', 'acquisto': c['purchase_price'],
+            'market': c['market_price'], 'margine': c['profit'],
+            'margine_pct': c['profit_percent'], 'season_label': _season_label(c),
+        })
+    for c in craft_cards:
+        rows.append({
+            'slug': c['slug'], 'player_slug': c['player_slug'],
+            'tipo': 'Craft/premio', 'acquisto': None,
+            'market': c['market_price'], 'margine': c['market_price'],
+            'margine_pct': None, 'season_label': _season_label(c),
+        })
+    rows.sort(key=lambda r: r['margine'], reverse=True)
 
-        msg = msg.rstrip() + BLOCK_SEPARATOR
-        track.send_telegram_msg(msg)
-        log(f"Notifica craft blocco {block_num} inviata")
+    ts_label = datetime.now().strftime('%d/%m/%Y %H:%M')
+    trs = []
+    for r in rows:
+        acquisto_cell = f"{r['acquisto']:.2f}€" if r['acquisto'] is not None else "—"
+        margine_pct = f" ({r['margine_pct']:+.1f}%)" if r['margine_pct'] is not None else ""
+        link = _card_link(r['player_slug'], r['slug'])
+        trs.append(
+            "<tr>"
+            f"<td><a href='{link}' target='_blank' rel='noopener'>{r['slug']}</a>"
+            f"<div class='sub'>{r['season_label']}</div></td>"
+            f"<td>{r['tipo']}</td>"
+            f"<td>{acquisto_cell}</td>"
+            f"<td>{r['market']:.2f}€</td>"
+            f"<td class='profit'>+{r['margine']:.2f}€{margine_pct}</td>"
+            "</tr>"
+        )
+
+    return f"""<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Cards Profit — {ts_label}</title>
+<style>
+  body {{ font-family: system-ui, sans-serif; background: #0f1216; color: #e6e6e6;
+         margin: 0; padding: 20px; }}
+  h1 {{ font-size: 18px; margin: 0 0 4px; }}
+  .subtitle {{ color: #9aa4af; font-size: 13px; margin-bottom: 16px; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 14px; }}
+  th, td {{ text-align: left; padding: 8px 10px; border-bottom: 1px solid #262b31; }}
+  th {{ color: #9aa4af; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; }}
+  td a {{ color: #6fd3ff; text-decoration: none; }}
+  td a:hover {{ text-decoration: underline; }}
+  td .sub {{ color: #6b7580; font-size: 11px; }}
+  td.profit {{ color: #3ddc84; font-weight: 600; white-space: nowrap; }}
+  tr:hover {{ background: #161a1f; }}
+</style>
+</head>
+<body>
+  <h1>My Cards Profit</h1>
+  <div class="subtitle">{ts_label} — {len(profit_cards)} carte acquistate in profitto,
+    {len(craft_cards)} carte craft/premio di valore</div>
+  <table>
+    <thead><tr><th>Carta</th><th>Tipo</th><th>Acquisto</th><th>Mercato</th><th>Margine</th></tr></thead>
+    <tbody>{''.join(trs)}</tbody>
+  </table>
+</body>
+</html>
+"""
+
+
+REPORT_PATH = os.path.join('scanners', 'output', 'my_cards_profit_report.html')
+GIT_REF = os.environ.get('GIT_REF', 'main').strip() or 'main'
+REPO_SLUG = os.environ.get('GITHUB_REPOSITORY', 'andreasalvatore93-oss/Sorare-tracker-2').strip()
+
+
+def _report_viewer_url():
+    """raw.githack.com serve raw.githubusercontent.com col Content-Type text/html corretto,
+    cosi' il link apre la pagina renderizzata invece di scaricare il file -- stesso schema gia'
+    collaudato in produzione da bot_profit_telegram_notify.py (funziona solo su repo pubblici,
+    gia' verificato li')."""
+    path_url = REPORT_PATH.replace(os.sep, '/')
+    return f"https://raw.githack.com/{REPO_SLUG}/{GIT_REF}/{path_url}"
+
+
+def generate_and_send_report(profit_cards, craft_cards):
+    """Scrive il report HTML su disco (il workflow lo committa, vedi .yml) e manda UN solo
+    messaggio Telegram con il link cliccabile -- sostituisce i vecchi blocchi di messaggi
+    Telegram per singola carta (richiesta esplicita dell'utente, 10/08)."""
+    if not profit_cards and not craft_cards:
+        return
+    os.makedirs(os.path.dirname(REPORT_PATH), exist_ok=True)
+    html = build_html_report(profit_cards, craft_cards)
+    with open(REPORT_PATH, 'w', encoding='utf-8') as f:
+        f.write(html)
+    log(f"Report HTML scritto in {REPORT_PATH}")
+
+    msg = (
+        f"<b>💰 My Cards Profit</b>\n"
+        f"{len(profit_cards)} carte acquistate in profitto, {len(craft_cards)} craft/premio "
+        f"di valore\n"
+        f"👉 <a href='{_report_viewer_url()}'>Apri il report</a>"
+    )
+    track.send_telegram_msg(msg)
+    log("Notifica con link al report inviata")
 
 
 if __name__ == '__main__':

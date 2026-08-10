@@ -84,6 +84,9 @@ jobs:
           if [ -f .my_cards_profit_backlog.txt ]; then
             git add .my_cards_profit_backlog.txt
           fi
+          if [ -f scanners/output/my_cards_profit_report.html ]; then
+            git add scanners/output/my_cards_profit_report.html
+          fi
           if git diff --cached --quiet; then
             echo "Nessuna modifica da salvare."
             exit 0
