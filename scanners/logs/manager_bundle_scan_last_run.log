@@ -715,3 +715,26 @@ IndentationError: unexpected indent
 [2026-07-19 08:49:38] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 1668, 'wei': 170, 'usdCents': 1151, 'gbpCents': 60, 'lamport': 0, 'none': 0}
 [2026-07-19 08:49:38] [manager bundle scan] RISULTATO -- 'betterthanthem-plusvalencia': 22 carte in vendita organizzate in 3 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 49.43EUR, minimo di mercato totale 43.53EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 14 gia' al minimo di mercato (sezione bonus separata).
 [2026-07-19 08:49:40] [manager bundle scan] notifica Telegram inviata (bot dedicato scanner) -- 3 messaggio/i.
+
+===== RUN 2026-08-10 15:47:50 UTC =====
+[2026-08-10 15:47:50] [manager bundle scan] [auto-find] nessun manager fornito e modalita' auto-discovery ATTIVA: ascolto il mercato per 120s a caccia di manager con almeno 5 carte in_season in vendita...
+[2026-08-10 15:50:35] [manager bundle scan] [auto-find] ascolto terminato: 34 carte in_season appena messe in vendita raccolte (sopra 1.00EUR).
+[2026-08-10 15:50:36] [manager bundle scan] [auto-find] variante proprietario 'user' FUNZIONA su anyCard -- la uso per tutti i lookup successivi.
+[2026-08-10 15:50:47] [manager bundle scan] [auto-find] 15 manager venditori distinti individuati (top: clem777 x9, sir-hiss-the-swap-bot x3, temha58 x3, eli-aquim x2, guenchuonzui x2) -- controllo quante carte in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...
+[2026-08-10 15:50:47] [manager bundle scan] [auto-find] 'clem777': blacklistato (bot noto che non accetta offerte negoziate), passo oltre.
+[2026-08-10 15:50:47] [manager bundle scan] [auto-find] 'sir-hiss-the-swap-bot': blacklistato (bot noto che non accetta offerte negoziate), passo oltre.
+[2026-08-10 15:50:47] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 15:50:48] [manager bundle scan] 'temha58': 251 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 15:50:50] [manager bundle scan] [filtro carte in vendita] 251 carte possedute scansionate, 237 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 14.
+[2026-08-10 15:50:50] [manager bundle scan] [auto-find] 'temha58': 26 carte in_season in vendita (soglia 5).
+[2026-08-10 15:50:50] [manager bundle scan] [auto-find] SELEZIONATO 'temha58' -- parte lo scan classico su di lui (in raffreddamento per i prossimi 7 giorni per la sola auto-discovery).
+[2026-08-10 15:50:51] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 15:50:51] [manager bundle scan] 'temha58': 251 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 15:50:54] [manager bundle scan] [filtro carte in vendita] 251 carte possedute scansionate, 237 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 14.
+[2026-08-10 15:50:54] [manager bundle scan] 'temha58': 26 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-08-10 15:50:54] [manager bundle scan] controllo il mercato live per 26 giocatori diversi (26 carte possedute da verificare)...
+[2026-08-10 15:51:08] [manager bundle scan] [diagnostica] 26 carte in_season possedute controllate, 10 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 16 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-08-10 15:51:08] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 761, 'wei': 131, 'usdCents': 219, 'gbpCents': 27, 'lamport': 1, 'none': 0}
+[2026-08-10 15:51:08] [manager bundle scan] RISULTATO -- 'temha58': 10 carte in vendita organizzate in 1 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 76.50EUR, minimo di mercato totale 27.34EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 0 gia' al minimo di mercato (sezione bonus separata).
+[2026-08-10 15:51:08] [manager bundle scan] report HTML scritto: scanners/logs/manager_bundle_scan_report.html
+REPORT_READY temha58 10
