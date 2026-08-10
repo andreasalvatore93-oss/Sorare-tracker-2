@@ -1306,6 +1306,35 @@ di *fingerprint*, non sta delirando — serve davvero, ma **esiste già** in
 
 ## 9. Modifiche di produzione — cronologia compressa
 
+**10/08/2026 sera — Pool suppletivo odds 0.60-0.70 per Arena Beginner/All
+Stars/Under23, TEST, flag spento di default** (commit `c23a3b3d2d`,
+`006a09c018`, `cec054ea96`/`8cafd0a3fb`). Nuovo `EXTEND_ODDS_060_070`
+(default `0`, nessun effetto sul comportamento esistente). Acceso: la
+discovery tiene ANCHE la fascia 0.60-0.70 (unica possibile sotto 0.80, le
+odds Sorare escono a blocchi da 10) oltre alla soglia normale; il
+generatore filtra SEMPRE `role_data` a >=0.80 per tutta la pipeline
+esistente (FASE 1, ARENE_EFFICIENTI, ALLSTARS/U23, FASE 1b — a flag spento
+e' un no-op). Un passo nuovo, dopo la tornata primaria, controlla lo scarto
+fra richiesto e generato per Arena Beginner (unica arena ammessa) + All
+Stars + All Stars Under23, e prova a colmarlo con lo stesso `card_pool` gia'
+consumato (mai carte gia' usate sopra) esteso alla banda 0.60-0.70 + il
+residuo 0.80+ non scelto. Nessuno sconto sul punteggio per le odds piu'
+basse (richiesta esplicita utente: vanno valutate come le 0.80+).
+Due bug reali trovati dall'utente confrontando run vere col pool visibile
+su Sorare, entrambi fixati in giornata: (1) il passo suppletivo provava
+ALLSTARS prima di ALLSTARS_U23, invertito rispetto a `PRIORITY_ORDER` (U23
+ha priorita') — le All Stars esaurivano candidati U23-eleggibili prima che
+toccasse a Under23; (2) ordine interno del SOLO suppletivo poi cambiato su
+richiesta esplicita: Under23 scavalca le arene qui (1-Under23, 2-Arena
+Beginner se ancora scoperta, 3-All Stars) — nella tornata primaria
+`PRIORITY_ORDER` resta invariato (arene prima). Verificato su run reali
+GW4: mancanza di formazioni Under23 e' risultata pool reale (solo 2 GK e 4
+DEF U23-eleggibili in tutto il pool esteso, tutte le leghe), non un bug.
+Aggiunta anche la starter-odds su OGNI carta del report HTML (badge
+ingrandito 0.85rem/blu dopo feedback "quasi invisibili"), zero query in
+piu' (dato gia' persistito da discovery_fixture.py). Stato: run di verifica
+in corso lanciata dall'utente, esito non ancora riportato in questo file.
+
 **10/08/2026 sera — Fix bug reale: giocatore trasferito spariva dalla
 discovery per `activeClub` stantio** (commit `92cdd42566`). Caso trovato
 dall'utente confrontando lo screenshot del banco MID di GW4 con
