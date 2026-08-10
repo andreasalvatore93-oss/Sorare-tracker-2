@@ -1,0 +1,129 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-10T07:20:57.870466Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) emanuel-coronel: 51 pt attesi (30-63)
+   ORDINAMENTO: 52.26
+   SQUADRA: rosario-central-rosario-provincia-de-santa-fe | AVVERSARIO: corinthians-sao-paulo
+======================================================================
+
+######################################################################
+# GIOCATORE: emanuel-coronel
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: emanuel-coronel (squadra: rosario-central-rosario-provincia-de-santa-fe)
+Generato: 2026-08-10T07:20:57.869314Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 42
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: conmebol-libertadores (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | ROS vs RIE | superliga-argentina-de-futbol | score=54.7 | peso=0.561
+  2025-08-23 | ROS vs NOB | superliga-argentina-de-futbol | score=39.5 | peso=0.574
+  2025-09-14 | ROS vs BOC | superliga-argentina-de-futbol | score=43.8 | peso=0.588
+  2025-09-21 | ROS vs CAT | superliga-argentina-de-futbol | score=29.6 | peso=0.602
+  2025-09-27 | GLP vs ROS | superliga-argentina-de-futbol | score=100.0 | peso=0.616
+  2025-10-12 | VEL vs ROS | superliga-argentina-de-futbol | score=99.7 | peso=0.630
+  2025-10-19 | ROS vs PLA | superliga-argentina-de-futbol | score=61.1 | peso=0.645
+  2025-11-01 | INS vs ROS | superliga-argentina-de-futbol | score=54.6 | peso=0.660
+  2025-11-08 | ROS vs SLO | superliga-argentina-de-futbol | score=52.7 | peso=0.675
+  2026-01-28 | RAC vs ROS | superliga-argentina-de-futbol | score=29.8 | peso=0.691
+  2026-02-02 | ROS vs RIV | superliga-argentina-de-futbol | score=56.0 | peso=0.707
+  2026-02-25 | GLP vs ROS | superliga-argentina-de-futbol | score=46.7 | peso=0.724
+  2026-03-01 | NOB vs ROS | superliga-argentina-de-futbol | score=93.4 | peso=0.741
+  2026-04-09 | ROS vs IVA | conmebol-libertadores | score=51.6 | peso=0.758
+  2026-04-12 | HUR vs ROS | superliga-argentina-de-futbol | score=21.4 | peso=0.776
+  2026-04-15 | LIB vs ROS | conmebol-libertadores | score=85.5 | peso=0.794
+  2026-04-24 | ERC vs ROS | superliga-argentina-de-futbol | score=40.4 | peso=0.812
+  2026-04-29 | UCV vs ROS | conmebol-libertadores | score=54.9 | peso=0.831
+  2026-05-05 | ROS vs LIB | conmebol-libertadores | score=62.0 | peso=0.851
+  2026-05-10 | ROS vs IND | superliga-argentina-de-futbol | score=60.7 | peso=0.871
+  2026-05-13 | ROS vs RAC | superliga-argentina-de-futbol | score=48.4 | peso=0.891
+  2026-05-16 | RIV vs ROS | superliga-argentina-de-futbol | score=32.3 | peso=0.912
+  2026-05-19 | ROS vs UCV | conmebol-libertadores | score=45.6 | peso=0.933
+  2026-05-27 | IVA vs ROS | conmebol-libertadores | score=43.3 | peso=0.955
+  2026-07-23 | BEL vs ROS | superliga-argentina-de-futbol | score=15.4 | peso=0.977
+  2026-08-02 | RIV vs ROS | superliga-argentina-de-futbol | score=22.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 50.42
+  di cui Punteggio decisivo (level_score) medio: 37.22 | Punteggio complessivo (granulari) medio: 13.20 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.62, delta avversario -0.39 | Passaggio condizionato: delta venue +1.89, delta avversario -0.13 | Clean sheet/disimpegni condizionato: delta venue +0.52, delta avversario -1.01 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 21.91
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.6 - 62.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.32 (differenza: +2.59)
+Media score in casa: 50.49 | Media score fuori casa: 52.83
+Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.6
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.733 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.995
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.011
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.995
+Fattore gol subiti (goals_conceded, con cap): 1.005
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.003
+Fattore trend (media ultime 5: 31.5 vs media 5 PRECEDENTI: 53.4): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T00:30
+Casa: CA Rosario Central | Trasferta: SC Corinthians Paulista
+Competizione: conmebol-libertadores
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.1 (range 30.3 - 62.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 52.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.92
+Punteggio REALE ottenuto in quella partita: 22.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -29.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 20 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      70.1    61.1     -9.0    31.5        SI
+   7        7      49.8    54.6     +4.8    29.0        SI
+   8        8      75.7    52.7    -22.9    27.1        SI
+   9        9      68.9    29.8    -39.1    25.6        NO
+  10       10      68.5    56.0    -12.5    26.3        SI
+  11       11      43.0    46.7     +3.7    24.9        SI
+  12       12      56.9    93.4    +36.6    23.9        NO
+  13       13      42.7    51.6     +9.0    25.7        SI
+  14       14      53.2    21.4    -31.8    24.7        NO
+  15       15      56.1    85.5    +29.4    26.1        NO
+  16       16      68.9    40.4    -28.5    26.6        NO
+  17       17      57.1    54.9     -2.2    26.1        SI
+  18       18      55.6    62.0     +6.4    25.2        SI
+  19       19      50.0    60.7    +10.7    24.4        SI
+  20       20      64.2    48.4    -15.8    23.7        SI
+  21       21      70.3    32.3    -38.0    23.1        NO
+  22       22      54.7    45.6     -9.1    23.2        SI
+  23       23      40.6    43.3     +2.7    22.7        SI
+  24       24      59.4    15.4    -44.0    22.3        NO
+  25       25      63.8    22.2    -41.6    23.6        NO
+
+MAE (errore assoluto medio): 19.89
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
