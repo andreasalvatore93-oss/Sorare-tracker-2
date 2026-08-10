@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-09T23:02:40.762435Z
+Generato: 2026-08-10T07:25:08.554694Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) helibelton-palacios-zapata: 51 pt attesi (33-71)
-   ORDINAMENTO: 50.49
+1) helibelton-palacios-zapata: 51 pt attesi (33-70)
+   ORDINAMENTO: 50.33
    SQUADRA: santa-fe-bogota-d-c | AVVERSARIO: river-plate-capital-federal-ciudad-de-buenos-aires
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: helibelton-palacios-zapata (squadra: santa-fe-bogota-d-c)
-Generato: 2026-08-09T23:02:40.761703Z
+Generato: 2026-08-10T07:25:08.553976Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -61,9 +61,9 @@ Deviazione standard pesata: 17.75
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.97 (differenza: +1.77)
 Media score in casa: 58.12 | Media score fuori casa: 36.33
 Fattore casa/trasferta applicato: 1.001 (CASA nella prossima partita)
-Ranking medio avversari affrontati (storico): 10.7
+Ranking medio avversari affrontati (storico): 10.6
 Ranking prossimo avversario: 15
-Fattore forza avversario applicato: 0.870 (gol subiti reali dell'avversario, ultime 10)
+Fattore forza avversario applicato: 0.802 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 1.003
 Fattore duelli (casa/trasferta, da dati reali): 1.011
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.006
@@ -83,8 +83,8 @@ Competizione: conmebol-sudamericana
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 51.4 (range 32.8 - 70.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 50.5
+Score atteso: 51.3 (range 32.7 - 70.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 50.3
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 47.61
@@ -122,10 +122,10 @@ P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo sto
   23       23      53.1    52.5     -0.6    19.8        SI
   24       24      47.7    78.7    +31.1    19.3        NO
   25       25      44.7    58.2    +13.4    20.5        SI
-  26       26      49.6    50.0     +0.4    20.2        SI
-  27       27      63.6    62.0     -1.5    19.7        SI
+  26       26      47.9    50.0     +2.1    20.2        SI
+  27       27      63.6    62.0     -1.6    19.7        SI
 
-MAE (errore assoluto medio): 14.98
+MAE (errore assoluto medio): 15.06
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 54.5%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
