@@ -4,17 +4,14 @@ Tracker: Analisi profit carte mie
 Scansiona TUTTE le carte dell'utente, le confronta col prezzo più basso del mercato.
 Se ho un profit (prezzo_acquisto < prezzo_market), manda notifica.
 
-FIX 18/07 (richiesta esplicita dell'utente, "il bot deve analizzare SEMPRE tutte le carte,
-deve ignorare solo quelle che ha già rilevato in profitto"): la versione precedente segnava
-come "già analizzata" (e quindi saltava per sempre) OGNI carta processata almeno una volta,
-profittevole o no. Rischio reale: una carta in perdita al primo controllo ma che in seguito
-sale di prezzo di mercato non veniva MAI più ricontrollata, perdendo l'occasione. Ora si
-ignorano SOLO le carte già trovate in profitto e già notificate (non ha senso ri-notificarle
-all'infinito) -- tutte le altre (in perdita, o senza prezzo di acquisto disponibile) vengono
-sempre rimesse in coda per il prossimo giro. Dato che scansionare 1900+ carte per intero ad
-ogni run sarebbe lento, si usa un cursore persistente che avanza di CARDS_TO_SCAN carte ad
-ogni run e riparte da capo una volta arrivato in fondo alla lista (rotazione continua) --
-cosi' TUTTE le carte vengono ricontrollate nel tempo, non solo le prime N per sempre.
+FIX 18/07 (richiesta esplicita dell'utente, "il bot deve analizzare SEMPRE tutte le carte"):
+la versione precedente segnava come "già analizzata" (e quindi saltava per sempre) OGNI
+carta processata almeno una volta, profittevole o no -- una carta in perdita al primo
+controllo che poi sale di prezzo non veniva mai piu' ricontrollata. SUPERATO 10/08 (vedi punto
+7 piu' sotto): non esiste piu' NESSUNO skip permanente, nemmeno per le carte gia' notificate.
+Resta valido il cursore persistente (CARDS_TO_SCAN a rotazione, riparte da capo in fondo alla
+lista) per non dover scansionare tutte le carte in un colpo solo se lanciato con un batch
+piccolo.
 
 FIX 18/07 (bug prezzo acquisto): la query precedente (anyCard.tokenTransfers con
 buyer/seller/salePrice) non esiste nello schema ("Field 'tokenTransfers' doesn't exist on
@@ -53,6 +50,11 @@ FIX 10/08 (richiesta esplicita dell'utente, 3 modifiche testate in locale sull'a
    visibili -- sarebbe finita tra i craft/premio per errore. build_auction_price_map legge
    user.tokenAuctions (scoperto per tentativi, introspection disabilitata) e aggiunge il
    prezzo della migliore offerta (bestBid) alla stessa mappa prezzi d'acquisto.
+7) TOLTO lo skip permanente (richiesta esplicita dell'utente, durante una run reale su
+   GitHub): prima una carta trovata profittevole/craft veniva notificata UNA sola volta e mai
+   piu' rivista (.my_cards_profit_found.txt). Ora ogni carta resta candidata per sempre e
+   viene rinotificata ad ogni giro in cui ricompare e soddisfa ancora la soglia -- nessuna
+   memoria cross-run di "gia' detto". load_profitable_found/save_profitable_found rimosse.
 """
 import os
 import json
@@ -67,9 +69,6 @@ MANAGER_SLUG = 'crowss'
 # BUNDLE_TELEGRAM_TOKEN/BUNDLE_TELEGRAM_CHAT_ID), cosi' i messaggi arrivano nello stesso canale
 # del bundle scanner senza bisogno di kwargs custom qui.
 
-# Salva SOLO le carte gia' trovate in profitto e notificate (skip permanente -- non ha senso
-# ri-notificare la stessa carta ad ogni run).
-PROFITABLE_FOUND_FILE = '.my_cards_profit_found.txt'
 # Cursore persistente: indice da cui riprendere la scansione al prossimo run (rotazione
 # continua sulla lista di carte NON ancora trovate in profitto, cosi' nel tempo si ricontrollano
 # tutte, non solo le prime N per sempre).
@@ -94,26 +93,6 @@ PURCHASE_HISTORY_MAX_PAGES = int(os.environ.get('MY_CARDS_PROFIT_HISTORY_MAX_PAG
 
 def log(msg):
     print(f"[my-cards-profit] {msg}")
-
-
-def load_profitable_found():
-    """Carica lo slug delle carte gia' trovate in profitto (skip permanente)."""
-    if not os.path.exists(PROFITABLE_FOUND_FILE):
-        return set()
-    try:
-        with open(PROFITABLE_FOUND_FILE) as f:
-            return set(line.strip() for line in f if line.strip())
-    except Exception:
-        return set()
-
-
-def save_profitable_found(slugs):
-    """Aggiunge slug al file delle carte gia' trovate in profitto (append)."""
-    if not slugs:
-        return
-    with open(PROFITABLE_FOUND_FILE, 'a') as f:
-        for slug in slugs:
-            f.write(slug + '\n')
 
 
 def load_cursor():
@@ -547,10 +526,11 @@ def get_market_min_price(player_slug, season_type, eth_rate):
 
 
 def run_profit_scan():
-    """Scansiona le carte e calcola profit. Ignora SOLO le carte gia' trovate in profitto (o
-    segnalate come craft di valore, vedi sotto) e gia' notificate -- tutte le altre vengono
-    sempre rimesse in coda, tramite un cursore rotante, cosi' una carta prima in perdita che poi
-    diventa profittevole non viene mai persa.
+    """Scansiona le carte e calcola profit. Nessuna carta viene mai esclusa a priori (FIX
+    10/08, punto 7 in cima al file): ogni carta resta candidata per sempre e viene rinotificata
+    ad ogni giro in cui ricompare e soddisfa ancora la soglia -- niente skip permanente. Il
+    cursore rotante serve solo a non dover scansionare tutte le carte in un colpo solo se
+    lanciato con un batch piccolo.
 
     FIX 10/08 (richiesta esplicita dell'utente, caso reale verificato
     sergi-dominguez-viloria-2026-limited-121: pack=None, createdAt presente, ZERO transazioni
@@ -567,7 +547,6 @@ def run_profit_scan():
     plausibile, non certezza. Lo includiamo nel messaggio solo come indizio, non come fatto."""
     log(f"Inizio scan profit ({CARDS_TO_SCAN} carte per run)...")
 
-    profitable_found = load_profitable_found()
     cursor = load_cursor()
 
     all_cards = get_all_my_cards()
@@ -575,15 +554,12 @@ def run_profit_scan():
         log("Nessuna carta trovata")
         return
 
-    # Escludi SOLO le carte gia' trovate in profitto/valore e notificate -- tutte le altre
-    # restano candidate per la rotazione (anche quelle gia' controllate in passato senza esito).
-    candidates = [c for c in all_cards if c.get('slug') not in profitable_found]
-    log(f"{len(all_cards)} carte totali, {len(all_cards) - len(candidates)} gia' notificate "
-        f"(escluse), {len(candidates)} candidate per questo giro")
-
-    if not candidates:
-        log("Nessuna carta candidata (tutte gia' notificate?)")
-        return
+    # FIX 10/08 (richiesta esplicita dell'utente, run reale in corso): tolto lo skip
+    # permanente delle carte gia' notificate una volta -- ogni carta profittevole/craft resta
+    # candidata per sempre e viene rinotificata ad ogni giro in cui ricompare (nessuna memoria
+    # cross-run di "gia' detto"). candidates = all_cards, nessuna esclusione.
+    candidates = all_cards
+    log(f"{len(all_cards)} carte totali, tutte candidate per questo giro")
 
     # Cursore rotante: riprende da dove si era arrivati, ricomincia da capo se supera la fine
     # della lista -- cosi' nel tempo TUTTE le carte candidate vengono ricontrollate.
@@ -608,7 +584,6 @@ def run_profit_scan():
 
     profitable = []
     craft_value = []
-    newly_notified_slugs = []
     updated_backlog = {}
 
     batch = []
@@ -668,7 +643,6 @@ def run_profit_scan():
                     'in_season': card.get('inSeasonEligible'),
                     'likely_pack': is_pack,
                 })
-                newly_notified_slugs.append(card_slug)
             else:
                 log(f"  ➖ Nessun acquisto noto, market {market_price:.2f}€ (sotto soglia)")
             continue
@@ -697,7 +671,6 @@ def run_profit_scan():
                 'season': card.get('sportSeason', {}).get('name', 'N/A'),
                 'in_season': card.get('inSeasonEligible'),
             })
-            newly_notified_slugs.append(card_slug)
         else:
             log(f"  ❌ No profit: acquistato {purchase_price:.2f}€, market {market_price:.2f}€ "
                 f"({profit_percent:+.1f}%)")
@@ -706,10 +679,6 @@ def run_profit_scan():
     # giro (rotazione continua sulla lista candidati, non su all_cards).
     save_cursor(idx)
     log(f"Cursore aggiornato a {idx}/{len(candidates)} (prossimo run riparte da li')")
-
-    if newly_notified_slugs:
-        save_profitable_found(newly_notified_slugs)
-        log(f"Salvate {len(newly_notified_slugs)} carte notificate (skip permanente)")
 
     save_backlog(updated_backlog)
     if updated_backlog:
