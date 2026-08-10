@@ -738,3 +738,29 @@ IndentationError: unexpected indent
 [2026-08-10 15:51:08] [manager bundle scan] RISULTATO -- 'temha58': 10 carte in vendita organizzate in 1 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 76.50EUR, minimo di mercato totale 27.34EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 0 gia' al minimo di mercato (sezione bonus separata).
 [2026-08-10 15:51:08] [manager bundle scan] report HTML scritto: scanners/logs/manager_bundle_scan_report.html
 REPORT_READY temha58 10
+
+===== RUN 2026-08-10 15:58:47 UTC =====
+[2026-08-10 15:58:47] [manager bundle scan] [auto-find] nessun manager fornito e modalita' auto-discovery ATTIVA: ascolto il mercato per 120s a caccia di manager con almeno 5 carte in_season in vendita...
+[2026-08-10 16:00:47] [manager bundle scan] [auto-find] ascolto terminato: 29 carte in_season appena messe in vendita raccolte (sopra 1.00EUR).
+[2026-08-10 16:00:47] [manager bundle scan] [auto-find] variante proprietario 'user' FUNZIONA su anyCard -- la uso per tutti i lookup successivi.
+[2026-08-10 16:00:57] [manager bundle scan] [auto-find] 16 manager venditori distinti individuati (top: clem777 x5, muri69 x3, yannic10 x3, daniferdoser2 x3, mashhz-zve x2) -- controllo quante carte in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...
+[2026-08-10 16:00:57] [manager bundle scan] [auto-find] 'clem777': blacklistato (bot noto che non accetta offerte negoziate), passo oltre.
+[2026-08-10 16:00:57] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 16:00:58] [manager bundle scan] 'muri69': 168 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 16:00:59] [manager bundle scan] [filtro carte in vendita] 168 carte possedute scansionate, 5 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 163.
+[2026-08-10 16:00:59] [manager bundle scan] [auto-find] 'muri69': 4 carte in_season in vendita (soglia 5).
+[2026-08-10 16:01:00] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 16:01:00] [manager bundle scan] 'yannic10': 241 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 16:01:02] [manager bundle scan] [filtro carte in vendita] 241 carte possedute scansionate, 6 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 235.
+[2026-08-10 16:01:02] [manager bundle scan] [auto-find] 'yannic10': 5 carte in_season in vendita (soglia 5).
+[2026-08-10 16:01:02] [manager bundle scan] [auto-find] SELEZIONATO 'yannic10' -- parte lo scan classico su di lui (in raffreddamento per i prossimi 7 giorni per la sola auto-discovery).
+[2026-08-10 16:01:02] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 16:01:03] [manager bundle scan] 'yannic10': 241 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 16:01:05] [manager bundle scan] [filtro carte in vendita] 241 carte possedute scansionate, 6 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 235.
+[2026-08-10 16:01:05] [manager bundle scan] 'yannic10': 5 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-08-10 16:01:05] [manager bundle scan] controllo il mercato live per 5 giocatori diversi (5 carte possedute da verificare)...
+[2026-08-10 16:01:08] [manager bundle scan] [diagnostica] 5 carte in_season possedute controllate, 4 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 1 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-08-10 16:01:08] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 268, 'wei': 33, 'usdCents': 230, 'gbpCents': 16, 'lamport': 0, 'none': 0}
+[2026-08-10 16:01:08] [manager bundle scan] RISULTATO -- 'yannic10': 4 carte in vendita organizzate in 1 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 17.60EUR, minimo di mercato totale 17.60EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 4 gia' al minimo di mercato (sezione bonus separata).
+[2026-08-10 16:01:08] [manager bundle scan] report HTML scritto: scanners/logs/manager_bundle_scan_report.html
+REPORT_READY yannic10 4
