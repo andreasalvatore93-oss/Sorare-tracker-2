@@ -1,0 +1,167 @@
+HANDOFF SESSIONE — 10/08/2026 (Roma, CEST)
+
+1. STATO DEL REPO
+Branch main, tutto pushato, HEAD 73fd34bca1. Commit di questa sessione (in
+ordine):
+  92cdd42566  Discovery: fix Monteiro, activeClub stantio (giocatore
+              trasferito non spariva piu' dal pool)
+  425440d944  Doc: sposta fix Monteiro da 'cose da fare' a cronologia (§9)
+  c23a3b3d2d  Generatore: pool suppletivo odds 0.60-0.70 (prima versione,
+              flag EXTEND_ODDS_060_070 default spento)
+  006a09c018  Fix bug reale: ordine ALLSTARS/ALLSTARS_U23 invertito nel
+              suppletivo + odds su ogni carta HTML
+  8cafd0a3fb  (= cec054ea96 cherry-picked) Under23 scavalca le arene nel
+              SOLO suppletivo + badge odds ingrandito/blu
+  599ac36f07  (= 6a6c1e8353) Doc: riassunto unificato aggiornato
+  02a4998559  (= 9f77be8759) Workflow: rimossi input arena_criterio/
+              list_unused_candidates (confondevano il lancio manuale)
+  73fd34bca1  Workflow: pool suppletivo ACCESO DI DEFAULT nel dispatch
+              (validato su piu' run reali dall'utente)
+Nota tecnica: alcuni commit hanno hash doppio perche' un'altra sessione
+stava lavorando in parallelo sullo stesso working directory
+(scanners/my_cards_profit.py, scanners/track.py) — per non pubblicare il
+suo lavoro non richiesto ho usato push parziali (cherry-pick su branch
+temporanei agganciati a origin/main) invece di push diretti. Alla fine
+della sessione origin/main e HEAD locale coincidono, nessuna divergenza.
+
+2. PERCHE' ESISTEVA QUESTO LAVORO
+Due filoni distinti, nati in sequenza:
+  a) Bug Monteiro (dal HANDOFF_SESSIONE_2026-08-10.txt di stamattina):
+     giocatore trasferito (activeClub Sorare stantio) spariva dal pool
+     eleggibile pur avendo una partita reale.
+  b) Idea segnata ieri (§10bis vecchio): sfruttare i giocatori con
+     starter-odds 0.60-0.70, oggi tagliati fuori dalla soglia 0.80, SOLO
+     per Arena Beginner + All Stars + All Stars Under23, SOLO come
+     ripiego quando la tornata normale non riempie il richiesto.
+
+3. COSA HO COSTRUITO/TOCCATO
+
+3a) Fix Monteiro (discovery_fixture.py)
+Il pre-filtro "squadre in campo" guardava solo anyPlayer.activeClub.slug.
+Fix: fallback su odds_giornata (mappa slug->starter-odds dalle partite
+REALI della fixture, indipendente da activeClub, gia' in cache) — se il
+club della carta non gioca ma il giocatore compare comunque nella mappa
+odds, resta nel pool. Verificato su dati reali GW4: NEC Nijmegen (club vero
+di Monteiro) gioca, PEC Zwolle (activeClub stantio) no, Monteiro in
+odds_giornata con 0.90 -> col fix resta nel pool MID.
+
+3b) Pool suppletivo odds 0.60-0.70 (discovery_fixture.py +
+generatore_formazioni/build_formazione_globale.py + formazione_mls/
+build_formazione_finale.py + .github/workflows/formazione_giornata.yml)
+
+Meccanismo finale (dopo 2 bug trovati e fixati in giornata):
+  - discovery_fixture.py: quando EXTEND_ODDS_060_070=1, tiene ANCHE le
+    carte con odds 0.60-0.70 (unica banda possibile sotto 0.80: le odds
+    Sorare escono a blocchi da 10), oltre alla soglia normale (0.80).
+  - build_formazione_globale.py: 'role_data' resta SEMPRE filtrato a
+    >=0.80 per TUTTA la pipeline esistente (FASE 1, ARENE_EFFICIENTI,
+    ALLSTARS/ALLSTARS_U23, FASE 1b) — a flag spento e' un no-op, a flag
+    acceso la tornata primaria resta comunque invariata. 'role_data_ext'
+    (tutto, banda compresa) e' letto SOLO dal passo suppletivo.
+  - Dopo la tornata primaria, si calcola lo scarto fra richiesto e
+    generato per Arena Beginner (unica arena ammessa) + All Stars +
+    All Stars Under23. Se c'e' scarto, un passo NUOVO prova a colmarlo
+    con lo STESSO card_pool gia' consumato (non puo' rubare carte gia'
+    schierate sopra) esteso con la banda 0.60-0.70 + il residuo 0.80+ mai
+    scelto. Nessuno sconto sul punteggio per le odds piu' basse (richiesta
+    esplicita utente: vanno valutate come le 0.80+).
+  - Ordine SOLO del suppletivo (diverso da PRIORITY_ORDER, che resta
+    invariato per la tornata primaria): 1) All Stars Under23, 2) Arena
+    Beginner (se ancora scoperta), 3) All Stars normali. Motivo: nella
+    tornata primaria le arene hanno gia' la priorita' (PRIORITY_ORDER),
+    quindi Under23 parte svantaggiata sui pochi U23-eleggibili — nel
+    recupero suppletivo tocca a lei per prima.
+  - Badge "POOL SUPPLETIVO" visibile in HTML sulle formazioni cosi'
+    generate.
+  - Starter-odds mostrate su OGNI carta del report (non solo sulle
+    suppletive), badge ingrandito (0.85rem, grassetto, blu #3a9de0) dopo
+    feedback che era "quasi invisibile" a 0.5rem/muted.
+  - ESCLUDI_LOCKATE verificato collegato correttamente: le carte bloccate
+    si scartano in discovery_fixture.py PRIMA di qualunque filtro odds
+    (riga ~1423 vs ~1596), quindi non entrano ne' nel pool primario ne' in
+    quello esteso — nessun codice separato da mantenere.
+
+BUG 1 (trovato dall'utente confrontando col pool visibile su Sorare, GW4):
+il passo suppletivo provava ALLSTARS prima di ALLSTARS_U23, invertito
+rispetto a PRIORITY_ORDER (U23 ha priorita'). Le All Stars normali
+esaurivano i candidati U23-eleggibili (che accettano comunque, essendo un
+sottoinsieme) prima che toccasse a Under23. Fixato (commit 006a09c018).
+
+BUG 2 (non un bug, falso allarme controllato): dopo il fix del BUG 1,
+Under23 continuava a restare a 0 nel suppletivo. Verificato sui dati
+grezzi della run: SOLO 2-3 portieri e 4 difensori U23-eleggibili in TUTTO
+il pool esteso (0.60-0.70 + 0.80+, tutte le leghe insieme) — scarsita' di
+dati reale, non un difetto di codice.
+
+Cambio ordine su richiesta esplicita (non un bug, una scelta): Under23
+scavalca anche le arene beginner nel SOLO suppletivo (commit 8cafd0a3fb),
+per darle la priorita' assoluta sul recupero visto quanto e' scarso il suo
+pool.
+
+Infine, dopo aver verificato piu' run reali che il flag non appesantisce i
+tempi, l'utente ha chiesto di accenderlo di default nel dispatch del
+workflow formazione_giornata.yml (commit 73fd34bca1). L'env var Python
+resta '0' di default nel codice (invariato per chi lo richiama fuori da
+questo workflow) — cambia SOLO il default del campo di input del dispatch.
+
+3c) Pulizia input workflow (commit 02a4998559)
+Rimossi dal dispatch manuale (confondevano il lancio, l'utente non
+ricordava a cosa servissero): arena_criterio (restava sempre 'assoluto',
+la misura 'capitale' non e' mai stata scelta per la produzione) e
+list_unused_candidates (solo log di debug, zero costo, ora fisso acceso).
+
+4. OUTPUT NUMERICO INTEGRALE
+Run di verifica lanciate su GW4 (football-11-14-aug-2026), tutte SUCCESS:
+  31386712619  arene=10 allstars=4 u23=4 extend=1 (ordine ancora sbagliato,
+               pre-fix): 4 All Stars suppletive generate (356-424 pt),
+               Under23 0/4 (bug ordine).
+  31387980759  arene=15 allstars=4 u23=4 extend=1: PUSH DIMENTICATO, ha
+               girato sul codice vecchio per errore mio (segnalato
+               all'utente, fix pushato subito dopo con tecnica cherry-pick
+               per non trascinare i commit dell'altra sessione).
+  31388944941  stesso input, ORA sul codice corretto: Under23 tentata
+               PRIMA di All Stars (ordine confermato nel log), 1/4 Under23
+               generata (355.1 pt) ma persa nel retry cap370 (meccanismo
+               gia' esistente, non toccato) -> 0 Under23 nel tally finale,
+               4 All Stars suppletive comunque generate, 5 Arena Beginner
+               suppletive generate (273-286 pt).
+  31401130705  run lanciata dall'utente con soli allstars_u23 scoperti (4
+               mancanti, arene/allstars gia' soddisfatte dalla tornata
+               primaria): 0 formazioni Under23 suppletive, confermato pool
+               reale (3 GK + 4 DEF U23-eleggibili in tutta l'estrazione).
+
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+- Il pool U23-eleggibile (soprattutto GK e DEF) e' strutturalmente scarso
+  su TUTTE le leghe insieme (2-4 carte a ruolo), indipendentemente dal
+  flag 0.60-0.70: anche col pool esteso, servono piu' carte U23 possedute
+  per sfruttare davvero il suppletivo su quel tipo. Non e' un difetto del
+  codice, e' un limite del mazzo posseduto.
+- Il retry "cap 370 forzato sulla prima" (gia' esistente, non toccato in
+  questa sessione) puo' generare una formazione valida al primo tentativo
+  e poi perderla nel retry-senza-forzare se il resto della serie fallisce
+  — comportamento voluto (evita di consegnare formazioni parziali), ma
+  visibile nei log come "spreco" apparente di un candidato buono.
+- L'altra sessione in corso (scanners/my_cards_profit.py, scanners/
+  track.py) ha lavorato in parallelo sullo stesso working directory per
+  tutta la sessione: i suoi file modificati/commit non sono stati toccati
+  ne' inclusi nei miei push, ma controllare che non ci siano conflitti
+  residui alla prossima sessione.
+
+6. DECISIONE APERTA
+Nessuna aperta su questo filone: l'utente ha validato il meccanismo su piu'
+run reali e ha chiesto di tenerlo acceso di default. Il filone si considera
+chiuso salvo problemi che emergano da run future (l'utente ha detto "se ci
+sono problemi ti aggiorno").
+
+7. FILE DI RIFERIMENTO
+- discovery_fixture.py (fix Monteiro righe ~1264/~1404-1420; banda odds
+  righe ~38-51 e ~1592-1598)
+- generatore_formazioni/build_formazione_globale.py (split role_data/
+  role_data_ext dopo load_league_role_data(); blocco POOL SUPPLETIVO dopo
+  il ciclo ALLSTARS_U23/ALLSTARS in main(); badge HTML suppletivo)
+- formazione_mls/build_formazione_finale.py (_pcard_body_html/
+  render_card_html: starter_odds su ogni carta; CSS .pcard-odds)
+- .github/workflows/formazione_giornata.yml (input extend_odds_060_070
+  default '1'; arena_criterio/list_unused_candidates rimossi dal dispatch)
+- docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md (§9, voce Monteiro e voce
+  pool suppletivo aggiornate in questa sessione)
