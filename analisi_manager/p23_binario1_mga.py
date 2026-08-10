@@ -1,11 +1,16 @@
 """BINARIO 1 -- M vs G vs A, formazione FISSA, walkforward pulito (10/08/2026).
 
-Gira su TUTTE le fixture pre-G in archivio_crowss/pre_2026-08-07/ (mai
-dal_2026-08-07/: li' "M" e' gia' il modello G, il confronto non avrebbe
-senso -- il README lo dice esplicito, pre_2026-08-07 e' il benchmark umano).
+Gira su TUTTE le fixture UMANE REALI in archivio_ufficiale/: per crowss
+solo pre_2026-08-07/ (mai dal_2026-08-07/: li' "M" e' gia' il modello G,
+il confronto non avrebbe senso), per qualunque altro manager tutte le sue
+fixture (le sue formazioni sono SEMPRE umane reali, non esiste "dopo G"
+per nessun altro manager). Multi-manager attivato 10/08/2026 (decisione
+esplicita utente, vedi archivio_ufficiale/README.md): il confronto resta
+SEMPRE G vs A, il manager fornisce solo la formazione reale e l'esito
+reale -- mai "battiamo il manager X".
 
 Metodologia decisa in sessione con l'utente:
-  - Fonte: SOLO archivio_crowss (mai dati_globali/manager_*.json).
+  - Fonte: SOLO archivio_ufficiale (mai dati_globali/manager_*.json).
   - Si escludono le FORMAZIONI INTERE con una carta a 0/DNP (non solo la
     carta: qui l'unita' e' la formazione fissa, non un pool).
   - M, G e A giocano la IDENTICA formazione reale (stesse 5 carte, stesso
@@ -57,7 +62,7 @@ TIPO_TO_BFG = {
     'cap260': 'ARENA_ALLSTARS_260', 'cap220': 'ARENA_ALLSTARS_220',
     'uncapped': 'ARENA_ALLSTARS_UNCAPPED', 'beginner': 'ARENA_ALLSTARS_BEGINNER',
 }
-ARCHIVIO_DIR = os.path.join(ROOT, 'archivio_crowss', 'pre_2026-08-07')
+ARCHIVIO_ROOT = os.path.join(ROOT, 'archivio_ufficiale')
 MESI = {'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6, 'jul': 7,
        'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12}
 
@@ -73,11 +78,22 @@ def fine_giornata_da_slug(fx):
 
 
 def elenca_fixture():
-    fixtures = []
-    for f in sorted(glob.glob(os.path.join(ARCHIVIO_DIR, '*_arene_limited.json'))):
-        fx = os.path.basename(f).replace('_arene_limited.json', '')
-        fixtures.append((fx, f))
-    return fixtures
+    """(manager, fixture, path) per OGNI fixture umana reale disponibile.
+
+    crowss: solo pre_2026-08-07/ (dal_2026-08-07/ e' gia' il modello G,
+    escluso apposta). Altri manager: tutte le loro fixture, sono sempre
+    schieramenti umani (non esiste "dopo G" per nessun altro manager)."""
+    out = []
+    for cartella in sorted(glob.glob(os.path.join(ARCHIVIO_ROOT, 'manager_*'))):
+        manager = os.path.basename(cartella).replace('manager_', '')
+        if manager == 'crowss':
+            sorgente = os.path.join(cartella, 'pre_2026-08-07', '*_arene_limited.json')
+        else:
+            sorgente = os.path.join(cartella, '*_arene_limited.json')
+        for f in sorted(glob.glob(sorgente)):
+            fx = os.path.basename(f).replace('_arene_limited.json', '')
+            out.append((manager, fx, f))
+    return out
 
 
 def carica_formazioni(path):
@@ -172,7 +188,7 @@ def decidi_entra(riga_per_carta, formazione, chiave):
     return atteso, soglia_decisione, (atteso >= soglia_decisione)
 
 
-def processa_fixture(fx, path, lega_di, idx_grade):
+def processa_fixture(manager, fx, path, lega_di, idx_grade):
     righe = carica_formazioni(path)
     pulite, escluse = escludi_dnp(righe)
     if not pulite:
@@ -192,15 +208,16 @@ def processa_fixture(fx, path, lega_di, idx_grade):
         if entra_A is None:
             continue
         risultati.append({
-            'fixture': fx, 'tipo': r['tipo'], 'punteggio_totale': r['punteggio_totale'],
+            'manager': manager, 'fixture': fx, 'tipo': r['tipo'],
+            'punteggio_totale': r['punteggio_totale'],
             'premio_netto': r['premio_netto'],
             'atteso_A': atteso_A, 'entra_A': entra_A,
             'atteso_G': atteso_G, 'entra_G': entra_G,
             'soglia_decisione': soglia_dec, 'capitano': r['capitano']['slug'],
         })
     return {
-        'fixture': fx, 'formazioni_totali': len(righe), 'escluse_dnp': len(escluse),
-        'primo_kickoff': primo_kickoff.isoformat(),
+        'manager': manager, 'fixture': fx, 'formazioni_totali': len(righe),
+        'escluse_dnp': len(escluse), 'primo_kickoff': primo_kickoff.isoformat(),
         'n_pool': len(pool), 'n_pool_con_atteso': len(pool_rows),
         'n_con_grade': sum(1 for r in pool_rows if r['_grade'] is not None),
         'scarti': dict(scarti), 'risultati': risultati,
@@ -209,8 +226,10 @@ def processa_fixture(fx, path, lega_di, idx_grade):
 
 def main():
     fixtures = elenca_fixture()
+    n_manager = len(set(m for m, _fx, _p in fixtures))
     print('=' * 78)
-    print(f'BINARIO 1 -- M vs G vs A, formazione fissa -- AGGREGATO su {len(fixtures)} GW pre-G')
+    print(f'BINARIO 1 -- M vs G vs A, formazione fissa -- AGGREGATO su {len(fixtures)} GW, '
+          f'{n_manager} manager')
     print('=' * 78)
 
     lega_di = AG.indice_lega()
@@ -218,10 +237,10 @@ def main():
 
     tutti_risultati = []
     per_gw = []
-    for fx, path in fixtures:
-        esito = processa_fixture(fx, path, lega_di, idx_grade)
+    for manager, fx, path in fixtures:
+        esito = processa_fixture(manager, fx, path, lega_di, idx_grade)
         if esito is None:
-            print(f'{fx:32s}  SALTATA (nessuna formazione pulita o nessuna partita-target trovata)')
+            print(f'{manager:12s} {fx:32s}  SALTATA (nessuna formazione pulita o nessuna partita-target trovata)')
             continue
         per_gw.append(esito)
         tutti_risultati.extend(esito['risultati'])
@@ -229,7 +248,7 @@ def main():
         tot_m = sum(r['premio_netto'] for r in esito['risultati'])
         tot_a = sum(r['premio_netto'] if r['entra_A'] else 0 for r in esito['risultati'])
         tot_g = sum(r['premio_netto'] if r['entra_G'] else 0 for r in esito['risultati'])
-        print(f"{fx:32s}  n={n:3d}  grade={esito['n_con_grade']:3d}/{esito['n_pool_con_atteso']:3d}  "
+        print(f"{manager:12s} {fx:32s}  n={n:3d}  grade={esito['n_con_grade']:3d}/{esito['n_pool_con_atteso']:3d}  "
               f"M={tot_m:+6.0f}  A={tot_a:+6.0f}  G={tot_g:+6.0f}")
 
     tot_M = sum(r['premio_netto'] for r in tutti_risultati)
@@ -249,7 +268,7 @@ def main():
     n_diverse = sum(1 for r in tutti_risultati if r['entra_A'] != r['entra_G'])
     print(f'\n  decisioni A/G diverse: {n_diverse}/{n_tot}')
 
-    out_path = os.path.join(ROOT, 'analisi_manager', 'dati', 'p23_binario1_aggregato_out.json')
+    out_path = os.path.join(ARCHIVIO_ROOT, 'aggregato', 'binario1_out.json')
     with open(out_path, 'w', encoding='utf-8') as fh:
         json.dump({'per_gw': per_gw, 'tot_M': tot_M, 'tot_A': tot_A, 'tot_G': tot_G,
                    'n_entra_A': n_A, 'n_entra_G': n_G, 'n_totale': n_tot}, fh,

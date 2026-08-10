@@ -1,9 +1,13 @@
 """BINARIO 2 -- G vs A, pool libero (10/08/2026).
 
-Gira su TUTTE le fixture pre-G in archivio_crowss/pre_2026-08-07/, una GW
-alla volta (pool, gruppi z-score e scelta arene MAI mischiati fra GW
-diverse -- ogni giornata e' una sua unita' indipendente, come in
-produzione), poi somma il netto essenze su tutte.
+Gira su TUTTE le fixture umane reali in archivio_ufficiale/ (per crowss
+solo pre_2026-08-07/, per altri manager tutte le loro fixture), una GW
+alla volta e SEMPRE dentro il pool di un solo manager (pool, gruppi
+z-score e scelta arene MAI mischiati fra GW o fra manager diversi -- ogni
+coppia manager/giornata e' una sua unita' indipendente, come in
+produzione), poi somma il netto essenze su tutte. Multi-manager attivato
+10/08/2026 (decisione utente): il confronto resta SEMPRE G vs A, mai
+"battiamo il manager X" -- vedi archivio_ufficiale/README.md.
 
 Metodologia (uguale al singolo-GW test, solo iterata):
   - Si escludono le sole CARTE a 0/DNP dal pool (non l'intera formazione:
@@ -56,7 +60,7 @@ cache = CACHE.CacheLocale()
 ROLE_CODE = {'Goalkeeper': 'GK', 'Defender': 'DEF', 'Midfielder': 'MID', 'Forward': 'FWD'}
 TIPI_ARENA = ['ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED',
              'ARENA_ALLSTARS_BEGINNER']
-ARCHIVIO_DIR = os.path.join(ROOT, 'archivio_crowss', 'pre_2026-08-07')
+ARCHIVIO_ROOT = os.path.join(ROOT, 'archivio_ufficiale')
 MESI = {'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6, 'jul': 7,
        'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12}
 
@@ -72,10 +76,19 @@ def fine_giornata_da_slug(fx):
 
 
 def elenca_fixture():
+    """(manager, fixture, path) per OGNI fixture umana reale disponibile.
+
+    crowss: solo pre_2026-08-07/. Altri manager: tutte le loro fixture."""
     out = []
-    for f in sorted(glob.glob(os.path.join(ARCHIVIO_DIR, '*_arene_limited.json'))):
-        fx = os.path.basename(f).replace('_arene_limited.json', '')
-        out.append((fx, f))
+    for cartella in sorted(glob.glob(os.path.join(ARCHIVIO_ROOT, 'manager_*'))):
+        manager = os.path.basename(cartella).replace('manager_', '')
+        if manager == 'crowss':
+            sorgente = os.path.join(cartella, 'pre_2026-08-07', '*_arene_limited.json')
+        else:
+            sorgente = os.path.join(cartella, '*_arene_limited.json')
+        for f in sorted(glob.glob(sorgente)):
+            fx = os.path.basename(f).replace('_arene_limited.json', '')
+            out.append((manager, fx, f))
     return out
 
 
@@ -191,7 +204,7 @@ def gioca(pool_rows, leghe, chiave_obiettivo, massimo=15):
     return risultati
 
 
-def processa_fixture(fx, path, lega_di, idx_grade):
+def processa_fixture(manager, fx, path, lega_di, idx_grade):
     righe = carica_formazioni(path)
     pool, escluse = costruisci_pool_carte(righe)
     if not pool:
@@ -208,7 +221,8 @@ def processa_fixture(fx, path, lega_di, idx_grade):
     ris_A = gioca([dict(r) for r in pool_rows], leghe, '_cal')
     ris_G = gioca([dict(r) for r in pool_rows], leghe, '_combinato')
     return {
-        'fixture': fx, 'pool_size': len(pool), 'pool_con_atteso': len(pool_rows),
+        'manager': manager, 'fixture': fx, 'pool_size': len(pool),
+        'pool_con_atteso': len(pool_rows),
         'n_con_grade': sum(1 for r in pool_rows if r['_grade'] is not None),
         'escluse_dnp': escluse, 'primo_kickoff': primo_kickoff.isoformat(),
         'ris_A': ris_A, 'ris_G': ris_G,
@@ -217,23 +231,24 @@ def processa_fixture(fx, path, lega_di, idx_grade):
 
 def main():
     fixtures = elenca_fixture()
+    n_manager = len(set(m for m, _fx, _p in fixtures))
     print('=' * 78)
-    print(f'BINARIO 2 -- G vs A, pool libero -- AGGREGATO su {len(fixtures)} GW pre-G')
+    print(f'BINARIO 2 -- G vs A, pool libero -- AGGREGATO su {len(fixtures)} GW, {n_manager} manager')
     print('=' * 78)
 
     lega_di = AG.indice_lega()
     idx_grade, _ = S21.carica_indice_grade()
 
     per_gw = []
-    for fx, path in fixtures:
-        esito = processa_fixture(fx, path, lega_di, idx_grade)
+    for manager, fx, path in fixtures:
+        esito = processa_fixture(manager, fx, path, lega_di, idx_grade)
         if esito is None:
-            print(f'{fx:32s}  SALTATA (pool vuoto o nessuna partita-target trovata)')
+            print(f'{manager:12s} {fx:32s}  SALTATA (pool vuoto o nessuna partita-target trovata)')
             continue
         per_gw.append(esito)
         tot_a = sum(r['netto_stimato'] for r in esito['ris_A'])
         tot_g = sum(r['netto_stimato'] for r in esito['ris_G'])
-        print(f"{fx:32s}  pool={esito['pool_con_atteso']:3d}  grade={esito['n_con_grade']:3d}  "
+        print(f"{manager:12s} {fx:32s}  pool={esito['pool_con_atteso']:3d}  grade={esito['n_con_grade']:3d}  "
               f"A={tot_a:+7.0f}({len(esito['ris_A'])})  G={tot_g:+7.0f}({len(esito['ris_G'])})")
 
     tot_A = sum(sum(r['netto_stimato'] for r in e['ris_A']) for e in per_gw)
@@ -247,7 +262,7 @@ def main():
     print(f'  A: {tot_A:+.0f}  ({n_A} arene totali)')
     print(f'  G: {tot_G:+.0f}  ({n_G} arene totali)')
 
-    out_path = os.path.join(ROOT, 'analisi_manager', 'dati', 'p24_binario2_aggregato_out.json')
+    out_path = os.path.join(ARCHIVIO_ROOT, 'aggregato', 'binario2_out.json')
     with open(out_path, 'w', encoding='utf-8') as fh:
         json.dump({'per_gw': per_gw, 'tot_A': tot_A, 'tot_G': tot_G, 'n_A': n_A, 'n_G': n_G},
                   fh, ensure_ascii=False, indent=1)

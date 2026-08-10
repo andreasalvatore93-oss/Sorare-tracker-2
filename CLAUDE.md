@@ -20,18 +20,37 @@ qui la sua sfiducia verso i backtest: e' motivata.
 
 Da adesso:
 1. Il modello si misura CONTRO SE STESSO. La domanda di ogni backtest e'
-   "questa variante batte la versione in produzione, sulle stesse
-   giornate?", mai "battiamo i manager?".
-2. L'unico archivio di riferimento sono le giornate dell'UTENTE (manager
-   crowss): le sole su cui ha controllo totale, di cui conosce dinamiche,
-   voti e formazioni.
-3. Si parte dalla fixture 7-11 agosto 2026: da li' le formazioni sono
-   schierate col modello G.
-4. Gli archivi multi-manager restano come STORIA, non come base di misura.
-   Non aprire nuovi filoni su quel materiale.
-5. Le giornate dell'utente crescono una alla volta: se un test ha bisogno
-   di centinaia di osservazioni per decidere, NON si puo' fare adesso e lo
-   dico subito, invece di girarlo su un campione che non ci appartiene.
+   "G batte A?", mai "battiamo i manager?" — vale ANCHE quando la
+   formazione reale usata come test-case viene da un manager diverso da
+   crowss (vedi punto 2bis): il manager fornisce solo una formazione vera
+   con un esito vero, la sua bravura non entra mai nel giudizio.
+2. L'archivio di riferimento e' `archivio_ufficiale/` (ex `archivio_crowss/`,
+   riorganizzato il 10/08/2026): dati estratti con
+   `estrai_archivio_manager.py`, coerenza carte/ufficiale verificata riga
+   per riga, mai copiati da `dati_globali/manager_*.json`.
+2bis. **MODIFICA 10/08/2026 (decisione esplicita dell'utente).** La regola
+   originaria del 09/08 diceva "solo crowss": nasceva dalle distorsioni
+   dell'ARCHIVIO vecchio (dati mai verificati, punteggi gonfiati dai bonus,
+   pool spesso uguale agli slot), non dal fatto di usare altri manager in
+   sé. Con la pipeline nuova, altri manager POSSONO entrare come base di
+   misura — mai come benchmark di qualita' (punto 1), e con un vincolo
+   tecnico non negoziabile: nel Binario 2 (pool libero) il pool resta
+   SEMPRE dentro un solo manager per una sola GW, non si mescolano mai le
+   carte di manager diversi (nessuno possiede l'unione di due mazzi). Si
+   sommano i RISULTATI fra manager, mai le carte disponibili. Dettaglio
+   completo in `archivio_ufficiale/README.md`.
+3. Si parte dalla fixture 7-11 agosto 2026: da li' le formazioni di crowss
+   sono schierate col modello G (`archivio_ufficiale/manager_crowss/dal_2026-08-07/`).
+   Per qualunque altro manager non esiste "prima/dopo G": le sue
+   formazioni sono sempre schieramenti umani reali.
+4. Gli archivi multi-manager VECCHI (`dati_globali/manager_*.json`, mai
+   verificati riga per riga) restano come STORIA, non come base di misura.
+   Non riaprire filoni su quel materiale — se serve un manager diverso da
+   crowss, si RIESTRAE con `estrai_archivio_manager.py`, non si legge da lì.
+5. Le giornate crescono una alla volta per ogni manager: se un test ha
+   bisogno di centinaia di osservazioni per decidere, NON si puo' fare
+   adesso e lo dico subito, invece di girarlo su un campione che non basta
+   a decidere.
 
 # LA FONTE DI VERITA' E' IL CODICE IN PRODUZIONE, NON I RIASSUNTI (08/08/2026)
 

@@ -1,32 +1,43 @@
-"""Estrazione STANDARD per archivio_crowss/, arene Limited (10/08/2026).
+"""Estrazione STANDARD per archivio_ufficiale/, arene Limited (10/08/2026).
 
-Applica alla lettera lo schema deciso in `archivio_crowss/README.md`
-(sezione "Schema dati" + "Come rilanciare un'estrazione"). Riusa SOLO
-funzioni di produzione gia' verificate, non le riscrive:
+Generalizzato da estrai_archivio_crowss.py (10/08/2026, decisione utente):
+la base di misura non e' piu' solo crowss, puo' includere altri manager,
+SEMPRE a una condizione non negoziabile -- vedi archivio_ufficiale/README.md
+in testa: il confronto nei binari resta sempre G vs A, MAI "battiamo il
+manager X". Il manager fornisce solo la formazione reale e il suo esito
+reale.
+
+Applica alla lettera lo schema in `archivio_ufficiale/README.md`. Riusa
+SOLO funzioni di produzione gia' verificate, non le riscrive:
   - `ricostruisci_manager.partecipazioni()` / `.formazione()` -- stesse
-    query usate per costruire tutto `dati_globali/manager_*.json`.
+    query usate per costruire tutto `dati_globali/manager_*.json`, e
+    funzionano per QUALUNQUE manager (query pubbliche tranne l'indice).
   - `generatore_formazioni.build_formazione_globale.COSTO_INGRESSO` -- mai
     a mano.
-  - `rewardsConfig` (query gia' in `scarica_premi_arene.py`) per il premio
-    VERO di ogni leaderboard, non i vecchi `rank_premiato`/coefficienti.
+  - `rewardsConfig` per il premio VERO di ogni leaderboard.
 
-NON legge MAI `dati_globali/manager_crowss.json` come fonte: quel file
-serve solo, fuori da questo script, per sapere QUALI fixture esistono
-(indice), mai per copiarne le righe -- e' esattamente il problema di
-fiducia che questa cartella e' nata per risolvere (CLAUDE.md 09/08,
-"i backtest sono il modello contro se stesso").
+NON legge MAI `dati_globali/manager_*.json` come fonte: quei file servono
+solo, fuori da questo script, per sapere QUALI fixture esistono (indice),
+mai per copiarne le righe.
 
-Scope: SOLO arene Limited (whitelist del README). Da7/In Season non
-trattate qui (decisione esplicita dell'utente, 10/08: "sulle altre
-competizioni diventano un bordello").
+Scope: SOLO arene Limited (whitelist del README, division escluse). Da7/In
+Season non trattate qui.
+
+Dove scrive: per `--manager crowss` rispetta la partizione
+pre_2026-08-07/dal_2026-08-07 (solo crowss ha "prima/dopo G", e' il nostro
+modello). Per qualunque altro manager scrive direttamente in
+`manager_<slug>/`, senza sotto-cartelle (le sue formazioni sono sempre
+schieramenti umani reali).
 
 Uso:
-  SORARE_COOKIE=... python estrai_archivio_crowss.py football-21-24-jul-2026 [altra-fixture ...]
+  SORARE_COOKIE=... python estrai_archivio_manager.py --manager crowss football-21-24-jul-2026 [altra-fixture ...]
+  SORARE_COOKIE=... python estrai_archivio_manager.py --manager forever-young football-21-24-jul-2026
 """
 import os
 import sys
 import json
 import time
+import argparse
 import datetime
 import collections
 
@@ -40,8 +51,10 @@ sys.path.insert(0, os.path.join(ROOT, 'generatore_formazioni'))
 import ricostruisci_manager as RM
 import build_formazione_globale as bfg
 
-MANAGER = 'crowss'
-OUT_DIR = os.path.join(ROOT, 'archivio_crowss', 'pre_2026-08-07')
+ARCHIVIO_ROOT = os.path.join(ROOT, 'archivio_ufficiale')
+TAGLIO_G = datetime.date(2026, 8, 7)
+MESI = {'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6, 'jul': 7,
+       'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12}
 
 # stessa regola del README, applicata alla lettera -- nessuna euristica nuova
 TIPO_COSTO = {
@@ -49,9 +62,6 @@ TIPO_COSTO = {
     'cap220': bfg.COSTO_INGRESSO.get('ARENA_ALLSTARS_220', 200),
     'cap260': bfg.COSTO_INGRESSO.get('ARENA_ALLSTARS_260', 300),
     'uncapped': bfg.COSTO_INGRESSO.get('ARENA_ALLSTARS_UNCAPPED', 300),
-    # arene dedicate a un campionato: stesso costo della cap 260 (README,
-    # verificato l'08/08 sulle costanti di produzione: stessa economia)
-    'division': bfg.COSTO_INGRESSO.get('ARENA_ALLSTARS_260', 300),
 }
 
 PREMI_QUERY = """
@@ -87,6 +97,24 @@ def tipo_da_slug(leaderboard_slug):
     return None
 
 
+def fine_fixture(fx):
+    """Ultimo giorno della fixture, per decidere pre/dal-G (solo crowss)."""
+    toks = fx.split('-')[1:]
+    year = int(toks[-1])
+    toks = toks[:-1]
+    midx = [i for i, t in enumerate(toks) if t in MESI]
+    ei = midx[-1]
+    d2, m2 = int(toks[ei - 1]), MESI[toks[ei]]
+    return datetime.date(year, m2, d2)
+
+
+def cartella_output(manager, fx):
+    if manager == 'crowss':
+        sotto = 'dal_2026-08-07' if fine_fixture(fx) >= TAGLIO_G else 'pre_2026-08-07'
+        return os.path.join(ARCHIVIO_ROOT, 'manager_crowss', sotto)
+    return os.path.join(ARCHIVIO_ROOT, f'manager_{manager}')
+
+
 def premi_per_posizione(leaderboard_slug):
     """[(pos_1based, quantity)] per quella leaderboard, sessione anonima."""
     d = RM.graphql(PREMI_QUERY, {'slug': leaderboard_slug}, con_cookie=False)
@@ -109,23 +137,20 @@ def premi_per_posizione(leaderboard_slug):
     return out, None
 
 
-def estrai_fixture(fixture):
-    log(f'--- {fixture} ---')
-    righe_idx, ok = RM.partecipazioni(MANAGER, fixture)
+def estrai_fixture(manager, fixture):
+    log(f'--- {manager} / {fixture} ---')
+    righe_idx, ok = RM.partecipazioni(manager, fixture)
     if not ok:
         log(f'  INDICE INCOMPLETO: non salvo nulla per {fixture} (429 o pagina persa).')
         return None
     # 'division' (arene dedicate a un campionato) ESCLUSE di proposito
-    # (decisione utente 10/08/2026): l'utente non le gioca piu', la soglia
-    # dedicata in produzione e' dietro un flag spento di default e non e'
-    # cablata nei binari 1/2 -- niente dato grezzo da conservare, i dati
-    # Sorare non sono scarsi. Risparmia anche le query formazione/premi per
-    # quelle arene.
+    # (decisione utente 10/08/2026): niente dato grezzo da conservare per
+    # una tipologia che non si gioca piu' e non e' cablata nei binari 1/2.
     arene = [r for r in righe_idx if tipo_da_slug(r['leaderboard']) not in (None, 'division')]
     log(f'  partecipazioni totali: {len(righe_idx)}  |  arene Limited (division escluse): {len(arene)}')
     if not arene:
         log('  nessuna arena limited questa GW, salto.')
-        return {'fixture_slug': fixture, 'manager': MANAGER, 'tipo_sezione': 'arene_limited', 'righe': []}
+        return {'fixture_slug': fixture, 'manager': manager, 'tipo_sezione': 'arene_limited', 'righe': []}
 
     premi_cache = {}
     righe_out = []
@@ -163,7 +188,7 @@ def estrai_fixture(fixture):
 
         righe_out.append({
             'contender_slug': a['contender'], 'fixture_slug': fixture, 'gw': fixture,
-            'manuale': True,  # pre-G: crowss correggeva sempre a mano, README
+            'manuale': True,  # schieramento umano reale (crowss pre-G o qualunque altro manager)
             'annullata': annullata,
             'capitano': next(({'slug': c['slug'], 'ruolo': c['ruolo']}
                              for c in carte if c['capitano']), None),
@@ -179,23 +204,25 @@ def estrai_fixture(fixture):
         })
 
     log(f'  formazioni scritte: {len(righe_out)}  (annullate: {n_annullate})')
-    return {'fixture_slug': fixture, 'manager': MANAGER, 'tipo_sezione': 'arene_limited', 'righe': righe_out}
+    return {'fixture_slug': fixture, 'manager': manager, 'tipo_sezione': 'arene_limited', 'righe': righe_out}
 
 
 def main():
-    fixtures = sys.argv[1:]
-    if not fixtures:
-        print('Uso: python estrai_archivio_crowss.py fixture1 [fixture2 ...]')
-        sys.exit(1)
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--manager', default='crowss')
+    ap.add_argument('fixtures', nargs='+')
+    args = ap.parse_args()
+
     if not RM.COOKIE:
         print('SORARE_COOKIE mancante in env: partecipazioni() non puo funzionare senza.')
         sys.exit(1)
-    os.makedirs(OUT_DIR, exist_ok=True)
-    for fx in fixtures:
-        out = estrai_fixture(fx)
+    for fx in args.fixtures:
+        out = estrai_fixture(args.manager, fx)
         if out is None:
             continue
-        path = os.path.join(OUT_DIR, f'{fx}_arene_limited.json')
+        out_dir = cartella_output(args.manager, fx)
+        os.makedirs(out_dir, exist_ok=True)
+        path = os.path.join(out_dir, f'{fx}_arene_limited.json')
         with open(path, 'w', encoding='utf-8') as fh:
             json.dump(out, fh, ensure_ascii=False, indent=1)
         log(f'  scritto {path}')
