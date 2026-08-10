@@ -814,3 +814,26 @@ REPORT_READY jafar1006-253160e2-1773-43e4-ad8e-fc7535558146 28
 [2026-08-10 16:36:03] [manager bundle scan] RISULTATO -- 'hsv_daniel-393740ab-37ab-48d8-bde8-1ef23327e34a': 37 carte in vendita organizzate in 4 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 1542.00EUR, minimo di mercato totale 1506.61EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 23 gia' al minimo di mercato (sezione bonus separata).
 [2026-08-10 16:36:03] [manager bundle scan] report HTML scritto: scanners/logs/manager_bundle_scan_report.html
 REPORT_READY hsv_daniel-393740ab-37ab-48d8-bde8-1ef23327e34a 37
+
+===== RUN 2026-08-10 16:43:11 UTC =====
+[2026-08-10 16:43:11] [manager bundle scan] [auto-find] nessun manager fornito e modalita' auto-discovery ATTIVA: ascolto il mercato per 120s a caccia di manager con almeno 5 carte in_season in vendita...
+[2026-08-10 16:45:11] [manager bundle scan] [auto-find] ascolto terminato: 17 carte in_season appena messe in vendita raccolte (sopra 1.00EUR).
+[2026-08-10 16:45:12] [manager bundle scan] [auto-find] variante proprietario 'user' FUNZIONA su anyCard -- la uso per tutti i lookup successivi.
+[2026-08-10 16:45:17] [manager bundle scan] [auto-find] 12 manager venditori distinti individuati (top: canmert x3, eli-aquim x3, metalist x2, g1ammi-trade-all-card-120-only-limited x1, milanvdpol x1) -- controllo quante carte in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...
+[2026-08-10 16:45:18] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 16:45:18] [manager bundle scan] 'canmert': 32 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 16:45:18] [manager bundle scan] [filtro carte in vendita] 32 carte possedute scansionate, 6 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 26.
+[2026-08-10 16:45:18] [manager bundle scan] [auto-find] 'canmert': 6 carte in_season in vendita (soglia 5).
+[2026-08-10 16:45:18] [manager bundle scan] [auto-find] 'canmert': sopra soglia carte -- controllo il mercato per calcolare lo scarto del pacchetto best-deal prima di impegnarmi...
+[2026-08-10 16:45:18] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 16:45:19] [manager bundle scan] 'canmert': 32 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 16:45:19] [manager bundle scan] [filtro carte in vendita] 32 carte possedute scansionate, 6 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 26.
+[2026-08-10 16:45:19] [manager bundle scan] 'canmert': 6 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-08-10 16:45:19] [manager bundle scan] controllo il mercato live per 6 giocatori diversi (6 carte possedute da verificare)...
+[2026-08-10 16:45:22] [manager bundle scan] [diagnostica] 6 carte in_season possedute controllate, 6 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 0 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-08-10 16:45:22] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 328, 'wei': 61, 'usdCents': 84, 'gbpCents': 16, 'lamport': 0, 'none': 0}
+[2026-08-10 16:45:22] [manager bundle scan] [auto-find] 'canmert': scarto totale pacchetto best-deal 7.23EUR su 6 carte (soglia 2.00EUR).
+[2026-08-10 16:45:22] [manager bundle scan] [auto-find] SELEZIONATO 'canmert' -- parte il report (in raffreddamento per i prossimi 7 giorni per la sola auto-discovery).
+[2026-08-10 16:45:22] [manager bundle scan] RISULTATO -- 'canmert': 6 carte in vendita organizzate in 1 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 95.28EUR, minimo di mercato totale 95.28EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 6 gia' al minimo di mercato (sezione bonus separata).
+[2026-08-10 16:45:22] [manager bundle scan] report HTML scritto: scanners/logs/manager_bundle_scan_report.html
+REPORT_READY canmert 6
