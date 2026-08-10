@@ -1262,6 +1262,13 @@ def main():
         log("ERRORE: nessuna squadra ricavata dalla fixture.")
         return 1
 
+    # Odds di giornata prese subito (10/08/2026): servono anche come fallback
+    # nel pre-filtro squadre-in-campo qui sotto, vedi 'club_di'/'odds_giornata'
+    # piu' avanti. Zero costo: e' la stessa mappa cachata che il ciclo ruoli
+    # richiedera' comunque piu' sotto (_odds_giornata_condivise memoizza per
+    # fixture_slug, questa e' solo la prima chiamata a valorizzarla).
+    odds_giornata = _odds_giornata_condivise(fx.get('slug'))
+
     uuid = base.get_user_uuid(base.USER_SLUG)
     if not uuid:
         log("ERRORE: uuid utente non ottenuto.")
@@ -1404,7 +1411,21 @@ def main():
                 # PRE-FILTRO decisivo: se il club non gioca in questa giornata,
                 # non serve nemmeno chiedere le starter odds. E' questo che
                 # abbatte i tempi: da ~2000 interrogazioni a poche decine.
-                if club.get('slug') not in squadre_in_campo:
+                # FALLBACK (10/08/2026, bug reale trovato dall'utente: Jamiro
+                # Monteiro spariva dal pool MID nonostante avesse una partita
+                # reale l'11/08 con 90% di titolarita'). activeClub e' un dato
+                # Sorare che dopo un trasferimento resta stantio per giorni
+                # (verificato in diretta: PEC Zwolle, mentre la partita vera e'
+                # con NEC Nijmegen). odds_giornata viene dalle partite REALI
+                # della giornata (playerGameScores di ogni anyGame), non da
+                # activeClub: se il giocatore ci compare sta davvero giocando
+                # questa GW anche se il suo club "attuale" secondo Sorare non
+                # e' fra quelli in campo. Zero query in piu' (mappa gia' pronta
+                # sopra). La lega/club salvati restano quelli di activeClub
+                # (stantii in questo caso): a valle in PREDICT c'e' gia' un
+                # fallback dedicato (test_def.py, fix 29/07) che ripiega sulla
+                # squadra reale della partita quando activeClub non corrisponde.
+                if club.get('slug') not in squadre_in_campo and p['slug'] not in odds_giornata:
                     continue
                 visti.add((p['slug'], (club.get('domesticLeague') or {}).get('slug'),
                            p.get('displayName') or ''))

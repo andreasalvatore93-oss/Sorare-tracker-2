@@ -1446,29 +1446,36 @@ di nuovo questa voce.
 
 ## 10bis. COSE DA FARE — riscritto il 09/08 notte
 
-**APERTO 10/08 pomeriggio — bug reale: giocatore trasferito sparisce dalla
+**FIXATO 10/08 sera — bug reale: giocatore trasferito spariva dalla
 discovery, `activeClub` di Sorare non aggiornato.** Trovato confrontando a
 mano lo screenshot del banco MID di GW4 con `player_card_counts.json`:
 Jamiro Monteiro (`jamiro-gregory-monteiro-alvarenga`) mancava dal pool
 eleggibile nonostante avesse una partita reale l'11/08 con 90% di
-titolarità. Verificato in diretta (query pubblica `anyPlayer`):
-`activeClub` per Sorare è ancora **PEC Zwolle**, ma la sua prossima
-partita (Champions League, 11/08) è schierata con **NEC Nijmegen**
-(homeTeam/awayTeam) — trasferimento recente non ancora riflesso nel campo
-`activeClub`, dato stantio LATO SORARE, non nostro. Sospetto (da
-verificare nel codice, non ancora fatto): `discovery_fixture.py` usa
-`activeClub` per instradare/abbinare il giocatore alla lega e alla
-partita in fase di ELEGGIBILITÀ — se lo squadra-partita non coincide col
-club "corrente", il giocatore sparisce invece di finire nella lega giusta.
-Nota: `test_def.py` ha già un fix simile ma solo in fase di PREDICT per un
-giocatore già selezionato (commento "29/07, trasferimento/team stantio"),
-non in fase di DISCOVERY dove si decide chi è eleggibile — il buco è a
-monte di quel fix. Pericoloso perché silenzioso: un giocatore realmente
-disponibile sparisce dal pool senza nessun errore visibile. Da riprendere:
-leggere `discovery_fixture.py` per capire dove/come usa `activeClub`, e
-decidere un fallback quando la squadra della partita target non coincide
-con `activeClub` (es. usare la squadra della partita, come già fa il fix
-di PREDICT).
+titolarità. Causa confermata nel codice: `discovery_fixture.py` (pre-filtro
+riga ~1407, prima del fix) escludeva la carta se `anyPlayer.activeClub.slug`
+non era fra le squadre in campo nella giornata — e `activeClub` per Sorare
+era ancora **PEC Zwolle**, mentre la sua partita vera (Champions League,
+11/08) è schierata con **NEC Nijmegen** (homeTeam/awayTeam): trasferimento
+recente non ancora riflesso nel campo `activeClub`, dato stantio LATO
+SORARE, non nostro.
+Fix applicato: fallback sulle odds reali di giornata (`_odds_giornata_condivise`,
+mappa slug->starter-odds costruita da `anyGame.playerGameScores` di TUTTE le
+partite della fixture, indipendente da `activeClub`) — se il club della carta
+non gioca ma il giocatore compare comunque nella mappa odds, resta nel pool.
+Zero query in più (la mappa era già cachata per uso successivo nello stesso
+processo). Verificato con dati reali sulla fixture football-11-14-aug-2026
+(gameweek 4): `nec-nijmegen` è fra le squadre in campo, `pec-zwolle` no,
+e Monteiro compare in `odds_giornata` con starter odds 0.90 — quindi col fix
+sarebbe rimasto nel pool MID. Codice: `discovery_fixture.py` righe ~1264
+(fetch anticipata) e ~1404-1420 (pre-filtro con fallback).
+Nota: `test_def.py` ha un fix analogo ma solo in fase di PREDICT per un
+giocatore già selezionato (commento "29/07, trasferimento/team stantio") —
+resta invariato, si applica a valle di questo. `lega_di`/`club_di` restano
+derivati da `activeClub` (stantio in questo caso): non corretti da questo
+fix, ma il routing lega funziona comunque quando il trasferimento è fra
+club dello stesso campionato (caso Monteiro: PEC Zwolle e NEC Nijmegen sono
+entrambi Eredivisie). Trasferimenti cross-lega non sono coperti: se serve,
+riaprire come filone a parte.
 
 **IDEA, non ancora un filone — 10/08 pomeriggio, richiesta esplicita
 dell'utente di non perderla.** Funzione SPERIMENTALE nel generatore che
