@@ -1,0 +1,203 @@
+RISPOSTA OPUS al BRIEF_OPUS_ANALISI_BINARIO1 — 10/08/2026 21:44 Roma (19:44 UTC)
+
+Non ho eseguito niente in produzione, non ho committato codice, non ho
+toccato script. Ho letto p23_binario1_mga.py e ho RILETTO il grezzo gia'
+prodotto (archivio_ufficiale/aggregato/binario1_out.json) con uno script
+usa-e-getta nello scratchpad. Tutti i numeri sotto vengono da li'.
+
+
+== VERDETTO SECCO ==
+
+No. Il "G batte A, 4/4 manager, 350 formazioni" NON e' un segnale solido.
+Le 350 formazioni sono un numero di facciata: le decisioni in cui G e A
+fanno cose diverse sono 55, e le 3 migliori da sole valgono il 100% del
+delta. Toglile e il vantaggio di G e' esattamente ZERO.
+
+Non e' "presto perche' i manager sono solo 4". E' presto perche' la n vera
+e' 55 e la varianza dei premi e' enorme rispetto all'effetto.
+
+
+== 1. I NUMERI CHE HO RICALCOLATO DAL GREZZO ==
+
+Su 350 formazioni, A e G prendono la STESSA decisione in 295 casi. Il
++3.000 nasce tutto e solo dalle 55 discordanti:
+  - 26 arene entra solo G  -> +2.450 di premio_netto reale
+  - 29 arene entra solo A  ->   -550 di premio_netto reale
+  - delta ricalcolato: +3.000 (coincide col totale dello script: ok)
+
+Come si distribuisce quel +3.000 sulle 55 decisioni:
+  - 32 decisioni danno ragione a G (somma +9.750)
+  - 23 decisioni danno ragione ad A (somma -6.750)
+  - media per decisione +54,5 ; deviazione standard 397,6 ; t = 1,02
+  - togliendo la MIGLIORE decisione di G: delta +2.000
+  - togliendo le migliori 2: +1.000
+  - togliendo le migliori 3: +0     <-- ecco il punto
+  - bootstrap (20.000 ricampionamenti sulle 55): il 85,1% finisce sopra
+    zero, IC90 sul totale = [-1.700, +7.800]
+  - test di permutazione (se G e A fossero equivalenti e il segno di ogni
+    decisione fosse una monetina): P(uscire >= +3.000 per puro caso) = 0,167
+
+In parole da bar: hai fatto 55 scommesse da 1 euro, ne hai vinte 32 e perse
+23, e sei in attivo di 3 euro — ma tre di quelle vincite erano da 1 euro
+l'una e senza quelle tre saresti in pari. Una moneta truccata al 58% e una
+moneta onesta producono questo risultato quasi con la stessa facilita' (1
+volta su 6 la moneta onesta ci arriva da sola).
+
+Il "4/4 manager" vale MENO di quanto sembra, per due motivi:
+  a) anche fosse 4 lanci indipendenti, 4 teste di fila escono 1 volta su 16
+     (p=0,0625): sarebbe comunque debole;
+  b) NON sono 4 lanci indipendenti. 16 fixture su 21 sono condivise da 2 o
+     piu' manager: stessi weekend, stessi risultati di campo, spesso stessi
+     giocatori. E il delta e' concentrato: crowss 27 decisioni discordanti
+     su 55, ch4 ne ha 3 (delta +100, cioe' rumore puro).
+     Per manager: crowss +1.400 (27 disc), tsubasa_451 +800 (19), tigermila11
+     +700 (6), ch4 +100 (3).
+
+Verifica di coerenza interna passata: per tutti e 4 i manager il delta
+totale coincide esattamente col delta calcolato sulle sole righe
+discordanti. L'interruttore funziona (dove il grade e' inerte, G e A
+decidono identico). 32 righe su 350 hanno atteso_A == atteso_G al decimale.
+
+Ultimo dato, il piu' importante per la domanda (b): le 55 decisioni
+discordanti hanno una distanza MEDIANA dalla soglia di 1,31 punti (massima
+5,67). Guarda le righe del dump: A=268,1 / G=269,9 / soglia=268,8. Stiamo
+ribaltando decisioni su differenze di un punto e mezzo su un atteso di 270.
+
+
+== 2. RISPOSTE ALLE QUATTRO DOMANDE ==
+
+(a) Il segnale e' abbastanza solido? NO, per i numeri del §1. Non e' un
+"quasi", e' un "non decidibile con questo campione". Attenzione al modo in
+cui e' stato letto finora: 350 formazioni suggeriscono un campione grande,
+ma 295 di quelle sono decisioni IDENTICHE fra A e G e non contengono
+nessuna informazione sul confronto. Regola da tenere per sempre in questo
+filone: la n di un confronto A-vs-G non e' il numero di formazioni, e' il
+numero di DECISIONI DISCORDANTI. Va stampata in cima ad ogni report (lo
+script gia' la calcola, riga 268-269 di p23: va promossa a numero
+principale, non a nota a pie' di pagina).
+
+(b) "Correlazione zero vicino alla soglia": NON e' la prova che il modello
+non ha risoluzione, e nemmeno la prova del contrario. E' un artefatto
+prevedibile. Quando misuri la correlazione SOLO sulle arene saltate stai
+guardando una fettina strettissima del predittore (tutte hanno atteso
+appena sotto soglia): in una fetta stretta la correlazione crolla verso
+zero anche quando il predittore funziona benissimo. Esempio banale: se
+misuri il rapporto altezza-peso solo fra persone alte 175-177 cm, ti esce
+zero — non perche' altezza e peso non c'entrino niente, ma perche' hai
+tolto tutta la variazione. Stesso meccanismo qui.
+   Detto questo, la mia ipotesi (da verificare, non da credere) e' che ci
+sia UN FONDO DI VERO: le decisioni discordanti stanno mediamente a 1,3
+punti dalla soglia, e nessun modello di questo tipo distingue 268,1 da
+269,9. In quella fascia stiamo tirando una monetina e incassando premi che
+valgono +1000 o -300. Non e' "soglia mal tarata": e' che li' non c'e'
+niente da decidere.
+   DUE TEST, ZERO QUERY, DATI GIA' IN REPO (binario1_out.json ha atteso_A,
+atteso_G, soglia_decisione e premio_netto REALE su tutte e 350 le righe,
+comprese quelle giocate):
+   TEST 1 — calibrazione a range pieno. Prendi tutte e 350 le righe, calcola
+     scarto = atteso - soglia_decisione, dividile in 6-8 fasce lungo TUTTO
+     il range (non solo sotto soglia), e stampa il premio_netto medio reale
+     per fascia. Se le fasce sono monotone in generale ma piatte dentro
+     +/-3 punti dalla soglia, l'ipotesi "il modello ordina ma non vicino al
+     margine" e' confermata e la correlazione zero del §4 e' spiegata. Se e'
+     piatta ovunque, il problema non e' la soglia: e' l'atteso.
+   TEST 2 — banda morta. Rigioca la decisione con la regola "entra se
+     atteso >= soglia; salta solo se atteso < soglia - X" per X = 0, 1, 2,
+     3, 5 punti, e guarda il netto totale di A e di G. Se il netto migliora
+     al crescere di X, la conferma e' diretta: le decisioni prese sul filo
+     distruggono valore e vanno semplicemente non prese (in dubbio, entra).
+     E' anche una modifica di produzione candidata, non solo un test.
+   Questi due test costano minuti e vanno fatti PRIMA di qualunque altra
+   cosa, perche' se il TEST 1 esce piatto ovunque, il filone grade non e'
+   il problema da risolvere.
+
+(c) Griglia fissa del grade: NON ADESSO, e' il terzo posto. Il ragionamento
+"lo z-score e' inerte nel 46% dei casi, quindi accendiamolo di piu'" e'
+giusto come diagnosi ma pericoloso come mossa adesso: amplificare un
+effetto di cui non conosciamo il segno con sicurezza (85% di fiducia, non
+di piu') produce un risultato piu' grande, non piu' vero. Se dopo il TEST 1
+sappiamo che il modello ordina, la griglia fissa diventa la mossa naturale
+perche' alza la frazione trattata e quindi la potenza del test successivo.
+Prima pero' voglio sapere una cosa che oggi non e' scritta da nessuna parte:
+delle 55 decisioni discordanti, quante nascono da un aggiustamento grade
+GRANDE (>2 punti) e quante da uno microscopico? Se il delta positivo sta
+tutto negli aggiustamenti grandi e le decisioni sul filo sono rumore, allora
+la regola giusta e' "applica il grade solo quando sposta l'atteso di almeno
+X" — che e' un'altra forma della banda morta del TEST 2.
+
+(d) Allargare o approfondire? APPROFONDIRE PRIMA (test 1 e 2, costo zero,
+oggi), poi allargare — ma allargare sapendo QUANTO serve. Col segnale
+misurato (media +54,5 per decisione, sd 397,6) per arrivare a un t=2, cioe'
+a "questo non e' piu' spiegabile col caso", servono circa 213 decisioni
+discordanti contro le 55 di oggi: quasi 4 volte il campione attuale. Non e'
+"aggiungiamo un paio di manager".
+
+RETTIFICA (stessa sessione, dopo il vincolo posto dall'utente). Avevo
+scritto "allargare sulle GIORNATE, non sui manager". Non si puo': prima di
+aprile 2026 il grade non e' recuperabile, quindi le fixture nuove esistono
+solo in avanti, una a settimana. Ho quindi MISURATO quanto costa davvero
+allargare sui manager a parita' di giornate, invece di limitarmi a dire che
+e' correlato (dati gia' in binario1_out.json, zero query):
+
+  - coppie manager-GW: 55, decisioni discordanti: 55 -> esattamente 1,00
+    decisione discordante per ogni manager-giornata estratta;
+  - varianza fra giornate osservata 615.821 contro 414.021 attesa se le
+    osservazioni fossero indipendenti -> rapporto 1,49;
+  - IC90 naive [-1.700, +7.850] (P(>0)=85,0%) contro IC90 con bootstrap
+    a grappoli per giornata [-2.550, +8.950] (P(>0)=80,2%);
+  - nelle 16 giornate con >=2 manager i segni spesso NON coincidono
+    (es. 1-5 maggio: crowss -200, tsubasa_451 +1.100).
+
+Traduzione: due manager sulla stessa giornata NON sono la stessa
+osservazione contata due volte. La correlazione c'e' ma e' debole: ogni
+nuovo manager su una giornata gia' coperta vale circa 0,67 di
+un'osservazione indipendente (1/1,49). Quindi allargare sui manager
+FUNZIONA, costa solo circa il 50% di manager in piu' del conto ingenuo.
+
+Conto pratico: servono ~158 decisioni discordanti in piu'; a 1,00 per
+manager-GW e con lo sconto di 0,67 servono ~236 coppie manager-GW nuove,
+cioe' circa 11-12 manager che coprano tutte e 21 le fixture. Realisticamente
+15-20 da estrarre, perche' alcuni avranno poche arene e vanno scartati come
+gabittom.
+
+E c'e' una ragione in piu' per estrarli SUBITO invece che dopo i test: una
+volta che l'archivio e' in repo, rigiocare p23 con qualunque variante del
+modello (griglia fissa, banda morta, soglia diversa) costa ZERO query. Il
+lavoro di rete e' un investimento a fondo perduto zero: non si rifa' quando
+si cambia idea sul modello. Le estrazioni si delegano a Haiku a lotti
+piccoli con checkpoint, mai un lancio unico con attesa cieca.
+
+Nota che nessuno ha ancora messo sul tavolo: il binario2 (pool libero, la
+condizione piu' realistica) dice gia' 2-2 fra i manager con margini
+dell'1-5%. Quando il test piu' realistico e' nullo e quello meno realistico
+e' marginalmente positivo, la lettura onesta e' "non lo sappiamo", non
+"abbiamo una risposta su binario1".
+
+
+== 3. COSA FAREI IO, IN ORDINE ==
+
+1. TEST 1 (calibrazione a range pieno sulle 350 righe). Costo: minuti, zero
+   query. Decide tutto il resto. Se il modello non ordina, il grade non e'
+   il tema.
+2. TEST 2 (banda morta X = 0/1/2/3/5). Costo: minuti, zero query. Puo'
+   produrre subito una modifica di produzione utile e indipendente dal
+   grade ("sul filo, entra").
+3. Stampare da qui in avanti, in cima a OGNI report A-vs-G, la n delle
+   decisioni discordanti e il delta al netto delle 3 migliori. Costo: due
+   righe di codice. Serve a non ricascare nel "350 formazioni".
+4. Allargare sui MANAGER, sulle stesse 21 fixture (le giornate nuove non
+   sono disponibili: prima di aprile il grade non si recupera). Obiettivo
+   ~213 decisioni discordanti totali: servono ~11-12 manager utili in piu',
+   cioe' 15-20 da estrarre contando gli scarti. Puo' partire in parallelo
+   ai punti 1-2: e' lavoro di rete per Haiku a lotti piccoli, e l'archivio
+   estratto resta valido per qualunque variante del modello.
+5. Solo dopo: griglia fissa del grade, oppure la sua variante "applica il
+   grade solo se sposta l'atteso di almeno X punti".
+
+
+== 4. FILE DI RIFERIMENTO ==
+
+- archivio_ufficiale/aggregato/binario1_out.json (grezzo che ho riletto)
+- analisi_manager/p23_binario1_mga.py (riga 268: n_diverse, gia' calcolata)
+- analisi_manager/p24_binario2_ga.py
+- docs/handoff/BRIEF_OPUS_ANALISI_BINARIO1_2026-08-10.txt (il brief)

@@ -1,0 +1,118 @@
+BRIEF PER OPUS — opinione su binario1/binario2, prossimo passo (10/08/2026 sera)
+
+Sei in una chat pulita, non sai nulla di questa conversazione. Leggi questo
+file per intero. Non è un compito di esecuzione: è una richiesta di
+OPINIONE. Non toccare produzione, non lanciare script, non committare.
+
+## 0. Cosa leggere prima (se vuoi verificare qualcosa dei numeri sotto)
+
+- `CLAUDE.md` (radice), sezione in testa "I BACKTEST SONO IL MODELLO CONTRO
+  SE STESSO" (09/08, modificata 10/08 col punto 2bis).
+- `archivio_ufficiale/README.md` — schema dati, pipeline post-estrazione.
+- `archivio_ufficiale/aggregato/INDICE.md` — stato di copertura attuale.
+- `analisi_manager/p23_binario1_mga.py` e `p24_binario2_ga.py` — i due
+  script, già scritti e verificati, che producono i numeri sotto.
+
+## 1. Come siamo arrivati qui (riassunto, 5 righe)
+
+Il vecchio filone "modello vs 24 manager" (dati_globali/manager_*.json) è
+stato chiuso: dati mai verificati riga per riga, criteri di schieramento
+ignoti, l'utente non si fidava. Nuovo filone (dal 09/08): l'unica domanda
+lecita è "il modello G (con aggiustamento grade) batte A (senza grade)?",
+mai "battiamo il manager". Archivio nuovo `archivio_ufficiale/`, estratto e
+verificato a mano, walk-forward pulito (niente leak: l'atteso è calcolato
+con `cutoff_giornata` = primo calcio d'inizio reale della giornata, il
+grade usato è quello disponibile PRIMA di quel momento). Il 10/08 la regola
+è stata allargata (decisione esplicita utente): oltre a crowss, anche altri
+manager reali possono entrare come campione di TEST (mai come benchmark di
+"quanto è bravo il manager" — la sua bravura non entra mai nel giudizio,
+serve solo a fornire una formazione vera con un esito vero).
+
+## 2. Cosa abbiamo ora, dati grezzi
+
+4 manager estratti su finestra aprile-inizio agosto 2026 (22 fixture
+candidate a testa): crowss (24 GW pre-modello + 1 post), tigermila11,
+tsubasa_451, ch4. Un quinto (gabittom) scartato: solo 2 arene su 22 GW,
+sotto soglia di utilità.
+
+Copertura grade sul pool aggregato: ~91% (indice storico condiviso,
+18.208 righe, cresce ad ogni estrazione). Di quel 91% con grade, solo il
+54% produce un aggiustamento G realmente non-zero (lo z-score gruppo
+lega+ruolo resta spento se in quella GW c'è meno di 2 carte con grade nello
+stesso gruppo — succede spesso con pool piccoli).
+
+Estrarre altri manager NON è un problema: col batching via alias GraphQL
+(già scritto, verificato A/A) un manager su 22 fixture richiede pochi
+minuti, non ore. Non c'è collo di bottiglia di query, solo il rate limit
+normale di Sorare.
+
+## 3. Due binari, due domande diverse
+
+**Binario 1** — M (manager reale) vs G vs A, sulla IDENTICA formazione
+reale (stesse carte, stesso capitano). L'unica differenza è la decisione
+entra/salta quell'arena, secondo l'atteso di ciascuno confrontato con
+`PAREGGIO_ARENA + margine`. M entra sempre (è quello che è successo
+davvero). Risultato aggregato (350 formazioni pulite, 61 GW, 4 manager):
+  M (reale, sempre dentro): +23.650
+  A (entra 186/350):        +14.550
+  G (entra 183/350):        +17.550
+  G batte A in TUTTI e 4 i manager singolarmente (4/4).
+
+**Binario 2** — G vs A su pool libero (le carte disponibili, non solo la
+formazione reale), riusa `genera_arene_efficienti` di produzione. Risultato
+(netto essenze REALIZZATO, non atteso, 63 GW):
+  A: +47.574 (371 arene)
+  G: +48.547 (358 arene)
+  Qui il pattern è debole: 2 manager (crowss, ch4) favoriscono G, 2
+  (tigermila11, tsubasa_451) favoriscono A, margini piccoli (1-5% dei
+  totali). Il totale pende per G solo perché i primi due pesano di più.
+
+## 4. Cosa NON significa il numero M > A, G (già chiarito con l'utente)
+
+M vince sul totale SOLO perché gioca 350/350 arene contro le ~185 di A/G:
+sulle arene che A/G scelgono di giocare i numeri sono identici a M (stesso
+`premio_netto` reale, campo grezzo dell'archivio, non stimato). La
+differenza M-A (9.100) e M-G (6.100) è il saldo netto di TUTTE le arene
+saltate: quando A salta un'arena che sarebbe stata persa, quella perdita
+NON entra nel conto di A (risparmio reale, verificato: su 164 arene saltate
+da A, 100 erano perdenti per un totale di -24.900 evitato). Il problema è
+che le 64 arene saltate che invece erano vincenti valgono di più in media
+(+34.000 totali) delle perdenti evitate, quindi il saldo netto dello skip è
+comunque a sfavore di A/G (+9.100 di guadagno mancato).
+
+**Test già fatto e risultato controintuitivo**: ho controllato se le arene
+saltate PIÙ VICINE alla soglia (i casi marginali, quelli che abbasseresti
+per primi allentando la regola) fossero quelle andate peggio — sarebbe la
+prova che "la soglia è troppo alta e va abbassata". Non è così: correlazione
+tra "quanto sotto soglia" e risultato reale ≈ 0.00 (A) / +0.10 (G). Anzi,
+le arene più LONTANE dalla soglia sono andate meglio (A: +28 media) di
+quelle appena sotto (A: -12 media) — l'opposto di quello che ti aspetteresti
+se il problema fosse "soglia mal calibrata in blocco". Verificato anche che
+non sia un effetto di 2-3 arene enormi (le prime 3 vincite mancate pesano
+solo l'11-12% del totale, distribuzione piatta).
+
+## 5. La domanda per te
+
+Non è un compito con un numero da produrre. È: **come leggi tu questi
+dati?** In particolare:
+
+a) Il segnale "G batte A" ti sembra abbastanza solido da dire che il
+   filone G-vs-A ha una risposta (almeno su binario1, 4/4 manager)? O è
+   ancora presto (solo 4 cluster-manager indipendenti, anche se le
+   formazioni sono 350)?
+b) Cosa ne pensi del pattern "correlazione zero vicino alla soglia" del
+   punto 4 — è ora di sospettare che il modello (l'atteso) abbia poca
+   risoluzione proprio vicino al margine decisionale, invece di pensare
+   alla soglia come mal tarata? Ti vengono in mente altri test economici
+   (pochi query, dati già in repo) per distinguere le due ipotesi?
+c) È il momento di riprovare l'esperimento della "griglia fissa" del grade
+   (invece dello z-score per gruppo, oggi inerte nel 46% dei casi per
+   mancanza di un pari nel gruppo lega+ruolo)? O prima serve altro?
+d) Vale la pena allargare subito il campione (altri manager, l'utente ha
+   detto che non è un problema estrarli) prima di investigare a fondo
+   binario1, o il contrario — approfondire prima quello che abbiamo,
+   allargare dopo?
+
+Rispondi con quello che faresti tu al posto dell'utente, in ordine di
+priorità. Non serve eseguire nulla, solo l'opinione — la esecuzione la
+decide poi l'utente con l'orchestratore della sessione principale.
