@@ -214,3 +214,68 @@ refresh forzato (piccolo, non inseguito oltre).
 **Non si allarga la finestra dei 6 giorni** per compensare: rischia di
 agganciare la partita sbagliata (di un'altra GW). Il fix è tenere la
 cache aggiornata per chi serve, non allentare il criterio di ricerca.
+
+**Quando NON serve** (deciso 10/08/2026, GW3 post-G): `atteso` risponde
+"il modello aveva previsto bene le carte che ha scelto lui?" — una domanda
+che ha senso su `pre_2026-08-07/` (modello G contro le scelte umane vecchie)
+o per confrontare una VARIANTE del modello contro G. Su una GW già
+schierata da G in produzione non aggiunge niente per il solo scopo di
+tracciare risultato/ROI: si salta, si rifà solo se serve davvero
+confrontare un numero previsto contro il realizzato.
+
+---
+
+## Come rilanciare un'estrazione — ricetta pratica (10/08/2026, verificata su GW3)
+
+Tempo: pochi minuti di rete per ~40 formazioni. Nessuna modifica alla
+produzione, nessun file toccato fuori da `archivio_crowss/`.
+
+**Strumenti, in ordine:**
+
+1. **`ricostruisci_manager.partecipazioni(manager, fixture_slug)`** — elenco
+   di tutte le partecipazioni (contender_slug + leaderboard) del manager
+   nella GW. Richiede `SORARE_COOKIE` in env (l'indice non è pubblico).
+2. **`ricostruisci_manager.formazione(contender_slug)`** — per OGNI
+   contender: carte (slug, nome, ruolo, rarità, punteggio, capitano),
+   manager, piazzamento (`{rank, punteggio}`). Query pubblica, `con_cookie=False`
+   nel codice: non serve il cookie qui, solo per il passo 1.
+3. **rewardsConfig per premio vero** — stessa query GraphQL di
+   `scarica_premi_arene.py` (sessione anonima, nessun cookie), MA lanciata
+   sugli slug leaderboard ESATTI della GW che si sta estraendo (non
+   riusabile da run precedenti: ogni arena ha il suo jackpot, verificato
+   su GW3 due arene "Cap 260" con premio 1° posto rispettivamente 4000 e
+   1300 essenze — non è un errore, sono jackpot diversi). Una query per
+   ogni leaderboard UNICA (non per ogni formazione: più formazioni proprie
+   possono condividere la stessa arena).
+4. **`costo_ingresso`** — MAI da query, si legge dalle costanti di
+   produzione `COSTO_INGRESSO` in
+   `generatore_formazioni/build_formazione_globale.py`: cap260=300,
+   cap220=200, uncapped=300, beginner=100, elite=800; le arene dedicate a
+   un campionato (`tipo: division`, es. Jupiler) costano 300 come la
+   cap260 anche se Sorare le etichetta "Cap 260" nel `displayName`.
+
+**Come si riconosce il `tipo` dallo slug della leaderboard** (nessuna
+chiamata dedicata, si guarda la stringa):
+- contiene `arena_limited_beginner` → `beginner`
+- contiene `arena_limited_uncapped` → `uncapped`
+- contiene `arena_limited` ma il prefisso lega NON è `all_star` (es.
+  `seasonal-jupiler-...`) → `division`
+- contiene `arena_limited` col prefisso `all_star` → `cap260`
+  (non ancora capitato un `cap_220` su GW reali di crowss: se compare,
+  lo slug ha `arena_limited_cap_220`, stessa logica)
+- contiene `all_star_limited` (senza `arena`) → Da7 `allstar7`
+- contiene `under_twenty_one_limited` → Da7 `under23`
+- contiene `in_season...pve` → In Season `hot_streak`; `...pvp` → `pvp`
+
+**Controllo di coerenza, sempre, su OGNI riga prima di scriverla**: somma
+`punteggio` delle carte vs `punteggio_totale` ufficiale, tolleranza ±0,5.
+Se lo scarto è enorme (visto su GW3: 376,41 vs 0,0 — GW ancora in corso,
+un giocatore non aveva ancora giocato la sua partita) si applica il
+trattamento del README sopra: arena → resta con `annullata:true`,
+`punteggio_totale:null`, `premio:0`; Da7/In Season → riga scartata,
+non entra nel file.
+
+**Cosa NON serve** per una GW già post-G tracciata solo per risultato/ROI:
+`predici_manager_batch.py --force`, refresh cache, campo `atteso` (vedi
+sopra). Serve solo se si vuole confrontare un numero previsto contro il
+realizzato.
