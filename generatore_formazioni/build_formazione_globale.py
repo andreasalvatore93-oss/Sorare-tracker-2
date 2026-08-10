@@ -1773,6 +1773,24 @@ def main():
 
     role_data, role_counts, player_names = load_league_role_data()
 
+    # POOL ESTESO (10/08/2026, EXTEND_ODDS_060_070, default spento): quando il
+    # flag e' acceso, discovery_fixture.py porta ANCHE candidati con
+    # starter_odds nella banda 0.60-0.70 (unica banda possibile sotto 0.80: le
+    # starter-odds Sorare escono a blocchi da 10). 'role_data' resta SEMPRE
+    # filtrato a >=0.80 (o odds ignote, comportamento di sempre): FASE 1, ARENE
+    # EFFICIENTI, ALLSTARS/ALLSTARS_U23 e FASE 1b restano quindi identici a un
+    # run col flag spento anche quando la discovery ha portato di piu' -- a
+    # flag spento questo filtro e' un no-op (la discovery non porta mai sotto
+    # 0.80). 'role_data_ext' (tutto, banda compresa) e' letto SOLO dal passo
+    # POOL SUPPLETIVO piu' sotto, mai dal resto.
+    EXTEND_ODDS_060_070 = os.environ.get('EXTEND_ODDS_060_070', '0') == '1'
+    role_data_ext = role_data
+    role_data = {
+        lg: {role: [r for r in rows if r.get('starter_odds') is None or r['starter_odds'] >= 0.80]
+             for role, rows in roles.items()}
+        for lg, roles in role_data.items()
+    }
+
     # DUMP_JSON_CANDIDATI (misura GRADE_SCALE, brief BRIEF_SONNET_GRADE_
     # SCALA_STORICA_2026-08-08.txt, Passo 0b/0c): se impostata, scrive TUTTI
     # i candidati (non solo quelli scelti in una formazione, a differenza di
@@ -1924,6 +1942,53 @@ def main():
         if tipo in POST_ARENA_TYPES:
             all_results.extend(generate_lineups_for_type(tipo, counts[tipo], role_data, pools, card_pool))
 
+    # POOL SUPPLETIVO (10/08/2026, EXTEND_ODDS_060_070, default spento):
+    # scatta SOLO se la tornata sopra (arene esplicite + ARENE EFFICIENTI +
+    # ALLSTARS/ALLSTARS_U23, tutta a odds >=0.80) non ha riempito gli slot
+    # RICHIESTI. Usa lo STESSO card_pool gia' consumato sopra -- non puo'
+    # "rubare" carte gia' finite in una formazione della tornata primaria,
+    # puo' solo pescare dal residuo 0.80+ mai scelto + la banda 0.60-0.70
+    # (role_data_ext). Riguarda SOLO Arena Beginner (unica arena ammessa, le
+    # altre restano fuori) + All Stars + All Stars Under23. Per le arene vale
+    # lo stesso vincolo di margine/soglia (genera_arene_efficienti, PAREGGIO_
+    # ARENA) di sempre: nessuno sconto sul punteggio per le odds piu' basse
+    # (richiesta esplicita utente, 10/08 -- vanno valutate come le 0.80+).
+    if EXTEND_ODDS_060_070:
+        _richiesti_arene = sum(counts.get(t, 0) for t in PRIORITY_ORDER if _is_arena_type(t)) + max(_n_eff, 0)
+        _generati_arene = sum(1 for r in all_results if 'error' not in r and _is_arena_type(r.get('tipo')))
+        _shortfall_arene = max(0, _richiesti_arene - _generati_arene)
+        _generati_allstars = sum(1 for r in all_results if 'error' not in r and r.get('tipo') == 'ALLSTARS')
+        _generati_u23 = sum(1 for r in all_results if 'error' not in r and r.get('tipo') == 'ALLSTARS_U23')
+        _shortfall_allstars = max(0, counts.get('ALLSTARS', 0) - _generati_allstars)
+        _shortfall_u23 = max(0, counts.get('ALLSTARS_U23', 0) - _generati_u23)
+        if _shortfall_arene or _shortfall_allstars or _shortfall_u23:
+            print(f"\n=== POOL SUPPLETIVO (odds 0.60-0.70): mancano {_shortfall_arene} "
+                  f"Arena Beginner, {_shortfall_allstars} All Stars, {_shortfall_u23} "
+                  f"All Stars Under23 rispetto al richiesto -- provo con la banda "
+                  f"0.60-0.70 + il residuo 0.80+ non ancora usato.")
+            pools_ext = build_quality_pools(role_data_ext)
+            _suppl = []
+            if _shortfall_arene:
+                _suppl.extend(genera_arene_efficienti(['ARENA_ALLSTARS_BEGINNER'], _shortfall_arene,
+                                                       role_data_ext, pools_ext, card_pool))
+            for _tipo_post, _shortfall, _gia in (('ALLSTARS', _shortfall_allstars, _generati_allstars),
+                                                  ('ALLSTARS_U23', _shortfall_u23, _generati_u23)):
+                if not _shortfall:
+                    continue
+                _batch = generate_lineups_for_type(_tipo_post, _shortfall, role_data_ext, pools_ext, card_pool)
+                for i, r in enumerate(_batch):
+                    if 'error' in r:
+                        break
+                    r['idx'] = _gia + i + 1
+                    _suppl.append(r)
+            for r in _suppl:
+                r['suppletivo'] = True
+            print(f"Pool suppletivo: {len(_suppl)} formazioni aggiuntive "
+                  f"({sum(1 for r in _suppl if r['tipo'] == 'ARENA_ALLSTARS_BEGINNER')} Arena Beginner, "
+                  f"{sum(1 for r in _suppl if r['tipo'] == 'ALLSTARS')} All Stars, "
+                  f"{sum(1 for r in _suppl if r['tipo'] == 'ALLSTARS_U23')} All Stars Under23).")
+            all_results.extend(_suppl)
+
     # FASE 1b: formazioni OPZIONALI extra (30/07, richiesta esplicita
     # utente -- sostituisce il vecchio "sondaggio" che si limitava a CONTARE
     # quante se ne sarebbero potute fare in piu' con una copia del pool
@@ -2064,6 +2129,18 @@ def main():
                 f'padding:10px 12px 4px 12px;margin:0 0 18px 0">'
                 f'<div style="font-size:.85rem;color:{_col};margin-bottom:8px">'
                 f'<b>{_et}</b></div>{lineup_html}</div>')
+        # Badge POOL SUPPLETIVO (10/08/2026, EXTEND_ODDS_060_070): marcata
+        # bene visibile -- questa formazione contiene (o puo' contenere)
+        # carte con starter-odds 0.60-0.70, piu' rischiose delle 0.80+ di
+        # tutte le altre. Richiesta esplicita utente: deve saltare all'occhio
+        # prima di schierare.
+        if r.get('suppletivo'):
+            lineup_html = (
+                '<div style="font-size:.78rem;color:#3a7bd5;background:rgba(58,123,213,.12);'
+                'border:1px solid #3a7bd5;border-radius:6px;padding:3px 9px;'
+                'display:inline-block;margin-bottom:6px">'
+                'POOL SUPPLETIVO -- starter-odds 0.60-0.70, non 0.80+</div>'
+                f'{lineup_html}')
         # Formazioni OPZIONALI (30/07): separatore ben visibile la prima
         # volta che se ne incontra una, poi ogni blocco un po' piu' piccolo
         # (font-size ridotto) per distinguerle a colpo d'occhio da quelle

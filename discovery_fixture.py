@@ -35,6 +35,21 @@ MIN_ODDS = float(os.environ.get('MIN_STARTER_ODDS', '0.80'))
 GAMEWEEK = os.environ.get('GAMEWEEK', '').strip()
 FIXTURE_SLUG = os.environ.get('FIXTURE_SLUG', '').strip()
 
+# EXTEND_ODDS_060_070 (10/08/2026, richiesta esplicita utente): filone
+# "pool suppletivo" nel generatore (solo Arena Beginner/All Stars/U23,
+# meccanismo di riserva quando la prima tornata a MIN_ODDS non riempie gli
+# slot richiesti). Di default (flag spento) il comportamento e' INVARIATO:
+# sotto MIN_ODDS si scarta e basta. Acceso, si tiene ANCHE la fascia
+# 0.60-0.70 inclusi (non un range continuo: le starter-odds Sorare escono a
+# blocchi da 10, quindi 0.60/0.70 sono gli UNICI due valori possibili sotto
+# 0.80 -- niente si perde fissando gli estremi invece di un confronto '<').
+# Il generatore (build_formazione_globale.py) e' l'unico a decidere se e
+# quando usarli: qui si scrive solo starter_odds come sempre, la riga non e'
+# "marcata" in alcun modo speciale -- la separazione primario/suppletivo e'
+# tutta a valle, sul valore starter_odds gia' persistito.
+EXTEND_ODDS_060_070 = os.environ.get('EXTEND_ODDS_060_070', '0') == '1'
+EXTEND_ODDS_BAND = (0.60, 0.70)
+
 # Storico delle odds di titolarita' PRESE PRIMA DELLA DEADLINE (04/08).
 # PERCHE': il campo starterOddsBasisPoints dentro il game log viene RISCRITTO
 # dopo le formazioni ufficiali -- misurato su 230 coppie da
@@ -1574,8 +1589,13 @@ def main():
                     esclusi_odds += 1
                     continue
             elif odds < MIN_ODDS:
-                esclusi_odds += 1
-                continue
+                # Banda suppletiva 0.60-0.70 (vedi EXTEND_ODDS_060_070 sopra):
+                # se accesa, chi cade DENTRO la banda non viene scartato qui,
+                # resta nel pool con il suo starter_odds vero -- decide il
+                # generatore, non la discovery. Sotto 0.60 resta escluso.
+                if not (EXTEND_ODDS_060_070 and EXTEND_ODDS_BAND[0] <= odds <= EXTEND_ODDS_BAND[1]):
+                    esclusi_odds += 1
+                    continue
             if lega:
                 dirname = LEAGUE_DIR.get(lega)
                 if not dirname:
