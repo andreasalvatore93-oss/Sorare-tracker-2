@@ -1,0 +1,109 @@
+HANDOFF ARCHIVIO_CROWSS — sessione 10/08/2026 sera (Roma, CEST)
+
+1. STATO DEL REPO
+Branch main. Tre commit di questa sessione, tutti pushati:
+  0e5c44031a  archivio_crowss: schema dati definitivo (tassonomia, campi, controlli)
+  ca6fa4e55c  Cache game-log: refresh mirato per 63 giocatori (test archivio_crowss)
+  db495f32cc  archivio_crowss: primo test di estrazione, GW 4-7 agosto (pre-G)
+Working tree pulito, nessun residuo locale. Nessuna modifica a parametri
+di produzione (score_atteso, soglie arena, grade): solo cache game-log
+rinfrescata e due file dati nuovi.
+
+2. PERCHE' ESISTEVA QUESTO LAVORO
+archivio_crowss/ era stato creato il 09/08 come contenitore vuoto (regola
+"i backtest sono il modello contro se stesso", CLAUDE.md). Mancava lo
+schema: cosa tracciare per ogni competizione, con che campi, con quali
+controlli. L'utente ha dettato la tassonomia a voce, pezzo per pezzo, e
+poi ha chiesto un'estrazione di test per vedere se lo schema regge sui
+dati veri.
+
+3. COSA HO COSTRUITO/TOCCATO
+- archivio_crowss/README.md: aggiunta la sezione "Schema dati" (3 macro
+  tipi: Arene Limited, Da7, In Season — campi, check di validazione,
+  bonus condizionali, gestione delle formazioni annullate, refresh
+  cache obbligatorio per l'atteso). Tutto scritto in sessione con
+  l'utente, nessuna ipotesi mia non confermata.
+- archivio_crowss/pre_2026-08-07/football-4-7-aug-2026_{arene_limited,da7}.json:
+  21 formazioni reali crowss (13 arene, 8 Da7), primo test di estrazione.
+- Cache game-log: refresh forzato (predici_manager_batch.py --force) su
+  63 slug che mancavano di walk-forward atteso per la GW di test.
+
+Come si rilancia un'estrazione su un'altra GW (rete, qualche minuto):
+  1. python -c "..." con ricostruisci_manager.partecipazioni('crowss', '<fixture_slug>')
+     (serve SORARE_COOKIE in env per l'indice; le formazioni sono pubbliche)
+  2. Per ogni contender, ricostruisci_manager.formazione(slug) -> carte/piazzamento
+  3. Controllo coerenza: somma punteggi carte vs punteggio ufficiale, tolleranza 0.5
+     -> se scarto grande, annullata (vedi README per trattamento arena/Da7)
+  4. Costruire l'input {slug: {ruolo, dir}} con analisi_manager/analizza_gw.indice_lega()
+     per gli slug SENZA atteso, poi predici_manager_batch.py --input <file> --force
+  5. Ricalcolare score_atteso (backtest_arene_previsioni.py) con la cache aggiornata
+  6. Scrivere i JSON secondo lo schema in archivio_crowss/README.md
+
+4. OUTPUT NUMERICO INTEGRALE (GW football-4-7-aug-2026, pre-G, manager crowss)
+21 partecipazioni: 13 arene limited (8 Cap260, 1 Cap220, 4 Beginner) + 8 Da7
+(4 All Star, 4 Under 23). Zero In Season questa GW (non giocata da crowss).
+Zero formazioni annullate (controllo di coerenza pulito su tutte e 21,
+scarto massimo 0.009 pt).
+
+Premi arene (rewardsConfig, premi VERI): 2 primi posti Cap260 (1300 ess.
+l'uno), 1 terzo posto Cap260 (500 ess.), resto piazzamenti fuori premio.
+Nessuna arena gold su questa GW (verificato: premio a podio = tabella
+base esatta su tutti e 3 i casi).
+
+Copertura atteso (walk-forward, funzione di produzione, zero codice
+nuovo) sulle 121 carte totali:
+  PRIMA del refresh cache: 52/121 (43.0%)
+  DOPO il refresh mirato:  112/121 (92.6%)
+Diagnosi con backtest_arene_previsioni.diagnostica_staleness_cache():
+0 slug con cache totalmente vuota (nessuna lega non tracciata, tranne 2
+casi strutturali sotto). Il buco iniziale era dovuto a giocatori con
+l'ultima partita in cache appena FUORI dalla finestra di 6 giorni usata
+da partita_target() (es. Heung-min Son fermo al 01/08 23:30 contro una
+finestra che iniziava alle 01/08 23:59 — mancava per 29 minuti).
+Residuo dopo il refresh, 7 carte:
+  - facundo-ezequiel-almada, josimar-alcocer: lega senza pipeline (permanente)
+  - maxwell-woledzi, mika-marcel-godts, wout-weghorst, xavier-valdez,
+    youri-baas: cache rinfrescata ma senza nuova partita nella finestra
+    (piccolo, non inseguito oltre per questo test)
+
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+- Il refresh cache (predici_manager_batch.py --force) COSTA QUERY VERE
+  verso Sorare (non è offline come il calcolo dell'atteso): su questa GW
+  ha impiegato alcuni minuti per 63 giocatori. Va ripetuto per ogni nuova
+  GW che entra in archivio, sui soli slug senza atteso.
+- NON ho allargato la finestra di 6 giorni di partita_target() per
+  compensare la copertura bassa: rischia di agganciare la partita
+  sbagliata (di un'altra GW). Il fix scelto è tenere la cache aggiornata
+  per chi serve, non allentare il criterio di ricerca — vedi README per
+  il ragionamento completo.
+- Il campo `manuale` è impostato a True su TUTTE le righe della partizione
+  pre_2026-08-07 per definizione della partizione stessa (l'utente
+  correggeva sempre a mano), non rilevato riga per riga: non esiste
+  ancora un modo automatico per distinguere una correzione manuale da
+  una schierata dal bot tal quale.
+- Il caso "formazione annullata" (Sorare azzera il punteggio ufficiale
+  mantenendo i voti reali sulle carte, nessun campo esplicito) è stato
+  verificato su 2 casi reali (non di questa GW, dalla GW 7-11 agosto) e
+  il controllo di coerenza lo intercetta da solo. Su questa GW di test
+  non è mai scattato.
+- Non toccato: partizione dal_2026-08-07/ (post-G) resta vuota. La GW
+  7-11 agosto (prima fixture G) è quella naturale da estrarre dopo.
+
+6. DECISIONE APERTA
+Nessuna urgente. Prossimo passo naturale, da confermare con l'utente:
+estrarre la prima GW post-G (football-7-11-aug-2026, chiusa oggi
+11/08) con lo stesso schema, per iniziare davvero il confronto
+"G contro se stesso". Il filone "grade esteso a tutta la giornata"
+(idea dell'utente del 10/08, §10bis handoff unificato) resta in attesa:
+va ritestato su archivio_crowss quando ci sono abbastanza giornate, non
+prima.
+
+7. FILE DI RIFERIMENTO
+- archivio_crowss/README.md (schema completo, unica fonte per la
+  convenzione dell'archivio)
+- archivio_crowss/pre_2026-08-07/football-4-7-aug-2026_*.json (dati)
+- ricostruisci_manager.py (partecipazioni/formazione, query pubbliche+cookie)
+- backtest_arene_previsioni.py (score_atteso, diagnostica_staleness_cache)
+- predici_manager_batch.py (refresh cache mirato, --force)
+- analisi_manager/analizza_gw.py (indice_lega(), pattern di riferimento
+  per il walk-forward, esempio CLI proprio su questa GW)
