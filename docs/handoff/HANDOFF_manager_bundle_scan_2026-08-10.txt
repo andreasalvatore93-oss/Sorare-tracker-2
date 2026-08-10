@@ -1,0 +1,154 @@
+SESSIONE 10/08/2026, ~15:45-18:40 Roma (13:45-16:40 UTC)
+
+1. STATO DEL REPO
+------------------
+Branch: main. Tutto committato E pushato, HEAD locale = origin/main =
+ed9e61bf57eca801e133c33e78101767c6208782 (ultimo commit e' un aggiornamento
+automatico del workflow con log/report/cooldown dell'ultima run).
+
+Commit di questa sessione (in ordine):
+  6b7b29d615  report HTML unico invece dei messaggi Telegram a blocchi
+  ff9e54e912  link Telegram al commit SHA invece che al branch (fix cache CDN)
+  d719d237e1  best deal in cima al report + soglia scarto minima in auto-discovery
+Tutti e tre in produzione: il workflow manager_bundle_scan.yml li ha gia'
+usati in run reali su GitHub Actions (vedi punto 4).
+
+NOTA: nella working tree locale c'erano gia', PRIMA di questa sessione,
+modifiche non mie non committate (analisi_manager/p12_backtest_formazione_
+grade.py modificato, + file nuovi analisi_manager/completa_grade_mancante.py,
+analisi_manager/dati/p23_binario1_gw2_out.json, analisi_manager/p23_binario1_
+mga.py, scratch2.txt) -- probabile lavoro di un'altra sessione in corso sul
+filone grade. NON li ho toccati.
+
+2. PERCHE' ESISTEVA QUESTO LAVORO
+----------------------------------
+Tool "manager bundle scan" (scanners/manager_bundle_scan.py, workflow
+manuale .github/workflows/manager_bundle_scan.yml): dato uno slug manager
+(o in auto-discovery), trova le sue carte Limited in_season davvero in
+vendita e organizza un'offerta cumulativa "a pacchetto" (max 10 carte per
+offerta Sorare). Non usato dal 19/07 (38 run nel log, poi silenzio). Oggi
+l'utente ha chiesto di rivitalizzarlo, partendo da un cambio della modalita'
+di notifica.
+
+3. COSA HO COSTRUITO/TOCCATO
+------------------------------
+a) Report HTML al posto dei messaggi Telegram a blocchi (commit 6b7b29d615)
+   - Nuova funzione write_html_report(): genera scanners/logs/manager_
+     bundle_scan_report.html, percorso FISSO sovrascritto ad ogni run.
+     Nomi giocatori cliccabili (link diretto alla carta sul mercato:
+     https://sorare.com/it/football/market/shop/manager-sales/<player_
+     slug>/limited?card=<card_slug>, pattern gia' collaudato in track.py).
+     Stessa logica di prima per le 3 sezioni: tutte le carte / bonus (gia'
+     al minimo) / best deal.
+   - Rimosse le funzioni telegram-only (_render_card_blocks, _pack_into_
+     messages, build_telegram_messages, BLOCK_SEPARATOR, TELEGRAM_SAFE_
+     MESSAGE_CHARS, MAX_BLOCKS_IN_TELEGRAM_MESSAGE) -- morte, l'HTML non ha
+     limiti di lunghezza.
+   - Workflow: nuovo step "Notify Telegram with report link" DOPO lo step
+     che pusha il file (mai prima), un solo messaggio con link renderizzato
+     via raw.githack.com -- stesso pattern di best_five_telegram_notify.py.
+     Lo step scan (id: scan) espone report_ready/manager_slug via
+     $GITHUB_OUTPUT, letti grep-ando "REPORT_READY <slug> <n>" (stampato
+     via print(), non log(), per restare grep-abile) dal log della run:
+     serve perche' il file HTML e' fisso e sovrascritto, quindi la sua
+     sola presenza non basta a dire che QUESTA run ha prodotto qualcosa.
+
+b) Fix link Telegram: commit SHA invece di branch (commit ff9e54e912)
+   BUG REALE osservato dall'utente: la seconda run (yannic10) ha mandato
+   un link che apriva ancora il report della run precedente (temha58).
+   Causa: raw.githack.com cacha aggressivamente gli URL basati su branch
+   ("main") -- con un file a percorso fisso sovrascritto ogni run, quello
+   e' esattamente il caso peggiore per quella cache. Fix: lo step "Save
+   log" espone commit_sha (git rev-parse HEAD dopo il commit) via
+   $GITHUB_OUTPUT, e il link Telegram usa quel commit SHA al posto di
+   "main" -- URL diverso ad ogni run, mai una cache stantia.
+   Verificato su run reale (31408160033): commit SHA nel push = commit SHA
+   nel link, titolo dell'HTML scaricato = manager di QUELLA run.
+
+c) Best deal in cima + soglia minima scarto in auto-discovery (d719d237e1)
+   - Sezione "Best deal" spostata all'inizio dell'HTML (prima di "tutte le
+     carte" e "bonus"), su richiesta esplicita.
+   - NUOVA soglia AUTO_FIND_MIN_BEST_DEAL_GAP_EUR (default 2.0, env var):
+     in auto-discovery, un manager candidato viene selezionato SOLO se la
+     SOMMA degli scarti (second_min_price - market_min_price) delle carte
+     nel pacchetto best-deal e' >= 2 EUR. Sotto soglia: candidato scartato,
+     la ricerca CONTINUA sul prossimo (mai una notifica). Motivazione reale
+     dell'utente: un run precedente (jafar1006) ha notificato un manager
+     con 27 carte "gia' al minimo" ma ognuna solo pochi centesimi sotto --
+     non un'occasione, il segnale tipico di un manager/bot che non accetta
+     offerte al ribasso (l'opposto di quello che il bot deve trovare).
+   - Refactor: estratta scan_manager_market(manager_slug, eth_rate) da
+     run_bundle_scan (fetch carte possedute + check mercato completo),
+     riusata sia dall'input manuale sia da auto_find_manager (che ora la
+     chiama PRIMA di impegnarsi su un candidato, per calcolare lo scarto,
+     evitando di scansionare due volte il manager alla fine selezionato).
+   - IMPORTANTE: la soglia si applica SOLO in auto-discovery. L'input
+     manuale (slug/URL scritto a mano nel workflow) non la rispetta --
+     scelta deliberata: se l'utente sceglie apposta un manager, non c'e'
+     "ricerca" da continuare su un altro. Non confermato esplicitamente
+     con l'utente, ma coerente con la sua richiesta ("continua la
+     ricerca" ha senso solo in auto-discovery). Da rivedere se in futuro
+     vuole lo stesso filtro anche sull'input manuale.
+   Verificato su run reale (31409505915): primo candidato (rodasmga)
+   scartato per soglia carte (4<5), secondo (hsv_daniel...) scansionato
+   per intero, scarto totale 20.70EUR su 10 carte (soglia 2.00EUR) ->
+   selezionato. Sezioni HTML nell'ordine corretto (best deal, poi tutte le
+   carte, poi bonus).
+
+4. OUTPUT NUMERICO INTEGRALE (le 4 run reali di oggi)
+-------------------------------------------------------
+Run 1 (31405481775, prima del fix report.html gia' presente): manager
+  temha58, 10 carte in vendita, TUTTE sopra il minimo (0 bonus), richiesta
+  76.50EUR vs minimo mercato 27.34EUR, nessun best deal (0 carte gia' al
+  minimo). Report + Telegram ok.
+Run 2 (31406452266): manager yannic10, 4 carte TUTTE gia' al minimo (bonus
+  = intero set), best deal 4 carte con scarti 0.46/0.15/0.10/0.10 EUR.
+  BUG SCOPERTO QUI: link Telegram puntava ancora al report di temha58
+  (cache raw.githack.com sul branch).
+Run 3 (31408160033, dopo fix link->commit SHA): manager jafar1006-
+  253160e2-..., 28 carte in vendita, 27 gia' al minimo (richiesta 60.45EUR
+  vs minimo 53.75EUR) -- CASO CHE HA MOTIVATO la soglia scarto minima:
+  27 carte "gia' al minimo" ma con scarti minimi, notificato comunque
+  perche' all'epoca non esisteva ancora il gate.
+Run 4 (31409505915, dopo entrambi i fix c): rodasmga scartato (4 carte <
+  soglia 5), hsv_daniel-393740ab-... selezionato con scarto totale
+  20.70EUR su 10 carte (soglia 2.00EUR) -- 37 carte in vendita, 23 gia' al
+  minimo, richiesta 1542.00EUR vs minimo 1506.61EUR.
+
+5. COSE DA SAPERE PRIMA DI DECIDERE
+--------------------------------------
+- BUNDLE_OFFER_MARGIN_FRACTION resta 0.25 (25%), MAI ritarato su casi
+  reali -- e' ancora il valore "provvisorio" ereditato dal 18/07, il
+  report lo dice esplicitamente ("valore provvisorio, da tarare").
+- La soglia AUTO_FIND_MIN_BEST_DEAL_GAP_EUR=2.0 e' una PRIMA STIMA data
+  dall'utente in chat, non tarata su una distribuzione di run reali (n=1
+  caso positivo, n=1 caso negativo osservati oggi). Se in futuro continua
+  a notificare pacchetti deboli o scarta troppo aggressivamente, va
+  rivista con piu' osservazioni.
+- Il gate best-deal NON si applica all'input manuale (vedi punto 3c) --
+  decisione presa per coerenza logica, non confermata esplicitamente.
+- best_five_telegram_notify.py (pattern gemello per altri tool) usa ANCORA
+  raw.githack.com con branch "main", non commit SHA -- soggetto
+  potenzialmente allo stesso bug di cache scoperto oggi, mai verificato.
+  Non toccato in questa sessione (fuori scope), ma vale la pena controllare
+  se best_five nota mai link che aprono un report vecchio.
+- MAX_OWNED_CARD_PAGES=20 (1000 carte) ha gia' troncato un manager con
+  1059 carte possedute (run 3, jafar1006) -- comportamento preesistente,
+  non toccato, solo osservato.
+
+6. DECISIONE APERTA
+----------------------
+Nessuna aperta al momento -- l'utente ha detto "per ora va bene cosi'".
+Prossimi possibili filoni (non richiesti, solo annotati): tarare
+BUNDLE_OFFER_MARGIN_FRACTION su casi reali; valutare se estendere il gate
+scarto minimo anche all'input manuale; controllare best_five_telegram_
+notify.py per lo stesso bug di cache.
+
+7. FILE DI RIFERIMENTO
+-------------------------
+scanners/manager_bundle_scan.py
+.github/workflows/manager_bundle_scan.yml
+scanners/logs/manager_bundle_scan_last_run.log (log accodato, ultime 200 run)
+scanners/logs/manager_bundle_scan_report.html (report dell'ULTIMA run, sovrascritto)
+.manager_bundle_scan_cooldown.json (cooldown auto-discovery, 7gg)
+best_five_telegram_notify.py (pattern gemello raw.githack, da controllare)
