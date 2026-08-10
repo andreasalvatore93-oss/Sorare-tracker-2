@@ -176,6 +176,70 @@ l'utente te lo dirà o lo vedrai da `git log`/`git pull`.
 5. FILE DI RIFERIMENTO
 ============================================================================
 
+============================================================================
+6. AGGIORNAMENTO 10-11/08/2026 notte — round 2+3 estratti, grade completato,
+   binari rilanciati. VERDETTO ANCORA NON DECISIVO.
+============================================================================
+
+Round 2 (13 slug) + round 3 (11 slug) estratti da Haiku Esecutore, commit
+ac0cdeddb3. Verificato sui dati grezzi (non sul commento di Haiku):
+- UTILI (>=10 arene): alfo88(20) gigigonzalez(28) golden_goal-...(212)
+  kowalskiuk(34) peppe_g(25) pnd999(27) raykocar(25) shadowblack21(96)
+  skepticalone(50) tekato-dan(80) yippeekiyay_trading(106) — 11 nuovi,
+  + ch4/tigermila11/tsubasa_451 del round1 = 14 manager utili totali oltre
+  crowss.
+- SCARTATI (<10 arene, cartelle RIMOSSE dal repo come gabittom): _clmt_(1)
+  duddav(5) eugeneg(0) fk-bask(2) jackdaniels10(1) mago313(8) mambri42(0)
+  nasheuh(0).
+- NOT_FOUND (slug inesistenti, candidati esauriti): titielboboh,
+  stevie_1dah, rossario, futbaba, 420todoeldia.
+
+Grade completato per i 14 manager nuovi: 1504 slug carta unici interrogati
+a lotti da 40 (pausa 75s, alcuni 429 nel primo tentativo veloce, poi zero
+errori), storico_grade_crowss_completamento.json cresciuto di circa 14.000
+righe.
+
+BINARIO 1 rilanciato — 578 formazioni pulite, 178 GW:
+  M=+35450  A=+18900  G=+20550
+  n vera (decisioni discordanti) = 80 (non 578), su 213 stimate da Opus
+  come soglia "non piu' spiegabile dal caso": SIAMO ANCORA SOTTO.
+  delta G-A totale +1650, MA senza le 3 decisioni pro-G piu' pesanti il
+  delta diventa -1350 — il segno si ribalta, stessa fragilita' segnalata
+  da Opus a n=55, ANCORA PRESENTE a n=80.
+  Split per manager (discordanti>0): G>A in 8/11 (crowss, ch4,
+  gigigonzalez, pnd999, shadowblack21, skepticalone, tigermila11,
+  tsubasa_451), A>G in 3/11 (golden_goal -300, kowalskiuk -400,
+  tekato-dan -2300, quest'ultimo il piu' grande singolo contributo in
+  valore assoluto di tutto il dataset). alfo88/peppe_g/raykocar: zero
+  decisioni discordanti (formazioni troppo poche o M sempre sopra/sotto
+  soglia su entrambi).
+
+BINARIO 2 rilanciato (pool libero, netto realizzato) — 189 GW:
+  A=+81306 (691 arene)  G=+82641 (662 arene)  delta totale +1335
+  Split per manager: G>A in 7/14 (ch4 +1511, gigigonzalez +465,
+  golden_goal +880, kowalskiuk +989, pnd999 +27, tekato-dan +32,
+  tsubasa_451 +160), A>G in 7/14 (alfo88 -194, peppe_g -94, raykocar -172,
+  shadowblack21 -892, skepticalone -168, tigermila11 -234,
+  yippeekiyay_trading -832; anche crowss stesso A>G -144). SPACCATO A
+  META', pattern ancora debole come nel giro precedente (era 2-2, resta
+  circa 50/50 con piu' manager).
+
+VERDETTO: nessuno dei due binari e' abbastanza forte per chiudere il
+filone. Binario1 e' cresciuto (55->80 discordanti) ma resta sotto la
+soglia di Opus e la fragilita' (si ribalta togliendo 3 decisioni) non e'
+sparita. Binario2 resta senza una direzione chiara (split quasi 50/50 fra
+manager). Prossimo passo aperto: servono altri manager (candidati
+esauriti, l'utente ne pesca altri se vuole continuare) oppure aspettare
+che crescano le giornate di crowss.
+
+Output dettagliato: archivio_ufficiale/aggregato/binario1_out.json,
+archivio_ufficiale/aggregato/binario2_out.json.
+
+============================================================================
+7. Candidati slug: ESAURITI (la lista dell'11/08 e' stata estratta per
+  intero nel round 3, vedi punto 6 — 6 utili, 5 NOT_FOUND). Per un
+  eventuale ROUND 4 servono slug NUOVI, non ancora pescati.
+
 - docs/handoff/BRIEF_HAIKU_ESTRAZIONE_13MANAGER_2026-08-10.txt (da inviare)
 - docs/handoff/BRIEF_OPUS_ANALISI_BINARIO1_2026-08-10.txt (la domanda posta)
 - docs/handoff/RISPOSTA_OPUS_ANALISI_BINARIO1_2026-08-10.txt (risposta

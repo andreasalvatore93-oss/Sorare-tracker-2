@@ -1,0 +1,144 @@
+BRIEF PER HAIKU — estrazione 11 nuovi manager, round 3, stessa finestra di crowss (10/08/2026, sera)
+
+Sei in una chat pulita, non sai nulla di questa conversazione. Leggi
+questo file per intero prima di iniziare.
+
+## 0. Cosa leggere prima
+
+1. `CLAUDE.md` (radice) — sezione in testa "I BACKTEST SONO IL MODELLO
+   CONTRO SE STESSO", punto 2bis: altri manager POSSONO entrare come base
+   di misura, ma il confronto resta sempre G vs A, MAI "battiamo il
+   manager X". Tu qui NON fai nessun confronto: estrai solo dati grezzi.
+2. `archivio_ufficiale/README.md` — lo schema che questa estrazione deve
+   rispettare (già applicato dallo script, leggilo per sapere cosa produci).
+3. `estrai_archivio_manager.py` (radice) — SCRIPT GIÀ SCRITTO, TESTATO E
+   VERIFICATO (10/08/2026): usa batching via alias GraphQL (formazioni
+   lotti da 3, premi lotti da 10 — limite di complessità reale di Sorare,
+   non toccarlo), verificato A/A e end-to-end. NON riscriverlo, NON
+   modificarlo. Se sembra rotto, fermati e segnalalo — non aggiustarlo tu.
+
+## 1. Il compito, uno solo
+
+Estrarre le arene Limited reali di 11 manager nuovi, sulla STESSA finestra
+di fixture già usata per crowss e per i due giri precedenti (4 + 12
+manager). È MECCANICO: nessuna analisi, nessuna decisione — solo eseguire.
+
+Contesto (non serve altro per lavorare, solo per capire perché): filone
+G-vs-A, serve arrivare a un campione di ~213 decisioni discordanti stimato
+da Opus per un segnale non più spiegabile dal caso. Il giro precedente da
+12 manager estratti ne ha resi utili solo 4 (gli altri 8 sotto soglia
+arene, alcuni a zero — plausibile, gli slug erano pescati a caso, non un
+bug): per questo servono altri manager.
+
+## 2. Gli 11 manager
+
+```
+raykocar
+kowalskiuk
+tekato-dan
+alfo88
+gigigonzalez
+golden_goal-699e9a95-45ec-4764-8771-a26226e5d4e9
+peppe_g
+stevie_1dah
+rossario
+futbaba
+420todoeldia
+```
+
+## 3. Credenziali
+
+`SORARE_COOKIE` te lo passa l'utente in questa chat. Senza,
+`partecipazioni()` non funziona: fermati e chiedilo se non arriva.
+
+## 4. Le fixture, ESATTE — stesse 22 usate per crowss e per i giri precedenti
+
+```
+football-3-7-apr-2026
+football-10-14-apr-2026
+football-17-17-apr-2026
+football-17-21-apr-2026
+football-21-24-apr-2026
+football-24-28-apr-2026
+football-29-apr-1-may-2026
+football-1-5-may-2026
+football-13-15-may-2026
+football-15-19-may-2026
+football-23-26-may-2026
+football-26-29-may-2026
+football-2-5-jun-2026
+football-5-11-jun-2026
+football-11-18-jun-2026
+football-18-24-jun-2026
+football-24-28-jun-2026
+football-1-4-jul-2026
+football-5-8-jul-2026
+football-21-24-jul-2026
+football-24-28-jul-2026
+football-28-31-jul-2026
+football-31-jul-4-aug-2026
+```
+
+Non sappiamo se questi 11 manager erano attivi in ognuna di queste GW: è
+NORMALE se molte fixture tornano vuote ("nessuna arena limited questa GW,
+salto" — lo script lo gestisce già da solo, non è un errore). È anche
+normale che un intero manager torni a zero arene su tutte le 22 fixture:
+non è un errore da correggere, riportalo e basta.
+
+## 5. Come lanciarlo — A PICCOLI LOTTI, CON CONTROLLO OGNI 1-2 MANAGER-GW
+
+Sintassi (nota l'argomento `--manager`):
+```
+SORARE_COOKIE=... python estrai_archivio_manager.py --manager raykocar football-3-7-apr-2026 football-10-14-apr-2026 football-17-17-apr-2026 football-17-21-apr-2026
+```
+
+REGOLA (causò un incidente vero due volte, non ripeterlo): NON lanciare
+tutto in un solo comando lunghissimo e poi sparire ad aspettare. Procedi
+così:
+1. Un manager alla volta, 4-5 fixture per lancio.
+2. Aspetta la riga finale `scritto <path>...json` per ogni fixture del
+   lotto prima di lanciare il prossimo.
+3. Se un lancio resta fermo più di ~2 minuti senza stampare nulla di
+   nuovo, interrompilo e rilancia SOLO quel pezzo. Se fallisce una seconda
+   volta, segnala l'errore esatto e passa oltre — non insistere.
+4. **ALLA FINE DI TUTTO, prima di chiudere la sessione**: controlla che
+   non sia rimasto nessun processo Python tuo ancora in esecuzione
+   (`ps aux | grep python`, o equivalente) e terminalo. Due volte finora
+   processi rimasti vivi in background hanno continuato a riscrivere file
+   già puliti con dati vecchi per ore — è il motivo di questa regola,
+   applicala con rigore.
+
+## 6. Cosa NON fare
+
+- Non modificare `estrai_archivio_manager.py`, `graphql_batch.py` né
+  nessun altro file fuori da `archivio_ufficiale/manager_<slug>/`.
+- Non lanciare run GitHub.
+- Non estrarre fixture o manager diversi da quelli elencati.
+- Non "aggiustare" a mano un file se sembra strano: segnalalo nel report,
+  non correggerlo tu.
+- Non serve completare il grade mancante: lo fa l'orchestratore dopo, con
+  `analisi_manager/completa_grade_mancante.py`.
+- Non scartare tu manager con poche arene: lo valuta l'orchestratore dopo
+  aver visto i numeri, riportali e basta.
+
+## 7. Cosa consegnare
+
+Un elenco secco, per manager:
+- quante fixture su 22 hanno prodotto almeno un'arena
+- quante arene totali estratte
+- eventuali fixture fallite con l'errore esatto
+
+Più un totale: arene totali su tutti gli 11 manager insieme.
+
+## 8. Commit
+
+Committa SOLO i file nuovi dentro `archivio_ufficiale/manager_<slug>/`
+per gli 11 manager. Nessun altro file. Messaggio tipo: "archivio_ufficiale:
+estrazione batch 11 nuovi manager round 3 (raykocar/kowalskiuk/.../420todoeldia)".
+NON pushare senza che l'utente lo chieda esplicitamente — se lo chiede,
+pusha e dillo nel report.
+
+## 9. Come riferire
+
+Il report del punto 7 in chat, per intero — è corto, non serve un file
+dedicato. Di' anche se hai committato/pushato.
