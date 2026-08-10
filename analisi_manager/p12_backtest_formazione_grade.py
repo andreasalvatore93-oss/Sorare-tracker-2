@@ -213,6 +213,16 @@ def carica_indice_grade():
     for r in d:
         registra(r.get('slug'), r.get('game_date'), r.get('grade'))
 
+    # completamento INCREMENTALE (10/08/2026, completa_grade_mancante.py):
+    # file che CRESCE ogni volta che un backtest (es. p23_binario1_mga.py)
+    # trova slug/date senza grade e li recupera mirati da Sorare. Stesso
+    # formato piatto dei file sopra. Facoltativo: puo' non esistere ancora.
+    path_compl = 'analisi_manager/dati/storico_grade_crowss_completamento.json'
+    if os.path.exists(path_compl):
+        d = json.load(open(path_compl, encoding='utf-8'))
+        for r in d:
+            registra(r.get('slug'), r.get('game_date'), r.get('grade'))
+
     for slug in idx:
         idx[slug] = sorted(set(idx[slug]))
     return idx, date_min
