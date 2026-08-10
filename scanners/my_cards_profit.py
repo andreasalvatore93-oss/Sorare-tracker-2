@@ -304,6 +304,13 @@ def build_purchase_price_map_and_swaps(eth_rate):
                         swap_received.update(c.get('slug') for c in sender_cards if c.get('slug'))
 
                 # --- (1) prezzo di acquisto (stessa logica di track.fetch_user_trades) ---
+                # FIX 10/08 (bug reale trovato sul caso heung-min-son-2025-limited-226,
+                # comprata 20e ma invisibile qui: il nodo aveva receiver=null, sender='oklaoma'
+                # -- un annuncio PUBBLICO (SingleSaleOffer), non un'offerta diretta a me).
+                # Mancava il terzo ramo di track.fetch_user_trades per questo caso: se ne'
+                # sender ne' receiver sono MANAGER_SLUG esplicitamente ma receiver e' null,
+                # sono IO la controparte implicita (e' per questo che l'offerta compare nella
+                # MIA cronologia trades). Prima qui c'era un 'continue' che scartava il caso.
                 if sender.get('slug') == MANAGER_SLUG:
                     is_selling = bool(sender_cards)
                     cards = sender_cards if is_selling else receiver_cards
@@ -312,8 +319,13 @@ def build_purchase_price_map_and_swaps(eth_rate):
                     is_selling = bool(receiver_cards)
                     cards = receiver_cards if is_selling else sender_cards
                     pay_amounts = sender_side.get('amounts') if is_selling else receiver_side.get('amounts')
+                elif n.get('receiver') is None:
+                    sender_is_seller = bool(sender_cards)
+                    is_selling = not sender_is_seller
+                    cards = receiver_cards if is_selling else sender_cards
+                    pay_amounts = sender_side.get('amounts') if is_selling else receiver_side.get('amounts')
                 else:
-                    continue
+                    continue  # ne' sender ne' receiver sono io, e receiver non e' null: non mi riguarda
                 if is_selling or not cards:
                     continue  # qui interessano solo gli acquisti (role='buy')
                 if len(cards) > 1:
