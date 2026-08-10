@@ -1,11 +1,11 @@
 ======================================================================
 CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-07T23:35:29.640869Z
+Generato: 2026-08-10T07:20:47.034118Z
 Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
 1) angel-martin-correa: 54 pt attesi (39-75)
-   ORDINAMENTO: 54.77
-   SQUADRA: river-plate-capital-federal-ciudad-de-buenos-aires | AVVERSARIO: tigre-victoria-provincia-de-buenos-aires
+   ORDINAMENTO: 54.12
+   SQUADRA: river-plate-capital-federal-ciudad-de-buenos-aires | AVVERSARIO: santa-fe-bogota-d-c
 ======================================================================
 
 ######################################################################
@@ -14,14 +14,14 @@ Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: angel-martin-correa (squadra: river-plate-capital-federal-ciudad-de-buenos-aires)
-Generato: 2026-08-07T23:35:29.640016Z
+Generato: 2026-08-10T07:20:46.999300Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
 Partite considerate: 38
 Escluse (DID_NOT_PLAY): 3
 Escluse (minutaggio < 60', subentri): 5
-Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Competizione partita target: conmebol-sudamericana (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
 Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2025-11-27 | TIJ vs TIG | liga-mx | score=38.4 | peso=0.035
   2025-11-30 | TIG vs TIJ | liga-mx | score=98.1 | peso=0.039
@@ -52,44 +52,44 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2026-05-06 | TIG vs NSH | concacaf-champions-league | score=64.5 | peso=0.707
   2026-05-10 | CHI vs TIG | liga-mx | score=42.0 | peso=0.794
   2026-05-31 | TOL vs TIG | concacaf-champions-league | score=40.2 | peso=0.891
-  2026-07-29 | GLP vs RIV | superliga-argentina-de-futbol | score=49.0 | peso=1.000
+  2026-08-08 | TIG vs RIV | superliga-argentina-de-futbol | score=44.1 | peso=1.000
 
 --- CALCOLO FATTORI ---
-Media pesata esponenziale (half-life 6.0 partite): 54.59
-  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 54.30 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
-  di cui Punteggio decisivo (level_score) medio: 45.96 | Punteggio complessivo (granulari) medio: 8.62 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Passaggio condizionato per venue: 6.04 (delta -0.37) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
-Deviazione standard pesata: 18.62
+Media pesata esponenziale (half-life 6.0 partite): 54.04
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 53.94 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 45.96 | Punteggio complessivo (granulari) medio: 8.07 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 6.57 (delta -0.07) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 18.85
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.9 - 75.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
-Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.34 (differenza: +3.28)
-Media score in casa: 54.59 | Media score fuori casa: 49.00
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.54 (differenza: +3.31)
+Media score in casa: 54.04 | Media score fuori casa: 44.10
 Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
-Ranking medio avversari affrontati (storico): 3.0
-Ranking prossimo avversario: 5
-Fattore forza avversario applicato: 0.867 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Ranking medio avversari affrontati (storico): 4.0
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 0.832 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
 Fattore falli (casa/trasferta, da dati reali): 1.000
-Fattore duelli (casa/trasferta, da dati reali): 1.002
-Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
-Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
 Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
-Fattore trend (media ultime 5: 47.1 vs media 5 PRECEDENTI: 67.4): 1.000
+Fattore trend (media ultime 5: 46.1 vs media 5 PRECEDENTI: 67.4): 1.000
 P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
 
 --- PROSSIMA PARTITA ---
-Data: 2026-08-08T20:00
-Casa: CA Tigre | Trasferta: CA River Plate
-Competizione: superliga-argentina-de-futbol
+Data: 2026-08-13T00:30
+Casa: Independiente Santa Fe SA | Trasferta: CA River Plate
+Competizione: conmebol-sudamericana
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 53.9 (range 39.2 - 74.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 54.8
+Score atteso: 53.6 (range 39.4 - 75.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 54.1
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 55.30
-Punteggio REALE ottenuto in quella partita: 49.0
-Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.3
+Punteggio REALE ottenuto in quella partita: 44.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -11.2
 NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
 
 --- PARAMETRI DEL MODELLO (fissati, 25/07) ---
@@ -125,9 +125,9 @@ P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo sto
   26       26      58.5    64.5     +6.0    25.0        SI
   27       27      59.2    42.0    -17.2    23.6        SI
   28       28      57.2    40.2    -17.0    23.1        SI
-  29       29      55.3    49.0     -6.3    22.6        SI
+  29       29      55.3    44.1    -11.2    22.6        SI
 
-MAE (errore assoluto medio): 18.23
+MAE (errore assoluto medio): 18.44
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.8%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
