@@ -177,11 +177,6 @@ BUNDLE_MIN_MARKET_PRICE_EUR = float(os.environ.get('BUNDLE_MIN_MARKET_PRICE_EUR'
 # "va bene anche in ordine sparso").
 BUNDLE_BLOCK_SIZE = int(os.environ.get('BUNDLE_BLOCK_SIZE', '10'))
 
-# Tetto di sicurezza sul numero di blocchi mostrati per intero nel messaggio Telegram (limite
-# di lunghezza dei messaggi Telegram) -- oltre questo tetto, i blocchi restanti vengono solo
-# riassunti con un conteggio (il dettaglio resta comunque nel log completo su GitHub).
-MAX_BLOCKS_IN_TELEGRAM_MESSAGE = int(os.environ.get('MAX_BLOCKS_IN_TELEGRAM_MESSAGE', '10'))
-
 # Pausa tra una query di mercato e la successiva (un giocatore diverso) -- stesso principio di
 # spaziatura gia' usato altrove nel progetto (fetch_user_recent_cards/filter_recent_direct_buy_
 # candidates in track.py), per non sparare tutte le query nello stesso istante.
@@ -729,6 +724,7 @@ def run_bundle_scan():
             continue
         on_sale.append({
             'player_name': card['player_name'],
+            'player_slug': card['player_slug'],
             'card_slug': card['card_slug'],
             'listing_price': listing_price,
             'market_min_price': market_min_price,
@@ -760,104 +756,84 @@ def run_bundle_scan():
         f"{format_eur(total_market_min)} (dettaglio/offerta per blocco nel messaggio Telegram) -- "
         f"di cui {n_cheapest_only} gia' al minimo di mercato (sezione bonus separata).")
 
-    messages = build_telegram_messages(manager_slug, on_sale)
-    for i, msg in enumerate(messages):
-        track.send_telegram_msg(msg)
-        if i < len(messages) - 1:
-            time.sleep(TELEGRAM_MULTI_MESSAGE_DELAY_SECONDS)
-    log(f"notifica Telegram inviata (bot dedicato scanner) -- {len(messages)} messaggio/i.")
+    html_path = write_html_report(manager_slug, on_sale)
+    log(f"report HTML scritto: {html_path}")
+    # Riga grezza (non attraverso log(), per restare facilmente grep-abile dal workflow) che
+    # segnala che QUESTA run ha davvero prodotto un report -- il file HTML e' a percorso fisso
+    # e sovrascritto ad ogni run, quindi la sua sola presenza non basta a dire che e' fresco.
+    print(f"REPORT_READY {manager_slug} {len(on_sale)}")
 
 
-# FIX 18/07 (richiesta esplicita dell'utente, "cosa accade su telegram se il manager ha 100 carte
-# in vendita? mi arriva una notifica lunghissima?"): risposta -- PRIMA di questo fix, si': un solo
-# messaggio enorme che con 100 carte arrivava a 11187 caratteri, ben oltre il limite Telegram di
-# 4096 -- l'invio sarebbe FALLITO silenziosamente (vedi fix gemello su track.send_telegram_msg,
-# che ora almeno lo segnala nel log). Ora il contenuto viene impacchettato in PIU' messaggi
-# separati, ciascuno sotto TELEGRAM_SAFE_MESSAGE_CHARS (margine di sicurezza sotto i 4096 reali),
-# con un'intestazione ripetuta su ognuno (+ indicatore "parte X/Y" se piu' di uno) cosi' ogni
-# messaggio e' comprensibile anche da solo.
-TELEGRAM_SAFE_MESSAGE_CHARS = int(os.environ.get('TELEGRAM_SAFE_MESSAGE_CHARS', '3500'))
-TELEGRAM_MULTI_MESSAGE_DELAY_SECONDS = float(os.environ.get('TELEGRAM_MULTI_MESSAGE_DELAY_SECONDS', '0.5'))
+# FIX 10/08 (richiesta esplicita dell'utente): al posto dei messaggi Telegram a blocchi (limite
+# 4096 caratteri, impacchettamento in piu' messaggi separati), un UNICO report HTML con la stessa
+# identica logica (blocchi da BUNDLE_BLOCK_SIZE, sezione bonus "gia' al minimo di mercato", best
+# deal) ma senza limiti di lunghezza e con i nomi dei giocatori cliccabili -- link diretto alla
+# carta sul mercato (stesso pattern gia' collaudato in track.py, manager-sales/<player_slug>/
+# limited?card=<card_slug>). Percorso fisso, sovrascritto ad ogni run (stesso principio del log
+# accodato dagli altri scanner: si legge dopo un pull, senza Chrome ne' copia-incolla).
+HTML_REPORT_PATH = os.environ.get('HTML_REPORT_PATH', 'scanners/logs/manager_bundle_scan_report.html')
+
+CARD_MARKET_LINK_TEMPLATE = ("https://sorare.com/it/football/market/shop/manager-sales/"
+                              "{player_slug}/limited?card={card_slug}")
 
 
-def _render_card_blocks(cards):
-    """Genera (blocks, block_texts) per una lista generica di carte, spezzata in pezzi da
-    BUNDLE_BLOCK_SIZE -- ogni block_text include gia' il subtotale e l'offerta suggerita con la
-    cornice di risalto. Fattorizzato per essere riusato sia per TUTTE le carte in vendita sia per
-    il sotto-insieme "gia' al minimo di mercato" (vedi FIX 18/07 sotto in build_telegram_messages)."""
+def _card_link(c):
+    return CARD_MARKET_LINK_TEMPLATE.format(player_slug=c['player_slug'], card_slug=c['card_slug'])
+
+
+def _html_escape(text):
+    return (text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                .replace('"', '&quot;'))
+
+
+def _render_card_row_html(c):
+    ok = c['listing_price'] <= c['market_min_price']
+    dot = '🟢' if ok else '🔴'
+    return (f'<tr class="{"ok" if ok else "over"}"><td>{dot}</td>'
+            f'<td><a href="{_card_link(c)}" target="_blank">{_html_escape(c["player_name"])}</a></td>'
+            f'<td>{format_eur(c["listing_price"])}</td>'
+            f'<td>{format_eur(c["market_min_price"])}</td></tr>')
+
+
+def _render_block_html(block, block_idx, start_n, end_n):
+    rows = "\n".join(_render_card_row_html(c) for c in block)
+    block_asking = sum(c['listing_price'] for c in block)
+    block_market_min = sum(c['market_min_price'] for c in block)
+    block_offer = block_market_min * (1 - BUNDLE_OFFER_MARGIN_FRACTION)
+    return f"""<div class="block">
+  <h3>Blocco {block_idx} (carte {start_n}-{end_n})</h3>
+  <table>
+    <tr><th></th><th>Giocatore</th><th>In vendita</th><th>Minimo mercato</th></tr>
+    {rows}
+  </table>
+  <p class="subtotal">Subtotale: richiesto {format_eur(block_asking)}, minimo mercato {format_eur(block_market_min)}</p>
+  <p class="offer">OFFRI FINO A {format_eur(block_offer)} <span class="margin">(margine {BUNDLE_OFFER_MARGIN_FRACTION:.0%} -- valore provvisorio, da tarare)</span></p>
+</div>"""
+
+
+def _render_blocks_section_html(title, subtitle, cards):
+    """Genera una sezione (titolo + blocchi da BUNDLE_BLOCK_SIZE + totale) per una lista generica
+    di carte -- riusata sia per TUTTE le carte in vendita sia per il sotto-insieme "gia' al minimo
+    di mercato" (stessa fattorizzazione che prima serviva ai messaggi Telegram, vedi _render_card_
+    blocks nella versione precedente). Nessun limite di blocchi mostrati: a differenza di Telegram,
+    l'HTML non ha un tetto di caratteri per messaggio."""
+    if not cards:
+        return ""
     blocks = [cards[i:i + BUNDLE_BLOCK_SIZE] for i in range(0, len(cards), BUNDLE_BLOCK_SIZE)]
-    block_texts = []
-    for block_idx, block in enumerate(blocks, start=1):
-        start_n = (block_idx - 1) * BUNDLE_BLOCK_SIZE + 1
+    blocks_html = []
+    for idx, block in enumerate(blocks, start=1):
+        start_n = (idx - 1) * BUNDLE_BLOCK_SIZE + 1
         end_n = start_n + len(block) - 1
-        lines = [f"<b>Blocco {block_idx} (carte {start_n}-{end_n})</b>"]
-        for c in block:
-            marker = "🟢" if c['listing_price'] <= c['market_min_price'] else "🔴"
-            lines.append(f"{marker} {c['player_name']}: in vendita a "
-                          f"{format_eur(c['listing_price'])}, minimo mercato "
-                          f"{format_eur(c['market_min_price'])}")
-        block_asking = sum(c['listing_price'] for c in block)
-        block_market_min = sum(c['market_min_price'] for c in block)
-        block_offer = block_market_min * (1 - BUNDLE_OFFER_MARGIN_FRACTION)
-        lines.append(f"Subtotale: richiesto {format_eur(block_asking)}, minimo mercato "
-                      f"{format_eur(block_market_min)}")
-        # FIX 18/07 (richiesta esplicita dell'utente, "piu' grande e piu' in risalto"): Telegram
-        # HTML non supporta dimensione del font, quindi simuliamo risalto visivo con una cornice
-        # di emoji sopra/sotto + maiuscolo + frecce, cosi' la riga "salta subito all'occhio"
-        # anche scorrendo veloce il messaggio.
-        lines.append("💰━━━━━━━━━━━━━━━━━━━━💰")
-        lines.append(f"👉👉 <b>OFFRI FINO A {format_eur(block_offer)}</b> 👈👈")
-        lines.append("💰━━━━━━━━━━━━━━━━━━━━💰")
-        lines.append(f"(margine {BUNDLE_OFFER_MARGIN_FRACTION:.0%} -- valore provvisorio, da tarare)")
-        block_texts.append("\n".join(lines))
-    return blocks, block_texts
-
-
-# FIX 18/07 (v2, richiesta esplicita dell'utente con screenshot: "le notifiche mi arrivano
-# tutte attaccate... viste cosi' sembrano un pezzo unico"): una semplice riga vuota tra un
-# blocco e l'altro non bastava a renderli "ben distinguibili" scorrendo veloce -- aggiunto un
-# divisore visivo esplicito tra un block_text e il successivo (mai prima del primo/dopo
-# l'ultimo, solo TRA blocchi).
-BLOCK_SEPARATOR = "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"
-
-
-def _pack_into_messages(header, block_texts, footer=None):
-    """Impacchetta block_texts in piu' messaggi Telegram, ciascuno sotto
-    TELEGRAM_SAFE_MESSAGE_CHARS, ripetendo l'intestazione (+ indicatore "parte X/Y" se piu' di
-    uno) su ognuno cosi' ogni messaggio e' comprensibile anche da solo. Il footer (se presente) va
-    sull'ultimo corpo se ci sta, altrimenti diventa un messaggio a se stante. Un BLOCK_SEPARATOR
-    viene inserito TRA un blocco e il successivo (vedi FIX 18/07 v2 sopra), cosi' i blocchi non
-    sembrano piu' "un pezzo unico" scorrendo il messaggio."""
-    joiner_len = len(BLOCK_SEPARATOR) + 4  # "\n\n" + divisore + "\n\n" tra due blocchi consecutivi
-    body_chunks = []
-    current_parts, current_len = [], 0
-    for bt in block_texts:
-        # Lunghezza che questo blocco aggiungerebbe al chunk corrente: se il chunk e' gia'
-        # non vuoto, ci va anche il divisore prima di lui.
-        add_len = len(bt) + (joiner_len if current_parts else 0)
-        if current_parts and current_len + add_len > TELEGRAM_SAFE_MESSAGE_CHARS:
-            body_chunks.append(f"\n\n{BLOCK_SEPARATOR}\n\n".join(current_parts))
-            current_parts, current_len = [], 0
-            add_len = len(bt)  # primo blocco del nuovo chunk: niente divisore prima
-        current_parts.append(bt)
-        current_len += add_len
-    if current_parts:
-        body_chunks.append(f"\n\n{BLOCK_SEPARATOR}\n\n".join(current_parts))
-    if not body_chunks:
-        body_chunks = [""]
-
-    if footer:
-        if len(body_chunks[-1]) + len(footer) + 4 <= TELEGRAM_SAFE_MESSAGE_CHARS:
-            body_chunks[-1] = (body_chunks[-1] + "\n\n" + footer) if body_chunks[-1] else footer
-        else:
-            body_chunks.append(footer)
-
-    n = len(body_chunks)
-    messages = []
-    for i, body in enumerate(body_chunks, start=1):
-        part_note = f"\n<i>(parte {i}/{n})</i>" if n > 1 else ""
-        messages.append(f"{header}{part_note}\n\n{body}")
-    return messages
+        blocks_html.append(_render_block_html(block, idx, start_n, end_n))
+    total_asking = sum(c['listing_price'] for c in cards)
+    total_market_min = sum(c['market_min_price'] for c in cards)
+    subtitle_html = f'<p class="subtitle">{subtitle}</p>' if subtitle else ""
+    return f"""<section>
+  <h2>{title} ({len(cards)} carte, {len(blocks)} blocchi da {BUNDLE_BLOCK_SIZE})</h2>
+  {subtitle_html}
+  {"".join(blocks_html)}
+  <p class="total">Totale complessivo: {len(cards)} carte, richiesto {format_eur(total_asking)}, minimo mercato {format_eur(total_market_min)} (informativo -- non offribile in un colpo solo oltre le {BUNDLE_BLOCK_SIZE} carte, vedi offerte per blocco sopra)</p>
+</section>"""
 
 
 def _select_best_deal_cards(cheapest_only):
@@ -882,133 +858,94 @@ def _select_best_deal_cards(cheapest_only):
     return candidates[:BUNDLE_BLOCK_SIZE]
 
 
-def _render_best_deal_block(cards):
-    """Renderizza l'UNICO blocco speciale 'BEST DEAL' -- al massimo BUNDLE_BLOCK_SIZE carte, mai
-    paginato in piu' blocchi (e' gia' una cernita tra le migliori, non l'intero insieme)."""
-    lines = [f"<b>🏆 BEST DEAL -- le {len(cards)} carte con lo scarto maggiore dal secondo "
-             f"prezzo di mercato</b>"]
-    for c in cards:
-        lines.append(f"🟢 {c['player_name']}: minimo mercato {format_eur(c['market_min_price'])}, "
-                      f"secondo prezzo {format_eur(c['second_min_price'])} "
-                      f"(scarto {format_eur(c['gap'])})")
+def _render_best_deal_row_html(c):
+    return (f'<tr class="ok"><td>🟢</td>'
+            f'<td><a href="{_card_link(c)}" target="_blank">{_html_escape(c["player_name"])}</a></td>'
+            f'<td>{format_eur(c["market_min_price"])}</td>'
+            f'<td>{format_eur(c["second_min_price"])}</td>'
+            f'<td>{format_eur(c["gap"])}</td></tr>')
+
+
+def _render_best_deal_section_html(cards):
+    """Renderizza l'UNICA sezione speciale 'BEST DEAL' -- al massimo BUNDLE_BLOCK_SIZE carte, mai
+    paginata in piu' blocchi (e' gia' una cernita tra le migliori, non l'intero insieme)."""
+    if not cards:
+        return ""
+    rows = "\n".join(_render_best_deal_row_html(c) for c in cards)
     asking = sum(c['listing_price'] for c in cards)
     market_min = sum(c['market_min_price'] for c in cards)
     offer = market_min * (1 - BUNDLE_OFFER_MARGIN_FRACTION)
-    lines.append(f"Subtotale: richiesto {format_eur(asking)}, minimo mercato "
-                  f"{format_eur(market_min)}")
-    lines.append("💰━━━━━━━━━━━━━━━━━━━━💰")
-    lines.append(f"👉👉 <b>OFFRI FINO A {format_eur(offer)}</b> 👈👈")
-    lines.append("💰━━━━━━━━━━━━━━━━━━━━💰")
-    lines.append(f"(margine {BUNDLE_OFFER_MARGIN_FRACTION:.0%} -- valore provvisorio, da tarare)")
-    return "\n".join(lines)
+    return f"""<section>
+  <h2>🏆 Best deal -- le {len(cards)} carte piu' isolate dalla concorrenza</h2>
+  <table>
+    <tr><th></th><th>Giocatore</th><th>Minimo mercato</th><th>Secondo prezzo</th><th>Scarto</th></tr>
+    {rows}
+  </table>
+  <p class="subtotal">Subtotale: richiesto {format_eur(asking)}, minimo mercato {format_eur(market_min)}</p>
+  <p class="offer">OFFRI FINO A {format_eur(offer)} <span class="margin">(margine {BUNDLE_OFFER_MARGIN_FRACTION:.0%} -- valore provvisorio, da tarare)</span></p>
+</section>"""
 
 
-def build_telegram_messages(manager_slug, on_sale):
-    """Organizza le carte in vendita in BLOCCHI DA BUNDLE_BLOCK_SIZE (default 10) -- limite
-    pratico di Sorare per fare un'unica offerta cumulativa su piu' carte dello stesso manager
-    (richiesta esplicita dell'utente). Ogni blocco riporta il proprio subtotale (richiesto,
-    minimo di mercato) e la propria offerta suggerita, cosi' e' immediatamente azionabile su
-    Sorare senza dover ricalcolare nulla a mano. L'ordine e' quello di scoperta (arbitrario --
-    l'utente ha confermato "va bene anche in ordine sparso"). Niente margine di profitto per
-    blocco: "poi il margine di profitto eventualmente me lo trovo io" (l'utente lo calcola da
-    solo).
-
-    Evidenziazione: Telegram (parse_mode HTML) non supporta colori del testo, solo grassetto/
-    corsivo/link/ecc -- l'unico modo pratico di "colorare" una riga e' un'emoji. Usiamo 🔴
-    quando il prezzo chiesto e' SOPRA il minimo di mercato (esiste un'alternativa piu' economica
-    altrove: questa carta pesa nel pacchetto ma non e' lei stessa l'occasione) e 🟢 quando la
-    carta e' GIA' al prezzo minimo di mercato (nessuna alternativa piu' economica trovata).
-
-    FIX 18/07 (richiesta esplicita dell'utente, dopo aver visto un caso reale con parecchie
-    carte 🟢 sparse nei blocchi 9/10): oltre alla struttura a blocchi normale (INVARIATA, "va
-    bene cosi'"), AGGIUNGIAMO in coda una sezione bonus con SOLO le carte gia' al minimo di
-    mercato (listing_price <= market_min_price) raggruppate a loro volta in blocchi da
-    BUNDLE_BLOCK_SIZE con lo stesso subtotale/offerta -- utile perche' per queste carte il
-    manager e' gia' il venditore piu' economico, quindi sono "sicure" indipendentemente da dove
-    cadono nei blocchi principali.
-
-    Ritorna una LISTA di messaggi (non piu' una singola stringa): se il contenuto supera
-    TELEGRAM_SAFE_MESSAGE_CHARS viene impacchettato in piu' messaggi separati, ognuno sotto il
-    limite reale di Telegram (4096 caratteri)."""
-    # Link diretto alla pagina Sorare del manager filtrata alle carte in vendita in_season --
-    # stesso URL osservato dall'utente nel browser (.../my-club/{slug}/cards/limited?sale=true&is=true).
-    # '&' va sempre HTML-escaped dentro un attributo href (Telegram parse_mode=HTML).
-    manager_url = (f"https://sorare.com/it/football/my-club/{manager_slug}/cards/limited"
-                   f"?sale=true&amp;is=true")
-    manager_link = f'📂 <a href="{manager_url}">Vai alle carte in vendita di {manager_slug}</a>'
-
-    # FIX 18/07 (richiesta esplicita dell'utente): niente piu' ordine di scoperta ("alla
-    # rinfusa") -- le carte vengono ordinate per prezzo chiesto crescente PRIMA di essere
-    # divise in blocchi: blocco 1 = le piu' economiche, blocco 2 piu' costoso del blocco 1, ecc.
+def write_html_report(manager_slug, on_sale):
+    """Genera l'UNICO report HTML per questa scansione -- stessa identica logica dei vecchi
+    messaggi Telegram a blocchi (blocchi da BUNDLE_BLOCK_SIZE ordinati per prezzo crescente,
+    sezione bonus "gia' al minimo di mercato", sezione best deal), ma in un solo file senza
+    limiti di lunghezza e con i nomi dei giocatori cliccabili (link diretto alla carta sul
+    mercato). Sovrascrive HTML_REPORT_PATH ad ogni run. Ritorna il percorso scritto."""
     on_sale = sorted(on_sale, key=lambda c: c['listing_price'])
-
-    # --- Sezione principale (struttura invariata) ---
-    blocks, block_texts = _render_card_blocks(on_sale)
-    blocks_shown = block_texts[:MAX_BLOCKS_IN_TELEGRAM_MESSAGE]
-
-    header = (f"🎯 <b>{manager_slug}</b> -- carte Limited in_season in vendita ({len(on_sale)}, "
-              f"{len(blocks)} blocchi da {BUNDLE_BLOCK_SIZE})\n{manager_link}")
-
-    footer_lines = []
-    if len(blocks) > MAX_BLOCKS_IN_TELEGRAM_MESSAGE:
-        remaining_blocks = blocks[MAX_BLOCKS_IN_TELEGRAM_MESSAGE:]
-        remaining_cards = sum(len(b) for b in remaining_blocks)
-        footer_lines.append(f"... altri {len(remaining_blocks)} blocchi ({remaining_cards} "
-                             f"carte) omessi dal messaggio, vedi log completo su GitHub")
-    total_asking = sum(c['listing_price'] for c in on_sale)
-    total_market_min = sum(c['market_min_price'] for c in on_sale)
-    footer_lines.append(f"Totale complessivo (tutti i blocchi): {len(on_sale)} carte, richiesto "
-                         f"{format_eur(total_asking)}, minimo mercato {format_eur(total_market_min)} "
-                         f"(informativo -- non offribile in un colpo solo oltre le "
-                         f"{BUNDLE_BLOCK_SIZE} carte, vedi offerte per blocco sopra)")
-    footer_lines.append("🟢 = gia' al minimo di mercato   🔴 = in vendita sopra il minimo di "
-                         "mercato (esiste altrove piu' a buon mercato)")
-    footer = "\n".join(footer_lines)
-
-    messages = _pack_into_messages(header, blocks_shown, footer)
-
-    # --- Sezione bonus: SOLO le carte gia' al minimo di mercato (marcatore 🟢), AGGIUNTA in coda
-    # (non sostituisce la struttura principale sopra) ---
+    manager_url = (f"https://sorare.com/it/football/my-club/{manager_slug}/cards/limited"
+                   f"?sale=true&is=true")
     cheapest_only = [c for c in on_sale if c['listing_price'] <= c['market_min_price']]
-    if cheapest_only:
-        cheapest_blocks, cheapest_block_texts = _render_card_blocks(cheapest_only)
-        cheapest_blocks_shown = cheapest_block_texts[:MAX_BLOCKS_IN_TELEGRAM_MESSAGE]
-
-        bonus_header = (f"🟢 <b>{manager_slug}</b> -- BONUS: SOLO carte GIA' al minimo di "
-                         f"mercato ({len(cheapest_only)}, {len(cheapest_blocks)} blocchi da "
-                         f"{BUNDLE_BLOCK_SIZE})\n"
-                         f"Per queste il manager e' gia' il venditore piu' economico -- nessuna "
-                         f"alternativa piu' a buon mercato altrove.\n{manager_link}")
-
-        bonus_footer_lines = []
-        if len(cheapest_blocks) > MAX_BLOCKS_IN_TELEGRAM_MESSAGE:
-            remaining_bonus_blocks = cheapest_blocks[MAX_BLOCKS_IN_TELEGRAM_MESSAGE:]
-            remaining_bonus_cards = sum(len(b) for b in remaining_bonus_blocks)
-            bonus_footer_lines.append(f"... altri {len(remaining_bonus_blocks)} blocchi "
-                                       f"({remaining_bonus_cards} carte) omessi dal messaggio, "
-                                       f"vedi log completo su GitHub")
-        bonus_total_asking = sum(c['listing_price'] for c in cheapest_only)
-        bonus_total_market_min = sum(c['market_min_price'] for c in cheapest_only)
-        bonus_footer_lines.append(f"Totale complessivo (tutti i blocchi bonus): "
-                                   f"{len(cheapest_only)} carte, richiesto "
-                                   f"{format_eur(bonus_total_asking)}, minimo mercato "
-                                   f"{format_eur(bonus_total_market_min)} (informativo -- non "
-                                   f"offribile in un colpo solo oltre le {BUNDLE_BLOCK_SIZE} "
-                                   f"carte, vedi offerte per blocco sopra)")
-        bonus_footer = "\n".join(bonus_footer_lines)
-
-        messages += _pack_into_messages(bonus_header, cheapest_blocks_shown, bonus_footer)
-
-    # --- Sezione BEST DEAL: UN solo blocco (mai piu' di BUNDLE_BLOCK_SIZE carte), selezionato
-    # tra le carte gia' al minimo di mercato per lo scarto maggiore dal secondo prezzo (FIX
-    # 18/07 v2, richiesta esplicita dell'utente) -- AGGIUNTA, non sostituisce le sezioni sopra.
     best_deal_cards = _select_best_deal_cards(cheapest_only)
-    if best_deal_cards:
-        best_deal_header = (f"🏆 <b>{manager_slug}</b> -- BEST DEAL: le carte piu' isolate dalla "
-                             f"concorrenza\n{manager_link}")
-        messages += _pack_into_messages(best_deal_header, [_render_best_deal_block(best_deal_cards)])
 
-    return messages
+    main_section = _render_blocks_section_html(
+        "Tutte le carte in vendita", None, on_sale)
+    bonus_section = _render_blocks_section_html(
+        "🟢 Bonus -- gia' al minimo di mercato",
+        "Per queste il manager e' gia' il venditore piu' economico -- nessuna alternativa piu' "
+        "a buon mercato altrove.",
+        cheapest_only)
+    best_deal_section = _render_best_deal_section_html(best_deal_cards)
+
+    html = f"""<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bundle scan -- {manager_slug}</title>
+<style>
+body {{ font-family: -apple-system, Arial, sans-serif; max-width: 720px; margin: 20px auto; padding: 0 12px; color: #222; }}
+h1 {{ font-size: 1.3rem; }}
+h2 {{ font-size: 1.1rem; margin-top: 2rem; border-bottom: 1px solid #ddd; padding-bottom: 4px; }}
+h3 {{ font-size: 1rem; margin-bottom: 4px; }}
+table {{ border-collapse: collapse; width: 100%; font-size: 0.9rem; margin-bottom: 6px; }}
+td, th {{ padding: 4px 6px; border-bottom: 1px solid #eee; text-align: left; }}
+tr.over td {{ color: #a33; }}
+tr.ok td {{ color: #1a7a1a; }}
+a {{ color: #1a5cbf; text-decoration: none; }}
+a:hover {{ text-decoration: underline; }}
+.subtotal {{ margin: 4px 0; font-size: 0.9rem; }}
+.offer {{ background: #fff3cd; border: 1px solid #ffe08a; padding: 8px; font-weight: bold; text-align: center; border-radius: 6px; }}
+.margin {{ font-weight: normal; font-size: 0.8rem; }}
+.total {{ font-weight: bold; margin-top: 8px; }}
+.subtitle {{ font-size: 0.85rem; color: #666; }}
+.block {{ margin-bottom: 1.2rem; }}
+</style>
+</head>
+<body>
+<h1>🎯 {manager_slug} -- {len(on_sale)} carte Limited in_season in vendita</h1>
+<p><a href="{manager_url}" target="_blank">📂 Vai alle carte in vendita di {manager_slug}</a></p>
+<p style="font-size:0.85rem;color:#666;">Generato {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')} -- 🟢 gia' al minimo di mercato, 🔴 in vendita sopra il minimo (esiste altrove piu' a buon mercato).</p>
+{main_section}
+{bonus_section}
+{best_deal_section}
+</body>
+</html>
+"""
+    os.makedirs(os.path.dirname(HTML_REPORT_PATH) or '.', exist_ok=True)
+    with open(HTML_REPORT_PATH, 'w', encoding='utf-8') as f:
+        f.write(html)
+    return HTML_REPORT_PATH
 
 
 if __name__ == '__main__':

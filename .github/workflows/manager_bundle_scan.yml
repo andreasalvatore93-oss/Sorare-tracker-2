@@ -73,19 +73,10 @@ jobs:
       # Stesso pattern di log-su-file-accodato gia' usato dai tre tracker esistenti (leggibile
       # dopo un pull, senza Chrome ne' copia-incolla).
       - name: Run manager bundle scan
+        id: scan
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
-          # FIX 18/07 (richiesta esplicita dell'utente, "creato chat bot dedicato per le notifiche
-          # telegram dello scanner"): non piu' un riuso temporaneo del canale aste -- bot Telegram
-          # dedicato a questo scanner. Servono 2 NUOVI secret su GitHub (Settings > Secrets and
-          # variables > Actions > New repository secret), che l'utente deve aggiungere lui stesso
-          # (mai gestiti da qui): BUNDLE_TELEGRAM_TOKEN = il token del bot da BotFather,
-          # BUNDLE_TELEGRAM_CHAT_ID = 409250306 (il chat.id/from.id nella risposta getUpdates
-          # incollata dall'utente -- NON l'update_id, quello e' solo un numero di sequenza interno
-          # di Telegram, mai un chat id).
-          TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
           MANAGER_SLUG_OR_URL: ${{ github.event.inputs.manager_slug_or_url }}
           AUTO_FIND_MANAGER: ${{ github.event.inputs.auto_find_manager || 'si' }}
           AUTO_FIND_LISTEN_SECONDS: ${{ github.event.inputs.auto_find_listen_seconds || '120' }}
@@ -115,10 +106,23 @@ jobs:
               for (i=from; i<=last; i++) print buf[i]
             }
           ' scanners/logs/manager_bundle_scan_last_run.log > scanners/logs/manager_bundle_scan_last_run.log.tmp && mv scanners/logs/manager_bundle_scan_last_run.log.tmp scanners/logs/manager_bundle_scan_last_run.log
+          # FIX 10/08 (richiesta esplicita dell'utente, report HTML al posto dei messaggi Telegram
+          # a blocchi): il file HTML e' a percorso FISSO e sovrascritto ad ogni run, quindi la sua
+          # sola presenza non basta a dire che questa run ha prodotto un risultato fresco (se
+          # questa run non ha trovato carte, il file resta quello della run precedente). Lo script
+          # stampa "REPORT_READY <slug> <n>" SOLO quando scrive davvero il file in questa run --
+          # lo cerchiamo nel log appena prodotto per decidere se notificare.
+          REPORT_LINE=$(grep '^REPORT_READY ' scanners/logs/manager_bundle_scan_last_run.log | tail -n 1 || true)
+          if [ -n "$REPORT_LINE" ]; then
+            echo "report_ready=true" >> "$GITHUB_OUTPUT"
+            echo "manager_slug=$(echo "$REPORT_LINE" | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+          else
+            echo "report_ready=false" >> "$GITHUB_OUTPUT"
+          fi
 
       # Nessun database da salvare qui (a differenza degli altri tre workflow): questo strumento
-      # non ha stato persistente tra un'esecuzione e l'altra, ogni run e' autonomo. Salviamo solo
-      # il log.
+      # non ha stato persistente tra un'esecuzione e l'altra, ogni run e' autonomo. Salviamo il
+      # log e il report HTML (percorso fisso, sovrascritto ad ogni run).
       - name: Save log and persist blacklist
         if: always()
         run: |
@@ -126,6 +130,9 @@ jobs:
           git config user.email "bot@users.noreply.github.com"
           if [ -f scanners/logs/manager_bundle_scan_last_run.log ]; then
             git add scanners/logs/manager_bundle_scan_last_run.log
+          fi
+          if [ -f scanners/logs/manager_bundle_scan_report.html ]; then
+            git add scanners/logs/manager_bundle_scan_report.html
           fi
           # Se questa run ha aggiunto manager alla blacklist temporanea, salva nel file per sempre
           if [ -n "$BLACKLIST_MANAGERS" ]; then
@@ -156,3 +163,27 @@ jobs:
             git merge --no-edit -X ours origin/main
           done
           echo "Salvato correttamente."
+
+      # FIX 10/08 (richiesta esplicita dell'utente): notifica Telegram minima con SOLO il link al
+      # report HTML (non piu' il contenuto a blocchi) -- stesso pattern gia' collaudato in
+      # best_five_telegram_notify.py, raw.githack.com fa RENDERE l'HTML al browser invece di
+      # scaricarlo. Step SEPARATO e DOPO lo step che ha gia' pushato il file, cosi' il link punta
+      # a un file davvero presente su GitHub quando arriva la notifica. Salta se questa run non ha
+      # prodotto un report fresco (vedi report_ready sopra) o se i secret non sono configurati.
+      - name: Notify Telegram with report link
+        if: steps.scan.outputs.report_ready == 'true'
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
+          MANAGER_SLUG: ${{ steps.scan.outputs.manager_slug }}
+        run: |
+          if [ -z "$TELEGRAM_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "BUNDLE_TELEGRAM_TOKEN/BUNDLE_TELEGRAM_CHAT_ID non configurati, salto la notifica."
+            exit 0
+          fi
+          URL="https://raw.githack.com/${GITHUB_REPOSITORY}/main/scanners/logs/manager_bundle_scan_report.html"
+          MSG="🎯 <b>${MANAGER_SLUG}</b> — report bundle pronto: <a href=\"${URL}\">apri</a>"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d parse_mode=HTML \
+            --data-urlencode text="${MSG}"
