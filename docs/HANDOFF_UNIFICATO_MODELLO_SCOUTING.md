@@ -1307,9 +1307,14 @@ di *fingerprint*, non sta delirando — serve davvero, ma **esiste già** in
 ## 9. Modifiche di produzione — cronologia compressa
 
 **10/08/2026 sera — Pool suppletivo odds 0.60-0.70 per Arena Beginner/All
-Stars/Under23, TEST, flag spento di default** (commit `c23a3b3d2d`,
-`006a09c018`, `cec054ea96`/`8cafd0a3fb`). Nuovo `EXTEND_ODDS_060_070`
-(default `0`, nessun effetto sul comportamento esistente). Acceso: la
+Stars/Under23, VALIDATO su piu' run reali, ora ACCESO DI DEFAULT nel
+workflow `formazione_giornata.yml`** (commit `c23a3b3d2d`, `006a09c018`,
+`cec054ea96`/`8cafd0a3fb`). `EXTEND_ODDS_060_070` resta un env var normale
+(default `'0'` nel codice Python, invariato per chi lo richiama fuori da
+questo workflow -- run locali/altri workflow): e' SOLO l'input del
+dispatch di `formazione_giornata.yml` ad avere default `'1'` ora, decisione
+esplicita dell'utente dopo aver verificato piu' run reali che non
+appesantisce i tempi. Acceso: la
 discovery tiene ANCHE la fascia 0.60-0.70 (unica possibile sotto 0.80, le
 odds Sorare escono a blocchi da 10) oltre alla soglia normale; il
 generatore filtra SEMPRE `role_data` a >=0.80 per tutta la pipeline
@@ -1332,8 +1337,15 @@ GW4: mancanza di formazioni Under23 e' risultata pool reale (solo 2 GK e 4
 DEF U23-eleggibili in tutto il pool esteso, tutte le leghe), non un bug.
 Aggiunta anche la starter-odds su OGNI carta del report HTML (badge
 ingrandito 0.85rem/blu dopo feedback "quasi invisibili"), zero query in
-piu' (dato gia' persistito da discovery_fixture.py). Stato: run di verifica
-in corso lanciata dall'utente, esito non ancora riportato in questo file.
+piu' (dato gia' persistito da discovery_fixture.py). Verificato che
+`ESCLUDI_LOCKATE` protegge anche il pool esteso: le carte bloccate si
+scartano in discovery PRIMA di qualunque filtro odds (riga ~1423, il
+filtro banda e' alla riga ~1596), quindi non entrano mai ne' nel pool
+primario ne' in quello esteso -- nessun collegamento separato da
+mantenere. Input rimossi dal dispatch dello stesso workflow perche'
+confondevano il lancio manuale (commit `9f77be8759`):
+`arena_criterio` (restava sempre `'assoluto'`, mai scelto `'capitale'` per
+la produzione) e `list_unused_candidates` (fissato acceso, e' solo log).
 
 **10/08/2026 sera — Fix bug reale: giocatore trasferito spariva dalla
 discovery per `activeClub` stantio** (commit `92cdd42566`). Caso trovato
