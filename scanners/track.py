@@ -465,7 +465,24 @@ def graphql_query(query, variables=None, max_retries=3):
     payload = {"query": query, "variables": variables or {}}
     for attempt in range(max_retries):
         _graphql_throttle()
-        r = requests.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
+        try:
+            r = requests.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
+        except requests.exceptions.RequestException as e:
+            # FIX 10/08 (caso reale: un ReadTimeout a meta' di una paginazione lunga in
+            # my_cards_profit.py ha troncato in silenzio 100+ pagine di storico acquisti,
+            # facendo scambiare per "craft/premio" una carta vera comprata a 20e -- il
+            # chiamante vedeva un'eccezione e si fermava, nessun retry esisteva per errori di
+            # rete (solo per 429). Un timeout/errore di connessione e' quasi sempre transitorio
+            # (rete, non un blocco Sorare) quindi vale la pena ritentare con lo stesso schema
+            # di backoff gia' usato per il 429, invece di abortire l'intera chiamata.
+            if attempt == max_retries - 1:
+                log(f"[graphql] errore di rete dopo {max_retries} tentativi: {e}")
+                raise
+            wait_seconds = (2 ** attempt) * 2
+            log(f"[graphql] errore di rete (tentativo {attempt + 1}/{max_retries}): {e} -- "
+                f"attendo {wait_seconds}s prima di ritentare...")
+            time.sleep(wait_seconds)
+            continue
         if r.status_code == 429:
             retry_after = r.headers.get('Retry-After')
             raw_retry_after_seconds = None

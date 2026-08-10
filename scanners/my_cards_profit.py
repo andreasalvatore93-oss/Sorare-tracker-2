@@ -246,7 +246,7 @@ def build_purchase_price_map_and_swaps(eth_rate):
     query SnipeUserTrades($slug: String!, $after: String) {
       user(slug: $slug) {
         slug
-        trades(sport: FOOTBALL, after: $after) {
+        trades(sport: FOOTBALL, after: $after, first: 100) {
           nodes {
             ... on TokenOffer {
               transactionDate
@@ -329,6 +329,16 @@ def build_purchase_price_map_and_swaps(eth_rate):
             if stop or not (trades.get('pageInfo') or {}).get('hasNextPage'):
                 break
             after = (trades.get('pageInfo') or {}).get('endCursor')
+        else:
+            # FIX 10/08 (nato dal caso reale heung-min-son-2025-limited-226, acquistata a 20e
+            # ma non trovata in un run: il ciclo aveva esaurito PURCHASE_HISTORY_MAX_PAGES
+            # SENZA che hasNextPage diventasse false, troncando in silenzio la cronologia molto
+            # prima della finestra di 10 anni -- nessuna eccezione, nessun log, solo dati
+            # mancanti. for...else scatta SOLO se il ciclo finisce tutte le iterazioni senza
+            # mai fare 'break', cioe' esattamente questo caso.
+            log(f"⚠️ ATTENZIONE: esauriti tutti i {PURCHASE_HISTORY_MAX_PAGES} pagine senza "
+                f"arrivare in fondo alla cronologia (hasNextPage ancora true) -- la mappa "
+                f"prezzi d'acquisto e' TRONCATA, alza PURCHASE_HISTORY_MAX_PAGES")
     except Exception as e:
         log(f"Eccezione durante fetch cronologia acquisti/scambi: {e}")
 
