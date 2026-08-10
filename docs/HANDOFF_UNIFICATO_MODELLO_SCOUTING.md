@@ -11,7 +11,7 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 09/08/2026, notte (Roma, CEST)**.
+Ultimo aggiornamento: **sessione 10/08/2026, pomeriggio (Roma, CEST)**.
 
 ## REGOLA NUOVA — I BACKTEST SONO IL MODELLO CONTRO SE STESSO (09/08/2026, decisa dall'utente)
 
@@ -1306,6 +1306,31 @@ di *fingerprint*, non sta delirando — serve davvero, ma **esiste già** in
 
 ## 9. Modifiche di produzione — cronologia compressa
 
+**10/08/2026 pomeriggio — Fix bug reale: ARENE_EFFICIENTI non rispettava
+PRIORITY_ORDER su ALLSTARS/ALLSTARS_U23** (commit `33625d456a`). Trovato
+dall'utente confrontando due run GitHub identiche su `ARENE_EFFICIENTI=10`:
+run158 (10 arene + 4 AllStars + 4 U23 richiesti) → solo 4 arene generate;
+run159 (solo 10 arene) → 9 arene, di rendimento nettamente più alto.
+Causa: la FASE 1 di `build_formazione_globale.main()` generava TUTTI i
+tipi con conteggio esplicito (`ALLSTARS`/`ALLSTARS_U23` compresi) PRIMA
+che partisse il blocco `ARENE_EFFICIENTI` — che in modalità "efficiente"
+non ha conteggio esplicito, quindi trovava il pool già mangiato da
+AllStars/U23, pur essendo queste ultime le tipologie a priorità PIÙ BASSA
+in `PRIORITY_ORDER` (riga 307-312: arene sopra Under23/AllStars). Fix:
+la FASE 1 ora si ferma prima di `ALLSTARS_U23`/`ALLSTARS`, il blocco
+`ARENE_EFFICIENTI` gira sul pool ancora intatto, e solo alla fine
+`ALLSTARS_U23`/`ALLSTARS` attingono al residuo. Verificato in locale
+rigiocando gli stessi input delle due run (stesso risultato di run159 in
+entrambi i casi) e con una terza run GitHub reale (4 arene + 4 AllStars,
+run160): le prime 4 arene sono risultate IDENTICHE, carta per carta e
+nello stesso ordine, a quelle di run159 — conferma che la selezione delle
+arene è ora deterministica e indipendente da cos'altro viene richiesto
+insieme. **Difetto cosmetico NON toccato** (separato, minore): il
+contatore nel `subhead` dell'HTML mostra ancora "Arena All Stars=0" anche
+quando le arene sono presenti davvero nel corpo della pagina — scollegato
+dal conteggio reale, non influenza la generazione, solo il riepilogo
+mostrato.
+
 **10/08/2026 — Fix "fixture ambigua" su TUTTI i predict (212 file) +
 scouting riscritto in modalità minimale** (commit `8e6e1df8a7`,
 `1dc1b81438`, `7b71e5638b`, `548242f743`, `282a974482`, `0582a7a836`).
@@ -1420,6 +1445,41 @@ di nuovo questa voce.
 ---
 
 ## 10bis. COSE DA FARE — riscritto il 09/08 notte
+
+**APERTO 10/08 pomeriggio — bug reale: giocatore trasferito sparisce dalla
+discovery, `activeClub` di Sorare non aggiornato.** Trovato confrontando a
+mano lo screenshot del banco MID di GW4 con `player_card_counts.json`:
+Jamiro Monteiro (`jamiro-gregory-monteiro-alvarenga`) mancava dal pool
+eleggibile nonostante avesse una partita reale l'11/08 con 90% di
+titolarità. Verificato in diretta (query pubblica `anyPlayer`):
+`activeClub` per Sorare è ancora **PEC Zwolle**, ma la sua prossima
+partita (Champions League, 11/08) è schierata con **NEC Nijmegen**
+(homeTeam/awayTeam) — trasferimento recente non ancora riflesso nel campo
+`activeClub`, dato stantio LATO SORARE, non nostro. Sospetto (da
+verificare nel codice, non ancora fatto): `discovery_fixture.py` usa
+`activeClub` per instradare/abbinare il giocatore alla lega e alla
+partita in fase di ELEGGIBILITÀ — se lo squadra-partita non coincide col
+club "corrente", il giocatore sparisce invece di finire nella lega giusta.
+Nota: `test_def.py` ha già un fix simile ma solo in fase di PREDICT per un
+giocatore già selezionato (commento "29/07, trasferimento/team stantio"),
+non in fase di DISCOVERY dove si decide chi è eleggibile — il buco è a
+monte di quel fix. Pericoloso perché silenzioso: un giocatore realmente
+disponibile sparisce dal pool senza nessun errore visibile. Da riprendere:
+leggere `discovery_fixture.py` per capire dove/come usa `activeClub`, e
+decidere un fallback quando la squadra della partita target non coincide
+con `activeClub` (es. usare la squadra della partita, come già fa il fix
+di PREDICT).
+
+**IDEA, non ancora un filone — 10/08 pomeriggio, richiesta esplicita
+dell'utente di non perderla.** Funzione SPERIMENTALE nel generatore che
+sfrutti anche i giocatori con starter-odds **0,60-0,70** (oggi tagliati
+fuori dalla soglia dura `MIN_STARTER_ODDS=0.80`). Nessuna analisi fatta,
+nessun backtest, nessuna decisione — solo l'idea segnata perché l'utente
+vuole riprenderla in un'altra sessione. Prima di implementare: capire se
+si tratta di un pool a parte (extra, non sostitutivo dei 0.80+) o di un
+abbassamento della soglia globale, e misurare quanto guadagno/rischio
+comporta con lo stesso metodo a tre gambe (MAE+correlazione+selezione)
+già in uso per gli altri parametri.
 
 **Aperto 10/08 notte: collo di bottiglia git push nel job `predict`.**
 Misurato su log reali (4 job campione): checkout ~15s, pip ~3s, predict

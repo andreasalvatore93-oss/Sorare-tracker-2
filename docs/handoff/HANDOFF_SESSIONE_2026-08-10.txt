@@ -1,0 +1,149 @@
+HANDOFF SESSIONE — 10/08/2026 pomeriggio (Roma, CEST)
+
+1. STATO DEL REPO
+Branch main. Commit di questa sessione, tutti pushati:
+  38f6666949  archivio_crowss: primo test post-G, GW3 (football-7-11-aug-2026)
+  bd3b65a94b  archivio_crowss: README, ricetta pratica per rilanciare un'estrazione
+  33625d456a  Generatore: ARENE_EFFICIENTI ora rispetta PRIORITY_ORDER su ALLSTARS/U23
+Più aggiornato in questo commit: docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md
+(sezioni 9 e 10bis). Nessuna modifica a parametri di produzione dello
+score_atteso: solo dati d'archivio, documentazione, e il fix di priorità
+del generatore (comportamento cambiato SOLO quando ARENE_EFFICIENTI è
+usato insieme ad ALLSTARS/ALLSTARS_U23 nella stessa run).
+
+2. PERCHÉ ESISTEVA QUESTO LAVORO
+Tre filoni distinti, nati in sequenza nella stessa sessione:
+  a) Popolare per la prima volta la partizione dal_2026-08-07/ (Post-G)
+     dell'archivio_crowss con una GW reale (GW3, football-7-11-aug-2026),
+     verificando che lo schema deciso il 09/08 reggesse sui dati veri.
+  b) Stabilire, una volta per tutte, un metodo di walk-forward "pulito"
+     (senza leakage) per confrontare il modello contro se stesso su GW
+     già chiuse — richiesta esplicita dell'utente, prima dell'uso su GW2.
+  c) Test dal vivo del generatore su GW4 (fixture 11-14 agosto, non ancora
+     iniziata): l'utente ha trovato un bug reale di priorità confrontando
+     due run GitHub identiche, e un secondo bug (giocatore trasferito che
+     sparisce dal pool) confrontando screenshot Sorare vs dati nostri.
+
+3. COSA HO COSTRUITO/TOCCATO
+
+3a) Archivio GW3 (Post-G)
+  archivio_crowss/dal_2026-08-07/football-7-11-aug-2026_{arene_limited,
+  da7,in_season}.json — 39 righe (28 arene, 7 Da7, 4 In Season), 1 Da7
+  esclusa per scarto carte/ufficiale (376,41 vs 0,0 — GW ancora in corso
+  al momento dell'estrazione, comportamento atteso). Nessun campo
+  `atteso`: non serve per una GW già schierata da G in produzione
+  (deciso con l'utente in sessione).
+  archivio_crowss/README.md — aggiunta la "ricetta pratica" per rilanciare
+  un'estrazione (strumenti usati, come si riconosce il tipo arena dallo
+  slug, dove NON serve il refresh cache).
+
+3b) Metodo walk-forward pulito (NESSUN CODICE CAMBIATO, solo analisi)
+Tre leakage distinti, verificati nel codice:
+  - PARAMETRI tarati su dati che includono la GW da testare (es.
+    GK_TEAM_CS_WEIGHT tarato il 05/08, dentro la finestra GW2 4-7/08).
+    Non risolvibile per GW già passate: si accetta o si aspetta una GW
+    successiva all'ultima taratura di ogni costante coinvolta.
+  - Canale "avversario" silenziosamente spento in TUTTI i backtest
+    esistenti: `backtest_arene_previsioni.score_atteso()` chiama
+    `calcola()` con `usa_avversario=False` di default, e nessun chiamante
+    del repo lo sovrascrive — la produzione vera invece lo usa sempre dal
+    vivo (verificato riga per riga in test_def.py). Fix NON fatto in
+    questa sessione (fuori scope oggi, solo diagnosticato).
+  - GRADE riscritto post-partita: Sorare azzera il grade pre-lock e lo
+    sostituisce con B/C/D/E (se ha giocato) o F (sempre, se non ha
+    giocato) — verificato in diretta su 2 casi reali dell'archivio GW3
+    (Fernando Muslera: B pre-lock → F oggi; Doğucan Haspolat: C pre-lock
+    → F oggi, entrambi DID_NOT_PLAY). L'UNICA fonte pulita per GW già
+    chiuse è la cronologia git di `player_card_counts.json` (il grade
+    fetch va in produzione dal 07/08/2026 14:04, scritto lì ad ogni run):
+    per ogni carta, si cerca il commit più recente PRIMA del suo kickoff.
+    Copertura misurata su GW3 (186 carte distinte dell'archivio): 144/186
+    (77,4%) recuperate pulite; 37 presenti nel pool ma mai con grade in
+    nessuno snapshot pre-kickoff (31 di queste semplicemente perché il
+    loro kickoff cadeva prima che la feature grade nascesse, 6 sono un
+    vero buco di copertura del pool "a finestra scorrevole"); 4 senza
+    lega/data risolvibile; 1 mai nel pool prima del kickoff. Per GW2
+    (4-7/08): copertura zero per costruzione, la feature non esisteva.
+    NON ancora scritto nell'archivio (né come campo `grade` per carta né
+    come metodo nel README): l'utente ha detto di procedere con la
+    popolazione dei 144, ma la sessione è virata sul test GW4 prima di
+    farlo. Da riprendere.
+
+3c) Test live GW4 + due bug trovati
+  Run GitHub 31377254833 (10 arene+4 AllStars+4 U23) vs run 31378436046
+  (solo 10 arene): stesso ARENE_EFFICIENTI=10, la prima ha generato solo
+  4 arene di rendimento basso, la seconda 9 di rendimento alto — bug di
+  priorità, dettagliato e FIXATO in commit 33625d456a (vedi HANDOFF
+  UNIFICATO §9 per il dettaglio tecnico). Verificato con una terza run
+  reale (31380230791, 4 arene+4 AllStars dopo il fix): le 4 arene sono
+  risultate identiche carta-per-carta a quelle della run "9 arene",
+  conferma che ora è deterministico.
+  Bug secondario (APERTO, non fixato): confrontando lo screenshot del
+  banco MID di Sorare con `player_card_counts.json`, manca Jamiro
+  Monteiro — verificato che il suo `activeClub` su Sorare è ancora PEC
+  Zwolle mentre la sua prossima partita reale è con NEC Nijmegen
+  (trasferimento non ancora riflesso lato Sorare). Sospetto:
+  `discovery_fixture.py` usa `activeClub` per l'eleggibilità e perde il
+  giocatore quando diverge dalla squadra della partita target. Dettaglio
+  in HANDOFF UNIFICATO §10bis.
+  Verificata a mano anche la copertura grade "pulita" (run singola,
+  senza git-history-mining): 61/61 (100%) su GW4, confermando che il
+  buco del 22,6% trovato su GW3 era un artefatto della finestra in cui è
+  nata la feature, non un difetto strutturale della fetch.
+
+4. OUTPUT NUMERICO INTEGRALE
+Vedi punto 3b per la tabella di copertura grade GW3 (144/37/4/1 su 186).
+Arene GW3 (football-7-11-aug-2026, manager crowss): 28 arene, ingresso
+totale 7.400 essenze, premio totale 13.350 essenze (rewardsConfig reale,
+jackpot inclusi), bilancio netto +5.950 essenze, 13 podi su 28.
+GW4 test (fixture football-11-14-aug-2026, non ancora giocata): 61
+kept_slugs totali su ~1.700 carte eleggibili esaminate (soglia odds 0.80,
+la maggior parte delle partite troppo lontane per avere quote), grade
+100% su quei 61.
+
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+- Il campo `grade` NON è ancora entrato nell'archivio GW3 (solo misurato
+  in memoria/scratch, mai scritto su file). Se si riprende, il metodo è
+  già validato (144/186), va solo eseguito e scritto.
+- Il leakage del canale "avversario" (usa_avversario=False di default in
+  TUTTI i backtest esistenti) è un difetto STRUTTURALE più ampio di
+  quello discusso oggi: va oltre l'archivio_crowss, tocca ogni backtest
+  passato che ha usato `score_atteso()` senza passare esplicitamente
+  `usa_avversario=True` (P11, P12, P13, sinergie, grade...). Non ancora
+  quantificato quanto cambia nei verdetti già presi. Nessuna azione
+  decisa, solo diagnosticato oggi.
+- Il bug ARENE_EFFICIENTI riguardava SOLO l'interazione con
+  ALLSTARS/ALLSTARS_U23 quando entrambi sono richiesti nella stessa run.
+  Se ARENA_ALLSTARS_260/220/UNCAPPED/BEGINNER vengono richieste con
+  conteggio esplicito (non tramite ARENE_EFFICIENTI), non erano toccate
+  dal bug: erano già dentro la FASE 1 nell'ordine giusto.
+- Il contatore "subhead" dell'HTML del generatore (riepilogo in cima alla
+  pagina) è scollegato dal conteggio reale delle formazioni nel corpo
+  della pagina (mostra spesso "=0" per tipi che invece sono presenti più
+  sotto). Bug cosmetico separato, NON toccato, non influenza le scelte.
+
+6. DECISIONE APERTA
+- Scrivere il campo `grade` nell'archivio GW3 con i 144 valori già
+  recuperati (metodo pronto, solo da eseguire e committare).
+- Aprire il filone Monteiro/activeClub-stantio (§10bis unificato):
+  leggere discovery_fixture.py per capire dove usa activeClub e decidere
+  un fallback.
+- Idea segnata, non ancora un filone: sfruttare i giocatori con odds
+  0,60-0,70 (oggi tagliati dalla soglia 0.80) — l'utente vuole
+  riprenderla in un'altra sessione.
+- Il leakage "canale avversario spento nei backtest" meriterebbe una
+  sessione dedicata: quanti verdetti passati cambiano se rifatti con
+  usa_avversario=True?
+
+7. FILE DI RIFERIMENTO
+- docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md (sezioni 9 e 10bis
+  aggiornate oggi — riferimento primario per il fix del generatore e i
+  due filoni aperti)
+- archivio_crowss/README.md (schema + ricetta pratica di estrazione)
+- archivio_crowss/dal_2026-08-07/football-7-11-aug-2026_*.json (dati GW3)
+- generatore_formazioni/build_formazione_globale.py (fix priorità,
+  righe ~1884-1919)
+- backtest_arene_previsioni.py (walk-forward score_atteso, vedi
+  docstring e commento su usa_avversario riga ~609-635)
+- discovery_fixture.py (fetch_grade_live, righe ~1609-1628; da leggere
+  per il bug Monteiro/activeClub)
