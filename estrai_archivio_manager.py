@@ -50,6 +50,7 @@ sys.path.insert(0, os.path.join(ROOT, 'generatore_formazioni'))
 # il buffer sottostante ("I/O operation on closed file").
 import ricostruisci_manager as RM
 import build_formazione_globale as bfg
+import graphql_batch as GB
 
 ARCHIVIO_ROOT = os.path.join(ROOT, 'archivio_ufficiale')
 TAGLIO_G = datetime.date(2026, 8, 7)
@@ -63,19 +64,6 @@ TIPO_COSTO = {
     'cap260': bfg.COSTO_INGRESSO.get('ARENA_ALLSTARS_260', 300),
     'uncapped': bfg.COSTO_INGRESSO.get('ARENA_ALLSTARS_UNCAPPED', 300),
 }
-
-PREMI_QUERY = """
-query Premi($slug: String!) {
-  so5 {
-    so5Leaderboard(slug: $slug) {
-      rewardsConfig {
-        ranking { ranks rewardConfigs { __typename ... on CardShardRewardConfig { quantity } } }
-      }
-    }
-  }
-}
-"""
-
 
 def log(msg):
     print(f'[{time.strftime("%H:%M:%S")}] {msg}', flush=True)
@@ -115,28 +103,6 @@ def cartella_output(manager, fx):
     return os.path.join(ARCHIVIO_ROOT, f'manager_{manager}')
 
 
-def premi_per_posizione(leaderboard_slug):
-    """[(pos_1based, quantity)] per quella leaderboard, sessione anonima."""
-    d = RM.graphql(PREMI_QUERY, {'slug': leaderboard_slug}, con_cookie=False)
-    if d.get('errors'):
-        return None, str(d['errors'])[:200]
-    lb = ((d.get('data') or {}).get('so5') or {}).get('so5Leaderboard')
-    if not lb or not lb.get('rewardsConfig'):
-        return None, 'rewardsConfig null'
-    out, pos = [], 1
-    for fascia in (lb['rewardsConfig'].get('ranking') or []):
-        larghezza = fascia.get('ranks') or 1
-        q = None
-        for x in (fascia.get('rewardConfigs') or []):
-            if x.get('__typename') == 'CardShardRewardConfig':
-                q = x.get('quantity')
-                break
-        for _ in range(larghezza):
-            out.append((pos, q))
-            pos += 1
-    return out, None
-
-
 def estrai_fixture(manager, fixture):
     log(f'--- {manager} / {fixture} ---')
     righe_idx, ok = RM.partecipazioni(manager, fixture)
@@ -152,11 +118,21 @@ def estrai_fixture(manager, fixture):
         log('  nessuna arena limited questa GW, salto.')
         return {'fixture_slug': fixture, 'manager': manager, 'tipo_sezione': 'arene_limited', 'righe': []}
 
-    premi_cache = {}
+    # Batch via alias GraphQL (10/08/2026, verificato identico riga per riga
+    # alle chiamate una-alla-volta su 19 formazioni + 18 leaderboard reali):
+    # tutte le formazioni e tutti i premi si scaricano PRIMA, in poche
+    # richieste HTTP invece di una a contender/leaderboard.
+    contenders = [a['contender'] for a in arene]
+    leaderboards_uniche = list(dict.fromkeys(a['leaderboard'] for a in arene))
+    log(f'  scarico {len(contenders)} formazioni in lotti da {GB.formazioni_batch.__defaults__[0]}...')
+    formazioni_cache = GB.formazioni_batch(contenders)
+    log(f'  scarico {len(leaderboards_uniche)} leaderboard di premi in lotti da {GB.premi_batch.__defaults__[0]}...')
+    premi_cache = GB.premi_batch(leaderboards_uniche)
+
     righe_out = []
     n_annullate = 0
     for a in arene:
-        carte, manager_reale, piazzamento = RM.formazione(a['contender'])
+        carte, manager_reale, piazzamento = formazioni_cache.get(a['contender'], (None, None, None))
         if carte is None:
             log(f"  ATTENZIONE: formazione non recuperata per {a['contender']} -- SALTATA (non silenziosa: contata sotto)")
             continue
@@ -173,12 +149,7 @@ def estrai_fixture(manager, fixture):
                 log(f"  ATTENZIONE coerenza: {a['contender']} somma={somma:.2f} "
                     f"ufficiale={ufficiale:.2f} -- tenuta ma segnalata, non e' il pattern annullata noto")
 
-        lb = a['leaderboard']
-        if lb not in premi_cache:
-            premi_cache[lb], errore = premi_per_posizione(lb)
-            if errore:
-                log(f"  premi non disponibili per {lb}: {errore}")
-        premi = premi_cache.get(lb)
+        premi = premi_cache.get(a['leaderboard'])
         rank = (piazzamento or {}).get('rank')
         premio = None
         if premi and rank:
