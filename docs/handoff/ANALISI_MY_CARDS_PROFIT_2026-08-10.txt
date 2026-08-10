@@ -166,3 +166,62 @@ la sua query market-price separata, non condivisa con track.py fino ad
 oggi).
 
 File toccati (oltre ai precedenti): stessi due file, nessun file nuovo.
+
+== ITERAZIONE 3 (stessa sessione, 10/08, controllo utente sul report) ==
+
+Ispezionando il report l'utente ha trovato altri 2 casi reali sbagliati (stesso
+principio del bug valute: "nessun prezzo d'acquisto" NON vuol dire "gratis").
+
+CASO A -- SCAMBIO CARTA-PER-CARTA (brian-schwake-2025-limited-106, segnalato
+dall'utente: "l'ho scambiata con altre carte"). Verificato: zero trade
+visibili in user.trades, pack=null, createdAt presente -- stessa identica
+firma di un vero craft (sergi-dominguez), IMPOSSIBILE distinguerli dai soli
+dati che il bot leggeva finora. Causa radice: user.trades (query
+SnipeUserTrades, la stessa usata da track.fetch_user_trades) registra, per
+ogni offerta, SOLO il lato che il manager DA' (come 'sell') oppure SOLO il
+lato che RICEVE (come 'buy'), mai entrambi. In uno scambio puro (carte su
+entrambi i lati dell'offerta) le carte ricevute non compaiono in NESSUNA riga
+di fetch_user_trades. Fix: leggere entrambi i lati di ogni offerta grezza
+(non possibile con la funzione condivisa, che scarta il lato che non usa) e
+segnare come "ricevuta in scambio" ogni carta dove sia il lato mio sia quello
+della controparte hanno carte. Queste carte vengono ESCLUSE del tutto dal
+report (richiesta esplicita: "vanno escluse, impossibile risalire alle
+transazioni"), non trattate ne' come profit ne' come craft.
+Verificato su dati reali: 498 carte identificate come "da scambio" su un
+campione, incluso correttamente brian-schwake (True) ed escluso
+correttamente sergi-dominguez (False, resta craft vero).
+
+CASO B -- ACQUISTO ALL'ASTA (seung-hyun-jung-2026-limited-187, segnalato
+dall'utente: "questo l'ho pagato, comprato in asta"). Verificato: zero trade
+in user.trades (le aste NON sono TokenOffer, sono un tipo diverso -- Sorare
+le rappresenta come TokenAuction/EnglishAuction su un campo separato dello
+user, tokenAuctions, non trades). Trovato per tentativi (introspection
+disabilitata): campo 'tokenAuctions' suggerito dall'errore su un tentativo
+sbagliato ('wonAuctions'), poi bestBid.amounts (non 'amount') per il prezzo
+vincente. Nessun campo esplicito 'winner'/'bidder' nello schema pubblico:
+euristica usata, se l'asta e' chiusa (open=false, cancelled=false) e la
+carta e' ATTUALMENTE posseduta, l'ho vinta io. Verificato sul caso reale:
+bestBid 1.98e, coerente con quanto dichiarato dall'utente. Su tutta la
+cronologia aste (5000 aste esaminate, finestra 10 anni) trovate 5573 carte
+con prezzo d'asta attribuibile -- un buco enorme, piu' grande persino di
+quello degli scambi.
+
+OTTIMIZZAZIONE (per non raddoppiare le query): le due funzioni separate per
+prezzo d'acquisto e rilevazione scambi leggevano DUE VOLTE la stessa
+cronologia trade (stessa query, stesso testo, due round-trip). Unite in
+build_purchase_price_map_and_swaps(eth_rate): un solo giro paginato che
+estrae entrambe le informazioni insieme.
+
+STATO TEST: fix implementati e i singoli pezzi verificati separatamente su
+casi reali (currency fix, swap fix, auction fix, ognuno confermato con un
+caso vero indicato dall'utente). Un test end-to-end completo POST-merge
+(batch da 80) e' stato interrotto da un rate limit 429 di Sorare (ban a
+tempo fisso, atteso dopo il volume di query di probing di questa sessione:
+probe schema, scansione 5000 aste, piu' vari batch di test) intorno alla
+carta 76/80 -- il bot lo ha gestito correttamente (si e' fermato, non ha
+ritentato alla cieca, nessun crash), ma il batch non e' stato verificato
+per intero dopo la fusione delle due funzioni. Da ripetere un batch pulito
+piccolo (15-20 carte) prima di considerare il fix definitivamente testato
+end-to-end.
+
+File toccati: scanners/my_cards_profit.py (nessun altro file).

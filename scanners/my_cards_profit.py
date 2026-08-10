@@ -41,10 +41,22 @@ FIX 10/08 (richiesta esplicita dell'utente, 3 modifiche testate in locale sull'a
    d'acquisto se noto, margine) -- vedi generate_and_send_report/build_html_report. Il file
    viene committato dal workflow e il messaggio Telegram contiene solo il link (stesso schema
    raw.githack.com gia' collaudato in produzione da bot_profit_telegram_notify.py).
+5) Le carte SENZA prezzo di acquisto NON sono tutte craft/premio: alcune sono ricevute in
+   SCAMBIO carta-per-carta (caso reale verificato: brian-schwake-2025-limited-106, zero
+   trade visibili ma ottenuta cedendo altre carte, non gratis). find_swap_received_slugs
+   distingue i due casi leggendo entrambi i lati di ogni offerta grezza (fetch_user_trades
+   non lo permette, vede solo un lato per offerta) -- le carte da scambio vengono escluse
+   del tutto, mai trattate come craft.
+6) Le carte vinte all'ASTA sono un TERZO canale di acquisto invisibile a
+   build_purchase_price_map (user.trades vede solo TokenOffer, un'asta e' un tipo diverso).
+   Caso reale verificato: seung-hyun-jung-2026-limited-187, vinta a 1.98e, zero trade
+   visibili -- sarebbe finita tra i craft/premio per errore. build_auction_price_map legge
+   user.tokenAuctions (scoperto per tentativi, introspection disabilitata) e aggiunge il
+   prezzo della migliore offerta (bestBid) alla stessa mappa prezzi d'acquisto.
 """
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import track
 
 MANAGER_SLUG = 'crowss'
@@ -208,42 +220,202 @@ def get_all_my_cards():
     return all_cards
 
 
-def build_purchase_price_map():
-    """Costruisce slug_carta -> prezzo_pagato usando track.fetch_user_trades (query bulk gia'
-    collaudata in produzione, vedi snipe_pattern_analysis.py) invece di una query per carta.
-    Solo le transazioni role='buy' con un prezzo attribuibile (esclusi i bundle multi-carta,
-    dove il prezzo aggregato non e' scomponibile per singola carta -- stesso limite noto e
-    documentato in track.py) entrano nella mappa. Se la stessa carta compare piu' volte
-    (comprata, rivenduta, ricomprata), vince l'acquisto piu' recente (i nodi sono ordinati dal
-    piu' recente al piu' vecchio da fetch_user_trades, quindi il primo trovato per slug vince)."""
-    log(f"Ricerca cronologia acquisti (finestra {PURCHASE_HISTORY_WINDOW_DAYS} giorni, "
+def build_purchase_price_map_and_swaps(eth_rate):
+    """Un solo giro sulla cronologia trade (query bulk paginata, UNA sola volta) che estrae
+    DUE cose insieme, per non raddoppiare il costo della query:
+    1) slug_carta -> prezzo_pagato (stessa logica di track.fetch_user_trades: solo le
+       transazioni 'buy' con un prezzo attribuibile, bundle multi-carta esclusi perche' il
+       prezzo aggregato non e' scomponibile per singola carta).
+    2) slug delle carte ricevute in SCAMBIO carta-per-carta (richiesta esplicita dell'utente,
+       caso reale verificato brian-schwake-2025-limited-106: nessun prezzo d'acquisto
+       attribuibile, MA non e' un craft/premio -- ottenuta cedendo altre carte in cambio, un
+       costo reale c'e', solo non esprimibile in euro).
+    FIX 10/08: prima erano due funzioni separate, ciascuna con la sua query paginata sulla
+    stessa identica cronologia -- track.fetch_user_trades() per il prezzo (che pero' registra,
+    per ogni offerta, SOLO il lato che il manager DA' o SOLO quello che RICEVE, mai entrambi,
+    quindi non basta per distinguere gli scambi) e una query grezza duplicata per gli scambi
+    (serve leggere ENTRAMBI i lati della stessa offerta, dato che fetch_user_trades scarta
+    quello che non usa). Unite in un solo giro qui, con processing locale che replica la
+    logica di attribuzione prezzo di track.fetch_user_trades (stessa attribuzione, stesso
+    principio di esclusione bundle) invece di chiamarla -- serve accesso ai dati grezzi che
+    quella funzione non espone. Se la stessa carta compare piu' volte, vince l'acquisto piu'
+    recente (i nodi sono ordinati dal piu' recente al piu' vecchio)."""
+    log(f"Ricerca cronologia acquisti/scambi (finestra {PURCHASE_HISTORY_WINDOW_DAYS} giorni, "
         f"max {PURCHASE_HISTORY_MAX_PAGES} pagine)...")
-    eth_rate = track.get_eth_rate()
-    try:
-        trades = track.fetch_user_trades(MANAGER_SLUG, PURCHASE_HISTORY_WINDOW_DAYS, eth_rate,
-                                          max_pages=PURCHASE_HISTORY_MAX_PAGES)
-    except Exception as e:
-        log(f"Eccezione durante fetch cronologia acquisti: {e}")
-        return {}
-
+    query = """
+    query SnipeUserTrades($slug: String!, $after: String) {
+      user(slug: $slug) {
+        slug
+        trades(sport: FOOTBALL, after: $after) {
+          nodes {
+            ... on TokenOffer {
+              transactionDate
+              sender { ... on User { slug } }
+              senderSide { amounts { eurCents wei usdCents gbpCents lamport } anyCards { slug } }
+              receiver { ... on User { slug } }
+              receiverSide { amounts { eurCents wei usdCents gbpCents lamport } anyCards { slug } }
+            }
+          }
+          pageInfo { endCursor hasNextPage }
+        }
+      }
+    }
+    """
+    cutoff = datetime.now() - timedelta(days=PURCHASE_HISTORY_WINDOW_DAYS)
     price_map = {}
+    swap_received = set()
     bundle_skipped = 0
-    for t in trades:
-        if t.get('role') != 'buy':
-            continue
-        card_slug = t.get('card_slug')
-        if not card_slug:
-            continue
-        if t.get('price') is None:
-            # Acquisto in bundle (piu' carte, un unico prezzo aggregato) -- non attribuibile
-            # alla singola carta, stesso principio gia' usato in track.py.
-            bundle_skipped += 1
-            continue
-        if card_slug not in price_map:
-            price_map[card_slug] = t['price']
+    total_trades = 0
+    after = None
+    try:
+        for _ in range(PURCHASE_HISTORY_MAX_PAGES):
+            data = track.graphql_query(query, {"slug": MANAGER_SLUG, "after": after})
+            if not data or data.get('errors'):
+                log(f"Errore GraphQL cronologia trade: {data.get('errors') if data else 'nessuna risposta'}")
+                break
+            trades = ((data.get('data') or {}).get('user') or {}).get('trades') or {}
+            nodes = trades.get('nodes') or []
+            if not nodes:
+                break
+            stop = False
+            for n in nodes:
+                try:
+                    dt = datetime.fromisoformat(
+                        (n.get('transactionDate') or '').replace('Z', '+00:00')).replace(tzinfo=None)
+                except (ValueError, AttributeError):
+                    continue
+                if dt < cutoff:
+                    stop = True
+                    continue
+                total_trades += 1
 
-    log(f"Cronologia acquisti: {len(trades)} transazioni totali, {len(price_map)} carte con "
-        f"prezzo di acquisto attribuibile, {bundle_skipped} scartate (acquisti in bundle)")
+                sender = n.get('sender') or {}
+                receiver = n.get('receiver') or {}
+                sender_side = n.get('senderSide') or {}
+                receiver_side = n.get('receiverSide') or {}
+                sender_cards = sender_side.get('anyCards') or []
+                receiver_cards = receiver_side.get('anyCards') or []
+
+                # --- (2) rilevazione scambio: entrambi i lati hanno carte ---
+                if sender_cards and receiver_cards:
+                    if sender.get('slug') == MANAGER_SLUG:
+                        swap_received.update(c.get('slug') for c in receiver_cards if c.get('slug'))
+                    elif receiver.get('slug') == MANAGER_SLUG:
+                        swap_received.update(c.get('slug') for c in sender_cards if c.get('slug'))
+
+                # --- (1) prezzo di acquisto (stessa logica di track.fetch_user_trades) ---
+                if sender.get('slug') == MANAGER_SLUG:
+                    is_selling = bool(sender_cards)
+                    cards = sender_cards if is_selling else receiver_cards
+                    pay_amounts = receiver_side.get('amounts') if is_selling else sender_side.get('amounts')
+                elif receiver.get('slug') == MANAGER_SLUG:
+                    is_selling = bool(receiver_cards)
+                    cards = receiver_cards if is_selling else sender_cards
+                    pay_amounts = sender_side.get('amounts') if is_selling else receiver_side.get('amounts')
+                else:
+                    continue
+                if is_selling or not cards:
+                    continue  # qui interessano solo gli acquisti (role='buy')
+                if len(cards) > 1:
+                    bundle_skipped += 1
+                    continue  # bundle multi-carta: prezzo aggregato non attribuibile, vedi track.py
+                price = track.eur_price_from_amounts(pay_amounts, eth_rate)
+                if price is None:
+                    continue
+                card_slug = cards[0].get('slug')
+                if card_slug and card_slug not in price_map:
+                    price_map[card_slug] = price
+
+            if stop or not (trades.get('pageInfo') or {}).get('hasNextPage'):
+                break
+            after = (trades.get('pageInfo') or {}).get('endCursor')
+    except Exception as e:
+        log(f"Eccezione durante fetch cronologia acquisti/scambi: {e}")
+
+    log(f"Cronologia trade: {total_trades} transazioni totali, {len(price_map)} carte con "
+        f"prezzo di acquisto attribuibile, {bundle_skipped} scartate (acquisti in bundle), "
+        f"{len(swap_received)} carte ricevute in scambio")
+    return price_map, swap_received
+
+
+def build_auction_price_map(eth_rate):
+    """Costruisce slug_carta -> prezzo_pagato per le carte vinte all'ASTA (richiesta esplicita
+    dell'utente, caso reale verificato seung-hyun-jung-2026-limited-187: bestBid 1.98e,
+    "l'ho pagato, comprato in asta" -- confermato, ma invisibile a build_purchase_price_map
+    perche' user(slug).trades restituisce solo nodi TokenOffer, e un'asta vinta NON e' un
+    TokenOffer: e' un tipo completamente diverso (TokenAuction/EnglishAuction), su un campo
+    diverso dello user (tokenAuctions, non trades). Scoperto per tentativi (introspection
+    disabilitata): 'tokenAuctions' suggerito dall'errore su un campo indovinato
+    ('wonAuctions'), poi bestBid.amounts (non 'amount') per il prezzo vincente.
+    Nessun campo 'winner'/'bidder' esposto nello schema pubblico per dire ESPLICITAMENTE se
+    la carta l'ho vinta io o un altro concorrente piu' alto -- euristica usata (stessa logica
+    gia' implicita per gli scambi): l'asta e' chiusa (open=False, cancelled=False) E la carta
+    e' ATTUALMENTE nella mia collezione (il chiamante controlla solo gli slug che possiede
+    davvero) => l'ho vinta io, altrimenti non la possiederei. Se la stessa carta compare in
+    piu' aste (rivenduta e riacquistata), vince l'asta piu' recente (i nodi sono ordinati dal
+    piu' recente al piu' vecchio, come tokenAuctions)."""
+    log(f"Ricerca aste vinte (finestra {PURCHASE_HISTORY_WINDOW_DAYS} giorni, "
+        f"max {PURCHASE_HISTORY_MAX_PAGES} pagine)...")
+    query = """
+    query UserTokenAuctions($slug: String!, $after: String) {
+      user(slug: $slug) {
+        tokenAuctions(first: 100, after: $after) {
+          nodes {
+            endDate
+            open
+            cancelled
+            anyCards { slug }
+            bestBid { amounts { eurCents wei usdCents gbpCents lamport } }
+          }
+          pageInfo { endCursor hasNextPage }
+        }
+      }
+    }
+    """
+    cutoff = datetime.now() - timedelta(days=PURCHASE_HISTORY_WINDOW_DAYS)
+    price_map = {}
+    after = None
+    total_auctions = 0
+    try:
+        for _ in range(PURCHASE_HISTORY_MAX_PAGES):
+            data = track.graphql_query(query, {"slug": MANAGER_SLUG, "after": after})
+            if not data or data.get('errors'):
+                log(f"Errore GraphQL ricerca aste: {data.get('errors') if data else 'nessuna risposta'}")
+                break
+            conn = ((data.get('data') or {}).get('user') or {}).get('tokenAuctions') or {}
+            nodes = conn.get('nodes') or []
+            if not nodes:
+                break
+            stop = False
+            for n in nodes:
+                total_auctions += 1
+                try:
+                    dt = datetime.fromisoformat(
+                        (n.get('endDate') or '').replace('Z', '+00:00')).replace(tzinfo=None)
+                except (ValueError, AttributeError):
+                    continue
+                if dt < cutoff:
+                    stop = True
+                    continue
+                if n.get('open') or n.get('cancelled'):
+                    continue  # non ancora chiusa o annullata: nessun vincitore definitivo
+                bid = n.get('bestBid')
+                if not bid:
+                    continue
+                price = track.eur_price_from_amounts(bid.get('amounts'), eth_rate)
+                if price is None:
+                    continue
+                for c in (n.get('anyCards') or []):
+                    card_slug = c.get('slug')
+                    if card_slug and card_slug not in price_map:
+                        price_map[card_slug] = price
+            if stop or not (conn.get('pageInfo') or {}).get('hasNextPage'):
+                break
+            after = (conn.get('pageInfo') or {}).get('endCursor')
+    except Exception as e:
+        log(f"Eccezione durante ricerca aste: {e}")
+
+    log(f"Aste esaminate: {total_auctions}, {len(price_map)} carte con prezzo d'asta attribuibile")
     return price_map
 
 
@@ -396,12 +568,21 @@ def run_profit_scan():
     if cursor >= len(candidates):
         cursor = 0
 
-    # Prezzi di acquisto per TUTTE le carte in un colpo solo (query bulk), invece di una query
-    # per carta come nella versione precedente (rotta e comunque inefficiente su 1900+ carte).
-    purchase_price_map = build_purchase_price_map()
     # Tasso ETH/EUR preso una volta sola (FIX 10/08: serve a track.eur_price_from_amounts per
     # convertire gli annunci prezzati in ETH/USD/GBP/SOL, vedi docstring get_market_min_price).
     eth_rate = track.get_eth_rate()
+
+    # Prezzi di acquisto (query bulk, un solo giro) + carte ricevute in scambio (escluse dal
+    # craft/premio, vedi docstring build_purchase_price_map_and_swaps).
+    purchase_price_map, swap_received_slugs = build_purchase_price_map_and_swaps(eth_rate)
+    # Carte vinte all'asta (richiesta esplicita utente, caso reale seung-hyun-jung-2026-
+    # limited-187, bestBid 1.98e): invisibili a user.trades (un'asta vinta e' un tipo diverso,
+    # TokenAuction non TokenOffer) -- vedi docstring build_auction_price_map. Priorita' al
+    # prezzo da trade normale se per assurdo esistesse gia' (non dovrebbe capitare, canali di
+    # acquisto diversi per la stessa carta).
+    auction_price_map = build_auction_price_map(eth_rate)
+    for slug, price in auction_price_map.items():
+        purchase_price_map.setdefault(slug, price)
 
     profitable = []
     craft_value = []
@@ -426,6 +607,15 @@ def run_profit_scan():
             continue
 
         purchase_price = purchase_price_map.get(card_slug)
+
+        if purchase_price is None and card_slug in swap_received_slugs:
+            # Ricevuta in scambio carta-per-carta: nessun costo in euro, ma NON e' un
+            # craft/premio gratuito -- un costo reale c'e' (le carte cedute), solo non
+            # quantificabile. Esclusa del tutto, niente query di mercato (richiesta esplicita
+            # utente: "vanno escluse"). Non finisce nemmeno in backlog: non e' un dato mancante
+            # da ritentare, e' un caso noto e permanente per questa carta.
+            log(f"  \U0001F501 Ricevuta in scambio, esclusa (nessun costo in euro quantificabile)")
+            continue
 
         # Ottieni prezzo market minimo (stessa categoria in_season/classic, FIX 18/07: match
         # per season_type invece che booleano grezzo, vedi docstring di get_market_min_price).
