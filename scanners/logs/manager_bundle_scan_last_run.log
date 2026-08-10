@@ -872,3 +872,93 @@ REPORT_READY canmert 6
 [2026-08-10 16:50:50] [manager bundle scan] [auto-find] 'delaagste': 2 carte in_season in vendita (soglia 5).
 [2026-08-10 16:50:50] [manager bundle scan] [auto-find] nessun manager idoneo (soglia carte + soglia scarto best-deal) tra i primi 5 controllati -- nessuno scan, riprova piu' tardi (o allunga AUTO_FIND_LISTEN_SECONDS).
 [2026-08-10 16:50:50] [manager bundle scan] [auto-find] nessun manager idoneo trovato in questo giro -- interrompo, nessuna notifica Telegram.
+
+===== RUN 2026-08-10 17:12:03 UTC =====
+[2026-08-10 17:12:03] [manager bundle scan] [auto-find] nessun manager fornito e modalita' auto-discovery ATTIVA: ascolto il mercato per 180s a caccia di fino a 3 manager con almeno 5 carte in_season in vendita...
+[2026-08-10 17:15:03] [manager bundle scan] [auto-find] ascolto terminato: 36 carte in_season appena messe in vendita raccolte (sopra 1.00EUR).
+[2026-08-10 17:15:04] [manager bundle scan] [auto-find] variante proprietario 'user' FUNZIONA su anyCard -- la uso per tutti i lookup successivi.
+[2026-08-10 17:15:18] [manager bundle scan] [auto-find] 18 manager venditori distinti individuati (top: sylvainkl x6, sebster-076faaac-04f7-414a-ad65-4c226d2f90ca x5, 19castro88 x4, sanderdeminion x3, joesro x2) -- controllo quante carte in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...
+[2026-08-10 17:15:19] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 17:15:19] [manager bundle scan] 'sylvainkl': 33 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 17:15:19] [manager bundle scan] [filtro carte in vendita] 33 carte possedute scansionate, 31 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 2.
+[2026-08-10 17:15:19] [manager bundle scan] [auto-find] 'sylvainkl': 24 carte in_season in vendita (soglia 5).
+[2026-08-10 17:15:19] [manager bundle scan] [auto-find] 'sylvainkl': sopra soglia carte -- controllo il mercato per calcolare lo scarto del pacchetto best-deal prima di impegnarmi...
+[2026-08-10 17:15:20] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 17:15:20] [manager bundle scan] 'sylvainkl': 33 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 17:15:20] [manager bundle scan] [filtro carte in vendita] 33 carte possedute scansionate, 31 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 2.
+[2026-08-10 17:15:20] [manager bundle scan] 'sylvainkl': 24 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-08-10 17:15:20] [manager bundle scan] controllo il mercato live per 24 giocatori diversi (24 carte possedute da verificare)...
+[2026-08-10 17:15:32] [manager bundle scan] [diagnostica] 24 carte in_season possedute controllate, 23 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 1 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-08-10 17:15:32] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 644, 'wei': 135, 'usdCents': 181, 'gbpCents': 59, 'lamport': 0, 'none': 0}
+[2026-08-10 17:15:32] [manager bundle scan] [auto-find] 'sylvainkl': scarto totale pacchetto best-deal 1.90EUR su 10 carte (soglia 2.00EUR).
+[2026-08-10 17:15:32] [manager bundle scan] [auto-find] 'sylvainkl': scarto sotto soglia -- probabile manager/bot che non accetta offerte al ribasso, scarto il candidato e continuo la ricerca.
+[2026-08-10 17:15:32] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 17:15:33] [manager bundle scan] 'sebster-076faaac-04f7-414a-ad65-4c226d2f90ca': 1165 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 17:15:43] [manager bundle scan] ATTENZIONE: 'sebster-076faaac-04f7-414a-ad65-4c226d2f90ca' possiede 1165 carte Limited ma ne ho scansionate solo 1000 (limite MAX_OWNED_CARD_PAGES=20) -- alcune carte piu' vecchie potrebbero non essere state controllate, il risultato finale potrebbe essere incompleto.
+[2026-08-10 17:15:43] [manager bundle scan] [filtro carte in vendita] 1000 carte possedute scansionate, 376 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 624.
+[2026-08-10 17:15:43] [manager bundle scan] [auto-find] 'sebster-076faaac-04f7-414a-ad65-4c226d2f90ca': 104 carte in_season in vendita (soglia 5).
+[2026-08-10 17:15:43] [manager bundle scan] [auto-find] 'sebster-076faaac-04f7-414a-ad65-4c226d2f90ca': sopra soglia carte -- controllo il mercato per calcolare lo scarto del pacchetto best-deal prima di impegnarmi...
+[2026-08-10 17:15:44] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 17:15:44] [manager bundle scan] 'sebster-076faaac-04f7-414a-ad65-4c226d2f90ca': 1165 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 17:15:54] [manager bundle scan] ATTENZIONE: 'sebster-076faaac-04f7-414a-ad65-4c226d2f90ca' possiede 1165 carte Limited ma ne ho scansionate solo 1000 (limite MAX_OWNED_CARD_PAGES=20) -- alcune carte piu' vecchie potrebbero non essere state controllate, il risultato finale potrebbe essere incompleto.
+[2026-08-10 17:15:54] [manager bundle scan] [filtro carte in vendita] 1000 carte possedute scansionate, 376 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 624.
+[2026-08-10 17:15:54] [manager bundle scan] 'sebster-076faaac-04f7-414a-ad65-4c226d2f90ca': 104 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-08-10 17:15:54] [manager bundle scan] controllo il mercato live per 101 giocatori diversi (104 carte possedute da verificare)...
+[2026-08-10 17:16:52] [manager bundle scan] [diagnostica] 104 carte in_season possedute controllate, 80 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 24 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-08-10 17:16:52] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 2255, 'wei': 358, 'usdCents': 1318, 'gbpCents': 280, 'lamport': 2, 'none': 0}
+[2026-08-10 17:16:52] [manager bundle scan] [auto-find] 'sebster-076faaac-04f7-414a-ad65-4c226d2f90ca': scarto totale pacchetto best-deal 4.34EUR su 9 carte (soglia 2.00EUR).
+[2026-08-10 17:16:52] [manager bundle scan] [auto-find] SELEZIONATO 'sebster-076faaac-04f7-414a-ad65-4c226d2f90ca' (1/3) -- in raffreddamento per i prossimi 7 giorni per la sola auto-discovery.
+[2026-08-10 17:16:52] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 17:16:53] [manager bundle scan] '19castro88': 143 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 17:16:54] [manager bundle scan] [filtro carte in vendita] 143 carte possedute scansionate, 13 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 130.
+[2026-08-10 17:16:54] [manager bundle scan] [auto-find] '19castro88': 11 carte in_season in vendita (soglia 5).
+[2026-08-10 17:16:54] [manager bundle scan] [auto-find] '19castro88': sopra soglia carte -- controllo il mercato per calcolare lo scarto del pacchetto best-deal prima di impegnarmi...
+[2026-08-10 17:16:54] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 17:16:54] [manager bundle scan] '19castro88': 143 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 17:16:56] [manager bundle scan] [filtro carte in vendita] 143 carte possedute scansionate, 13 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 130.
+[2026-08-10 17:16:56] [manager bundle scan] '19castro88': 11 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-08-10 17:16:56] [manager bundle scan] controllo il mercato live per 11 giocatori diversi (11 carte possedute da verificare)...
+[2026-08-10 17:17:01] [manager bundle scan] [diagnostica] 11 carte in_season possedute controllate, 11 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 0 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-08-10 17:17:01] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 2343, 'wei': 367, 'usdCents': 1355, 'gbpCents': 284, 'lamport': 2, 'none': 0}
+[2026-08-10 17:17:01] [manager bundle scan] [auto-find] '19castro88': scarto totale pacchetto best-deal 4.32EUR su 4 carte (soglia 2.00EUR).
+[2026-08-10 17:17:01] [manager bundle scan] [auto-find] SELEZIONATO '19castro88' (2/3) -- in raffreddamento per i prossimi 7 giorni per la sola auto-discovery.
+[2026-08-10 17:17:01] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 17:17:01] [manager bundle scan] 'sanderdeminion': 36 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 17:17:01] [manager bundle scan] [filtro carte in vendita] 36 carte possedute scansionate, 6 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 30.
+[2026-08-10 17:17:01] [manager bundle scan] [auto-find] 'sanderdeminion': 3 carte in_season in vendita (soglia 5).
+[2026-08-10 17:17:02] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 17:17:02] [manager bundle scan] 'joesro': 6141 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 17:17:13] [manager bundle scan] ATTENZIONE: 'joesro' possiede 6141 carte Limited ma ne ho scansionate solo 1000 (limite MAX_OWNED_CARD_PAGES=20) -- alcune carte piu' vecchie potrebbero non essere state controllate, il risultato finale potrebbe essere incompleto.
+[2026-08-10 17:17:13] [manager bundle scan] [filtro carte in vendita] 1000 carte possedute scansionate, 809 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 191.
+[2026-08-10 17:17:13] [manager bundle scan] [auto-find] 'joesro': 77 carte in_season in vendita (soglia 5).
+[2026-08-10 17:17:13] [manager bundle scan] [auto-find] 'joesro': sopra soglia carte -- controllo il mercato per calcolare lo scarto del pacchetto best-deal prima di impegnarmi...
+[2026-08-10 17:17:14] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 17:17:14] [manager bundle scan] 'joesro': 6141 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 17:17:24] [manager bundle scan] ATTENZIONE: 'joesro' possiede 6141 carte Limited ma ne ho scansionate solo 1000 (limite MAX_OWNED_CARD_PAGES=20) -- alcune carte piu' vecchie potrebbero non essere state controllate, il risultato finale potrebbe essere incompleto.
+[2026-08-10 17:17:24] [manager bundle scan] [filtro carte in vendita] 1000 carte possedute scansionate, 809 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 191.
+[2026-08-10 17:17:24] [manager bundle scan] 'joesro': 77 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-08-10 17:17:24] [manager bundle scan] controllo il mercato live per 76 giocatori diversi (77 carte possedute da verificare)...
+[2026-08-10 17:18:08] [manager bundle scan] [diagnostica] 77 carte in_season possedute controllate, 44 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 33 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-08-10 17:18:08] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 3972, 'wei': 596, 'usdCents': 2197, 'gbpCents': 435, 'lamport': 12, 'none': 0}
+[2026-08-10 17:18:08] [manager bundle scan] [auto-find] 'joesro': scarto totale pacchetto best-deal 1.34EUR su 10 carte (soglia 2.00EUR).
+[2026-08-10 17:18:08] [manager bundle scan] [auto-find] 'joesro': scarto sotto soglia -- probabile manager/bot che non accetta offerte al ribasso, scarto il candidato e continuo la ricerca.
+[2026-08-10 17:18:09] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 17:18:09] [manager bundle scan] 'ruben-s-trophy-chasers': 870 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 17:18:18] [manager bundle scan] ATTENZIONE: 'ruben-s-trophy-chasers' possiede 870 carte Limited ma ne ho scansionate solo 869 (limite MAX_OWNED_CARD_PAGES=20) -- alcune carte piu' vecchie potrebbero non essere state controllate, il risultato finale potrebbe essere incompleto.
+[2026-08-10 17:18:18] [manager bundle scan] [filtro carte in vendita] 869 carte possedute scansionate, 84 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 785.
+[2026-08-10 17:18:18] [manager bundle scan] [auto-find] 'ruben-s-trophy-chasers': 53 carte in_season in vendita (soglia 5).
+[2026-08-10 17:18:18] [manager bundle scan] [auto-find] 'ruben-s-trophy-chasers': sopra soglia carte -- controllo il mercato per calcolare lo scarto del pacchetto best-deal prima di impegnarmi...
+[2026-08-10 17:18:19] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 17:18:19] [manager bundle scan] 'ruben-s-trophy-chasers': 869 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 17:18:27] [manager bundle scan] [filtro carte in vendita] 869 carte possedute scansionate, 84 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 785.
+[2026-08-10 17:18:27] [manager bundle scan] 'ruben-s-trophy-chasers': 53 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-08-10 17:18:27] [manager bundle scan] controllo il mercato live per 53 giocatori diversi (53 carte possedute da verificare)...
+[2026-08-10 17:18:55] [manager bundle scan] [diagnostica] 53 carte in_season possedute controllate, 27 risultano DAVVERO in vendita ora, 1 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 25 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-08-10 17:18:55] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 4990, 'wei': 729, 'usdCents': 2677, 'gbpCents': 488, 'lamport': 13, 'none': 0}
+[2026-08-10 17:18:55] [manager bundle scan] [auto-find] 'ruben-s-trophy-chasers': scarto totale pacchetto best-deal 30.67EUR su 10 carte (soglia 2.00EUR).
+[2026-08-10 17:18:55] [manager bundle scan] [auto-find] SELEZIONATO 'ruben-s-trophy-chasers' (3/3) -- in raffreddamento per i prossimi 7 giorni per la sola auto-discovery.
+[2026-08-10 17:18:55] [manager bundle scan] RISULTATO -- 'sebster-076faaac-04f7-414a-ad65-4c226d2f90ca': pacchetto best-deal di 9 carte, scarto totale 4.34EUR (su 80 carte in vendita totali possedute dal manager).
+[2026-08-10 17:18:55] [manager bundle scan] RISULTATO -- '19castro88': pacchetto best-deal di 4 carte, scarto totale 4.32EUR (su 11 carte in vendita totali possedute dal manager).
+[2026-08-10 17:18:55] [manager bundle scan] RISULTATO -- 'ruben-s-trophy-chasers': pacchetto best-deal di 10 carte, scarto totale 30.67EUR (su 27 carte in vendita totali possedute dal manager).
+[2026-08-10 17:18:55] [manager bundle scan] report HTML multi-manager scritto: scanners/logs/manager_bundle_scan_report.html (3 manager: sebster-076faaac-04f7-414a-ad65-4c226d2f90ca, 19castro88, ruben-s-trophy-chasers).
+REPORT_READY sebster-076faaac-04f7-414a-ad65-4c226d2f90ca,19castro88,ruben-s-trophy-chasers 118
