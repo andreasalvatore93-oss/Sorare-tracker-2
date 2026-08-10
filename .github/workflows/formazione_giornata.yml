@@ -48,14 +48,6 @@ on:
         description: 'Escludi le carte schierate in formazioni BLOCCATE (non modificabili) di questa giornata. Le formazioni ancora modificabili non contano. 0=no, 1=si (default)'
         required: false
         default: '1'
-      arena_criterio:
-        description: 'MISURA (brief BRIEF_SONNET_CRITERIO_ARENE_2026-08-08.txt): come genera_arene_efficienti confronta i tipi. assoluto=comportamento di sempre (default). capitale=resa per essenza impegnata (tiene conto del costo d ingresso).'
-        required: false
-        default: 'assoluto'
-      list_unused_candidates:
-        description: 'Stampa nel log i candidati eleggibili mai schierati (debug, 0/1)'
-        required: false
-        default: '1'
       extend_odds_060_070:
         description: 'TEST: pool suppletivo Arena Beginner/All Stars/Under23 con odds 0.60-0.70 se la tornata a 0.80+ non riempie il richiesto. Default spento (0).'
         required: false
@@ -492,8 +484,13 @@ jobs:
           ALLSTARS: ${{ github.event.inputs.allstars }}
           ALLSTARS_U23: ${{ github.event.inputs.allstars_u23 }}
           ARENA_LEAGUES_ENABLED: ${{ github.event.inputs.arena_leghe_abilitate }}
-          LIST_UNUSED_CANDIDATES: ${{ github.event.inputs.list_unused_candidates }}
-          ARENA_CRITERIO: ${{ github.event.inputs.arena_criterio }}
+          # Hardcoded (10/08, tolti dagli input per non confondere in fase di
+          # lancio): LIST_UNUSED_CANDIDATES e' solo log, zero costo, sempre
+          # acceso; ARENA_CRITERIO resta sul comportamento di sempre
+          # (assoluto), la misura 'capitale' non e' stata scelta per la
+          # produzione.
+          LIST_UNUSED_CANDIDATES: '1'
+          ARENA_CRITERIO: 'assoluto'
           EXTEND_ODDS_060_070: ${{ github.event.inputs.extend_odds_060_070 }}
           PYTHONUNBUFFERED: "1"
         run: python generatore_formazioni/build_formazione_globale.py
