@@ -722,6 +722,10 @@ LEAGUE_DIR = {
     # da club.domesticLeague dei 74 club della fixture, mai indovinati.
     'primera-division-pe': 'peru', '1-division-cy': 'cipro',
     'urvalsdeild': 'islanda',
+    # Aggiunta 10/08: unico club Bolivia della GW4 (football-11-14-aug-2026),
+    # trovato scartato come "lega senza pipeline" nella verifica empirica
+    # portieri richiesta dall'utente (Carlos Lampe, Bolivar La Paz).
+    'primera-division': 'bolivia',
 }
 
 # Split delle cartelle di destinazione in n quote -- usato solo se
