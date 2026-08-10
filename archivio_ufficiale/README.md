@@ -180,12 +180,33 @@ direttamente in `manager_<slug>/`, senza sotto-cartelle.
 Se lo scarto è enorme, è il pattern "annullata" — vedi sopra.
 
 **Costo**: tempo di rete dominato dal rate limit di Sorare, non dalla
-CPU — ~15 minuti per 220 formazioni misurato il 10/08. Ottimizzazione nota
-non ancora implementata: raggruppare `formazione()`/premi con alias
-GraphQL invece di una richiesta a query (fattore 10-15x in meno di
-richieste HTTP) — vedi backlog in memoria di sessione.
+CPU. Batching via alias GraphQL già implementato in `graphql_batch.py`
+(formazioni lotti da 3, premi lotti da 10 — limite reale di complessità
+Sorare senza APIKEY, verificato A/A) e wired in `estrai_archivio_manager.py`:
+non serve più farlo a mano, è il comportamento di default dello script.
 
-**Grade**: completare SEMPRE dopo un'estrazione nuova con
-`analisi_manager/completa_grade_mancante.py` (procedura standard, scrive
-in un indice condiviso persistente, beneficio permanente per ogni backtest
-futuro — non solo per l'estrazione appena fatta).
+## Pipeline post-estrazione — ordine fisso, sempre lo stesso (10/08/2026)
+
+Dopo aver estratto uno o più manager nuovi, prima di girare i binari:
+
+1. **Scarta i manager sotto soglia.** Se un manager produce troppo poche
+   arene sull'intera finestra (es. 2 arene su 22 GW, caso `gabittom`
+   10/08/2026: manager quasi inattivo in quel periodo, non aggiunge
+   segnale e appesantisce solo le run), elimina la sua cartella
+   `manager_<slug>/` con `git rm -r` invece di tenerla vuota.
+2. **Completa il grade** con `analisi_manager/completa_grade_mancante.py`
+   su TUTTI gli slug unici del pool dei manager nuovi (non solo quelli
+   mancanti — lo script fa comunque una query per slug passato, quindi
+   passare l'elenco degli slug del manager appena estratto è già il modo
+   economico: chi era già coperto da un manager precedente non viene
+   richiesto due volte perché non è nell'elenco). Scrive nell'indice
+   condiviso persistente `analisi_manager/dati/storico_grade_crowss_completamento.json`
+   — cresce nel giro, beneficio permanente per ogni backtest futuro, mai
+   da azzerare o duplicare.
+3. **Gira SEMPRE i binari sull'aggregato, mai per-manager separato.**
+   `p23_binario1_mga.py`/`p24_binario2_ga.py` scansionano da soli tutte le
+   `manager_*/` con `glob.glob('manager_*')`: un giro per-manager sarebbe
+   lavoro doppio e in più il campione per-manager è troppo piccolo da solo
+   per decidere qualunque cosa (vedi regola CLAUDE.md sulla numerosità).
+   L'aggiunta di un manager nuovo si traduce SEMPRE in un solo comando in
+   più a monte (l'estrazione), mai in un giro di binari dedicato.
