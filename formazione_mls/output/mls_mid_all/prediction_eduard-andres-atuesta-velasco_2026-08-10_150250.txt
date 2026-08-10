@@ -1,0 +1,121 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-10T15:02:50.479357Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) eduard-andres-atuesta-velasco: 47 pt attesi (34-59)
+   SQUADRA: orlando-city-lake-mary-florida | AVVERSARIO: atletico-san-luis-san-luis-potosi
+======================================================================
+
+######################################################################
+# GIOCATORE: eduard-andres-atuesta-velasco
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: eduard-andres-atuesta-velasco (squadra: orlando-city-lake-mary-florida)
+Generato: 2026-08-10T15:02:50.475411Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-11 | ORL vs MIA | mlspa | score=45.7 | peso=0.543
+  2025-08-17 | ORL vs SKC | mlspa | score=55.1 | peso=0.559
+  2025-08-21 | TOL vs ORL | leagues-cup-mls | score=79.1 | peso=0.574
+  2025-08-28 | MIA vs ORL | leagues-cup-mls | score=48.9 | peso=0.590
+  2025-08-31 | LA vs ORL | leagues-cup-mls | score=35.8 | peso=0.607
+  2025-09-13 | DC vs ORL | mlspa | score=58.0 | peso=0.624
+  2025-09-20 | ORL vs NSH | mlspa | score=49.4 | peso=0.642
+  2025-09-28 | CIN vs ORL | mlspa | score=44.2 | peso=0.660
+  2025-10-04 | ORL vs CLB | mlspa | score=45.4 | peso=0.678
+  2025-10-11 | ORL vs VAN | mlspa | score=26.6 | peso=0.697
+  2025-10-18 | TOR vs ORL | mlspa | score=33.4 | peso=0.717
+  2025-10-23 | CHI vs ORL | mlspa | score=35.2 | peso=0.737
+  2026-03-14 | ORL vs MTL | mlspa | score=29.9 | peso=0.758
+  2026-04-05 | LAFC vs ORL | mlspa | score=29.2 | peso=0.779
+  2026-04-12 | CLB vs ORL | mlspa | score=46.1 | peso=0.801
+  2026-04-18 | ORL vs HOU | mlspa | score=40.1 | peso=0.824
+  2026-05-09 | MTL vs ORL | mlspa | score=32.6 | peso=0.847
+  2026-05-13 | ORL vs PHI | mlspa | score=41.1 | peso=0.871
+  2026-05-16 | ORL vs ATL | mlspa | score=52.0 | peso=0.895
+  2026-05-23 | CIN vs ORL | mlspa | score=69.7 | peso=0.920
+  2026-07-23 | SJ vs ORL | mlspa | score=92.6 | peso=0.946
+  2026-08-01 | RBNY vs ORL | mlspa | score=35.1 | peso=0.973
+  2026-08-06 | MON vs ORL | leagues-cup-mls | score=40.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 46.35
+  di cui Punteggio decisivo (level_score) medio: 37.47 | Punteggio complessivo (granulari) medio: 8.88 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 35.88 (delta -1.59)
+  Efficacia offensiva condizionata: delta venue -0.72, delta avversario -0.45 | Passaggio condizionato: delta venue -0.25, delta avversario +0.15 | Gol subiti condizionato: delta venue +0.75, delta avversario +0.40 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 16.47
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.6 - 58.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.20 (differenza: +4.27)
+Media score in casa: 42.81 | Media score fuori casa: 48.56
+Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.0
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.185 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 1.005
+Fattore trend (media ultime 5: 57.5 vs media 5 PRECEDENTI: 37.9): 1.000
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-12T23:30
+Casa: Orlando City SC | Trasferta: Atlético San Luis
+Competizione: leagues-cup-mls
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.4 (range 33.6 - 59.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.74
+Punteggio REALE ottenuto in quella partita: 40.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 17 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      39.2    49.4    +10.2    14.7        SI
+   7        7      50.0    44.2     -5.8    13.6        SI
+   8        8      58.0    45.4    -12.6    13.1        SI
+   9        9      38.7    26.6    -12.1    12.5        SI
+  10       10      56.9    33.4    -23.5    14.5        NO
+  11       11      41.1    35.2     -5.9    14.6        SI
+  12       12      56.0    29.9    -26.1    14.4        NO
+  13       13      35.5    29.2     -6.3    14.6        SI
+  14       14      48.4    46.1     -2.3    14.7        SI
+  15       15      37.5    40.1     +2.6    14.1        SI
+  16       16      53.0    32.6    -20.4    13.6        NO
+  17       17      49.6    41.1     -8.5    13.4        SI
+  18       18      52.0    52.0     +0.0    13.0        SI
+  19       19      39.1    69.7    +30.6    12.8        NO
+  20       20      36.5    92.6    +56.1    14.4        NO
+  21       21      48.0    35.1    -12.9    18.9        SI
+  22       22      42.3    40.0     -2.3    18.6        SI
+
+MAE (errore assoluto medio): 14.00
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
