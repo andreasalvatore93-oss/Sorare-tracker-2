@@ -225,3 +225,27 @@ piccolo (15-20 carte) prima di considerare il fix definitivamente testato
 end-to-end.
 
 File toccati: scanners/my_cards_profit.py (nessun altro file).
+
+== ITERAZIONE 4 (stessa sessione, 10/08, bug reale trovato dall'utente) ==
+
+L'utente ha segnalato heung-min-son-2025-limited-226 (comprata 20e, trade
+pulito non-bundle) mostrata come craft/premio. Causa: build_purchase_price_
+map_and_swaps (iterazione 2) aveva perso un ramo di track.fetch_user_trades
+copiandolo a mano -- il nodo aveva sender='oklaoma' (altro manager) e
+receiver=null (ANNUNCIO PUBBLICO sul mercato aperto, non un'offerta diretta
+a me): track.py gestisce questo terzo caso (receiver nullo => io sono la
+controparte implicita), la mia riscrittura no, e scartava (continue) tutti
+questi casi. Erano la MAGGIORANZA degli acquisti normali (mercato aperto,
+non offerte dirette). Impatto: copertura prezzi d'acquisto passata da 926
+a 1998 carte sullo stesso dato -- spiega quasi tutti i falsi "craft/premio"
+visti nei report precedenti di oggi. Fix committato e verificato: batch di
+80 carte, craft/premio sceso da 26-29 a 4, zero errori.
+
+Falso allarme nel mezzo: durante il debug e' sembrato per un istante che un
+commit precedente fosse "sparito" da main per un cambio branch di un'altra
+sessione che lavora in PARALLELO sulla stessa cartella locale -- verificato
+poi che non era cosi' (il commit era comunque un antenato di HEAD dopo il
+merge di quella sessione). Nessuna azione necessaria, ma conferma: un'altra
+sessione tocca main in concomitanza, attenzione a push/pull.
+
+STATO: fix testato in locale su piu' batch reali, pronto per la run GitHub.
