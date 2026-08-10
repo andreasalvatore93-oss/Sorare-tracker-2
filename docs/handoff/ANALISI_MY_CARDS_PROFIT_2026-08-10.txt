@@ -1,0 +1,125 @@
+SESSIONE 10/08/2026 (Roma) — Analisi "My Cards Profit" (scanners/my_cards_profit.py)
+
+Nessun handoff precedente su questo bot: prima ricognizione, letta dal codice
+in produzione + log reale + file di stato, non da riassunti (non esistevano).
+
+== COME FUNZIONA OGGI ==
+
+Scopo: scansiona le carte di 'crowss', confronta prezzo pagato (storico
+acquisti) vs prezzo minimo di mercato attuale, notifica su Telegram se
+profit > 0.50 EUR.
+
+Trigger: SOLO manuale (workflow_dispatch, .github/workflows/my_cards_profit.yml
+riga 3-9). Nessun cron. Run reali finora: 18/07 (piu' run di test), 23/07,
+03/08. Nessuna dal 03/08 (7 giorni fa oggi).
+
+Meccanica di rotazione (my_cards_profit.py):
+- Cursore persistente (.my_cards_profit_cursor.txt) avanza di CARDS_TO_SCAN
+  carte ad ogni run, riparte da 0 in fondo alla lista (righe 366-383).
+- Skip permanente SOLO per carte gia' trovate in profitto e notificate
+  (.my_cards_profit_found.txt, 21 slug accumulati). Tutte le altre (in
+  perdita O senza prezzo d'acquisto) restano candidate per sempre.
+- Stato attuale cursore: 300/1992 carte (15% del giro completo), dopo 3 run
+  reali da scan_count=100 in 3 settimane.
+
+Prezzo di acquisto: build_purchase_price_map() (righe 192-228) fa UNA query
+bulk (track.fetch_user_trades) su tutta la cronologia acquisti/vendite,
+esclude solo i bundle multi-carta (prezzo non attribuibile alla singola
+carta).
+
+Prezzo di mercato: get_market_min_price() (righe 231-338) fa query PER
+CARTA (non bulk): 1) anyCard(slug)->anyPlayer.slug, 2) liveSingleSaleOffers
+per quel player, filtra per stessa categoria (in_season/classic), rarity
+limited, esclude venditori blacklistati e scambi carta-per-carta.
+
+== NUMERI VERI DAGLI ULTIMI RUN (dal log, non stimati) ==
+
+Run 03/08/2026 19:58 UTC (scan_count=100, da indice 200):
+  1992 carte totali possedute (candidate, escluse le 21 gia' in profitto)
+  59/100 carte del batch: "prezzo acquisto non trovato" (59%)
+  5 nuove carte in profitto trovate e notificate
+  Cronologia acquisti: 4082 trade totali, 1982 carte con prezzo attribuibile,
+  151 scartate per bundle (151/4082 = 3.7% dei trade, non il grosso del 59%)
+
+Run 23/07/2026 22:04 UTC (scan_count=100, da indice 100):
+  81/100 senza prezzo acquisto trovato
+
+== 2 PROBLEMI CONCRETI VERIFICATI NEL CODICE ==
+
+1) QUERY RIDONDANTE per il prezzo di mercato (viola la regola "minimizzare
+   le query, bulk quando possibile" in CLAUDE.md). get_market_min_price()
+   riga 253-259 fa una query anyCard->anyPlayer.slug per RITROVARE il
+   player_slug -- ma il chiamante (run_profit_scan, riga 387-404) ha GIA' il
+   player_slug nella carta (card['anyPlayer']['slug'], viene dalla stessa
+   query di get_all_my_cards riga 154, ed e' gia' usato dopo alla riga 421).
+   Basta passare player_slug come argomento invece di card_slug e togliere
+   la prima query: dimezza le chiamate GraphQL per ogni carta processata
+   (fino a 100/run -> risparmio reale, coerente con la Regola Suprema token
+   E con la regola "minimizzare le query API Sorare").
+
+2) LE CARTE SENZA PREZZO D'ACQUISTO RESTANO CANDIDATE PER SEMPRE. Il 59-81%
+   di ogni batch da 100 non trova un prezzo d'acquisto (quasi certamente
+   carte NON comprate sul mercato: pacchetti, ricompense, regali -- lo
+   scarto bundle e' solo il 3.7% dei trade, non spiega un tasso cosi' alto).
+   Non essendoci un prezzo d'acquisto, quelle carte non potranno MAI
+   risultare "in profitto" con la logica attuale, ma restano nella
+   rotazione e occupano slot di scan ad ogni giro, insieme al fatto che
+   get_market_min_price fa comunque 2 query per le carte CON prezzo — le
+   carte senza prezzo saltano quello stage (continue a riga 398), quindi lo
+   spreco e' di TEMPO/slot di rotazione, non di query extra. Conseguenza
+   pratica: un giro completo dei 1992 reali candidati-utili (quelli con
+   prezzo) e' molto piu' lento di quanto sembri dal contatore 300/1992,
+   perche' quel contatore include anche le carte "morte" per lo scopo del
+   bot.
+
+== IMPLEMENTATO 10/08/2026 (testato in locale sull'account reale crowss) ==
+
+Cron (idea A) SCARTATO su indicazione dell'utente: lancia il workflow a mano
+~1 volta a settimana, non gli serve.
+
+1) FIX QUERY RIDONDANTE. get_market_min_price ora riceve player_slug
+   direttamente dal chiamante (gia' presente in card['anyPlayer']['slug'],
+   dalla stessa query bulk di get_all_my_cards) invece di rifare una query
+   anyCard->anyPlayer.slug per ritrovarlo. Dimezza le query di mercato per
+   carta processata.
+
+2) CARTE CRAFT/PREMIO ORA CATTURATE. Verificato sul caso reale indicato
+   dall'utente (sergi-dominguez-viloria-2026-limited-121): pack=null,
+   createdAt presente, ZERO transazioni in tutto lo storico crowss (4105
+   trade totali, nessuno su questa carta) -- non e' un acquisto bundle
+   scartato (quello e' solo il 3.7% dei trade), e' proprio una carta MAI
+   comprata sul mercato. Per queste carte (senza prezzo d'acquisto
+   attribuibile) ora si guarda comunque il prezzo minimo di mercato: se
+   supera MIN_PROFIT_EUR (0.50€, stessa soglia) viene notificato come
+   "craft/premio di valore" (blocco Telegram separato, send_craft_notifications
+   in scanners/my_cards_profit.py), non come "profit" (non c'e' un costo in
+   EUR da confrontare, solo il valore di realizzo). Nel messaggio compare
+   anche il segnale debole 'pack' (se valorizzato = quasi certamente da
+   pacchetto acquistato, probabilmente NON craft -- indizio, non certezza;
+   nessun campo "isCrafted"/"provenance" esiste nello schema pubblico Sorare,
+   gia' verificato da crafted_card_scanner.py il 19/07).
+   TEST REALE: batch di 15 carte -> trovata la carta indicata dall'utente,
+   market 21.05€. Batch di 200 carte -> 41 carte craft/premio di valore, 18
+   profit normali, zero errori.
+
+3) COPERTURA IN UN SOLO GIRO. Con la query dimezzata, un giro completo delle
+   carte reali (2019 al momento del test) e' stato misurato in locale:
+   overhead fisso ~57s (fetch di tutte le carte + storico acquisti) + ~0.34s
+   per carta processata (query di mercato) => ~12-13 minuti per l'intero
+   archivio. CARDS_TO_SCAN di default alzato da 10 a 3000 (my_cards_profit.py)
+   e default dell'input scan_count nel workflow alzato da 10 a 3000; timeout
+   del job alzato da 10 a 25 minuti (margine ~2x sul tempo misurato). Con
+   questo, ogni run manuale copre TUTTE le carte, non serve piu' rotazione a
+   piu' run per un giro completo (il cursore resta come rete di sicurezza se
+   in futuro si rilancia con uno scan_count piu' piccolo).
+
+   NOTA SUL DUBBIO "prende sempre le piu' recenti": la query di
+   get_all_my_cards ordina per user_owner.from DESC (piu' recenti prima). Con
+   un giro COMPLETO ad ogni run (punto 3) questo non e' piu' un problema: si
+   processano tutte le carte comunque, l'ordine non conta. Prima (batch da
+   10-100 su 2000 carte), un cursore a INDICE su una lista che si riordina ad
+   ogni nuovo acquisto poteva in teoria derivare (nuovi acquisti spostano gli
+   indici di tutte le carte piu' vecchie) -- osservazione dal codice, non
+   piu' rilevante ora che si copre tutto in un giro.
+
+File toccati: scanners/my_cards_profit.py, .github/workflows/my_cards_profit.yml

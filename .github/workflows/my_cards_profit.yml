@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       scan_count:
-        description: "Quante carte scannerizzare per run (rotazione continua su tutte le carte, ignora solo quelle già trovate in profitto)"
+        description: "Quante carte scannerizzare per run (default: tutte, ~2000 carte in un giro unico, ~12-13 min)"
         required: false
-        default: "10"
+        default: "3000"
 
 permissions:
   contents: write
@@ -18,7 +18,7 @@ concurrency:
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,7 +39,7 @@ jobs:
           # mapping gia' usato in manager_bundle_scan.yml, per finire nello stesso canale/bot.
           TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
-          MY_CARDS_PROFIT_SCAN_COUNT: ${{ github.event.inputs.scan_count || '10' }}
+          MY_CARDS_PROFIT_SCAN_COUNT: ${{ github.event.inputs.scan_count || '3000' }}
           PYTHONUNBUFFERED: "1"
         run: |
           set -o pipefail

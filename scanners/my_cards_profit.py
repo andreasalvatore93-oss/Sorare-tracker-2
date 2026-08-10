@@ -22,6 +22,20 @@ type 'AnyCardInterface'", suggerimento dell'errore: 'tokenOwner'), quindi ogni c
 sempre in backlog. Sostituita con track.fetch_user_trades(), la stessa query gia' collaudata
 in produzione (snipe_pattern_analysis.py) che restituisce TUTTA la cronologia acquisti/vendite
 di un manager in un'unica query paginata (molto piu' efficiente di una query per carta).
+
+FIX 10/08 (richiesta esplicita dell'utente, 3 modifiche testate in locale sull'account reale):
+1) get_market_min_price non rifa' piu' la query anyCard->anyPlayer.slug per un dato gia' noto
+   dal chiamante (player_slug arriva direttamente dalla carta) -- dimezza le query per carta.
+2) Le carte SENZA prezzo di acquisto attribuibile (probabile craft/premio, non un vero
+   acquisto) non vengono piu' scartate a priori: si guarda comunque il loro prezzo di mercato e,
+   se sopra MIN_PROFIT_EUR, si notificano come "craft/premio di valore" (vedi
+   send_craft_notifications), non come "profit" in senso stretto. Caso reale verificato:
+   sergi-dominguez-viloria-2026-limited-121, zero transazioni in storico, market 21.05€.
+3) Grazie al fix (1), un giro completo delle ~2000 carte reali sta in circa 12-13 minuti
+   (misurato in locale: overhead fisso ~57s + ~0.34s/carta) -- CARDS_TO_SCAN di default e il
+   timeout del workflow sono stati alzati di conseguenza per fare un giro completo ad ogni run
+   invece che a rotazione su piu' run (l'utente lancia il workflow manualmente ~1 volta a
+   settimana, niente cron).
 """
 import os
 import json
@@ -50,8 +64,10 @@ CURSOR_FILE = '.my_cards_profit_cursor.txt'
 # tentativo) -- NON usato per saltare carte, solo per diagnostica nei log.
 UNSCANNED_BACKLOG_FILE = '.my_cards_profit_backlog.txt'
 
-# Input dal workflow
-CARDS_TO_SCAN = int(os.environ.get('MY_CARDS_PROFIT_SCAN_COUNT', '10'))
+# Input dal workflow. FIX 10/08: default alzato da 10 a 3000 (sopra le ~2000 carte reali, con
+# margine di crescita) per coprire l'intero archivio in un solo giro invece che a rotazione su
+# piu' run manuali -- vedi nota FIX 10/08 in cima al file per i tempi misurati.
+CARDS_TO_SCAN = int(os.environ.get('MY_CARDS_PROFIT_SCAN_COUNT', '3000'))
 # FIX 18/07 (richiesta esplicita dell'utente): non segnalare se il profit assoluto e' sotto
 # questa soglia -- pochi centesimi non sono un vero affare, solo rumore.
 MIN_PROFIT_EUR = float(os.environ.get('MY_CARDS_PROFIT_MIN_EUR', '0.50'))
@@ -152,6 +168,7 @@ def get_all_my_cards():
             inSeasonEligible
             sportSeason { name }
             anyPlayer { slug }
+            ... on Card { pack { id } }
           }
           nbHits
         }
@@ -228,8 +245,8 @@ def build_purchase_price_map():
     return price_map
 
 
-def get_market_min_price(card_slug, season_type):
-    """Ottieni il prezzo più basso del mercato per il giocatore di questa carta, tra gli
+def get_market_min_price(player_slug, season_type):
+    """Ottieni il prezzo più basso del mercato per questo giocatore, tra gli
     annunci aperti con la stessa categoria (in_season/classic) -- stesso schema query di
     track.py (fetch_all_live_offers/get_live_min_offer): la carta messa in vendita sta in
     senderSide.anyCards, il prezzo chiesto sta in receiverSide.amounts. receiverSide.anyCards
@@ -249,25 +266,12 @@ def get_market_min_price(card_slug, season_type):
     CATEGORIE ('in_season'/'classic') invece del booleano grezzo.
     FIX 18/07 (v3, richiesta esplicita dell'utente): esclude gli annunci del manager
     'privacy' (vende solo in ETH, non e' un'opzione utilizzabile per l'utente) dal calcolo
-    del prezzo minimo di mercato -- stesso blacklist condiviso di track.py."""
-    query = """
-    {
-      anyCard(slug: "%s") {
-        anyPlayer { slug }
-      }
-    }
-    """ % card_slug
-
+    del prezzo minimo di mercato -- stesso blacklist condiviso di track.py.
+    FIX 10/08 (richiesta esplicita dell'utente): il chiamante ha GIA' player_slug (viene dalla
+    stessa query bulk di get_all_my_cards, campo anyPlayer.slug) -- prima si rifaceva una query
+    anyCard(slug)->anyPlayer.slug per ritrovare un dato gia' in mano, raddoppiando le chiamate
+    GraphQL per ogni carta processata. Ora si passa player_slug direttamente."""
     try:
-        data = track.graphql_query(query, {})
-        if data.get('errors') or not data.get('data', {}).get('anyCard'):
-            return None
-
-        player_slug = (data.get('data', {}).get('anyCard', {})
-                      .get('anyPlayer', {}).get('slug'))
-        if not player_slug:
-            return None
-
         offers_query = """
         query LiveOffers($slug: String!, $n: Int!) {
           tokens {
@@ -334,15 +338,29 @@ def get_market_min_price(card_slug, season_type):
 
         return min(prices) if prices else None
     except Exception as e:
-        log(f"Eccezione durante fetch market price per {card_slug}: {e}")
+        log(f"Eccezione durante fetch market price per {player_slug}: {e}")
         return None
 
 
 def run_profit_scan():
-    """Scansiona le carte e calcola profit. Ignora SOLO le carte gia' trovate in profitto in
-    un run precedente (gia' notificate) -- tutte le altre vengono sempre rimesse in coda,
-    tramite un cursore rotante, cosi' una carta prima in perdita che poi diventa profittevole
-    non viene mai persa."""
+    """Scansiona le carte e calcola profit. Ignora SOLO le carte gia' trovate in profitto (o
+    segnalate come craft di valore, vedi sotto) e gia' notificate -- tutte le altre vengono
+    sempre rimesse in coda, tramite un cursore rotante, cosi' una carta prima in perdita che poi
+    diventa profittevole non viene mai persa.
+
+    FIX 10/08 (richiesta esplicita dell'utente, caso reale verificato
+    sergi-dominguez-viloria-2026-limited-121: pack=None, createdAt presente, ZERO transazioni
+    nello storico crowss): le carte senza prezzo di acquisto attribuibile (niente 'buy' in
+    track.fetch_user_trades) sono in larghissima parte carte CRAFTATE con essenze o vinte come
+    premio (confermato: 59-81% di ogni batch da 100, contro un 3.7% di scarto per soli acquisti
+    bundle -- il grosso non e' spiegato dai bundle). Prima venivano scartate PRIMA di guardare
+    il prezzo di mercato (non hanno un costo in EUR da confrontare). Ora, per queste carte, si
+    guarda comunque il prezzo minimo di mercato: se supera MIN_PROFIT_EUR viene segnalato come
+    valore di realizzo potenziale (non un "profit" in senso stretto, perche' il costo reale e'
+    in essenze non in euro). Sorare non espone via API un campo che dica esplicitamente
+    "craftata" (verificato nello schema pubblico da crafted_card_scanner.py, 19/07): 'pack'
+    valorizzato = quasi certamente da un pacchetto acquistato; 'pack' nullo = craft o premio
+    plausibile, non certezza. Lo includiamo nel messaggio solo come indizio, non come fatto."""
     log(f"Inizio scan profit ({CARDS_TO_SCAN} carte per run)...")
 
     profitable_found = load_profitable_found()
@@ -353,14 +371,14 @@ def run_profit_scan():
         log("Nessuna carta trovata")
         return
 
-    # Escludi SOLO le carte gia' trovate in profitto e notificate -- tutte le altre restano
-    # candidate per la rotazione (anche quelle gia' controllate in passato senza profit).
+    # Escludi SOLO le carte gia' trovate in profitto/valore e notificate -- tutte le altre
+    # restano candidate per la rotazione (anche quelle gia' controllate in passato senza esito).
     candidates = [c for c in all_cards if c.get('slug') not in profitable_found]
-    log(f"{len(all_cards)} carte totali, {len(all_cards) - len(candidates)} gia' trovate in "
-        f"profitto (escluse), {len(candidates)} candidate per questo giro")
+    log(f"{len(all_cards)} carte totali, {len(all_cards) - len(candidates)} gia' notificate "
+        f"(escluse), {len(candidates)} candidate per questo giro")
 
     if not candidates:
-        log("Nessuna carta candidata (tutte gia' trovate in profitto?)")
+        log("Nessuna carta candidata (tutte gia' notificate?)")
         return
 
     # Cursore rotante: riprende da dove si era arrivati, ricomincia da capo se supera la fine
@@ -373,7 +391,8 @@ def run_profit_scan():
     purchase_price_map = build_purchase_price_map()
 
     profitable = []
-    newly_profitable_slugs = []
+    craft_value = []
+    newly_notified_slugs = []
     updated_backlog = {}
 
     batch = []
@@ -386,22 +405,49 @@ def run_profit_scan():
 
     for i, card in enumerate(batch, 1):
         card_slug = card.get('slug')
+        player_slug = (card.get('anyPlayer') or {}).get('slug')
         log(f"Analizzando ({i}/{len(batch)}): {card_slug}")
 
-        purchase_price = purchase_price_map.get(card_slug)
-        if purchase_price is None:
-            log(f"  ⚠️ Prezzo acquisto non trovato")
-            updated_backlog[card_slug] = {
-                'reason': 'prezzo_acquisto_non_trovato',
-                'last_attempt': datetime.now().isoformat(),
-            }
+        if not player_slug:
+            log(f"  ⚠️ player_slug mancante, salto")
             continue
 
+        purchase_price = purchase_price_map.get(card_slug)
+
         # Ottieni prezzo market minimo (stessa categoria in_season/classic, FIX 18/07: match
-        # per season_type invece che booleano grezzo, vedi docstring di get_market_min_price)
+        # per season_type invece che booleano grezzo, vedi docstring di get_market_min_price).
+        # FIX 10/08: player_slug viene passato direttamente (gia' noto dalla carta), non piu'
+        # ririchiesto con una query separata (vedi docstring get_market_min_price).
         season_name = (card.get('sportSeason') or {}).get('name', 'unknown')
         season_type = track.season_type_for_card(card, season_name)
-        market_price = get_market_min_price(card_slug, season_type)
+        market_price = get_market_min_price(player_slug, season_type)
+
+        if purchase_price is None:
+            # Carta senza acquisto attribuibile: probabile craft/premio (vedi docstring sopra).
+            if market_price is None:
+                log(f"  ⚠️ Prezzo acquisto E prezzo market non trovati")
+                updated_backlog[card_slug] = {
+                    'reason': 'prezzo_acquisto_e_mercato_non_trovati',
+                    'last_attempt': datetime.now().isoformat(),
+                }
+                continue
+            if market_price > MIN_PROFIT_EUR:
+                is_pack = card.get('pack') is not None
+                log(f"  \U0001F528 CRAFT/PREMIO DI VALORE: nessun acquisto noto, market "
+                    f"{market_price:.2f}€ (pack={is_pack})")
+                craft_value.append({
+                    'slug': card_slug,
+                    'player_slug': player_slug,
+                    'market_price': market_price,
+                    'season': card.get('sportSeason', {}).get('name', 'N/A'),
+                    'in_season': card.get('inSeasonEligible'),
+                    'likely_pack': is_pack,
+                })
+                newly_notified_slugs.append(card_slug)
+            else:
+                log(f"  ➖ Nessun acquisto noto, market {market_price:.2f}€ (sotto soglia)")
+            continue
+
         if market_price is None:
             log(f"  ⚠️ Prezzo market non trovato")
             continue
@@ -418,7 +464,7 @@ def run_profit_scan():
                 f"(+{profit:.2f}€, {profit_percent:+.1f}%)")
             profitable.append({
                 'slug': card_slug,
-                'player_slug': (card.get('anyPlayer') or {}).get('slug'),
+                'player_slug': player_slug,
                 'purchase_price': purchase_price,
                 'market_price': market_price,
                 'profit': profit,
@@ -426,7 +472,7 @@ def run_profit_scan():
                 'season': card.get('sportSeason', {}).get('name', 'N/A'),
                 'in_season': card.get('inSeasonEligible'),
             })
-            newly_profitable_slugs.append(card_slug)
+            newly_notified_slugs.append(card_slug)
         else:
             log(f"  ❌ No profit: acquistato {purchase_price:.2f}€, market {market_price:.2f}€ "
                 f"({profit_percent:+.1f}%)")
@@ -436,21 +482,25 @@ def run_profit_scan():
     save_cursor(idx)
     log(f"Cursore aggiornato a {idx}/{len(candidates)} (prossimo run riparte da li')")
 
-    if newly_profitable_slugs:
-        save_profitable_found(newly_profitable_slugs)
-        log(f"Salvate {len(newly_profitable_slugs)} carte in profitto (skip permanente)")
+    if newly_notified_slugs:
+        save_profitable_found(newly_notified_slugs)
+        log(f"Salvate {len(newly_notified_slugs)} carte notificate (skip permanente)")
 
     save_backlog(updated_backlog)
     if updated_backlog:
         log(f"Backlog (solo informativo) di questo giro: {len(updated_backlog)} carte senza "
-            f"prezzo di acquisto")
+            f"prezzo di acquisto ne' di mercato")
 
-    if not profitable:
-        log("Nessuna carta con profit trovata in questo giro")
+    if not profitable and not craft_value:
+        log("Nessuna carta con profit o valore craft trovata in questo giro")
         return
 
-    log(f"Totale carte con profit: {len(profitable)}")
-    send_notifications(profitable)
+    log(f"Totale carte con profit: {len(profitable)}, carte craft/premio di valore: "
+        f"{len(craft_value)}")
+    if profitable:
+        send_notifications(profitable)
+    if craft_value:
+        send_craft_notifications(craft_value)
 
 
 def send_notifications(profit_cards):
@@ -484,6 +534,40 @@ def send_notifications(profit_cards):
         msg = msg.rstrip() + BLOCK_SEPARATOR
         track.send_telegram_msg(msg)
         log(f"Notifica blocco {block_num} inviata")
+
+
+def send_craft_notifications(craft_cards):
+    """Manda notifiche Telegram per le carte senza acquisto attribuibile (probabile
+    craft/premio) che hanno comunque un valore di mercato sopra soglia. Non e' un "profit" in
+    senso stretto (nessun costo in EUR noto), quindi messaggio e struttura separati da
+    send_notifications -- vedi docstring di run_profit_scan per il ragionamento."""
+    blocks = [craft_cards[i:i+BLOCK_SIZE] for i in range(0, len(craft_cards), BLOCK_SIZE)]
+
+    for block_num, block in enumerate(blocks, 1):
+        msg = f"<b>\U0001F528 Carte Craft/Premio di Valore (Blocco {block_num}/{len(blocks)})</b>\n\n"
+
+        for card in block:
+            season_label = f"{card['season']} {'(In Season)' if card['in_season'] else '(Classic)'}"
+            player_slug = card.get('player_slug')
+            if player_slug:
+                card_link = (f"https://sorare.com/it/football/market/shop/manager-sales/"
+                             f"{player_slug}/limited?card={card['slug']}")
+            else:
+                card_link = f"https://sorare.com/it/football/market/shop/{card['slug']}"
+            pack_note = ("pacchetto acquistato, probabilmente NON craft" if card['likely_pack']
+                         else "nessun pacchetto rilevato, craft/premio plausibile")
+            msg += (
+                f"<b>{card['slug']}</b>\n"
+                f"Nessun acquisto trovato ({pack_note}, indizio non certo)\n"
+                f"<b>Market min: {card['market_price']:.2f}€</b>\n"
+                f"Stagione: {season_label}\n"
+                f"👉 <a href='{card_link}'>Vedi la carta</a>\n"
+                f"\n"
+            )
+
+        msg = msg.rstrip() + BLOCK_SEPARATOR
+        track.send_telegram_msg(msg)
+        log(f"Notifica craft blocco {block_num} inviata")
 
 
 if __name__ == '__main__':
