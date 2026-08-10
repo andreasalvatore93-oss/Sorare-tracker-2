@@ -1,0 +1,135 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-10T07:22:07.366891Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) agustin-canobbio-graviz: 51 pt attesi (34-70)
+   ORDINAMENTO: 50.30
+   SQUADRA: fluminense-rio-de-janeiro-rio-de-janeiro | AVVERSARIO: independiente-rivadavia-mendoza-provincia-de-mendoza
+======================================================================
+
+######################################################################
+# GIOCATORE: agustin-canobbio-graviz
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: agustin-canobbio-graviz (squadra: fluminense-rio-de-janeiro-rio-de-janeiro)
+Generato: 2026-08-10T07:22:07.353561Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 42
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: conmebol-libertadores (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-29 | FLU vs CEA | campeonato-brasileiro-serie-a | score=42.7 | peso=0.035
+  2025-11-02 | CEA vs FLU | campeonato-brasileiro-serie-a | score=55.0 | peso=0.039
+  2025-11-06 | FLU vs MIR | campeonato-brasileiro-serie-a | score=47.9 | peso=0.044
+  2025-11-09 | CRU vs FLU | campeonato-brasileiro-serie-a | score=31.8 | peso=0.050
+  2025-11-20 | FLU vs FLA | campeonato-brasileiro-serie-a | score=42.7 | peso=0.056
+  2025-11-23 | PAL vs FLU | campeonato-brasileiro-serie-a | score=54.2 | peso=0.062
+  2025-11-27 | FLU vs SPA | campeonato-brasileiro-serie-a | score=81.8 | peso=0.070
+  2025-12-07 | FLU vs BAH | campeonato-brasileiro-serie-a | score=51.5 | peso=0.079
+  2026-01-28 | FLU vs GRE | campeonato-brasileiro-serie-a | score=35.5 | peso=0.088
+  2026-02-05 | BAH vs FLU | campeonato-brasileiro-serie-a | score=39.0 | peso=0.099
+  2026-02-12 | FLU vs BOT | campeonato-brasileiro-serie-a | score=14.8 | peso=0.111
+  2026-03-12 | REM vs FLU | campeonato-brasileiro-serie-a | score=71.6 | peso=0.125
+  2026-03-15 | FLU vs CAP | campeonato-brasileiro-serie-a | score=60.5 | peso=0.140
+  2026-03-19 | VAS vs FLU | campeonato-brasileiro-serie-a | score=71.1 | peso=0.157
+  2026-03-21 | FLU vs CAM | campeonato-brasileiro-serie-a | score=69.4 | peso=0.177
+  2026-03-27 | ? vs ? | friendlies | score=32.2 | peso=0.198
+  2026-03-31 | ? vs ? | friendlies | score=29.0 | peso=0.223
+  2026-04-07 | LAG vs FLU | conmebol-libertadores | score=46.4 | peso=0.250
+  2026-04-12 | FLU vs FLA | campeonato-brasileiro-serie-a | score=53.1 | peso=0.281
+  2026-04-16 | FLU vs IND | conmebol-libertadores | score=32.7 | peso=0.315
+  2026-04-26 | FLU vs CHA | campeonato-brasileiro-serie-a | score=68.8 | peso=0.354
+  2026-04-30 | BOL vs FLU | conmebol-libertadores | score=44.5 | peso=0.397
+  2026-05-07 | IND vs FLU | conmebol-libertadores | score=40.4 | peso=0.445
+  2026-05-16 | FLU vs SPA | campeonato-brasileiro-serie-a | score=67.0 | peso=0.500
+  2026-05-19 | FLU vs BOL | conmebol-libertadores | score=42.1 | peso=0.561
+  2026-05-28 | FLU vs LAG | conmebol-libertadores | score=75.8 | peso=0.630
+  2026-06-21 | ? vs ? | global-cup | score=67.0 | peso=0.707
+  2026-06-27 | ? vs ? | global-cup | score=18.9 | peso=0.794
+  2026-07-26 | GRE vs FLU | campeonato-brasileiro-serie-a | score=46.8 | peso=0.891
+  2026-07-30 | FLU vs BAH | campeonato-brasileiro-serie-a | score=54.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 50.13
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 51.34 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 39.39 | Punteggio complessivo (granulari) medio: 10.74 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 7.76 (delta +1.07) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.81
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.7 - 68.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.26 (differenza: +0.55)
+Media score in casa: 52.53 | Media score fuori casa: 50.08
+Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.2
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.901 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.012
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.009
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.008
+Fattore trend (media ultime 5: 52.5 vs media 5 PRECEDENTI: 52.6): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-11T22:00
+Casa: Fluminense FC | Trasferta: CS Independiente Rivadavia
+Competizione: conmebol-libertadores
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.3 (range 33.9 - 70.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 50.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.63
+Punteggio REALE ottenuto in quella partita: 54.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +4.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.6    81.8    +32.2     9.3        NO
+   7        7      43.8    51.5     +7.7    18.4        SI
+   8        8      66.7    35.5    -31.2    16.7        NO
+   9        9      40.8    39.0     -1.8    16.9        SI
+  10       10      45.4    14.8    -30.6    16.2        NO
+  11       11      57.0    71.6    +14.6    20.2        SI
+  12       12      35.2    60.5    +25.3    22.0        NO
+  13       13      63.1    71.1     +8.0    21.1        SI
+  14       14      51.2    69.4    +18.2    21.4        SI
+  15       15      54.3    32.2    -22.1    21.1        NO
+  16       16      51.5    29.0    -22.5    21.5        NO
+  17       17      49.1    46.4     -2.7    21.8        SI
+  18       18      34.7    53.1    +18.4    20.4        SI
+  19       19      42.9    32.7    -10.2    19.2        SI
+  20       20      64.4    68.8     +4.4    19.0        SI
+  21       21      49.7    44.5     -5.2    19.6        SI
+  22       22      42.0    40.4     -1.6    18.5        SI
+  23       23      52.2    67.0    +14.8    17.7        SI
+  24       24      51.0    42.1     -8.9    18.0        SI
+  25       25      50.0    75.8    +25.8    17.2        NO
+  26       26      52.3    67.0    +14.7    18.9        SI
+  27       27      54.0    18.9    -35.1    18.6        NO
+  28       28      61.9    46.8    -15.1    21.7        SI
+  29       29      42.9    54.1    +11.2    20.5        SI
+
+MAE (errore assoluto medio): 15.93
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
