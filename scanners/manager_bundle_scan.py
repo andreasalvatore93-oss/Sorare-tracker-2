@@ -58,6 +58,14 @@ AUTO_FIND_MANAGER = os.environ.get('AUTO_FIND_MANAGER', '').strip().lower() in (
 # giro) e soglia carte in vendita 10->5 (anche manager con 5+ carte in season valgono uno scan).
 AUTO_FIND_LISTEN_SECONDS = float(os.environ.get('AUTO_FIND_LISTEN_SECONDS', '120'))
 AUTO_FIND_MIN_CARDS_FOR_SALE = int(os.environ.get('AUTO_FIND_MIN_CARDS_FOR_SALE', '5'))
+# FIX 10/08 (richiesta esplicita dell'utente, caso reale jafar1006: 27 carte "gia' al minimo" ma
+# ognuna solo pochi centesimi sotto -- non un'occasione, ma il segnale di un manager/bot che non
+# accetta offerte al ribasso, esattamente il tipo di target che questo scanner deve SCARTARE).
+# Soglia minima sulla SOMMA degli scarti (second_min_price - market_min_price) delle carte nel
+# pacchetto best-deal: sotto questa soglia il candidato viene scartato in auto-discovery e la
+# ricerca CONTINUA sul prossimo candidato (vedi auto_find_manager) -- non si applica all'input
+# manuale (l'utente ha scelto quel manager apposta, nessuna "ricerca" da continuare).
+AUTO_FIND_MIN_BEST_DEAL_GAP_EUR = float(os.environ.get('AUTO_FIND_MIN_BEST_DEAL_GAP_EUR', '2.0'))
 # Tetti di sicurezza: quanti manager diversi controllare al massimo (ognuno costa la scansione
 # paginata delle sue carte possedute) e quante carte al massimo sottoporre al lookup del
 # proprietario (1 query ciascuna).
@@ -419,6 +427,98 @@ def format_eur(value):
     return f"{value:.2f}EUR"
 
 
+def scan_manager_market(manager_slug, eth_rate):
+    """Scarica le carte Limited in_season possedute da manager_slug e controlla il mercato live
+    per ognuna -- stessa identica logica usata sia dall'input manuale sia dall'auto-discovery
+    (FIX 10/08: prima viveva solo dentro run_bundle_scan; ora auto_find_manager la riusa PRIMA di
+    impegnarsi su un candidato, per calcolare lo scarto del pacchetto best-deal e poterlo
+    scartare in favore del prossimo candidato se il margine e' troppo piccolo). Ritorna
+    (on_sale, manager_found): manager_found=False se lo slug non esiste, None se errore di
+    rete/GraphQL prima ancora di una risposta valida -- in entrambi i casi on_sale e' []."""
+    owned_in_season_cards, nb_hits_total, manager_found, has_sale_field = \
+        fetch_manager_owned_in_season_limited_cards(manager_slug)
+
+    if manager_found is False:
+        log(f"manager '{manager_slug}' NON TROVATO su Sorare (query user() ha restituito null) "
+            f"-- controlla che lo slug/URL sia corretto.")
+        return [], manager_found
+    if manager_found is None:
+        log(f"impossibile determinare se '{manager_slug}' esiste (errore di rete/GraphQL prima "
+            f"ancora di ricevere una risposta valida, vedi dettaglio errore sopra nel log).")
+        return [], manager_found
+
+    scope_desc = ("GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)"
+                  if has_sale_field else f"su {nb_hits_total} carte Limited totali, tutte le stagioni")
+    log(f"'{manager_slug}': {len(owned_in_season_cards)} carte Limited IN SEASON possedute "
+        f"({scope_desc}).")
+    if not owned_in_season_cards:
+        log(f"'{manager_slug}' non possiede nessuna carta Limited in_season -- nessuna carta da controllare.")
+        return [], manager_found
+
+    unique_players = []
+    seen_players = set()
+    for card in owned_in_season_cards:
+        p = card['player_slug']
+        if p not in seen_players:
+            seen_players.add(p)
+            unique_players.append(p)
+
+    if len(unique_players) > MAX_PLAYERS_TO_CHECK:
+        log(f"ATTENZIONE: '{manager_slug}' ha {len(unique_players)} giocatori diversi tra le "
+            f"carte in_season possedute, oltre il tetto MAX_PLAYERS_TO_CHECK="
+            f"{MAX_PLAYERS_TO_CHECK} -- controllo solo i primi {MAX_PLAYERS_TO_CHECK} (per "
+            f"acquisizione piu' recente), il risultato potrebbe essere incompleto.")
+        allowed_players = set(unique_players[:MAX_PLAYERS_TO_CHECK])
+        owned_in_season_cards = [c for c in owned_in_season_cards
+                                  if c['player_slug'] in allowed_players]
+        unique_players = unique_players[:MAX_PLAYERS_TO_CHECK]
+
+    log(f"controllo il mercato live per {len(unique_players)} giocatori diversi "
+        f"({len(owned_in_season_cards)} carte possedute da verificare)...")
+
+    on_sale = []
+    not_on_sale_count = 0
+    error_count = 0
+    below_min_price_count = 0
+    for card in owned_in_season_cards:
+        try:
+            result = find_current_listing_and_market_min(
+                card['card_slug'], card['player_slug'], eth_rate)
+        except Exception as e:
+            log(f"eccezione controllando {card['player_name']} ({card['card_slug']}): {e}")
+            error_count += 1
+            continue
+        if result is None:
+            not_on_sale_count += 1
+            continue
+        listing_price, market_min_price, second_min_price = result
+        # FIX 18/07 (v2, richiesta esplicita dell'utente, "ignoriamo le carte che hanno un
+        # prezzo minimo di vendita inferiore ad un euro"): scartate PRIMA di entrare in on_sale,
+        # quindi assenti da blocchi/bonus/best deal.
+        if market_min_price < BUNDLE_MIN_MARKET_PRICE_EUR:
+            below_min_price_count += 1
+            continue
+        on_sale.append({
+            'player_name': card['player_name'],
+            'player_slug': card['player_slug'],
+            'card_slug': card['card_slug'],
+            'listing_price': listing_price,
+            'market_min_price': market_min_price,
+            'second_min_price': second_min_price,
+        })
+        time.sleep(PER_PLAYER_QUERY_DELAY_SECONDS)
+
+    log(f"[diagnostica] {len(owned_in_season_cards)} carte in_season possedute controllate, "
+        f"{len(on_sale)} risultano DAVVERO in vendita ora, {not_on_sale_count} possedute ma NON "
+        f"in vendita (o ritirate/vendute nel frattempo), {below_min_price_count} scartate perche' "
+        f"sotto {format_eur(BUNDLE_MIN_MARKET_PRICE_EUR)} di prezzo minimo di mercato, "
+        f"{error_count} errori di query.")
+    log(f"[diagnostica valute] branch usati in eur_price_from_amounts: "
+        f"{track.get_currency_branch_stats()}")
+
+    return on_sale, manager_found
+
+
 # --- Auto-discovery del manager (FIX 18/07 v3, vedi AUTO_FIND_MANAGER sopra) ---
 
 # Come risalire dal singolo card_slug al manager che lo possiede (= il venditore, dato che
@@ -564,8 +664,17 @@ def auto_find_manager(eth_rate):
     """Trova un manager 'interessante' da scansionare: ascolta il mercato, raggruppa le carte
     appena messe in vendita per manager venditore (i manager visti PIU' volte nello stream sono
     controllati per primi: chi sta listando molte carte e' il candidato piu' probabile ad averne
-    almeno AUTO_FIND_MIN_CARDS_FOR_SALE), e ritorna lo slug del primo che supera la soglia --
-    oppure None se nessuno la supera entro i tetti di sicurezza."""
+    almeno AUTO_FIND_MIN_CARDS_FOR_SALE), e ritorna (slug, on_sale) del primo candidato che
+    supera SIA la soglia sul numero di carte SIA la soglia sullo scarto best-deal -- oppure
+    (None, None) se nessuno le supera entro i tetti di sicurezza.
+
+    FIX 10/08 (v2, richiesta esplicita dell'utente, caso reale jafar1006: 27 carte 'gia' al
+    minimo di mercato' ma ognuna solo pochi centesimi sotto -- non un'occasione, il segnale di
+    un manager/bot che non accetta offerte al ribasso): superata la soglia sul numero di carte,
+    il candidato viene scansionato per intero (scan_manager_market, la STESSA logica usata per
+    l'input manuale) e si calcola lo scarto totale del pacchetto best-deal. Sotto
+    AUTO_FIND_MIN_BEST_DEAL_GAP_EUR il candidato viene scartato e la ricerca CONTINUA sul
+    prossimo -- mai una notifica su un pacchetto senza un vero margine."""
     log(f"[auto-find] nessun manager fornito e modalita' auto-discovery ATTIVA: ascolto il "
         f"mercato per {AUTO_FIND_LISTEN_SECONDS:.0f}s a caccia di manager con almeno "
         f"{AUTO_FIND_MIN_CARDS_FOR_SALE} carte in_season in vendita...")
@@ -573,7 +682,7 @@ def auto_find_manager(eth_rate):
     log(f"[auto-find] ascolto terminato: {len(candidates)} carte in_season appena messe in "
         f"vendita raccolte (sopra {format_eur(BUNDLE_MIN_MARKET_PRICE_EUR)}).")
     if not candidates:
-        return None
+        return None, None
 
     owner_counts = {}
     lookups = 0
@@ -584,12 +693,12 @@ def auto_find_manager(eth_rate):
         lookups += 1
         time.sleep(PER_PLAYER_QUERY_DELAY_SECONDS)
         if _card_owner_variant == '':
-            return None  # nessuna query di lookup funziona, gia' loggato
+            return None, None  # nessuna query di lookup funziona, gia' loggato
         if owner:
             owner_counts[owner] = owner_counts.get(owner, 0) + 1
     if not owner_counts:
         log("[auto-find] nessun proprietario leggibile tra le carte raccolte, interrompo.")
-        return None
+        return None, None
 
     ordered = sorted(owner_counts.items(), key=lambda kv: kv[1], reverse=True)
     log(f"[auto-find] {len(ordered)} manager venditori distinti individuati "
@@ -621,17 +730,36 @@ def auto_find_manager(eth_rate):
         n_for_sale = len(cards)
         log(f"[auto-find] '{owner}': {n_for_sale} carte in_season in vendita "
             f"(soglia {AUTO_FIND_MIN_CARDS_FOR_SALE}).")
-        if n_for_sale >= AUTO_FIND_MIN_CARDS_FOR_SALE:
-            log(f"[auto-find] SELEZIONATO '{owner}' -- parte lo scan classico su di lui "
-                f"(in raffreddamento per i prossimi {AUTO_FIND_COOLDOWN_DAYS:.0f} giorni per "
-                f"la sola auto-discovery).")
-            cooldown[owner] = datetime.datetime.now().isoformat()
-            _save_auto_find_cooldown(cooldown)
-            return owner
-    log(f"[auto-find] nessun manager sopra la soglia tra i primi "
+        if n_for_sale < AUTO_FIND_MIN_CARDS_FOR_SALE:
+            continue
+
+        log(f"[auto-find] '{owner}': sopra soglia carte -- controllo il mercato per calcolare "
+            f"lo scarto del pacchetto best-deal prima di impegnarmi...")
+        on_sale, _found2 = scan_manager_market(owner, eth_rate)
+        # Scansionato per intero: in raffreddamento per la sola auto-discovery a prescindere
+        # dall'esito, per non ripetere la stessa scansione costosa ogni run.
+        cooldown[owner] = datetime.datetime.now().isoformat()
+        _save_auto_find_cooldown(cooldown)
+        if not on_sale:
+            log(f"[auto-find] '{owner}': nessuna carta davvero in vendita dopo il controllo "
+                f"mercato, passo oltre.")
+            continue
+        cheapest_only = [c for c in on_sale if c['listing_price'] <= c['market_min_price']]
+        best_deal_cards = _select_best_deal_cards(cheapest_only)
+        gap_sum = sum(c['gap'] for c in best_deal_cards)
+        log(f"[auto-find] '{owner}': scarto totale pacchetto best-deal {format_eur(gap_sum)} "
+            f"su {len(best_deal_cards)} carte (soglia {format_eur(AUTO_FIND_MIN_BEST_DEAL_GAP_EUR)}).")
+        if gap_sum < AUTO_FIND_MIN_BEST_DEAL_GAP_EUR:
+            log(f"[auto-find] '{owner}': scarto sotto soglia -- probabile manager/bot che non "
+                f"accetta offerte al ribasso, scarto il candidato e continuo la ricerca.")
+            continue
+        log(f"[auto-find] SELEZIONATO '{owner}' -- parte il report (in raffreddamento per i "
+            f"prossimi {AUTO_FIND_COOLDOWN_DAYS:.0f} giorni per la sola auto-discovery).")
+        return owner, on_sale
+    log(f"[auto-find] nessun manager idoneo (soglia carte + soglia scarto best-deal) tra i primi "
         f"{AUTO_FIND_MAX_MANAGERS_TO_CHECK} controllati -- nessuno scan, riprova piu' tardi "
         f"(o allunga AUTO_FIND_LISTEN_SECONDS).")
-    return None
+    return None, None
 
 
 def run_bundle_scan():
@@ -650,95 +778,18 @@ def run_bundle_scan():
 
     if manager_slug:
         log(f"input ricevuto: {MANAGER_INPUT!r} -> slug estratto: '{manager_slug}'")
+        # Input manuale: nessuna soglia di scarto best-deal (l'utente ha scelto apposta questo
+        # manager, non c'e' una "ricerca" da continuare su un altro candidato).
+        on_sale, manager_found = scan_manager_market(manager_slug, eth_rate)
+        if manager_found is False or manager_found is None:
+            log("nessuna notifica Telegram inviata.")
+            return
     else:
-        manager_slug = auto_find_manager(eth_rate)
+        manager_slug, on_sale = auto_find_manager(eth_rate)
         if not manager_slug:
             log("[auto-find] nessun manager idoneo trovato in questo giro -- interrompo, "
                 "nessuna notifica Telegram.")
             return
-
-    owned_in_season_cards, nb_hits_total, manager_found, has_sale_field = \
-        fetch_manager_owned_in_season_limited_cards(manager_slug)
-
-    if manager_found is False:
-        log(f"manager '{manager_slug}' NON TROVATO su Sorare (query user() ha restituito null) "
-            f"-- controlla che lo slug/URL sia corretto. Nessuna notifica Telegram inviata.")
-        return
-    if manager_found is None:
-        log(f"impossibile determinare se '{manager_slug}' esiste (errore di rete/GraphQL prima "
-            f"ancora di ricevere una risposta valida, vedi dettaglio errore sopra nel log). "
-            f"Nessuna notifica Telegram inviata.")
-        return
-
-    scope_desc = ("GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)"
-                  if has_sale_field else f"su {nb_hits_total} carte Limited totali, tutte le stagioni")
-    log(f"'{manager_slug}': {len(owned_in_season_cards)} carte Limited IN SEASON possedute "
-        f"({scope_desc}).")
-    if not owned_in_season_cards:
-        log(f"'{manager_slug}' non possiede nessuna carta Limited in_season -- nessuna carta da "
-            f"controllare, nessuna notifica Telegram inviata.")
-        return
-
-    unique_players = []
-    seen_players = set()
-    for card in owned_in_season_cards:
-        p = card['player_slug']
-        if p not in seen_players:
-            seen_players.add(p)
-            unique_players.append(p)
-
-    if len(unique_players) > MAX_PLAYERS_TO_CHECK:
-        log(f"ATTENZIONE: '{manager_slug}' ha {len(unique_players)} giocatori diversi tra le "
-            f"carte in_season possedute, oltre il tetto MAX_PLAYERS_TO_CHECK="
-            f"{MAX_PLAYERS_TO_CHECK} -- controllo solo i primi {MAX_PLAYERS_TO_CHECK} (per "
-            f"acquisizione piu' recente), il risultato potrebbe essere incompleto.")
-        allowed_players = set(unique_players[:MAX_PLAYERS_TO_CHECK])
-        owned_in_season_cards = [c for c in owned_in_season_cards
-                                  if c['player_slug'] in allowed_players]
-        unique_players = unique_players[:MAX_PLAYERS_TO_CHECK]
-
-    log(f"controllo il mercato live per {len(unique_players)} giocatori diversi "
-        f"({len(owned_in_season_cards)} carte possedute da verificare)...")
-
-    on_sale = []
-    not_on_sale_count = 0
-    error_count = 0
-    below_min_price_count = 0
-    for card in owned_in_season_cards:
-        try:
-            result = find_current_listing_and_market_min(
-                card['card_slug'], card['player_slug'], eth_rate)
-        except Exception as e:
-            log(f"eccezione controllando {card['player_name']} ({card['card_slug']}): {e}")
-            error_count += 1
-            continue
-        if result is None:
-            not_on_sale_count += 1
-            continue
-        listing_price, market_min_price, second_min_price = result
-        # FIX 18/07 (v2, richiesta esplicita dell'utente, "ignoriamo le carte che hanno un
-        # prezzo minimo di vendita inferiore ad un euro"): scartate PRIMA di entrare in on_sale,
-        # quindi assenti da blocchi/bonus/best deal.
-        if market_min_price < BUNDLE_MIN_MARKET_PRICE_EUR:
-            below_min_price_count += 1
-            continue
-        on_sale.append({
-            'player_name': card['player_name'],
-            'player_slug': card['player_slug'],
-            'card_slug': card['card_slug'],
-            'listing_price': listing_price,
-            'market_min_price': market_min_price,
-            'second_min_price': second_min_price,
-        })
-        time.sleep(PER_PLAYER_QUERY_DELAY_SECONDS)
-
-    log(f"[diagnostica] {len(owned_in_season_cards)} carte in_season possedute controllate, "
-        f"{len(on_sale)} risultano DAVVERO in vendita ora, {not_on_sale_count} possedute ma NON "
-        f"in vendita (o ritirate/vendute nel frattempo), {below_min_price_count} scartate perche' "
-        f"sotto {format_eur(BUNDLE_MIN_MARKET_PRICE_EUR)} di prezzo minimo di mercato, "
-        f"{error_count} errori di query.")
-    log(f"[diagnostica valute] branch usati in eur_price_from_amounts: "
-        f"{track.get_currency_branch_stats()}")
 
     if not on_sale:
         log(f"'{manager_slug}' possiede carte in_season ma NESSUNA risulta attualmente in "
@@ -936,9 +987,9 @@ a:hover {{ text-decoration: underline; }}
 <h1>🎯 {manager_slug} -- {len(on_sale)} carte Limited in_season in vendita</h1>
 <p><a href="{manager_url}" target="_blank">📂 Vai alle carte in vendita di {manager_slug}</a></p>
 <p style="font-size:0.85rem;color:#666;">Generato {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')} -- 🟢 gia' al minimo di mercato, 🔴 in vendita sopra il minimo (esiste altrove piu' a buon mercato).</p>
+{best_deal_section}
 {main_section}
 {bonus_section}
-{best_deal_section}
 </body>
 </html>
 """
