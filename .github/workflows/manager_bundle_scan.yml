@@ -91,11 +91,25 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p logs
+          # FIX 10/08 (v2, bug reale osservato dall'utente: 'canmert' notificato due volte a 5
+          # minuti di distanza): oltre a scrivere sul log ACCODATO (che resta per sempre, tra run
+          # diverse), scriviamo l'output di QUESTA sola run anche su un file temporaneo dedicato
+          # (.this_run.tmp) -- il grep su REPORT_READY va fatto SOLO li'. Causa del bug: il vecchio
+          # grep cercava nell'INTERO log accodato (tutte le run precedenti comprese) e prendeva
+          # l'ULTIMA riga REPORT_READY trovata -- se QUESTA run non ne scriveva una nuova (nessun
+          # manager idoneo, es. dopo un "Re-run" manuale da GitHub che riparte da zero
+          # l'auto-discovery), il grep restituiva comunque quella della run PRECEDENTE, notificando
+          # di nuovo lo stesso manager con un report identico. Riprodotto sulla run 31410353910
+          # (richiesta esplicita di verifica): attempt 1 seleziona 'canmert' e notifica (16:45:25),
+          # l'utente rilancia la run dall'interfaccia GitHub, attempt 2 (16:47:39) non trova nessun
+          # candidato idoneo ma la notifica Telegram e' partita comunque per 'canmert' (16:50:53) --
+          # stesso manager, stesso identico report.html (mai riscritto dall'attempt 2), commit
+          # diverso: esattamente il sintomo segnalato ("stesso manager due volte a 5 minuti").
           {
             echo ""
             echo "===== RUN $(date -u '+%Y-%m-%d %H:%M:%S UTC') ====="
             python scanners/manager_bundle_scan.py
-          } 2>&1 | tee -a scanners/logs/manager_bundle_scan_last_run.log
+          } 2>&1 | tee -a scanners/logs/manager_bundle_scan_last_run.log scanners/logs/.this_run.tmp
           # Rete di sicurezza SOLO per non far crescere il file all'infinito -- stesso pattern
           # gemello degli altri tre workflow, tiene le ultime 200 run intere.
           awk -v maxruns=200 '
@@ -106,13 +120,11 @@ jobs:
               for (i=from; i<=last; i++) print buf[i]
             }
           ' scanners/logs/manager_bundle_scan_last_run.log > scanners/logs/manager_bundle_scan_last_run.log.tmp && mv scanners/logs/manager_bundle_scan_last_run.log.tmp scanners/logs/manager_bundle_scan_last_run.log
-          # FIX 10/08 (richiesta esplicita dell'utente, report HTML al posto dei messaggi Telegram
-          # a blocchi): il file HTML e' a percorso FISSO e sovrascritto ad ogni run, quindi la sua
-          # sola presenza non basta a dire che questa run ha prodotto un risultato fresco (se
-          # questa run non ha trovato carte, il file resta quello della run precedente). Lo script
-          # stampa "REPORT_READY <slug> <n>" SOLO quando scrive davvero il file in questa run --
-          # lo cerchiamo nel log appena prodotto per decidere se notificare.
-          REPORT_LINE=$(grep '^REPORT_READY ' scanners/logs/manager_bundle_scan_last_run.log | tail -n 1 || true)
+          # Lo script stampa "REPORT_READY <slug> <n>" SOLO quando scrive davvero il file HTML in
+          # QUESTA run -- lo cerchiamo SOLO nell'output isolato di questa run (mai nel log
+          # accodato, vedi spiegazione sopra), poi il temporaneo si butta subito.
+          REPORT_LINE=$(grep '^REPORT_READY ' scanners/logs/.this_run.tmp | tail -n 1 || true)
+          rm -f scanners/logs/.this_run.tmp
           if [ -n "$REPORT_LINE" ]; then
             echo "report_ready=true" >> "$GITHUB_OUTPUT"
             echo "manager_slug=$(echo "$REPORT_LINE" | awk '{print $2}')" >> "$GITHUB_OUTPUT"
