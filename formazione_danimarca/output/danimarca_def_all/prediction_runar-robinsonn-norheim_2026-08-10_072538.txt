@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-10T07:25:38.287142Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) runar-robinsonn-norheim: 52 pt attesi (38-73)
+   ORDINAMENTO: 52.76
+   SQUADRA: nordsjaelland-farum | AVVERSARIO: valur-reykjavik-1911
+======================================================================
+
+######################################################################
+# GIOCATORE: runar-robinsonn-norheim
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: runar-robinsonn-norheim (squadra: nordsjaelland-farum)
+Generato: 2026-08-10T07:25:38.269629Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | TIL vs BRA | eliteserien | score=47.0 | peso=0.645
+  2025-09-28 | FCN vs AGF | superliga-dk | score=46.8 | peso=0.660
+  2025-12-07 | FCN vs SIF | superliga-dk | score=83.8 | peso=0.675
+  2026-02-20 | FCN vs VB | superliga-dk | score=62.7 | peso=0.691
+  2026-03-01 | VFF vs FCN | superliga-dk | score=36.0 | peso=0.707
+  2026-03-15 | FCM vs FCN | superliga-dk | score=40.1 | peso=0.724
+  2026-03-22 | FCN vs SJE | superliga-dk | score=71.4 | peso=0.741
+  2026-04-07 | FCN vs BIF | superliga-dk | score=45.5 | peso=0.758
+  2026-04-10 | AGF vs FCN | superliga-dk | score=37.0 | peso=0.776
+  2026-04-19 | FCN vs VFF | superliga-dk | score=37.9 | peso=0.794
+  2026-04-23 | FCN vs AGF | superliga-dk | score=37.0 | peso=0.812
+  2026-04-26 | VFF vs FCN | superliga-dk | score=34.7 | peso=0.831
+  2026-05-01 | BIF vs FCN | superliga-dk | score=35.3 | peso=0.851
+  2026-05-10 | FCN vs FCM | superliga-dk | score=38.1 | peso=0.871
+  2026-05-17 | SJE vs FCN | superliga-dk | score=80.2 | peso=0.891
+  2026-07-23 | GAI vs FCN | uefa-europa-conference-league | score=40.4 | peso=0.912
+  2026-07-26 | ACH vs FCN | superliga-dk | score=42.1 | peso=0.933
+  2026-07-30 | FCN vs GAI | uefa-europa-conference-league | score=87.5 | peso=0.955
+  2026-08-02 | FCN vs RFC | superliga-dk | score=67.7 | peso=0.977
+  2026-08-06 | VAL vs FCN | uefa-europa-conference-league | score=42.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 50.81
+  di cui Punteggio decisivo (level_score) medio: 44.30 | Punteggio complessivo (granulari) medio: 6.51 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.26, delta avversario +0.00 | Passaggio condizionato: delta venue +0.33, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.57
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.0 - 71.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.51 (differenza: +2.06)
+Media score in casa: 57.84 | Media score fuori casa: 43.10
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.6
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.005
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 1.005
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.000
+Fattore trend (media ultime 5: 56.1 vs media 5 PRECEDENTI: 45.5): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-13T17:00
+Casa: FC Nordsjælland | Trasferta: Valur Reykjavík
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.0 (range 38.2 - 72.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 52.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.38
+Punteggio REALE ottenuto in quella partita: 42.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -9.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      61.7    71.4     +9.7    17.8        SI
+   7        7      46.2    45.5     -0.7    18.0        SI
+   8        8      52.5    37.0    -15.5    17.2        SI
+   9        9      48.6    37.9    -10.7    17.2        SI
+  10       10      51.1    37.0    -14.1    17.0        SI
+  11       11      44.8    34.7    -10.1    16.7        SI
+  12       12      40.5    35.3     -5.2    16.5        SI
+  13       13      40.1    38.1     -2.0    16.3        SI
+  14       14      53.8    80.2    +26.4    15.8        NO
+  15       15      47.6    40.4     -7.2    18.2        SI
+  16       16      50.9    42.1     -8.8    17.7        SI
+  17       17      48.5    87.5    +39.0    17.1        NO
+  18       18      46.5    67.7    +21.2    19.9        NO
+  19       19      50.1    42.1     -8.0    19.8        SI
+
+MAE (errore assoluto medio): 12.76
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 78.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
