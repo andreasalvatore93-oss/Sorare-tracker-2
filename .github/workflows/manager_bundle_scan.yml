@@ -124,6 +124,7 @@ jobs:
       # non ha stato persistente tra un'esecuzione e l'altra, ogni run e' autonomo. Salviamo il
       # log e il report HTML (percorso fisso, sovrascritto ad ogni run).
       - name: Save log and persist blacklist
+        id: save
         if: always()
         run: |
           git config user.name "sorare-tracker-bot"
@@ -163,6 +164,7 @@ jobs:
             git merge --no-edit -X ours origin/main
           done
           echo "Salvato correttamente."
+          echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       # FIX 10/08 (richiesta esplicita dell'utente): notifica Telegram minima con SOLO il link al
       # report HTML (non piu' il contenuto a blocchi) -- stesso pattern gia' collaudato in
@@ -170,18 +172,32 @@ jobs:
       # scaricarlo. Step SEPARATO e DOPO lo step che ha gia' pushato il file, cosi' il link punta
       # a un file davvero presente su GitHub quando arriva la notifica. Salta se questa run non ha
       # prodotto un report fresco (vedi report_ready sopra) o se i secret non sono configurati.
+      #
+      # FIX 10/08 (v2, bug reale osservato dall'utente: il link della seconda run puntava ancora
+      # al report della PRIMA run, temha58 invece di yannic10): raw.githack.com e' una CDN che
+      # CACHA aggressivamente gli URL basati su un branch (es. ".../main/...") -- il file su
+      # GitHub era gia' aggiornato, ma il link continuava a servire la copia vecchia. Il file HTML
+      # ha percorso FISSO e viene sovrascritto ad ogni run, quindi un URL "main" e' esattamente il
+      # caso che la CDN cacha di piu'. Fix: puntare al COMMIT SHA appena creato (commit_sha, dallo
+      # step precedente) invece che al branch -- e' un URL diverso ad ogni run, quindi non puo'
+      # MAI essere una cache stantia di un run precedente.
       - name: Notify Telegram with report link
         if: steps.scan.outputs.report_ready == 'true'
         env:
           TELEGRAM_TOKEN: ${{ secrets.BUNDLE_TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.BUNDLE_TELEGRAM_CHAT_ID }}
           MANAGER_SLUG: ${{ steps.scan.outputs.manager_slug }}
+          COMMIT_SHA: ${{ steps.save.outputs.commit_sha }}
         run: |
           if [ -z "$TELEGRAM_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
             echo "BUNDLE_TELEGRAM_TOKEN/BUNDLE_TELEGRAM_CHAT_ID non configurati, salto la notifica."
             exit 0
           fi
-          URL="https://raw.githack.com/${GITHUB_REPOSITORY}/main/scanners/logs/manager_bundle_scan_report.html"
+          if [ -z "$COMMIT_SHA" ]; then
+            echo "commit_sha non disponibile (nessun commit nello step precedente?), salto la notifica."
+            exit 0
+          fi
+          URL="https://raw.githack.com/${GITHUB_REPOSITORY}/${COMMIT_SHA}/scanners/logs/manager_bundle_scan_report.html"
           MSG="🎯 <b>${MANAGER_SLUG}</b> — report bundle pronto: <a href=\"${URL}\">apri</a>"
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
