@@ -844,13 +844,17 @@ def run_bundle_scan():
                 "nessuna notifica Telegram.")
             return
 
+        total_gap_sum = 0.0
         for slug, on_sale in manager_results:
             cheapest_only = [c for c in on_sale if c['listing_price'] <= c['market_min_price']]
             best_deal_cards = _select_best_deal_cards(cheapest_only)
             gap_sum = sum(c['gap'] for c in best_deal_cards)
+            total_gap_sum += gap_sum
             log(f"RISULTATO -- '{slug}': pacchetto best-deal di {len(best_deal_cards)} carte, "
                 f"scarto totale {format_eur(gap_sum)} (su {len(on_sale)} carte in vendita totali "
                 f"possedute dal manager).")
+        log(f"RISULTATO -- scarto totale complessivo su tutti i {len(manager_results)} manager: "
+            f"{format_eur(total_gap_sum)}.")
 
         html_path = write_batch_html_report(manager_results)
         log(f"report HTML multi-manager scritto: {html_path} "
@@ -1081,9 +1085,11 @@ def write_batch_html_report(manager_results):
     soglia scarto minimo). Stesso percorso fisso HTML_REPORT_PATH del report a manager singolo
     -- sovrascritto ad ogni run. Ritorna il percorso scritto."""
     sections = []
+    total_gap_sum = 0.0
     for manager_slug, on_sale in manager_results:
         cheapest_only = [c for c in on_sale if c['listing_price'] <= c['market_min_price']]
         best_deal_cards = _select_best_deal_cards(cheapest_only)
+        total_gap_sum += sum(c['gap'] for c in best_deal_cards)
         sections.append(_render_manager_best_deal_section_html(manager_slug, best_deal_cards))
 
     names = ", ".join(slug for slug, _ in manager_results)
@@ -1098,6 +1104,7 @@ def write_batch_html_report(manager_results):
 <body>
 <h1>🏆 {len(manager_results)} manager trovati: {names}</h1>
 <p style="font-size:0.85rem;color:#666;">Generato {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')} -- solo il pacchetto best-deal di ciascuno (le altre sezioni non compaiono in questa modalita').</p>
+<p class="total">Scarto totale complessivo (tutti i {len(manager_results)} manager insieme): {format_eur(total_gap_sum)}</p>
 {"".join(sections)}
 </body>
 </html>
