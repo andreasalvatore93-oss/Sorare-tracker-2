@@ -787,3 +787,30 @@ REPORT_READY yannic10 4
 [2026-08-10 16:20:52] [manager bundle scan] RISULTATO -- 'jafar1006-253160e2-1773-43e4-ad8e-fc7535558146': 28 carte in vendita organizzate in 3 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 60.45EUR, minimo di mercato totale 53.75EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 27 gia' al minimo di mercato (sezione bonus separata).
 [2026-08-10 16:20:52] [manager bundle scan] report HTML scritto: scanners/logs/manager_bundle_scan_report.html
 REPORT_READY jafar1006-253160e2-1773-43e4-ad8e-fc7535558146 28
+
+===== RUN 2026-08-10 16:33:19 UTC =====
+[2026-08-10 16:33:19] [manager bundle scan] [auto-find] nessun manager fornito e modalita' auto-discovery ATTIVA: ascolto il mercato per 120s a caccia di manager con almeno 5 carte in_season in vendita...
+[2026-08-10 16:35:19] [manager bundle scan] [auto-find] ascolto terminato: 28 carte in_season appena messe in vendita raccolte (sopra 1.00EUR).
+[2026-08-10 16:35:19] [manager bundle scan] [auto-find] variante proprietario 'user' FUNZIONA su anyCard -- la uso per tutti i lookup successivi.
+[2026-08-10 16:35:30] [manager bundle scan] [auto-find] 17 manager venditori distinti individuati (top: rodasmga x4, hsv_daniel-393740ab-37ab-48d8-bde8-1ef23327e34a x4, eli-aquim x3, crobberx x3, raffaelepeluso x2) -- controllo quante carte in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...
+[2026-08-10 16:35:30] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 16:35:30] [manager bundle scan] 'rodasmga': 248 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 16:35:32] [manager bundle scan] [filtro carte in vendita] 248 carte possedute scansionate, 4 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 244.
+[2026-08-10 16:35:32] [manager bundle scan] [auto-find] 'rodasmga': 4 carte in_season in vendita (soglia 5).
+[2026-08-10 16:35:33] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 16:35:33] [manager bundle scan] 'hsv_daniel-393740ab-37ab-48d8-bde8-1ef23327e34a': 262 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 16:35:36] [manager bundle scan] [filtro carte in vendita] 262 carte possedute scansionate, 75 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 187.
+[2026-08-10 16:35:36] [manager bundle scan] [auto-find] 'hsv_daniel-393740ab-37ab-48d8-bde8-1ef23327e34a': 45 carte in_season in vendita (soglia 5).
+[2026-08-10 16:35:36] [manager bundle scan] [auto-find] 'hsv_daniel-393740ab-37ab-48d8-bde8-1ef23327e34a': sopra soglia carte -- controllo il mercato per calcolare lo scarto del pacchetto best-deal prima di impegnarmi...
+[2026-08-10 16:35:36] [manager bundle scan] [filtro carte in vendita] campo liveSingleSaleOffer FUNZIONA dentro searchCards.hits -- lo uso per sapere SUBITO quali carte possedute sono davvero in vendita, senza controllare il mercato per i giocatori che non c'entrano.
+[2026-08-10 16:35:36] [manager bundle scan] 'hsv_daniel-393740ab-37ab-48d8-bde8-1ef23327e34a': 262 carte Limited possedute in totale (tutte le stagioni), scansiono fino a un massimo di 1000...
+[2026-08-10 16:35:39] [manager bundle scan] [filtro carte in vendita] 262 carte possedute scansionate, 75 confermate in vendita ORA (liveSingleSaleOffer non nullo) -- salto il controllo mercato per le restanti 187.
+[2026-08-10 16:35:39] [manager bundle scan] 'hsv_daniel-393740ab-37ab-48d8-bde8-1ef23327e34a': 45 carte Limited IN SEASON possedute (GIA' filtrate alle sole confermate in vendita (liveSingleSaleOffer)).
+[2026-08-10 16:35:39] [manager bundle scan] controllo il mercato live per 45 giocatori diversi (45 carte possedute da verificare)...
+[2026-08-10 16:36:03] [manager bundle scan] [diagnostica] 45 carte in_season possedute controllate, 37 risultano DAVVERO in vendita ora, 0 possedute ma NON in vendita (o ritirate/vendute nel frattempo), 8 scartate perche' sotto 1.00EUR di prezzo minimo di mercato, 0 errori di query.
+[2026-08-10 16:36:03] [manager bundle scan] [diagnostica valute] branch usati in eur_price_from_amounts: {'eurCents': 1199, 'wei': 172, 'usdCents': 410, 'gbpCents': 84, 'lamport': 0, 'none': 0}
+[2026-08-10 16:36:03] [manager bundle scan] [auto-find] 'hsv_daniel-393740ab-37ab-48d8-bde8-1ef23327e34a': scarto totale pacchetto best-deal 20.70EUR su 10 carte (soglia 2.00EUR).
+[2026-08-10 16:36:03] [manager bundle scan] [auto-find] SELEZIONATO 'hsv_daniel-393740ab-37ab-48d8-bde8-1ef23327e34a' -- parte il report (in raffreddamento per i prossimi 7 giorni per la sola auto-discovery).
+[2026-08-10 16:36:03] [manager bundle scan] RISULTATO -- 'hsv_daniel-393740ab-37ab-48d8-bde8-1ef23327e34a': 37 carte in vendita organizzate in 4 blocchi da 10 (limite Sorare per offerta cumulativa), richiesta totale 1542.00EUR, minimo di mercato totale 1506.61EUR (dettaglio/offerta per blocco nel messaggio Telegram) -- di cui 23 gia' al minimo di mercato (sezione bonus separata).
+[2026-08-10 16:36:03] [manager bundle scan] report HTML scritto: scanners/logs/manager_bundle_scan_report.html
+REPORT_READY hsv_daniel-393740ab-37ab-48d8-bde8-1ef23327e34a 37
