@@ -180,3 +180,37 @@ senza bisogno di un campo dedicato: uno scarto di 300+ punti è il segnale.
 - **Da7 / In Season** (nessun costo): la riga **non entra in archivio**
   (o al massimo una nota informativa) — non c'è nulla da contabilizzare,
   l'unica perdita è la formazione sprecata, zero essenze.
+
+### Campo `atteso` per carta — refresh obbligatorio prima di calcolarlo (10/08/2026)
+
+Ogni carta porta anche `atteso` (walk-forward, funzione di produzione
+`backtest_arene_previsioni.score_atteso(cache, slug, ruolo, fine_giornata)`,
+zero codice nuovo). Senza questo campo l'archivio può rispondere solo
+"quanto ha reso" (ROI), non "il modello aveva previsto bene" — la domanda
+per cui l'archivio esiste.
+
+**La cache condivisa non è aggiornata per riflesso per tutti i giocatori**:
+si aggiorna solo quando un giocatore passa per una run di produzione. Sul
+primo test (GW 4-7 agosto 2026, pre-G) la copertura era del 43% (52/121
+carte) — non per leghe non tracciate (0 slug con cache vuota), ma perché
+molti giocatori avevano l'ultima partita in cache appena fuori dalla
+finestra di ricerca di 6 giorni usata da `partita_target()`.
+
+**Passo obbligatorio, prima di calcolare `atteso` per una GW**:
+1. Elenco slug/ruolo delle carte schierate (già nell'archivio).
+2. `python predici_manager_batch.py --input <file> --force` — rinfresca la
+   cache ESATTAMENTE per quei giocatori (stesso tool del filone
+   smart-money). Costa query vere, non è gratis/offline come il calcolo
+   dell'atteso.
+3. Dopo il refresh, `backtest_arene_previsioni.diagnostica_staleness_cache()`
+   per riportare il grezzo (trovati/mancanti) — se restano buchi, sono
+   reali (lega senza pipeline, o partita non ancora in Sorare) e vanno
+   segnati in chiaro, mai scartati in silenzio.
+
+Sul test: 43% → **92,6%** dopo il refresh (112/121). Residuo 7 carte: 2
+strutturali (lega senza pipeline), 5 rimaste scoperte anche dopo il
+refresh forzato (piccolo, non inseguito oltre).
+
+**Non si allarga la finestra dei 6 giorni** per compensare: rischia di
+agganciare la partita sbagliata (di un'altra GW). Il fix è tenere la
+cache aggiornata per chi serve, non allentare il criterio di ricerca.
