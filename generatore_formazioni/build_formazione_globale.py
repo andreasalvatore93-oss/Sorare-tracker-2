@@ -1971,8 +1971,16 @@ def main():
             if _shortfall_arene:
                 _suppl.extend(genera_arene_efficienti(['ARENA_ALLSTARS_BEGINNER'], _shortfall_arene,
                                                        role_data_ext, pools_ext, card_pool))
-            for _tipo_post, _shortfall, _gia in (('ALLSTARS', _shortfall_allstars, _generati_allstars),
-                                                  ('ALLSTARS_U23', _shortfall_u23, _generati_u23)):
+            # Stesso ordine di PRIORITY_ORDER (riga 311: 'ALLSTARS_U23' PRIMA
+            # di 'ALLSTARS' -- Under23 ha priorita' sulle All Stars normali).
+            # BUG REALE (10/08, trovato dall'utente confrontando col pool
+            # visibile su Sorare): qui l'ordine era invertito -- il
+            # suppletivo esauriva i candidati U23-eleggibili sulle All Stars
+            # (che li accettano comunque, essendo un sottoinsieme) PRIMA che
+            # toccasse a Under23, lasciandola a corto anche quando il pool
+            # esteso ne aveva a sufficienza.
+            for _tipo_post, _shortfall, _gia in (('ALLSTARS_U23', _shortfall_u23, _generati_u23),
+                                                  ('ALLSTARS', _shortfall_allstars, _generati_allstars)):
                 if not _shortfall:
                     continue
                 _batch = generate_lineups_for_type(_tipo_post, _shortfall, role_data_ext, pools_ext, card_pool)

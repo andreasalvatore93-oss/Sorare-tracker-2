@@ -1845,7 +1845,7 @@ def _team_vs_opponent_html(team_slug, opponent_team_slug, opp_factor):
 
 
 def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool,
-                      team_slug=None, opponent_team_slug=None, opp_factor=None):
+                      team_slug=None, opponent_team_slug=None, opp_factor=None, starter_odds=None):
     """Contenuto dinamico di una pcard (tutto tranne striscia colore/ruolo/
     badge capitano, che restano legati allo SLOT, non al giocatore) --
     fattorizzato (28/07) per essere riusato SIA per la carta reale SIA per
@@ -1853,6 +1853,13 @@ def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool,
     se trascinata al posto del titolare (drag&drop lato client, nessun
     ricalcolo server: lo scambio e' un puro swap di HTML gia' pronto)."""
     l10_html = f'<div class="pcard-l10">L10: {l10:.0f}</div>' if l10 is not None else ''
+    # Starter-odds su OGNI carta (10/08/2026, richiesta esplicita utente,
+    # solo nell'HTML): stessa fonte gia' usata dal tie-break (row['starter_
+    # odds'], persistita da discovery_fixture.py) -- zero costo, il dato era
+    # gia' in mano. Chi non ce l'ha (odds ignote/discovery vecchia) non
+    # mostra la riga, come per L10.
+    odds_html = (f'<div class="pcard-odds">Odds: {starter_odds:.0%}</div>'
+                 if starter_odds is not None else '')
     match_html = _team_vs_opponent_html(team_slug, opponent_team_slug, opp_factor)
     return (
         f'<span class="pcard-fatto">OK</span>'
@@ -1861,6 +1868,7 @@ def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool,
         f'<div class="pcard-score">{atteso:.1f}</div>'
         f'<div class="pcard-range">{low:.1f}–{high:.1f} pt</div>'
         f'{l10_html}'
+        f'{odds_html}'
         f'{match_html}'
         f'<div class="pcard-tags">{tags_html}</div>'
     )
@@ -1878,7 +1886,7 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain, apply_xp_bon
     l10 = card_pool.l10(row['slug'])
     body_html = _pcard_body_html(row['slug'], row['atteso'], row['low'], row['high'], l10, tags_html, card_pool,
                                   team_slug=row.get('team_slug'), opponent_team_slug=row.get('opponent_team_slug'),
-                                  opp_factor=row.get('opp_factor'))
+                                  opp_factor=row.get('opp_factor'), starter_odds=row.get('starter_odds'))
     # data-body (28/07): l'HTML esatto della pcard-body per QUESTO giocatore,
     # gia' pronto -- il drag&drop lato client lo scambia con quello di
     # un'alternativa senza ricalcolare nulla in JS (vedi script nel template).
@@ -2051,6 +2059,7 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   .pcard-score {{ font-size: 1.15rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--role-color); }}
   .pcard-range {{ font-size: 0.55rem; color: var(--muted); font-variant-numeric: tabular-nums; }}
   .pcard-l10 {{ font-size: 0.5rem; color: var(--muted-2); font-variant-numeric: tabular-nums; }}
+  .pcard-odds {{ font-size: 0.5rem; color: var(--muted-2); font-variant-numeric: tabular-nums; }}
   .pcard-match {{ font-size: 0.62rem; color: var(--text); opacity: 0.85; line-height: 1.3; text-align: center; }}
   .pcard-tags {{ display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; min-height: 14px; }}
   .tag {{ font-size: 0.5rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; }}
