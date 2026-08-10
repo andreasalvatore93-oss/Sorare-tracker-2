@@ -1,0 +1,135 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-10T07:28:27.815234Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) luis-henrique-barros-lopes: 49 pt attesi (36-77)
+   ORDINAMENTO: 47.52
+   SQUADRA: atlas-guadalajara | AVVERSARIO: cincinnati-cincinnati-ohio
+======================================================================
+
+######################################################################
+# GIOCATORE: luis-henrique-barros-lopes
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: luis-henrique-barros-lopes (squadra: atlas-guadalajara)
+Generato: 2026-08-10T07:28:27.814214Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 48
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | HUE vs LEG | segunda-division-es | score=44.7 | peso=0.035
+  2025-08-22 | LEG vs CAD | segunda-division-es | score=67.9 | peso=0.039
+  2025-09-01 | LEG vs DEP | segunda-division-es | score=74.4 | peso=0.044
+  2025-09-07 | CUL vs LEG | segunda-division-es | score=57.7 | peso=0.050
+  2025-09-14 | GCF vs LEG | segunda-division-es | score=86.0 | peso=0.056
+  2025-09-20 | LEG vs LPA | segunda-division-es | score=51.4 | peso=0.062
+  2025-10-04 | FCA vs LEG | segunda-division-es | score=66.0 | peso=0.070
+  2025-10-11 | MIR vs LEG | segunda-division-es | score=42.4 | peso=0.079
+  2025-10-25 | EIB vs LEG | segunda-division-es | score=43.6 | peso=0.088
+  2025-11-01 | LEG vs BCF | segunda-division-es | score=34.3 | peso=0.099
+  2025-11-16 | ADC vs LEG | segunda-division-es | score=49.1 | peso=0.111
+  2025-11-22 | LEG vs UDA | segunda-division-es | score=37.2 | peso=0.125
+  2025-11-30 | ZAR vs LEG | segunda-division-es | score=64.9 | peso=0.140
+  2025-12-13 | RAC vs LEG | segunda-division-es | score=43.4 | peso=0.157
+  2025-12-20 | LEG vs RSG | segunda-division-es | score=46.8 | peso=0.177
+  2026-01-04 | ALB vs LEG | segunda-division-es | score=37.8 | peso=0.198
+  2026-03-14 | VLL vs LEG | segunda-division-es | score=73.9 | peso=0.223
+  2026-03-21 | LEG vs ADC | segunda-division-es | score=79.4 | peso=0.250
+  2026-03-28 | MCF vs LEG | segunda-division-es | score=40.5 | peso=0.281
+  2026-04-02 | LEG vs ZAR | segunda-division-es | score=41.7 | peso=0.315
+  2026-04-05 | UDA vs LEG | segunda-division-es | score=40.1 | peso=0.354
+  2026-04-11 | LEG vs ALB | segunda-division-es | score=49.8 | peso=0.397
+  2026-04-17 | LPA vs LEG | segunda-division-es | score=37.4 | peso=0.445
+  2026-04-26 | LEG vs FCA | segunda-division-es | score=29.2 | peso=0.500
+  2026-05-01 | DEP vs LEG | segunda-division-es | score=74.3 | peso=0.561
+  2026-05-10 | LEG vs RAC | segunda-division-es | score=28.3 | peso=0.630
+  2026-07-18 | LEO vs ATS | liga-mx | score=77.9 | peso=0.707
+  2026-07-26 | SAN vs ATS | liga-mx | score=32.9 | peso=0.794
+  2026-08-02 | ATS vs MON | liga-mx | score=32.9 | peso=0.891
+  2026-08-04 | CLB vs ATS | leagues-cup-mls | score=36.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 45.95
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 48.55 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 38.94 | Punteggio complessivo (granulari) medio: 7.01 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.88 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.36
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.9 - 74.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.04 (differenza: +0.31)
+Media score in casa: 36.50 | Media score fuori casa: 45.95
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 2.0
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.311 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 41.7 vs media 5 PRECEDENTI: 46.2): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-12T00:00
+Casa: FC Cincinnati | Trasferta: Atlas FC de Guadalajara
+Competizione: leagues-cup-mls
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.9 (range 35.8 - 77.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 47.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.15
+Punteggio REALE ottenuto in quella partita: 36.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -10.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      64.2    66.0     +1.8    16.3        SI
+   7        7      64.6    42.4    -22.2    14.6        NO
+   8        8      60.6    43.6    -17.0    16.5        NO
+   9        9      57.7    34.3    -23.4    16.7        NO
+  10       10      54.0    49.1     -4.9    18.2        SI
+  11       11      53.2    37.2    -16.0    16.9        SI
+  12       12      50.9    64.9    +14.0    16.9        SI
+  13       13      52.9    43.4     -9.5    16.6        SI
+  14       14      51.6    46.8     -4.8    15.9        SI
+  15       15      50.9    37.8    -13.1    14.9        SI
+  16       16      49.2    73.9    +24.7    14.8        NO
+  17       17      52.4    79.4    +27.0    16.8        NO
+  18       18      55.7    40.5    -15.2    18.7        SI
+  19       19      53.9    41.7    -12.2    18.5        SI
+  20       20      52.4    40.1    -12.3    17.9        SI
+  21       21      50.9    49.8     -1.1    17.4        SI
+  22       22      50.8    37.4    -13.4    16.4        SI
+  23       23      49.2    29.2    -20.0    16.2        NO
+  24       24      46.9    74.3    +27.4    16.9        NO
+  25       25      50.1    28.3    -21.8    18.8        NO
+  26       26      47.6    77.9    +30.3    19.4        NO
+  27       27      51.0    32.9    -18.1    21.4        SI
+  28       28      49.0    32.9    -16.1    21.2        SI
+  29       29      47.1    36.5    -10.6    20.8        SI
+
+MAE (errore assoluto medio): 15.70
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
