@@ -15,9 +15,13 @@ on:
         required: false
         default: ""
       auto_find_listen_seconds:
-        description: "Solo per auto-discovery: secondi di ascolto del mercato prima di scegliere il manager"
+        description: "Solo per auto-discovery: secondi di ascolto del mercato prima di scegliere i manager (allungato di default: ora ne cerca fino a 3 insieme, vedi sotto)"
         required: false
-        default: "120"
+        default: "180"
+      auto_find_target_manager_count:
+        description: "Solo per auto-discovery: quanti manager idonei cercare prima di notificare TUTTI insieme in un solo report (solo il pacchetto best-deal di ciascuno)"
+        required: false
+        default: "3"
       remove_cooldown_managers:
         description: "Anti-raffreddamento: slug (separati da virgola) da TOGLIERE subito dalla coda di raffreddamento 7gg dell'auto-discovery"
         required: false
@@ -79,7 +83,8 @@ jobs:
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           MANAGER_SLUG_OR_URL: ${{ github.event.inputs.manager_slug_or_url }}
           AUTO_FIND_MANAGER: ${{ github.event.inputs.auto_find_manager || 'si' }}
-          AUTO_FIND_LISTEN_SECONDS: ${{ github.event.inputs.auto_find_listen_seconds || '120' }}
+          AUTO_FIND_LISTEN_SECONDS: ${{ github.event.inputs.auto_find_listen_seconds || '180' }}
+          AUTO_FIND_TARGET_MANAGER_COUNT: ${{ github.event.inputs.auto_find_target_manager_count || '3' }}
           AUTO_FIND_COOLDOWN_DAYS: ${{ github.event.inputs.auto_find_cooldown_days || '7' }}
           REMOVE_COOLDOWN_MANAGERS: ${{ github.event.inputs.remove_cooldown_managers }}
           BLACKLIST_MANAGERS: ${{ github.event.inputs.blacklist_managers }}
@@ -210,7 +215,10 @@ jobs:
             exit 0
           fi
           URL="https://raw.githack.com/${GITHUB_REPOSITORY}/${COMMIT_SHA}/scanners/logs/manager_bundle_scan_report.html"
-          MSG="🎯 <b>${MANAGER_SLUG}</b> — report bundle pronto: <a href=\"${URL}\">apri</a>"
+          # FIX 10/08 (v3): in modalita' multi-manager MANAGER_SLUG e' una lista separata da
+          # virgola (es. "canmert,foo,bar") -- qui solo per la resa nel messaggio, virgole -> ", ".
+          MANAGER_LABEL="${MANAGER_SLUG//,/, }"
+          MSG="🎯 <b>${MANAGER_LABEL}</b> — report bundle pronto: <a href=\"${URL}\">apri</a>"
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
             -d parse_mode=HTML \

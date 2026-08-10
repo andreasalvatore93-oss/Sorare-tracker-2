@@ -56,8 +56,17 @@ MANAGER_INPUT = os.environ.get('MANAGER_SLUG_OR_URL', '').strip()
 AUTO_FIND_MANAGER = os.environ.get('AUTO_FIND_MANAGER', '').strip().lower() in ('1', 'true', 'si', 'yes')
 # FIX 18/07 (v6, richiesta esplicita dell'utente): ascolto default 60->120s (piu' candidati per
 # giro) e soglia carte in vendita 10->5 (anche manager con 5+ carte in season valgono uno scan).
-AUTO_FIND_LISTEN_SECONDS = float(os.environ.get('AUTO_FIND_LISTEN_SECONDS', '120'))
+# FIX 10/08 (v3, richiesta esplicita dell'utente, "notificami 2/3 manager insieme, va allungato
+# leggermente l'ascolto"): 120->180s -- servono piu' candidati distinti raccolti dallo stream per
+# poter trovare AUTO_FIND_TARGET_MANAGER_COUNT manager idonei in un solo giro.
+AUTO_FIND_LISTEN_SECONDS = float(os.environ.get('AUTO_FIND_LISTEN_SECONDS', '180'))
 AUTO_FIND_MIN_CARDS_FOR_SALE = int(os.environ.get('AUTO_FIND_MIN_CARDS_FOR_SALE', '5'))
+# FIX 10/08 (v3, richiesta esplicita dell'utente): auto-discovery non si ferma piu' al primo
+# manager idoneo -- continua a controllare candidati finche' non ne trova
+# AUTO_FIND_TARGET_MANAGER_COUNT (o esaurisce AUTO_FIND_MAX_MANAGERS_TO_CHECK), poi notifica
+# tutti insieme in un solo report/messaggio, mostrando SOLO la sezione best-deal di ciascuno
+# ("le altre non mi interessano").
+AUTO_FIND_TARGET_MANAGER_COUNT = int(os.environ.get('AUTO_FIND_TARGET_MANAGER_COUNT', '3'))
 # FIX 10/08 (richiesta esplicita dell'utente, caso reale jafar1006: 27 carte "gia' al minimo" ma
 # ognuna solo pochi centesimi sotto -- non un'occasione, ma il segnale di un manager/bot che non
 # accetta offerte al ribasso, esattamente il tipo di target che questo scanner deve SCARTARE).
@@ -69,8 +78,10 @@ AUTO_FIND_MIN_BEST_DEAL_GAP_EUR = float(os.environ.get('AUTO_FIND_MIN_BEST_DEAL_
 # Tetti di sicurezza: quanti manager diversi controllare al massimo (ognuno costa la scansione
 # paginata delle sue carte possedute) e quante carte al massimo sottoporre al lookup del
 # proprietario (1 query ciascuna).
-AUTO_FIND_MAX_MANAGERS_TO_CHECK = int(os.environ.get('AUTO_FIND_MAX_MANAGERS_TO_CHECK', '5'))
-AUTO_FIND_MAX_OWNER_LOOKUPS = int(os.environ.get('AUTO_FIND_MAX_OWNER_LOOKUPS', '30'))
+# FIX 10/08 (v3): alzati insieme all'ascolto -- per trovare 3 manager idonei (non solo 1) servono
+# piu' candidati sia da raccogliere (lookup) sia da controllare a fondo (scan mercato).
+AUTO_FIND_MAX_MANAGERS_TO_CHECK = int(os.environ.get('AUTO_FIND_MAX_MANAGERS_TO_CHECK', '12'))
+AUTO_FIND_MAX_OWNER_LOOKUPS = int(os.environ.get('AUTO_FIND_MAX_OWNER_LOOKUPS', '50'))
 
 # FIX 18/07 (v4, richiesta esplicita dell'utente): blacklist di manager bot noti che non accettano
 # offerte negoziate -- scansionarli e' inutile perche' rispondono solo a loro stessa logica bot,
@@ -660,13 +671,15 @@ def collect_on_sale_candidates_from_market(eth_rate, listen_seconds):
     return candidates
 
 
-def auto_find_manager(eth_rate):
-    """Trova un manager 'interessante' da scansionare: ascolta il mercato, raggruppa le carte
-    appena messe in vendita per manager venditore (i manager visti PIU' volte nello stream sono
-    controllati per primi: chi sta listando molte carte e' il candidato piu' probabile ad averne
-    almeno AUTO_FIND_MIN_CARDS_FOR_SALE), e ritorna (slug, on_sale) del primo candidato che
-    supera SIA la soglia sul numero di carte SIA la soglia sullo scarto best-deal -- oppure
-    (None, None) se nessuno le supera entro i tetti di sicurezza.
+def auto_find_managers(eth_rate):
+    """Trova fino a AUTO_FIND_TARGET_MANAGER_COUNT manager 'interessanti' da notificare INSIEME
+    in un solo report: ascolta il mercato, raggruppa le carte appena messe in vendita per manager
+    venditore (i manager visti PIU' volte nello stream sono controllati per primi), e per ognuno
+    che supera SIA la soglia sul numero di carte SIA la soglia sullo scarto best-deal lo aggiunge
+    ai risultati -- continuando sul prossimo candidato finche' non ne trova
+    AUTO_FIND_TARGET_MANAGER_COUNT o esaurisce AUTO_FIND_MAX_MANAGERS_TO_CHECK. Ritorna una lista
+    di (slug, on_sale), eventualmente piu' corta del target se i candidati non bastano, oppure
+    vuota se nessuno e' idoneo.
 
     FIX 10/08 (v2, richiesta esplicita dell'utente, caso reale jafar1006: 27 carte 'gia' al
     minimo di mercato' ma ognuna solo pochi centesimi sotto -- non un'occasione, il segnale di
@@ -674,15 +687,20 @@ def auto_find_manager(eth_rate):
     il candidato viene scansionato per intero (scan_manager_market, la STESSA logica usata per
     l'input manuale) e si calcola lo scarto totale del pacchetto best-deal. Sotto
     AUTO_FIND_MIN_BEST_DEAL_GAP_EUR il candidato viene scartato e la ricerca CONTINUA sul
-    prossimo -- mai una notifica su un pacchetto senza un vero margine."""
+    prossimo -- mai una notifica su un pacchetto senza un vero margine.
+
+    FIX 10/08 (v3, richiesta esplicita dell'utente, "notificami 2/3 manager insieme, solo il
+    best deal di ognuno"): prima si fermava al PRIMO candidato idoneo, ora continua a raccoglierne
+    fino al target."""
     log(f"[auto-find] nessun manager fornito e modalita' auto-discovery ATTIVA: ascolto il "
-        f"mercato per {AUTO_FIND_LISTEN_SECONDS:.0f}s a caccia di manager con almeno "
-        f"{AUTO_FIND_MIN_CARDS_FOR_SALE} carte in_season in vendita...")
+        f"mercato per {AUTO_FIND_LISTEN_SECONDS:.0f}s a caccia di fino a "
+        f"{AUTO_FIND_TARGET_MANAGER_COUNT} manager con almeno {AUTO_FIND_MIN_CARDS_FOR_SALE} "
+        f"carte in_season in vendita...")
     candidates = collect_on_sale_candidates_from_market(eth_rate, AUTO_FIND_LISTEN_SECONDS)
     log(f"[auto-find] ascolto terminato: {len(candidates)} carte in_season appena messe in "
         f"vendita raccolte (sopra {format_eur(BUNDLE_MIN_MARKET_PRICE_EUR)}).")
     if not candidates:
-        return None, None
+        return []
 
     owner_counts = {}
     lookups = 0
@@ -693,19 +711,22 @@ def auto_find_manager(eth_rate):
         lookups += 1
         time.sleep(PER_PLAYER_QUERY_DELAY_SECONDS)
         if _card_owner_variant == '':
-            return None, None  # nessuna query di lookup funziona, gia' loggato
+            return []  # nessuna query di lookup funziona, gia' loggato
         if owner:
             owner_counts[owner] = owner_counts.get(owner, 0) + 1
     if not owner_counts:
         log("[auto-find] nessun proprietario leggibile tra le carte raccolte, interrompo.")
-        return None, None
+        return []
 
     ordered = sorted(owner_counts.items(), key=lambda kv: kv[1], reverse=True)
     log(f"[auto-find] {len(ordered)} manager venditori distinti individuati "
         f"(top: {', '.join(f'{m} x{c}' for m, c in ordered[:5])}) -- controllo quante carte "
         f"in_season hanno DAVVERO in vendita, in ordine di frequenza nello stream...")
     cooldown = _load_auto_find_cooldown()
+    selected = []
     for owner, seen_count in ordered[:AUTO_FIND_MAX_MANAGERS_TO_CHECK]:
+        if len(selected) >= AUTO_FIND_TARGET_MANAGER_COUNT:
+            break
         # FIX 18/07 (v4): ignora i manager in blacklist durante auto-discovery
         if owner in AUTO_FIND_BLACKLIST_MANAGERS:
             log(f"[auto-find] '{owner}': blacklistato (bot noto che non accetta offerte "
@@ -753,13 +774,19 @@ def auto_find_manager(eth_rate):
             log(f"[auto-find] '{owner}': scarto sotto soglia -- probabile manager/bot che non "
                 f"accetta offerte al ribasso, scarto il candidato e continuo la ricerca.")
             continue
-        log(f"[auto-find] SELEZIONATO '{owner}' -- parte il report (in raffreddamento per i "
-            f"prossimi {AUTO_FIND_COOLDOWN_DAYS:.0f} giorni per la sola auto-discovery).")
-        return owner, on_sale
-    log(f"[auto-find] nessun manager idoneo (soglia carte + soglia scarto best-deal) tra i primi "
-        f"{AUTO_FIND_MAX_MANAGERS_TO_CHECK} controllati -- nessuno scan, riprova piu' tardi "
-        f"(o allunga AUTO_FIND_LISTEN_SECONDS).")
-    return None, None
+        log(f"[auto-find] SELEZIONATO '{owner}' ({len(selected) + 1}/{AUTO_FIND_TARGET_MANAGER_COUNT}) "
+            f"-- in raffreddamento per i prossimi {AUTO_FIND_COOLDOWN_DAYS:.0f} giorni per la "
+            f"sola auto-discovery.")
+        selected.append((owner, on_sale))
+    if not selected:
+        log(f"[auto-find] nessun manager idoneo (soglia carte + soglia scarto best-deal) tra i "
+            f"primi {AUTO_FIND_MAX_MANAGERS_TO_CHECK} controllati -- nessuno scan, riprova piu' "
+            f"tardi (o allunga AUTO_FIND_LISTEN_SECONDS).")
+    elif len(selected) < AUTO_FIND_TARGET_MANAGER_COUNT:
+        log(f"[auto-find] trovati solo {len(selected)}/{AUTO_FIND_TARGET_MANAGER_COUNT} manager "
+            f"idonei tra i primi {AUTO_FIND_MAX_MANAGERS_TO_CHECK} controllati -- notifico quelli "
+            f"trovati, non aspetto oltre.")
+    return selected
 
 
 def run_bundle_scan():
@@ -777,42 +804,60 @@ def run_bundle_scan():
     track.reset_currency_branch_stats()
 
     if manager_slug:
+        # Input manuale: un solo manager, report completo (tutte le carte + bonus + best deal),
+        # nessuna soglia di scarto best-deal (l'utente ha scelto apposta questo manager, non c'e'
+        # una "ricerca" da continuare su un altro candidato).
         log(f"input ricevuto: {MANAGER_INPUT!r} -> slug estratto: '{manager_slug}'")
-        # Input manuale: nessuna soglia di scarto best-deal (l'utente ha scelto apposta questo
-        # manager, non c'e' una "ricerca" da continuare su un altro candidato).
         on_sale, manager_found = scan_manager_market(manager_slug, eth_rate)
         if manager_found is False or manager_found is None:
             log("nessuna notifica Telegram inviata.")
             return
+        if not on_sale:
+            log(f"'{manager_slug}' possiede carte in_season ma NESSUNA risulta attualmente in "
+                f"vendita -- nessuna notifica Telegram inviata.")
+            return
+
+        total_asking = sum(c['listing_price'] for c in on_sale)
+        total_market_min = sum(c['market_min_price'] for c in on_sale)
+        n_blocks = math.ceil(len(on_sale) / BUNDLE_BLOCK_SIZE)
+        n_cheapest_only = sum(1 for c in on_sale if c['listing_price'] <= c['market_min_price'])
+        log(f"RISULTATO -- '{manager_slug}': {len(on_sale)} carte in vendita organizzate in "
+            f"{n_blocks} blocchi da {BUNDLE_BLOCK_SIZE} (limite Sorare per offerta cumulativa), "
+            f"richiesta totale {format_eur(total_asking)}, minimo di mercato totale "
+            f"{format_eur(total_market_min)} -- di cui {n_cheapest_only} gia' al minimo di "
+            f"mercato (sezione bonus separata).")
+
+        html_path = write_html_report(manager_slug, on_sale)
+        log(f"report HTML scritto: {html_path}")
+        # Riga grezza (non attraverso log(), per restare facilmente grep-abile dal workflow) che
+        # segnala che QUESTA run ha davvero prodotto un report -- il file HTML e' a percorso
+        # fisso e sovrascritto ad ogni run, quindi la sua sola presenza non basta a dire che e'
+        # fresco.
+        print(f"REPORT_READY {manager_slug} {len(on_sale)}")
     else:
-        manager_slug, on_sale = auto_find_manager(eth_rate)
-        if not manager_slug:
+        # FIX 10/08 (v3, richiesta esplicita dell'utente): auto-discovery raccoglie fino a
+        # AUTO_FIND_TARGET_MANAGER_COUNT manager idonei e li notifica INSIEME, uno solo report,
+        # mostrando SOLO il pacchetto best-deal di ciascuno ("le altre carte non mi interessano").
+        manager_results = auto_find_managers(eth_rate)
+        if not manager_results:
             log("[auto-find] nessun manager idoneo trovato in questo giro -- interrompo, "
                 "nessuna notifica Telegram.")
             return
 
-    if not on_sale:
-        log(f"'{manager_slug}' possiede carte in_season ma NESSUNA risulta attualmente in "
-            f"vendita -- nessuna notifica Telegram inviata.")
-        return
+        for slug, on_sale in manager_results:
+            cheapest_only = [c for c in on_sale if c['listing_price'] <= c['market_min_price']]
+            best_deal_cards = _select_best_deal_cards(cheapest_only)
+            gap_sum = sum(c['gap'] for c in best_deal_cards)
+            log(f"RISULTATO -- '{slug}': pacchetto best-deal di {len(best_deal_cards)} carte, "
+                f"scarto totale {format_eur(gap_sum)} (su {len(on_sale)} carte in vendita totali "
+                f"possedute dal manager).")
 
-    total_asking = sum(c['listing_price'] for c in on_sale)
-    total_market_min = sum(c['market_min_price'] for c in on_sale)
-    n_blocks = math.ceil(len(on_sale) / BUNDLE_BLOCK_SIZE)
-    n_cheapest_only = sum(1 for c in on_sale if c['listing_price'] <= c['market_min_price'])
-
-    log(f"RISULTATO -- '{manager_slug}': {len(on_sale)} carte in vendita organizzate in "
-        f"{n_blocks} blocchi da {BUNDLE_BLOCK_SIZE} (limite Sorare per offerta cumulativa), "
-        f"richiesta totale {format_eur(total_asking)}, minimo di mercato totale "
-        f"{format_eur(total_market_min)} (dettaglio/offerta per blocco nel messaggio Telegram) -- "
-        f"di cui {n_cheapest_only} gia' al minimo di mercato (sezione bonus separata).")
-
-    html_path = write_html_report(manager_slug, on_sale)
-    log(f"report HTML scritto: {html_path}")
-    # Riga grezza (non attraverso log(), per restare facilmente grep-abile dal workflow) che
-    # segnala che QUESTA run ha davvero prodotto un report -- il file HTML e' a percorso fisso
-    # e sovrascritto ad ogni run, quindi la sua sola presenza non basta a dire che e' fresco.
-    print(f"REPORT_READY {manager_slug} {len(on_sale)}")
+        html_path = write_batch_html_report(manager_results)
+        log(f"report HTML multi-manager scritto: {html_path} "
+            f"({len(manager_results)} manager: {', '.join(s for s, _ in manager_results)}).")
+        slugs_joined = ",".join(slug for slug, _ in manager_results)
+        total_cards = sum(len(on_sale) for _, on_sale in manager_results)
+        print(f"REPORT_READY {slugs_joined} {total_cards}")
 
 
 # FIX 10/08 (richiesta esplicita dell'utente): al posto dei messaggi Telegram a blocchi (limite
@@ -937,6 +982,28 @@ def _render_best_deal_section_html(cards):
 </section>"""
 
 
+# Fattorizzato (FIX 10/08 v3): riusato sia dal report a manager singolo (write_html_report,
+# input manuale) sia dal report multi-manager (write_batch_html_report, auto-discovery).
+REPORT_CSS = """
+body { font-family: -apple-system, Arial, sans-serif; max-width: 720px; margin: 20px auto; padding: 0 12px; color: #222; }
+h1 { font-size: 1.3rem; }
+h2 { font-size: 1.1rem; margin-top: 2rem; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+h3 { font-size: 1rem; margin-bottom: 4px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; margin-bottom: 6px; }
+td, th { padding: 4px 6px; border-bottom: 1px solid #eee; text-align: left; }
+tr.over td { color: #a33; }
+tr.ok td { color: #1a7a1a; }
+a { color: #1a5cbf; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.subtotal { margin: 4px 0; font-size: 0.9rem; }
+.offer { background: #fff3cd; border: 1px solid #ffe08a; padding: 8px; font-weight: bold; text-align: center; border-radius: 6px; }
+.margin { font-weight: normal; font-size: 0.8rem; }
+.total { font-weight: bold; margin-top: 8px; }
+.subtitle { font-size: 0.85rem; color: #666; }
+.block { margin-bottom: 1.2rem; }
+"""
+
+
 def write_html_report(manager_slug, on_sale):
     """Genera l'UNICO report HTML per questa scansione -- stessa identica logica dei vecchi
     messaggi Telegram a blocchi (blocchi da BUNDLE_BLOCK_SIZE ordinati per prezzo crescente,
@@ -964,24 +1031,7 @@ def write_html_report(manager_slug, on_sale):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bundle scan -- {manager_slug}</title>
-<style>
-body {{ font-family: -apple-system, Arial, sans-serif; max-width: 720px; margin: 20px auto; padding: 0 12px; color: #222; }}
-h1 {{ font-size: 1.3rem; }}
-h2 {{ font-size: 1.1rem; margin-top: 2rem; border-bottom: 1px solid #ddd; padding-bottom: 4px; }}
-h3 {{ font-size: 1rem; margin-bottom: 4px; }}
-table {{ border-collapse: collapse; width: 100%; font-size: 0.9rem; margin-bottom: 6px; }}
-td, th {{ padding: 4px 6px; border-bottom: 1px solid #eee; text-align: left; }}
-tr.over td {{ color: #a33; }}
-tr.ok td {{ color: #1a7a1a; }}
-a {{ color: #1a5cbf; text-decoration: none; }}
-a:hover {{ text-decoration: underline; }}
-.subtotal {{ margin: 4px 0; font-size: 0.9rem; }}
-.offer {{ background: #fff3cd; border: 1px solid #ffe08a; padding: 8px; font-weight: bold; text-align: center; border-radius: 6px; }}
-.margin {{ font-weight: normal; font-size: 0.8rem; }}
-.total {{ font-weight: bold; margin-top: 8px; }}
-.subtitle {{ font-size: 0.85rem; color: #666; }}
-.block {{ margin-bottom: 1.2rem; }}
-</style>
+<style>{REPORT_CSS}</style>
 </head>
 <body>
 <h1>🎯 {manager_slug} -- {len(on_sale)} carte Limited in_season in vendita</h1>
@@ -990,6 +1040,65 @@ a:hover {{ text-decoration: underline; }}
 {best_deal_section}
 {main_section}
 {bonus_section}
+</body>
+</html>
+"""
+    os.makedirs(os.path.dirname(HTML_REPORT_PATH) or '.', exist_ok=True)
+    with open(HTML_REPORT_PATH, 'w', encoding='utf-8') as f:
+        f.write(html)
+    return HTML_REPORT_PATH
+
+
+def _render_manager_best_deal_section_html(manager_slug, best_deal_cards):
+    """Sezione best-deal di UN manager dentro il report multi-manager (FIX 10/08 v3) -- stessa
+    tabella di _render_best_deal_section_html ma con intestazione/link propri del manager, cosi'
+    piu' manager possono comparire uno sotto l'altro nello stesso file."""
+    manager_url = (f"https://sorare.com/it/football/my-club/{manager_slug}/cards/limited"
+                   f"?sale=true&is=true")
+    rows = "\n".join(_render_best_deal_row_html(c) for c in best_deal_cards)
+    asking = sum(c['listing_price'] for c in best_deal_cards)
+    market_min = sum(c['market_min_price'] for c in best_deal_cards)
+    offer = market_min * (1 - BUNDLE_OFFER_MARGIN_FRACTION)
+    gap_sum = sum(c['gap'] for c in best_deal_cards)
+    return f"""<section>
+  <h2>🏆 {manager_slug} -- {len(best_deal_cards)} carte, scarto totale {format_eur(gap_sum)}</h2>
+  <p><a href="{manager_url}" target="_blank">📂 Vai alle carte in vendita di {manager_slug}</a></p>
+  <table>
+    <tr><th></th><th>Giocatore</th><th>Minimo mercato</th><th>Secondo prezzo</th><th>Scarto</th></tr>
+    {rows}
+  </table>
+  <p class="subtotal">Subtotale: richiesto {format_eur(asking)}, minimo mercato {format_eur(market_min)}</p>
+  <p class="offer">OFFRI FINO A {format_eur(offer)} <span class="margin">(margine {BUNDLE_OFFER_MARGIN_FRACTION:.0%} -- valore provvisorio, da tarare)</span></p>
+</section>"""
+
+
+def write_batch_html_report(manager_results):
+    """Report HTML multi-manager per l'auto-discovery (FIX 10/08 v3, richiesta esplicita
+    dell'utente: "notificami 2/3 manager insieme, ma solo il best deal di ognuno, le altre
+    sezioni non mi interessano") -- un manager per sezione, SOLO il pacchetto best-deal di
+    ciascuno (niente "tutte le carte"/bonus). manager_results e' una lista di (slug, on_sale)
+    gia' filtrata e ordinata da auto_find_managers (ogni manager qui dentro ha gia' passato la
+    soglia scarto minimo). Stesso percorso fisso HTML_REPORT_PATH del report a manager singolo
+    -- sovrascritto ad ogni run. Ritorna il percorso scritto."""
+    sections = []
+    for manager_slug, on_sale in manager_results:
+        cheapest_only = [c for c in on_sale if c['listing_price'] <= c['market_min_price']]
+        best_deal_cards = _select_best_deal_cards(cheapest_only)
+        sections.append(_render_manager_best_deal_section_html(manager_slug, best_deal_cards))
+
+    names = ", ".join(slug for slug, _ in manager_results)
+    html = f"""<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bundle scan -- {len(manager_results)} manager</title>
+<style>{REPORT_CSS}</style>
+</head>
+<body>
+<h1>🏆 {len(manager_results)} manager trovati: {names}</h1>
+<p style="font-size:0.85rem;color:#666;">Generato {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')} -- solo il pacchetto best-deal di ciascuno (le altre sezioni non compaiono in questa modalita').</p>
+{"".join(sections)}
 </body>
 </html>
 """
