@@ -1884,14 +1884,32 @@ def main():
     # FASE 1: genera (e consuma il card_pool) per tutti i tipi, in ordine di
     # priorita'. Nessun HTML ancora -- il rendering avviene dopo, quando si
     # conoscono TUTTE le formazioni (serve per il pannello alternative).
+    #
+    # FIX (10/08, bug reale trovato dall'utente confrontando run158/run159 a
+    # parita' di ARENE_EFFICIENTI=10): PRIORITY_ORDER mette le arene SOPRA
+    # ALLSTARS_U23/ALLSTARS, ma prima questo ciclo generava TUTTI i tipi con
+    # conteggio esplicito -- ALLSTARS_U23/ALLSTARS compresi -- e SOLO DOPO
+    # partiva ARENE_EFFICIENTI (che in modalita' "efficiente" non ha un
+    # conteggio esplicito, quindi qui non genera nulla). Risultato: se
+    # ALLSTARS_U23/ALLSTARS erano richieste insieme alle arene efficienti,
+    # si mangiavano il pool per prime nonostante fossero l'ULTIMA priorita'
+    # (9 arene chiedendo solo arene, 4 chiedendo anche 4+4 AllStars/U23,
+    # stesso ARENE_EFFICIENTI=10 in entrambe le run). Ora il ciclo si ferma
+    # PRIMA di ALLSTARS_U23/ALLSTARS, ARENE_EFFICIENTI gira sul pool ancora
+    # intatto, e ALLSTARS_U23/ALLSTARS vengono generate per ultime, come da
+    # PRIORITY_ORDER.
+    POST_ARENA_TYPES = {'ALLSTARS_U23', 'ALLSTARS'}
     all_results = []
     for tipo in PRIORITY_ORDER:
+        if tipo in POST_ARENA_TYPES:
+            continue
         all_results.extend(generate_lineups_for_type(tipo, counts[tipo], role_data, pools, card_pool))
 
     # ARENE EFFICIENTI (02/08): invece di dire quante di ogni tipo, si dice
     # quante al massimo e il bot sceglie da solo tipo e numero, massimizzando
-    # le essenze attese. Gira DOPO le richieste esplicite, quindi il pool che
-    # trova e' quello residuo -- e le In Season restano intoccate.
+    # le essenze attese. Gira DOPO le richieste esplicite di In Season/arene
+    # dedicate/Arena All Stars (priorita' piu' alta), ma PRIMA di
+    # ALLSTARS_U23/ALLSTARS (priorita' piu' bassa) -- vedi fix sopra.
     _n_eff = int(os.environ.get('ARENE_EFFICIENTI', '0') or 0)
     if _n_eff > 0:
         _tipi = [t for t in PRIORITY_ORDER if _is_arena_type(t)]
@@ -1900,6 +1918,11 @@ def main():
         print("scelti, e torneranno appena il mazzo li rendera' convenienti.")
         all_results.extend(genera_arene_efficienti(_tipi, _n_eff, role_data,
                                                    pools, card_pool))
+
+    # Solo ora ALLSTARS_U23/ALLSTARS, sul pool residuo (fix sopra).
+    for tipo in PRIORITY_ORDER:
+        if tipo in POST_ARENA_TYPES:
+            all_results.extend(generate_lineups_for_type(tipo, counts[tipo], role_data, pools, card_pool))
 
     # FASE 1b: formazioni OPZIONALI extra (30/07, richiesta esplicita
     # utente -- sostituisce il vecchio "sondaggio" che si limitava a CONTARE
