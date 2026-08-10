@@ -787,6 +787,21 @@ c'era davvero), il capitano è scelto col criterio del baseline in tutti i
 rami, e le formazioni senza arena reale a cui assegnarle contano come non
 premiate. Dettaglio: `docs/handoff/HANDOFF_G_ODDS_ARENE_2026-08-09.txt`.
 
+**AGGIORNAMENTO 10/08 sera — il risultato ARENE sopra usa l'archivio dei
+24 manager, che la regola in testa a CLAUDE.md (dal 09/08) NON considera
+più base di misura.** È stata avviata una riverifica pulita su
+`archivio_ufficiale/` (dati verificati riga per riga, walk-forward senza
+leak, G vs A mai "vs manager"). Esito ad oggi: **non conferma ancora il
+segnale**. Su 350 formazioni (binario1, 4 manager) solo 55 sono decisioni
+in cui G e A scelgono diverso — la n vera è 55, non 350 — e il vantaggio
+di G sparisce del tutto togliendo le 3 decisioni pro-G più pesanti
+(bootstrap: 85% di probabilità che il segno sia positivo, non un dato
+solido). Servono stimati ~11-20 manager in più per un campione decisivo.
+Round di estrazione in corso. Non trattare "G validato sulle arene" come
+chiuso finché questa riverifica non ha campione sufficiente — stato
+completo e prossimi passi in
+`docs/handoff/HANDOFF_ORCHESTRATORE_BINARIO_GVSA_2026-08-10.txt`.
+
 **LA RISERVA CHE RESTA — RIDIMENSIONATA il 09/08 notte**: si diceva che
 il +29.050 potesse sparire sopra il filtro starting odds 0,80 che il bot
 applica in produzione. Falso come premessa: il pool del backtest è fatto
@@ -1507,6 +1522,13 @@ di nuovo questa voce.
 ---
 
 ## 10bis. COSE DA FARE — riscritto il 09/08 notte
+
+**PRIORITARIO IN CORSO (10/08 sera): riverifica pulita di G-vs-A sulle
+arene su `archivio_ufficiale/`.** Vedi §8bis addendum sopra per il
+perché. Prossimo passo già scritto e pronto — non ripartire da zero:
+`docs/handoff/HANDOFF_ORCHESTRATORE_BINARIO_GVSA_2026-08-10.txt` (stato
+esatto: si attende un round di estrazione di 13 manager nuovi, brief
+Haiku già pronto, poi rilancio binari e verifica se il campione basta).
 
 **IDEA, non ancora un filone — 10/08 pomeriggio, richiesta esplicita
 dell'utente di non perderla.** Funzione SPERIMENTALE nel generatore che

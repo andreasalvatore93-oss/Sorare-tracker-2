@@ -1,0 +1,190 @@
+HANDOFF PER IL NUOVO ORCHESTRATORE — filone G-vs-A (archivio_ufficiale)
+Scritto 10/08/2026 ~22:10 Roma (20:10 UTC), sessione precedente su altro account.
+Chi legge: orchestratore di una sessione NUOVA, account NUOVO. Non hai
+memoria di questa conversazione. Leggi questo file per intero prima di
+fare qualunque cosa. NON leggere altri handoff per "prendere contesto":
+questo file è autosufficiente, verifica tutto sul codice se hai dubbi.
+
+============================================================================
+0. DA DOVE RIPARTI, IN UNA RIGA
+============================================================================
+
+Haiku NON è ancora partito. Il primo passo è avviarlo tu, con il brief già
+scritto e pronto (punto 3). Poi aspetti il suo push, poi prosegui con la
+pipeline (punto 4).
+
+============================================================================
+1. STATO DEL REPO
+============================================================================
+
+Branch: main. Ultimo commit pushato: 38dd4c9003 ("Brief Haiku 13 manager,
+brief Opus e risposta su solidita' segnale G-vs-A"). Tutto pulito, niente
+di locale non pushato. Verifica con `git log --oneline -10` e `git status`
+appena apri la sessione.
+
+NOTA: nella sessione precedente sono comparsi 4 file di dati non tracciati
+(manager__clmt_, manager_duddav, manager_mambri42, manager_skepticalone,
+parziali) di origine ignota — non generati né da questa pipeline né da
+Haiku consapevolmente. Sono stati CANCELLATI su richiesta esplicita
+dell'utente (passaggio ad account nuovo, per non fare confusione). Se li
+rivedi ricomparire, chiedi all'utente prima di usarli: non è chiaro cosa
+li abbia prodotti.
+
+============================================================================
+2. COME SIAMO ARRIVATI QUI (l'arco intero, in ordine)
+============================================================================
+
+- Vecchio filone "modello vs 24 manager" (dati_globali/manager_*.json):
+  CHIUSO, mai fidato dall'utente (dati mai verificati riga per riga,
+  criteri di schieramento di 23/24 manager ignoti).
+
+- Nuovo filone (dal 09/08/2026, CLAUDE.md "I BACKTEST SONO IL MODELLO
+  CONTRO SE STESSO"): l'unica domanda lecita è "G (con aggiustamento
+  grade) batte A (senza grade)?", MAI "battiamo il manager reale". Il
+  manager fornisce solo una formazione vera con un esito vero, la sua
+  bravura non entra mai nel giudizio.
+
+- Archivio nuovo `archivio_ufficiale/` (10/08, ex archivio_crowss):
+  cartella per manager (`manager_<slug>/`, crowss ha anche la partizione
+  pre/dal 2026-08-07), cartella `aggregato/` per gli output multi-manager.
+  Estrazione con `estrai_archivio_manager.py --manager <slug> <fixture...>`,
+  batching via alias GraphQL già scritto e verificato (formazioni lotti da
+  3, premi lotti da 10 — limite reale di complessità Sorare senza APIKEY).
+
+- Regola CLAUDE.md aggiornata (10/08, punto 2bis): altri manager oltre
+  crowss POSSONO entrare come campione di TEST (mai come benchmark di
+  bravura). Vincolo tecnico non negoziabile: nel Binario 2 il pool di
+  carte resta sempre dentro UN SOLO manager per UNA SOLA GW, non si
+  mescolano mai le carte di manager diversi.
+
+- Due binari, entrambi scritti e verificati:
+  * Binario 1 (`analisi_manager/p23_binario1_mga.py`): M (manager reale,
+    entra sempre) vs G vs A, sulla IDENTICA formazione reale. L'unica
+    differenza fra i tre è la decisione entra/salta quell'arena, secondo
+    l'atteso confrontato con PAREGGIO_ARENA + margine QUOTA_MINIMA.
+  * Binario 2 (`analisi_manager/p24_binario2_ga.py`): G vs A su pool
+    libero (riusa `genera_arene_efficienti` di produzione), netto essenze
+    REALIZZATO (non atteso).
+
+- Muro noto: il grade storico è recuperabile solo fino a ~4 mesi indietro
+  (playerGameScores capa a 15 partite). Non ha senso cercare GW pre-G più
+  vecchie di aprile 2026 per questo filone: per allargare il campione si
+  aggiungono MANAGER, non giornate più vecchie.
+
+- Round 1 di estensione (10/08, pomeriggio): 4 manager nuovi estratti
+  (gabittom, tigermila11, tsubasa_451, ch4), delegato a Haiku con brief
+  dedicato (checkpoint a piccoli lotti, kill dei processi a fine lavoro —
+  regola nata da un incidente reale con processi zombie in una sessione
+  precedente). gabittom SCARTATO (2 arene su 22 GW, sotto soglia).
+  Completato il grade mancante (1325 slug nuovi interrogati,
+  `analisi_manager/dati/storico_grade_crowss_completamento.json` a 18.208
+  righe). Binari rilanciati sull'aggregato (61-63 GW, 4 manager):
+    Binario1: M +23.650, A +14.550, G +17.550 (G>A in 4/4 manager)
+    Binario2: A +47.574, G +48.547 (pattern debole: 2 manager pro-G, 2 pro-A)
+
+- REVISIONE CRITICA di Opus (10/08 sera, vedi
+  docs/handoff/RISPOSTA_OPUS_ANALISI_BINARIO1_2026-08-10.txt per il testo
+  integrale): il segnale "G batte A 4/4 manager" NON è solido. Su 350
+  formazioni di binario1, A e G prendono la STESSA decisione in 295 casi:
+  la n vera del confronto è **55 decisioni discordanti**, non 350. Il
+  delta +3.000 si azzera togliendo le 3 decisioni pro-G più pesanti.
+  Bootstrap: 85,1% di probabilità che il segno sia positivo, non 95%.
+  Test di permutazione: p=0,167 (non significativo). Stima di Opus: per
+  arrivare a un campione decisivo (t=2, "non più spiegabile dal caso")
+  servono circa 213 decisioni discordanti — servono **~11-20 manager
+  nuovi** (contando gli scarti tipo gabittom) sulle STESSE 22 fixture
+  (non su GW nuove: prima di aprile il grade non si recupera).
+
+- Due test economici a costo zero eseguiti subito dopo (stessa sessione,
+  su richiesta di Opus, dati già in binario1_out.json, zero query):
+  * TEST 1 (calibrazione a range pieno): risultato NON pulito, per
+    entrambi i modelli. Il premio_netto medio per fascia non è monotono,
+    specie per G (fasce erratiche: +122, -32, +7, +99, +48, +165, +64).
+    Pesa verso l'ipotesi scomoda di Opus: non è la soglia mal tarata, è
+    l'ATTESO che ha poca capacità di ordinare i risultati reali, non solo
+    vicino al margine decisionale.
+  * TEST 2 (banda morta X=0..5 punti): segnale debole/misto. Per G il
+    totale sale un po' allargando la banda (17.550→19.150 a X=5), per A
+    oscilla senza direzione chiara. Non conferma né smentisce con forza.
+
+- Modifica di produzione minima applicata (commit f38970a5a8): lo script
+  p23_binario1_mga.py ora stampa SEMPRE, in cima al report, "la n vera del
+  confronto G-vs-A" (decisioni discordanti) e il delta senza le 3 pro-G
+  più pesanti — per non ricascare nell'errore "350 formazioni sembrano un
+  campione grande".
+
+- Preparati 13 manager nuovi da estrarre (slug dati dall'utente, presi a
+  caso dall'ultima GW, uno per tipo arena): duddav, mambri42, titielboboh,
+  skepticalone, _clmt_, shadowblack21, pnd999, yippeekiyay_trading,
+  jackdaniels10, eugeneg, nasheuh, fk-bask, mago313. Coprono la stima di
+  Opus (~11-20 manager necessari). Brief già scritto e pronto:
+  `docs/handoff/BRIEF_HAIKU_ESTRAZIONE_13MANAGER_2026-08-10.txt`.
+
+============================================================================
+3. IL TUO PRIMO PASSO: avviare Haiku
+============================================================================
+
+Passa il contenuto di `docs/handoff/BRIEF_HAIKU_ESTRAZIONE_13MANAGER_2026-08-10.txt`
+a una sessione Haiku nuova. Serve `SORARE_COOKIE` (l'utente te lo passa in
+chat quando serve). Il brief è già completo e autosufficiente (contiene
+lui stesso l'elenco fixture, i 13 slug, le regole anti-zombie-process).
+
+Dopo aver avviato Haiku: NON restare fermo ad aspettare in silenzio.
+Se hai altro da fare nel frattempo (es. leggere questo handoff con calma,
+verificare lo stato del codice), fallo. Quando Haiku ha finito e pushato,
+l'utente te lo dirà o lo vedrai da `git log`/`git pull`.
+
+============================================================================
+4. COSA FARE DOPO IL PUSH DI HAIKU (pipeline fissa, vedi anche
+   archivio_ufficiale/README.md sezione "Pipeline post-estrazione")
+============================================================================
+
+1. `git pull`. Verifica quanti manager hanno prodotto dati utili (conta le
+   arene per manager, non solo i file: vedi il pattern usato nella
+   sessione precedente, righe['arene_limited']... in ogni file
+   `manager_<slug>/*.json` la chiave è `righe`, non `arene`).
+2. Scarta i manager sotto soglia (troppe poche arene, es. <10 su 22 GW,
+   vedi caso gabittom con 2/22 — usa giudizio, non una regola rigida).
+3. Completa il grade sui manager nuovi con
+   `analisi_manager/completa_grade_mancante.py` (richiede SORARE_COOKIE/
+   SORARE_CSRF, chiedili all'utente). Passa gli slug unici delle carte dei
+   manager appena estratti — vedi lo script usato nella sessione
+   precedente (creato al volo in analisi_manager/dati/, poi cancellato:
+   ricrealo se serve, la logica è: raccogli slug unici da
+   archivio_ufficiale/manager_<nuovo>/*.json, chiama
+   completa_grade_mancante.completa(slugs) a lotti da 80).
+4. Rilancia `analisi_manager/p23_binario1_mga.py` e
+   `analisi_manager/p24_binario2_ga.py` (scansionano da soli tutte le
+   `manager_*/`, nessun argomento da passare).
+5. Guarda per PRIMA COSA il nuovo numero "n vera del confronto G-vs-A"
+   (decisioni discordanti) che ora lo script stampa in cima al report, e
+   il delta senza le 3 pro-G più pesanti. Confronta con la soglia di Opus
+   (~213 decisioni discordanti per un segnale non più spiegabile dal
+   caso). Se il campione è ancora sotto, NON dichiarare un verdetto: dillo
+   esplicitamente e valuta se servono altri manager.
+6. Se il campione è abbastanza grande: rilancia anche TEST 1 e TEST 2
+   (vedi punto 2 sopra, script usa-e-getta, pattern già usato nella
+   sessione precedente su binario1_out.json — nessuna query, solo
+   ricalcolo locale) per vedere se il pattern "non pulito" si conferma o
+   si chiarisce con più dati.
+7. SOLO se dopo tutto questo il segnale G-vs-A risulta solido: valutare
+   l'esperimento "griglia fissa" del grade (terza priorità secondo Opus,
+   vedi RISPOSTA_OPUS per il ragionamento completo — non partire da lì per
+   primo).
+
+============================================================================
+5. FILE DI RIFERIMENTO
+============================================================================
+
+- docs/handoff/BRIEF_HAIKU_ESTRAZIONE_13MANAGER_2026-08-10.txt (da inviare)
+- docs/handoff/BRIEF_OPUS_ANALISI_BINARIO1_2026-08-10.txt (la domanda posta)
+- docs/handoff/RISPOSTA_OPUS_ANALISI_BINARIO1_2026-08-10.txt (risposta
+  integrale di Opus, leggila tutta se hai dubbi sul perché delle scelte
+  sopra — contiene anche il calcolo di quanti manager servono davvero e
+  perché la correlazione degli split "sotto soglia" era un artefatto)
+- archivio_ufficiale/README.md (schema dati, pipeline post-estrazione)
+- archivio_ufficiale/aggregato/INDICE.md (copertura corrente, da
+  aggiornare tu dopo il round nuovo)
+- analisi_manager/p23_binario1_mga.py, p24_binario2_ga.py
+- analisi_manager/completa_grade_mancante.py
+- CLAUDE.md (radice), sezione "I BACKTEST SONO IL MODELLO CONTRO SE STESSO"
