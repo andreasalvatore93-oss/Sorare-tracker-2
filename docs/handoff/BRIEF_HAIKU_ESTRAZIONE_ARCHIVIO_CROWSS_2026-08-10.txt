@@ -1,0 +1,127 @@
+BRIEF PER HAIKU — estrazione archivio_crowss, 22 giornate pre-G (10/08/2026)
+
+Sei in una chat pulita, non sai nulla di questa conversazione. Leggi questo
+file per intero prima di iniziare, non saltare sezioni.
+
+## 0. Cosa leggere prima di iniziare (in ordine)
+1. `CLAUDE.md` (radice del repo) — regole generali del progetto.
+2. `archivio_crowss/README.md` — lo schema dati che questa estrazione deve
+   rispettare (l'ho già applicato nello script, non serve che tu lo riscriva,
+   ma leggilo per capire cosa stai producendo).
+3. `estrai_archivio_crowss.py` (radice del repo) — LO SCRIPT GIÀ SCRITTO E
+   TESTATO che devi lanciare. Leggilo, non riscriverlo. È già stato validato
+   su 2 giornate (football-4-7-aug-2026 e football-31-jul-4-aug-2026): somma
+   carte vs punteggio ufficiale entro 0.008 di scarto, premi tutti trovati.
+
+## 1. Il compito, uno solo
+
+Lanciare `estrai_archivio_crowss.py` sulle 22 fixture elencate al punto 3,
+per estrarre le loro arene Limited reali di `crowss` e salvarle in
+`archivio_crowss/pre_2026-08-07/`. È un compito MECCANICO: nessuna analisi,
+nessuna decisione da prendere, solo eseguire ed eventualmente rifare se una
+fixture non riesce alla prima.
+
+## 2. Credenziali
+
+`SORARE_COOKIE` te lo passa l'utente direttamente in questa chat (variabile
+d'ambiente). NON serve `SORARE_CSRF` per questo script (le query di
+partecipazioni/formazione/premi non lo richiedono, sono lette dal codice
+esistente). Se l'utente non te lo ha ancora dato, fermati e chiedilo — non
+puoi procedere senza.
+
+## 3. Le 22 fixture, ESATTE — non aggiungerne o toglierne
+
+```
+football-3-7-apr-2026
+football-10-14-apr-2026
+football-17-17-apr-2026
+football-17-21-apr-2026
+football-21-24-apr-2026
+football-24-28-apr-2026
+football-29-apr-1-may-2026
+football-1-5-may-2026
+football-13-15-may-2026
+football-15-19-may-2026
+football-23-26-may-2026
+football-26-29-may-2026
+football-2-5-jun-2026
+football-5-11-jun-2026
+football-11-18-jun-2026
+football-18-24-jun-2026
+football-24-28-jun-2026
+football-1-4-jul-2026
+football-5-8-jul-2026
+football-21-24-jul-2026
+football-24-28-jul-2026
+football-28-31-jul-2026
+```
+
+Queste sono le fixture pre-G (prima del 7/8/2026) con attività storica
+nota, limitate ad aprile 2026 in avanti — deciso in sessione con l'utente
+per garanzia di copertura del grade (oltre i 4-5 mesi indietro il grade
+smette di essere recuperabile, verificato). NON estrarre altre fixture,
+NON tornare più indietro di aprile senza che l'utente lo chieda di nuovo.
+
+Due fixture sono GIÀ estratte (non ritoccarle, non serve rilanciarle):
+`football-4-7-aug-2026` e `football-31-jul-4-aug-2026` (già presenti in
+`archivio_crowss/pre_2026-08-07/`).
+
+## 4. Come lanciarlo — A PICCOLI LOTTI, MAI TUTTO INSIEME
+
+REGOLA IMPORTANTE (l'utente ci tiene, causa già un problema in passato):
+NON lanciare le 22 fixture tutte in un solo comando/processo lungo e poi
+aspettare in silenzio. Lo script può restare fermo a lungo se Sorare
+risponde 429 (rate limit) e va in retry — se lanci tutto insieme e non
+controlli, rischi di aspettare 30 minuti senza sapere se sta ancora
+lavorando o è bloccato.
+
+Procedi così:
+1. Lancia 1-2 fixture per volta:
+   `SORARE_COOKIE=... python estrai_archivio_crowss.py football-3-7-apr-2026 football-10-14-apr-2026`
+2. Aspetta che il comando finisca e STAMPI la riga finale
+   `scritto <path>...json` per OGNI fixture del lotto.
+3. Se un lotto resta fermo più di ~2 minuti senza stampare nulla di nuovo,
+   interrompilo (Ctrl+C equivalente) e rilancia SOLO quella fixture da
+   sola, un'altra volta. Se fallisce una seconda volta, segnala l'errore
+   esatto (l'output dello script lo dice: "INDICE INCOMPLETO" o un errore
+   GraphQL) e passa alla fixture successiva — non insistere all'infinito
+   sulla stessa.
+4. Dopo ogni lotto, apri velocemente il file JSON appena scritto e
+   controlla che `righe` non sia vuoto e che il campo `fixture_slug`
+   corrisponda — è un controllo di 10 secondi, fallo sempre prima di
+   passare al lotto successivo.
+5. Ripeti finché non hai coperto tutte le 22.
+
+## 5. Cosa NON fare
+
+- Non modificare `estrai_archivio_crowss.py` né nessun altro file del repo
+  fuori da `archivio_crowss/pre_2026-08-07/`.
+- Non lanciare run GitHub.
+- Non estrarre fixture diverse da quelle elencate al punto 3.
+- Non "aggiustare" a mano un file se un'estrazione sembra strana: se un
+  numero non torna, segnalalo nel report finale, non correggerlo tu.
+- Non continuare a ritentare una fixture oltre 2 volte.
+
+## 6. Cosa consegnare
+
+Un elenco secco, fixture per fixture:
+- fixture_slug
+- riuscita (sì/no)
+- numero di righe (arene) scritte
+- se fallita: l'errore esatto riportato dallo script
+
+Più un totale: quante fixture riuscite su 22, quante arene totali estratte
+in tutto.
+
+## 7. Commit
+
+Committa SOLO i file nuovi dentro `archivio_crowss/pre_2026-08-07/`
+(uno o più file `<fixture>_arene_limited.json`). Nessun altro file. Messaggio
+di commit tipo: "archivio_crowss: estrazione batch aprile-luglio 2026 (N
+giornate)". NON pushare senza che l'utente lo chieda.
+
+## 8. Come riferire
+
+Riporta il report del punto 6 direttamente in chat all'utente, per intero
+(è un elenco corto, va bene tutto in chat qui — non serve un handoff
+dedicato per un'estrazione meccanica). Di' anche se hai committato.
