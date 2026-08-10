@@ -354,14 +354,17 @@ PAGE_SIZE = 50  # il vero massimo per richiesta imposto dal server, confermato i
 MAX_PAGES = 20  # tetto di sicurezza (fino a 1000 annunci totali) per evitare loop su volumi estremi
 
 
-def fetch_all_live_offers(player_slug):
+def fetch_all_live_offers(player_slug, exclude_blacklisted=True):
     """Scorre TUTTE le pagine di annunci live per un giocatore usando la paginazione a
     cursore confermata funzionante (before/startCursor), invece di fidarsi di un singolo
     "last: N" che il server tronca comunque a ~50 per richiesta.
     FIX 18/07 (richiesta esplicita dell'utente): esclude qui, alla fonte, gli annunci del
     manager blacklistato (BLACKLISTED_SELLER_SLUGS, es. 'privacy' che vende solo in ETH) --
     cosi' TUTTI i consumatori (get_bucket_prices -> track.py/zenlock_model_tracker.py/
-    manager_bundle_scan.py) li ignorano automaticamente, senza dover duplicare il filtro."""
+    manager_bundle_scan.py) li ignorano automaticamente, senza dover duplicare il filtro.
+    FIX 10/08 (richiesta esplicita dell'utente, my_cards_profit.py): exclude_blacklisted=False
+    disattiva il filtro -- per "quanto vale la mia carta sul mercato" non importa chi vende,
+    solo il minimo vero. Default True, comportamento invariato per tutti gli altri chiamanti."""
     all_nodes = []
     cursor = None
     for _ in range(MAX_PAGES):
@@ -372,9 +375,10 @@ def fetch_all_live_offers(player_slug):
         conn = (((data.get('data') or {}).get('tokens') or {}).get('liveSingleSaleOffers') or {})
         nodes = conn.get('nodes') or []
         for node in nodes:
-            seller_slug = ((node.get('sender') or {}).get('slug') or '').lower()
-            if seller_slug in BLACKLISTED_SELLER_SLUGS:
-                continue
+            if exclude_blacklisted:
+                seller_slug = ((node.get('sender') or {}).get('slug') or '').lower()
+                if seller_slug in BLACKLISTED_SELLER_SLUGS:
+                    continue
             all_nodes.append(node)
         page_info = conn.get('pageInfo') or {}
         if not page_info.get('hasPreviousPage'):
@@ -997,7 +1001,7 @@ def _cache_set(cache_dict, key, value):
     cache_dict[key] = (time.time(), value)
 
 
-def get_bucket_prices(player_slug, eth_rate, use_cache=True):
+def get_bucket_prices(player_slug, eth_rate, use_cache=True, exclude_blacklisted=True):
     """Scorre TUTTI gli annunci live di un giocatore UNA SOLA VOLTA e li divide subito nei due
     bucket in_season/classic, invece di interrogare Sorare una volta per bucket. Restituisce
     {'in_season': (lista_prezzi_ordinata, dati_incompleti), 'classic': (..., ...)} dove
@@ -1017,11 +1021,12 @@ def get_bucket_prices(player_slug, eth_rate, use_cache=True):
     e' meno margine di quanto sembri (caso Cancelo: secondo prezzo vero 2.97EUR, non
     3.33EUR). Accettato come limite noto per ora (fenomeno di nicchia, poche carte
     Early Access sul mercato in un dato momento) -- da rivedere se capitano altri casi."""
+    cache_key = (player_slug, exclude_blacklisted)
     if use_cache:
-        cached = _cache_get(_BUCKET_PRICES_CACHE, player_slug)
+        cached = _cache_get(_BUCKET_PRICES_CACHE, cache_key)
         if cached is not _CACHE_MISS:
             return cached
-    nodes = fetch_all_live_offers(player_slug)
+    nodes = fetch_all_live_offers(player_slug, exclude_blacklisted=exclude_blacklisted)
     raw = {'in_season': [], 'classic': []}
     # NOTA (v23): questo flag ora non viene piu' impostato a True da nessuna parte (vedi FIX
     # v23 piu' sotto, caso Scherpen) -- resta qui per non toccare la forma del valore restituito
@@ -1086,11 +1091,11 @@ def get_bucket_prices(player_slug, eth_rate, use_cache=True):
     for key in ('in_season', 'classic'):
         raw[key].sort(key=lambda p: p[0])
         result[key] = (raw[key], incomplete_flags[key])
-    _cache_set(_BUCKET_PRICES_CACHE, player_slug, result)
+    _cache_set(_BUCKET_PRICES_CACHE, cache_key, result)
     return result
 
 
-def get_live_min_offer(player_slug, season_type, eth_rate):
+def get_live_min_offer(player_slug, season_type, eth_rate, exclude_blacklisted=True):
     """Restituisce (prezzo_minimo, slug_carta_minima, secondo_prezzo_minimo, dati_incompleti)
     oppure None. dati_incompleti e' True se esistono annunci aperti e compatibili (stessa
     rarita'/sport/categoria in_season-o-classic) di cui pero' Sorare non restituisce il prezzo
@@ -1106,7 +1111,7 @@ def get_live_min_offer(player_slug, season_type, eth_rate):
     "2026") veniva scambiata per "classic" perche' il confronto guardava solo il formato europeo
     "2025-26" -- vedi CURRENT_SEASON_LABELS."""
     try:
-        buckets = get_bucket_prices(player_slug, eth_rate)
+        buckets = get_bucket_prices(player_slug, eth_rate, exclude_blacklisted=exclude_blacklisted)
         prices, incomplete = buckets.get(season_type, ([], False))
         if not prices:
             return None

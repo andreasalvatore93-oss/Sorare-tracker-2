@@ -421,108 +421,23 @@ def build_auction_price_map(eth_rate):
 
 
 def get_market_min_price(player_slug, season_type, eth_rate):
-    """Ottieni il prezzo più basso del mercato per questo giocatore, tra gli
-    annunci aperti con la stessa categoria (in_season/classic) -- stesso schema query di
-    track.py (fetch_all_live_offers/get_live_min_offer): la carta messa in vendita sta in
-    senderSide.anyCards, il prezzo chiesto sta in receiverSide.amounts. receiverSide.anyCards
-    NON vuoto significa scambio carta-per-carta (nessun prezzo in denaro, va escluso).
-    FIX 18/07 (v1): la versione precedente cercava card_slug dentro receiverSide.anyCards (il
-    lato del pagamento, quasi sempre vuoto per una vendita a prezzo fisso) invece che in
-    senderSide.anyCards (il lato della carta venduta) -- il match falliva quasi sempre,
-    lasciando il prezzo di mercato sempre a None.
-    FIX 18/07 (v2, caso reale cheol-woo-park-2024-limited-143, richiesta esplicita dell'utente):
-    confrontare inSeasonEligible con un uguaglianza diretta (True/False) e' fragile -- questo
-    campo puo' risultare None per alcuni annunci (dato non sempre popolato da Sorare), e in quel
-    caso l'annuncio passava comunque il filtro per errore, mescolando prezzi in_season con
-    carte classic dello stesso giocatore (la carta 2024/classic dell'utente veniva confrontata
-    con un annuncio in_season a 4.28EUR invece che con la sua vera categoria). Fix: usa
-    track.season_type_for_card (stessa funzione, stesso fallback su sportSeason.name gia'
-    collaudato in track.py) sia per la mia carta che per ogni candidato, e confronta le
-    CATEGORIE ('in_season'/'classic') invece del booleano grezzo.
-    FIX 18/07 (v3, richiesta esplicita dell'utente): esclude gli annunci del manager
-    'privacy' (vende solo in ETH, non e' un'opzione utilizzabile per l'utente) dal calcolo
-    del prezzo minimo di mercato -- stesso blacklist condiviso di track.py.
-    FIX 10/08 (richiesta esplicita dell'utente): il chiamante ha GIA' player_slug (viene dalla
-    stessa query bulk di get_all_my_cards, campo anyPlayer.slug) -- prima si rifaceva una query
-    anyCard(slug)->anyPlayer.slug per ritrovare un dato gia' in mano, raddoppiando le chiamate
-    GraphQL per ogni carta processata. Ora si passa player_slug direttamente.
-    FIX 10/08 bis (bug reale trovato ispezionando dong-kyung-lee-2026-limited-104 sul mercato
-    vero: la pagina mostrava annunci in_season a 15.08€/16.09€/17.30€, ma questa funzione
-    restituiva 25.00€ come minimo): la query leggeva SOLO receiverSide.amounts.eurCents,
-    ignorando gli annunci prezzati in USD/GBP/ETH/SOL (eurCents torna null in quel caso, non
-    "annuncio assente" -- STESSO bug gia' documentato e risolto in track.py il 17/07, caso
-    Jhegson Sebastian Mendez, mai applicato pero' a questo file). Ora si richiedono tutti i
-    campi valuta e si usa track.eur_price_from_amounts (stessa funzione, stessa conversione)
-    invece di leggere eurCents a mano."""
-    try:
-        offers_query = """
-        query LiveOffers($slug: String!, $n: Int!) {
-          tokens {
-            liveSingleSaleOffers(playerSlug: $slug, last: $n) {
-              nodes {
-                status
-                sender { ... on User { slug } }
-                receiverSide {
-                  amounts { eurCents wei usdCents gbpCents lamport }
-                  anyCards { slug }
-                }
-                senderSide {
-                  anyCards {
-                    slug
-                    rarityTyped
-                    sport
-                    inSeasonEligible
-                    sportSeason { name }
-                  }
-                }
-              }
-            }
-          }
-        }
-        """
-
-        data = track.graphql_query(offers_query, {"slug": player_slug, "n": 50})
-        if data.get('errors'):
-            return None
-
-        nodes = (data.get('data', {}).get('tokens', {})
-                .get('liveSingleSaleOffers', {}).get('nodes', []))
-
-        if not nodes:
-            return None
-
-        prices = []
-        for node in nodes:
-            if node.get('status') != 'opened':
-                continue
-            seller_slug = ((node.get('sender') or {}).get('slug') or '').lower()
-            if seller_slug in track.BLACKLISTED_SELLER_SLUGS:
-                continue
-            # scambio carta-per-carta (nessun prezzo in denaro): escluso, stesso filtro di track.py
-            if (node.get('receiverSide') or {}).get('anyCards'):
-                continue
-            sender_cards = (node.get('senderSide') or {}).get('anyCards') or []
-            match = None
-            for c in sender_cards:
-                if c.get('rarityTyped') != 'limited':
-                    continue
-                if c.get('sport') != 'FOOTBALL':
-                    continue
-                c_season_name = (c.get('sportSeason') or {}).get('name', 'unknown')
-                if track.season_type_for_card(c, c_season_name) != season_type:
-                    continue
-                match = c
-                break
-            if not match:
-                continue
-            price = track.eur_price_from_amounts(node.get('receiverSide', {}).get('amounts'), eth_rate)
-            if price:
-                prices.append(price)
-
-        return min(prices) if prices else None
-    except Exception as e:
-        log(f"Eccezione durante fetch market price per {player_slug}: {e}")
-        return None
+    """Ottieni il prezzo più basso del mercato per questo giocatore, nella categoria
+    in_season/classic richiesta.
+    FIX 10/08 (richiesta esplicita dell'utente, "alleggerire la run" dopo i 429 sulla prima run
+    reale): prima questa funzione rifaceva da zero una query per carta (fino a 2000/run). Ora
+    delega a track.get_live_min_offer, la stessa funzione gia' in produzione da mesi per il
+    listener live (track.py/zenlock_model_tracker.py/manager_bundle_scan.py), che porta con se'
+    due vantaggi diretti: 1) cache in memoria con TTL 30s condivisa per player_slug -- se
+    possiedo piu' carte dello stesso giocatore (comune su ~2000 carte), la seconda in poi e'
+    GRATIS, zero query; 2) pagina TUTTI gli annunci live (fetch_all_live_offers, cursore
+    completo), non solo i primi 50 come faceva la query precedente qui -- poteva perdere il
+    vero minimo sui giocatori con piu' di 50 annunci aperti.
+    exclude_blacklisted=False (richiesta esplicita dell'utente): qui non interessa chi vende,
+    solo il minimo di mercato vero -- diverso da track.py, dove BLACKLISTED_SELLER_SLUGS
+    esiste per motivi di acquistabilita' reale (es. 'privacy' vende solo in ETH), non rilevanti
+    per "quanto vale la mia carta"."""
+    result = track.get_live_min_offer(player_slug, season_type, eth_rate, exclude_blacklisted=False)
+    return result[0] if result else None
 
 
 def run_profit_scan():
