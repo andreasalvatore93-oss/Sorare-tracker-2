@@ -1,9 +1,9 @@
 ======================================================================
 CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-04T12:57:43.228794Z
+Generato: 2026-08-10T07:26:31.546653Z
 Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) dario-esteban-osorio-osorio: 56 pt attesi (37-79)
+1) dario-esteban-osorio-osorio: 59 pt attesi (40-82)
    SQUADRA: midtjylland-herning | AVVERSARIO: bohemians-dublin
 ======================================================================
 
@@ -13,13 +13,13 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: dario-esteban-osorio-osorio (squadra: midtjylland-herning)
-Generato: 2026-08-04T12:57:43.228046Z
+Generato: 2026-08-10T07:26:31.545696Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
-Partite considerate: 49
+Partite considerate: 50
 Escluse (DID_NOT_PLAY): 8
-Escluse (minutaggio < 60', subentri): 11
+Escluse (minutaggio < 60', subentri): 12
 Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
 Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2025-08-24 | FCM vs SIF | superliga-dk | score=100.0 | peso=0.448
@@ -56,36 +56,35 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 25.0 partite): 58.34
   di cui Punteggio decisivo (level_score) medio: 44.75 | Punteggio complessivo (granulari) medio: 13.58 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Punteggio decisivo condizionato per venue: 42.35 (delta -2.40)
-  Efficacia offensiva condizionata: delta venue -0.38, delta avversario +0.00 | Passaggio condizionato: delta venue -0.59, delta avversario +0.00 | Gol subiti condizionato: delta venue -0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+  Punteggio decisivo condizionato per venue: 46.23 (delta +1.47)
+  Efficacia offensiva condizionata: delta venue +0.77, delta avversario +0.00 | Passaggio condizionato: delta venue +0.73, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.04, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
 Deviazione standard pesata: 20.14
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.7 - 81.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.30 (differenza: +1.84)
 Media score in casa: 63.31 | Media score fuori casa: 54.82
-Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
-Ranking medio avversari affrontati (storico): 6.9
+Fattore casa/trasferta applicato: 1.002 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.0
 Ranking prossimo avversario: None
 Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
-Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 1.000
-Fattore falli (casa/trasferta, da dati reali): 0.997
-Fattore duelli (casa/trasferta, da dati reali): 1.004
-Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
-Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
-Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore falli (casa/trasferta, da dati reali): 1.006
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.005
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
 Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
-Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.001
 Fattore trend (media ultime 5: 61.9 vs media 5 PRECEDENTI: 53.5): 1.000
-P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
 
 --- PROSSIMA PARTITA ---
-Data: 2026-08-06T18:45
-Casa: Bohemian FC | Trasferta: FC Midtjylland
+Data: 2026-08-13T17:00
+Casa: FC Midtjylland | Trasferta: Bohemian FC
 Competizione: uefa-europa-conference-league
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 55.9 (range 37.2 - 79.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 58.7 (range 40.1 - 82.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 57.21
@@ -126,9 +125,9 @@ P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo sto
   26       26      51.6    40.9    -10.7    23.0        SI
   27       27      64.5    70.5     +6.0    22.8        SI
   28       28      53.0    46.7     -6.3    22.4        SI
-  29       29      62.6    80.5    +17.9    22.0        SI
+  29       29      68.6    80.5    +11.9    22.0        SI
 
-MAE (errore assoluto medio): 16.83
+MAE (errore assoluto medio): 16.58
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 87.5%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
