@@ -2059,7 +2059,7 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   .pcard-score {{ font-size: 1.15rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--role-color); }}
   .pcard-range {{ font-size: 0.55rem; color: var(--muted); font-variant-numeric: tabular-nums; }}
   .pcard-l10 {{ font-size: 0.5rem; color: var(--muted-2); font-variant-numeric: tabular-nums; }}
-  .pcard-odds {{ font-size: 0.5rem; color: var(--muted-2); font-variant-numeric: tabular-nums; }}
+  .pcard-odds {{ font-size: 0.85rem; font-weight: 800; color: #3a9de0; font-variant-numeric: tabular-nums; }}
   .pcard-match {{ font-size: 0.62rem; color: var(--text); opacity: 0.85; line-height: 1.3; text-align: center; }}
   .pcard-tags {{ display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; min-height: 14px; }}
   .tag {{ font-size: 0.5rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; }}
