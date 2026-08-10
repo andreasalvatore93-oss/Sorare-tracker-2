@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Generatore Formazioni — run #160</title>
+<style>
+  :root {
+    --bg: #0a0d12; --surface: #131a23; --surface-2: #1c2530; --stripe: #232d3a;
+    --text: #edf1f6; --muted: #8a93a6; --muted-2: #5f6879; --gold: #f4c542;
+    --border: rgba(255,255,255,0.08);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f3f4f7; --surface: #ffffff; --surface-2: #eef0f4; --stripe: #e3e6ec;
+      --text: #1a2029; --muted: #5b6474; --muted-2: #8a93a6; --border: rgba(20,25,35,0.08);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    padding: 40px 32px 64px; max-width: 1180px; margin: 0 auto;
+  }
+  h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 6px; }
+  .subhead { color: var(--muted); font-size: 0.85rem; margin: 0 0 32px; }
+  .lineup-row { display: flex; gap: 20px; align-items: flex-start; margin-bottom: 40px; }
+  .lineup-row .lineup-block { flex: 1 1 auto; min-width: 0; margin-bottom: 0; }
+  .alt-panel {
+    flex: 0 0 200px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; align-self: stretch;
+  }
+  .alt-panel-title {
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); margin-bottom: 10px; line-height: 1.4;
+  }
+  .alt-list { display: flex; flex-direction: column; gap: 10px; }
+  .alt-chip { display: flex; align-items: center; gap: 8px; cursor: grab; border-radius: 8px; padding: 2px; }
+  .alt-chip[draggable="true"]:active { cursor: grabbing; }
+  .pcard[draggable="true"] { cursor: grab; }
+  .pcard[draggable="true"]:active { cursor: grabbing; }
+  .pcard.drop-target, .alt-chip.drop-target {
+    outline: 2px dashed var(--gold); outline-offset: 2px;
+  }
+  .alt-circle {
+    flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; background: var(--surface-2);
+    border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+    font-size: 0.62rem; font-weight: 700; color: var(--muted);
+  }
+  .alt-name { font-size: 0.72rem; font-weight: 600; line-height: 1.2; }
+  .alt-score { font-size: 0.64rem; color: var(--muted); }
+  .lineup-block { margin-bottom: 40px; }
+  .lineup-meta { margin-bottom: 12px; }
+  .lineup-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .lineup-title span { color: var(--text); }
+  .card-strip { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+  .pcard {
+    position: relative; flex: 0 0 104px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .pcard-stripe { height: 4px; width: 100%; }
+  .pcard-body { padding: 8px 6px 8px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+  .pcard-role {
+    position: absolute; top: 6px; left: 6px; font-size: 0.52rem; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--role-color);
+    background: color-mix(in srgb, var(--role-color) 16%, transparent);
+    padding: 1px 5px; border-radius: 4px;
+  }
+  .pcard-captain {
+    position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--gold); color: #241c00; font-size: 0.58rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface);
+    /* 08/08: il capitano sta SEMPRE sopra la spunta verde di "copiata", che
+       occupava lo stesso identico angolo (top/right 5px) e lo nascondeva --
+       dopo aver copiato le 5 carte non si sapeva piu' chi fosse il capitano. */
+    z-index: 2;
+  }
+  .pcard-avatar {
+    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.72rem; color: var(--role-color);
+    background: color-mix(in srgb, var(--role-color) 18%, var(--surface-2));
+    border: 2px solid color-mix(in srgb, var(--role-color) 55%, transparent); margin-top: 8px;
+  }
+  .pcard-name { font-size: 0.62rem; font-weight: 650; line-height: 1.2; min-height: 1.6em; display: flex; align-items: center; }
+  .pcard-score { font-size: 1.15rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--role-color); }
+  .pcard-range { font-size: 0.55rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pcard-l10 { font-size: 0.5rem; color: var(--muted-2); font-variant-numeric: tabular-nums; }
+  .pcard-match { font-size: 0.62rem; color: var(--text); opacity: 0.85; line-height: 1.3; text-align: center; }
+  .pcard-tags { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; min-height: 14px; }
+  .tag { font-size: 0.5rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; }
+  .tag-classic { background: rgba(240,168,59,0.16); color: #f0a83b; }
+  .tag-copies { background: var(--stripe); color: var(--muted); }
+  .tag-xpbonus { background: rgba(76,175,80,0.16); color: #4caf50; }
+  /* QOL 07/08 (richiesta utente: schierare ~300 giocatori a giornata facendo
+     avanti e indietro con Sorare, senza perdere il segno e senza sbagliare
+     formazione). Tre stati VISIBILI a colpo d'occhio:
+       - CLASSIC: contorno dorato. Sono quelle che pesano diversamente e vanno
+         distinte al volo dalle In Season, soprattutto quando si hanno 2 copie.
+       - carta GIA' COPIATA: si spegne, cosi' si sa dove si era arrivati.
+       - formazione GIA' SCHIERATA: si spegne tutta e si accascia in alto.
+     Lo stato vive in localStorage, per giornata: un refresh non lo perde. */
+  /* CLASSIC vs IN SEASON (rimarcato 08/08, richiesta esplicita utente: la
+     scritta "classic" da sola "e' poco intuitiva"). Tre segnali insieme,
+     leggibili senza rileggere il testo: contorno dorato DOPPIO (2px invece
+     di 1), striscia dorata in cima al posto del colore ruolo (il ruolo si
+     legge comunque nel badge in alto a sinistra), e il tag pieno d'oro con
+     un rombo davanti invece che scritta scolorita su fondo grigio. */
+  .pcard.is-classic { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold) inset, 0 1px 2px rgba(0,0,0,0.2); }
+  .pcard.is-classic .pcard-stripe { background: var(--gold) !important; height: 5px; }
+  .tag-classic { background: var(--gold); color: #241c00; font-weight: 800; }
+  .tag-classic::before { content: '\25C6'; margin-right: 3px; }
+  .tag-inseason { background: rgba(94,201,255,0.16); color: #5ec9ff; }
+  /* CARTA GIA' COPIATA (rivisto 08/08 su richiesta utente). Prima si spegneva
+     a opacity 0.38: illeggibile, e "non mi piace, diventano bui". Ora resta
+     LEGGIBILE (0.72) e il segnale di "fatto" e' il contorno verde piu' la
+     spunta, non il buio. Serve a sapere dove si era arrivati, non a
+     cancellare la carta: i numeri si devono poter ancora rileggere. */
+  .pcard.copiata { opacity: 0.72; }
+  .pcard.copiata .pcard-avatar { border-style: dashed; }
+  .pcard-fatto {
+    position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%;
+    background: #4caf50; color: #06210a; font-size: 0.62rem; font-weight: 800;
+    display: none; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface);
+  }
+  .pcard.copiata .pcard-fatto { display: flex; }
+  /* Contorno verde: si vede a colpo d'occhio anche senza spegnere la carta.
+     outline (non box-shadow) per non cancellare il bordo dorato delle
+     Classic, che usa gia' box-shadow inset. */
+  .pcard.copiata { outline: 2px solid #4caf50; outline-offset: -2px; }
+  /* Se la carta e' capitano, la spunta si sposta a fianco invece di finirgli
+     sotto. Con browser senza :has() resta sovrapposta, ma il capitano ha
+     z-index 2 e resta comunque visibile: nessun peggioramento. */
+  .pcard:has(.pcard-captain) .pcard-fatto { right: 25px; }
+  .lineup-block.schierata { opacity: 0.42; }
+  .lineup-block.schierata .lineup-title::after { content: ' — SCHIERATA'; color: #4caf50; font-weight: 800; }
+  .btn-schierata {
+    margin-left: 10px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; padding: 3px 8px; border-radius: 5px; cursor: pointer;
+    background: var(--surface-2); color: var(--muted); border: 1px solid var(--border);
+  }
+  .btn-schierata:hover { color: var(--text); border-color: var(--gold); }
+  .lineup-block.schierata .btn-schierata { background: rgba(76,175,80,0.18); color: #4caf50; border-color: #4caf50; }
+  .lineup-total {
+    margin-top: 12px; display: inline-flex; align-items: center; gap: 14px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; flex-wrap: wrap;
+    max-width: 100%;
+  }
+  .lineup-total .figure { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .lineup-total .figure.with-captain { color: var(--gold); }
+  .lineup-total .label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); display: block; margin-bottom: 2px; }
+  .lineup-total .divider { width: 1px; height: 30px; background: var(--border); }
+  .lineup-total .captain-note { font-size: 0.74rem; color: var(--muted); }
+  .lineup-total .captain-note b { color: var(--gold); font-weight: 700; }
+  .error-block { font-size: 0.82rem; color: var(--muted); padding: 12px 0; }
+  footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.7rem; color: var(--muted-2); line-height: 1.6; }
+</style>
+</head>
+<body>
+<h1>Generatore Formazioni — run #160</h1>
+<p class="subhead">Generato 10/08/2026 10:46Z — totale=4 (In Season MLS=0, In Season K League=0, Arena All Stars (cap 260)=0, Arena All Stars (cap 220)=0, Arena All Stars (uncapped)=0, Arena All Stars (Beginner)=0, All Stars Under 23=0, All Stars=4)<br>Candidati non schierati in nessuna formazione: 16 (GK: 5, DEF: 3, MID: 7, FWD: 1)</p>
+<div style="position:relative;padding-right:400px"><div data-sezione="arene_allstars"><div style="border:2px solid #7bd88f;border-radius:10px;padding:10px 12px 4px 12px;margin:0 0 18px 0"><div style="font-size:.85rem;color:#7bd88f;margin-bottom:8px"><b>SCHIERA -- guadagno atteso +290 essenze su 300 di ingresso</b></div><div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">Arena All Stars (cap 260) <span>#1</span></div></div><div class="card-strip"><div class="pcard is-classic" draggable="true" style="--role-color:#8b7cf6" data-slug="hugo-lloris" data-role="GK" data-score="50.65005668475217" data-xp-frac="0.0" data-name="Hugo Lloris" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;HL&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Hugo Lloris&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;50.7&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;42.1–56.9 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 43&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Los Angeles Fc vs Queretaro Queretaro&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;span class=&quot;tag tag-copies&quot;&gt;2 copie&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">HL</div><div class="pcard-name">Hugo Lloris</div><div class="pcard-score">50.7</div><div class="pcard-range">42.1–56.9 pt</div><div class="pcard-l10">L10: 43</div><div class="pcard-match">Los Angeles Fc vs Queretaro Queretaro</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span><span class="tag tag-copies">2 copie</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="nicolas-hernan-otamendi" data-role="DEF" data-score="57.1" data-xp-frac="0.0" data-name="Nicolás Otamendi" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;NH&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Nicolás Otamendi&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;57.1&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;43.0–72.9 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 44&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;River Plate Capital vs Santa Fe Bogota&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">NH</div><div class="pcard-name">Nicolás Otamendi</div><div class="pcard-score">57.1</div><div class="pcard-range">43.0–72.9 pt</div><div class="pcard-l10">L10: 44</div><div class="pcard-match">River Plate Capital vs Santa Fe Bogota</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="orkun-kokcu" data-role="MID" data-score="70.68005793631959" data-xp-frac="0.0" data-name="Orkun Kökçü" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;OK&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Orkun Kökçü&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;70.7&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;47.9–81.2 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 63&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Besiktas Istanbul vs Hradec Kralove Hradec&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID</span><span class="pcard-captain">C</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">OK</div><div class="pcard-name">Orkun Kökçü</div><div class="pcard-score">70.7</div><div class="pcard-range">47.9–81.2 pt</div><div class="pcard-l10">L10: 63</div><div class="pcard-match">Besiktas Istanbul vs Hradec Kralove Hradec</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#ef5b5b" data-slug="muhammed-kerem-akturkoglu" data-role="FWD" data-score="53.8" data-xp-frac="0.0" data-name="Kerem Aktürkoğlu" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;MK&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Kerem Aktürkoğlu&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;53.8&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;33.6–72.3 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 54&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Fenerbahce Istanbul vs Sturm Graz Graz&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">MK</div><div class="pcard-name">Kerem Aktürkoğlu</div><div class="pcard-score">53.8</div><div class="pcard-range">33.6–72.3 pt</div><div class="pcard-l10">L10: 54</div><div class="pcard-match">Fenerbahce Istanbul vs Sturm Graz Graz</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="valdemar-byskov-andreasen" data-role="MID" data-score="59.80842566801974" data-xp-frac="0.0" data-name="Valdemar Andreasen" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;VB&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Valdemar Andreasen&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;59.8&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;41.2–69.3 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 56&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Midtjylland Herning vs Bohemians Dublin&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">EXTRA · MID</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">VB</div><div class="pcard-name">Valdemar Andreasen</div><div class="pcard-score">59.8</div><div class="pcard-range">41.2–69.3 pt</div><div class="pcard-l10">L10: 56</div><div class="pcard-match">Midtjylland Herning vs Bohemians Dublin</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div></div><div class="lineup-total" data-captain-pct="0.2"><div><span class="label">Totale</span><span class="figure">292.0 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">306.0 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Orkun Kökçü</b> <span class="cap-bonus">(+14 pt, +20%)</span></div><div class="captain-note">L10: 260.0 / 260.0 (entro budget)</div></div></div></div></div><div style="position:absolute;top:0;right:0;width:380px;max-height:480px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:0 4px 16px rgba(0,0,0,0.25)"><div class="alt-panel-title">Top 16 esclusi<br>per punteggio atteso</div><div style="font-size:0.78rem"><table style="border-collapse:collapse;width:100%;table-layout:fixed"><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">1.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">49.5 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Alexander Nübel</td><td style="padding:2px 6px 2px 0;color:var(--muted)">GK</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Besiktas Istanbul vs Hradec Kralove Hradec">Besiktas Istanbul vs Hradec Kralove Hradec</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">2.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">48.7 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Carlos Lampe</td><td style="padding:2px 6px 2px 0;color:var(--muted)">GK</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Bolivar La Paz vs Sao Paulo Sao">Bolivar La Paz vs Sao Paulo Sao</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">3.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">48.6 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Itsuki Someno</td><td style="padding:2px 6px 2px 0;color:var(--muted)">FWD</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Tokyo Verdy Tokyo vs Kashiwa Reysol Kashiwa">Tokyo Verdy Tokyo vs Kashiwa Reysol Kashiwa</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">4.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">48.5 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Dominik Kotarski</td><td style="padding:2px 6px 2px 0;color:var(--muted)">GK</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Kobenhavn Kobenhavn vs Debrecen Debrecen">Kobenhavn Kobenhavn vs Debrecen Debrecen</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">5.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">47.9 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Ryosuke Kojima</td><td style="padding:2px 6px 2px 0;color:var(--muted)">GK</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Kashiwa Reysol Kashiwa vs Tokyo Verdy Tokyo">Kashiwa Reysol Kashiwa vs Tokyo Verdy Tokyo</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">6.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">47.9 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Simon Seidl</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Sturm Graz Graz vs Fenerbahce Istanbul">Sturm Graz Graz vs Fenerbahce Istanbul</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">7.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">47.5 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Calvin Miller</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Hearts Edinburgh vs Benfica Lisboa">Hearts Edinburgh vs Benfica Lisboa</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">8.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">47.5 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Blair Spittal</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Hearts Edinburgh vs Benfica Lisboa">Hearts Edinburgh vs Benfica Lisboa</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">9.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">46.4 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Wataru Harada</td><td style="padding:2px 6px 2px 0;color:var(--muted)">DEF</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Kashiwa Reysol Kashiwa vs Tokyo Verdy Tokyo">Kashiwa Reysol Kashiwa vs Tokyo Verdy Tokyo</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">10.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">46.4 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Kacper Urbański</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Gornik Zabrze Zabrze vs Ferencvaros Budapest">Gornik Zabrze Zabrze vs Ferencvaros Budapest</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">11.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">46.3 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Jamie Mccart</td><td style="padding:2px 6px 2px 0;color:var(--muted)">DEF</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Hearts Edinburgh vs Benfica Lisboa">Hearts Edinburgh vs Benfica Lisboa</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">12.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">45.7 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Nelson Semedo</td><td style="padding:2px 6px 2px 0;color:var(--muted)">DEF</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Fenerbahce Istanbul vs Sturm Graz Graz">Fenerbahce Istanbul vs Sturm Graz Graz</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">13.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">45.3 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Isaac Boehmer</td><td style="padding:2px 6px 2px 0;color:var(--muted)">GK</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Vancouver Whitecaps Vancouver vs Tigres Uanl San">Vancouver Whitecaps Vancouver vs Tigres Uanl San</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">14.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">45.0 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Rei Hirakawa</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Tokyo Verdy Tokyo vs Kashiwa Reysol Kashiwa">Tokyo Verdy Tokyo vs Kashiwa Reysol Kashiwa</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">15.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">42.3 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Mattéo Guendouzi</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Fenerbahce Istanbul vs Sturm Graz Graz">Fenerbahce Istanbul vs Sturm Graz Graz</td></tr><tr><td style="padding:2px 6px 2px 0;color:var(--muted)">16.</td><td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">34.4 pt</td><td style="padding:2px 6px 2px 0;white-space:normal">Thomas Delaney</td><td style="padding:2px 6px 2px 0;color:var(--muted)">MID</td><td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Kobenhavn Kobenhavn vs Debrecen Debrecen">Kobenhavn Kobenhavn vs Debrecen Debrecen</td></tr></table></div></div></div>
+<div data-sezione="arene_allstars"><div style="border:2px solid #7bd88f;border-radius:10px;padding:10px 12px 4px 12px;margin:0 0 18px 0"><div style="font-size:.85rem;color:#7bd88f;margin-bottom:8px"><b>SCHIERA -- guadagno atteso +186 essenze su 300 di ingresso</b></div><div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">Arena All Stars (cap 260) <span>#1</span></div></div><div class="card-strip"><div class="pcard is-classic" draggable="true" style="--role-color:#8b7cf6" data-slug="hugo-lloris" data-role="GK" data-score="50.65005668475217" data-xp-frac="0.0" data-name="Hugo Lloris" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;HL&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Hugo Lloris&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;50.7&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;42.1–56.9 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 43&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Los Angeles Fc vs Queretaro Queretaro&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;span class=&quot;tag tag-copies&quot;&gt;2 copie&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">HL</div><div class="pcard-name">Hugo Lloris</div><div class="pcard-score">50.7</div><div class="pcard-range">42.1–56.9 pt</div><div class="pcard-l10">L10: 43</div><div class="pcard-match">Los Angeles Fc vs Queretaro Queretaro</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span><span class="tag tag-copies">2 copie</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="taiyo-koga" data-role="DEF" data-score="59.599999999999994" data-xp-frac="0.0" data-name="Taiyo Koga" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;TK&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Taiyo Koga&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;59.6&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;43.0–70.4 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 59&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Kashiwa Reysol Kashiwa vs Tokyo Verdy Tokyo&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;span class=&quot;tag tag-copies&quot;&gt;2 copie&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF</span><span class="pcard-captain">C</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">TK</div><div class="pcard-name">Taiyo Koga</div><div class="pcard-score">59.6</div><div class="pcard-range">43.0–70.4 pt</div><div class="pcard-l10">L10: 59</div><div class="pcard-match">Kashiwa Reysol Kashiwa vs Tokyo Verdy Tokyo</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span><span class="tag tag-copies">2 copie</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="dario-esteban-osorio-osorio" data-role="MID" data-score="58.30842566801974" data-xp-frac="0.0" data-name="Darío Osorio" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;DE&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Darío Osorio&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;58.3&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;41.2–72.3 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 53&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Midtjylland Herning vs Bohemians Dublin&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">DE</div><div class="pcard-name">Darío Osorio</div><div class="pcard-score">58.3</div><div class="pcard-range">41.2–72.3 pt</div><div class="pcard-l10">L10: 53</div><div class="pcard-match">Midtjylland Herning vs Bohemians Dublin</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#ef5b5b" data-slug="franculino-gluda-dju" data-role="FWD" data-score="51.8" data-xp-frac="0.0" data-name="Franculino Djú" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;FG&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Franculino Djú&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;51.8&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;33.6–66.8 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 43&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Midtjylland Herning vs Bohemians Dublin&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">FG</div><div class="pcard-name">Franculino Djú</div><div class="pcard-score">51.8</div><div class="pcard-range">33.6–66.8 pt</div><div class="pcard-l10">L10: 43</div><div class="pcard-match">Midtjylland Herning vs Bohemians Dublin</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="anderson-souza-conceicao" data-role="MID" data-score="58.88005793631959" data-xp-frac="0.0" data-name="Talisca" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;AS&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Talisca&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;58.9&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;36.0–68.6 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 61&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Fenerbahce Istanbul vs Sturm Graz Graz&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">EXTRA · MID</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">AS</div><div class="pcard-name">Talisca</div><div class="pcard-score">58.9</div><div class="pcard-range">36.0–68.6 pt</div><div class="pcard-l10">L10: 61</div><div class="pcard-match">Fenerbahce Istanbul vs Sturm Graz Graz</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div></div><div class="lineup-total" data-captain-pct="0.2"><div><span class="label">Totale</span><span class="figure">279.2 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">291.2 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Taiyo Koga</b> <span class="cap-bonus">(+12 pt, +20%)</span></div><div class="captain-note">L10: 259.0 / 260.0 (entro budget)</div></div></div></div></div>
+<div data-sezione="arene_allstars"><div style="border:2px solid #7bd88f;border-radius:10px;padding:10px 12px 4px 12px;margin:0 0 18px 0"><div style="font-size:.85rem;color:#7bd88f;margin-bottom:8px"><b>SCHIERA -- guadagno atteso +153 essenze su 300 di ingresso</b></div><div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">Arena All Stars (cap 260) <span>#1</span></div></div><div class="card-strip"><div class="pcard is-classic" draggable="true" style="--role-color:#8b7cf6" data-slug="matheus-caldeira-vidotto-de-oliveira" data-role="GK" data-score="47.7" data-xp-frac="0.0" data-name="Matheus Vidotto" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;MC&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Matheus Vidotto&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;47.7&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;41.3–55.3 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 38&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Tokyo Verdy Tokyo vs Kashiwa Reysol Kashiwa&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">MC</div><div class="pcard-name">Matheus Vidotto</div><div class="pcard-score">47.7</div><div class="pcard-range">41.3–55.3 pt</div><div class="pcard-l10">L10: 38</div><div class="pcard-match">Tokyo Verdy Tokyo vs Kashiwa Reysol Kashiwa</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="lautaro-blanco" data-role="DEF" data-score="57.1" data-xp-frac="0.0" data-name="Lautaro Blanco" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;LB&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Lautaro Blanco&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;57.1&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;40.5–72.9 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 53&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Boca Juniors Capital vs Deportivo Recoleta&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">LB</div><div class="pcard-name">Lautaro Blanco</div><div class="pcard-score">57.1</div><div class="pcard-range">40.5–72.9 pt</div><div class="pcard-l10">L10: 53</div><div class="pcard-match">Boca Juniors Capital vs Deportivo Recoleta</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="yoshio-koizumi" data-role="MID" data-score="56.75" data-xp-frac="0.0" data-name="Yoshio Koizumi" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;YK&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Yoshio Koizumi&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;56.8&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;41.2–69.3 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 51&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Kashiwa Reysol Kashiwa vs Tokyo Verdy Tokyo&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">YK</div><div class="pcard-name">Yoshio Koizumi</div><div class="pcard-score">56.8</div><div class="pcard-range">41.2–69.3 pt</div><div class="pcard-l10">L10: 51</div><div class="pcard-match">Kashiwa Reysol Kashiwa vs Tokyo Verdy Tokyo</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#ef5b5b" data-slug="kevin-behrens" data-role="FWD" data-score="53.4" data-xp-frac="0.0" data-name="Kevin Behrens" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;KB&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Kevin Behrens&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;53.4&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;33.6–68.4 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 58&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Lugano Lugano vs Nsi Saltangara Eysturoy&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">KB</div><div class="pcard-name">Kevin Behrens</div><div class="pcard-score">53.4</div><div class="pcard-range">33.6–68.4 pt</div><div class="pcard-l10">L10: 58</div><div class="pcard-match">Lugano Lugano vs Nsi Saltangara Eysturoy</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="taiyo-koga" data-role="DEF" data-score="59.599999999999994" data-xp-frac="0.0" data-name="Taiyo Koga" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;TK&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Taiyo Koga&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;59.6&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;43.0–70.4 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 59&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Kashiwa Reysol Kashiwa vs Tokyo Verdy Tokyo&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;span class=&quot;tag tag-copies&quot;&gt;2 copie&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">EXTRA · DEF</span><span class="pcard-captain">C</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">TK</div><div class="pcard-name">Taiyo Koga</div><div class="pcard-score">59.6</div><div class="pcard-range">43.0–70.4 pt</div><div class="pcard-l10">L10: 59</div><div class="pcard-match">Kashiwa Reysol Kashiwa vs Tokyo Verdy Tokyo</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span><span class="tag tag-copies">2 copie</span></div></div></div></div><div class="lineup-total" data-captain-pct="0.2"><div><span class="label">Totale</span><span class="figure">274.6 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">286.6 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Taiyo Koga</b> <span class="cap-bonus">(+12 pt, +20%)</span></div><div class="captain-note">L10: 259.0 / 260.0 (entro budget)</div></div></div></div></div>
+<div data-sezione="arene_allstars"><div style="border:2px solid #7bd88f;border-radius:10px;padding:10px 12px 4px 12px;margin:0 0 18px 0"><div style="font-size:.85rem;color:#7bd88f;margin-bottom:8px"><b>SCHIERA -- guadagno atteso +96 essenze su 200 di ingresso</b></div><div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">Arena All Stars (cap 220) <span>#1</span></div></div><div class="card-strip"><div class="pcard is-classic" draggable="true" style="--role-color:#8b7cf6" data-slug="nestor-fernando-muslera-micol" data-role="GK" data-score="50.3" data-xp-frac="0.0" data-name="Fernando Muslera" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;NF&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Fernando Muslera&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;50.3&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;44.5–58.2 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 42&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Estudiantes La Plata vs Universidad Catolica Santiago&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">NF</div><div class="pcard-name">Fernando Muslera</div><div class="pcard-score">50.3</div><div class="pcard-range">44.5–58.2 pt</div><div class="pcard-l10">L10: 42</div><div class="pcard-match">Estudiantes La Plata vs Universidad Catolica Santiago</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard" draggable="true" style="--role-color:#3aa1e8" data-slug="ryan-hollingshead" data-role="DEF" data-score="51.3" data-xp-frac="0.0" data-name="Ryan Hollingshead" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;RH&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Ryan Hollingshead&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;51.3&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;41.4–63.8 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 45&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Los Angeles Fc vs Queretaro Queretaro&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-inseason&quot;&gt;In Season&lt;/span&gt;&lt;span class=&quot;tag tag-copies&quot;&gt;2 copie (1 IS + 1 CL)&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">RH</div><div class="pcard-name">Ryan Hollingshead</div><div class="pcard-score">51.3</div><div class="pcard-range">41.4–63.8 pt</div><div class="pcard-l10">L10: 45</div><div class="pcard-match">Los Angeles Fc vs Queretaro Queretaro</div><div class="pcard-tags"><span class="tag tag-inseason">In Season</span><span class="tag tag-copies">2 copie (1 IS + 1 CL)</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="clement-bischoff" data-role="MID" data-score="49.4" data-xp-frac="0.0" data-name="Clement Bischoff" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;CB&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Clement Bischoff&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;49.4&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;39.7–57.5 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 38&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Nec Nijmegen vs Olympiakos Piraeus Pireas&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">CB</div><div class="pcard-name">Clement Bischoff</div><div class="pcard-score">49.4</div><div class="pcard-range">39.7–57.5 pt</div><div class="pcard-l10">L10: 38</div><div class="pcard-match">Nec Nijmegen vs Olympiakos Piraeus Pireas</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#ef5b5b" data-slug="claudio-rafael-soares-braga" data-role="FWD" data-score="48.6" data-xp-frac="0.0" data-name="Cláudio Braga" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;CR&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Cláudio Braga&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;48.6&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;33.6–69.9 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 40&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Hearts Edinburgh vs Benfica Lisboa&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">CR</div><div class="pcard-name">Cláudio Braga</div><div class="pcard-score">48.6</div><div class="pcard-range">33.6–69.9 pt</div><div class="pcard-l10">L10: 40</div><div class="pcard-match">Hearts Edinburgh vs Benfica Lisboa</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="franco-ibarra" data-role="MID" data-score="55.3" data-xp-frac="0.0" data-name="Franco Ibarra" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;FI&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Franco Ibarra&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;55.3&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;42.7–69.3 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 54&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Rosario Central Rosario vs Corinthians Sao Paulo&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">EXTRA · MID</span><span class="pcard-captain">C</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">FI</div><div class="pcard-name">Franco Ibarra</div><div class="pcard-score">55.3</div><div class="pcard-range">42.7–69.3 pt</div><div class="pcard-l10">L10: 54</div><div class="pcard-match">Rosario Central Rosario vs Corinthians Sao Paulo</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div></div><div class="lineup-total" data-captain-pct="0.2"><div><span class="label">Totale</span><span class="figure">254.9 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">265.9 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Franco Ibarra</b> <span class="cap-bonus">(+11 pt, +20%)</span></div><div class="captain-note">L10: 219.0 / 220.0 (entro budget)</div></div></div></div></div>
+<div data-sezione="allstars"><div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">All Stars <span>#1</span></div></div><div class="card-strip"><div class="pcard" draggable="true" style="--role-color:#8b7cf6" data-slug="jonathan-sirois" data-role="GK" data-score="49.900226739008694" data-xp-frac="0.0" data-name="Jonathan Sirois" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;JS&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Jonathan Sirois&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;49.9&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;40.5–54.0 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 68&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Dallas Frisco Texas vs Toluca Toluca De&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-inseason&quot;&gt;In Season&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">JS</div><div class="pcard-name">Jonathan Sirois</div><div class="pcard-score">49.9</div><div class="pcard-range">40.5–54.0 pt</div><div class="pcard-l10">L10: 68</div><div class="pcard-match">Dallas Frisco Texas vs Toluca Toluca De</div><div class="pcard-tags"><span class="tag tag-inseason">In Season</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="jeyland-yahir-mitchell-baltodano" data-role="DEF" data-score="54.65" data-xp-frac="0.0" data-name="Jeyland Mitchell" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;JY&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Jeyland Mitchell&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;54.6&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;29.7–82.1 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 54&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Sturm Graz Graz vs Fenerbahce Istanbul&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF1</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">JY</div><div class="pcard-name">Jeyland Mitchell</div><div class="pcard-score">54.6</div><div class="pcard-range">29.7–82.1 pt</div><div class="pcard-l10">L10: 54</div><div class="pcard-match">Sturm Graz Graz vs Fenerbahce Istanbul</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="nenad-n-cvetkovic" data-role="DEF" data-score="54.65" data-xp-frac="0.0" data-name="Nenad Cvetković" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;NN&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Nenad Cvetković&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;54.6&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;38.0–64.6 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 56&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Rapid Wien Wien vs Paide Tallinn&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;span class=&quot;tag tag-copies&quot;&gt;2 copie&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF2</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">NN</div><div class="pcard-name">Nenad Cvetković</div><div class="pcard-score">54.6</div><div class="pcard-range">38.0–64.6 pt</div><div class="pcard-l10">L10: 56</div><div class="pcard-match">Rapid Wien Wien vs Paide Tallinn</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span><span class="tag tag-copies">2 copie</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="valeri-qazaishvili" data-role="MID" data-score="56.8" data-xp-frac="0.0" data-name="Valeri Qazaishvili" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;VQ&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Valeri Qazaishvili&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;56.8&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;42.0–75.2 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 58&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Shandong Luneng Ji vs Qingdao Jonoon Qingdao&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID1</span><span class="pcard-captain">C</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">VQ</div><div class="pcard-name">Valeri Qazaishvili</div><div class="pcard-score">56.8</div><div class="pcard-range">42.0–75.2 pt</div><div class="pcard-l10">L10: 58</div><div class="pcard-match">Shandong Luneng Ji vs Qingdao Jonoon Qingdao</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="thiago-henrique-mendes-ribeiro" data-role="MID" data-score="55.95" data-xp-frac="0.0" data-name="Thiago Mendes" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;TH&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Thiago Mendes&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;56.0&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;42.7–71.5 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 60&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Vasco Da Gama vs Olimpia Asuncion&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID2</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">TH</div><div class="pcard-name">Thiago Mendes</div><div class="pcard-score">56.0</div><div class="pcard-range">42.7–71.5 pt</div><div class="pcard-l10">L10: 60</div><div class="pcard-match">Vasco Da Gama vs Olimpia Asuncion</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#ef5b5b" data-slug="steven-berghuis" data-role="FWD" data-score="53.4" data-xp-frac="0.0" data-name="Steven Berghuis" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;SB&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Steven Berghuis&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;53.4&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;38.4–70.7 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 64&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Ajax Amsterdam vs Shelbourne Dublin&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">SB</div><div class="pcard-name">Steven Berghuis</div><div class="pcard-score">53.4</div><div class="pcard-range">38.4–70.7 pt</div><div class="pcard-l10">L10: 64</div><div class="pcard-match">Ajax Amsterdam vs Shelbourne Dublin</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="marco-asensio-willemsen" data-role="MID" data-score="52.80664735456014" data-xp-frac="0.0" data-name="Marco Asensio" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;MA&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Marco Asensio&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;52.8&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;39.0–64.2 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 54&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Fenerbahce Istanbul vs Sturm Graz Graz&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">EXTRA · MID</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">MA</div><div class="pcard-name">Marco Asensio</div><div class="pcard-score">52.8</div><div class="pcard-range">39.0–64.2 pt</div><div class="pcard-l10">L10: 54</div><div class="pcard-match">Fenerbahce Istanbul vs Sturm Graz Graz</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div></div><div class="lineup-total" data-captain-pct="0.5"><div><span class="label">Totale</span><span class="figure">378.2 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">406.2 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Valeri Qazaishvili</b> <span class="cap-bonus">(+28 pt, +50%)</span></div><div class="captain-note">Bonus Multi-club +2%/giocatore: attivo (meno di 3 titolari della stessa squadra)</div><div class="captain-note" style="color:#d9534f">Cap 370: L10 414.0 / 370 (bonus +4% non ottenuto)</div></div></div></div>
+<div data-sezione="allstars"><div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">All Stars <span>#2</span></div></div><div class="card-strip"><div class="pcard is-classic" draggable="true" style="--role-color:#8b7cf6" data-slug="andreas-hansen" data-role="GK" data-score="50.6" data-xp-frac="0.0" data-name="Andreas Hansen" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;AH&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Andreas Hansen&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;50.6&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;46.3–54.8 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 57&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Nordsjaelland Farum vs Valur Reykjavik 1911&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">AH</div><div class="pcard-name">Andreas Hansen</div><div class="pcard-score">50.6</div><div class="pcard-range">46.3–54.8 pt</div><div class="pcard-l10">L10: 57</div><div class="pcard-match">Nordsjaelland Farum vs Valur Reykjavik 1911</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="nenad-n-cvetkovic" data-role="DEF" data-score="54.65" data-xp-frac="0.0" data-name="Nenad Cvetković" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;NN&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Nenad Cvetković&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;54.6&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;38.0–64.6 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 56&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Rapid Wien Wien vs Paide Tallinn&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;span class=&quot;tag tag-copies&quot;&gt;2 copie&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF1</span><span class="pcard-captain">C</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">NN</div><div class="pcard-name">Nenad Cvetković</div><div class="pcard-score">54.6</div><div class="pcard-range">38.0–64.6 pt</div><div class="pcard-l10">L10: 56</div><div class="pcard-match">Rapid Wien Wien vs Paide Tallinn</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span><span class="tag tag-copies">2 copie</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="ryan-hollingshead" data-role="DEF" data-score="51.3" data-xp-frac="0.0" data-name="Ryan Hollingshead" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;RH&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Ryan Hollingshead&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;51.3&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;41.4–63.8 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 45&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Los Angeles Fc vs Queretaro Queretaro&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;span class=&quot;tag tag-copies&quot;&gt;2 copie (1 IS + 1 CL)&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF2</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">RH</div><div class="pcard-name">Ryan Hollingshead</div><div class="pcard-score">51.3</div><div class="pcard-range">41.4–63.8 pt</div><div class="pcard-l10">L10: 45</div><div class="pcard-match">Los Angeles Fc vs Queretaro Queretaro</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span><span class="tag tag-copies">2 copie (1 IS + 1 CL)</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="kristian-fredrik-malt-arnstad-2003-09-07" data-role="MID" data-score="53.80842566801974" data-xp-frac="0.0" data-name="Kristian Arnstad" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;KF&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Kristian Arnstad&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;53.8&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;34.5–65.6 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 57&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Agf Arhus vs Sabah Baki Baku&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID1</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">KF</div><div class="pcard-name">Kristian Arnstad</div><div class="pcard-score">53.8</div><div class="pcard-range">34.5–65.6 pt</div><div class="pcard-l10">L10: 57</div><div class="pcard-match">Agf Arhus vs Sabah Baki Baku</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard" draggable="true" style="--role-color:#2fbf8f" data-slug="timothy-tillman" data-role="MID" data-score="50.1" data-xp-frac="0.0" data-name="Timothy Tillman" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;TT&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Timothy Tillman&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;50.1&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;40.5–61.9 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 57&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Los Angeles Fc vs Queretaro Queretaro&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-inseason&quot;&gt;In Season&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID2</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">TT</div><div class="pcard-name">Timothy Tillman</div><div class="pcard-score">50.1</div><div class="pcard-range">40.5–61.9 pt</div><div class="pcard-l10">L10: 57</div><div class="pcard-match">Los Angeles Fc vs Queretaro Queretaro</div><div class="pcard-tags"><span class="tag tag-inseason">In Season</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#ef5b5b" data-slug="angel-martin-correa" data-role="FWD" data-score="51.4" data-xp-frac="0.0" data-name="Ángel Correa" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;AM&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Ángel Correa&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;51.4&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;39.2–67.6 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 56&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;River Plate Capital vs Santa Fe Bogota&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;span class=&quot;tag tag-copies&quot;&gt;2 copie&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">AM</div><div class="pcard-name">Ángel Correa</div><div class="pcard-score">51.4</div><div class="pcard-range">39.2–67.6 pt</div><div class="pcard-l10">L10: 56</div><div class="pcard-match">River Plate Capital vs Santa Fe Bogota</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span><span class="tag tag-copies">2 copie</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="mads-bech-sorensen" data-role="DEF" data-score="52.2" data-xp-frac="0.0" data-name="Mads Bech Sørensen" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;MB&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Mads Bech Sørensen&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;52.2&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;41.4–63.0 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 55&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Midtjylland Herning vs Bohemians Dublin&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">EXTRA · DEF</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">MB</div><div class="pcard-name">Mads Bech Sørensen</div><div class="pcard-score">52.2</div><div class="pcard-range">41.4–63.0 pt</div><div class="pcard-l10">L10: 55</div><div class="pcard-match">Midtjylland Herning vs Bohemians Dublin</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div></div><div class="lineup-total" data-captain-pct="0.5"><div><span class="label">Totale</span><span class="figure">364.1 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">391.1 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Nenad Cvetković</b> <span class="cap-bonus">(+27 pt, +50%)</span></div><div class="captain-note">Bonus Multi-club +2%/giocatore: attivo (meno di 3 titolari della stessa squadra)</div><div class="captain-note" style="color:#d9534f">Cap 370: L10 383.0 / 370 (bonus +4% non ottenuto)</div></div></div></div>
+<div data-sezione="allstars"><div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">All Stars <span>#3</span></div></div><div class="card-strip"><div class="pcard is-classic" draggable="true" style="--role-color:#8b7cf6" data-slug="gonzalo-alejandro-crettaz" data-role="GK" data-score="49.5" data-xp-frac="0.0" data-name="Gonzalo Crettaz" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;GA&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Gonzalo Crettaz&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;49.5&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;46.1–58.5 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 50&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Nec Nijmegen vs Olympiakos Piraeus Pireas&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">GA</div><div class="pcard-name">Gonzalo Crettaz</div><div class="pcard-score">49.5</div><div class="pcard-range">46.1–58.5 pt</div><div class="pcard-l10">L10: 50</div><div class="pcard-match">Nec Nijmegen vs Olympiakos Piraeus Pireas</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="milan-skriniar" data-role="DEF" data-score="50.587294577165146" data-xp-frac="0.0" data-name="Milan Škriniar" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;MS&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Milan Škriniar&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;50.6&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;28.9–74.6 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 52&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Fenerbahce Istanbul vs Sturm Graz Graz&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF1</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">MS</div><div class="pcard-name">Milan Škriniar</div><div class="pcard-score">50.6</div><div class="pcard-range">28.9–74.6 pt</div><div class="pcard-l10">L10: 52</div><div class="pcard-match">Fenerbahce Istanbul vs Sturm Graz Graz</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="ridvan-yilmaz" data-role="DEF" data-score="52.57035401338533" data-xp-frac="0.0" data-name="Rıdvan Yılmaz" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;RY&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Rıdvan Yılmaz&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;52.6&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;32.2–68.8 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 49&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Besiktas Istanbul vs Hradec Kralove Hradec&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF2</span><span class="pcard-captain">C</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">RY</div><div class="pcard-name">Rıdvan Yılmaz</div><div class="pcard-score">52.6</div><div class="pcard-range">32.2–68.8 pt</div><div class="pcard-l10">L10: 49</div><div class="pcard-match">Besiktas Istanbul vs Hradec Kralove Hradec</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="mathieu-choiniere" data-role="MID" data-score="52.3" data-xp-frac="0.0" data-name="Mathieu Choinière" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;MC&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Mathieu Choinière&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;52.3&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;39.7–64.2 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 53&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Los Angeles Fc vs Queretaro Queretaro&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID1</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">MC</div><div class="pcard-name">Mathieu Choinière</div><div class="pcard-score">52.3</div><div class="pcard-range">39.7–64.2 pt</div><div class="pcard-l10">L10: 53</div><div class="pcard-match">Los Angeles Fc vs Queretaro Queretaro</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="luciano-federico-acosta" data-role="MID" data-score="50.150000000000006" data-xp-frac="0.0" data-name="Lucho Acosta " data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;LF&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Lucho Acosta &lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;50.2&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;39.0–64.9 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 50&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Fluminense Rio De vs Independiente Rivadavia Mendoza&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;span class=&quot;tag tag-copies&quot;&gt;2 copie&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID2</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">LF</div><div class="pcard-name">Lucho Acosta </div><div class="pcard-score">50.2</div><div class="pcard-range">39.0–64.9 pt</div><div class="pcard-l10">L10: 50</div><div class="pcard-match">Fluminense Rio De vs Independiente Rivadavia Mendoza</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span><span class="tag tag-copies">2 copie</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#ef5b5b" data-slug="angel-martin-correa" data-role="FWD" data-score="51.4" data-xp-frac="0.0" data-name="Ángel Correa" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;AM&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Ángel Correa&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;51.4&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;39.2–67.6 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 56&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;River Plate Capital vs Santa Fe Bogota&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;span class=&quot;tag tag-copies&quot;&gt;2 copie&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">AM</div><div class="pcard-name">Ángel Correa</div><div class="pcard-score">51.4</div><div class="pcard-range">39.2–67.6 pt</div><div class="pcard-l10">L10: 56</div><div class="pcard-match">River Plate Capital vs Santa Fe Bogota</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span><span class="tag tag-copies">2 copie</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#ef5b5b" data-slug="vaclav-cerny" data-role="FWD" data-score="49.0" data-xp-frac="0.0" data-name="Václav Černý" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;VC&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Václav Černý&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;49.0&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;40.0–65.2 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 46&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Besiktas Istanbul vs Hradec Kralove Hradec&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">EXTRA · FWD</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">VC</div><div class="pcard-name">Václav Černý</div><div class="pcard-score">49.0</div><div class="pcard-range">40.0–65.2 pt</div><div class="pcard-l10">L10: 46</div><div class="pcard-match">Besiktas Istanbul vs Hradec Kralove Hradec</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div></div><div class="lineup-total" data-captain-pct="0.5"><div><span class="label">Totale</span><span class="figure">355.5 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">381.5 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Rıdvan Yılmaz</b> <span class="cap-bonus">(+26 pt, +50%)</span></div><div class="captain-note">Bonus Multi-club +2%/giocatore: attivo (meno di 3 titolari della stessa squadra)</div><div class="captain-note">Cap 370: L10 356.0 / 370 (+4% bonus formazione attivo)</div></div></div></div>
+<div data-sezione="allstars"><div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">All Stars <span>#4</span></div></div><div class="card-strip"><div class="pcard is-classic" draggable="true" style="--role-color:#8b7cf6" data-slug="elias-rafn-olafsson" data-role="GK" data-score="48.2" data-xp-frac="0.0" data-name="Elías Ólafsson" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;ER&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Elías Ólafsson&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;48.2&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;43.4–53.7 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 46&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Midtjylland Herning vs Bohemians Dublin&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">ER</div><div class="pcard-name">Elías Ólafsson</div><div class="pcard-score">48.2</div><div class="pcard-range">43.4–53.7 pt</div><div class="pcard-l10">L10: 46</div><div class="pcard-match">Midtjylland Herning vs Bohemians Dublin</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="nouhou-tolo" data-role="DEF" data-score="49.7" data-xp-frac="0.0" data-name="Nouhou Tolo" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;NT&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Nouhou Tolo&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;49.7&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;34.7–67.9 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 57&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Seattle Sounders Renton vs Guadalajara Zapopan Guadalajara&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF1</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">NT</div><div class="pcard-name">Nouhou Tolo</div><div class="pcard-score">49.7</div><div class="pcard-range">34.7–67.9 pt</div><div class="pcard-l10">L10: 57</div><div class="pcard-match">Seattle Sounders Renton vs Guadalajara Zapopan Guadalajara</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="nathan-ake" data-role="DEF" data-score="49.821175704724766" data-xp-frac="0.0" data-name="Nathan Aké" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;NA&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Nathan Aké&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;49.8&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;33.0–73.8 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 52&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Fenerbahce Istanbul vs Sturm Graz Graz&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF2</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">NA</div><div class="pcard-name">Nathan Aké</div><div class="pcard-score">49.8</div><div class="pcard-range">33.0–73.8 pt</div><div class="pcard-l10">L10: 52</div><div class="pcard-match">Fenerbahce Istanbul vs Sturm Graz Graz</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="luciano-federico-acosta" data-role="MID" data-score="50.150000000000006" data-xp-frac="0.0" data-name="Lucho Acosta " data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;LF&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Lucho Acosta &lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;50.2&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;39.0–64.9 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 50&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Fluminense Rio De vs Independiente Rivadavia Mendoza&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;span class=&quot;tag tag-copies&quot;&gt;2 copie&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID1</span><span class="pcard-captain">C</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">LF</div><div class="pcard-name">Lucho Acosta </div><div class="pcard-score">50.2</div><div class="pcard-range">39.0–64.9 pt</div><div class="pcard-l10">L10: 50</div><div class="pcard-match">Fluminense Rio De vs Independiente Rivadavia Mendoza</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span><span class="tag tag-copies">2 copie</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="jon-gorenc-stankovic" data-role="MID" data-score="48.6" data-xp-frac="0.0" data-name="Jon Gorenc Stankovic" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;JG&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Jon Gorenc Stankovic&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;48.6&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;40.5–61.2 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 53&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Sturm Graz Graz vs Fenerbahce Istanbul&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID2</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">JG</div><div class="pcard-name">Jon Gorenc Stankovic</div><div class="pcard-score">48.6</div><div class="pcard-range">40.5–61.2 pt</div><div class="pcard-l10">L10: 53</div><div class="pcard-match">Sturm Graz Graz vs Fenerbahce Istanbul</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#ef5b5b" data-slug="miguel-angel-merentiel-serrano" data-role="FWD" data-score="49.800000000000004" data-xp-frac="0.0" data-name="Miguel Merentiel" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;MA&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Miguel Merentiel&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;49.8&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;39.2–68.4 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 46&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Boca Juniors Capital vs Deportivo Recoleta&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">MA</div><div class="pcard-name">Miguel Merentiel</div><div class="pcard-score">49.8</div><div class="pcard-range">39.2–68.4 pt</div><div class="pcard-l10">L10: 46</div><div class="pcard-match">Boca Juniors Capital vs Deportivo Recoleta</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="philippe-sandler" data-role="DEF" data-score="48.8" data-xp-frac="0.0" data-name="Philippe Sandler" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;PS&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Philippe Sandler&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;48.8&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;32.2–74.6 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 50&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Nec Nijmegen vs Olympiakos Piraeus Pireas&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">EXTRA · DEF</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">PS</div><div class="pcard-name">Philippe Sandler</div><div class="pcard-score">48.8</div><div class="pcard-range">32.2–74.6 pt</div><div class="pcard-l10">L10: 50</div><div class="pcard-match">Nec Nijmegen vs Olympiakos Piraeus Pireas</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div></div><div class="lineup-total" data-captain-pct="0.5"><div><span class="label">Totale</span><span class="figure">345.1 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">370.1 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Lucho Acosta </b> <span class="cap-bonus">(+25 pt, +50%)</span></div><div class="captain-note">Bonus Multi-club +2%/giocatore: attivo (meno di 3 titolari della stessa squadra)</div><div class="captain-note">Cap 370: L10 354.0 / 370 (+4% bonus formazione attivo)</div></div></div></div>
+<div class="lineup-block verdetto-arene"><style>.verdetto-arene table{border-collapse:collapse;width:100%;font-size:.85rem}.verdetto-arene td{padding:3px 8px;border-bottom:1px solid #2a2a2a}.verdetto-arene tr.ok td{color:#7bd88f}.verdetto-arene tr.no td{color:#8a8a8a}</style><h2>Conviene pagare l'ingresso? — 4 su 4 arene</h2><p>Soglie misurate su 673 arene reali: sotto quella riga l'ingresso costa piu' di quanto renda, e le carte valgono di piu' in una competizione senza costo (All Stars da 7, Under 23).</p><table><tr><td><b>arena</b></td><td style="text-align:right"><b>atteso</b></td><td style="text-align:right"><b>pareggio</b></td><td style="text-align:right"><b>margine</b></td><td><b>verdetto</b></td></tr><tr class="ok"><td>Arena All Stars (cap 260)</td><td style="text-align:right">306</td><td style="text-align:right">264.5</td><td style="text-align:right">+41.7</td><td><b>SCHIERA</b></td></tr><tr class="ok"><td>Arena All Stars (cap 260)</td><td style="text-align:right">291</td><td style="text-align:right">264.5</td><td style="text-align:right">+26.7</td><td><b>SCHIERA</b></td></tr><tr class="ok"><td>Arena All Stars (cap 260)</td><td style="text-align:right">286</td><td style="text-align:right">264.5</td><td style="text-align:right">+22.0</td><td><b>SCHIERA</b></td></tr><tr class="ok"><td>Arena All Stars (cap 220)</td><td style="text-align:right">266</td><td style="text-align:right">247.1</td><td style="text-align:right">+18.9</td><td><b>SCHIERA</b></td></tr></table></div>
+<footer>Fusione 53 campionati. Max 1 carta CLASSIC solo per In Season. Filtro qualita' L5/L10/L40 disattivato (28/07): ridondante con lo starter-odds.</footer>
+<script>
+// Drag&drop (28/07, richiesta esplicita utente): scambia un giocatore fra
+// una pcard schierata e un'alternativa (o un'altra pcard), stesso ruolo.
+// Puro swap di HTML/attributi gia' pronti lato server (data-body) -- NESSUN
+// ricalcolo di formula, NESSUNA persistenza (un refresh della pagina
+// riporta tutto allo stato generato). Limite noto: le note L10/cap/anti-stack
+// sotto ogni formazione restano quelle calcolate al momento della run, non
+// si aggiornano con lo scambio (solo totale e bonus capitano lo fanno).
+(function () {
+  var dragEl = null;
+
+  function isDraggable(el) {
+    return el && (el.classList.contains('pcard') || el.classList.contains('alt-chip'))
+      && el.getAttribute('draggable') === 'true';
+  }
+
+  document.addEventListener('dragstart', function (e) {
+    var el = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!el) return;
+    dragEl = el;
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', 'x'); } catch (err) {}
+  });
+
+  document.addEventListener('dragover', function (e) {
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!dragEl || !target || target === dragEl || target.dataset.role !== dragEl.dataset.role) return;
+    e.preventDefault();
+  });
+
+  document.addEventListener('dragenter', function (e) {
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (dragEl && target && target !== dragEl && target.dataset.role === dragEl.dataset.role) {
+      target.classList.add('drop-target');
+    }
+  });
+
+  document.addEventListener('dragleave', function (e) {
+    var target = e.target.closest('.pcard, .alt-chip');
+    if (target) target.classList.remove('drop-target');
+  });
+
+  document.addEventListener('dragend', function () {
+    document.querySelectorAll('.drop-target').forEach(function (el) { el.classList.remove('drop-target'); });
+    dragEl = null;
+  });
+
+  document.addEventListener('drop', function (e) {
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!dragEl || !target || target === dragEl || target.dataset.role !== dragEl.dataset.role) return;
+    e.preventDefault();
+    target.classList.remove('drop-target');
+    swapPlayers(dragEl, target);
+    dragEl = null;
+  });
+
+  function initials(name) {
+    return (name || '').split(' ').filter(Boolean).slice(0, 2)
+      .map(function (w) { return w[0].toUpperCase(); }).join('') || '??';
+  }
+
+  function refresh(el) {
+    if (el.classList.contains('pcard')) {
+      var body = el.querySelector('.pcard-body');
+      if (body) body.innerHTML = el.dataset.body;
+    } else {
+      var circle = el.querySelector('.alt-circle');
+      var name = el.querySelector('.alt-name');
+      var score = el.querySelector('.alt-score');
+      if (circle) circle.textContent = initials(el.dataset.name);
+      if (name) name.textContent = el.dataset.name;
+      if (score) score.textContent = (parseFloat(el.dataset.score) || 0).toFixed(1) + ' pt · ' + el.dataset.role;
+    }
+  }
+
+  function swapPlayers(a, b) {
+    ['slug', 'score', 'name', 'body', 'xpFrac'].forEach(function (k) {
+      var tmp = a.dataset[k];
+      a.dataset[k] = b.dataset[k];
+      b.dataset[k] = tmp;
+    });
+    refresh(a);
+    refresh(b);
+    [a, b].forEach(function (el) {
+      var block = el.closest('.lineup-block');
+      if (block) recomputeTotal(block);
+    });
+  }
+
+  function recomputeTotal(block) {
+    var total = 0;
+    block.querySelectorAll('.pcard').forEach(function (c) { total += parseFloat(c.dataset.score) || 0; });
+    var totalEl = block.querySelector('.lineup-total');
+    if (!totalEl) return;
+    var figure = totalEl.querySelector('.figure:not(.with-captain)');
+    if (figure) figure.textContent = total.toFixed(1) + ' pt';
+    var capBadge = block.querySelector('.pcard-captain');
+    var capPct = parseFloat(totalEl.dataset.captainPct || '0.5');
+    var bonus = 0, capName = '';
+    if (capBadge) {
+      var capCard = capBadge.closest('.pcard');
+      // FIX 28/07 sera: data-score include GIA' il bonus xp/collezione/
+      // stagione (se applicabile) -- calcolare il +50% capitano su quel
+      // valore gonfiato lo applica in cascata invece che addizionato
+      // (stesso bug fixato lato Python in render_lineup_html). Si riporta
+      // al valore raw dividendo per (1+xpFrac) prima di applicare capPct.
+      var capScore = parseFloat(capCard.dataset.score) || 0;
+      var xpFrac = parseFloat(capCard.dataset.xpFrac) || 0;
+      var capRaw = xpFrac ? capScore / (1 + xpFrac) : capScore;
+      bonus = Math.round(capRaw * capPct);
+      capName = capCard.dataset.name || '';
+    }
+    var withCap = totalEl.querySelector('.figure.with-captain');
+    if (withCap) withCap.textContent = (total + bonus).toFixed(1) + ' pt';
+    var capNameEl = totalEl.querySelector('.cap-name');
+    if (capNameEl && capName) capNameEl.textContent = capName;
+    var capBonusEl = totalEl.querySelector('.cap-bonus');
+    if (capBonusEl) capBonusEl.textContent = '(+' + bonus + ' pt, +' + Math.round(capPct * 100) + '%)';
+  }
+})();
+</script>
+<script>
+(function () {
+  // Click sul nome del giocatore = nome negli appunti, da incollare nella
+  // ricerca di Sorare (01/08, richiesta utente: i nomi coreani sono difficili
+  // da riscrivere a mano).
+  function copia(testo, el) {
+    var vecchio = el.textContent;
+    var ok = function () {
+      el.textContent = 'copiato!';
+      setTimeout(function () { el.textContent = vecchio; }, 800);
+    };
+    var fallback = function () {
+      var riuscito = false;
+      var ta = document.createElement('textarea');
+      ta.value = testo; document.body.appendChild(ta); ta.select();
+      try { riuscito = document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      if (riuscito) {
+        ok();
+      } else {
+        el.style.color = 'red';
+        el.textContent = 'copia non riuscita';
+        setTimeout(function () { el.textContent = vecchio; el.style.color = ''; }, 1200);
+      }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(testo).then(ok, fallback);
+    } else {
+      fallback();
+    }
+  }
+  document.addEventListener('click', function (ev) {
+    // Si copia cliccando il CERCHIO con le iniziali oppure il nome (07/08,
+    // richiesta utente): il cerchio e' molto piu' grande e piu' facile da
+    // centrare quando si compongono decine di formazioni. Restano validi
+    // entrambi, cosi' chi e' abituato al nome non perde niente.
+    if (!ev.target || !ev.target.closest) return;
+    var punto = ev.target.closest('.pcard-avatar, .pcard-name');
+    if (!punto) return;
+    ev.preventDefault(); ev.stopPropagation();
+    var card = punto.closest('[data-name]') || punto.closest('[data-slug]')
+               || punto.closest('.pcard');
+    // Il messaggio ('copiato!'/'copia non riuscita') va SEMPRE sul nome, mai
+    // sul cerchio: li' dentro ci stanno due lettere e non si leggerebbe.
+    var el = (card && card.querySelector('.pcard-name')) || punto;
+    var testo = (card && (card.dataset.name || card.dataset.slug)) || el.textContent;
+    copia(testo.trim(), el);
+    segnaCopiata(card);   // avanzamento: da qui in poi si sa dove si era arrivati
+  }, true);
+  /* AVANZAMENTO (07/08). Il problema non e' copiare un nome, e' NON PERDERE
+     IL SEGNO: ~300 giocatori a giornata, avanti e indietro con Sorare, con il
+     rischio di rimettere un difensore nella formazione di un altro portiere.
+     Due memorie, per GIORNATA, in localStorage (un refresh non le perde):
+       - carta copiata -> si spegne e prende la spunta verde
+       - formazione schierata -> si spegne tutta, col tasto FATTA
+     Niente di tutto questo tocca i punteggi: e' solo stato di avanzamento. */
+  var CHIAVE = 'sorare-avanzamento::' + (document.title || 'gw');
+  function statoLeggi() {
+    try { return JSON.parse(localStorage.getItem(CHIAVE) || '{}'); }
+    catch (e) { return {}; }
+  }
+  function statoScrivi(s) {
+    try { localStorage.setItem(CHIAVE, JSON.stringify(s)); } catch (e) {}
+  }
+  function idCarta(card) {
+    var blocco = card.closest('.lineup-block');
+    var titolo = blocco ? (blocco.querySelector('.lineup-title') || {}).textContent : '';
+    return (titolo || '') + '|' + (card.dataset.slug || '') + '|' + (card.dataset.role || '');
+  }
+  function idBlocco(blocco) {
+    var t = blocco.querySelector('.lineup-title');
+    return 'BLOCCO|' + ((t && t.textContent) || '');
+  }
+  function applicaStato() {
+    var s = statoLeggi();
+    document.querySelectorAll('.pcard').forEach(function (c) {
+      c.classList.toggle('copiata', !!s[idCarta(c)]);
+    });
+    document.querySelectorAll('.lineup-block').forEach(function (b) {
+      b.classList.toggle('schierata', !!s[idBlocco(b)]);
+    });
+  }
+  function segnaCopiata(card) {
+    if (!card) return;
+    var s = statoLeggi();
+    s[idCarta(card)] = 1;
+    statoScrivi(s);
+    card.classList.add('copiata');
+  }
+  // Un tasto FATTA per formazione, piu' il ripristino
+  document.querySelectorAll('.lineup-block').forEach(function (b) {
+    var t = b.querySelector('.lineup-title');
+    if (!t) return;
+    var btn = document.createElement('span');
+    btn.className = 'btn-schierata';
+    btn.textContent = 'fatta';
+    btn.title = 'Segna questa formazione come gia\' schierata su Sorare';
+    btn.addEventListener('click', function (ev) {
+      ev.preventDefault(); ev.stopPropagation();
+      var s = statoLeggi();
+      var k = idBlocco(b);
+      if (s[k]) { delete s[k]; } else { s[k] = 1; }
+      statoScrivi(s);
+      applicaStato();
+    });
+    t.parentNode.appendChild(btn);
+  });
+  applicaStato();
+  var st = document.createElement('style');
+  st.textContent = '.pcard-name{cursor:copy} .pcard-name:hover{text-decoration:underline dotted}'
+                 + '.pcard-avatar{cursor:copy}'
+                 + '.pcard-avatar:hover{outline:2px solid currentColor;outline-offset:2px}';
+  document.head.appendChild(st);
+})();
+</script>
+
+<style>
+  .schierata-flag {
+    display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+    user-select: none; margin-left: 14px; vertical-align: middle;
+    font-size: 0.92rem; font-weight: 700; letter-spacing: 0.02em;
+    color: var(--text); opacity: 0.8;
+    transition: opacity 0.15s ease;
+  }
+  .schierata-flag:hover { opacity: 1; }
+  .schierata-box {
+    width: 22px; height: 22px; border-radius: 6px; flex: 0 0 auto;
+    border: 2px solid var(--gold); background: transparent;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1rem; line-height: 1; color: transparent; font-weight: 800;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .schierata-flag[data-on="1"] { opacity: 1; }
+  .schierata-flag[data-on="1"] .schierata-box {
+    background: #2fbf6a; border-color: #2fbf6a; color: #06240f;
+    box-shadow: 0 0 0 4px rgba(47, 191, 106, 0.28);
+  }
+  .lineup-block[data-schierata="1"] { outline: 2px solid #2fbf6a; outline-offset: 3px; }
+  /* COLLASSO (08/08, richiesta esplicita utente: "falla proprio sparire, cosi'
+     non la vedo piu' e non mi confondo"). Segnata come schierata, la
+     formazione si richiude e resta solo il titolo con un tasto per
+     riaprirla. Lo stato "riaperta" NON e' persistito di proposito: alla
+     riapertura del file le schierate tornano chiuse, che e' lo scopo. */
+  .lineup-block[data-schierata="1"] { padding-bottom: 4px; }
+  .btn-riapri {
+    display: none; margin-left: 12px; cursor: pointer; user-select: none;
+    font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em;
+    padding: 3px 10px; border-radius: 999px; vertical-align: middle;
+    border: 1px solid #2fbf6a; color: #2fbf6a; background: rgba(47,191,106,0.12);
+  }
+  .btn-riapri:hover { background: rgba(47,191,106,0.24); }
+  .lineup-block[data-schierata="1"] .btn-riapri { display: inline-block; }
+</style>
+<script>
+(function () {
+  var CHIAVE = 'sorare_schierate::' + (location.pathname.split('/').pop() || 'report');
+  var stato = {};
+  try { stato = JSON.parse(localStorage.getItem(CHIAVE) || '{}'); } catch (e) { stato = {}; }
+
+  function salva() {
+    try { localStorage.setItem(CHIAVE, JSON.stringify(stato)); } catch (e) {}
+  }
+
+  document.querySelectorAll('.lineup-block').forEach(function (block, i) {
+    var titolo = block.querySelector('.lineup-title');
+    if (!titolo) return;
+    var id = (titolo.textContent || '').trim().replace(/\s+/g, ' ') || ('formazione-' + i);
+
+    var flag = document.createElement('span');
+    flag.className = 'schierata-flag';
+    flag.title = 'Segna questa formazione come gia schierata su Sorare';
+    var box = document.createElement('span');
+    box.className = 'schierata-box';
+    box.textContent = '✓';
+    var testo = document.createElement('span');
+    testo.textContent = 'Formazione gia schierata';
+    flag.appendChild(box);
+    flag.appendChild(testo);
+
+    // Tasto per riaprire una formazione richiusa. Vive DENTRO il titolo,
+    // l'unica parte che resta visibile quando il blocco e' collassato.
+    var riapri = document.createElement('span');
+    riapri.className = 'btn-riapri';
+    var aperta = false;   // non persistito: si riparte sempre da chiusa
+
+    // Il contenuto da nascondere sono tutti i figli diretti del blocco TRANNE
+    // quello che contiene il titolo. Si ricava risalendo dal titolo invece di
+    // elencare classi a mano: se un domani il template cambia struttura,
+    // questo continua a funzionare.
+    var ramoTitolo = titolo;
+    while (ramoTitolo && ramoTitolo.parentNode !== block) { ramoTitolo = ramoTitolo.parentNode; }
+
+    function applica() {
+      var on = stato[id] ? '1' : '0';
+      flag.setAttribute('data-on', on);
+      block.setAttribute('data-schierata', on);
+      var chiudi = !!stato[id] && !aperta;
+      Array.prototype.forEach.call(block.children, function (ch) {
+        if (ch !== ramoTitolo) { ch.style.display = chiudi ? 'none' : ''; }
+      });
+      riapri.textContent = aperta ? 'richiudi' : 'clicca per riaprire';
+    }
+    flag.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      stato[id] = !stato[id];
+      if (!stato[id]) { delete stato[id]; }
+      aperta = false;   // rimarcandola da schierare si riparte da chiusa
+      salva();
+      applica();
+    });
+    riapri.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      ev.preventDefault();
+      aperta = !aperta;
+      applica();
+    });
+    applica();
+    titolo.appendChild(flag);
+    titolo.appendChild(riapri);
+  });
+})();
+</script>
+
+<style>
+  .bf-topbar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    margin: 0 0 20px 0; padding-top: 6px;
+  }
+  .bf-tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+  .bf-tabs::-webkit-scrollbar { display: none; }
+  .bf-tab {
+    appearance: none; border: none; background: none; color: var(--muted);
+    font-size: 0.84rem; font-weight: 600; padding: 10px 16px 12px; cursor: pointer;
+    border-bottom: 2px solid transparent; white-space: nowrap; font-family: inherit;
+    transition: color 0.15s ease;
+  }
+  .bf-tab:hover { color: var(--text); }
+  .bf-tab[aria-current="true"] { color: var(--text); border-bottom-color: var(--gold); }
+  .bf-tab .bf-count { color: var(--muted-2); font-weight: 700; margin-left: 5px; }
+</style>
+<script>
+(function () {
+  var SEZIONI = [["in_season", "In Season"], ["arene_dedicate", "Arene dedicate"], ["arene_allstars", "Arene All Stars"], ["allstars", "All Stars"], ["under23", "Under 23"], ["opzionali", "Opzionali"]];
+  var blocchi = Array.prototype.slice.call(document.querySelectorAll('[data-sezione]'));
+  if (!blocchi.length) return;
+
+  var gruppi = {};
+  blocchi.forEach(function (b) {
+    var s = b.getAttribute('data-sezione');
+    (gruppi[s] = gruppi[s] || []).push(b);
+  });
+
+  var bar = document.createElement('div');
+  bar.className = 'bf-topbar';
+  var nav = document.createElement('nav');
+  nav.className = 'bf-tabs';
+  bar.appendChild(nav);
+
+  // Il separatore delle OPZIONALI e' un blocco a se' (non ha data-sezione):
+  // va mostrato solo quando quelle formazioni sono visibili.
+  var divisore = null;
+  document.querySelectorAll('div').forEach(function (d) {
+    if (!divisore && d.textContent.indexOf('Formazioni OPZIONALI (extra') === 0) { divisore = d; }
+  });
+
+  function mostra(vista, btn) {
+    Array.prototype.slice.call(nav.children).forEach(function (b) { b.removeAttribute('aria-current'); });
+    if (btn) btn.setAttribute('aria-current', 'true');
+    blocchi.forEach(function (b) {
+      var s = b.getAttribute('data-sezione');
+      b.style.display = (vista === 'tutto' || vista === s) ? '' : 'none';
+    });
+    if (divisore) {
+      divisore.style.display = (vista === 'tutto' || vista === 'opzionali') ? '' : 'none';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function tab(id, label, n) {
+    var b = document.createElement('button');
+    b.className = 'bf-tab';
+    b.type = 'button';
+    b.textContent = label;
+    if (n) {
+      var sp = document.createElement('span');
+      sp.className = 'bf-count';
+      sp.textContent = n;
+      b.appendChild(sp);
+    }
+    b.addEventListener('click', function () { mostra(id, b); });
+    nav.appendChild(b);
+    return b;
+  }
+
+  var primo = tab('tutto', 'Tutte', blocchi.length);
+  SEZIONI.forEach(function (s) {
+    if ((gruppi[s[0]] || []).length) { tab(s[0], s[1], gruppi[s[0]].length); }
+  });
+
+  var ancora = document.querySelector('p.subhead') || document.querySelector('h1');
+  if (ancora && ancora.parentNode) {
+    ancora.parentNode.insertBefore(bar, ancora.nextSibling);
+  } else {
+    document.body.insertBefore(bar, document.body.firstChild);
+  }
+  mostra('tutto', primo);
+})();
+</script>
+</body>
+</html>
