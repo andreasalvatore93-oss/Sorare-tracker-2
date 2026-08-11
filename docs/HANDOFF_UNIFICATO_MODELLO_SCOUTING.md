@@ -1320,6 +1320,88 @@ riproducibile di p50/p51, non quello vecchio.
 
 File: `analisi_manager/dati/grade_essenze_fix_2026-08-12.json`.
 
+### Controllo placebo (Opus, 12/08/2026 notte) — IL SEGNALE È VERO, la taglia no
+
+`analisi_manager/p52_placebo_grade_essenze.py`: stessa macchina di p51
+(pool, tabella, fattore, fix i+ii), ma il grade viene rimescolato a caso
+dentro la stessa GW-manager (20 permutazioni) — rompe SOLO il legame
+voto↔giocatore, lascia identica scala/dispersione/ricentraggio.
+
+    VERO (grade reale)         +7.577
+    20 placebo (grade finto):  TUTTI negativi, mediana -10.860,
+                               migliore -5.080, peggiore -16.881
+    0/20 placebo arrivano al valore vero -> p<=0,048
+
+**Un voto finto della stessa taglia COSTA ~10.900 essenze; solo il voto
+vero guadagna.** Non è un artefatto della macchina (scala, ricentraggio,
+dispersione più larga): è informazione vera — prima volta dimostrato a
+livello essenze, non solo di correlazione a livello carta. Quello che il
+placebo NON dimostra: la taglia esatta (IC ampio, 51% del +7.577 viene da
+5 GW-manager su 360).
+
+Ma il braccio "archivio" non è spedibile: `p51:118` costruisce la tabella
+sd_atteso dalle righe del POOL DI TEST stesso — in produzione quella
+scala non esiste (non hai la sd dei pool dei 29 manager della giornata che
+stai decidendo). La fonte spedibile resta quella dei consigli (+6.109,
+92,2%), statisticamente indistinguibile dall'archivio (appaiato -1.468,
+include zero): si scegli la produzione perché è l'unica che esiste fuori
+dal backtest, non perché vince.
+
+### "Il +1,02 del voto" — causa vera trovata, NON è colpa della fonte (Opus)
+
+Tentativo (a) dell'orchestratore: ricostruire la tabella VOTO sulla
+popolazione dei consigli (`p53_grade_scala_produzione.py`, invece di
+`dati_globali/manager_*.json`) — chiudeva solo +0,1/+0,25 per ruolo, non
+il +1,02 misurato. Diagnosi di Opus, MISURATA non ipotizzata:
+
+    pool di backtest (slug+data specifici)             voto 4,029
+    STESSI slug, TUTTE le altre date nell'indice grade  voto 2,993  (-1,04)
+    slug diversi da quelli nel pool                     voto 2,292  (mix conta poco, +0,29)
+
+A parità di GIOCATORE, le date che finiscono nel pool di backtest hanno un
+voto più alto di 1,04 rispetto alle altre date dello stesso giocatore —
+**non è "chi possiede" (account/29 manager), è il filtro DNP**:
+`p24_binario2_ga.costruisci_pool_carte:114` scarta le carte a punteggio 0
+(non ha giocato) e `prepara_pool_rows_grezze` richiede un `reale` non
+nullo — il pool tiene, per ogni giocatore, SOLO le giornate in cui ha
+giocato, cioè quelle in cui non era F. p53 aveva ragione: la popolazione
+giusta per la tabella di produzione sono i consigli, non l'archivio.
+**Conseguenza pratica**: le costanti di ricentraggio per ruolo misurate
+sul backtest (+1,42 DEF ... +1,51 MID) correggono un ARTEFATTO DEL
+BACKTEST (selezione sulle date), non trasferibile in produzione dove la
+spinta vale solo ~0,2-0,3 punti di punteggio — NON vanno spedite.
+
+### Ricetta finale, (b)+(c), 12/08/2026 notte — esclude lo zero per la prima volta
+
+`p54_grade_carta_refit_v2.py` (ritara il fattore su voto+sd di produzione,
+fix i, NIENTE ricentraggio per ruolo qui — solo per misurare la spinta
+cieca residua): pendenza OLS = **0,482** (corr +0,1151, IC[+0,0941;
++0,1348], 100%). Spinta cieca sul CAMPIONE BACKTEST resta grande (+2,34,
+per ruolo GK+0,83 DEF+2,91 MID+2,17 FWD+3,06) — attesa, perché qualunque
+numero letto DAL backtest eredita il suo stesso artefatto di selezione.
+
+`p55_grade_essenze_finale.py`: il braccio UNICO pre-registrato (voto+sd da
+produzione, fattore 0,482, ricentraggio GLOBALE — una costante sola, non
+per ruolo, seguendo l'indicazione di Opus di non spedire le costanti
+per-ruolo tarate sull'artefatto):
+
+    G baseline = +124.021
+    G finale   = +134.123
+    delta = +10.102  IC95%=[+1.494;+18.995]  positivo 98,8%  n=360
+
+**Esclude lo zero per la prima volta.** Caveat testuale di Opus, da NON
+perdere: "il backtest giudica il voto su un pool da cui è già stata tolta
+l'informazione più forte del voto (chi non gioca). Qualunque cifra di
+guadagno esca da lì è distorta — in che verso non lo so, non l'ho
+misurato." Quindi: il segnale è vero (placebo, p<=0,048), il +10.102 è la
+prima cifra che non include lo zero con la ricetta deployabile, ma
+NESSUNA cifra di oggi è garantita libera dalla distorsione DNP del
+backtest. Prossimo passo naturale (non ancora fatto): pre-registrare un
+controllo fuori campione sulle prossime GW reali, come per GK_ATT_AVV.
+
+File: `analisi_manager/dati/grade_essenze_finale_2026-08-12.json`,
+`analisi_manager/dati/grade_scala_produzione_2026-08-12.json`.
+
 ### Controllo placebo, 12/08/2026 sera (Opus) — il segnale c'è; il braccio scelto però non è spedibile
 
 Primo numero della giornata che REGGE a un controllo, ma non è quello che
