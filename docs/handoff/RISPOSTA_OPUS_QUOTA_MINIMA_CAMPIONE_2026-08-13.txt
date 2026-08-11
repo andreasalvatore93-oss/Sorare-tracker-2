@@ -1,0 +1,156 @@
+RISPOSTA OPUS ESECUTORE -- "quanto campione serve per sciogliere il disaccordo
+train/test su QUOTA_MINIMA?"
+Sessione Opus esecutore, 13/08/2026 (ora di Roma). Nessuna modifica alla
+produzione: QUOTA_MINIMA resta 0.10 (build_formazione_globale.py:731).
+Script nuovo: analisi_manager/p30_quota_minima_potenza.py (solo misura).
+
+===============================================================================
+IL VERDETTO IN DIECI RIGHE, DA BAR
+===============================================================================
+1. La domanda ha una risposta scomoda: NON basta piu' campione. Non e' che i
+   due periodi non sanno decidersi per poca roba -- hanno DECISO tutti e due,
+   con sicurezza, e hanno deciso il contrario.
+2. Il motivo per cui il totale sembrava incerto e' che si guardava il numero
+   sbagliato. Fra q=0 e q=0,15 la stragrande maggioranza delle formazioni fa
+   la stessa identica cosa (entra o non entra in entrambi i casi) e si
+   cancella. Cambia il destino solo di UNA formazione su quattro: quelle nella
+   fascia di confine. E' li' che si decide tutto.
+3. Nella fascia di confine, in primavera (apr-11 giu) entrare RENDEVA: +51
+   essenze in media a formazione, n=198. Rifacendo i conti pescando a caso i
+   manager 994 volte su 1000 il segno resta positivo.
+4. Nella stessa fascia, nel periodo recente (21 lug-7 ago) entrare COSTAVA:
+   -61 essenze a formazione, n=68. Pescando a caso i manager, il segno resta
+   negativo 988 volte su 1000. E sono negative tutte e cinque le giornate del
+   periodo, non una giornata storta: -6,6 / -9,5 / -29,5 / -19,4 / -33,3.
+5. Due risposte opposte, ciascuna solida. La distanza fra le due e' 3,2 volte
+   il tremolio della misura: per la regola del repo (delta almeno 3 volte il
+   tremolio) e' una differenza VERA, non rumore. Aggiungere giornate di quei
+   due periodi rendera' entrambe piu' sicure, e resteranno opposte.
+6. In soldoni: nel periodo recente le arene di confine ci fanno perdere circa
+   70 essenze per manager per giornata; in primavera ce ne facevano guadagnare
+   circa 58. Mille essenze = un craft.
+
+===============================================================================
+1. PERCHE' IL NUMERO GIUSTO E' LA FASCIA DI CONFINE, NON IL TOTALE
+===============================================================================
+La decisione e': si entra se atteso >= soglia_pareggio + costo*q/guadagno_punto
+(p29_soglia_quota_minima.py:58-65, replica di _etichetta_arena,
+build_formazione_globale.py:742-761). Cambiando q da 0,00 a 0,15 si sposta
+solo la soglia: una formazione ben sopra entra comunque, una ben sotto resta
+fuori comunque. La differenza fra i due totali di p29 e' ESATTAMENTE la somma
+dei guadagni delle formazioni che stanno in mezzo.
+
+  campione     formazioni  in fascia  % del campione
+  TRAIN            778        198        25,4%
+  TEST             272         68        25,0%
+  TRAIN+TEST      1077        266        25,3%
+
+Quindi l'n che conta non e' 778 contro 272: e' 198 contro 68.
+
+===============================================================================
+2. I NUMERI (guadagno reale della formazione di confine, in essenze)
+===============================================================================
+gain = (punteggio_reale - PAREGGIO_ARENA) * GUADAGNO_PER_PUNTO, la formula
+lineare gia' in produzione applicata al realizzato (stessa scelta di p29:
+non premio_netto, che e' lotteria).
+
+  periodo    n    media    sd     err.std   totale     bootstrap sul manager
+  TRAIN     198   +50,7   244,8    17,4     +10.043   IC95% [+12,1; +96,2]  99,4% positivo
+  TEST       68   -60,5   249,6    30,3      -4.117   IC95% [-123,7; -7,6]   1,2% positivo
+  POOLED    266   +22,3   250,3    15,3      +5.926   IC95% [-21,1; +63,7]  82,1% positivo
+
+Bootstrap 2000 ricampionamenti sul CLUSTER MANAGER (le formazioni dello stesso
+manager non sono indipendenti). Ricampionando invece sulla fixture: TRAIN
+100,0% positivo, TEST 0,0% positivo -- stessa conclusione, piu' netta.
+
+Differenza fra i due periodi: 111,2 essenze, errore std della differenza 34,9
+-> 3,2 errori standard. Sopra la soglia di 3 richiesta dal repo. E' un
+cambio di regime reale.
+
+TEST, fascia di confine, giornata per giornata (residuo reale - atteso):
+  football-21-24-jul-2026     n=11    -6,58
+  football-24-28-jul-2026     n=14    -9,50
+  football-28-31-jul-2026     n= 6   -29,50
+  football-31-jul-4-aug-2026  n=33   -19,44
+  football-4-7-aug-2026       n= 4   -33,29
+Tutte e cinque negative, 21 manager distinti. Non e' una giornata sfortunata.
+TRAIN, stessa fascia: 8 giornate positive e 5 negative, media +5,29.
+
+===============================================================================
+3. LA RISPOSTA ALLA DOMANDA, IN NUMERI
+===============================================================================
+a) Per decidere un q UNICO valido su tutto (media dei due regimi):
+   effetto pooled +22,3 con errore std 15,3 -> per portarlo a 3 errori
+   standard servirebbero ~1.136 formazioni di confine, contro le 266 di oggi.
+   Sono ~1.000 unita' GW-manager contro le 234 attuali: 4,3 volte l'archivio
+   di oggi. E sarebbe comunque una media fra due regimi opposti, cioe' un
+   numero che dipende da quante giornate di primavera e quante di agosto ci
+   metti dentro. NON LO CONSIGLIO.
+
+b) Per decidere dentro il regime RECENTE (l'unico che conta per la
+   produzione di adesso): oggi il periodo test da' -60,5 con errore std 30,3,
+   cioe' 2,0 errori standard, piu' un bootstrap che sta dalla stessa parte nel
+   98,8% dei casi. Per arrivare ai 3 errori standard richiesti dal repo, a
+   parita' di effetto, servono ~153 formazioni di confine contro le 68 di
+   oggi. Il periodo recente ne produce 13,6 per giornata (68 su 5 giornate,
+   21 manager): servono quindi circa 11 giornate in quel regime, cioe'
+   ~6 GIORNATE IN PIU' rispetto a quelle che abbiamo.
+   In alternativa, a parita' di giornate: ~47 manager invece di 21.
+
+c) Conversione utile: 1,14 formazioni di confine per unita' GW-manager
+   (266 su 234). Serve per tradurre "n formazioni" in "n GW-manager".
+
+===============================================================================
+4. COSA FAREI (e cosa non farei)
+===============================================================================
+NON rilanciare la griglia sui due periodi messi insieme: la media dei due
+regimi non e' una risposta, e' la loro proporzione.
+
+La direzione che indica il regime attuale e' q PIU' ALTO, non piu' basso: nel
+periodo recente le formazioni di confine perdono 61 essenze a testa. La
+produzione sta a 0,10, in mezzo fra i due ottimi (0,00-0,02 in primavera,
+0,15 nel test): e' la scelta prudente, e finche' il campione recente non
+arriva a 3 errori standard (punto 3b) la lascerei li'.
+
+Il controllo di robustezza che avrei chiesto a un esecutore l'ho FATTO io:
+leave-one-manager-out sul periodo recente, 21 run (uno per manager escluso).
+Il segno resta NEGATIVO in 21 casi su 21. Il piu' vicino a ribaltare porta la
+media da -60,5 a -51,5 (escluso lucio_spallettone, 1 formazione). Quindi il
+-60,5 non e' di un manager sfortunato: e' del periodo. Questo alza la fiducia
+sul segno, ma NON sostituisce il campione mancante del punto 3b: il
+leave-one-out dice "non e' un singolo outlier", non "l'effetto e' grande
+abbastanza per decidere".
+
+Ipotesi da NON dare per buona senza test (mia, non misurata): che sia il
+periodo estivo in se' (mercato, precampionato, rose che cambiano) a rendere
+gli attesi di confine troppo ottimisti. E' compatibile con i dati ma non l'ho
+dimostrata, e se fosse vera il rimedio giusto non sarebbe q, sarebbe una q
+che si adatta -- il che apre un filone nuovo, non lo chiude.
+
+===============================================================================
+5. UN CONTROLLO CHE HO FATTO E CHE NON CONFERMA LA SPIEGAZIONE PIU' OVVIA
+===============================================================================
+Sospetto naturale: nel periodo recente il modello sovrastima, quindi basta
+ritarare. Misurato, e la cosa NON regge come la si racconta:
+  residuo medio (reale - atteso) per formazione: TRAIN +1,52 (err.std 1,75),
+  TEST -1,92 (err.std 2,88). Uno scarto di 3,4 punti, piccolo.
+  regressione reale = a + b*atteso: TRAIN b=1,225 (err.std 0,153),
+  TEST b=0,786 (err.std 0,244). La differenza fra le due pendenze e' 1,5
+  errori standard: NON distinguibile dal rumore.
+Quindi: il modello nel suo complesso non e' sballato in modo diverso fra i due
+periodi in modo dimostrabile. Lo scarto e' concentrato nella fascia di
+confine (+5,29 contro -17,02 di residuo medio) ed e' li' che va spiegato.
+Riporto entrambe le misure, anche quella che non mi torna comoda.
+
+===============================================================================
+6. CATENA DI PRODUZIONE
+===============================================================================
+QUOTA_MINIMA sta in build_formazione_globale.py:731 e decide l'etichetta
+SCHIERA/MARGINALE (righe 742-764), cioe' l'ingresso in arena. E' l'anello
+"soglie arena" della catena: chi lo muove deve poi riverificare lo scouting,
+che consiglia gli acquisti sull'efficienza per essenza. Nessun anello e'
+stato toccato in questa sessione.
+
+File: analisi_manager/p30_quota_minima_potenza.py (nuovo, solo misura),
+analisi_manager/dati/quota_minima_grid_2026-08-13.json (di p29, letto),
+archivio_ufficiale/aggregato/binario1_out.json (fonte).
