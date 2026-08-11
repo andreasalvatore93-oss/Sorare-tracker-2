@@ -1355,3 +1355,152 @@ Dati aggiornati: analisi_manager/dati/storico_grade_crowss_completamento.json,
      ho verificato la funzione che sta sotto (_applica_da_riferimento) e i
      numeri di controllo dichiarati nel brief, non l'intero script.
 
+
+============================================================================
+17. RISPOSTA OPUS ESECUTORE â€” 4 BATTE 2: BUG O FATTO? (11/08/2026, ~22:20 Roma)
+    Risposta al brief docs/handoff/BRIEF_OPUS_GRADE_GROUP_4BRACCI_2026-08-11.txt
+============================================================================
+
+17.0 VERDETTO DA BAR (12 righe)
+     Non e' un bug: e' un fatto, e la previsione sbagliata era la mia.
+     Avevo scritto "4 non puo' battere 2" chiamando il braccio 2 il tetto
+     teorico. Non lo e'. Il braccio 2 stima due numeri (dove sta il centro
+     dei voti e quanto sono sparpagliati) contando in media TRE carte. E'
+     come misurare l'altezza media degli italiani fermando tre persone alla
+     stazione: puo' uscire qualunque cosa. La tabella storica gli stessi due
+     numeri li stima su 100-400 osservazioni per lega-ruolo. Piu' dati batte
+     piu' vicino nel tempo, e la vostra lettura al Â§1 era gia' quella giusta.
+     Ho anche escluso a mano la spiegazione noiosa che sospettavo (che il
+     braccio 4 vincesse solo perche' tiene il "livello" del voto invece di
+     azzerarlo dentro il gruppo): tolto il livello, vince lo stesso.
+     Cosa aggiungo di nuovo: la correlazione non vede se l'aggiustamento e'
+     della TAGLIA giusta, e non lo e'. Misurata la pendenza: il braccio 2
+     corregge il doppio del necessario, il braccio 4 circa un terzo di
+     troppo. Va rimpicciolito di un quarto prima di andare in produzione.
+
+17.1 NON E' UN BUG â€” cosa ho controllato
+     Letti i bracci 3 e 4 di p46_grade_group_carta.py (righe ~140-175):
+     riusano bfg._scala_storica_per senza reimplementarlo, la tabella
+     sd_atteso replica la stessa gerarchia a tre livelli (lega_ruolo ->
+     ruolo -> globale) con lo stesso fallback, le chiavi sono coerenti
+     ((lega, codice) in entrambe). Non ho trovato errori.
+     Poi l'ho rifatto per conto mio, senza usare p46, partendo da
+     archivio_ufficiale/aggregato/binario2_pool_rows.json (9.440 righe con
+     grade) e ricostruendo l'aggiustamento del braccio 4 da zero:
+       corr(agg_4, residuo)             = +0,0994   (brief: +0,0999)
+       corr(z pool_largo, residuo)      = +0,0697   (brief: +0,0695)
+     Riprodotto. La violazione e' nei dati, non nel codice.
+
+17.2 LA SPIEGAZIONE NOIOSA CHE SOSPETTAVO, E CHE HO ESCLUSO
+     Sospetto: il braccio 4 usa una media/sd FISSE per (lega,ruolo), quindi
+     il suo z conserva il LIVELLO del voto, mentre i bracci 1 e 2
+     standardizzano dentro il gruppo e il livello lo buttano via. In una
+     correlazione fatta su tutte le righe insieme, tenere il livello puo'
+     bastare a vincere senza essere un metro migliore.
+     Verifica: ho tolto la media di gruppo (manager,fixture,lega,ruolo) sia
+     dall'aggiustamento sia dal residuo e ho rifatto la correlazione solo
+     DENTRO i gruppi (n=6.068 righe in gruppi con almeno 2 membri):
+       entro-gruppo  corr(agg_4, residuo)        = +0,0964
+       entro-gruppo  corr(z pool_largo, residuo) = +0,0682
+     Praticamente identici ai valori su tutte le righe. Il vantaggio del
+     braccio 4 NON e' un effetto di livello: regge anche nel confronto
+     mele-con-mele dentro lo stesso gruppo. Spiegazione esclusa.
+
+17.3 PERCHE' ALLORA VINCE (e perche' la mia pre-registrazione era sbagliata)
+     Il braccio 2 non e' un tetto: e' solo un altro stimatore, e con pochi
+     dati. Il suo riferimento ha mediana 3 carte per (fixture,lega,ruolo)
+     â€” da tre punti bisogna tirare fuori sia una media sia una deviazione
+     standard, e la seconda su tre punti e' quasi solo rumore. Quando la
+     deviazione stimata e' troppo piccola lo z esplode, quando e' troppo
+     grande lo z si schiaccia: rumore in entrambe le direzioni. Misurato
+     sul file: l'11,9% delle righe ha z esattamente 0 (riferimento con meno
+     di 2 voti) e il 2,6% ha |z| esattamente 1 (riferimento di 2 voti, dove
+     lo z puo' valere solo +1 o -1). La tabella storica ha invece 70 voci
+     lega-ruolo con n da 100 a 421, fallback per ruolo con n 2.600-6.900 e
+     globale con n 20.955.
+     Che il ricentraggio per lega serva davvero, e non sia solo il voto
+     grezzo travestito, si vede qui:
+       corr(voto GREZZO, residuo)                    = +0,0687
+       corr(voto standardizzato con la storica, res) = +0,0930
+     Un "C" in una lega non e' un "C" in un'altra (mls|GK media 3,64 contro
+     brasile|GK 4,29), e la tabella lo cattura. Errore mio: avevo assunto
+     che "stesso giorno" valesse piu' di "tanti dati". Non e' cosi'.
+     Nota di conferma indiretta: il braccio 3 (+0,0530) resta molto sotto
+     il 4 (+0,0999), esattamente come avevo previsto al Â§16.4 â€” il collo di
+     bottiglia e' sd_atteso, non il metro del voto. Quella parte regge.
+
+17.4 FUGA D'INFORMAZIONE: ESCLUSA, con un argomento piu' forte del vostro
+     Voi avete detto "una riga pesa 1/20.955, trascurabile". Vero, ma c'e'
+     di meglio: NESSUNA DELLE DUE TABELLE CONTIENE UN ESITO.
+     grade_scala_storica.json contiene solo statistiche dei VOTI;
+     la tabella sd_atteso e' costruita solo su '_cal', cioe' PREVISIONI.
+     Il residuo (reale - _cal) non entra ne' nell'una ne' nell'altra, per
+     nessuna via. Quindi anche se le tabelle fossero costruite al 100% sulle
+     stesse righe del test, non potrebbero far trapelare il risultato: non
+     lo hanno mai visto. Il tema e' chiuso, non serve rifare le tabelle con
+     un cutoff temporale.
+     (Resta una questione di igiene, non di validita': la tabella sd_atteso
+     di p46 e' costruita sulle stesse 10.255 righe che valuta. Per la
+     produzione va costruita dai consigli storici, come grade_scala_storica,
+     non ricalcolata ogni volta sul campione che si sta misurando.)
+
+17.5 QUELLO CHE IL VOSTRO TEST NON PUO' VEDERE â€” e che ho misurato io
+     La correlazione non cambia se moltiplicate l'aggiustamento per due o
+     per dieci: e' cieca alla TAGLIA. E la taglia e' proprio cio' che
+     decide se in produzione il correttivo aiuta o rovina. Serve la
+     pendenza: di quanto si muove il residuo vero per ogni punto di
+     aggiustamento. Se vale 1, la taglia e' giusta; sotto 1, si corregge
+     troppo.
+     Misurato (OLS residuo su aggiustamento, n=9.440, bootstrap cluster
+     manager-fixture B=2.000):
+       braccio 2 pool_largo       sd aggiust. 2,68   pendenza 0,474
+                                                     IC95% [+0,318;+0,635]
+       braccio 4 storica_completa sd aggiust. 2,42   pendenza 0,749
+                                                     IC95% [+0,574;+0,918]
+       (sd del residuo, per riferimento: 18,27)
+     Lettura: il braccio 2 sposta il punteggio circa il DOPPIO di quanto
+     dovrebbe; il braccio 4 circa un terzo di troppo. Entrambi gli IC
+     escludono l'1, quindi non e' rumore. Il braccio 4 e' quindi migliore
+     due volte â€” punta meglio (correlazione) E spara meno lungo (pendenza)
+     â€” ma applicato cosi' com'e' sovracorregge: va moltiplicato per ~0,75.
+     E' un miglioramento gratis: stesso segnale, meno danno.
+
+17.6 SI PUO' PROPORRE 'STORICA_COMPLETA' PER LA PRODUZIONE? SI', CON TRE
+     CONDIZIONI
+     Si', ed e' l'unico dei quattro bracci realmente costruibile (non serve
+     nessun altro manager). Ma va portato dentro tutto intero, altrimenti
+     non succede niente:
+       a) TOGLIERE IL RITORNO ANTICIPATO in _apply_grade_group
+          (build_formazione_globale.py:514-520). Finche' c'e', il 51% dei
+          gruppi di produzione non arriva nemmeno a leggere le tabelle e il
+          guadagno misurato sul sottoinsieme peggiore (+0,1016) non si
+          materializza. Questa e' la modifica che conta di piu'.
+       b) LE DUE TABELLE INSIEME, mai solo una: gm/gsd dalla storica (gia'
+          pronta) E sd_atteso dalla storica (da costruire dai consigli
+          storici, vedi Â§17.4). Accendere solo GRADE_SCALE='storica'
+          porterebbe dal +0,0299 al +0,0530 invece che al +0,0999, e
+          lascerebbe fuori proprio i gruppi da 1 carta.
+       c) IL FATTORE ~0,75 del Â§17.5, oppure ristimarlo sul campione di
+          produzione. Senza, si sovracorregge in modo misurato.
+
+17.7 COSA NON DAREI PER ACQUISITO PRIMA DI ACCENDERE
+     - Tutto questo e' misurato in correlazione a livello di carta, non in
+       essenze. Sappiamo gia' (Â§15) che l'endpoint essenze non ha la
+       potenza per confermarlo, quindi NON chiedete quel test: non
+       risponderebbe. Ma vuol dire anche che nessuno ha ancora visto questo
+       correttivo produrre una formazione migliore, solo un numero meglio
+       correlato.
+     - Il fattore 0,75 e' stimato sulle stesse righe su cui e' stato
+       misurato il vantaggio. Va ricontrollato fuori campione.
+     - Come per GK_ATT_AVV, la strada onesta e': accendere dietro flag,
+       pre-registrare il controllo (segno e taglia attesi) e verificarlo
+       sulle prime fixture nuove. Non l'ho scritto io il piano: lo decide
+       l'utente.
+
+17.8 COSA NON HO FATTO
+     Nessuna query di rete, nessuna modifica alla produzione, nessun codice
+     committato oltre a questa sezione. Non ho girato p46 (ho ricostruito i
+     numeri per conto mio da binario2_pool_rows.json, che e' piu' severo:
+     se ci fosse stato un bug in p46 i miei numeri non avrebbero coinciso).
+     Non ho costruito la tabella sd_atteso di produzione del Â§17.6.b.
+
