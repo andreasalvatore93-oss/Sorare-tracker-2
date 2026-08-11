@@ -210,3 +210,22 @@ Dopo aver estratto uno o più manager nuovi, prima di girare i binari:
    per decidere qualunque cosa (vedi regola CLAUDE.md sulla numerosità).
    L'aggiunta di un manager nuovo si traduce SEMPRE in un solo comando in
    più a monte (l'estrazione), mai in un giro di binari dedicato.
+
+## Backlog aperto (11/08/2026, richiesta utente)
+
+**Riverificare le soglie di produzione (`PAREGGIO_ARENA` in
+`generatore_formazioni/build_formazione_globale.py`) sul NUOVO archivio**
+(`archivio_ufficiale/`, non su `dati_globali/arene_storico.json` che
+`consiglio_arena.py --verifica` usa di default ed è superato — vedi §4.0
+di `docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md`).
+
+Manca un pezzo per farlo bene: **il piazzamento in punti del 3° posto
+COMPLESSIVO per arena** (il punteggio del terzo classificato reale, non
+solo le volte in cui siamo arrivati noi 3°). Oggi da `archivio_ufficiale`
+si può ricavare solo "quanto abbiamo fatto NOI quando siamo arrivati
+esattamente 3°" (rank+punteggio_totale nelle righe manager) — un proxy,
+non il vero cutoff del campo. Per il cutoff vero serve la classifica
+completa per arena (tutti e 10 i punteggi), che oggi sta solo
+nell'archivio vecchio (`dati_globali/arene_storico_full_v3.json`,
+§4.0 dell'handoff unificato) — da recuperare/unire prima di rifare la
+verifica sulle soglie con dati coerenti col resto di questo filone.
