@@ -549,6 +549,66 @@ def _apply_grade_group(rows):
                 r['sort_score'] = r['atteso_combinato']
 
 
+# --- GK_ATT_AVV: correttivo portiere da "quanto segna di solito l'avversario"
+# (11/08/2026, filone clean-sheet/gol veri). L'atteso GK di produzione e'
+# quasi piatto (1.932 righe, range 45,5-51,7, sd 0,97 contro sd 18,7 del
+# reale): sotto il criterio "dispersione vera correlata al reale" (deciso
+# dall'utente, non piu' "batte le quote con margine sicuro") il modello
+# attuale sul portiere e' indistinguibile dal cieco. Il segnale misurato --
+# media storica di gol fatti dall'AVVERSARIO -- correla col punteggio reale
+# del portiere ed e' l'UNICO che regge su tenuta out-of-sample:
+#   - n=716 (crowss + altri manager, 2025/26): corr -0,091 circa (vedi p42)
+#   - n=1.896, blocco TEMPORALE indipendente (stagione 2024/25, p44):
+#     corr +0,067 sul segnale invertito [+0,024;+0,114], IC ESCLUDE lo zero
+#   - pendenza di regressione pooled (n=2.612, i due campioni sopra):
+#     reale = 54,49 - 4,26 * att_medio_avversario
+# Dettaglio completo: docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt
+# §11. Magnitudine onesta: ~1,3-2 punti di dispersione vera catturata, non
+# un salto enorme -- ma il modello attuale cattura ZERO, quindi e' un
+# miglioramento netto sotto il criterio scelto dall'utente.
+# INTERRUTTORE SPENTO DI DEFAULT (GK_ATT_AVV_ENABLED='0'): a spento,
+# 'atteso'/'sort_score' non vengono MAI toccati, stesso identico
+# comportamento di oggi -- stesso schema di GRADE_ENABLED sopra.
+GK_ATT_AVV_ENABLED = os.environ.get('GK_ATT_AVV_ENABLED', '0') == '1'
+GK_ATT_AVV_DATA_PATH = os.environ.get(
+    'GK_ATT_AVV_DATA_PATH',
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dati', 'gk_attacco_avversario.json'))
+GK_ATT_AVV_K = -4.26            # pendenza misurata, pooled n=2.612
+GK_ATT_AVV_MEDIA_GLOBALE = 1.400  # media att_medio pooled, stesso campione
+GK_ATT_AVV_MIN_STORICO = 4
+_GK_ATT_AVV_TABELLA = {}
+if GK_ATT_AVV_ENABLED:
+    if os.path.exists(GK_ATT_AVV_DATA_PATH):
+        with open(GK_ATT_AVV_DATA_PATH, encoding='utf-8') as _f:
+            _GK_ATT_AVV_TABELLA = json.load(_f).get('squadre', {})
+    else:
+        print(f"ATTENZIONE: GK_ATT_AVV_ENABLED=1 ma {GK_ATT_AVV_DATA_PATH} non esiste "
+              "-- correttivo GK disattivato per questa run (nessun dato, nessuna riga toccata).")
+        GK_ATT_AVV_ENABLED = False
+
+
+def _apply_gk_att_avv(rows):
+    """Annota su ogni row (SOLO ruolo GK) _att_avv/atteso_att_avv. Se
+    GK_ATT_AVV_ENABLED e' True, sovrascrive 'atteso'/'sort_score'. Se
+    l'avversario non e' in tabella o ha meno di GK_ATT_AVV_MIN_STORICO
+    partite, la riga resta invariata (adjustment=0, fallback esplicito)."""
+    for r in rows:
+        avv = r.get('opponent_team_slug')
+        info = _GK_ATT_AVV_TABELLA.get(avv) if avv else None
+        if not info or info.get('n_partite', 0) < GK_ATT_AVV_MIN_STORICO or r.get('atteso') is None:
+            r['_att_avv'] = None
+            r['atteso_att_avv'] = r.get('atteso')
+            continue
+        att_medio = info['att_medio']
+        aggiustamento = GK_ATT_AVV_K * (att_medio - GK_ATT_AVV_MEDIA_GLOBALE)
+        r['_att_avv'] = att_medio
+        r['atteso_att_avv'] = round(r['atteso'] + aggiustamento, 1)
+        if GK_ATT_AVV_ENABLED:
+            r['atteso'] = r['atteso_att_avv']
+            if r.get('sort_score') is not None:
+                r['sort_score'] = r['atteso_att_avv']
+
+
 # Punteggio atteso oltre il quale l'ingresso si ripaga, misurato su 673 arene
 # reali (consiglio_arena.py). Sotto questa riga si pagano piu' essenze di
 # quante se ne incassino, e le carte rendono di piu' in una competizione senza
@@ -1024,6 +1084,8 @@ def load_league_role_data():
             # DOPO starter_odds (non serve starter_odds per il grade, ma cosi'
             # la riga e' completa prima di qualunque uso a valle).
             _apply_grade_group(rows)
+            if role == 'GK':
+                _apply_gk_att_avv(rows)
             names.update(bff.load_player_names(DISCOVERY_DIRS[league][role]))
             print(f"[{league}/{role}] {path or 'NESSUN FILE TROVATO'} -> {len(rows)} giocatori")
             role_data[league][role] = rows
