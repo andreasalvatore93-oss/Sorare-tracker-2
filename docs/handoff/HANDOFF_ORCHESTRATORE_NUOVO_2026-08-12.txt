@@ -88,6 +88,75 @@ pipeline GK è più delicata (serve giudizio, non solo esecuzione) — valuta
 tu se scalare a un brief più dettagliato o procedere direttamente.
 
 ============================================================================
+1bis. ESITO PRIMO PASSO (12/08/2026, sessione orchestratore) — CONFERMATO:
+   il problema è a monte, nelle feature. Diagnosi iniziale già fatta.
+============================================================================
+
+**Primo passo (Sonnet esecutore, sessione "Sonnet esecutore")**: n=1932
+portieri (match 1932/1932 su `_cal` ricalcolato, zero mismatch — controllo
+di produzione riuscito). `corr(atteso_raw, reale) = -0,0037`,
+`corr(_cal, reale) = -0,0018` (coincide con l'handoff). Praticamente
+identiche: la calibrazione non c'entra, il buco è a monte. File temporaneo
+(non committato): `analisi_manager/dati/gk_atteso_raw_2026-08-12.json`.
+Difetto annotato da Sonnet (non toccato): `atteso_raw` viene calcolato in
+`prepara_pool_rows()` (riga 160) ma buttato via nella costruzione di
+`carta_rows` dentro `processa_fixture()`
+(`analisi_manager/p24_binario2_ga.py:223-227`) — non entra mai
+nell'aggregato scritto su disco. Va aggiunto se in futuro serve di nuovo
+senza ricalcolarlo da zero (non fatto ora, decisione rimandata).
+
+**Diagnosi (stessa sessione orchestratore, letta nel codice
+`formazione_mls/predict/test_gk.py`, verificata su n=1932 con script
+temporanei in `/tmp`, non committati)**: la previsione grezza del portiere
+è la somma di 4 pezzi. Scomposti e misurati singolarmente contro il
+punteggio vero:
+
+  a) media storica pesata dei punteggi passati (`media_granulari_pesata`)
+     -> corr -0,0076 (zero)
+  b) pezzo dalle "decisive rates" (parate/gol subiti, POSITIVE_DECISIVE_STAT
+     / NEGATIVE_DECISIVE_STAT del dettaglio Sorare, via Poisson,
+     `expected_level_from_rates`) -> corr -0,0520, **negativa**: quando
+     questo pezzo dice "bene", il portiere in media fa PEGGIO, non meglio.
+     E' il pezzo che pesa di più nella formula (sd 3,25 contro sd della
+     media storica, molto più piccola).
+  c) fattore trend (`compute_trend_factor`) -> risulta ESATTAMENTE 1,0 su
+     tutti e 1932 i casi, cioè per il portiere non fa mai nulla (nessuna
+     variabilità misurata). Da capire se voluto o un bug — non toccato,
+     solo osservato.
+  d) blend "porta inviolata di squadra" (`team_cs_prob`, aggiunto 03/08,
+     GK_TEAM_CS_WEIGHT=22/35≈0,629, attivo di default) -> è l'UNICO pezzo
+     col segno giusto: corr +0,0524 (debole ma POSITIVO), su 1730/1932 GK
+     dove `_pcs_squadra()` riesce a calcolarlo (202/1932 = 10,5% restano
+     None per mancanza di storico sufficiente nel modello_partita walk-
+     forward, e in quei casi il blend semplicemente non si applica --
+     comportamento corretto, non un bug).
+
+  Prova diretta che il blend AIUTA (non è inerte, l'interruttore funziona):
+  corr SENZA il blend CS = -0,0452 (peggio), corr CON il blend CS =
+  -0,0037 (quasi zero). Il blend tira su, ma il pezzo (b) lo cancella quasi
+  del tutto.
+
+**In parole povere**: prova a indovinare chi vince una gara con due
+indizi. Un indizio (la squadra dietro di lui, punto d) è debole ma giusto
+-- un po' come sapere che uno dei corridori si è allenato di più.
+L'altro indizio, quello che pesa di più nella previsione (punto b, le
+"decisive rates" prese dal dettaglio Sorare), dice l'esatto CONTRARIO di
+quello che poi succede davvero. Sommando i due, quasi si annullano e resta
+zero. Il problema non è "il portiere è imprevedibile": e' che il pezzo
+principale della sua previsione punta nel verso sbagliato.
+
+**Prossimo passo, non ancora fatto**: capire PERCHE' il pezzo (b) ha
+segno invertito. Ipotesi da verificare (non ancora testate): (i) le
+categorie POSITIVE_DECISIVE_STAT/NEGATIVE_DECISIVE_STAT nel dettaglio
+Sorare per un portiere potrebbero non essere "parate vs gol subiti" come
+assunto, o esserlo con pesi/segni che a livello aggregato producono
+l'effetto opposto; (ii) `expected_level_from_rates`/Poisson potrebbe avere
+un bug di segno o di scala specifico per i portieri (LEVEL_SCORE_POISSON_K_MAX,
+`netto_to_level`). Anche il fattore trend fisso a 1,0 (punto c) va capito:
+se è un bug (dovrebbe muoversi e non lo fa), potrebbe nascondere altro
+segnale.
+
+============================================================================
 2. SECONDA PRIORITÀ: IL CAPITANO — riaprire, il vecchio verdetto non regge
 ============================================================================
 
