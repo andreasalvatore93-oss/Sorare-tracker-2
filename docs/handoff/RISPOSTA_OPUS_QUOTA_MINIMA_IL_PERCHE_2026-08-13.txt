@@ -1,0 +1,142 @@
+RISPOSTA OPUS ESECUTORE -- "il perche' della perdita estiva nella fascia di
+confine". Trovato: NON e' un regime, e' la carta che non gioca.
+Sessione Opus esecutore, 13/08/2026 (ora di Roma). Zero query di rete.
+Nessuna modifica alla produzione. Script: analisi_manager/p35_banda_dnp.py.
+
+===============================================================================
+IL VERDETTO IN DIECI RIGHE, DA BAR
+===============================================================================
+1. Ritiro la mia ipotesi "mercato/precampionato": p34 aveva ragione a
+   indebolirla, ed e' sbagliata anche per un motivo che p34 non aveva visto.
+2. Il modello NON sbaglia le previsioni dei singoli giocatori in estate. Carta
+   per carta il residuo (reale meno atteso) e' +2,22 in primavera e +1,57 in
+   estate: uguale, e in entrambi i casi il modello e' semmai prudente. Nessun
+   peggioramento, nemmeno nella fascia bassa. Quindi nessuna spiegazione di
+   lega, mercato o forma puo' funzionare: passerebbe dai giocatori, e li' non
+   c'e' niente da spiegare.
+3. Il problema nasce quando le carte diventano una formazione. Ed e' una cosa
+   sola: LE FORMAZIONI CHE CONTENGONO UNA CARTA CHE NON HA GIOCATO.
+4. Nella fascia di confine estiva il 30,9% delle formazioni ha almeno una
+   carta a zero, contro il 18,0% del periodo estivo nel suo insieme e il
+   18,7% della stessa fascia in primavera. Le formazioni al limite, in
+   estate, sono proprio quelle a rischio panchina.
+5. Separando le due cose il "cambio di regime" quasi sparisce:
+     primavera, senza carte a zero: +82,8 essenze  (n=161)
+     estate,    senza carte a zero: +19,6 essenze  (n=47)
+     primavera, con carta a zero:   -88,9 essenze  (n=37)
+     estate,    con carta a zero:  -239,9 essenze  (n=21)
+   Senza panchinati entrare CONVIENE in tutti e due i periodi. Il segno non
+   si ribalta mai. Si ribaltava solo perche' le due popolazioni erano mescolate.
+6. Quindi QUOTA_MINIMA e' la leva sbagliata: le stiamo chiedendo di pagare il
+   rischio panchina alzando la soglia per tutti. La leva giusta e' non
+   schierare formazioni marginali con dentro uno che rischia di non giocare.
+7. Onesta': "ha giocato o no" si sa dopo, non al momento della scelta. Questo
+   spiega il fenomeno, non lo risolve da solo. Ma dice dove guardare:
+   starter-odds, non soglia d'ingresso.
+
+===============================================================================
+1. IL CONTROLLO CHE HA ROTTO LA PISTA "REGIME ESTIVO"
+===============================================================================
+Residuo per CARTA (reale meno atteso calibrato), da binario2_pool_rows.json:
+
+  periodo                n      residuo medio   quarto piu basso di atteso
+  TRAIN (fino 11 giu)   7953    +2,22 (e.s.0,21)   +2,77 (e.s. 0,40)
+  TEST  (dal 20 lug)    1928    +1,57 (e.s.0,42)   +1,43 (e.s. 0,76)
+
+Nessuna differenza degna di nota, e nessun crollo nella fascia bassa (che e'
+quella da cui provengono le formazioni marginali). Il modello, sulle carte
+che giocano, in estate va come in primavera.
+
+Conseguenza metodologica per p34: qualunque spiegazione basata sulla LEGA
+(mercato, precampionato, MLS/K League che giocano tutta l'estate) deve
+passare attraverso la qualita' delle previsioni sui giocatori. Li' non c'e'
+segnale da spiegare. Per questo p34 non trovava niente: stava cercando una
+causa nel posto giusto per l'ipotesi sbagliata.
+
+===============================================================================
+2. DOVE STA DAVVERO (formazioni, non carte)
+===============================================================================
+Appaiate 1.050 righe di binario1_out.json con le formazioni grezze di
+archivio_ufficiale (chiave tipo+punteggio_totale+capitano, 0 non appaiate su
+1.050) per contare le carte con punteggio 0.
+
+  insieme                        formazioni   con >=1 carta a 0   carte a 0/form.
+  TRAIN intero                       778         18,5%               0,202
+  TRAIN fascia di confine            198         18,7%               0,197
+  TEST intero                        272         18,0%               0,191
+  TEST fascia di confine              68         30,9%               0,353
+
+Il tasso di panchinati e' identico ovunque (18-19%) TRANNE che nella fascia
+di confine estiva, dove quasi raddoppia. Non e' che in estate si gioca meno:
+e' che in estate le formazioni che finiscono sul filo del pareggio sono
+proprio quelle tenute su da una carta che poi non scende in campo.
+
+===============================================================================
+3. LA SCOMPOSIZIONE CHE CHIUDE IL DISCORSO
+===============================================================================
+Guadagno reale medio, in essenze, delle formazioni della fascia di confine:
+
+  periodo   sottoinsieme     n     media      err.std
+  TRAIN     senza carte a 0  161   + 82,8      19,9
+  TRAIN     con carta a 0     37   - 88,9      24,0
+  TRAIN     totale           198   + 50,7      17,4
+  TEST      senza carte a 0   47   + 19,6      33,2
+  TEST      con carta a 0     21   -239,9      43,9
+  TEST      totale            68   - 60,5      30,3
+
+Letto da bar: se nessuno resta in panchina, entrare nelle arene di confine
+rende in tutti e due i periodi (+83 in primavera, +20 in estate: il secondo
+e' dentro il rumore, ma il segno e' lo stesso). Se uno resta in panchina si
+perde sempre, e in estate si perde il triplo.
+
+Il famoso disaccordo train/test su QUOTA_MINIMA era quindi in buona parte un
+artefatto della composizione: due popolazioni diverse (con e senza
+panchinati) mescolate in proporzioni diverse.
+
+RETTIFICA DI QUELLO CHE HO SCRITTO IO STAMATTINA: nel file
+RISPOSTA_OPUS_QUOTA_MINIMA_CAMPIONE_2026-08-13.txt avevo concluso "cambio di
+regime vero, 3,2 errori standard, la direzione e' q piu' alto". La misura
+resta corretta ma la LETTURA era sbagliata: non e' il periodo, e' la quota di
+formazioni con un panchinato dentro. Alzare q e' il rimedio sbagliato al
+problema giusto.
+
+===============================================================================
+4. PERCHE' NON E' UNA RICETTA PRONTA (limiti)
+===============================================================================
+- Sto condizionando su un esito (la carta ha preso 0) che al momento della
+  scelta non e' noto. Questo IDENTIFICA il meccanismo, non fornisce una
+  regola applicabile cosi' com'e'. In produzione l'equivalente osservabile
+  ex ante e' starter_odds, non "ha giocato".
+- n piccoli: 21 formazioni con panchinato in estate, 47 senza. Le medie
+  ballano. Il fatto che regge e' il SEGNO, uguale nei due periodi.
+- Il conteggio delle carte a 0 assume che punteggio 0 = non ha giocato. Un
+  vero 0 giocando e' possibile ma raro; non l'ho separato.
+- L'appaiamento formazione grezza / riga binario1 usa tipo + punteggio
+  totale + capitano. Zero righe non appaiate su 1.050, ma se due formazioni
+  della stessa giornata avessero lo stesso identico totale e capitano
+  verrebbero confuse: in quel caso prendo il numero MINIMO di carte a 0 fra
+  le candidate, quindi la stima e' prudente (semmai sottostima i panchinati).
+
+===============================================================================
+5. COSA PROPONGO DI FARE ADESSO
+===============================================================================
+1. NON toccare QUOTA_MINIMA. Resta 0,10. Non e' quello il parametro.
+2. La domanda nuova, che si misura sugli stessi dati e a costo zero: nella
+   fascia di confine, lo starter_odds delle carte prevede il panchinato
+   meglio di quanto gia' facciamo? Oggi il filtro e' una soglia unica a 0,80
+   applicata in discovery (build_formazione_globale.py:1789), uguale per una
+   formazione che punta a 320 e per una che sta sul filo del pareggio. Ma il
+   costo di un panchinato NON e' lo stesso: su una formazione larga te lo
+   puoi permettere, su una marginale ti mangia l'ingresso. Un requisito piu'
+   severo (o un numero massimo di carte "a rischio") applicato SOLO alle
+   formazioni vicine alla soglia e' la leva coerente col meccanismo trovato.
+3. Da rifare quando ci sara' il dato: p34 (leghe) e p33 (tipi arena) andrebbero
+   riletti separando con/senza panchinati. Il segnale che cercavano potrebbe
+   esserci sotto: MLS e K League giocano tutta l'estate ma con calendari
+   fitti e rotazioni, che e' un'ottima ragione per avere piu' panchinati --
+   ipotesi mia, NON misurata.
+
+File: analisi_manager/p35_banda_dnp.py (rilanciabile, ~3 min, nessuna rete).
+Fonti: archivio_ufficiale/aggregato/binario1_out.json,
+archivio_ufficiale/aggregato/binario2_pool_rows.json,
+archivio_ufficiale/manager_*/**/*.json.
