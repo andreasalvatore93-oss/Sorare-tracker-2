@@ -395,6 +395,53 @@ reale a `compute_score_atteso_gk`. Nessuna modifica al codice di
 produzione fatta finora.
 
 ============================================================================
+1quinquies. GRIGLIA DI PESI ESEGUITA (12/08/2026, orchestratore) — pcs
+   puro è (staticamente) il migliore, nessuna combinazione lo batte
+============================================================================
+
+Script `analisi_manager/_tmp_gk_passo2_griglia_pesi.py` (temporaneo, non
+produzione, rigenera in ~1 minuto zero rete). Stesso campione del §1quater
+(n=2898, 195 portieri), combinazione lineare z-standardizzata
+`w*z_pcs + (1-w)*z_storico` per w da 0 a 1:
+
+  w_pcs=0,00 (solo storico) corr +0,0583  IC95 [+0,0195,+0,0949]
+  w_pcs=0,15               corr +0,0763  IC95 [+0,0373,+0,1122]
+  w_pcs=0,25               corr +0,0889  IC95 [+0,0487,+0,1243]
+  w_pcs=0,35               corr +0,1011  IC95 [+0,0628,+0,1420]
+  w_pcs=0,50               corr +0,1171  IC95 [+0,0789,+0,1557]
+  w_pcs=0,65               corr +0,1281  IC95 [+0,0889,+0,1663]
+  w_pcs=0,75               corr +0,1323  IC95 [+0,0890,+0,1716]
+  w_pcs=0,85               corr +0,1341  IC95 [+0,0961,+0,1763]  <- picco
+  w_pcs=1,00 (solo pcs)    corr +0,1336  IC95 [+0,0914,+0,1751]
+
+**Verdetto**: la correlazione sale IN MODO MONOTONO col peso su pcs, e il
+picco puntuale (w=0,85) è statisticamente indistinguibile da pcs puro
+(w=1,00): +0,1341 contro +0,1336, dentro il rumore reciproco (IC che si
+sovrappongono quasi del tutto). Non esiste una combinazione che batta pcs
+da solo in modo significativo. Lo storico personale del portiere non
+aggiunge segnale misurabile oltre alla forza della squadra, in nessuna
+proporzione provata.
+
+**Limite ancora aperto**: questo resta un test PROXY (combinazione
+z-standardizzata lineare, non la formula additiva reale di produzione con
+GK_TEAM_CS_POINTS/baseline/pesi fissati a mano), e non è ancora un
+backtest di SELEZIONE (lift su pool veri) né una misura di MAE sulla
+scala reale del punteggio. Copre le soglie (a) e parzialmente (b) della
+lista in fondo al §1quater ma non (c)/(d). Il campione (2898 punti/195
+portieri, dalla cache dettaglio multi-lega) NON dipende dai 50 manager
+estratti — è una fonte diversa e più ampia, quindi non è "il collo di
+bottiglia" se servono ancora più portieri: si potrebbe allargare
+cachando più giocatori, non estraendo altri manager.
+
+**Decisione demandata a Opus** (12/08, brief inviato dall'orchestratore
+alla sessione "Opus Esecutore" subito dopo questo risultato): se e come
+proporre una modifica reale a `compute_score_atteso_gk` (sostituire il
+pezzo storico con pcs, o tenerlo solo come fallback per il 10,7% dei casi
+senza pcs), quali soglie MAE/lift mancano prima di considerarlo pronto, e
+se la scala politica GK_TEAM_CS_POINTS/baseline andrebbe ritarata insieme.
+Nessuna modifica al codice di produzione fatta.
+
+============================================================================
 8. FILE DI RIFERIMENTO
 ============================================================================
 
