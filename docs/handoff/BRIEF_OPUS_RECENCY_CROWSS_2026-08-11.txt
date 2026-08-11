@@ -1,0 +1,199 @@
+BRIEF PER OPUS ESECUTORE -- l'utente contesta duramente la media storica a 3
+anni usata per "quanto segna di solito l'avversario" e vuole un test con
+FINESTRA CORTA (N partite piu' recenti), SOLO su archivio crowss (l'unico
+che considera pulito). Chat pulita, nessuna memoria di questa conversazione.
+
+Rispondi con mcp__ccd_session_mgmt__send_message a session_id
+local_6b270595-476d-4338-98c5-645611c8ce23 (NON SendMessage). Report in coda
+a docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt, nuova sezione "12.
+SEGUITO 4 -- RECENCY vs STORIA LUNGA (crowss)". Committa solo i tuoi file.
+
+===============================================================================
+0. COSA LEGGERE PRIMA (in ordine)
+===============================================================================
+1. CLAUDE.md.
+2. docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt, tutto il §11 (il
+   segnale attacco-avversario: come nasce, come tiene su tenuta OOS).
+3. generatore_formazioni/build_formazione_globale.py, righe ~552-608 circa
+   (cerca "GK_ATT_AVV"): il correttivo di produzione GIA' SCRITTO e committato
+   in locale (non pushato), dietro flag GK_ATT_AVV_ENABLED spento di default.
+   Usa `reale = a + k*att_medio_avversario` con k=-4.26 misurato su una MEDIA
+   STORICA SENZA FINESTRA (tutte le partite disponibili, dal 2023-08-01 ad
+   oggi, ~3 anni, NON pesata, NON dinamica -- si aggiorna solo rilanciando
+   generatore_formazioni/dati/aggiorna_gk_attacco_avversario.py a mano).
+4. generatore_formazioni/dati/aggiorna_gk_attacco_avversario.py -- come e'
+   costruita oggi la tabella di produzione (media di TUTTI i gol disponibili
+   per squadra, min 4 partite, nessuna finestra temporale).
+5. analisi_manager/p44_gk_tenuta_2024_25.py -- il test di tenuta OOS che ha
+   confermato il segnale (n=1.896, IC esclude lo zero), stessa logica
+   "media di tutta la storia disponibile prima della data".
+6. analisi_manager/dati/gol_squadre_archivio_2025-26_2026-08-11.json e
+   analisi_manager/dati/gol_squadre_archivio_2023_25_2026-08-11.json --
+   i gol veri gia' estratti (19.883 partite unite, 872 squadre). NON servono
+   nuove query: tutto quello che serve per questo test e' gia' in questi due
+   file.
+
+===============================================================================
+1. LA CONTESTAZIONE DELL'UTENTE (testuale, non parafrasata)
+===============================================================================
+"nel calcio di oggi una squadra ruota 3-4-5 giocatori ogni stagione, come
+diavolo facciamo a usare una media storica. No, l'unico criterio, che voglio
+utilizzare, se ha una correlazione positiva in termini di produzione è
+questa: Prendi n partite (provare combinazioni, ma non oltre le 20) piu
+recenti rispetto alla partita rispetto alla quale bisogna effettuare al
+predizione: calcola gol effettuati da avversario in quelle n partite e
+confronta con goal subiti da squadra avversaria in quelle medesime n
+partite. Il resto per me, tipo media storica a 3 anni, e nemmeno dinamica, è
+una follia totale."
+
+E: "il test deve essere pulito, cioè solo le arene del cassetto crowss,
+quello è un archivio sicuro dove far girare g. non completamente a cazzo."
+
+===============================================================================
+2. ATTENZIONE: LA FRASE CHIAVE E' AMBIGUA. DICHIARA LA TUA LETTURA, NON
+   SCEGLIERE IN SILENZIO.
+===============================================================================
+"calcola gol effettuati da avversario in quelle n partite e confronta con
+goal subiti da squadra avversaria in quelle medesime n partite" si puo'
+leggere in almeno tre modi. Io (orchestratore) NON sono sicuro di quale sia
+quello giusto:
+
+  (a) REFUSO/RIDONDANZA: intende solo "gol fatti dall'avversario nelle sue
+      ultime N partite" (esattamente il segnale gia' testato, att_media, ma
+      su finestra CORTA invece che su tutta la storia). "Confronta con gol
+      subiti da squadra avversaria" sarebbe un modo (ridondante) di dire la
+      stessa cosa vista dal lato opposto (gol fatti da A = gol subiti da chi
+      A ha affrontato).
+  (b) DUE SEGNALI SU FINESTRA CORTA: vuole confrontare, sulla stessa
+      finestra di N partite, DUE cose calcolate separatamente -- gol fatti
+      dall'AVVERSARIO (attacco, quello che gia' testiamo) VS gol SUBITI
+      dalla MIA squadra/portiere (dif_media, il segnale che finora e'
+      risultato SEMPRE inutile, vedi §10/§11 -- quarta conferma) -- per
+      vedere se su finestra corta la difesa propria si accende (finora mai
+      testata su finestra corta, solo su media lunga).
+  (c) FORZA DEL CALENDARIO: gol fatti dall'avversario nelle sue ultime N
+      partite, corretti/confrontati con quanti gol concedono IN MEDIA le
+      squadre che l'avversario ha affrontato in quelle stesse N partite (una
+      correzione per "contro chi ha giocato", tipo strength-of-schedule).
+
+ISTRUZIONE: testa (a) come baseline (e' la lettura piu' semplice e piu'
+probabile, ed e' quella tecnicamente piu' comparabile con quanto gia' fatto).
+Se hai tempo/budget, testa anche (b). Non tentare (c) se non hai tempo: e'
+la piu' costosa e la meno probabile come lettura. SCRIVI ESPLICITAMENTE nel
+report quale lettura hai usato per ciascun numero che consegni, cosi' se ho
+capito male io si vede subito e si corregge, invece di scoprirlo dopo.
+
+===============================================================================
+3. RISULTATO PRELIMINARE MIO (SPORCO, DA RIVERIFICARE SUL CAMPIONE PULITO)
+===============================================================================
+Ho gia' fatto un test veloce (NON su crowss, sull'intero campione 2024/25 di
+p44, quindi da buttare/riverificare, lo scrivo solo perche' l'utente lo ha
+gia' visto e non va contraddetto in silenzio): confrontando finestra intera
+storia vs ultimi 12/6 mesi vs ultime 20/10/5 partite, la correlazione era:
+
+  tutta la storia        n=1896  corr=+0.0671
+  ultimi 12 mesi          n=1890  corr=+0.0688
+  ultimi 6 mesi           n=1862  corr=+0.0690
+  ultime 20 partite       n=1896  corr=+0.0622
+  ultime 10 partite       n=1896  corr=+0.0555
+  ultime 5 partite        n=1896  corr=+0.0676
+
+Cioe' finestre CORTE (10-20 partite) NON hanno fatto meglio della storia
+lunga, anzi leggermente peggio. L'utente e' fortemente scettico su questo
+risultato e ha chiesto un test pulito, solo su crowss, con piu' valori di N
+(fino a 20) e con l'interpretazione (a)/(b) sopra. LA TUA IPOTESI PRIMA DEI
+NUMERI (dichiarala): ti aspetti che il mio test preliminare regga (finestra
+corta non aiuta) o che si ribalti sul campione crowss-pulito? Scrivi il
+perche' prima di girare i numeri. Se il risultato ribalta il mio, e' un
+risultato valido e va scritto cosi', non aggiustato.
+
+===============================================================================
+4. IL CAMPIONE -- SOLO ARCHIVIO CROWSS, CON NUMERI DI CONTROLLO
+===============================================================================
+Fonte: archivio_ufficiale/manager_crowss/{pre,dal}_2026-08-07/*.json (18
+giornate, NON il pool 29-manager di binario2_pool_rows.json -- quello e'
+"non completamente a cazzo" secondo l'utente solo per crowss).
+
+Per ogni formazione in quei file, per ogni carta con ruolo Goalkeeper: quella
+e' una riga di valutazione GK reale (portiere, giornata, punteggio 'reale'
+gia' nella carta -- campo 'punteggio' nel JSON).
+  - n formazioni totali nell'archivio crowss: deve tornare 266 (18 giornate,
+    gia' verificato oggi dall'orchestratore).
+  - n carte GK totali nelle formazioni (con ripetizioni fra formazioni
+    diverse della stessa giornata): conta e riporta, non lo so a memoria.
+  - squadra e avversario del portiere: NON sono nel dump, si ricavano dalla
+    cache (stesso metodo di p36/analisi_manager/dati/_cache_index_gamelog.json:
+    'squadra' = squadra che compare nel maggior numero di partite del
+    giocatore; l'avversario si trova appaiando GIORNATA/DATA della carta con
+    la partita reale del portiere in quella finestra -- stessa logica di
+    finestra_fixture() in p36_correlazioni_compagni.py righe 41-56).
+  - Se dopo il filtro (portiere risolto a una squadra E una sola partita
+    nella finestra) il campione scende molto sotto ~200 righe uniche
+    (portiere, giornata), e' normale (18 giornate x ~30 formazioni x ~1 GK
+    ciascuna, ma con deduplicazione su portiere+giornata il numero vero e'
+    piu' piccolo) -- riportalo comunque, non fermarti per questo da solo, ma
+    SEGNALA il numero prima dei risultati.
+
+SE NON RITROVI QUESTI NUMERI (266 formazioni), FERMATI E DILLO, non
+proseguire su un campione diverso.
+
+===============================================================================
+5. IL METODO
+===============================================================================
+Per ogni riga GK del campione crowss (slug, squadra, avversario, data,
+reale):
+  a) Costruisci lo storico "gol fatti" per squadra da ENTRAMBI i file gia'
+     estratti (gol_squadre_archivio_2025-26_2026-08-11.json +
+     gol_squadre_archivio_2023_25_2026-08-11.json, uniti, NESSUNA nuova
+     query -- tutto gia' in repo).
+  b) Per ogni N in {5, 8, 10, 12, 15, 20}: att_finestra(avversario, data, N)
+     = media dei gol fatti dall'avversario nelle SUE N partite immediatamente
+     precedenti alla data (contate a partite, non a mesi/anni -- e' la
+     richiesta esplicita dell'utente, "prendi n partite"). Se l'avversario
+     ha meno di N partite disponibili prima di quella data, ESCLUDI la riga
+     per quel valore di N (non fare padding, non abbassare la soglia in
+     silenzio).
+  c) Correlazione di Pearson (segnale invertito, come gia' fatto: piu'
+     l'avversario segna, peggio rende il portiere) fra att_finestra e
+     'reale', bootstrap sul cluster (squadra, giornata) per l'IC95%, stesso
+     metodo di p42/p44 (pearson()/boot_cluster() gia' scritte li', riusale,
+     non riscriverle).
+  d) Se testi anche la lettura (b): stessa procedura ma con dif_finestra
+     (gol SUBITI dalla squadra del portiere nelle sue N partite precedenti),
+     e prova sia da sola sia in combinazione con att_finestra (media ranghi,
+     come in §11.3 del report precedente).
+
+===============================================================================
+6. CONTROLLI OBBLIGATORI PRIMA DEI NUMERI DI SINTESI
+===============================================================================
+- Dump leggibile di 10 righe: portiere, squadra, avversario, data, reale, e
+  per un N a scelta (es. 10) le 10 partite usate per att_finestra (data +
+  gol fatti in ciascuna), cosi' si vede a mano che il calcolo e' giusto.
+- Test A/A: rilancio identico deve dare numeri identici.
+- Confronta il numero sul crowss-pulito con quello (sporco) del mio
+  preliminare al §3: stesso segno? stessa taglia? Se e' molto diverso,
+  spiega perche' (campione diverso, non e' un bug automaticamente).
+
+===============================================================================
+7. COSA CONSEGNARE
+===============================================================================
+- La tua lettura dichiarata di §2 (a e/o b)
+- n righe campione crowss-pulito, per ciascun N testato
+- tabella N -> corr [IC95%] (e stessa tabella per dif_finestra/combinato se
+  hai testato la lettura b)
+- il dump del punto 6
+- il confronto col mio preliminare (§3)
+- eventuali difetti trovati per strada, annotati, non sistemati
+
+===============================================================================
+8. COSA NON FARE
+===============================================================================
+- NON toccare generatore_formazioni/build_formazione_globale.py: il flag
+  GK_ATT_AVV_ENABLED resta spento di default, non lo cambio io ne' tu finche'
+  l'utente non decide sulla FORMULA (finestra vs storia intera).
+- NON sovrascrivere generatore_formazioni/dati/gk_attacco_avversario.json
+  (la tabella di produzione attuale, basata sulla media storica contestata):
+  resta li' finche' non si decide il sostituto.
+- NON lanciare query di rete (tutto gia' in repo).
+- NON forzare un verdetto se l'n per un dato N e' troppo piccolo (sotto
+  ~100): dillo e basta.
