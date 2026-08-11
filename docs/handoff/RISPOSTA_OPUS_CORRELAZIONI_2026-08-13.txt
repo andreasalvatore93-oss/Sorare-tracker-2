@@ -448,3 +448,110 @@ che avevo lasciato al §1c.
 
 File nuovo: analisi_manager/p38_clean_sheet_da_quote.py
 Dati: analisi_manager/dati/clean_sheet_quote_2026-08-13.json
+
+===============================================================================
+10. SEGUITO 2 -- FORZA DIFENSIVA E FORZA D'ATTACCO: NON FUNZIONA. E UNA MIA
+    AFFERMAZIONE DEL §9.5 ERA SBAGLIATA.
+    (13/08/2026 notte, dopo BRIEF_OPUS_CLEAN_SHEET_VIA_LIBERA)
+===============================================================================
+Script: analisi_manager/p39_clean_sheet_forza_difesa.py. Zero query.
+
+10.1 ERRORE MIO, DA CORREGGERE PRIMA DI TUTTO IL RESTO.
+     Nel §9.5 avevo scritto che i "gol subiti attesi della squadra" sono
+     "ricavabili dalla cache game-log senza rete". E' FALSO. Verificato su
+     20.011 entry: la cache contiene solo fieldStatus, gameStarted,
+     minsPlayed, yellowCard, footballPlayingStatusOdds. Nessun gol, ne'
+     fatti ne' subiti, da nessuna parte. Chi avesse preso quella riga per
+     buona avrebbe cercato un dato che non c'e'.
+     Quello che si puo' ricavare e' l'EVENTO clean sheet (non i gol): il
+     punteggio del portiere dice se la sua squadra ha tenuto la porta
+     inviolata. Ho costruito le due forze su quell'evento binario, che e'
+     comunque esattamente cio' che vogliamo prevedere.
+
+10.2 IL PROXY DEL CLEAN SHEET REGGE (controllo preliminare obbligatorio).
+     Distribuzione dei punteggi dei 731 portieri: due gobbe nette, una a
+     30-49 (348 casi) e una a 60-79 (177), con una valle a 50-59 (61 casi).
+     Il taglio a 60 cade nella valle, non in mezzo a una gobba. Solo l'8,1%
+     dei punteggi sta nella fascia ambigua 55-65. Il proxy si puo' usare.
+
+10.3 COME HO COSTRUITO LE DUE FORZE (walk-forward, mai il futuro).
+     Da TUTTA la cache, non solo dall'archivio: 243 portieri riconosciuti,
+     9.399 partite-squadra con esito clean sheet ricostruito, dal 29/07/2023
+     al 09/08/2026, 208 squadre, 45,2 partite a squadra. Tasso di clean
+     sheet complessivo 32,9%.
+       forza difensiva      = quota di clean sheet della MIA squadra nelle
+                              sue partite PRECEDENTI alla data
+       debolezza offensiva  = quota di volte in cui l'AVVERSARIO non ha
+                              segnato (cioe' il portiere di chi lo
+                              affrontava ha fatto clean sheet), sempre solo
+                              nelle partite precedenti
+     Entrambe con shrinkage verso il tasso base (peso 5 partite finte),
+     altrimenti una squadra con 5 partite e 5 clean sheet varrebbe 1,00.
+
+10.4 ESITO: NEGATIVO SU TUTTA LA LINEA. n=424 (il vincolo che taglia il
+     campione e' lo storico dell'AVVERSARIO, non il mio).
+
+       segnale                              AUC
+       atteso di produzione (oggi)         0,554
+       quote: p_own + p_draw               0,539
+       forza difensiva mia squadra         0,522
+       debolezza offensiva avversario      0,504
+       difesa + attacco (media ranghi)     0,518
+       difesa + attacco + quote            0,537
+
+     Delta appaiato contro le sole quote (bootstrap squadra-giornata):
+       forza difensiva            -0,017  IC95% [-0,101; +0,063]  positivo 33,6%
+       debolezza offensiva        -0,034  IC95% [-0,113; +0,044]  positivo 19,4%
+       difesa + attacco           -0,021  IC95% [-0,098; +0,055]  positivo 28,8%
+       difesa + attacco + quote   -0,002  IC95% [-0,051; +0,048]  positivo 46,2%
+     Nessuna combinazione batte le quote. Nessun delta e' positivo.
+
+10.5 NON E' COLPA DELLO STIMATORE, E L'HO VERIFICATO.
+     Il sospetto ovvio e' "il tasso storico e' calcolato su troppe poche
+     partite". Non regge: la MIA squadra ha una mediana di 41 partite
+     precedenti disponibili (quartili 33 e 50), lo 0,0% delle righe sta
+     sotto le 4. E alzando la soglia di storico l'AUC NON migliora, peggiora:
+
+       storico minimo   n     difesa   attacco-avv   quote
+             4         424    0,522      0,500       0,539
+             8         377    0,520      0,502       0,539
+            12         327    0,516      0,497       0,536
+            20         192    0,476      0,490       0,512
+     Se il problema fosse il rumore dello stimatore, l'AUC salirebbe con lo
+     storico. Fa il contrario. La quota storica di clean sheet di una
+     squadra non dice quasi nulla su cosa fara' la settimana dopo, in questo
+     campione. Coerente col test indiretto del §1e (AUC 0,498).
+
+10.6 COSA CAMBIA NEL QUADRO GENERALE (e mi tocca ridimensionare me stesso).
+     Al §9.4 ho scritto che il tetto e' 52,2 punti e che ne prendiamo il 9%.
+     Il tetto resta vero: chi SAPESSE il clean sheet guadagnerebbe quello.
+     Ma dopo questo test la parte raggiungibile sembra molto piu' piccola di
+     quanto lasciassi intendere: con tutto cio' che e' disponibile nel repo
+     senza rete -- quote 1X2, storia difensiva della squadra, storia
+     offensiva dell'avversario, campo -- non si va oltre AUC 0,585, e le
+     due strade nuove provate stanotte non aggiungono niente.
+     Detto in modo brutale: sappiamo con certezza DOVE sta il segnale (il
+     clean sheet e' il portiere, 72,7 contro 37,8) ma non abbiamo, oggi, un
+     modo per prevederlo molto meglio del caso. Il collo di bottiglia non e'
+     il modello, sono i dati: servirebbero gol subiti veri, xG contro,
+     formazioni annunciate -- niente di tutto questo e' nel repo.
+
+10.7 COSA PROPONGO ADESSO (decide l'utente)
+     a) CHIUDERE la strada "prevedere il clean sheet con quello che abbiamo".
+        Due tentativi indipendenti, entrambi negativi, con controlli che
+        escludono lo stimatore rumoroso. Non consiglio un terzo giro sugli
+        stessi dati.
+     b) NON chiudere l'idea in se'. Se un giorno entrano in repo i gol
+        subiti per squadra-partita (una raccolta piccola: 9.399
+        partite-squadra sono gia' identificate, servirebbe solo il
+        risultato), il test si rifa' in un'ora e il tetto e' li' che aspetta.
+        Questa e' l'unica richiesta di rete che avrei da fare, e NON la sto
+        facendo: la metto sul tavolo per l'utente.
+     c) Nel frattempo, l'unica cosa gia' pronta e a costo zero e' il §9:
+        le quote come predittore del clean sheet valgono AUC 0,585 contro il
+        caso, ma spostano il lift dei portieri di +1,21 punti dentro un
+        intervallo da -4,3 a +6,4. Non giustificano di toccare la catena.
+        Resta il consiglio del §9.5a: non metterle in produzione.
+
+File nuovo: analisi_manager/p39_clean_sheet_forza_difesa.py
+Dati: analisi_manager/dati/clean_sheet_forze_2026-08-13.json
