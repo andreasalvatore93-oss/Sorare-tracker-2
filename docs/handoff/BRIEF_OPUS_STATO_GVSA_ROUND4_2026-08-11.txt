@@ -1,0 +1,117 @@
+BRIEF PER OPUS — filone G-vs-A, stato dopo 4 round di estrazione (11/08/2026 notte)
+
+Sei in una chat pulita, non hai memoria di questa conversazione. Leggi
+questo file per intero. Non sei un esecutore: qui si ti chiede un
+giudizio e delle proposte, non di lanciare query.
+
+## 0. Cosa leggere prima (in ordine)
+
+1. `CLAUDE.md` (radice), sezione "I BACKTEST SONO IL MODELLO CONTRO SE
+   STESSO" — la regola di fondo: si misura SEMPRE G contro A sulla stessa
+   formazione reale, mai "battiamo il manager".
+2. `docs/handoff/BRIEF_OPUS_ANALISI_BINARIO1_2026-08-10.txt` — la domanda
+   che ti fu posta la sessione scorsa (a n=55 decisioni discordanti).
+3. `docs/handoff/RISPOSTA_OPUS_ANALISI_BINARIO1_2026-08-10.txt` — la TUA
+   risposta di allora: segnale non solido (85,1% bootstrap non 95%,
+   permutazione p=0,167), stima di ~213 decisioni discordanti necessarie
+   per un segnale non più spiegabile dal caso, servono ~11-20 manager
+   nuovi.
+4. `docs/handoff/HANDOFF_ORCHESTRATORE_BINARIO_GVSA_2026-08-10.txt`,
+   sezione 6 — cosa è successo dopo la tua risposta (round 2+3).
+5. `archivio_ufficiale/README.md` — schema dati e struttura archivio.
+6. `analisi_manager/p23_binario1_mga.py` e `analisi_manager/p24_binario2_ga.py`
+   — i due script, se vuoi leggere la logica esatta.
+
+## 1. Cosa è successo dopo la tua stima (~213 discordanti)
+
+Hai stimato che servissero 11-20 manager nuovi sulle stesse 22 fixture di
+crowss (il grade storico non si recupera oltre ~4 mesi, quindi si allarga
+per MANAGER, non per GW più vecchie). Round eseguiti:
+
+- Round 2 (13 slug pescati a caso dall'utente): 8 utili... poi altri
+  scartati per poche arene, vedi handoff punto 6.
+- Round 3 (11 slug): 6 utili.
+- Round 4 (15 slug, appena finito): 11 utili.
+
+Totale: **25 manager utili + crowss = 26**, contro i tuoi 11-20 stimati —
+siamo nel range o leggermente sopra, eppure il campione discordante non
+ha ancora raggiunto la tua soglia.
+
+## 2. I numeri AGGIORNATI (appena ricalcolati, dati grezzi verificati)
+
+**Binario1** (M reale vs A vs G, stessa formazione, entra/non entra
+secondo soglia PAREGGIO_ARENA+margine):
+- 866 formazioni pulite, 291 GW
+- M +42.150 (entra sempre) | A +22.700 (entra 440/866) | G +25.100 (entra 421/866)
+- **n vera del confronto (decisioni discordanti) = 103** (era 55 alla tua
+  analisi, poi 80 dopo round2+3, ora 103 dopo round4)
+- delta G-A totale = +2.400
+- **delta G-A togliendo le 3 decisioni pro-G più pesanti = -600**
+  (era -1.350 a n=80: la fragilità è ancora lì ma si è un po' attenuata)
+
+**Binario2** (pool libero, netto essenze realizzato, mai atteso):
+- 316 GW, A +107.494 (1.108 arene) | G +111.012 (1.060 arene)
+- delta totale = +3.519
+- **NUOVO controllo fatto stasera, mai fatto prima su questo binario:
+  togliendo i 3 manager col contributo pro-G più pesante (ch4 +1.511,
+  karew +1.490, elkenodescansa +1.006 = 4.007) il delta totale diventa
+  -488.** Stessa identica fragilità del binario1, scoperta ora.
+- Split per manager (26 totali, contando ognuno 1 voto): 12 pro-G, 14
+  pro-A — l'utente ha giustamente fatto notare che è un conteggio
+  fuorviante (un manager da 2 arene pesa come uno da 308), quindi NON è
+  il numero su cui basarsi. Il dato vero è il delta pesato sopra.
+- Osservazione ulteriore: i DUE manager col campione più grande in
+  assoluto (tsubasa_451 n=308, crowss n=285, insieme il 27% di tutte le
+  arene del binario2) sono leggermente A>G (-3 e -144). Il segnale
+  positivo totale è sostenuto da manager di taglia media, non dai due
+  campioni più affidabili che abbiamo.
+
+## 3. Le tue domande
+
+1. **Il segnale sta diventando più o meno credibile crescendo il
+   campione?** n_discordanti passa da 55 a 103 (quasi raddoppiato) e la
+   fragilità del binario1 si è un po' attenuata (-1350 -> -600 togliendo
+   i top3), ma resta negativa. Il binario2 mostra la STESSA fragilità
+   (mai controllata prima, appena scoperta). È lecito dire che il segnale
+   si sta consolidando lentamente, o è ancora presto per dirlo anche solo
+   qualitativamente?
+2. **Il fatto che i due manager con più dati (tsubasa_451, crowss) siano
+   leggermente A>G, mentre il segnale positivo viene da manager di taglia
+   media, è un problema strutturale o rumore atteso a questa numerosità?**
+   Vale la pena pesare/pesare-diversamente il verdetto per numerosità del
+   manager, o sarebbe un altro modo di guardare lo stesso rumore?
+3. **Quanti altri manager (o quante altre decisioni discordanti) servono
+   ora**, aggiornando la tua stima precedente con questi numeri nuovi?
+4. **Test utili per capire DOVE il modello sbaglia, non solo SE vince**,
+   in ottica di migliorare G invece di solo validarlo:
+   - "G fisso" — l'utente ha proposto di isolare le due decisioni che G
+     prende (quale carta schierare / se entrare nell'arena) e testarle
+     separatamente: es. tenere ferma la scelta delle 5 carte di G (o di
+     A) e far variare solo la soglia entra/non-entra, o viceversa. Nel
+     dataset attuale il manager tekato-dan diverge fortissimo in
+     binario1 (A>G di -2.300, il singolo numero più grande di tutto il
+     dataset) ma è quasi pari in binario2 (+32) — sembra indicare che per
+     quel manager il problema sta nella soglia di ingresso, non nella
+     scelta delle carte. Ha senso generalizzare questo confronto
+     binario1-vs-binario2 per-manager come diagnostica (dove i due
+     binari concordano/divergono, isola quale componente di G sta
+     guadagnando o perdendo)?
+   - Altre combinazioni/test che vedi utili con i dati che abbiamo ora
+     (25 manager, ~2.700 arene reali totali, grade all'91,6-91,7% di
+     copertura)? Non servono nuove query per proporli, solo idee da
+     misurare su quello che è già in `archivio_ufficiale/aggregato/
+     binario1_out.json` e `binario2_out.json`.
+
+## 4. Cosa NON fare
+
+Non hai accesso a lanciare query o modificare produzione da qui: questo
+è un brief di analisi, la tua risposta va scritta come testo (l'utente la
+copia in una sessione esecutrice se propone un test da lanciare). Non
+inventare numeri che non trovi nei JSON citati: se ti serve un dato che
+non c'è nei file, dillo esplicitamente invece di stimarlo.
+
+## 5. Dove scrivere la risposta
+
+Scrivi la tua analisi in un file nuovo:
+`docs/handoff/RISPOSTA_OPUS_STATO_GVSA_ROUND4_2026-08-11.txt` (stesso
+pattern del file precedente). L'utente la porta all'orchestratore.
