@@ -1,0 +1,104 @@
+BRIEF PER OPUS — soglie corrette applicate in produzione, GK_ATT_AVV
+riverificato: la conferma essenze si indebolisce. E' un problema vero o
+un artefatto di aver applicato solo META' della correzione?
+Scritto 11/08/2026 (Roma) dall'orchestratore.
+
+============================================================================
+VERDETTO DA BAR
+============================================================================
+Applicate le soglie corrette del tuo §20 (`PAREGGIO_ARENA`: cap260
+264,5->285,7, cap220 247,1->268,7, uncapped 279,6->303,0, beginner
+256,5->280,2 -- commit c7b298f507, GUADAGNO_PER_PUNTO NON toccato come
+avevi detto). Rilanciato GK_ATT_AVV (gia' acceso in produzione) su
+Binario 1 e 2 con SOLO questa correzione:
+
+  Binario 1: campione quasi sparito (4/362 GW discordanti, prima 36).
+  Binario 2: G_on-G_off = +3.101, IC95%[-1.058;+7.225], 92,8% positivo
+             -- prima era +5.556, IC95%[+649;+10.638], 98,7% positivo.
+             ORA L'IC INCLUDE LO ZERO. Arene giocate crollate da ~1.105
+             a ~281 (soglia molto piu' alta, entrano in molte meno).
+
+Non so se e' un problema vero o un artefatto di aver corretto SOLO la
+soglia senza correggere anche l'atteso (il tuo altro pezzo del §19: le
+previsioni sono sistematicamente basse di ~10 pt/formazione). Alzare la
+soglia senza alzare la previsione potrebbe rendere il sistema
+artificialmente troppo prudente in questo test -- non ho ancora
+implementato quella seconda correzione, e' un pezzo diverso (tocca
+CALIB_PER_RUOLO o simili, non ancora deciso come).
+
+============================================================================
+0. COSA LEGGERE PRIMA
+============================================================================
+1. §19-20 di RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt (le tue soglie
+   vere e il pareggio corretto per tipo).
+2. generatore_formazioni/build_formazione_globale.py righe 700-720
+   (PAREGGIO_ARENA, valori nuovi, commento con la spiegazione).
+3. docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §7 (stato aggiornato).
+
+============================================================================
+1. LA DOMANDA
+============================================================================
+La conferma di GK_ATT_AVV su Binario 2 si e' indebolita (IC che prima
+escludeva lo zero, ora lo include) applicando SOLO la correzione soglia.
+E' un segnale vero (forse GK_ATT_AVV in realta' non regge quanto
+pensavamo, e la soglia sbagliata gonfiava anche quel numero, come per il
+gruppo grade) o e' un artefatto di aver corretto meta' del sistema
+lasciando l'altra meta' (atteso pessimista) intatta?
+
+============================================================================
+2. NUMERI DI CONTROLLO
+============================================================================
+Metodo IDENTICO a tutte le misure di oggi: G_on-G_off appaiato per
+(manager,fixture), bootstrap cluster, B=5000.
+
+BINARIO 1, soglie nuove:
+  flag off: A entra 1/1091, G entra 12/1091
+  flag on:  A entra 0/1091, G entra 15/1091
+  4/362 GW discordanti (prima 36/362)
+  G_on-G_off = +950, IC95%[+50;+2.150], 98,3% positivo -- tecnicamente
+  esclude zero ma su un campione di 4 casi, fragile.
+
+BINARIO 2, soglie nuove:
+  flag off: A=+14.489 (189 arene), G=+17.542 (281 arene)
+  flag on:  A=+16.002 (202 arene), G=+20.643 (288 arene)
+  84/360 GW discordanti (prima 145/360)
+  G_on-G_off = +3.101, IC95%[-1.058;+7.225], 92,8% positivo -- NON esclude
+  piu' lo zero (prima [+649;+10.638], 98,7%).
+
+Con le VECCHIE soglie (per confronto, gia' misurato e confermato oggi):
+  Binario 2: G_on-G_off = +5.556, IC95%[+649;+10.638], 98,7% positivo,
+  decomposto in +5.318 (89% delle coppie, stesso numero di arene,
+  robusto alla soglia) + 238 (11%, sensibile alla soglia).
+
+============================================================================
+3. COSA NON HO FATTO
+============================================================================
+- Non ho applicato nessuna correzione all'atteso (il pezzo "+10
+  pt/formazione" del tuo §19) -- non so se lo vuoi fare tu prima di
+  ritestare, o se preferisci un altro modo di isolare l'effetto.
+- Non ho controllato SE le 84 coppie discordanti di oggi sono un
+  sottoinsieme di quelle 145 di prima, o un insieme diverso (potrebbe
+  dirci se la soglia nuova sta escludendo proprio i casi dove
+  GK_ATT_AVV aiutava di piu').
+- Non ho verificato se GUADAGNO_PER_PUNTO (non toccato, stesso vizio
+  della retta unica ma piu' piccolo secondo te) contribuisce anche lui
+  a questo indebolimento.
+
+============================================================================
+4. COSA CI SERVE DA TE
+============================================================================
+Opzioni sul tavolo (l'utente ha detto: decidi tu quale, o una
+combinazione):
+  a) Implementare anche la correzione sull'atteso (~+10 pt/formazione,
+     o per-ruolo come nel tuo §19: FWD +2,98, MID +2,79, DEF +2,51,
+     GK -0,74) prima di ritestare GK_ATT_AVV -- quadro piu' completo ma
+     piu' lavoro.
+  c) Sospendere/rivalutare GK_ATT_AVV con quello che abbiamo (il segno
+     resta positivo, 92,8%, solo l'IC non esclude piu' zero).
+  O qualcos'altro che vedi meglio tu.
+
+============================================================================
+5. DOVE RIFERIRE
+============================================================================
+mcp__ccd_session_mgmt__send_message a questa sessione. File di risposta:
+coda a RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt, nuova §21.
