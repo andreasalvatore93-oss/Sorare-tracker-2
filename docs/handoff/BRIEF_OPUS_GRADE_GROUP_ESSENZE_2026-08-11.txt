@@ -1,0 +1,119 @@
+BRIEF PER OPUS — testata la ricetta completa (storica_completa, fattore
+0,75) sull'endpoint essenze: su Binario 2 esce un numero MOLTO piu'
+grande di tutto il resto misurato oggi. L'utente ha detto "mi sembra
+troppo buono per essere buono" -- verificalo prima di fidarcene.
+Scritto 11/08/2026 (Roma) dall'orchestratore, stessa sessione di oggi.
+
+============================================================================
+VERDETTO DA BAR
+============================================================================
+Hai proposto tu la ricetta completa (§17, punto 6): togliere il return
+anticipato, usare ENTRAMBE le tabelle storiche insieme, applicare il
+fattore ~0,75. L'ho implementata nell'ambiente di backtest (nuova
+modalita' 'storica_completa' in applica_gruppi_grade, zero rischio
+produzione) e testata sull'endpoint essenze che finora non aveva mai
+avuto la potenza per decidere nulla in questo filone.
+
+Risultato: Binario 1 resta senza potenza come sempre (+1.400,
+IC95%[-9.050;+12.150], 59,5% positivo). Binario 2 pero' esclude lo zero
+con un margine grande: **+14.387 essenze, IC95%[+5.566;+23.412], 99,9%
+positivo** -- piu' del doppio del guadagno gia' misurato per GK_ATT_AVV
+(+5.556). Ho controllato gli aggiustamenti uno per uno (range -5,6/+7,2
+punti, mediana +0,9, nessuna esplosione), ma la dimensione del salto mi
+insospettisce lo stesso -- e l'istinto dell'utente ("troppo buono per
+essere buono") e' lo stesso identico test che hai gia' fatto tu due volte
+oggi su questo filone (trovando un problema vero entrambe le volte).
+Verificalo tu da zero, come hai gia' fatto per il round precedente.
+
+============================================================================
+0. COSA LEGGERE PRIMA
+============================================================================
+1. RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §16-17 (la tua ricetta).
+2. analisi_manager/p12_backtest_formazione_grade.py -- funzioni
+   costruisci_tabella_sd_atteso(), _sd_atteso_storico(), e il branch
+   'storica_completa' dentro applica_gruppi_grade() (righe ~374-382).
+3. analisi_manager/p23_binario1_mga.py e p24_binario2_ga.py, sezione
+   main() dove si carica bfg._GRADE_SCALE_TABLE e si costruisce
+   tab_sd -- cerca "storica_completa" in entrambi i file.
+
+============================================================================
+1. LA DOMANDA (una sola)
+============================================================================
+Il numero +14.387 (IC95%[+5.566;+23.412], 99,9% positivo) su Binario 2 e'
+un risultato vero, o c'e' un errore nell'implementazione che lo gonfia?
+
+============================================================================
+2. COME E' STATO OTTENUTO -- riproducibile
+============================================================================
+Comandi ESATTI (stesso archivio_ufficiale di sempre, 360 GW-manager,
+GK_ATT_AVV gia' acceso in produzione come baseline -- non e' l'oggetto di
+questo test, resta costante fra baseline e variante):
+
+  GK_ATT_AVV_ENABLED=1 GK_ATT_AVV_FORMULA=secca \
+    python analisi_manager/p24_binario2_ga.py                  # baseline (default GRADE_GROUP_MODE=lega_ruolo)
+
+  GK_ATT_AVV_ENABLED=1 GK_ATT_AVV_FORMULA=secca \
+  GRADE_GROUP_MODE=storica_completa FATTORE_STORICO=0.75 \
+    python analisi_manager/p24_binario2_ga.py                  # variante
+
+Metrica: G_variante - G_baseline, appaiato per (manager,fixture),
+bootstrap cluster (manager,fixture), B=5000 -- stesso identico metodo
+usato per tutte le misure di oggi (GK_ATT_AVV incluso).
+
+============================================================================
+3. NUMERI DI CONTROLLO
+============================================================================
+- A/A test PRIMA di misurare: GRADE_GROUP_MODE default ('lega_ruolo')
+  riproduce ESATTAMENTE i numeri gia' noti (+3488/+2509 flag GK off,
+  +2250/+2003 flag GK on) -- verificato di nuovo oggi prima di questo
+  giro, nessuna deriva nel refactor.
+- Baseline (lega_ruolo, GK_ATT_AVV on): A=+121.770 (1.157 arene),
+  G=+124.021 (1.105 arene).
+- Variante (storica_completa 0.75, GK_ATT_AVV on): A=+121.770 (1.157
+  arene, INVARIATO -- A non usa il grade, giusto che non cambi),
+  G=+138.408 (1.205 arene) -- G entra in 100 arene IN PIU' e totalizza
+  14.387 essenze in piu'.
+- 237/360 coppie manager-GW discordanti (G_variante != G_baseline), su
+  360 totali -- non e' un pugno di casi isolati.
+- Aggiustamento (sd_atteso*z*0.75) su tutte le 10.255 righe carta:
+  min -5,57, max +7,20, mediana +0,91, MEDIA +1,15 (non zero-centrata --
+  vedi §4, e' il punto che mi insospettisce di piu').
+
+============================================================================
+4. IL SOSPETTO PIU' CONCRETO CHE HO, NON VERIFICATO A FONDO
+============================================================================
+La media dell'aggiustamento su tutte le 10.255 righe e' +1,15, NON vicina
+a zero. Ipotesi: l'archivio (carte REALMENTE schierate da manager veri)
+e' selezionato verso giocatori discreti/buoni (nessuno schiera
+volontariamente un F se puo' evitarlo) -- quindi rispetto alla tabella
+storica GLOBALE (che include anche i grade bassi di chi non gioca),
+questo campione ha una media di voto naturalmente piu' alta, e lo z medio
+viene sistematicamente positivo. Se e' cosi', l'aggiustamento non sta
+"scoprendo" chi e' meglio: sta solo spostando SISTEMATICAMENTE l'atteso
+di G verso l'alto per QUASI OGNI carta del pool (non solo per le carte
+davvero forti) -- il che farebbe entrare G in piu' arene non perche'
+sceglie meglio, ma perche' e' diventato piu' ottimista in blocco. Non ho
+verificato se A (che non ha questo bias, calibra sempre uguale) sia
+davvero il confronto giusto quando G ha uno spostamento medio non-zero,
+o se serva ricentrare l'aggiustamento (sottrarre la sua stessa media)
+prima di sommarlo, cosi' il confronto misura solo la parte che ORDINA
+meglio i candidati, non anche uno spostamento di livello che alza tutto
+indiscriminatamente.
+
+============================================================================
+5. COSA NON HO FATTO
+============================================================================
+- Non ho ricentrato l'aggiustamento a media zero per isolare l'effetto
+  "ordina meglio" da un eventuale effetto "sposta tutto in alto" (§4).
+- Non ho controllato se le 100 arene in piu' in cui G entra sono
+  arene che A avrebbe evitato a ragione (DNP, punteggio basso) o arene
+  buone che A perdeva per un atteso troppo prudente -- solo il totale
+  aggregato, non un'ispezione arena per arena.
+- Non ho ripetuto il calcolo con un fattore diverso da 0,75 per vedere
+  come si muove il risultato (sensitivity).
+
+============================================================================
+6. DOVE RIFERIRE
+============================================================================
+mcp__ccd_session_mgmt__send_message a questa sessione. File di risposta:
+coda a RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt, nuova §18.
