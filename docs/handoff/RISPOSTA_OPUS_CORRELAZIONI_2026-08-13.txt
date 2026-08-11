@@ -1660,3 +1660,201 @@ Dati aggiornati: analisi_manager/dati/storico_grade_crowss_completamento.json,
      Non ho testato se il grade ricentrato migliori con un fattore diverso
      da 0,75.
 
+
+============================================================================
+19. RISPOSTA OPUS ESECUTORE â€” SOGLIA D'INGRESSO ARENA: NON SERVIVA UN TEST,
+    IL DATO C'ERA GIA'. E RIBALTA IL MIO Â§18.
+    (11/08/2026, ~23:55 Roma) Risposta al brief
+    docs/handoff/BRIEF_OPUS_TEMA_SOGLIE_2026-08-11.txt
+============================================================================
+
+19.0 VERDETTO DA BAR (16 righe)
+     Mi avete chiesto come disegnare un test. Il test non serviva: il dato
+     era gia' in archivio e nessuno l'aveva guardato. Nelle formazioni dei
+     manager ci sono 2.979 arene VERE con dentro il piazzamento vero e il
+     premio vero incassato. Non servono modelli: si guarda quanto si e'
+     portato a casa davvero, in funzione del punteggio fatto davvero.
+     Risultato: l'arena si ripaga a 285 punti (cap 260), non a 264,5 come
+     dice il codice. Stessa storia sugli altri due tipi, sempre ~20 punti
+     piu' su. Tradotto: fra la soglia scritta nel codice e quella vera c'e'
+     una fascia larga una ventina di punti in cui il bot dice "entra" e la
+     realta' dice "ci perdi". L'utente che salta le marginali e ne gioca il
+     60% non e' prudente: ha ragione, e ha ragione da mesi.
+     La parte scomoda e' che questo ribalta il mio Â§18. La "spinta cieca"
+     sembrava rendere +9.254 essenze, ma quelle essenze erano contate con
+     un metro che usa proprio la costante sbagliata: piu' arene marginali
+     entravano, piu' il metro le premiava. Con i premi veri quelle stesse
+     arene perdono. Ritiro la direzione di quel risultato.
+     Ho anche misurato la seconda diagnosi che mi avevate chiesto di
+     separare: l'atteso E' pessimista, di 2,08 punti a carta (+10,4 a
+     formazione). Ma la soglia sbaglia di 21: la prudenza vince comunque.
+
+19.1 LE TRE COSE CHE AVEVATE TROVATO NEL CODICE: CONFERMATE TUTTE E TRE
+     Le ho verificate una per una, non fidato del brief:
+     - genera_arene_efficienti (riga 1468): `if migliore is None or
+       migliore[0] <= 0: break`. Margine ZERO, QUOTA_MINIMA non compare.
+       Confermato.
+     - QUOTA_MINIMA (riga 857) usata solo in _etichetta_arena (868-892),
+       che produce testo e colore per l'HTML. Confermato: e' un'etichetta,
+       non un filtro.
+     - verdetto_arena (895-907): definita una volta, mai chiamata in tutto
+       il repo. Confermato. Nota in piu': la regola che contiene e'
+       `atteso >= soglia`, cioe' margine zero â€” la stessa di
+       genera_arene_efficienti. Il "+9.800 -> +54.700" della docstring
+       resta non verificato e ora e' anche irrilevante: qualunque regola a
+       margine zero e' sbagliata (Â§19.2). Suggerisco di cancellare la
+       funzione e il numero, non di verificarlo.
+
+19.2 IL DATO CHE MANCAVA: 2.979 ARENE VERE CON PREMIO VERO
+     Ogni riga di archivio_ufficiale/manager_*/*_arene_limited.json ha
+     'punteggio_totale', 'piazzamento', 'premio', 'costo_ingresso' e
+     'premio_netto'. Sono esiti REALI, non stime. Contate: 2.979 arene non
+     annullate con punteggio e premio (beginner 1.366, cap260 1.036,
+     cap220 415, uncapped 162).
+     Netto reale medio per fascia di punteggio (fasce da 10 punti, mostrate
+     solo quelle con n>=15). Cap 260, costo d'ingresso 300:
+       250-259  n= 81  netto medio  -287,7   a premio  2%
+       260-269  n= 86  netto medio  -212,8   a premio 12%   <- soglia codificata 264,5
+       270-279  n= 90  netto medio  -141,1   a premio 24%
+       280-289  n= 71  netto medio   -74,6   a premio 32%
+       290-299  n= 69  netto medio   +78,3   a premio 49%
+       300-309  n= 69  netto medio  +189,9   a premio 64%
+     Beginner (costo 100): -83,5 a 250-259; -69,9 a 260-269; -12,8 a
+     270-279; +5,8 a 280-289; +78,9 a 290-299.  Soglia codificata 256,5.
+     Cap 220 (costo 200): -140,6 a 250-259; -92,6 a 260-269; +50,0 a
+     270-279.  Soglia codificata 247,1.
+     Stima del pareggio vero (retta locale nella finestra dove la curva
+     attraversa lo zero, bootstrap 3.000 sulle arene):
+       cap260    pareggio REALE 285,4  IC95% [282,8;288,4]  codificato 264,5
+       beginner  pareggio REALE 277,3  IC95% [275,3;279,6]  codificato 256,5
+       cap220    pareggio REALE 262,4  IC95% [258,8;267,1]  codificato 247,1
+       uncapped  dati insufficienti (n=162, nessuna fascia utile)
+     Tutti e tre gli intervalli escludono il valore codificato, e lo
+     escludono nella STESSA direzione: il pareggio vero e' piu' ALTO di
+     15-21 punti.
+     Convertito in margine da pretendere prima di entrare:
+       cap260    +20,9 punti = +145 essenze = 48% del costo d'ingresso
+       beginner  +20,8 punti =  +51 essenze = 51% del costo
+       cap220    +15,3 punti =  +78 essenze = 39% del costo
+     Contro lo 0% della produzione e il 10% del nostro Binario 1.
+     Nota che regge il quadro: la PENDENZA invece e' quasi giusta
+     (GUADAGNO_PER_PUNTO cap260 codificato 6,96 contro 6,43 misurato;
+     beginner 2,46 contro 2,34). Non e' tutto da rifare: e' il punto zero
+     a essere spostato, non l'inclinazione.
+
+19.3 RITIRO LA DIREZIONE DEL MIO Â§18 (circolarita', me l'ero persa)
+     Nel backtest il guadagno di un'arena e'
+       netto_stimato = (punti_reali - PAREGGIO_ARENA[tipo]) * GUADAGNO_PER_PUNTO
+     cioe' e' calcolato con la stessa costante che decide se entrare. Se
+     quella costante e' 21 punti troppo bassa, ogni arena marginale entra
+     E risulta redditizia, per costruzione. Il mio "controllo di sanita'"
+     del Â§18.4 (lo sweep con un massimo interno) NON poteva accorgersene:
+     mostra che il metro e' internamente coerente, non che il metro e'
+     giusto.
+     Quindi: il fatto che la spinta cieca muova il numero resta vero, ma
+     l'interpretazione "la soglia e' troppo prudente, conviene entrare di
+     piu'" e' SBAGLIATA e la ritiro. Con i premi veri e' l'opposto.
+     REGOLA DA SCRIVERSI: qualunque test sulla soglia d'ingresso deve usare
+     'premio_netto' dall'archivio (esito vero), MAI 'netto_stimato'. Con
+     netto_stimato la soglia si sta misurando con se stessa.
+
+19.4 CONSEGUENZA CHE NON MI PIACE MA VA DETTA: TOCCA ANCHE I NUMERI DI OGGI
+     Tutti i confronti di oggi su Binario 2 usano netto_stimato. Un errore
+     di 21 punti nella costante non si cancella del tutto in una
+     differenza appaiata: si cancella nella misura in cui le due varianti
+     entrano nelle STESSE arene, e sopravvive nella misura in cui una
+     variante ne aggiunge di marginali.
+     Quindi, in ordine di contaminazione:
+       - grade 'storica_completa': +100 arene su 1.105. FORTEMENTE
+         contaminato â€” coerente col fatto che il Â§18 aveva gia' trovato
+         che il 45% del guadagno era una spinta cieca.
+       - GK_ATT_AVV: 1.113 arene a flag spento contro 1.105 acceso, cioe'
+         -8 (0,7%). POCO contaminato, il delta e' quasi tutto ricomposizione
+         a parita' di numero di arene. Il verdetto del Â§14 probabilmente
+         regge, ma e' stato misurato in un'unita' sbagliata e adesso il
+         flag e' acceso in produzione: va RI-MISURATO con le costanti
+         corrette prima di considerarlo chiuso. Costa una rilanciata.
+     E vale la catena di produzione di CLAUDE.md: se PAREGGIO_ARENA si
+     muove di 21 punti, si muove l'efficienza delle arene, e quindi si
+     muovono i consigli di ACQUISTO dello scouting (Ess/GW, EUR/EssGW), che
+     poggiano proprio su quella. E' l'anello a valle, non va saltato.
+
+19.5 L'ALTRA META' DELLA DOMANDA: L'ATTESO E' DAVVERO PESSIMISTA? SI'
+     Misurato direttamente, senza passare da nessuna soglia: residuo
+     (punteggio reale - atteso calibrato) su tutte le 10.255 righe carta
+     dell'aggregato.
+       residuo medio = +2,084  IC95% [+1,670;+2,469] (bootstrap cluster
+       manager-fixture), mediana -1,30, sd 18,29
+       per ruolo: FWD +2,98, MID +2,79, DEF +2,51, GK -0,74
+       su una formazione da 5 carte: +10,4 punti
+     L'atteso e' quindi pessimista di ~10 punti a formazione. (Il GK e'
+     l'unico leggermente ottimista: coerente con quanto gia' sapevamo, il
+     suo atteso e' quasi piatto.)
+     Caveat onesto: sono le carte effettivamente SCHIERATE, non un
+     campione casuale. Ma e' la popolazione giusta per questa domanda:
+     ci interessa l'errore sulle carte che finiscono in formazione.
+
+19.6 LE DUE DIAGNOSI SONO ENTRAMBE VERE â€” E SI SEPARANO COSI'
+     Qui c'e' la risposta al vostro Â§5.b. La ragione per cui la spinta
+     cieca non le separa e' strutturale: aggiungere +c all'atteso e
+     togliere c alla soglia sono la STESSA IDENTICA cosa dal punto di vista
+     della decisione. Nessun test che guardi le decisioni potra' mai
+     distinguerle. Si separano solo misurando le due grandezze
+     SEPARATAMENTE, ognuna contro la sua verita':
+       - "l'atteso e' pessimista?" -> confronto previsione contro
+         punteggio reale. Nessuna soglia coinvolta. Fatto al Â§19.5:
+         SI', +10,4 punti a formazione.
+       - "la soglia e' giusta?" -> confronto punteggio reale contro premio
+         reale. Nessun modello coinvolto. Fatto al Â§19.2: NO, e' 15-21
+         punti troppo bassa.
+     Nessuna delle due misure usa la regola di decisione, quindi il
+     problema di identificazione sparisce. Non serviva un disegno furbo:
+     serviva smettere di misurare la decisione e misurare i due pezzi.
+     Somma dei due effetti sulla decisione: l'atteso va alzato di ~10, la
+     soglia va alzata di ~21. Restano ~11 punti netti di margine in piu' da
+     pretendere. Quindi il bot deve entrare in MENO arene, non in piu'.
+
+19.7 RISPOSTA SECCA ALLE TRE DOMANDE DEL Â§5
+     a) Ri-testare la spinta cieca con la regola al 10%? NO, e' la domanda
+        sbagliata: 0% e 10% sono entrambi lontanissimi dal 39-51% del costo
+        che i premi veri richiedono, e comunque sarebbero misurati con
+        netto_stimato, cioe' con la costante sotto esame. Buttato.
+     b) Come separare le due diagnosi? Â§19.6: misurarle separatamente
+        contro due verita' diverse, mai attraverso la decisione. Gia' fatto
+        entrambe.
+     c) Il comportamento reale dell'utente e' un dato o rumore? E' UN DATO,
+        e non viola la regola "il backtest e' il modello contro se stesso".
+        La regola vieta di giudicare la bravura del manager; qui l'utente
+        non e' un benchmark, e' un TESTIMONE: dice che una fascia di arene
+        proposte non conviene, e i premi veri gli danno ragione. Il suo
+        "gioco il 60%" e il nostro "serve il 39-51% del costo di margine"
+        sono la stessa osservazione da due parti. Da incorporare, non da
+        tenere fuori. Vale la pena dirglielo esplicitamente: ha corretto a
+        mano, per mesi, un difetto vero del modello.
+
+19.8 QUELLO CHE NON SO, E CHE VA RISOLTO PRIMA DI TOCCARE LA PRODUZIONE
+     - I 264,5/247,1/256,5 non sono stati inventati: vengono da premi veri
+       letti da rewardsConfig su 2.125 arene avversarie e 5.031 premi
+       (commento alla riga 700, split-half dichiarato stabile). Il mio
+       numero viene da un metodo DIVERSO: il netto realmente incassato da
+       2.979 arene realmente giocate. I due metodi non concordano, e non
+       posso dire a priori quale sia giusto. Ipotesi da controllare, in
+       ordine di sospetto: (i) il calcolo da rewardsConfig stima il premio
+       ATTESO dato il piazzamento previsto, e potrebbe sbagliare la
+       distribuzione del campo avversario; (ii) il mio campione e'
+       selezionato (arene che i manager hanno scelto di giocare), anche se
+       io condiziono sul punteggio realizzato, il che dovrebbe attenuarlo
+       parecchio; (iii) la struttura dei premi puo' essere cambiata fra
+       aprile e agosto 2026. Questa e' la prima cosa da chiarire, prima di
+       riscrivere una costante di produzione.
+     - Non ho stimato il pareggio per 'uncapped' (n=162, insufficiente) ne'
+       per le arene dedicate per lega (262,9, mai ricalcolate).
+     - Non ho toccato niente: PAREGGIO_ARENA, QUOTA_MINIMA,
+       genera_arene_efficienti e verdetto_arena sono come li ho trovati.
+
+19.9 DOVE ANDREBBE SCRITTO QUESTO
+     Non qui. Questo tocca costanti di PRODUZIONE e l'anello scouting:
+     va riportato in docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md, che per
+     CLAUDE.md e' l'unico posto dove vive lo stato di modello e scouting.
+     Lo lascio in Â§19 perche' il brief chiedeva qui, ma copiatelo li'.
+
