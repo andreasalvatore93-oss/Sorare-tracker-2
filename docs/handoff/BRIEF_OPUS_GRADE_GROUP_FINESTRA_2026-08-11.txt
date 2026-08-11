@@ -1,0 +1,147 @@
+BRIEF PER OPUS — filone "gruppo grade esteso alla giornata": allargare la
+finestra temporale (non i manager) è una strada legittima per crescere il
+campione, o ha lo stesso tetto della strada "più manager" già chiusa?
+Scritto 11/08/2026 (Roma) dall'orchestratore, stessa sessione del brief
+GK_ATT_AVV di oggi (docs/handoff/BRIEF_OPUS_GK_SECCA_PRODUZIONE_2026-08-11.txt).
+
+============================================================================
+VERDETTO DA BAR (poi sotto il rigore)
+============================================================================
+Nuovo filone di oggi (dopo GK_ATT_AVV): il gruppo con cui si calcola lo
+z-score del grade è oggi (lega,ruolo) dentro il pool di UN manager per
+UNA giornata — a volte 2-3 carte, troppo piccolo per essere affidabile
+(caso reale: Hugo Lloris penalizzato ingiustamente). Testate tre varianti
+sul pool ristretto: nessuna mostra segnale (IC a cavallo dello zero).
+Allargando il RIFERIMENTO (non il pool di selezione, che resta sempre di
+un solo manager) a TUTTI i manager che condividono la stessa fixture, il
+segno diventa positivo e coerente su entrambi i binari (B1 +3.750,
+78% positivo; B2 +2.376, 74% positivo) ma nessun IC esclude ancora lo
+zero — incoraggiante, non provato.
+
+L'utente ha chiesto di allargare il campione. Prima di farlo ho trovato
+una nota bloccante: `archivio_ufficiale/aggregato/INDICE.md` dichiara
+CHIUSA la strada "più manager" (4 round di estrazione, n_discordanti
+55→80→103→143 contro una soglia stimata di ~1.000, "non riaprire senza
+un'idea nuova"). L'utente ha risposto: se il problema è la finestra
+TEMPORALE (non i manager), può allungarla senza limiti — l'unico
+blocco noto è la copertura del grade, trovata più bassa prima di
+aprile. Mi ha chiesto di verificarlo io stesso prima di chiedere a te.
+L'ho fatto (sez. 3): la copertura c'è, più bassa ma non nulla.
+
+============================================================================
+0. COSA LEGGERE PRIMA (in ordine)
+============================================================================
+1. CLAUDE.md — "I BACKTEST SONO IL MODELLO CONTRO SE STESSO" e "le
+   giornate crescono una alla volta per ogni manager: se un test ha
+   bisogno di centinaia di osservazioni e non le ha, dirlo subito".
+2. archivio_ufficiale/README.md — struttura archivio, regola "il pool di
+   selezione resta sempre dentro un solo manager per una sola GW".
+3. archivio_ufficiale/aggregato/INDICE.md — la nota che chiude la strada
+   "più manager" (leggila per intero, è corta).
+4. Commit di oggi: `db8062f780` (implementazione 'pool_largo', numeri) e
+   `d75fd2c8d6` (varianti sul pool ristretto, risultato nullo).
+5. analisi_manager/p12_backtest_formazione_grade.py, funzione
+   `applica_gruppi_grade` (righe ~271-330): le 4 modalità di
+   raggruppamento oggi disponibili, inclusa 'pool_largo'.
+
+============================================================================
+1. LA DOMANDA (una sola)
+============================================================================
+La nota in INDICE.md chiude la strada "più manager" per il confronto
+grezzo G-vs-A (troppo pochi discordanti anche dopo 4 round di
+estrazione). Il filone di oggi è diverso: non serve un altro manager,
+serve la STESSA copertura (29 manager già estratti) ma su una finestra
+temporale più lunga (fixture PRIMA del 7 aprile 2026, mai estratte per
+nessun manager). È una strada diversa con un tetto diverso, o ha lo
+STESSO problema strutturale (poche osservazioni indipendenti) sotto un
+altro nome?
+
+============================================================================
+2. IPOTESI PRIMA DEI NUMERI (dell'orchestratore, non tua)
+============================================================================
+Ipotesi: allungare la finestra AIUTA più che aggiungere manager, perché
+ogni manager in più porta ~1 GW di osservazioni nuove (i round passati
+ne aggiungevano 11-14 alla volta, con rendimento calante), mentre
+allungare la finestra all'indietro per gli STESSI 29 manager potrebbe
+aggiungere ~8-10 fixture intere x 29 manager = centinaia di
+osservazioni in un colpo solo, un salto di ordine di grandezza diverso
+dai round precedenti. Se l'ipotesi è sbagliata (es. la copertura grade
+o dati crolla troppo presto, o la stagione cambia struttura prima di
+aprile rendendo i dati non comparabili), va scritto così, non aggiustata.
+
+============================================================================
+3. VERIFICA FATTA OGGI (numeri di controllo, zero query di rete)
+============================================================================
+a) Copertura indice grade per mese (da `S21.carica_indice_grade()`,
+   51.783 coppie slug/data, 3.429 slug, dato locale già in repo):
+
+     mese      n coppie (slug,data)
+     2025-07   11
+     2025-08   26
+     2025-09   37
+     2025-10   48
+     2025-11   55
+     2025-12   32
+     2026-01   330
+     2026-02   3.662
+     2026-03   8.134
+     2026-04   13.848
+     2026-05   14.655
+     2026-06   3.346
+     2026-07   4.274
+     2026-08   3.325
+
+   Nessun taglio netto: la copertura CRESCE gradualmente da gennaio,
+   febbraio è al 26% di aprile, marzo al 59%. Non è "assente prima di
+   aprile", è più rada. Prima di luglio 2025 il volume è trascurabile
+   (crawl iniziale), ma quella soglia è lontanissima da febbraio-marzo.
+
+b) Perché l'archivio parte dal 7 aprile: verificato che NON è un limite
+   tecnico. `estrai_archivio_manager.py` non ha nessuna data hardcoded
+   (grep vuoto); l'inizio al 7/4 è solo dove sono iniziati i round di
+   estrazione, una scelta pratica passata, non un muro dei dati.
+   Nessun manager (crowss incluso) ha oggi fixture estratte prima del
+   7/4/2026 — servirebbe un'estrazione NUOVA (query reali, non gratis)
+   per riempire febbraio-marzo, cosa che oggi non ho ancora fatto.
+
+c) Non ancora verificato (lo dico esplicitamente, non lo nascondo):
+   se il GAME-LOG CACHE (serve per calcolare l'atteso via score_atteso,
+   non solo il grade) copre altrettanto indietro nel tempo. Il grade è
+   una condizione necessaria ma non sufficiente: senza cache di gioco
+   per quelle date, score_atteso tornerebbe None e la riga verrebbe
+   scartata comunque (stesso meccanismo di 'no_atteso' in
+   prepara_pool_rows_grezze). Da controllare prima di lanciare
+   un'estrazione vera.
+
+============================================================================
+4. COSA NON HO FATTO (fuori scope di questa verifica)
+============================================================================
+- Nessuna estrazione nuova (nessuna query verso Sorare per manager o
+  fixture prima del 7/4/2026).
+- Nessun ricalcolo del binario1/binario2 su dati precedenti al 7/4
+  (non esistono ancora).
+- Non ho verificato la copertura del game-log cache per gennaio-marzo
+  (punto 3c sopra).
+
+============================================================================
+5. COSA CI SERVE DA TE
+============================================================================
+Un verdetto: vale la pena spendere un'estrazione (query reali, tempo)
+per allungare la finestra all'indietro fino a inizio febbraio/gennaio
+2026 per i 29 manager già in archivio, per il filone "gruppo grade
+esteso alla giornata"? O il problema di fondo (poche coppie
+manager-GW davvero discordanti) è lo stesso a prescindere da
+COME si allarga il campione (più manager o più storia), e quindi anche
+questa strada non porterebbe abbastanza osservazioni per decidere?
+Se pensi che valga la pena, quanti mesi indietro avrebbe senso spingersi
+prima che la qualità/comparabilità dei dati diventi un problema (cambio
+stagione, formato competizioni, altro)?
+
+============================================================================
+6. DOVE RIFERIRE
+============================================================================
+Rispondi con mcp__ccd_session_mgmt__send_message alla sessione
+orchestratore (stessa di oggi, "Opus esecutore" è questa chat). Se scrivi
+un file di risposta, aggiungilo in coda a
+docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt (nuova sezione),
+non un file nuovo.
