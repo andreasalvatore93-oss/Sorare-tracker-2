@@ -1220,6 +1220,73 @@ toccata la produzione, non applicato il return anticipato di
 `analisi_manager/dati/grade_carta_sd_produzione_2026-08-12.json`,
 `analisi_manager/dati/grade_essenze_sd_produzione_2026-08-12.json`.
 
+### Revisione critica Opus, 12/08/2026 — il +7.761 NON è un miglioramento dimostrato
+
+**Il difetto principale era il confronto fra run diverse.** Il +4.260 della
+fonte vecchia veniva da un'altra esecuzione: confrontare due IC prodotti da
+run diverse non decide niente (CLAUDE.md, "Cosa deve riprodursi: il delta,
+non il valore assoluto"). Rifatto nello STESSO run, stesso pool, stesso
+bootstrap — `analisi_manager/p50_confronto_fonti_essenze.py` (n=360
+GW-manager, B=5.000, cluster manager-fixture):
+
+    baseline lega_ruolo                          G = +124.021   (replica esatta)
+    archivio 0,75 ricentrata   vs baseline   delta = +5.067  IC95%[-2.748;+13.209]  90,3%
+    produzione 0,462 ricentrata vs baseline  delta = +7.761  IC95%[-716;+16.516]    96,0%  (replica esatta)
+    >>> produzione - archivio (APPAIATO)     delta = +2.694  IC95%[-3.298;+8.799]   81,6%
+
+Quindi: il salto vero è +7.761 contro **+5.067**, non contro +4.260, e la
+differenza fra le due fonti **non esclude lo zero**. Da spiegare a parte:
+perché la stessa configurazione nominale (archivio, 0,75, ricentrata) dia
++5.067 qui e +4.260 nella run dell'11/08 — 800 essenze di scarto a parità di
+etichetta.
+
+**Anche a livello di carta il vantaggio della fonte nuova non è provato.**
+Delta appaiato corr(produzione) − corr(archivio) = **+0,0143
+IC95%[-0,0022;+0,0308], 95,6% positivo** (B=3.000, stessi cluster, calcolato
+sulle 9.440 righe già in `grade_carta_sd_produzione_2026-08-12.json`).
+Controllo di replica superato: corr archivio +0,0999 = il +0,100 di round 2.
+
+**Concentrazione**: dei +7.761 essenze, il **56% viene da 5 GW-manager su
+360** (top: maltazars/24-28 apr +1.239). 228 GW su 360 hanno delta ≠ 0: 128
+positive, 100 negative, mediana 0.
+
+**Due buchi strutturali, indipendenti dal numero:**
+
+1. `costruisci_tabella_sd_atteso()` **non ha soglia di n** (a differenza di
+   `p18.costruisci_scala`, che usa 100/500). Con la tabella di produzione,
+   **213 righe del backtest (2,3%) cadono su celle con n=1 → sd=0 → grade
+   completamente spento**, cioè esattamente il difetto che questo filone
+   esiste per togliere, solo spostato dal gruppo-giornata alla cella della
+   tabella; altre 920 (9,7%) su celle n=2-9. Righe azzerate solo dalla
+   tabella produzione: 235, contro 5 solo dall'archivio. Fix mirato: quando
+   la cella ha n<2, fallback al livello ruolo.
+2. **Soglie alte NO** — provate (100/500 come p18) sul sottoinsieme dove lo
+   z è ricostruibile (6.398 righe): peggiorano, corr 0,1103 → 0,0836, delta
+   appaiato IC95%[-0,0430;-0,0093], 99,9% negativo. La granularità fine
+   della cella porta informazione vera: si tocca solo il caso n<2.
+3. **Il ricentraggio globale non basta**: sottrarre una costante unica
+   azzera la media complessiva ma lascia una spinta sistematica **per
+   ruolo** — GK −0,926 pt, FWD +0,425, DEF +0,243, MID +0,013. Sulla sd
+   della tabella di produzione (GK 2,25 calibrata) quel −0,93 è il **41% di
+   una deviazione standard dell'intera distribuzione GK**: sposta i portieri
+   in blocco verso il basso, quindi cambia composizione delle formazioni e
+   numero di arene giocate — non è più "solo ordinamento". Ricentrare almeno
+   per ruolo, o meglio togliere la causa (media voto del pool 4,029 contro
+   3,037 della tabella grade).
+
+**Punti confermati** (domande a/c dell'orchestratore): il fattore ristimato
+in-sample è lo stesso limite di §17.7, non uno nuovo; ma il calo 0,75 → 0,462
+**non è solo scala** — sd(aggiustamento) passa da 2,423 a 4,510 (×1,861), il
+puro riscalamento darebbe 0,403, misurato 0,462 (+15%), e le due correzioni
+correlano 0,799, non sono lo stesso segnale. La **spinta cieca è identica**
+fra le due fonti (archivio 1,6673×0,75 = +1,2505 pt; produzione 2,7048×0,462
+= +1,2496 pt): l'IC migliore non viene da una spinta più piccola, viene dalla
+forma per cella — e per il 56% da cinque giornate.
+
+**Verdetto**: la fonte resta quella giusta, il guadagno non è dimostrato.
+Prima di qualunque fuori campione: (i) fix celle n<2; (ii) ricentraggio per
+ruolo; (iii) spiegare lo scarto +4.260/+5.067.
+
 ---
 
 ## 8ter. Scouting dopo il grade (07/08/2026) — CONTROLLATO, 2 decisioni aperte
