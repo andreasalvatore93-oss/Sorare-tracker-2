@@ -354,3 +354,97 @@ File prodotti:
     giocatore-partita. Si rigenera da solo lanciando p36 (~2 minuti, nessuna
     rete): p36 lo ricrea se non lo trova. Chi vuole fare altre correlazioni
     parta da li' invece di riscorrere la cache.
+
+===============================================================================
+9. SEGUITO -- LE QUOTE ERANO GIA' IN CACHE. CLEAN SHEET MISURATO.
+   (13/08/2026 sera, dopo il brief BRIEF_OPUS_CORREZIONE_CODICE_ESISTENTE)
+===============================================================================
+Prese per buone le due correzioni dell'orchestratore: A1/A2 erano gia' in
+produzione (ANTI_SYNERGY_PENALTY, CROSS_TEAM_PENALTY_BY_PAIR,
+GK_DEF_PAIR_BONUS in formazione_mls/build_formazione_finale.py) -- le ritiro
+dalla lista delle proposte; e il +10 al difensore e' una regola di gioco
+dichiarata dall'utente, non una correlazione da smontare: tolgo il dubbio
+che avevo lasciato al §1c.
+
+9.1 LE QUOTE CI SONO GIA', NESSUNA ESTRAZIONE DA CHIEDERE.
+    dati_globali/odds_1x2_index.json -- 7.184 partite, dal 19/11/2025 al
+    07/08/2026, lette in produzione da backtest_arene_previsioni.
+    _p_own_opp_odds (riga 527). Coprono 731 dei 899 portieri del campione,
+    cioe' l'81,3%. Costo dell'intera misura sotto: zero query.
+
+9.2 IL CLEAN SHEET SI PREVEDE MEGLIO DEL NIENTE, MA NON DI MOLTO.
+    AUC = probabilita' che un portiere che FARA' clean sheet abbia il
+    segnale piu' alto di uno che non lo fara'. 0,50 = tirare a caso.
+    n=731, quota di clean sheet 29,4%, bootstrap sul cluster squadra-giornata.
+
+      segnale                              AUC     IC95%
+      atteso di produzione (oggi)         0,538   [0,490; 0,583]   <- tocca 0,50
+      p vittoria propria                  0,577   [0,531; 0,623]
+      p vittoria avversario (invertita)   0,585   [0,541; 0,631]
+      p_own + p_draw ("non perdere")      0,585   [0,540; 0,631]
+      p_own - p_opp (favorito)            0,581   [0,535; 0,626]
+      giocare in casa                     0,548   [0,512; 0,585]
+
+    Controllo di sanita' -- clean sheet per quinto di "quanto sei favorito":
+      quinto 1 (favorito -0,361): CS 26,0%   GK medio 47,2
+      quinto 2 (favorito -0,111): CS 21,9%   GK medio 44,6
+      quinto 3 (favorito +0,052): CS 27,4%   GK medio 48,3
+      quinto 4 (favorito +0,217): CS 32,2%   GK medio 49,1
+      quinto 5 (favorito +0,481): CS 39,5%   GK medio 51,1
+    Il meccanismo si vede (dal 26% al 39,5%), ma non e' una scala ripida e il
+    secondo quinto rompe la monotonia.
+
+9.3 IL CONFRONTO CHE DECIDE (delta appaiato, stesse righe, stesso run):
+      quote meno atteso, AUC sul clean sheet: +0,047
+        IC95% [-0,003; +0,097]; positivo nel 96,7% dei ricampionamenti.
+      quote meno atteso, lift di selezione GK: +1,21 punti
+        IC95% [-4,30; +6,38]; positivo nel 68,4% dei ricampionamenti.
+      combinato (media dei ranghi atteso+quote): AUC 0,572, lift +5,09.
+
+    VERDETTO ONESTO: la direzione e' quella giusta e il meccanismo e' reale,
+    ma su questo campione IL GUADAGNO DI SELEZIONE NON E' DIMOSTRATO. Il
+    delta sull'AUC sfiora la significativita' (96,7%, appena sotto il 95% di
+    IC), il delta sul lift e' rumore puro. Per la regola del repo (delta
+    almeno 3 volte il tremolio) non si decide niente.
+    Quanto campione servirebbe per decidere sul LIFT a questo effetto: circa
+    45 volte quello di oggi (~33.000 portiere-giornata contro 731). Cioe':
+    quella strada di validazione e' chiusa, non e' questione di aspettare.
+
+9.4 MA IL TETTO E' ALTISSIMO, ED E' QUESTA LA NOTIZIA.
+    Se qualcuno sapesse in anticipo chi fara' clean sheet, il quinto migliore
+    dei portieri farebbe 76,8 punti contro 24,7 del peggiore: 52,2 punti di
+    lift. Oggi le quote ne catturano 4,8 e l'atteso di produzione 3,6.
+    Stiamo raccogliendo il 9% di quello che c'e' sul tavolo.
+    Il freno non e' l'idea (il clean sheet E' il portiere: 72,7 punti con,
+    37,8 senza), e' il predittore: le quote 1X2 sono un proxy grezzo della
+    difesa. Chi non subisce gol non e' chi vince, e' chi difende bene contro
+    un attacco debole -- due squadre possono avere la stessa quota di
+    vittoria e probabilita' di clean sheet molto diverse.
+
+9.5 COSA PROPONGO (decide l'utente, io non tocco niente)
+    a) NON mettere in produzione le quote come predittore di clean sheet
+       cosi' come sono: +1,21 punti di lift dentro un intervallo che va da
+       -4,3 a +6,4 non giustifica di toccare la catena
+       (score_atteso GK -> soglie arena -> scouting).
+    b) La misura giusta da fare dopo, e non e' su questo campione: costruire
+       una probabilita' di clean sheet vera (gol subiti attesi della squadra
+       contro la forza d'attacco dell'avversario, non "chi vince"), poi
+       rimisurare l'AUC. Il salto da 0,585 a 0,70 varrebbe da solo un terzo
+       del tetto di 52 punti. Gli ingredienti (gol subiti storici per
+       squadra, gol fatti dell'avversario) NON sono nel dump attuale ma sono
+       ricavabili dalla cache game-log senza rete: e' la prossima misura a
+       costo zero, se l'utente vuole proseguire.
+    c) Nota di metodo per chiunque continui: validare un predittore di clean
+       sheet sul LIFT dei portieri e' la strada sbagliata (troppo rumore,
+       servirebbero 33.000 osservazioni). Si valida sull'AUC del clean sheet,
+       che e' l'evento che stiamo prevedendo, e si guarda il lift solo alla
+       fine come conferma.
+
+    RETTIFICA a quello che ho scritto io stamattina: il Spearman del portiere
+    non e' -0,004 su QUESTO sottocampione, e' +0,060 (731 righe deduplicate
+    persona-giornata e con quote disponibili, contro 1.932 carte del pool
+    completo). Resta piccolissimo e resta battuto dalle quote (+0,096), ma il
+    numero esatto dipende dal campione e va citato con la sua n.
+
+File nuovo: analisi_manager/p38_clean_sheet_da_quote.py
+Dati: analisi_manager/dati/clean_sheet_quote_2026-08-13.json
