@@ -1,0 +1,254 @@
+RISPOSTA OPUS ESECUTORE -- "ricontrollo i due verdetti? dove cerchiamo segnale nuovo?"
+Sessione Opus esecutore, 13/08/2026 (ora di Roma). Nessuna modifica alla
+produzione, nessun default cambiato. Tutto misurato da me in questa sessione.
+
+===============================================================================
+IL VERDETTO IN DIECI RIGHE, DA BAR
+===============================================================================
+1. I due verdetti dell'orchestratore stanno in piedi: non li ricontrollo.
+2. Ma il primo (CALIB_PER_RUOLO) era morto in partenza per un motivo che non
+   c'entra col fuori campione: la calibrazione e' "a + b per il valore", cioe'
+   sposta e stira tutti i numeri allo stesso modo. Non puo' MAI cambiare
+   l'ordine dei giocatori dentro un ruolo. Quindi non puo' migliorare la
+   scelta delle carte, nemmeno in teoria. Tocca solo il livello assoluto
+   (soglie arena e scouting). Da non riaprire mai piu' per la selezione.
+3. Il buco vero e' il PORTIERE. Su 1.932 carte e 22 giornate il nostro
+   punteggio atteso dei portieri non ordina NIENTE: la correlazione d'ordine
+   e' -0,004, cioe' zero spaccato. E le previsioni dei portieri sono tutte
+   uguali fra loro (si spalmano su 1 punto scarso, mentre la realta' si
+   spalma su 19). Tradotto: un quinto della formazione lo stiamo tirando a
+   sorte. "Portiere chiuso perche' nessuna variante batte la produzione" e'
+   vero e insieme allarmante: nessuna variante ha battuto lo zero.
+4. Sul portiere il grade non aiuta, PEGGIORA: piu' peso gli do, piu' l'ordine
+   si sfascia (correlazione da -0,004 a -0,019 a -0,047). Vale in entrambi i
+   periodi. Spegnere il grade per il solo GK e' un guadagno piccolo ma gratis.
+5. Il posto dove forse abbiamo lasciato qualcosa: il GRADE DA SOLO sceglie
+   meglio del nostro atteso+grade su MID e FWD, in tutti e due i periodi. Ma
+   il vantaggio (2-3 punti) e' grande quanto il rumore: NON decide. Serve piu'
+   campione, non un'altra griglia.
+6. Prima di credere a qualunque cosa sul grade: il test di leakage diretto
+   NON E' MAI STATO COMPLETATO (le partite non erano finite). Oggi si puo'
+   fare a costo quasi zero. Se il grade e' riscritto dopo la partita, meta'
+   dei nostri risultati buoni sono finti.
+
+===============================================================================
+0. DA DOVE VENGONO QUESTI NUMERI
+===============================================================================
+Dataset: archivio_ufficiale/aggregato/binario2_pool_rows.json
+  10.035 righe, 29 manager, 22 fixture (3 apr 2026 -> 7 ago 2026).
+  Campi per riga: manager, fixture, slug, codice(ruolo), lega,
+  _cal (atteso calibrato), _combinato (atteso + sd_gruppo * z_grade),
+  _grade (1-6), _zgrade, reale.
+Codice di produzione letto:
+  generatore_formazioni/build_formazione_globale.py:403-417  (CALIB_PER_RUOLO, calibra)
+  generatore_formazioni/build_formazione_globale.py:505-549  (_apply_grade_group)
+  generatore_formazioni/build_formazione_globale.py:1016-1024, 1118  (starter_odds)
+  generatore_formazioni/build_formazione_globale.py:1789  (filtro starter_odds >= 0.80)
+Script usati (scratchpad, non committati -- 40 righe, ricostruibili in 5 min):
+  griglia peso grade su pooled e su top-1 dentro gruppo. Nessuna query di rete.
+
+CONTROLLO POOL vs SLOT (obbligatorio, CLAUDE.md): la metrica top-1 usa solo i
+gruppi (manager, fixture, ruolo) con almeno 4 carte. Media carte per gruppo:
+GK 10,7 / DEF 13,5 / MID 13,5 / FWD 12,3 contro 1 carta da scegliere. C'e'
+selezione vera da misurare.
+
+===============================================================================
+1. PERCHE' NON RICONTROLLO IL REFIT CALIB_PER_RUOLO (motivo strutturale)
+===============================================================================
+calibra() e' `a + b*valore` con b>0 (build_formazione_globale.py:411-417).
+E' una funzione monotona crescente: applicata a tutte le carte dello stesso
+ruolo NON cambia di una posizione la classifica interna, e non cambia di un
+millesimo la correlazione (Pearson e Spearman sono invarianti per trasformazioni
+affini). Quindi qualunque refit di (a,b):
+  - non puo' migliorare la scelta della carta dentro un ruolo -- mai;
+  - puo' cambiare solo (i) il confronto FRA ruoli (capitano, e quale slot
+    conviene sacrificare) e (ii) il livello assoluto, che e' cio' che le
+    soglie arena e lo scouting leggono.
+Conclusione: il verdetto negativo dell'orchestratore e' corretto, ma la
+misura giusta per quel parametro non era il MAE fuori campione -- era
+l'effetto sulle soglie arena. Se un giorno si riapre, si riapre da li'.
+Il fatto che il bias non sia stabile fra periodi (DEF -2,40 vs -1,79;
+MID -1,92 vs -4,44) rende comunque sconsigliato il refit.
+
+Sul DEF w=1: non l'ho ripetuto (test A/A gia' fatto, scarto 0,000000 contro
+produzione, w=1 massimo di correlazione e minimo di MAE in train e test). Non
+ho motivi per sospettarlo.
+
+===============================================================================
+2. IL BUCO: IL PORTIERE NON ORDINA NIENTE
+===============================================================================
+Campione intero (10.035 righe). sd = quanto si spalmano i numeri.
+
+  ruolo    n     sd(atteso)  sd(reale)  Spearman   lift quintile alto - basso
+  GK     1.932      0,97       18,71     -0,004          +0,06
+  DEF    2.807      3,24       18,97     +0,129          +6,70
+  MID    2.824      4,00       18,21     +0,193          +9,82
+  FWD    2.472      2,93       18,29     +0,187          +9,55
+
+Lettura da bar: prendi i 386 portieri con l'atteso piu' alto e i 386 con
+l'atteso piu' basso. Segnano in media LO STESSO punteggio (differenza 0,06
+punti su una scala dove la gente oscilla di 19). Il modello portieri, su 22
+giornate, non distingue un portiere da un altro. Su MID/FWD invece il quinto
+migliore fa quasi 10 punti in piu' del quinto peggiore: li' il segnale c'e'.
+
+Nota su tutti i ruoli: le nostre previsioni si spalmano su 3-4 punti mentre la
+realta' si spalma su 19. Non e' un errore di per se' (con poco segnale la
+previsione ottima e' schiacciata verso la media), ma spiega perche' migliorare
+il MAE non porta niente: il MAE e' quasi tutto rumore irriducibile.
+
+ATTENZIONE (non e' un buco): il "giochera' o no" non manca dal modello, e'
+gestito a monte da un filtro duro starter_odds >= 0,80 (build_formazione_
+globale.py:1789 e i discovery per lega). Coerente col dataset, dove le righe
+con punteggio reale sotto 5 sono lo 0,0-0,2%: sono tutti giocatori che hanno
+giocato. Quindi NON e' li' che abbiamo perso segnale.
+
+===============================================================================
+3. IL GRADE SUL PORTIERE FA DANNO
+===============================================================================
+In produzione (build_formazione_globale.py:541-549) si applica sempre e a
+tutti i ruoli: atteso_combinato = atteso + sd_gruppo * z_grade. Peso 1,0
+cablato, non c'e' un knob. Ho ricostruito qualunque peso w dal dataset
+(pred = _cal + w*(_combinato - _cal)) e misurato l'ordinamento sul pooled:
+
+  GK    w=0     w=0,5   w=1     w=1,5   w=2     w=3     w=5
+  train +0,003  -0,007  -0,012  -0,016  -0,020  -0,030  -0,036   (n=1.422)
+  test  -0,003  -0,022  -0,042  -0,052  -0,060  -0,067  -0,074   (n=510)
+  lift(tutto) +0,06  -0,09  -1,20  -0,71  -1,13  -1,74  -3,13
+
+Monotono in peggio, stesso segno in train (apr-mag) e test (giu-ago) e su
+tutto il campione. Su DEF/MID/FWD invece la curva e' piatta col massimo a
+w=1 (DEF +0,129 -> +0,140; MID +0,193 -> +0,206; FWD +0,187 -> +0,195):
+CONFERMA INDIPENDENTE del verdetto gia' agli atti "grade gia' pesato giusto,
+beta 1,01". Su quei tre ruoli non c'e' niente da guadagnare cambiando peso.
+
+Azione possibile (piccola, gratis, dietro flag): peso grade = 0 per il solo
+GK. Effetto atteso ~1 punto di lift per formazione, non di piu'.
+
+===============================================================================
+4. DOVE POTREMMO AVER LASCIATO SEGNALE: ATTESO vs GRADE SULLA METRICA VERA
+===============================================================================
+La metrica delle sezioni sopra (quintili sul pooled) NON e' la decisione vera.
+La decisione vera e': dentro il mazzo di UN manager, in UNA giornata, per UN
+ruolo, scegli 1 carta fra ~13. Ho misurato esattamente quella: quanto batte la
+media del suo gruppo la carta scelta come top-1 da ciascun criterio.
+
+  TRAIN apr-mag        gruppi  w=0     w=1     w=2     w=3    solo_grade (n)
+  GK                     106   +0,32   +0,30   -1,29   -1,95   -0,98 (102)
+  DEF                    131   +4,44   +4,13   +4,63   +3,72   +4,76 (125)
+  MID                    128   +2,86   +4,44   +3,96   +3,83   +6,25 (121)
+  FWD                    124   +4,72   +4,23   +3,37   +2,37   +6,81 (113)
+
+  TEST giu-ago         gruppi  w=0     w=1     w=2     w=3    solo_grade (n)
+  GK                      49   +0,85   -0,05   +1,88   +2,39   -0,19 (49)
+  DEF                     62   +5,98   +6,21   +6,40   +4,71   +4,61 (62)
+  MID                     64   +5,58   +3,42   +3,72   +3,57   +6,89 (63)
+  FWD                     58   +5,16   +7,42   +7,01   +7,51   +7,06 (58)
+
+  TUTTO                gruppi  w=0     w=1     w=2     w=3    solo_grade (n)
+  GK                     155   +0,49   +0,19   -0,28   -0,58   -0,72 (151)
+  DEF                    193   +4,94   +4,80   +5,20   +4,04   +4,71 (187)
+  MID                    192   +3,76   +4,10   +3,88   +3,75   +6,47 (184)
+  FWD                    182   +4,86   +5,25   +4,53   +4,01   +6,90 (171)
+
+QUANTO E' RUMORE (indispensabile per leggerle): il punteggio reale ha sd ~19,
+quindi l'errore tipico su una media di 190 gruppi vale ~1,4 punti, su 60
+gruppi ~2,5 punti. Sono errori standard grezzi, NON bootstrap sul manager: con
+il cluster giusto (stesso manager, righe non indipendenti) l'incertezza puo'
+solo essere PIU' GRANDE, mai piu' piccola.
+
+Che cosa se ne ricava, onestamente:
+- MID e FWD: il grade DA SOLO batte la produzione (w=1) in entrambi i periodi.
+  MID +6,25 vs +4,44 (train) e +6,89 vs +3,42 (test); FWD +6,81 vs +4,23 e
+  +7,06 vs +7,42 (qui NO, il test da' ragione alla produzione).
+  Segno stabile su MID, non su FWD. Il divario e' 1-3 punti contro un rumore
+  di 1,4-2,5: per la regola del repo (delta almeno 3 volte il tremolio) NON
+  DECIDE. E' un indizio, non un verdetto.
+- DEF: nessuna differenza fuori dal rumore. Niente da fare.
+- GK: tutti i criteri stanno a zero. Non c'e' niente da scegliere perche' non
+  c'e' niente che ordini. Vedi sezione 2.
+- Il criterio combinato di produzione non arriva mai sopra il migliore dei
+  due componenti su MID: e' il sintomo che l'atteso MID sta diluendo il grade
+  invece di aggiungergli qualcosa.
+
+DA NON FARE: girare un'altra griglia di pesi su questi stessi 22 GW. La
+griglia e' gia' piatta, il campione e' gia' stato usato per guardarci dentro.
+Serve campione NUOVO (giornate successive al 7 ago), non un'altra passata.
+
+===============================================================================
+5. LA COSA PIU' ECONOMICA DA FARE SUBITO (e la piu' pericolosa se saltata)
+===============================================================================
+IL TEST DI LEAKAGE DIRETTO SUL GRADE NON E' MAI STATO COMPLETATO.
+docs/handoff/HANDOFF_LETTERA_GRADE_2026-08-06.txt righe 645-670: lanciato il
+06/08 alle ~19:40, risultato 0/32 e 0/174 confrontabili perche' le partite
+della GW football-4-7-aug-2026 non erano ancora chiuse. Rimandato e mai
+ripreso. Il test indiretto S4 e' rassicurante ma il documento stesso lo
+chiama "un test dell'odore, non la prova".
+
+Perche' e' urgente: il grade storico usato in TUTTI questi backtest e'
+raccolto DOPO la partita, dalla rotta anyPlayer(slug).playerGameScores(last:15)
+.projection.grade (analisi_manager/completa_grade_mancante.py, docstring
+righe 1-15). Se Sorare riscrive quel campo dopo il risultato, allora il grade
+"batte l'atteso" perche' contiene il risultato: e la sezione 4 di questo file,
+il criterio combinato in produzione e mezzo filone lettera/grade vanno cestinati.
+
+Come si chiude oggi, a costo quasi zero (nessuna nuova estrazione):
+  - abbiamo gia' in repo gli snapshot PRE-partita:
+    analisi_manager/dati/grade_snapshot_football-4-7-aug-2026_*.json (4 file)
+    analisi_manager/dati/grade_snapshot_football-7-11-aug-2026_*.json (2 file)
+  - quelle partite sono finite da giorni;
+  - analisi_manager/p12_verifica_leakage_grade.py e' gia' scritto e legge la
+    rotta post-partita: serve solo SORARE_COOKIE/SORARE_CSRF e un run.
+  - Esito: grade_pre == grade_post su tutte le righe -> il grade e' genuino e
+    tutto quello che ci abbiamo costruito sopra regge. Diversi -> riscritto,
+    e vale solo il grade catturato in avanti (grade_snapshot.py).
+Costo: una manciata di query su ~30-170 giocatori. E' il rapporto
+valore/costo piu' alto che ho trovato in tutta questa sessione.
+
+===============================================================================
+6. RISPOSTA SECCA ALLE DUE DOMANDE
+===============================================================================
+"Vuoi ricontrollare uno dei due?" -> No. Il primo e' corretto ma per il motivo
+sbagliato (sezione 1); il secondo non ha crepe visibili.
+
+"Dove cercheresti segnale nuovo / dove ci siamo persi del segnale?"
+In ordine di rapporto valore/costo:
+  A. Chiudere il test di leakage sul grade (sezione 5). Prima di tutto il
+     resto: se salta, cambia il giudizio su meta' del lavoro fatto.
+  B. Il portiere, ma cambiando domanda. Non "quale variante batte la
+     produzione" (la produzione e' zero: e' una gara fra fermi), bensi'
+     "esiste UN QUALUNQUE ordinatore dei portieri con Spearman > 0 su
+     n~1.900?". Oggi la risposta e' no per l'atteso e no per il grade: sono
+     gli unici due criteri che il dataset permette di provare.
+     PRIMO PASSO OBBLIGATO, ed e' anche il vero collo di bottiglia di tutto
+     il resto: il dump del pool (binario2_pool_rows.json) contiene solo 4
+     numeri per riga (atteso, combinato, grade, zgrade). Tutto cio' che la
+     produzione calcola comunque -- starter_odds, L10, casa/trasferta, odds
+     di vittoria della squadra, clean-sheet atteso -- NON e' nel dump, quindi
+     nessuna ipotesi nuova e' testabile senza rifarlo. Riesportare quelle
+     colonne sulle stesse 22 GW non costa query di rete (i dati stanno gia'
+     in player_card_counts.json e nella cache game-log) ed e' cio' che
+     trasforma "non sappiamo dove cercare" in "possiamo cercare".
+     Su starter_odds una cautela: la tabella S4 dell'handoff lettera/grade
+     riporta corr 0,833 con lo score sui portieri (777 righe, 60 portieri),
+     ma non ho verificato se quel campione includa i non-giocanti. Se li
+     include, quello 0,833 misura soprattutto "ha giocato o no" e dice poco
+     sul pool di produzione, che e' gia' filtrato a starter_odds >= 0,80.
+     Da riverificare sul campione filtrato prima di dargli peso.
+  C. MID: capire perche' l'atteso diluisce il grade invece di sommarcisi
+     (sezione 4). Ma serve campione nuovo, non un'altra griglia sui 22 GW.
+  D. Il capitano e le soglie arena come consumatori del livello assoluto:
+     e' li' che CALIB_PER_RUOLO conta davvero, ed e' l'unico posto dove non
+     e' stato misurato.
+
+===============================================================================
+7. DIFETTI TROVATI PER STRADA (annotati, non sistemati)
+===============================================================================
+- Il peso del grade e' cablato a 1,0 in _apply_grade_group: non esiste una
+  variabile d'ambiente GRADE_WEIGHT. Chi vorra' misurare pesi diversi in
+  produzione dovra' introdurla (spenta di default = 1,0, comportamento
+  identico a oggi).
+- GRADE_SCALE ha default 'gruppo' (riga 460): la scala storica esiste ma non
+  e' quella in uso. Nel dataset _zgrade ordina PEGGIO di _grade grezzo
+  (MID +0,119 contro +0,255): la normalizzazione per gruppo sta togliendo
+  segnale invece di aggiungerne. Non l'ho approfondito.
+- Nessun file di questa sessione e' stato committato tranne questo report.
