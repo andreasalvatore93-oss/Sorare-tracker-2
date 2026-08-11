@@ -1,0 +1,143 @@
+BRIEF PER SONNET — estrazione 15 nuovi manager, round 5, stessa finestra di crowss (11/08/2026)
+
+Sei in una chat pulita, non sai nulla di questa conversazione. Leggi
+questo file per intero prima di iniziare.
+
+## 0. Cosa leggere prima
+
+1. `CLAUDE.md` (radice) — sezione in testa "I BACKTEST SONO IL MODELLO
+   CONTRO SE STESSO", punto 2bis: altri manager POSSONO entrare come base
+   di misura, ma il confronto resta sempre G vs A, MAI "battiamo il
+   manager X". Tu qui NON fai nessun confronto: estrai solo dati grezzi.
+2. `archivio_ufficiale/README.md` — lo schema che questa estrazione deve
+   rispettare (già applicato dallo script, leggilo per sapere cosa produci).
+3. `estrai_archivio_manager.py` (radice) — SCRIPT GIÀ SCRITTO, TESTATO E
+   VERIFICATO: usa batching via alias GraphQL (formazioni lotti da 3,
+   premi lotti da 10 — limite di complessità reale di Sorare, non
+   toccarlo). NON riscriverlo, NON modificarlo. Se sembra rotto, fermati e
+   segnalalo — non aggiustarlo tu.
+
+## 1. Il compito, uno solo
+
+Estrarre le arene Limited reali di 15 manager nuovi, sulla STESSA finestra
+di fixture già usata per crowss e per i quattro giri precedenti (25
+manager utili finora). È MECCANICO: nessuna analisi, nessuna decisione —
+solo eseguire.
+
+Contesto: filone G-vs-A, serve arrivare a un campione di decisioni
+discordanti G-vs-A più grande (Opus sta rivedendo la stima esatta, era
+~213, siamo a 103). Ogni manager con abbastanza arene aiuta.
+
+## 2. I 15 manager (già ripuliti da duplicati e da slug già noti — vedi
+   nota in fondo)
+
+```
+m_platini
+samyhipiyo
+malf99
+so-finito
+granata94
+frejo
+bobone-9aa6189d-1c01-4ee4-a011-a1f4d0ec8f33
+morant
+elbo1707
+kloppynwa84
+m-i-r
+pasalacqua-1057d5e1-b7af-4183-83ee-6fe262445ee3
+paulo-hora
+trashcan-fire-fc
+didave_11
+```
+
+## 3. Credenziali
+
+`SORARE_COOKIE` te lo passa l'utente in questa chat.  Senza,
+`partecipazioni()` non funziona: fermati e chiedilo se non arriva.
+
+## 4. Le fixture, ESATTE — stesse 22 usate per crowss e per i giri precedenti
+
+```
+football-3-7-apr-2026
+football-10-14-apr-2026
+football-17-17-apr-2026
+football-17-21-apr-2026
+football-21-24-apr-2026
+football-24-28-apr-2026
+football-29-apr-1-may-2026
+football-1-5-may-2026
+football-13-15-may-2026
+football-15-19-may-2026
+football-23-26-may-2026
+football-26-29-may-2026
+football-2-5-jun-2026
+football-5-11-jun-2026
+football-11-18-jun-2026
+football-18-24-jun-2026
+football-24-28-jun-2026
+football-1-4-jul-2026
+football-5-8-jul-2026
+football-21-24-jul-2026
+football-24-28-jul-2026
+football-28-31-jul-2026
+football-31-jul-4-aug-2026
+```
+
+Non sappiamo se questi 15 manager erano attivi in ognuna di queste GW: è
+NORMALE se molte fixture tornano vuote, se un manager intero torna a
+zero arene, o se uno slug risulta NOT_FOUND — non è un errore, riportalo
+e basta.
+
+## 5. Come lanciarlo — A PICCOLI LOTTI, **COMMIT+PUSH AD OGNI MANAGER COMPLETATO**
+
+Sintassi (nota l'argomento `--manager`):
+```
+SORARE_COOKIE=... python estrai_archivio_manager.py --manager m_platini football-3-7-apr-2026 football-10-14-apr-2026 football-17-17-apr-2026 football-17-21-apr-2026
+```
+
+Procedi così:
+1. Un manager alla volta, 4-5 fixture per lancio.
+2. Aspetta la riga finale `scritto <path>...json` per ogni fixture del
+   lotto prima di lanciare il prossimo.
+3. Se un lancio resta fermo più di ~2 minuti senza stampare nulla di
+   nuovo, interrompilo e rilancia SOLO quel pezzo. Se fallisce una seconda
+   volta, segnala l'errore esatto e passa oltre — non insistere.
+4. **DIFFERENZA IMPORTANTE rispetto ai giri precedenti: appena un manager
+   è completo (tutte le 22 fixture tentate), fai SUBITO `git add
+   archivio_ufficiale/manager_<slug>/` + commit + `git push` PRIMA di
+   passare al manager successivo.** Non aspettare la fine di tutti e 15.
+   Serve perché l'orchestratore lavora in parallelo: appena vede un push
+   nuovo parte con il completamento del grade su quel manager, mentre tu
+   continui con gli altri. Messaggio di commit tipo: "archivio_ufficiale:
+   estrazione round5 manager_m_platini".
+5. **ALLA FINE DI TUTTO, prima di chiudere la sessione**: controlla che
+   non sia rimasto nessun processo Python tuo ancora in esecuzione e
+   terminalo. Processi rimasti vivi in background hanno già causato danni
+   reali in sessioni precedenti (riscrivevano file puliti con dati
+   vecchi per ore).
+
+## 6. Cosa NON fare
+
+- Non modificare `estrai_archivio_manager.py`, `graphql_batch.py` né
+  nessun altro file fuori da `archivio_ufficiale/manager_<slug>/`.
+- Non lanciare run GitHub.
+- Non estrarre fixture o manager diversi da quelli elencati.
+- Non "aggiustare" a mano un file se sembra strano: segnalalo, non
+  correggerlo tu.
+- Non completare il grade: lo fa l'orchestratore in parallelo.
+- Non scartare tu manager con poche arene: lo valuta l'orchestratore.
+- Non accorpare i commit di più manager insieme: un commit (e un push)
+  per manager completato, è il punto centrale di questo brief.
+
+## 7. Cosa consegnare
+
+Alla fine, un elenco secco per manager: quante fixture su 22 hanno
+prodotto almeno un'arena, quante arene totali, eventuali errori/NOT_FOUND.
+Più conferma di aver committato e pushato ogni manager singolarmente
+(non serve aspettare che l'utente lo chieda).
+
+## Nota sulla pulizia degli slug
+
+La lista originale conteneva duplicati (samyhipiyo, malf99 comparivano
+due volte) e 3 slug già noti da giri precedenti, rimossi qui: `eugeneg`
+(già estratto e scartato, 0 arene), `peppe_g` (già estratto e utile, 25
+arene), `stevie_1dah` (già tentato, NOT_FOUND). Non ri-estrarli.
