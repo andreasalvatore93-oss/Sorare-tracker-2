@@ -1,0 +1,101 @@
+BRIEF PER OPUS — esito test carta con scala storica + default DNP invertito, 11/08/2026 notte
+
+Sei in una chat pulita, non hai memoria di questa conversazione. Leggi
+questo file per intero. Non sei un esecutore: giudizio, non query.
+
+## 0. Cosa leggere prima
+
+1. `docs/handoff/RISPOSTA_OPUS_ESITO_TESTCARTA_DNP_2026-08-11.txt` — la
+   tua risposta di poco fa: il grade porta informazione vera (placebo
+   p=0,005), ma beta=0,33 e' schiacciato da un metro rotto (gruppo locale
+   mediana 1 carta, ICC=0,507), il tuo consiglio era rifare il test con
+   `GRADE_SCALE=storica` prima di toccare qualunque peso.
+2. `analisi_manager/p26_test_carta_scala_storica.py` — fatto stanotte
+   stessa.
+
+## 1. Fatto: test carta con GRADE_SCALE=storica
+
+Ho riletto la scala storica di produzione
+(`generatore_formazioni/dati/grade_scala_storica.json`, 70 lega/ruolo +
+fallback ruolo/globale, 20.955 osservazioni) e l'ho applicata alle stesse
+10.093 righe carta, tenendo la dispersione degli attesi (sd_atteso) dal
+gruppo locale come fa la produzione (cambia solo la scala del grade, non
+la conversione in punti — stessa logica di `_apply_grade_group` righe
+505-550 di build_formazione_globale.py).
+
+  copertura scala: 8.050 righe lega+ruolo, 1.208 solo ruolo (fallback)
+  righe con aggiustamento esattamente zero: 4.319 (42,8%, era 54,2% con
+    la scala di gruppo -- il metro e' migliorato ma non perfetto, restano
+    righe senza compagni di gruppo nella STESSA lega/ruolo/giornata/manager
+    per il calcolo di sd_atteso)
+
+  n = 10.093   a = +1,702   b = +0,549   (era +0,330 con la scala rotta)
+  SE classico:                     0,101   t = +5,43
+  SE cluster su slug (2.066 gr.):  0,151   t = +3,64
+  SE cluster su fixture (22 gr.):  0,181   t = +3,04   <- il piu' prudente
+
+PLACEBO (200 rimescolamenti dei grade dentro ogni gruppo manager-fixture-
+lega-ruolo, stessa logica del tuo test):
+  beta vero = +0,549
+  beta placebo: media +0,273 (NON zero, vedi nota sotto), sd 0,070,
+    IC90 [+0,158, +0,398]
+  permutazioni che arrivano a +0,549: 0/200 -> p nominale 0,000
+  z del beta vero RISPETTO al centro della distribuzione placebo (0,273):
+    (0,549-0,273)/0,070 = 3,93
+
+NOTA ONESTA che ti giro perche' non voglio nasconderla: il placebo QUI
+non e' centrato a zero come nel tuo test (media +0,002 la' con la scala
+di gruppo). Sospetto — non verificato — che sia un artefatto meccanico:
+l'aggiustamento e' sd_atteso_gruppo * z_grade, e sd_atteso_gruppo resta
+FISSO (non rimescolato) mentre solo z_grade viene permutato dentro il
+gruppo. Se sd_atteso_gruppo correla di per se' con (reale - atteso_A)
+anche senza grade (es. gruppi piu' dispersi = carte piu' incerte = piu'
+possibilita' di sovraperformare), il rimescolamento del grade da solo non
+azzera quella correlazione, e il placebo si sposta da zero. Non ho isolato
+questo meccanismo, te lo segnalo come ipotesi. Il numero che uso per
+decidere resta lo z rispetto al placebo stesso (3,93), non il confronto
+naive con zero, ma vorrei un secondo parere sul perche' il placebo si
+sposta.
+
+## 2. Fatto: default di ESCLUDI_DNP invertito, come raccomandato
+
+`p23_binario1_mga.py`: rinominato `INCLUDI_DNP` in `ESCLUDI_DNP`, default
+ORA false (= comportamento nuovo, senza filtro). Il vecchio comportamento
+(con filtro) resta disponibile con `ESCLUDI_DNP=1`, salvato per confronto
+in `archivio_ufficiale/aggregato/binario1_con_filtro_dnp_storico_out.json`.
+`binario1_out.json` (il file di default, quello che leggono tutti gli
+altri script) ora e' la versione SENZA filtro: 1.099 formazioni, M+11.500,
+A+13.550, G+17.050, 143 discordanti, delta+3.500, trim simmetrico +2.900.
+Non ho trovato altri script/doc in repo che leggano `binario1_out.json`
+assumendo il vecchio filtro (solo p23 stesso lo scrive e lo rilegge);
+`archivio_ufficiale/aggregato/INDICE.md` e
+`docs/handoff/HANDOFF_ORCHESTRATORE_BINARIO_GVSA_2026-08-10.txt` citano i
+vecchi numeri come storia, non li ho ancora aggiornati — lo faccio dopo il
+tuo giudizio finale, per non riscriverli due volte.
+
+## 3. Le mie domande
+
+1. **Con b=0,549 (scala storica) e t=3,04 (il clustering piu' prudente),
+   sei d'accordo che ora si esce dalla zona grigia?** Il tuo intervallo
+   corretto per attenuazione sulla scala VECCHIA era [0,11 - 1,19] (conteneva
+   1,0). Con la scala storica il beta grezzo e' gia' piu' alto (0,549 vs
+   0,330): ha senso rifare anche qui la correzione per attenuazione (ICC),
+   o con un metro migliore l'attenuazione residua e' trascurabile?
+2. **La nota sul placebo non centrato a zero (sezione 1)**: e' il
+   meccanismo che sospetto (sd_atteso fisso sotto permutazione) o c'e'
+   dell'altro? Cambia la lettura del risultato?
+3. **Si puo' gia' proporre un `GRADE_WEIGHT` dietro flag spento**, oppure
+   c'e' ancora un passo di misura prima (es. rifare il test su un
+   sott'insieme piu' pulito, o pesare le righe per l'affidabilita' del
+   gruppo)?
+4. **Prossimo passo, in ordine**, alla luce di questo risultato piu'
+   forte del precedente.
+
+## 4. Cosa NON ho fatto
+
+Non ho toccato produzione, non ho scritto `GRADE_WEIGHT` da nessuna
+parte, non ho lanciato query, non ho estratto altri manager.
+
+## 5. Dove scrivere la risposta
+
+`docs/handoff/RISPOSTA_OPUS_SCALA_STORICA_2026-08-11.txt`.
