@@ -1,0 +1,203 @@
+HANDOFF PER IL NUOVO ORCHESTRATORE — si riparte dal PORTIERE
+Scritto 11/08/2026 notte (Roma), sessione precedente, per la sessione di
+domani (12/08). Leggi questo file per intero prima di fare qualunque cosa.
+NON leggere altri handoff per "prendere contesto" oltre a quelli citati
+qui: questo file è pensato per essere autosufficiente. L'utente ha già
+confermato l'ordine sotto ("lo stregone ha sempre ragione", 11/08 notte).
+
+============================================================================
+0. COME SIAMO ARRIVATI QUI (5 righe)
+============================================================================
+
+Il filone grade (il voto A-F sulle carte) si è chiuso l'11/08: funziona
+ed è già pesato giusto in produzione, nessuna modifica al codice
+(`docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md` §8bis). Mentre si misuravano
+pattern nuovi sugli stessi dati (`archivio_ufficiale/aggregato/
+binario2_pool_rows.json`, 10.035 righe carta, zero query nuove), Opus ha
+trovato una cosa grossa non cercata: **il modello non prevede i
+portieri**. È diventata la priorità, sostituendo il piano originale
+(la soglia arena in punti, ora in terza posizione — vedi §3).
+
+============================================================================
+1. LA TUA PRIORITÀ: IL PORTIERE — il modello non lo prevede
+============================================================================
+
+**Il fatto, misurato su 1.932 portieri reali**: la correlazione fra quanto
+il modello si aspettava e quanto il portiere ha fatto davvero è **-0,0018**
+(IC95 ±0,045 — lo zero è dentro il margine da ogni lato: non è debole, è
+assente). Per confronto: DEF +0,135, MID +0,194, FWD +0,189 — gli altri
+tre ruoli un minimo ci azzeccano, il portiere no. Il grade non lo salva
+(-0,0232 con grade acceso).
+
+**Perché, è nel codice, non un'ipotesi**
+(`generatore_formazioni/build_formazione_globale.py` righe 395-418,
+`CALIB_PER_RUOLO`):
+  GK : a=35,78  b=0,264
+  DEF: a= 7,28  b=0,831
+  MID: a=11,61  b=0,740
+  FWD: a= 8,40  b=0,789
+La pendenza (b) del portiere è un terzo di quella degli altri ruoli:
+l'atteso calibrato dei portieri oscilla solo fra 45,5 e 51,7 (dispersione
+0,97), mentre il loro punteggio VERO ha dispersione 18,72 — identica a
+quella degli altri ruoli. **La calibrazione NON è il bug**: una pendenza
+così bassa è la reazione corretta a una previsione grezza senza segnale.
+Il problema sta A MONTE, nella previsione grezza del portiere — non
+toccare la costante 0,264, peggiorerebbe soltanto.
+
+**Effetto pratico misurato** (dentro pool con ≥3 carte dello stesso
+ruolo, "il modello" prende la migliore secondo l'atteso, "a caso" prende
+la media del pool):
+  GK : 191 pool | guadagno -0,17 punti (t=-0,14) -> ZERO, indistinguibile dal caso
+  DEF: 211 pool | guadagno +5,18 (t=+3,91)
+  MID: 227 pool | guadagno +3,42 (t=+3,40)
+  FWD: 212 pool | guadagno +4,26 (t=+3,58)
+
+**Quanto vale**: portare il portiere dove stanno gli altri ruoli varrebbe
+circa **+4 punti per formazione** — stesso ordine di grandezza di tutto il
+filone grade appena chiuso (+3,4 punti/formazione). Ma il grade era una
+rifinitura di un pezzo che già funzionava; questo è un pezzo che oggi non
+funziona per niente. Onestà di Opus: non è garantito che il portiere sia
+portabile a +4 (il clean sheet dipende da 10 compagni, forse è
+intrinsecamente meno prevedibile) — quello che è certo è che oggi vale
+esattamente zero, e nessuno lo sapeva prima di stanotte.
+
+**Il tuo primo passo, letteralmente il primo comando da lanciare, zero
+query, ~10 minuti**: guardare la correlazione della previsione GREZZA del
+portiere (PRIMA di `calibra()`) col punteggio realizzato.
+  - Se anche la previsione grezza ha correlazione ~0 -> il problema è
+    nelle FEATURE della pipeline di predizione GK (leggi `formazione_mls/
+    predict/test_gk.py` o l'equivalente per la lega che stai testando —
+    stesso pattern in tutte le leghe, `formazione_<lega>/predict/`).
+  - Se la previsione grezza HA una correlazione positiva ma sparisce dopo
+    `calibra()` -> il problema è nella retta di calibrazione (CALIB_PER_RUOLO
+    GK), che va ricalcolata, non la pipeline di predizione.
+  Sono due mondi diversi. Non procedere oltre senza aver fatto prima
+  questo controllo — è la prima cosa che decide dove guardare.
+
+**Dati per farlo**: `archivio_ufficiale/aggregato/binario2_pool_rows.json`
+ha già `_cal` (l'atteso CALIBRATO) e `reale` per ogni carta GK, ma non
+l'atteso GREZZO pre-calibrazione — quello va ricalcolato passando per
+`P.score_atteso(...)` in `analisi_manager/backtest_arene_previsioni.py`
+(stesso modulo che usa `p24_binario2_ga.py`, leggi `res['atteso']` prima
+della chiamata a `S21.bfg.calibra()` — vedi `prepara_pool_rows()` in
+`analisi_manager/p24_binario2_ga.py:150-160` per dove si inserisce).
+
+**Chi esegue**: la misura del primo passo è meccanica, va bene Sonnet.
+Se il primo passo indica "problema nelle feature", la diagnosi della
+pipeline GK è più delicata (serve giudizio, non solo esecuzione) — valuta
+tu se scalare a un brief più dettagliato o procedere direttamente.
+
+============================================================================
+2. SECONDA PRIORITÀ: IL CAPITANO — riaprire, il vecchio verdetto non regge
+============================================================================
+
+Il vecchio filone capitano (8 ipotesi, tutte "chiuse" —
+`docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md` §5.3) girava su backtest che
+leggevano il punteggio dai file manager CON bonus/xp non tolti (bug D6 in
+CLAUDE.md). Rifatto pulito stanotte da Opus sull'archivio corretto (1.145
+arene con capitano, punteggi veri per carta, D6 non si applica qui):
+
+  bonus capitano incassato dal modello:     +11,36 punti/arena
+  scegliendo il capitano A CASO fra le 5:   +10,67
+  scegliendo col SENNO DI POI (il migliore):+15,26
+  guadagno vero del modello sul caso:        +0,69 (t=6,91, solido)
+  massimo possibile sul caso:                +4,59
+  -> il modello prende il 15% di quello che c'è sul piatto
+
+Funziona (non è casuale), ma lascia l'85% del valore potenziale sul
+tavolo. Costo per riverificare/migliorare: zero query, dati già in repo.
+Dettaglio che lega i due temi: il modello non nomina MAI capitano un
+portiere (0 su 1.145), ma il portiere è la carta con più punti in 157
+arene su 1.145 (13,7%) — in parte è corretto (non punti forte su chi non
+sai prevedere), in parte è lo stesso buco del punto 1.
+
+============================================================================
+3. TERZA PRIORITÀ (era la prima nel piano di ieri sera, RETROCESSA da
+   Opus stesso): la soglia d'ingresso arena in PUNTI, fuori campione
+============================================================================
+
+Perché è stata retrocessa: è una regola di decisione che sta SOPRA il
+modello. Tararla mentre il portiere (1 slot su 5) è cieco significa
+tararla sul rumore di quello slot, e rifarla daccapo quando il portiere si
+sistema — è la catena di produzione di CLAUDE.md letta al contrario (si
+tara la soglia DOPO aver sistemato la predizione, non prima). Se preferisci
+comunque partire da qui, non è una scelta sbagliata, solo meno efficiente.
+
+**Se decidi di farla comunque, il metodo (NON saltare l'ordine):**
+1. Decidi PRIMA di guardare un solo numero come dividere il campione in
+   due metà indipendenti (taratura / verifica). Scrivilo e committalo
+   PRIMA di guardare i dati — se lo decidi dopo aver visto anche un solo
+   numero il test è da buttare (è già successo due volte su questo tema:
+   due sweep sullo stesso parametro hanno dato risultati opposti a seconda
+   di dettagli del campione).
+2. Dati: `archivio_ufficiale/aggregato/binario1_out.json` -> `per_gw` ->
+   `risultati`, ha `atteso_A`, `atteso_G`, `soglia_decisione`,
+   `punteggio_totale` (il PUNTO REALE — usa questo, non `premio_netto`,
+   i premi in essenze sono una lotteria che nasconde il segnale) per
+   OGNI formazione pulita. Formula della soglia oggi:
+   `decidi_entra()` in `analisi_manager/p23_binario1_mga.py:176-188`.
+3. Sulla metà di TARATURA: prova diversi scarti X dalla soglia attuale,
+   misura il punteggio reale totale di chi entrerebbe. Trova l'X migliore
+   SOLO su questa metà.
+4. Sulla metà di VERIFICA (mai guardata): applica quell'X e controlla se
+   regge. Se non regge, "la soglia va bene così" è un esito valido.
+
+============================================================================
+4. QUARTA PRIORITÀ: correlazioni fra compagni di squadra (portiere-
+   difensore, attacco-centrocampo)
+============================================================================
+
+Idea valida (sposta la VARIABILITÀ della formazione, non i punti attesi —
+conta perché i premi arena sono una lotteria: i 20 premi più grandi su 860
+valgono il 75% del valore totale), ma bloccata su due cose:
+- manca il campo `squadra` nel dump (`p24_binario2_ga.py::prepara_pool_rows`
+  lo calcola già, `res.get('squadra')`, ma non lo scrive in `carta_rows` —
+  due campi in più, zero query, 5 minuti).
+- finché il portiere è cieco (punto 1), misurare la correlazione
+  portiere-difensore vuol dire correlare qualcosa di noto con qualcosa che
+  non sai prevedere. Ha senso solo DOPO il punto 1.
+
+============================================================================
+5. DA TENERE NEL CASSETTO, non un filone: differenze fra leghe
+============================================================================
+
+Stessa misura del punto 1, spaccata per lega invece che per ruolo:
+Germania (corr 0,28) e MLS (0,22) ordinano bene; Giappone (0,03) e
+Argentina (0,01) non ordinano quasi per niente — stesso tipo di buco del
+portiere, ma per lega. Non aprire un filone ora: se dopo il portiere si
+cerca "il secondo buco", si guarda qui prima di ripartire da zero.
+
+============================================================================
+6. REGOLA CHE VALE PIÙ DELLA CLASSIFICA (Opus, testuale)
+============================================================================
+
+"UNO ALLA VOLTA. Se l'handoff di domani ne apre tre, non se ne chiude
+nessuno." Non iniziare il punto 2 prima che il punto 1 abbia una risposta
+scritta (anche se la risposta è "i dati non bastano" — è comunque una
+risposta).
+
+============================================================================
+7. COSA NON FARE
+============================================================================
+
+- Non riaprire il filone grade (§8bis in HANDOFF_UNIFICATO): chiuso,
+  serve un'idea davvero nuova per riaprirlo, non solo altri dati.
+- Non estrarre altri manager: strada chiusa da Opus l'11/08 sera.
+- Non toccare `CALIB_PER_RUOLO['GK']` (la costante 0,264) finché non sai
+  se il problema è a monte (feature) o nella retta — spostarla alla cieca
+  peggiora, non migliora.
+
+============================================================================
+8. FILE DI RIFERIMENTO
+============================================================================
+
+- `docs/handoff/RISPOSTA_OPUS_PATTERN_NUOVI_2026-08-11.txt` — la risposta
+  integrale di Opus, tutti i numeri di questo file vengono da lì.
+- `docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md` §8bis — stato del grade
+  (chiuso), §5.3 — vecchio verdetto capitano (superato dal punto 2 sopra),
+  §5.6 — nota già aperta sul GK level_score binario (probabilmente
+  collegata al buco di stanotte, da verificare).
+- `archivio_ufficiale/aggregato/binario1_out.json`, `binario2_out.json`,
+  `binario2_pool_rows.json` — dati grezzi.
+- `docs/handoff/HANDOFF_ORCHESTRATORE_BINARIO_GVSA_2026-08-10.txt` —
+  cronologia completa del filone grade appena chiuso.
