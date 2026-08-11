@@ -32,6 +32,7 @@ os.chdir(ROOT)
 sys.path.insert(0, ROOT)
 
 import ricostruisci_manager as RM
+from analisi_manager.p36_correlazioni_compagni import costruisci_indice_cache
 
 CACHE_INDEX = os.path.join('analisi_manager', 'dati', '_cache_index_gamelog.json')
 FINESTRA_INIZIO = '2025-08-01'
@@ -49,7 +50,10 @@ def squadre_crowss():
         for riga in righe:
             for c in riga['carte']:
                 giocatori.add(c['slug'])
-    idx = json.load(open(CACHE_INDEX, encoding='utf-8'))
+    # Stesso fix di p42_estrai_gol_tutte_squadre_archivio.squadre_archivio()
+    # (11/08/2026): ricostruisce l'indice se manca, invece di crashare su
+    # checkout fresco (il file da 20MB non e' mai committato di proposito).
+    idx = costruisci_indice_cache()
     squadre = {idx[p]['squadra'] for p in giocatori if p in idx and idx[p].get('squadra')}
     return giocatori, squadre
 

@@ -27,6 +27,7 @@ sys.path.insert(0, ROOT)
 import ricostruisci_manager as RM
 from analisi_manager.p40_estrai_gol_squadre_crowss import (
     partite_uniche, estrai_gol, CACHE_INDEX, FINESTRA_INIZIO)
+from analisi_manager.p36_correlazioni_compagni import costruisci_indice_cache
 
 POOL = 'archivio_ufficiale/aggregato/binario2_pool_rows.json'
 OUT = os.path.join('analisi_manager', 'dati',
@@ -36,7 +37,15 @@ OUT = os.path.join('analisi_manager', 'dati',
 def squadre_archivio():
     pool = json.load(open(POOL, encoding='utf-8'))
     giocatori = {r['slug'] for r in pool}
-    idx = json.load(open(CACHE_INDEX, encoding='utf-8'))
+    # BUG REALE (11/08/2026, run 31520960100): prima leggeva CACHE_INDEX
+    # direttamente con json.load, senza ricostruirlo se mancante. Il file
+    # (20MB) non e' mai committato di proposito -- in un checkout CI fresco
+    # non esiste -- e nessuno lo ricostruiva mai: il commento nel workflow
+    # ("si ricostruisce da zero, non e' un bug") era falso, la funzione che
+    # ricostruisce (costruisci_indice_cache, gia' in produzione per altri
+    # script) non veniva mai chiamata da questo percorso. FileNotFoundError
+    # certo su ogni checkout senza il file gia' presente.
+    idx = costruisci_indice_cache()
     squadre = {idx[p]['squadra'] for p in giocatori if p in idx and idx[p].get('squadra')}
     return giocatori, squadre
 

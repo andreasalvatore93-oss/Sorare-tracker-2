@@ -480,10 +480,17 @@ jobs:
       # per quando la si accende. ATTENZIONE COSTO: il checkout e' shallow e
       # non porta analisi_manager/dati/_cache_index_gamelog.json (20MB, mai
       # committato di proposito): la prima volta che gira in un checkout
-      # fresco si ricostruisce da zero dai *_gamelog.json tracciati (~2 min),
-      # non e' un bug -- pero' vuol dire ~2 min in piu' ad OGNI run finche'
-      # non si trova un modo di persistere quell'indice fra run (cache
-      # actions/cache o committarlo): da valutare se il costo infastidisce.
+      # fresco si ricostruisce da zero dai *_gamelog.json tracciati (~2 min).
+      # BUG REALE trovato in run 31520960100 (11/08/2026): questo commento
+      # dichiarava il rebuild automatico, ma p42_estrai_gol_tutte_squadre_
+      # archivio.squadre_archivio() leggeva il file con json.load diretto,
+      # SENZA MAI chiamare la funzione che lo ricostruisce -- FileNotFoundError
+      # certo su ogni checkout fresco, run intera fallita. Fix: ora chiama
+      # costruisci_indice_cache() (gia' in produzione altrove), verificato
+      # in locale simulando il checkout fresco (file assente -> ricostruito
+      # in 80s, stesse 4828 chiavi del file precedente). Vuol dire comunque
+      # ~1-2 min in piu' ad OGNI run finche' non si persiste l'indice fra run
+      # (cache actions/cache o commit) -- da valutare se il costo infastidisce.
       - run: python generatore_formazioni/dati/aggiorna_gk_attacco_avversario.py
       - env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
