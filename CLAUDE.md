@@ -319,19 +319,59 @@ rapido che potrebbe dargli torto, e lanciarlo subito.
 
 ## Come si lavora: un orchestratore, piu' esecutori
 
-Modello di lavoro consolidato (dalla sessione 05-06/08). Vale sempre.
+Modello di lavoro consolidato (dalla sessione 05-06/08, esteso 12/08 con
+la messaggistica diretta fra sessioni). Vale sempre.
 
-- **Opus = orchestratore.** Non esegue: ragiona, decide cosa misurare, scrive
-  i brief, legge i risultati, decide se un numero regge. Tiene la memoria del
-  filone e aggiorna gli handoff.
-- **Sonnet = esecutore con giudizio.** Query mirate, lettura di codice,
-  script di misura, backtest. Riceve un brief scritto e riporta numeri.
+- **L'orchestratore ragiona**: non esegue, decide cosa misurare, scrive i
+  brief, legge i risultati, decide se un numero regge. Tiene la memoria del
+  filone e aggiorna gli handoff. **Il modello che gioca questo ruolo puo'
+  VARIARE da sessione a sessione** (Opus, Sonnet o altro) — la procedura
+  sotto e' la stessa indipendentemente da quale modello e'. Non dare per
+  scontato che l'orchestratore sia sempre Opus.
+- **Sonnet esecutore = esecutore con giudizio.** Query mirate, lettura di
+  codice, script di misura, backtest. Riceve un brief scritto e riporta
+  numeri.
+- **Opus esecutore = per decisioni, controlli, dubbi.** Quando il compito
+  e' "decidi se", "verifica questo verdetto sospetto", "cosa ne pensi", o
+  tocca potenzialmente la produzione. Costoso: un brief solo, con TUTTI i
+  dubbi aperti insieme, mai uno alla volta.
 - **Haiku = volume meccanico.** Estrazioni massive, popolamento cache,
   conteggi, verifiche noiose. Regola pratica: se il compito si scrive come
   "fai questa cosa N volte e riporta gli errori" e' Haiku; se contiene un
   "decidi se", non lo e'.
-- **L'utente fa da navetta**: copia i brief dall'orchestratore agli esecutori
-  e riporta indietro gli esiti. Gli agenti non si parlano fra loro.
+
+### Come raggiungere un esecutore: messaggistica diretta fra sessioni (12/08/2026)
+
+Da oggi il metodo preferito e' la messaggistica diretta fra sessioni
+(`mcp__ccd_session_mgmt__send_message`), non piu' solo la navetta manuale.
+**L'utente-navetta resta sempre un fallback valido** (piu' lento ma non
+fallisce mai) se il canale diretto non funziona.
+
+Regole imparate da un errore reale del 12/08 (un esecutore ha mandato un
+report completo a una sessione vecchia e chiusa che si chiamava come
+quella giusta, il lavoro si e' quasi perso):
+
+1. **Prima di scrivere un brief, verifica/chiedi che la sessione esecutore
+   esista.** Non dare per scontato che "Opus Esecutore"/"Sonnet
+   Esecutore"/"Haiku Esecutore" siano gia' aperte: usa
+   `mcp__ccd_session_mgmt__list_sessions` per cercarle, e se non ci sono
+   **chiedi all'utente di aprirne una apposita** prima di mandare il brief.
+2. **Usa SEMPRE l'ID esatto della sessione, mai il titolo**, sia per
+   mandare un brief sia per dire a un esecutore dove rispondere. I titoli
+   si ripetono fra sessioni vecchie e nuove (successo davvero: due
+   sessioni diverse intitolate allo stesso modo, una chiusa). Il proprio
+   session_id esatto si trova nell'intestazione dei messaggi cross-
+   sessione in arrivo (`<cross-session-message from="ID_ESATTO"
+   name="titolo">`) — usa quell'ID, non il nome.
+3. **Nel brief specifica sempre**: l'ID esatto della sessione mittente
+   (dove l'esecutore deve rispondere) e l'istruzione esplicita di usare
+   `mcp__ccd_session_mgmt__send_message` (cross-sessione) e NON
+   `SendMessage` (quello e' per agenti interni ALLA STESSA sessione,
+   errore reale gia' successo: un esecutore ha provato a "raggiungere"
+   un'altra chat con lo strumento sbagliato e ha fallito silenziosamente).
+4. Se un esecutore non riesce a raggiungere l'orchestratore (ID sbagliato,
+   sessione chiusa), correggi subito con un messaggio che dia l'ID giusto,
+   invece di lasciarlo bloccato o farlo passare dall'utente per forza.
 
 Conseguenze operative per l'orchestratore:
 1. Ogni brief deve essere **autosufficiente**: l'esecutore puo' essere in una
@@ -343,7 +383,9 @@ Conseguenze operative per l'orchestratore:
    file nuovo: le chat non condividono memoria, il repo si'.
 4. Quando piu' esecutori lavorano in parallelo sulla stessa working tree,
    ciascuno committa SOLO i propri file e segnala gli altri senza toccarli.
-5. Dire sempre all'utente **a chi** va passato un brief (Opus/Sonnet/Haiku).
+5. Dire sempre all'utente **a chi** va un brief (Opus/Sonnet/Haiku
+   esecutore) — anche quando lo si manda da soli via messaggistica
+   diretta, l'utente deve sapere chi sta lavorando a cosa.
 6. PRIMA di riportare all'utente l'esito di un commit di un esecutore,
    l'orchestratore VERIFICA I DATI GREZZI, non solo il messaggio/commento
    dell'esecutore (07/08/2026). Nato da un caso reale: un esecutore ha
