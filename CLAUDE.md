@@ -322,23 +322,38 @@ rapido che potrebbe dargli torto, e lanciarlo subito.
 Modello di lavoro consolidato (dalla sessione 05-06/08, esteso 12/08 con
 la messaggistica diretta fra sessioni). Vale sempre.
 
-- **L'orchestratore ragiona**: non esegue, decide cosa misurare, scrive i
-  brief, legge i risultati, decide se un numero regge. Tiene la memoria del
-  filone e aggiorna gli handoff. **Il modello che gioca questo ruolo puo'
-  VARIARE da sessione a sessione** (Opus, Sonnet o altro) — la procedura
-  sotto e' la stessa indipendentemente da quale modello e'. Non dare per
-  scontato che l'orchestratore sia sempre Opus.
-- **Sonnet esecutore = esecutore con giudizio.** Query mirate, lettura di
-  codice, script di misura, backtest. Riceve un brief scritto e riporta
-  numeri.
-- **Opus esecutore = per decisioni, controlli, dubbi.** Quando il compito
-  e' "decidi se", "verifica questo verdetto sospetto", "cosa ne pensi", o
-  tocca potenzialmente la produzione. Costoso: un brief solo, con TUTTI i
-  dubbi aperti insieme, mai uno alla volta.
-- **Haiku = volume meccanico.** Estrazioni massive, popolamento cache,
+- **L'orchestratore E' ANCHE UN ESECUTORE, in senso stretto (12/08/2026).**
+  Tutto quello che l'orchestratore PUO' fare da solo (leggere codice,
+  scrivere script di misura, girare un backtest locale, verificare un
+  numero), lo fa da solo — non delega per principio. Delega SOLO quando
+  serve un secondo parere/controllo indipendente (Opus), volume meccanico
+  che conviene isolare (Haiku), o affidabilita' extra su un test che va
+  fatto bene una volta sola (Sonnet esecutore). Decide cosa misurare,
+  scrive i brief quando delega, legge i risultati, tiene la memoria del
+  filone, aggiorna gli handoff — ma il lavoro di misura lo fa lui stesso
+  di default.
+  **Il modello che gioca questo ruolo puo' VARIARE da sessione a sessione**
+  (Opus, Sonnet o altro) — la procedura sotto e' la stessa
+  indipendentemente da quale modello e'. Non dare per scontato che
+  l'orchestratore sia sempre Opus: **il default dell'utente e' Sonnet a
+  impegno ALTO come orchestratore**, per bilanciare il consumo di token.
+- **Sonnet esecutore = esecutore con giudizio, impegno BASSO di default.**
+  Query mirate, lettura di codice, script di misura, backtest. Riceve un
+  brief scritto e riporta numeri.
+- **Opus esecutore = per decisioni, controlli, dubbi — impegno ALTO di
+  default, ma DA USARE COL CONTAGOCCE.** Consumo elevato: usarlo SOLO nei
+  casi davvero necessari (decisione che tocca la produzione, verdetto
+  sospetto da controllare, secondo parere su un dubbio reale) — mai per
+  misure che l'orchestratore o Sonnet esecutore possono fare da soli. Un
+  brief solo, con TUTTI i dubbi aperti insieme, mai uno alla volta.
+- **Haiku = volume meccanico, NON ha un livello di impegno** (sempre
+  uguale, non regolabile). Estrazioni massive, popolamento cache,
   conteggi, verifiche noiose. Regola pratica: se il compito si scrive come
   "fai questa cosa N volte e riporta gli errori" e' Haiku; se contiene un
   "decidi se", non lo e'.
+- **Sonnet ALTO/Sonnet BASSO e Opus ALTO sono i DEFAULT**, non un vincolo:
+  se un compito specifico lo richiede, chiedere all'utente di alzare o
+  abbassare il livello di impegno di una sessione.
 
 ### Come raggiungere un esecutore: messaggistica diretta fra sessioni (12/08/2026)
 
@@ -372,6 +387,17 @@ quella giusta, il lavoro si e' quasi perso):
 4. Se un esecutore non riesce a raggiungere l'orchestratore (ID sbagliato,
    sessione chiusa), correggi subito con un messaggio che dia l'ID giusto,
    invece di lasciarlo bloccato o farlo passare dall'utente per forza.
+
+**I brief e i report vanno scritti come FILE, non incollati come testo nel
+messaggio cross-sessione** (12/08/2026) — un wall of text in un messaggio
+intasa sia la chat dell'orchestratore sia quella dell'esecutore, e impedisce
+all'utente di continuare a ragionare nella chat principale. Eccezione: una
+domanda secca e breve (una riga, un chiarimento) puo' viaggiare come testo.
+Per tutto il resto: **usare la skill `/brief-esecutore`** (obbligatoria per
+orchestratore ED esecutori, non solo per chi scrive il brief iniziale) per
+scrivere il contenuto in un file nel repo, poi il messaggio cross-sessione
+contiene solo il percorso del file, l'ID di sessione dove rispondere, e
+due righe di contesto per orientarsi.
 
 Conseguenze operative per l'orchestratore:
 1. Ogni brief deve essere **autosufficiente**: l'esecutore puo' essere in una
@@ -417,35 +443,39 @@ l'unico canale di memoria condivisa fra loro.
 - Se il mio lavoro tocca file che un'altra sessione sta usando, lavoro su un
   branch dedicato e lo dico nell'handoff.
 
-## Come rispondere all'utente
+## Come rispondere all'utente (unifica due regole precedenti, 12/08/2026)
 
-L'utente paga a token e non vuole leggere prosa lunga in chat.
+L'utente paga a token, ha l'ADHD, e non vuole leggere prosa lunga in chat.
+Vale per TUTTI gli agenti, orchestratore incluso. Ogni singola riga di
+chat viene riletta ad ogni turno e consuma la sessione in fretta.
 
-- In chat scrivo il minimo: cosa sto per fare, cosa ho fatto, il percorso del
-  file prodotto, e le domande che mi bloccano.
-- Tutto il resto — analisi, tabelle, ragionamenti, risultati, dubbi — va nei
-  file di `docs/handoff/`, non nel messaggio di chat.
-- Non ripeto in chat quello che ho gia' scritto nel file.
-- Se devo fare una domanda, la faccio secca e con le opzioni gia' elencate.
-- Limite duro: massimo 5 righe per messaggio di chat. Analisi, tabelle e
-  numeri non compaiono mai in chat, solo in docs/handoff/.
+- In chat scrivo il minimo: cosa sto per fare, cosa ho fatto, il percorso
+  del file prodotto, e le domande che mi bloccano. Niente saluti, niente
+  cortesie, niente preamboli/postamboli se possono essere evitati.
+- Tutto il resto — analisi, tabelle, ragionamenti, risultati, dubbi — va
+  nei file (`docs/handoff/` o via skill `/brief-esecutore`), MAI nel
+  messaggio di chat o in un messaggio cross-sessione. Non ripeto in chat
+  quello che ho gia' scritto nel file.
+- Limite duro: massimo 5 righe per messaggio di chat. Risposte piu' lunghe
+  SOLO quando l'utente fa una domanda che le richiede esplicitamente.
+- Se devo fare una domanda, secca, con le opzioni gia' elencate. Se conosco
+  gia' la preferenza dell'utente, NON la faccio: bypasso e procedo.
+- I file per cui l'utente fa da navetta (o le sessioni esecutore da
+  raggiungere in diretta) si INDICANO soltanto: dico quale file, a quale
+  esecutore (Haiku/Sonnet/Opus) e con quale grado di impegno — mai il
+  contenuto per esteso in chat.
+- Ogni volta che l'utente deve passare file a un esecutore, gli RICORDO di
+  farli pushare (altrimenti se ne dimentica).
 
-## Comunicazioni in chat ridotte al minimo assoluto (09/08/2026)
-
-Vale per TUTTI gli agenti, orchestratore incluso. Ogni singola riga di chat
-viene riletta ad ogni turno e consuma la sessione in fretta. Quindi:
-- In chat SOLO e SOLTANTO i messaggi essenziali al buon esito della sessione.
-  Niente saluti, niente "ciao", niente cortesie, niente preamboli/postamboli
-  se possono essere evitati.
-- Risposte piu' lunghe sono tollerate SOLO quando l'utente fa una domanda che
-  le richiede.
-- Se conosco gia' la preferenza dell'utente, NON faccio la domanda: bypasso e
-  procedo direttamente scrivendo i file.
-- I file per cui l'utente fa da navetta si INDICANO soltanto: nessun prompt o
-  wall of text in chat. Scrivo il brief nel file, poi in chat dico solo quale
-  file, a quale esecutore (Haiku/Sonnet/Opus) e con quale grado di impegno.
-- Se sono l'orchestratore, ogni volta che l'utente deve passare file a un
-  esecutore gli RICORDO di farli pushare (altrimenti se ne dimentica).
+**Dopo ogni scambio con un esecutore, spiego all'utente cosa sta
+succedendo in modo comprensibile** (12/08/2026) — niente formule, nomi di
+costanti o gergo tecnico di cui non ha contezza (stessa logica della
+regola sotto su "spiegare i numeri", ma estesa al PROCESSO, non solo ai
+risultati statistici). Non e' solo cortesia: **l'utente e' in gamba e puo'
+dare spunti veri**, o risolvere con una regola del gioco che solo lui
+conosce un dubbio che altrimenti costerebbe un test — tenerlo dentro al
+ragionamento nella chat principale (invece di seppellirlo di dettagli
+tecnici) e' cio' che gli permette di intervenire in tempo utile.
 
 ## Handoff Cerbero: file unico
 
