@@ -135,6 +135,80 @@ def placebo(righe, grade_num_per_riga, tabella, per_gruppo, n_perm=200, seme=11)
     return betas
 
 
+def regressione_dentro_gruppo(xs, ys, cluster_id, per_gruppo):
+    """Regressione a effetti fissi di gruppo (RISPOSTA_OPUS_SCALA_STORICA
+    sez. 3): toglie a ogni riga la media del suo gruppo (manager, fixture,
+    lega, codice) sia da x che da y, poi regressione PASSANTE PER L'ORIGINE
+    sui residui demeanizzati (la media del gruppo, per costruzione, non
+    porta piu' informazione). Isola lo scarto DENTRO il gruppo dal livello
+    FRA i gruppi -- il placebo (che rimescola solo dentro gruppo) puo'
+    toccare solo questa parte, quindi qui deve tornare centrato a zero.
+    """
+    n = len(xs)
+    xt = [0.0] * n
+    yt = [0.0] * n
+    for _key, idx in per_gruppo.items():
+        mx = sum(xs[i] for i in idx) / len(idx)
+        my = sum(ys[i] for i in idx) / len(idx)
+        for i in idx:
+            xt[i] = xs[i] - mx
+            yt[i] = ys[i] - my
+    sxx = sum(x * x for x in xt)
+    sxy = sum(x * y for x, y in zip(xt, yt))
+    b = sxy / sxx
+    residui = [y - b * x for x, y in zip(xt, yt)]
+    n_gruppi = len(per_gruppo)
+    dof = n - n_gruppi - 1
+    sse = sum(r ** 2 for r in residui)
+    se_classico = (sse / dof / sxx) ** 0.5 if dof > 0 else float('nan')
+
+    gruppi_cluster = collections.defaultdict(list)
+    for i, cid in enumerate(cluster_id):
+        gruppi_cluster[cid].append(i)
+    meat = 0.0
+    for _cid, idx in gruppi_cluster.items():
+        s = sum(xt[i] * residui[i] for i in idx)
+        meat += s * s
+    G = len(gruppi_cluster)
+    corr = (G / (G - 1)) * ((n - 1) / dof) if G > 1 and dof > 0 else 1.0
+    se_cluster = (corr * meat / (sxx ** 2)) ** 0.5
+
+    n_non_banali = sum(1 for x in xt if x != 0.0)
+    return b, se_classico, se_cluster, n_non_banali, n_gruppi
+
+
+def placebo_dentro_gruppo(righe, grade_num_per_riga, tabella, per_gruppo, n_perm=200, seme=13):
+    rnd = random.Random(seme)
+    n = len(righe)
+    sd_atteso, _ = sd_atteso_per_gruppo(righe)
+    ys = [righe[i]['reale'] - righe[i]['_cal'] for i in range(n)]
+    betas = []
+    for _ in range(n_perm):
+        gn_shuffled = list(grade_num_per_riga)
+        for _key, idx in per_gruppo.items():
+            if len(idx) < 2:
+                continue
+            vals = [gn_shuffled[i] for i in idx]
+            rnd.shuffle(vals)
+            for i, v in zip(idx, vals):
+                gn_shuffled[i] = v
+        agg = [0.0] * n
+        for i in range(n):
+            gn = gn_shuffled[i]
+            if gn is None:
+                continue
+            scala = scala_per(tabella, righe[i]['lega'], righe[i]['codice'])
+            if scala is None:
+                continue
+            gm, gsd, _liv = scala
+            if gsd <= 0:
+                continue
+            agg[i] = sd_atteso[i] * (gn - gm) / gsd
+        b, _se0, _sec, _nnb, _ng = regressione_dentro_gruppo(agg, ys, [None] * n, per_gruppo)
+        betas.append(b)
+    return betas
+
+
 def main():
     righe = json.load(open(POOL_PATH, encoding='utf-8'))
     righe = [r for r in righe if r.get('_cal') is not None and r.get('reale') is not None]
@@ -183,6 +257,30 @@ def main():
     print(f'  beta vero = {b:+.3f}')
     print(f'  beta placebo: media {media_p:+.3f}, IC90 [{lo:+.3f}, {hi:+.3f}]')
     print(f'  permutazioni che arrivano a {b:+.3f}: {oltre}/200  ->  p = {oltre / 200:.3f}')
+    print('  NOTA (RISPOSTA_OPUS_SCALA_STORICA sez.2): questo placebo non e\' centrato')
+    print('  a zero -- rimescolare DENTRO gruppo tocca solo lo scarto dentro-gruppo')
+    print('  (48,7% della varianza), non la media di gruppo. La stima pulita e il suo')
+    print('  placebo (centrato a zero) sono qui sotto.')
+
+    print()
+    print('=' * 78)
+    print('STIMA DENTRO-GRUPPO (effetti fissi di gruppo, la stima pulita)')
+    print('=' * 78)
+    b_dg, se0_dg, sec_dg, n_nb, n_gr = regressione_dentro_gruppo(xs, ys, fixtures, per_gruppo)
+    print(f'  beta dentro-gruppo = {b_dg:+.3f}  ({n_gr} gruppi assorbiti, '
+          f'{n_nb} righe con scarto dentro-gruppo non nullo)')
+    print(f'  SE classico:              {se0_dg:.3f}   t = {b_dg / se0_dg:+.2f}')
+    print(f'  SE cluster su fixture:    {sec_dg:.3f}   t = {b_dg / sec_dg:+.2f}')
+
+    betas_dg = placebo_dentro_gruppo(righe, grade_num_per_riga, tabella, per_gruppo, n_perm=200)
+    media_dg = sum(betas_dg) / len(betas_dg)
+    oltre_dg = sum(1 for bp in betas_dg if bp >= b_dg)
+    ordina_dg = sorted(betas_dg)
+    lo_dg = ordina_dg[int(0.05 * len(ordina_dg))]
+    hi_dg = ordina_dg[int(0.95 * len(ordina_dg)) - 1]
+    print(f'  placebo (200 rimescolamenti): media {media_dg:+.3f} (deve essere ~0), '
+          f'IC90 [{lo_dg:+.3f}, {hi_dg:+.3f}]')
+    print(f'  permutazioni che arrivano a {b_dg:+.3f}: {oltre_dg}/200  ->  p = {oltre_dg / 200:.3f}')
 
 
 if __name__ == '__main__':
