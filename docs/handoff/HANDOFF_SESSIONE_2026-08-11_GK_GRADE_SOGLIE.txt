@@ -1,0 +1,496 @@
+HANDOFF DI FINE SESSIONE PER IL NUOVO ORCHESTRATORE
+Sessione 11/08/2026 (Roma, CEST), orchestratore Sonnet, impegno alto.
+Sessione lunghissima, tre filoni grossi + un bug di produzione. Leggi
+tutto, non solo il verdetto da bar: ci sono tanti pezzi in sospeso.
+
+================================================================================
+VERDETTO DA BAR (10 righe, poi il rigore sotto)
+================================================================================
+Oggi: 1) acceso in produzione il correttivo portiere GK_ATT_AVV (formula
+secca, dinamica) — confermato, chiuso, nessuna azione ulteriore. 2) Aperto
+un filone nuovo sul "gruppo" con cui si confronta il voto A-F dei
+giocatori: trovato un difetto vero (il grade e' spento per meta' delle
+righe di produzione), una correzione valida A LIVELLO DI SINGOLA CARTA
+(solida), ma NON ancora provata a livello di essenze/formazioni — resta
+da implementare in produzione, e' la PRIORITA' 2 quando si riprende.
+3) Aperto e RICHIUSO in giornata un filone sulle soglie d'ingresso arena:
+sembrava ci fosse un errore grosso nelle soglie di produzione, Opus ha
+proposto una correzione, l'ho applicata, POI Opus ha trovato il proprio
+errore e ho fatto il revert. Le soglie sono TORNATE quelle di sempre,
+nessuna modifica netta. Nel mezzo, trovato un difetto vero e separato
+(arene Uncapped perdono soldi) mai affrontato. 4) Fixato un crash reale
+in produzione (CI si rompeva su ogni checkout fresco). Tutto pushato.
+
+================================================================================
+1. STATO DEL REPO
+================================================================================
+Branch: main. Ultimo commit locale al momento di scrivere: 70bb24a1b4
+("Riassunto unificato §7: filone soglie CHIUSO...").
+
+A fine sessione ho fatto pull (9 commit nuovi sul remoto, tutti bot
+automatici "Formazione giornata: output run/formazioni generate" — la run
+che l'utente aveva rilanciato con GW4/odds 0.80/arene 15/suppletivo=1,
+andata a buon fine grazie al fix del cache index, vedi §5) e poi push di
+tutto il lavoro di oggi. Verificare con `git log --oneline -5` e
+`git status` che il push sia andato a buon fine appena apri la sessione.
+
+FILE NON MIEI, NON TOCCARE SENZA CAPIRE (untracked, lasciati da un'altra
+sessione, visti fin dall'inizio di questa sessione senza mai cambiare):
+  analisi_manager/_tmp_gk_atteso_raw.py
+  analisi_manager/_tmp_gk_diagnosi_opus.py
+  analisi_manager/dati/gk_atteso_raw_2026-08-12.json
+  docs/handoff/BRIEF_SONNET_GK_GREZZO_2026-08-12.txt
+Sembrano lavoro in corso di un filone diverso (previsione grezza del
+portiere, non il filone GK_ATT_AVV di oggi). Non li ho toccati, non so a
+che punto sono, chiedi all'utente prima di cancellarli o modificarli.
+
+FILE LEGITTIMO MA GROSSO, NON COMMITTATO DI PROPOSITO:
+  analisi_manager/dati/_cache_index_gamelog.json (20MB, indice della
+  cache game-log, si ricostruisce da solo in ~80s-2min se manca — vedi
+  §5, NON va mai committato, e' nel comportamento normale che sia
+  "untracked" in locale)
+
+Sessione Opus esecutore ancora aperta e raggiungibile:
+  session_id = local_7794deef-c2df-40a1-810f-d94f85ca22e5 (titolo "Opus
+  esecutore"). Ha lavorato tantissimo oggi (§14-21 di
+  RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt). Se serve un altro giro su
+  uno di questi filoni, riprendi da li' con
+  mcp__ccd_session_mgmt__send_message, ha gia' tutto il contesto.
+
+================================================================================
+2. PERCHE' ESISTEVA QUESTO LAVORO — punto di partenza della sessione
+================================================================================
+Sessione aperta con handoff di una sessione precedente: filone portiere
+(GK_ATT_AVV) riaperto, due formule pre-registrate (secca/u10), flag
+spento, formula NON ancora decisa dall'utente. Da li' e' partita la
+giornata: prima chiuso quel filone (deciso, acceso, verificato), poi
+l'utente ha chiesto di esplorare un'idea nuova sul grade (mai toccata
+prima), poi durante quel lavoro e' emerso un sospetto sulle soglie arena
+che ha aperto un terzo filone. Tre filoni concatenati, non pianificati
+dall'inizio — normale, e' cosi' che e' andata la sessione.
+
+================================================================================
+3. FILONE 1 — GK_ATT_AVV: CHIUSO, ACCESO IN PRODUZIONE, CONFERMATO
+================================================================================
+
+STATO FINALE: `GK_ATT_AVV_ENABLED` default '1' (acceso) in
+`generatore_formazioni/build_formazione_globale.py` e nell'input del
+workflow `.github/workflows/formazione_giornata.yml`. Formula 'secca'
+(default gia' cosi'). Tabella dinamica, refresh automatico ad ogni run
+(gia' agganciato da una sessione precedente, verificato funzionante oggi
+dopo il fix del bug in §5).
+
+COSA HO FATTO:
+- Trovato e fissato un bug reale: `_apply_gk_att_avv()` (il percorso VERO
+  di produzione, build_formazione_globale.py, chiamato per ogni riga GK)
+  referenziava due costanti mai definite (`GK_ATT_AVV_K`,
+  `GK_ATT_AVV_MEDIA_GLOBALE`) — residuo di un refactor precedente.
+  Inerte a flag spento (per questo nessuno l'aveva mai visto), ma
+  crash certo (NameError) al primo utilizzo reale col flag acceso. Fix:
+  ora usa `gk_att_avv_aggiustamento()`, gia' corretta. Commit 362108da0b.
+- p23_binario1_mga.py (Binario 1) non applicava affatto il correttivo GK
+  (solo p24/Binario 2 lo faceva) — aggiunto, stesso pattern. Commit
+  091092df96.
+- Rilanciati Binario 1 e Binario 2 flag spento/acceso sull'aggregato
+  COMPLETO (2.975 formazioni/362 GW-manager B1, 360 GW-manager B2, 29
+  manager, non solo la fixture nuova 7-11 agosto). Risultato: B2 conferma
+  quasi esatto lo storico (G migliora se stesso +5.556 essenze, IC95%
+  [+649;+10.638], 98,7% positivo, esclude lo zero). B1 piatto ma
+  SOTTO-POTENZA (non contro-prova: solo 36 decisioni discordanti su
+  1.091, soglia di rilevabilita' ~4.190 essenze contro un effetto atteso
+  di poche centinaia).
+- Mandato tutto a Opus (sessione "Opus esecutore"), verdetto: ACCENDERE.
+  Commit d373af11b5 (risposta Opus), 44d9dfb71f (acceso in produzione).
+- `scouting_gw.py` NON applicava il correttivo (percorso separato dal
+  generatore, legge le predizioni grezze) — a flag acceso un portiere
+  avrebbe avuto un atteso diverso fra generatore e scouting fino a ~6-7
+  punti. Allineato, stessa funzione `gk_att_avv_aggiustamento()`. Commit
+  255c97caca.
+- Scritto promemoria datato per la ri-misura: dopo 3 fixture giocate col
+  flag acceso (GW5 football-14-18-aug-2026, GW6 football-18-21-aug-2026,
+  GW7 football-21-25-aug-2026, chiude 25/08/2026), rifare G_on-G_off SOLO
+  sulle GW nuove. Atteso (Opus): ~+15 essenze/GW-manager. Se negativo su
+  queste 3, rispegnere il flag. QUESTO PROMEMORIA E' ANCORA VALIDO E
+  ANCORA DA FARE, non e' stato toccato oggi pomeriggio/sera. Scritto in
+  `docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md` §5.6.
+- Tardi in sessione (dopo il filone soglie, §7bis sotto), riverificato
+  scomponendo il +5.556 in parte robusta alla soglia arena (89% delle
+  coppie manager-GW, +5.318, IC95%[+997;+9.866] 99,3% positivo — stesso
+  numero di arene entrate a flag spento/acceso, il correttivo cambia solo
+  QUALE portiere schierare) e parte sensibile (11%, +238). **Confermato,
+  nessun'altra azione necessaria su questo filone per ora** — tranne la
+  ri-misura pre-registrata sulle 3 fixture nuove sopra, quella resta.
+
+NUMERI INTEGRALI (essenze, netto realizzato):
+  Binario 1: flag off G_on-G_off n/a (e' il baseline), flag on delta
+    G-A totale +3.400 (trim +2.800) vs flag off +3.700 (trim +3.100) —
+    quindi G_on-G_off = -1.500, IC95%[-5.650;+2.550], 22,9% positivo
+    (NULLO, sotto potenza, non contro-prova).
+  Binario 2: G_on-G_off = +5.556, IC95%[+649;+10.638], 98,7% positivo.
+    Scomposizione: 322/360 coppie stesso n.arene (+5.318, IC95%
+    [+997;+9.866] 99,3%) + 38/360 coppie n.arene diverso (+238).
+
+DA FARE (unica cosa aperta su questo filone): la ri-misura sulle 3 GW
+nuove (25/08/2026 in poi), gia' scritta in §5.6 del riassunto unificato.
+Non serve altro.
+
+================================================================================
+4. FILONE 2 — GRUPPO GRADE ESTESO ALLA GIORNATA: APERTO, PRIORITA' 2
+================================================================================
+
+ORIGINE: idea dell'utente, mai esplorata prima. Oggi il voto A-F di un
+giocatore si confronta con gli "altri giocatori del suo ruolo, nella sua
+lega, quel giorno" per decidere se il punteggio previsto va spostato in
+su o in giu'. Caso concreto che ha fatto partire il filone: Hugo Lloris
+(voto B, buono) prendeva uno sconto ingiusto perche' nel suo gruppo di
+confronto (3 portieri MLS quel giorno) la media era piu' alta.
+
+SCOPERTA PIU' GROSSA (non prevista all'inizio, trovata da Opus): il
+gruppo di confronto oggi in produzione ha SPESSO un solo giocatore — sui
+consigli veri su disco (ultima run), 51% dei gruppi (lega,ruolo) ha UN
+SOLO giocatore, 69% ne ha al massimo 2. E per i gruppi sotto i 2 membri
+`_apply_grade_group()` (build_formazione_globale.py righe 505-548) fa un
+RETURN ANTICIPATO (righe 514-520): il correttivo grade NON VIENE
+APPLICATO PER NIENTE. Non e' "Lloris penalizzato ingiustamente per un
+gruppo piccolo": e' che per META' delle righe di produzione oggi il
+grade e' SPENTO, silenziosamente, da sempre.
+
+COSA HO TESTATO (tutto negli script analisi_manager/p12_backtest_
+formazione_grade.py, p23_binario1_mga.py, p24_binario2_ga.py, p46_grade_
+group_carta.py — vedi §7 sotto per l'elenco file):
+
+Round 1 — pool ristretto (solo le carte del manager che gioca quella
+GW), 4 modalita' di raggruppamento aggiunte a `applica_gruppi_grade()`:
+  - 'lega_ruolo' (baseline, A/A verificato bit-per-bit identico)
+  - 'giornata_ruolo' (tutte le leghe della stessa giornata insieme)
+  - 'suppletivo' (fallback solo se il gruppo nativo ha <5 membri,
+    soglia pre-registrata prima di vedere risultati)
+  - 'pool_largo' (pool multi-manager: le carte di TUTTI i 29 manager che
+    condividono la stessa fixture, non solo il pool del singolo manager
+    — poi rivelatosi RUMOROSO, non un tetto teorico affidabile: mediana
+    solo 3 carte anche allargato, vedi Round 2)
+Risultato sull'endpoint essenze (Binario 1/2): NULLO su tutte le
+varianti. Nessun IC esclude lo zero. Commit d75fd2c8d6 (varianti), poi
+db8062f780 (pool_largo).
+
+Round 2 — livello di CARTA (non GW), proposta di Opus dopo il verdetto
+"nessuna estrazione, il problema di fondo e' lo stesso della strada
+manager gia' chiusa" (vedi INDICE.md di archivio_ufficiale, "non
+riaprire senza un'idea nuova"). Confronta correlazione(aggiustamento,
+residuo=reale-atteso_calibrato) su 9.440-10.255 righe carta invece che
+sulle 360 GW intere (molto piu' potente, zero rumore da lotteria-arena).
+4 bracci: 1 lega_ruolo (baseline), 2 pool_largo (creduto tetto teorico),
+3 storica_grade (solo tabella storica del voto), 4 storica_completa
+(tabella storica del voto E della variabilita' dell'atteso, ENTRAMBE,
+nessuna dipendenza dal gruppetto nativo).
+Risultato: 1<3<4 confermato (IC escludono zero, 99-100% positivo). MA
+4<=2 VIOLATO (storica_completa batte pool_largo) — non un bug (Opus l'ha
+riprodotto da zero), ma la scoperta che pool_largo non era affatto un
+tetto: troppo rumoroso (mediana 3 carte anche con 29 manager). Script:
+analisi_manager/p46_grade_group_carta.py, dati in
+analisi_manager/dati/grade_group_carta_bracci_2026-08-11.json.
+
+Round 3 — implementata la "ricetta completa" (storica_completa, fattore
+di scala 0,75) anche sull'endpoint essenze (Binario 1/2), per vedere la
+direzione. Risultato: B1 ancora nullo. B2 **+14.387 essenze, IC95%
+[+5.566;+23.412], 99,9% positivo** — sembrava una conferma fortissima,
+l'utente ("troppo buono per essere buono") aveva ragione a dubitarne:
+Opus ha scomposto il numero e trovato che ~45% era una "spinta cieca"
+(l'aggiustamento aveva MEDIA NON ZERO, +1,15 pt/carta, perche' l'archivio
+di manager reali possiede carte mediamente piu' forti della media
+storica generale — 4,03 di voto medio contro 3,04) — non ordinamento
+migliore, solo un livello piu' alto applicato a quasi tutte le carte.
+La versione RICENTRATA (media zero, solo ordinamento) da' **+4.260, IC95%
+[-3.837;+12.398], 84,6% positivo — NON esclude lo zero**. Quindi: a
+livello di GW/essenze il grade NON E' ANCORA PROVATO, ne' in un senso ne'
+nell'altro. A livello di CARTA (correlazione, Round 2) RESTA VALIDO e
+solido: la correlazione e' insensibile allo spostamento di media (per
+costruzione matematica), quindi il problema del Round 3 non tocca quella
+conclusione.
+
+STATO FINALE DEL FILONE — COSA E' VERO:
+- A livello di carta: la ricetta (tabelle storiche per voto E
+  variabilita', nessun return anticipato) migliora davvero la previsione,
+  confermato con IC che esclude lo zero, robusto, ricontrollato da Opus
+  in modo indipendente.
+- A livello di essenze/formazioni: NON provato. Il numero grosso
+  (+14.387) era in gran parte un artefatto. La versione onesta
+  (ricentrata) non esclude lo zero.
+- NON e' abbastanza implementabile in produzione oggi stesso (chiesto
+  esplicitamente dall'utente "e' gia' astrattamente implementabile?").
+  Mancano: (1) una tabella storica della variabilita' (sd_atteso)
+  costruita sui dati DI PRODUZIONE (quella usata nei test viene
+  dall'archivio dei 29 manager, che Opus ha segnalato "sbilanciato verso
+  i buoni giocatori" — chi possiede una carta di solito l'ha scelta
+  bene); (2) il correttivo deve avere ESPLICITAMENTE media zero (nel
+  Round 3 non l'avevo ricentrato, e' quello che ha creato l'illusione
+  del +14.387); (3) la catena di produzione (soglie arena + scouting) va
+  riverificata una volta implementato, come fatto per GK_ATT_AVV.
+
+PRIORITA' 2 (l'utente ha chiesto esplicitamente di riprendere QUESTO
+DOPO aver chiuso il filone soglie, per non sovrapporsi — il filone
+soglie si e' chiuso stasera, vedi §5bis, quindi QUESTO E' IL PROSSIMO DA
+FARE quando si riprende):
+1. Costruire la tabella storica sd_atteso sui dati di produzione (non
+   sull'archivio backtest).
+2. Implementare il correttivo con recentraggio esplicito a media zero.
+3. Ritestare a livello di carta (dovrebbe reggere, e' quello gia'
+   verificato) E a livello di essenze (bracci 3/4 puliti, senza la
+   spinta cieca).
+4. Solo se regge: implementare in produzione dietro flag spento, seguire
+   la catena fino allo scouting, poi decidere se/quando accendere.
+
+FUNZIONI NUOVE RIUTILIZZABILI (in analisi_manager/p12_backtest_
+formazione_grade.py): `applica_gruppi_grade(rows, modo=..., ...)` con 5
+modalita' ('lega_ruolo','giornata_ruolo','suppletivo','pool_largo',
+'storica_completa'), `costruisci_tabella_sd_atteso()`,
+`_sd_atteso_storico()`. Riusabili per il prossimo giro.
+
+================================================================================
+5. FILONE 3 — SOGLIE ARENA (PAREGGIO_ARENA): APERTO E RICHIUSO OGGI STESSO
+================================================================================
+
+ORIGINE: durante il filone grade, l'utente ha fatto un'osservazione sul
+proprio comportamento reale — non schiera tutte le arene che il bot
+consiglia, salta quelle segnalate "marginali", tiene un margine piu' alto
+di quello minimo codificato ("forse gioco il 60% di quello che il bot
+consiglia"). In parallelo Opus aveva trovato (dentro il filone grade,
+testando l'endpoint essenze) che una "spinta cieca" (aggiungere punti a
+caso, zero informazione) sembrava valere piu' di GK_ATT_AVV — segno
+potenziale che la soglia fosse troppo PRUDENTE. Le due cose insieme hanno
+aperto il filone.
+
+SEQUENZA DEGLI EVENTI (importante capirla, ci sono STATI DUE ERRORI
+consecutivi, entrambi corretti in giornata):
+
+1. Verificato nel codice (fatto vero, resta valido): la selezione VERA
+   (`genera_arene_efficienti`, build_formazione_globale.py righe
+   1411-1479, usata sia in produzione sia nel nostro Binario 2) entra in
+   QUALUNQUE arena con `atteso > PAREGGIO_ARENA`, margine ZERO.
+   `QUOTA_MINIMA` (10%, riga 857) esiste ma serve SOLO all'etichetta
+   visiva "SCHIERA/MARGINALE/LASCIA PERDERE" (`_etichetta_arena`, righe
+   868-892) — non filtra nulla dalla formazione proposta, e' il bot che
+   PROPONE anche le marginali, e' l'utente che poi sceglie di seguirle o
+   no. Il nostro Binario 1 (p23) invece USA il 10% nella sua regola
+   entra/salta: due regole diverse misurate oggi senza saperlo all'inizio.
+   `verdetto_arena()` (righe 895-907) e' funzione MORTA, mai chiamata in
+   tutto il repo (grep confermato), stessa regola a margine zero — il
+   commento nel codice che dichiara "+9.800→+54.700 essenze" non e' mai
+   stato verificato e non va preso per buono.
+
+2. ERRORE 1 (di Opus, poi ritrattato da lui stesso): calcolato il
+   "pareggio vero" guardando il PREMIO REALE ottenuto su 2.979 arene
+   realmente giocate (contro punteggio realizzato, non stimato) —
+   cap260 285,4 (poi raffinato a 285,7), cap220 262,4/268,7, beginner
+   277,3/280,2, uncapped 303,0 — tutti PIU' ALTI dei valori codificati
+   (264,5/247,1/256,5/279,6). Sembrava un errore vero: le soglie di
+   produzione troppo BASSE (il bot entra troppo facilmente), opposto di
+   quello che la "spinta cieca" sembrava suggerire (quella era un
+   artefatto circolare: misurava netto_stimato calcolato con la STESSA
+   soglia sospetta, quindi il test era circolare). Applicato in
+   produzione (commit c7b298f507).
+
+3. ERRORE 2, TROVATO DA OPUS STESSO POCHE ORE DOPO, PIU' GROSSO
+   DELL'ERRORE 1: il "pareggio vero" (285,7 ecc.) e' calcolato sul
+   PUNTEGGIO REALIZZATO — risponde alla domanda "quanto devo segnare
+   DAVVERO per ripagare il biglietto". Ma la decisione di entrare si
+   prende sulla PREVISIONE, non sul realizzato — e sono due grandezze
+   diverse. Sulle formazioni vere: previsione media 264,5 (sd 11,9),
+   realizzato media 265,0 (sd 49,8), correlazione solo 0,25 — la
+   previsione e' giusta IN MEDIA ma il vero oscilla di ~50 punti intorno
+   a ogni previsione. Con premi a "gancio" (piatto sotto soglia, a
+   valanga sopra fino ai jackpot), per la disuguaglianza di Jensen il
+   guadagno atteso DATA la previsione e' piu' alto del guadagno calcolato
+   AL punto della previsione — quindi il punto di pareggio in unita' di
+   PREVISIONE sta PIU' IN BASSO di quello in punti realizzati. In parole
+   povere per l'utente: la lotteria vale piu' del suo prezzo anche
+   partendo un po' indietro (perdi solo il biglietto se va male, prendi
+   il jackpot se va bene) — conviene entrare anche con una previsione
+   sotto il "pareggio vero" misurato sui punti realizzati.
+   PROVA DIRETTA (su 1.091 arene reali, premio VERO, bootstrap cluster
+   manager-fixture): soglia sulla PREVISIONE T=250 -> +14.350 essenze,
+   T=255 -> +16.550, **T=260 -> +18.400 (il migliore della griglia
+   testata)**, T=265 -> +14.200, T=270 -> +11.300, T=275 -> +10.000,
+   T=280 -> +3.000, T=285 -> -150. La vecchia soglia codificata (264,5,
+   +13.900, 92,5% positivo) e' STATISTICAMENTE INDISTINGUIBILE
+   dall'ottimo 260 (delta -4.850, IC95%[-18.350;+6.600]) — niente da
+   guadagnare a ritoccarla. Nessuno di questi IC esclude formalmente lo
+   zero, ma 5 soglie diverse concordano nella stessa direzione e ampiezza.
+   AZIONE: revertito il commit c7b298f507 (commit di revert: ca87663dfe).
+   **PAREGGIO_ARENA E' TORNATA IDENTICA A PRIMA DI OGGI: 264,5/247,1/
+   279,6/256,5. NESSUNA MODIFICA NETTA DI QUESTO FILONE SUL CODICE DI
+   PRODUZIONE.**
+
+ALTRA RITRATTAZIONE NELLA STESSA GIORNATA: "l'atteso e' sistematicamente
+pessimista di ~10 pt/formazione" (misurato su 10.255 righe, sembrava un
+secondo difetto vero) — ANCH'ESSA RITRATTATA. La misura era condizionata
+su "il giocatore ha giocato" (il calcolo, tramite `costruisci_pool_
+carte`, escludeva le carte a 0/DNP). Sulle formazioni VERE (DNP inclusi,
+4,42% delle carte reali segna 0) il bias e' +0,62/+0,47 punti,
+sostanzialmente zero. Aggiungere punti fissi all'atteso sarebbe stato
+ottimismo inventato — SCARTATO, non fatto.
+
+TERZA RITRATTAZIONE: l'osservazione dell'utente sul proprio comportamento
+("gioco solo il 60%, salto le marginali") — inizialmente sembrava
+confermata dal calcolo (Errore 1), poi Opus ha ritirato la conferma
+insieme all'errore. Col metro giusto, fra le arene REALMENTE giocate
+essere piu' severi di ~265 di previsione costa soldi — ma l'archivio
+contiene SOLO le arene che l'utente ha giocato, non quelle che ha
+saltato, quindi non si puo' dire nulla sulla sua scelta specifica di
+saltarle. CONCLUSIONE ONESTA: non provato ne' a favore ne' contro
+dell'utente. Non riproporre "aveva ragione" ne' "aveva torto" senza un
+test nuovo dedicato (che richiederebbe sapere quali arene ha SALTATO,
+dato che oggi non ce l'abbiamo).
+
+TROVATA UNA COSA VERA E SEPARATA, MAI AFFRONTATA — FILONE APERTO PICCOLO
+SE SI VUOLE RIPRENDERLO: le arene **UNCAPPED perdono soldi davvero**:
+-10.300 essenze reali su 98 arene VERE giocate, negative a QUALUNQUE
+soglia testata nella griglia (250-285). Non fa parte di nessun altro
+filone, e' indipendente da tutto il resto di oggi. Nessuna azione presa
+(disattivarle? cambiare soglia specifica? boh, non deciso).
+
+DA NON DIMENTICARE: quando si tocca `PAREGGIO_ARENA`/`GUADAGNO_PER_PUNTO`
+in futuro (per QUALUNQUE motivo, incluso il filone Uncapped sopra), i
+backtest p23_binario1_mga.py/p24_binario2_ga.py leggono quelle costanti
+DALLA PRODUZIONE (via `S21.bfg`), sia per la decisione entra/salta sia
+per `netto_stimato` — quindi ogni verdetto essenze gia' misurato oggi
+(GK_ATT_AVV, gruppo grade) andrebbe rimisurato se le soglie cambiassero
+per davvero in futuro. Oggi non e' successo (revert), ma la prossima
+volta che si tocca sul serio quella costante, tenerne conto.
+
+================================================================================
+5bis. FILONE 4 — BUG DI PRODUZIONE FIXATO (crash su ogni checkout fresco)
+================================================================================
+
+Durante la sessione l'utente ha rilanciato una run di produzione
+(GW4/GW5, odds 0.80, arene efficienti=15, meccanismo suppletivo=1) ed e'
+fallita: `generatore_formazioni/dati/aggiorna_gk_attacco_avversario.py`
+(lo step di refresh della tabella GK_ATT_AVV, gira SEMPRE prima del
+generatore) crashava con FileNotFoundError su
+`analisi_manager/dati/_cache_index_gamelog.json` — file da 20MB, mai
+committato di proposito, che su un checkout CI fresco non esiste.
+
+CAUSA: il commento nel workflow dichiarava "si ricostruisce da solo" ma
+il codice NON lo faceva davvero. `p42_estrai_gol_tutte_squadre_archivio.
+squadre_archivio()` (e la sorella `p40_estrai_gol_squadre_crowss.
+squadre_crowss()`) leggevano il file con `json.load()` diretto, senza mai
+chiamare `costruisci_indice_cache()` (funzione gia' esistente in
+p36_correlazioni_compagni.py, gia' usata altrove).
+
+FIX (commit 0bf7fe98c6): entrambe le funzioni ora chiamano
+`costruisci_indice_cache()` invece del json.load diretto. Verificato in
+locale simulando il checkout fresco (file spostato via, rilanciato,
+ricostruito in 80s, 4.828 chiavi identiche al file precedente, nessun
+crash). Anche il commento nel workflow yml aggiornato per riflettere la
+realta'.
+
+STATO: fixato, pushato, la run dell'utente e' poi andata a buon fine
+(9 commit bot sul remoto durante la sessione, "Formazione giornata:
+output run/formazioni generate" — confermano che il fix ha funzionato in
+produzione, non solo in locale).
+
+================================================================================
+5ter. FILONE 5 — PULIZIA DOCUMENTO: 6 VOCI "APERTE" ERANO GIA' FATTE
+================================================================================
+
+Prima di aprire il filone grade, ho controllato §10bis di
+`docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md` (la lista "cose da fare")
+per vedere se c'era qualcosa di buono da riprendere. Trovate 6 voci
+descritte come ancora aperte che in realta' erano gia' fatte, verificato
+leggendo il codice attuale (non fidandosi del documento, che era rimasto
+fermo al 09-10/08):
+  - Archivio G-vs-A esteso: fatto, 29 manager (non piu' 13 in attesa).
+  - Pool supplementare starter-odds 0,60-0,70: implementato e IN
+    PRODUZIONE (`EXTEND_ODDS_060_070`, acceso di default nel workflow).
+  - Collo di bottiglia git push nel job predict: risolto, job
+    artifact-based, niente piu' commit+push per shard.
+  - `GK_TEAM_CS_WEIGHT` "default fasullo 0,5": FALSO, il default e'
+    22/35≈0,629, gia' calibrato.
+  - Fix "prossima partita" (caso Freese): gia' propagato ovunque, commit
+    8e6e1df8a7.
+  - "level_score portiere, leva mai raccolta": FALSO, c'e' gia' lavoro
+    esteso (Stadio A/B/D) in test_gk.py.
+Ripulito §10bis, commit 0444968206. Non ricontrollarle, sono verificate.
+
+================================================================================
+6. OUTPUT NUMERICO INTEGRALE — tabella riassuntiva di tutti i verdetti di oggi
+================================================================================
+
+GK_ATT_AVV (Binario 2, soglie originali, uniche valide):
+  G_on - G_off = +5.556 essenze, IC95%[+649;+10.638], 98,7% positivo
+  Scomposizione: +5.318 (89% coppie, robusto a soglia) + 238 (11%, sensibile)
+  Binario 1: -1.500, IC95%[-5.650;+2.550], 22,9% positivo (NULLO)
+
+GRUPPO GRADE, livello carta (n=9.440-10.255 righe, valido):
+  corr(z_lega_ruolo, residuo) = +0,0299-0,0378
+  corr(z_storica_completa, residuo) = +0,0999-0,100, IC esclude zero,
+    100% positivo (bootstrap B=3.000-5.000)
+  Sottoinsieme gruppo nativo <2 (34,4% delle righe, oggi SPENTO in
+    produzione): lega_ruolo indefinito (varianza zero per costruzione),
+    storica_completa +0,1016-0,057 (a seconda del round di misura)
+
+GRUPPO GRADE, livello essenze (Binario 1/2, NON conclusivo):
+  Round 3 (fattore 0,75, NON ricentrato): B2 +14.387, IC95%
+    [+5.566;+23.412], 99,9% positivo -- SCOMPOSTO: 45% spinta cieca
+    (placebo +6.524, IC[-2.878;+15.500], 91,7%) + 30% ordinamento vero
+    (ricentrata +4.260, IC[-3.837;+12.398], 84,6%, NON esclude zero) +
+    25% interazione.
+
+SOGLIE ARENA (esito finale: NESSUNA modifica netta):
+  Vecchia soglia (264,5 cap260) vs ottimo di griglia in unita' di
+  previsione (260): delta -4.850, IC95%[-18.350;+6.600] -- indistinguibili.
+  Uncapped: -10.300 essenze reali su 98 arene vere, negativo su tutta
+  la griglia 250-285 -- UNICO dato azionabile non ancora usato.
+
+================================================================================
+7. FILE DI RIFERIMENTO
+================================================================================
+Riassunto sempre aggiornato (leggere §5.6 per GK, §7 per soglie, §10bis
+gia' ripulito): docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md
+
+Filone GK_ATT_AVV:
+  docs/handoff/BRIEF_OPUS_GK_SECCA_PRODUZIONE_2026-08-11.txt
+
+Filone grade (in ordine cronologico):
+  docs/handoff/BRIEF_OPUS_GRADE_GROUP_FINESTRA_2026-08-11.txt
+  docs/handoff/BRIEF_OPUS_GRADE_GROUP_CARTA_2026-08-11.txt
+  docs/handoff/BRIEF_OPUS_GRADE_GROUP_4BRACCI_2026-08-11.txt
+  docs/handoff/BRIEF_OPUS_GRADE_GROUP_ESSENZE_2026-08-11.txt
+  analisi_manager/p46_grade_group_carta.py (script test carta, 4 bracci)
+  analisi_manager/dati/grade_group_carta_bracci_2026-08-11.json (dati)
+
+Filone soglie (in ordine cronologico):
+  docs/handoff/BRIEF_OPUS_TEMA_SOGLIE_2026-08-11.txt
+  docs/handoff/BRIEF_OPUS_SOGLIE_CONFLITTO_METODI_2026-08-11.txt
+  docs/handoff/BRIEF_OPUS_SOGLIE_APPLICATE_GK_2026-08-11.txt
+
+Risposte integrali di Opus (TUTTO il filone soglie+grade e' li' dentro,
+sezioni §14-21, e' il file piu' denso e completo):
+  docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt
+
+Codice modificato oggi (per orientarsi):
+  generatore_formazioni/build_formazione_globale.py (GK fix+acceso;
+    PAREGGIO_ARENA toccata e poi revertita, stato finale INVARIATO)
+  scouting_gw.py (GK allineato)
+  analisi_manager/p12_backtest_formazione_grade.py (applica_gruppi_grade
+    con 5 modalita', costruisci_tabella_sd_atteso)
+  analisi_manager/p23_binario1_mga.py, p24_binario2_ga.py (GK support,
+    refactor due passate, GRADE_GROUP_MODE)
+  analisi_manager/p40_estrai_gol_squadre_crowss.py,
+    p42_estrai_gol_tutte_squadre_archivio.py (fix crash cache index)
+  .github/workflows/formazione_giornata.yml (GK default acceso, commento
+    cache index corretto)
+
+================================================================================
+8. DECISIONE APERTA / PROSSIMI PASSI, IN ORDINE DI PRIORITA'
+================================================================================
+1. GRUPPO GRADE (priorita' 2 dell'utente, ora e' la prossima): costruire
+   tabella storica sd_atteso su dati di produzione, ricentrare a media
+   zero, ritestare, poi decidere se implementare dietro flag. Vedi §4.
+2. Ri-misura GK_ATT_AVV pre-registrata dopo la chiusura di GW7
+   (25/08/2026), gia' scritta in HANDOFF_UNIFICATO §5.6 — solo da
+   ricordarsi di farla quando arriva la data.
+3. Filone Uncapped (soglie, §5): -10.300 essenze reali su 98 arene, mai
+   affrontato. Piccolo, indipendente, se l'utente lo vuole riprendere.
+4. `verdetto_arena()` funzione morta (build_formazione_globale.py
+   895-907): da cancellare quando si fa pulizia, non urgente.
