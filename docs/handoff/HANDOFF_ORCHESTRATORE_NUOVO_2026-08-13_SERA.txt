@@ -1,0 +1,158 @@
+HANDOFF ORCHESTRATORE -- sessione 13/08/2026, lavoro autonomo (utente
+allontanato dal PC, autorizzato a procedere e a usare Opus se necessario).
+Sostituisce come punto di partenza HANDOFF_ORCHESTRATORE_NUOVO_2026-08-13.txt
+(quello resta come STORIA della giornata, non piu' da leggere come priorita').
+
+NOTA DATE: nel repo compaiono riferimenti a "12/08" e "13/08" come gia'
+passati mentre l'orologio di sistema segna 11/08 -- incoerenza nota
+dell'ambiente, non un errore di battitura. L'ordine CRONOLOGICO (git log,
+sequenza degli eventi) e' affidabile; le etichette calendario assolute no.
+
+===============================================================================
+0. VERDETTO DA BAR
+===============================================================================
+Tre filoni chiusi oggi, tutti "nessun cambio alla produzione":
+1. CALIB_PER_RUOLO: il refit (con qualunque metodo) peggiora il MAE fuori
+   campione. Non si tocca.
+2. DEF peso decisivo/granulare: sulla formula vera, w=1 (produzione) e' gia'
+   il massimo. Non si tocca.
+3. Leakage grade: chiuso con due test indipendenti (utente + Opus, 120
+   partite-giocatore, zero query di rete). Il voto NON segue il risultato.
+   Punto fisso scritto in CLAUDE.md, non riaprire senza nuove prove.
+
+Un filone RESTA APERTO, non chiuso (correzione importante fatta oggi
+all'utente: "non basta campione" non e' la stessa cosa di "si chiude"):
+4. QUOTA_MINIMA (soglia arena): non e' indecisione da poco campione, e' un
+   VERO cambio di regime fra primavera (guadagno) ed estate (perdita),
+   3,2 errori standard di differenza. Serve piu' campione SPECIFICO al
+   regime recente per decidere con sicurezza (vedi §2). Fino ad allora resta
+   a 0,10 (in mezzo ai due ottimi).
+
+Il GK e' stato riesaminato oggi (priorita' che Opus aveva proposto come piu'
+urgente) e il verdetto "chiuso" del 12/08 e' stato RICONFERMATO tre volte,
+inclusi due segnali mai provati prima (L10, casa/trasferta): nessuno ordina
+il portiere. Tetto strutturale, non un test mal fatto in passato.
+
+===============================================================================
+1. GK -- ESAURITO IL PANIERE A COSTO ZERO (chiuso, non riaprire senza dati nuovi)
+===============================================================================
+Il modello non ordina i portieri: Spearman atteso/reale +0,03 su n=995
+(dedup slug+fixture), confermato 3 volte in giornata (utente scettico che
+sospettava un test rifatto inutilmente -- verificato che NON lo era: la
+scoperta del buco e' del giorno prima, mai stata "gia' buona").
+
+Segnali alternativi testati oggi, TUTTI falliscono (nessuno supera il
+niente-di-atteso):
+  - quote di vittoria squadra (favorito_odds): GIA' testato il 07/08
+    (script pulito, dedicato), GK 0/9 varianti. Richiamato, non ripetuto.
+  - clean sheet di squadra (pcs): gia' il migliore trovato, gia' in
+    produzione (GK_TEAM_CS_WEIGHT). Non ripetuto.
+  - L10 (media ultime 10): NUOVO oggi. Spearman -0,04 (peggio dell'atteso).
+  - casa/trasferta da solo: NUOVO oggi. Differenza +0,03 punti su 995
+    portieri (499 in casa, 496 in trasferta). Nullo.
+
+NON testabile a costo zero: starter_odds INDIVIDUALE (probabilita' che
+QUEL portiere specifico giochi) -- non esiste uno storico cachato, servirebbe
+raccolta nel tempo (rete, giorni). Se si vuole insistere sul GK, questo e'
+l'unico varco rimasto, e costa una raccolta dati nuova, non un'analisi.
+
+Script: analisi_manager/p32_gk_segnali_alternativi.py (riproducibile, zero
+rete). Dato: analisi_manager/dati/gk_segnali_alternativi_2026-08-13.json.
+
+===============================================================================
+2. QUOTA_MINIMA -- APERTO, cambio di regime vero, servono piu' dati
+===============================================================================
+Riassunto della catena di oggi (tre misure, ciascuna verificata
+indipendentemente da chi scrive, non solo riportata):
+
+  a) Grid ingenuo su TUTTE le formazioni (p29_soglia_quota_minima.py):
+     train (apr-11 giu) preferisce q basso, test (21 lug-7 ago) preferisce
+     q alto -- sembrava indecidibile.
+  b) Opus ha mostrato che il numero giusto non e' il totale ma la FASCIA DI
+     CONFINE (le formazioni la cui decisione cambia fra q=0 e q=0,15): 25%
+     del campione, il resto si cancella a vicenda. Su quella fascia: train
+     +50,7 essenze/formazione (n=198, quasi certo positivo), test -60,5
+     (n=68, quasi certo negativo). Differenza 3,2 errori standard -> vero,
+     non rumore. Verificato di persona: n e medie ricalcolate a mano,
+     combaciano esatte (198/68, +50,7/-60,5).
+  c) Oggi in piu' (p33_quota_minima_per_tipo.py): la perdita estiva non e'
+     concentrata in un tipo di arena -- negativa su tutti e 4 (cap260 n=38
+     -47,3; beginner n=18 -69,7; cap220 n=8 -10,1; uncapped n=4 -246,1).
+     Non prova ne' smentisce l'ipotesi "mercato estivo" di Opus, ma esclude
+     che sia un artefatto di un solo tipo di arena.
+
+COSA NON REGGE come spiegazione comoda (controllato da Opus, non solo
+affermato): "il modello e' tarato peggio d'estate" -- la pendenza
+reale/atteso non e' distinguibile fra i due periodi (differenza 1,5 err.std,
+dentro il rumore). Lo scarto e' concentrato SOLO nella fascia di confine.
+
+IPOTESI ANCORA APERTA (non provata, non esclusa): mercato/precampionato
+rende gli attesi di confine troppo ottimisti d'estate. Prossimo test, se si
+vuole scioglierla con QUESTI dati (nessuna nuova estrazione): controllare se
+la fascia di confine estiva e' concentrata nei giocatori con transfermarkt/
+squadra cambiata di recente, o in leghe in preseason vs leghe a stagione
+regolare -- richiede incrociare `lega`/`squadra` (gia' in binario2, non in
+binario1: servirebbe un merge, mezz'ora di lavoro, nessuna query).
+
+PER DECIDERE DAVVERO (numeri di Opus, non ricalcolati da me ma verosimili
+dato che il resto ha retto): ~6 giornate in piu' nel regime recente (21
+lug-7 ago), oppure ~47 manager sulle stesse 5 GW invece di 21. ENTRAMBE
+richiedono ESTRAZIONE NUOVA (rete/query) -- non ho lanciato nulla, la regola
+"avvisare prima di ogni run GitHub" vale anche sotto autorizzazione generale
+ad agire in autonomia (l'autorizzazione di oggi copriva analisi, non nuove
+estrazioni).
+
+Azione consigliata quando l'utente torna: decidere se vale la spesa di
+un'estrazione mirata (~26-47 manager in piu' sulle 5 GW recenti, o aspettare
+le prossime GW naturali) per sciogliere il regime estivo, oppure lasciare
+QUOTA_MINIMA a 0,10 e chiudere il filone come "regime-dipendente, non
+risolvibile senza piu' dati".
+
+File: analisi_manager/p29_soglia_quota_minima.py, p30 (di Opus, non mio),
+p33_quota_minima_per_tipo.py. Dati: analisi_manager/dati/quota_minima_*.json.
+
+===============================================================================
+3. LEAKAGE GRADE -- CHIUSO, punto fisso in CLAUDE.md (non riaprire)
+===============================================================================
+Vedi CLAUDE.md sezione "IL GRADE SORARE NON HA LEAKAGE SISTEMATICO". Due
+test indipendenti (utente su 3 partite di un giocatore, poi Opus su 120
+partite-giocatore a costo zero) concordano: il voto A-F non segue il
+risultato della partita. Un margine residuo ACCETTATO (13% delle righe,
+"F che a sorpresa gioca sale a D/E") gioca a sfavore del grade, non a
+favore -- va tenuto in conto ma non gonfia niente.
+
+===============================================================================
+4. STATO DEL REPO
+===============================================================================
+Branch main, 20 commit locali avanti rispetto a origin/main (tutti di oggi,
+elencabili con `git log origin/main..HEAD`). NON pushato (regola CLAUDE.md:
+push solo a fine sessione o su richiesta esplicita -- l'utente non ha ancora
+chiesto il push oggi). Nessuna modifica al codice di PRODUZIONE: solo script
+di misura in analisi_manager/ e un aggiornamento di CLAUDE.md (punto fisso
+leakage grade).
+
+File non tracciati rimasti dalla sessione del 12/08 (gia' segnalati allora
+come "puoi ignorarli, non servono piu'", non toccati oggi):
+analisi_manager/_tmp_gk_atteso_raw.py, _tmp_gk_diagnosi_opus.py,
+analisi_manager/dati/gk_atteso_raw_2026-08-12.json,
+docs/handoff/BRIEF_SONNET_GK_GREZZO_2026-08-12.txt.
+
+===============================================================================
+5. SESSIONE OPUS ESECUTORE
+===============================================================================
+ID esatto: local_beb5e68f-8d4f-451c-87da-1a7d3ebeb4c7 (titolo "Opus
+esecutore"). Ha risposto a tre brief oggi (dove cercare segnale, quanto
+campione serve per QUOTA_MINIMA, chiusura leakage grade) sempre con
+`mcp__ccd_session_mgmt__send_message`, sempre a costo di rete zero (dati
+gia' in repo). I suoi tre report sono committati in docs/handoff/
+RISPOSTA_OPUS_*_2026-08-13.txt.
+
+===============================================================================
+6. FILE DI RIFERIMENTO
+===============================================================================
+- docs/handoff/HANDOFF_ORCHESTRATORE_NUOVO_2026-08-13.txt -- il brief di
+  partenza di oggi, leggilo come storia.
+- docs/handoff/RISPOSTA_OPUS_DOVE_CERCARE_SEGNALE_2026-08-13.txt
+- docs/handoff/RISPOSTA_OPUS_QUOTA_MINIMA_CAMPIONE_2026-08-13.txt
+- docs/handoff/RISPOSTA_OPUS_LEAKAGE_GRADE_CHIUSO_2026-08-13.txt
+- CLAUDE.md, sezione "IL GRADE SORARE NON HA LEAKAGE SISTEMATICO"
