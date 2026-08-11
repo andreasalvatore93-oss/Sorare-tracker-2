@@ -701,29 +701,16 @@ PAREGGIO_ARENA = {
     # In punteggio REALE, perche' la previsione arriva gia' calibrata (vedi
     # calibra_riga). Prima erano espresse in previsione grezza -- 274.1 per la
     # cap 260 -- che e' lo stesso pareggio letto sull'altra scala.
-    # CORRETTE 11/08/2026 sera (RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt
-    # §19-20, docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §7): i valori del
-    # 09/08 (264.5/247.1/279.6/256.5, sotto in commento) venivano da una
-    # RETTA UNICA adattata sull'intero intervallo di punteggio. Il guadagno
-    # di un'arena non e' una retta: sotto soglia si perde sempre e solo il
-    # biglietto (piatto), sopra sale a valanga con la classifica (gancio).
-    # Una retta unica su un gancio incrocia lo zero troppo presto -- Opus ha
-    # riprodotto i valori del 09/08 quasi esatti rifacendo apposta questo
-    # errore (3 tipi su 4 entro 2.5 pt). Valori nuovi: pareggio VERO, nessuna
-    # stima -- punteggio a cui il premio ATTESO (tabella premi vera,
-    # rewardsConfig) uguaglia il costo. Confermato su due dataset
-    # indipendenti e due finestre temporali diverse (ago 2025-lug 2026 e
-    # apr-ago 2026): stessa risposta, la finestra non c'entra.
-    # ATTENZIONE CATENA (regola in cima a questo file): sposta l'efficienza
-    # delle arene -> i consigli di ACQUISTO dello scouting. GUADAGNO_PER_PUNTO
-    # sotto viene dallo stesso fit vecchio (stesso vizio) ma NON ancora
-    # corretto: va riderivato SOLO nella zona vicino alla nuova soglia, passo
-    # successivo, non insieme a questo.
-    'ARENA_ALLSTARS_260': 285.7,      # era 264.5 (09/08, retta unica errata); sigma cap 260 50.6
-    'ARENA_ALLSTARS_220': 268.7,      # era 247.1; due calcoli indipendenti divergono qui (268.7 vs 262.4), preso il piu' prudente
-    'ARENA_ALLSTARS_UNCAPPED': 303.0,  # era 279.6
-    'ARENA_ALLSTARS_ELITE': 342.7,    # INVARIATA (esclusa dal perimetro, decisione utente 09/08; non ricalcolata oggi)
-    'ARENA_ALLSTARS_BEGINNER': 280.2,  # era 256.5
+    # AGGIORNATE 09/08/2026 (BRIEF_SONNET_APPLICA_SOGLIE_2026-08-09.txt,
+    # HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt §11-12): premi VERI letti da
+    # rewardsConfig su 2.125 arene avversarie / 5.031 premi osservati (contro
+    # i 141 su cui poggiavano i valori precedenti). Split-half stabile
+    # (scarti 0,2-2,5 pt).
+    'ARENA_ALLSTARS_260': 264.5,      # era 259.5 (05/08); sigma cap 260 50.6
+    'ARENA_ALLSTARS_220': 247.1,      # era 244.1
+    'ARENA_ALLSTARS_UNCAPPED': 279.6,  # era 288.3
+    'ARENA_ALLSTARS_ELITE': 342.7,    # INVARIATA (esclusa dal perimetro, decisione utente 09/08)
+    'ARENA_ALLSTARS_BEGINNER': 256.5,  # tipo NUOVO 09/08, vedi COSTO_INGRESSO/GUADAGNO_PER_PUNTO sotto
 }
 # Arene dedicate a un campionato: SONO cap 260 (confermato dall'utente 03/08),
 # stesso ingresso e stessi premi. La soglia e' comunque leggermente piu' bassa,
