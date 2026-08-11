@@ -101,14 +101,22 @@ def carica_formazioni(path):
     return d['righe'] if isinstance(d, dict) else d
 
 
-INCLUDI_DNP = os.environ.get('INCLUDI_DNP') == '1'
+# DEFAULT INVERTITO 11/08/2026 su raccomandazione di Opus (vedi
+# RISPOSTA_OPUS_ESITO_TESTCARTA_DNP_2026-08-11.txt sez. 5.2): il filtro
+# escludeva il 19,3% delle formazioni, precisamente i casi andati peggio,
+# gonfiando artificialmente 'M entra sempre' (+42.500 vs +11.500 reale) e
+# facendo sembrare la soglia d'ingresso un costo quando invece e' un
+# guadagno. Ogni misura vecchia che coinvolge M o la soglia fatta col
+# filtro acceso e' sistematicamente distorta, non solo "un po' ottimista".
+# ESCLUDI_DNP=1 riattiva il vecchio comportamento (filtro acceso), solo
+# per confrontarsi con le misure storiche -- non usarlo per nuovi verdetti.
+ESCLUDI_DNP = os.environ.get('ESCLUDI_DNP') == '1'
 
 
 def escludi_dnp(righe):
-    """Se INCLUDI_DNP=1 non esclude nulla (misura, vedi RISPOSTA_OPUS_STATO_GVSA_ROUND4
-    sez. 6.2: il filtro toglie il 19,3% delle formazioni ed e' precisamente i casi
-    andati peggio, distorcendo 'M entra sempre' verso l'alto). Default INVARIATO."""
-    if INCLUDI_DNP:
+    """Default: NON esclude nulla. ESCLUDI_DNP=1 ripristina il vecchio filtro
+    (solo per confronto con misure storiche, vedi nota sopra)."""
+    if not ESCLUDI_DNP:
         return righe, []
     pulite, escluse = [], []
     for r in righe:
