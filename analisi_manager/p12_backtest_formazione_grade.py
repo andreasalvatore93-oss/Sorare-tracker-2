@@ -268,7 +268,41 @@ def _applica_da_riferimento(target, riferimento):
         m['_combinato'] = m['_cal'] + sd_atteso * m['_zgrade']
 
 
-def applica_gruppi_grade(rows, modo='lega_ruolo', soglia_piccolo=5, riferimento_esterno=None):
+def costruisci_tabella_sd_atteso(tutte_le_righe):
+    """Stessa gerarchia a 3 livelli di grade_scala_storica.json
+    (lega_ruolo -> ruolo -> globale), stessa materia prima (_cal delle
+    righe passate), ma per la SD dell'atteso calibrato (non per il
+    grade). Filone 'gruppo grade esteso alla giornata' (11/08/2026),
+    round 2 (RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §16-17): serve
+    per il braccio 'storica_completa' di applica_gruppi_grade. In
+    produzione andrebbe costruita dai consigli storici, non ricalcolata
+    sul campione che si sta misurando (igiene, non correttezza --
+    verificato zero leak: nessuna delle due tabelle storiche contiene un
+    esito/reale, solo statistiche di grade/atteso)."""
+    per_lega_ruolo = collections.defaultdict(list)
+    per_ruolo = collections.defaultdict(list)
+    tutti = []
+    for r in tutte_le_righe:
+        per_lega_ruolo[(r['lega'], r['codice'])].append(r['_cal'])
+        per_ruolo[r['codice']].append(r['_cal'])
+        tutti.append(r['_cal'])
+    return {
+        'lega_ruolo': {k: _media_sd(v) for k, v in per_lega_ruolo.items()},
+        'ruolo': {k: _media_sd(v) for k, v in per_ruolo.items()},
+        'globale': _media_sd(tutti),
+    }
+
+
+def _sd_atteso_storico(tabella, lega, codice):
+    if (lega, codice) in tabella['lega_ruolo']:
+        return tabella['lega_ruolo'][(lega, codice)][1]
+    if codice in tabella['ruolo']:
+        return tabella['ruolo'][codice][1]
+    return tabella['globale'][1]
+
+
+def applica_gruppi_grade(rows, modo='lega_ruolo', soglia_piccolo=5, riferimento_esterno=None,
+                         tabella_sd_storica=None, fattore_storico=1.0):
     """Imposta _zgrade/_combinato su ogni riga di `rows` (deve gia' avere
     '_cal', '_grade', 'lega', 'codice'), per TUTTI i ruoli insieme (GK/DEF/
     MID/FWD, non solo GK). Filone 'gruppo grade esteso alla giornata'
@@ -301,7 +335,24 @@ def applica_gruppi_grade(rows, modo='lega_ruolo', soglia_piccolo=5, riferimento_
         vede solo il pool di UN manager per volta. Approssima il pool di
         discovery della produzione (molti candidati per lega/ruolo, non
         solo le carte possedute da un manager) riusando dati gia' estratti
-        in archivio_ufficiale, zero query nuove."""
+        in archivio_ufficiale, zero query nuove. RIVELATOSI RUMOROSO (round
+        2, §17 di RISPOSTA_OPUS_CORRELAZIONI...13.txt): anche allargato a
+        tutti i manager il gruppo resta piccolo (mediana 3 carte), non e'
+        un tetto teorico affidabile -- 'storica_completa' lo batte.
+      - 'storica_completa' (11/08/2026 notte, round 2 del filone, proposta
+        Opus §16-17): gm/gsd del grade dalla tabella storica PRODUZIONE
+        (generatore_formazioni/dati/grade_scala_storica.json, letta dal
+        chiamante in bfg._GRADE_SCALE_TABLE) E sd_atteso da
+        `tabella_sd_storica` (obbligatoria, costruita col builder
+        costruisci_tabella_sd_atteso() sopra) -- NESSUNA dipendenza dal
+        gruppetto nativo (lega,ruolo,manager,fixture), quindi funziona
+        anche per i gruppi di UNA carta (51% dei casi in produzione,
+        oggi il grade e' li' completamente spento per il return anticipato
+        di _apply_grade_group). `fattore_storico` (default 1.0, misurato
+        ottimale ~0.75: il correttivo grezzo sovrastima lo spostamento,
+        pendenza OLS residuo~aggiustamento 0.749 IC[0.574;0.918], vedi
+        RISPOSTA_OPUS_CORRELAZIONI...13.txt §17 punto 5) scala
+        l'aggiustamento finale."""
     per_lega_ruolo = collections.defaultdict(list)
     per_ruolo = collections.defaultdict(list)
     for r in rows:
@@ -326,6 +377,16 @@ def applica_gruppi_grade(rows, modo='lega_ruolo', soglia_piccolo=5, riferimento_
         for chiave, membri in per_lega_ruolo.items():
             rif = riferimento_esterno.get(chiave) or membri
             _applica_da_riferimento(membri, rif)
+    elif modo == 'storica_completa':
+        if tabella_sd_storica is None:
+            raise ValueError("modo='storica_completa' richiede tabella_sd_storica")
+        for r in rows:
+            scala = bfg._scala_storica_per(r['lega'], r['codice'])
+            gm, gsd, _liv = scala if scala else (0.0, 0.0, None)
+            z = (r['_grade'] - gm) / gsd if (r.get('_grade') is not None and gsd > 0) else 0.0
+            sd_atteso = _sd_atteso_storico(tabella_sd_storica, r['lega'], r['codice'])
+            r['_zgrade'] = z
+            r['_combinato'] = r['_cal'] + fattore_storico * sd_atteso * z
     else:
         raise ValueError(f"GRADE_GROUP_MODE sconosciuto: {modo!r}")
 

@@ -60,6 +60,8 @@ cache = CACHE.CacheLocale()
 # Gruppo grade (11/08/2026, filone "gruppo esteso alla giornata" -- vedi
 # docstring di S21.applica_gruppi_grade). Default 'lega_ruolo' = INVARIATO.
 GRADE_GROUP_MODE = os.environ.get('GRADE_GROUP_MODE', 'lega_ruolo')
+FATTORE_STORICO = float(os.environ.get('FATTORE_STORICO', '1.0'))
+GRADE_SCALE_PATH = os.path.join('generatore_formazioni', 'dati', 'grade_scala_storica.json')
 
 ROLE_CODE = {'Goalkeeper': 'GK', 'Defender': 'DEF', 'Midfielder': 'MID', 'Forward': 'FWD'}
 TIPI_ARENA = ['ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED',
@@ -278,6 +280,20 @@ def main():
         for pre in pre_ok:
             S21.applica_gruppi_grade(pre['pool_rows'], modo='pool_largo',
                                      riferimento_esterno=esterno_per_fixture[pre['fixture']])
+    elif GRADE_GROUP_MODE == 'storica_completa':
+        # Round 2 del filone (RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt
+        # §16-17): gm/gsd del grade dalla tabella storica di produzione,
+        # sd_atteso da una tabella storica gemella costruita qui (stessa
+        # gerarchia lega_ruolo->ruolo->globale, stessa materia prima).
+        # Nessuna dipendenza dal gruppetto nativo: funziona anche per i
+        # gruppi di 1 carta (51% dei casi in produzione).
+        with open(GRADE_SCALE_PATH, encoding='utf-8') as f:
+            S21.bfg._GRADE_SCALE_TABLE = json.load(f)
+        tutte_le_righe = [r for pre in pre_ok for r in pre['pool_rows']]
+        tab_sd = S21.costruisci_tabella_sd_atteso(tutte_le_righe)
+        for pre in pre_ok:
+            S21.applica_gruppi_grade(pre['pool_rows'], modo='storica_completa',
+                                     tabella_sd_storica=tab_sd, fattore_storico=FATTORE_STORICO)
     else:
         for pre in pre_ok:
             S21.applica_gruppi_grade(pre['pool_rows'], modo=GRADE_GROUP_MODE)
