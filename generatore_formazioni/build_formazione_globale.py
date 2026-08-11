@@ -1108,16 +1108,36 @@ def _sort_ordinamento(rows):
     # sopra PREFERENZA_ODDS_TOLLERANZA): O(n^2) nel caso peggiore, accettabile
     # -- questa funzione gira una manciata di volte per generazione, mai in
     # un ciclo per-candidato.
-    restanti = list(rows)
+    #
+    # BANDA ODDS PRIMA DEL PUNTEGGIO (11/08/2026, richiesta esplicita utente,
+    # bug reale: pool suppletivo EXTEND_ODDS_060_070 schierava Brady odds 60%
+    # al posto di Chambaere odds 90% per un bonus XP di 3 punti sull'atteso).
+    # Il pool suppletivo (10/08) pesca ANCHE candidati 0.60-0.70 insieme al
+    # residuo 0.80+, senza sconto sul punteggio -- voluto, ma quello sconto
+    # riguarda il VALORE del punteggio, non l'ordine di scelta: uno 0.80+
+    # residuo va SEMPRE esaurito prima di toccare la banda 0.60-0.70,
+    # qualunque sia il punteggio. In tornata primaria role_data e' gia'
+    # filtrato a >=0.80 (vedi sopra), quindi qui e' sempre un solo gruppo e
+    # questa partizione e' un no-op -- il fix agisce solo quando la lista
+    # contiene davvero le due bande, cioe' nel pool suppletivo.
+    def _banda_alta(r):
+        odds = r.get('starter_odds')
+        return odds is None or odds >= 0.80
+
     ordinati = []
-    while restanti:
-        migliore = max(r.get('sort_score', r['atteso']) for r in restanti)
-        vicini = [r for r in restanti
-                  if r.get('sort_score', r['atteso']) >= migliore - PREFERENZA_ODDS_TOLLERANZA]
-        vincitore = max(vicini, key=lambda r: (
-            r.get('starter_odds') or 0.0, r.get('sort_score', r['atteso'])))
-        ordinati.append(vincitore)
-        restanti.remove(vincitore)
+    for gruppo in (
+        [r for r in rows if _banda_alta(r)],
+        [r for r in rows if not _banda_alta(r)],
+    ):
+        restanti = list(gruppo)
+        while restanti:
+            migliore = max(r.get('sort_score', r['atteso']) for r in restanti)
+            vicini = [r for r in restanti
+                      if r.get('sort_score', r['atteso']) >= migliore - PREFERENZA_ODDS_TOLLERANZA]
+            vincitore = max(vicini, key=lambda r: (
+                r.get('starter_odds') or 0.0, r.get('sort_score', r['atteso'])))
+            ordinati.append(vincitore)
+            restanti.remove(vincitore)
     rows[:] = ordinati
     return rows
 
