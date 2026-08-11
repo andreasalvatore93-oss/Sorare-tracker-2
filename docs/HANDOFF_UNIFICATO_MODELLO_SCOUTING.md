@@ -850,6 +850,16 @@ numeri.
 **NON ANCORA APPLICATO** (proposta, decide l'utente + catena di produzione
 §1bis fino allo scouting prima di considerarlo chiuso).
 
+**NOTA CRITICA (11/08/2026 sera, da non perdere): quando/se si applica,
+TUTTI i backtest di oggi su essenze vanno RIFATTI.** `p23_binario1_mga.py`
+e `p24_binario2_ga.py` leggono `PAREGGIO_ARENA`/`GUADAGNO_PER_PUNTO` da
+`S21.bfg` (importati dalla produzione), sia per la decisione entra/salta
+sia per `netto_stimato`. Cambiando le soglie in produzione, ogni verdetto
+di oggi misurato su queste due unita' (GK_ATT_AVV essenze, gruppo grade
+essenze — storica_completa, pool_largo, tutte le varianti) smette di
+valere finche' non si rilancia con le soglie nuove. Priorita': GK_ATT_AVV
+(gia' acceso in produzione) prima di tutto il resto.
+
 **Conseguenza per GK_ATT_AVV -- RIVERIFICATO l'11/08/2026 sera, REGGE.**
 Il verdetto del §14 era misurato con `netto_stimato`, la stessa unita'
 ora sospetta. Scomposto il +5.556 per isolare la parte sensibile alla
