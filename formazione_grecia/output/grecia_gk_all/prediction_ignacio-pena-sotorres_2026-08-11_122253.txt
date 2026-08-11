@@ -1,0 +1,112 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-11T12:22:53.404780Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) ignacio-pena-sotorres: 45 pt attesi (35-57)
+   SQUADRA: panathinaikos-athina-athens | AVVERSARIO: cska-1948-sofia-sofia
+======================================================================
+
+######################################################################
+# GIOCATORE: ignacio-pena-sotorres
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ignacio-pena-sotorres (squadra: panathinaikos-athina-athens)
+Generato: 2026-08-11T12:22:53.404044Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 41
+Escluse (DID_NOT_PLAY): 22
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-21 | ELC vs OVI | laliga-es | score=79.8 | peso=0.125
+  2025-09-25 | OSA vs ELC | laliga-es | score=29.7 | peso=0.140
+  2025-10-05 | ALA vs ELC | laliga-es | score=34.8 | peso=0.157
+  2025-10-19 | ELC vs ATH | laliga-es | score=66.5 | peso=0.177
+  2025-10-25 | ESP vs ELC | laliga-es | score=57.6 | peso=0.198
+  2025-11-02 | FCB vs ELC | laliga-es | score=38.2 | peso=0.223
+  2025-11-23 | ELC vs RMA | laliga-es | score=55.3 | peso=0.250
+  2025-11-28 | GET vs ELC | laliga-es | score=51.4 | peso=0.281
+  2025-12-07 | ELC vs GIR | laliga-es | score=79.8 | peso=0.315
+  2025-12-13 | MLL vs ELC | laliga-es | score=28.3 | peso=0.354
+  2025-12-21 | ELC vs RAY | laliga-es | score=90.6 | peso=0.397
+  2026-01-03 | ELC vs VIL | laliga-es | score=35.2 | peso=0.445
+  2026-01-19 | ELC vs SEV | laliga-es | score=42.2 | peso=0.500
+  2026-01-23 | LEV vs ELC | laliga-es | score=33.1 | peso=0.561
+  2026-01-31 | ELC vs FCB | laliga-es | score=42.1 | peso=0.630
+  2026-02-07 | RSO vs ELC | laliga-es | score=34.3 | peso=0.707
+  2026-07-23 | PAK vs PAO | uefa-europa-conference-league | score=26.3 | peso=0.794
+  2026-07-30 | PAO vs PAK | uefa-europa-conference-league | score=35.9 | peso=0.891
+  2026-08-05 | PAO vs C48 | uefa-europa-conference-league | score=41.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 43.09
+  di cui Punteggio decisivo (level_score) medio: 37.24 | Punteggio complessivo (granulari) medio: 5.84 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 37.24 (delta +0.00 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.69, delta avversario +0.00 | Possesso condizionato per venue: delta +0.10 | Goalkeeping condizionato per venue: delta -2.26 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 16.49
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.1 - 55.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.53 (differenza: +3.97)
+Media score in casa: 38.60 | Media score fuori casa: 26.30
+Fattore casa/trasferta applicato: 0.981 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): N/D
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.998
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.996
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.001
+Tasso storico clean sheet (porta inviolata nei primi 60'): 21.1% (bonus atteso incorporato nella media pesata: ~5.3pt)
+Fattore trend (media ultime 5: 36.0 vs media 5 PRECEDENTI: 44.9): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-11T17:30
+Casa: FK CSKA 1948 Sofia | Trasferta: Panathinaikos FC
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.2 (range 35.3 - 57.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.34
+Punteggio REALE ottenuto in quella partita: 41.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -2.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      50.3    55.3     +5.0    19.6        SI
+   7        7      51.3    51.4     +0.1    17.7        SI
+   8        8      51.3    79.8    +28.5    16.0        NO
+   9        9      56.1    28.3    -27.8    19.1        NO
+  10       10      51.7    90.6    +38.9    21.0        NO
+  11       11      57.6    35.2    -22.4    25.2        SI
+  12       12      54.3    42.2    -12.1    25.0        SI
+  13       13      52.6    33.1    -19.5    23.7        SI
+  14       14      50.0    42.1     -7.9    23.3        SI
+  15       15      48.9    34.3    -14.6    21.9        SI
+  16       16      47.0    26.3    -20.7    21.2        SI
+  17       17      44.4    35.9     -8.5    21.3        SI
+  18       18      50.0    41.3     -8.7    20.2        SI
+
+MAE (errore assoluto medio): 16.53
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 76.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
