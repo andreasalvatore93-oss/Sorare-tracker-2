@@ -250,6 +250,37 @@ D5. LE GOLDEN ARENA sono identiche alle normali (stesse regole d'ingresso,
     una golden puo' essere 220, 260, uncapped o beginner. Non sono un tipo
     a parte e non vanno trattate come tale.
 
+## IL GRADE SORARE NON HA LEAKAGE SISTEMATICO -- PUNTO FISSO (13/08/2026)
+
+Domanda ricorrente, chiusa con due test indipendenti lo stesso giorno (uno
+dell'utente su un giocatore/3 partite, uno di Opus su 120 partite-giocatore,
+zero query di rete, dati gia' in repo). NON riaprire senza nuove prove.
+
+- Il voto A-F NON viene riscritto sul risultato della partita: un punteggio
+  di 100 resta un voto basso (D) tanto quanto un punteggio di 31, un voto
+  POST-partita non ordina meglio del voto PRE (0,24 contro 0,30 su chi ha
+  giocato, n=40 -- un vero leakage darebbe 0,7-0,8). Test riproducibile:
+  `analisi_manager/p31_leakage_grade_pre_post.py`.
+- Il voto CAMBIA nel 35% dei casi (42/120), ma segue il "gioca / non gioca"
+  (16 casi F->D/E, 9 casi D/E->F), non il punteggio: chi viene promosso dopo
+  la partita ha segnato IN MEDIA MENO (46,8) di chi resta invariato (66,3).
+  L'opposto di un leakage.
+- MARGINE RESIDUO ACCETTATO, da tenere in conto nei backtest (NON e' escluso
+  dal filtro DNP: quel giocatore ha un punteggio vero, non zero): un
+  giocatore dato F (quasi certo non giocare) che a sorpresa GIOCA puo'
+  arrivare nel backtest con un voto D/E che il giorno della scelta era F.
+  Frequenza: ~13% delle righe (16/120). Direzione: CONSERVATIVA, penalizza
+  il grade invece di gonfiarlo (quei promossi segnano meno della media) --
+  quindi il vantaggio misurato del grade su MID/FWD e' semmai sottostimato,
+  mai sovrastimato. Margine tollerato per questo.
+- Il modello schiera guardando lo starter_odds al momento della cattura
+  (~80%, PRIMA delle formazioni ufficiali): il voto che si vede in quel
+  momento e' quello con cui si decide, non quello di dopo -- e' normale
+  che differiscano, non e' un difetto.
+
+Fonti: `docs/handoff/RISPOSTA_OPUS_LEAKAGE_GRADE_CHIUSO_2026-08-13.txt`,
+`analisi_manager/dati/verifica_leakage_grade_*.json`.
+
 # Regole di interazione (valgono per ogni sessione)
 
 Riguardano SOLO come mi rapporto all'utente. Nessuna istruzione operativa sui tool qui dentro.
