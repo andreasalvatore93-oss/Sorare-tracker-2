@@ -1,0 +1,97 @@
+BRIEF PER OPUS ESECUTORE — revisione critica dei numeri con la tabella
+sd_atteso di produzione (seguito diretto del tuo lavoro di oggi)
+Scritto 12/08/2026 (Roma), orchestratore Sonnet. Commit di riferimento:
+97d3b7847b (già pushato in locale, non ancora su remoto -- se serve
+pusharlo dimmelo, non l'ho fatto perche' non me l'hanno chiesto).
+
+============================================================================
+0. COSA LEGGERE PRIMA (in ordine)
+============================================================================
+1. CLAUDE.md — in particolare "divieto di allucinazioni" e "prima di
+   misurare l'effetto di un componente dimostro che l'interruttore
+   funziona".
+2. docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8bis-bis, sezione
+   "Aggiornamento 12/08/2026" (appena scritta, in coda) — tutti i numeri
+   che riporto qui vengono da li'.
+3. La tua risposta di oggi in §8bis-bis "Fonte per sd_atteso" (quella su
+   cui ho costruito) e docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.
+   txt §17-18 (la ricetta: recentraggio media zero, pendenza OLS come
+   metro di taglia, la storia del +14.387/+4.260 con la fonte vecchia).
+4. Codice nuovo, con i numeri di riga:
+   - analisi_manager/p47_sd_atteso_produzione.py — costruisce le 2.333
+     righe (lega,codice,slug,kickoff,_cal) dai consiglio_*.txt, dedup
+     tenendo il file con timestamp piu' recente per chiave.
+   - analisi_manager/p48_grade_carta_sd_produzione.py — braccio 4 di p46
+     rifatto con la tabella nuova: righe 95-130 costruiscono ENTRAMBE le
+     tabelle (archivio E produzione) sullo stesso pool_rows, righe 132-155
+     calcolano _agg_archivio/_agg_produzione riga per riga, righe 159-172
+     bootstrap (cluster manager-fixture, B=3000) di corr e pendenza OLS
+     per ciascuna fonte.
+   - analisi_manager/p49_grade_essenze_sd_produzione.py — tre varianti sullo
+     stesso pool_rows (deep copy, righe 46-76): baseline lega_ruolo,
+     storica_completa con tabella produzione+fattore 0,462 non ricentrata,
+     stessa ricentrata (sottraggo la media dell'aggiustamento sull'INTERO
+     campione di 360 GW-manager prima di aggiungerlo a _cal, righe 60-64).
+     Bootstrap cluster manager-fixture, B=5000, righe 95-108.
+
+============================================================================
+1. LA DOMANDA (una sola, ma con piu' angoli — dimmi quello che trovi)
+============================================================================
+Il numero essenze e' migliorato usando la tua fonte + il fattore ritarato
+di conseguenza: RICENTRATA passa da +4.260 IC95%[-3.837;+12.398] 84,6%
+(fonte archivio, fattore 0,75) a **+7.761 IC95%[-716;+16.516] 96,0%**
+(fonte produzione, fattore 0,462). E' un miglioramento vero o un artefatto
+di come ho ritarato il fattore o costruito il bootstrap? In particolare:
+
+a) Ho ristimato il fattore_storico (pendenza OLS residuo~aggiustamento,
+   n=9.440, STESSO campione su cui poi misuro l'effetto essenze) SUL
+   CAMPIONE STESSO in cui poi misuro il guadagno — e' lo stesso problema di
+   "fattore stimato sulle stesse righe" che tu segnalavi al §17.7 per la
+   fonte vecchia ("va ricontrollato fuori campione"), quindi non e' una
+   novita' introdotta da me, ma resta un limite non risolto. Confermi che
+   e' lo stesso genere di limite, o vedi qualcosa di diverso stavolta
+   (es. perche' la pendenza e' scesa da 0,75 a 0,46, non e' solo scala)?
+
+b) Il recentraggio nel mio script (p49, righe 60-64) sottrae UNA sola
+   costante (la media dell'aggiustamento su TUTTE le 360 GW-manager
+   insieme), non una media per-GW o per-manager. E' la stessa granularita'
+   della tua "ricentrata" del §18.2 ("storica_completa 0,75 meno la sua
+   stessa media globale")? Se avevi usato una media diversa (es. per
+   manager, per lega), il confronto non e' pulito.
+
+c) Nel dump di controllo che ho fatto io (alfo88, football-10-14-apr-2026,
+   riportato in §8bis-bis) la media aggiustamento pre-ricentraggio in
+   QUELLA gw e' +1,01 — piu' piccola della media pre-ricentraggio globale
+   che si può ricavare da G=+139.219 vs G_rc=+131.781 (differenza di
+   livello, non ho calcolato la media esatta in punti). Puoi controllare se
+   la size della "spinta cieca" con la fonte nuova e' plausibile rispetto
+   al tuo calcolo del §18.3 (media voto archivio 4,029 vs tabella storica
+   3,037, z=+0,602, moltiplicato per sd_atteso e fattore)? Con sd_atteso
+   nuovo (globale 5,87 calibrato, ma la cella dipende da lega/ruolo) e
+   fattore 0,462 il conto dovrebbe tornare a un ordine di grandezza simile
+   a prima (l'effetto z e' lo stesso, cambiano solo sd_atteso e fattore in
+   modo che si compensano quasi esattamente per costruzione OLS) — confermi
+   che e' quello che ci si aspetta, o e' un caso che l'IC sia migliorato?
+
+d) Guardando la baseline: G=+124.021 mi torna identico al tuo §18.1 (buon
+   segno, pipeline verificata). Hai qualche altro numero di controllo che
+   dovrebbe tornare identico e non ho citato?
+
+============================================================================
+2. COSA NON HO FATTO (per essere chiaro sui limiti)
+============================================================================
+- Non ho toccato la produzione, non ho tolto il return anticipato di
+  _apply_grade_group.
+- Non ho fatto nessun test fuori campione (fattore stimato e guadagno
+  misurato sullo stesso campione, vedi punto 1a).
+- Non ho pushato il commit su GitHub (solo locale).
+- Non ho lanciato query di rete.
+
+============================================================================
+3. DOVE RISPONDERE
+============================================================================
+mcp__ccd_session_mgmt__send_message (arriva etichettato automaticamente).
+Se vuoi, scrivi anche in coda a §8bis-bis (non un file nuovo). Fammi sapere
+se secondo te la strada e' abbastanza solida da proporre all'utente un
+prossimo passo (es. pre-registrare un controllo fuori campione, come fatto
+per GK_ATT_AVV) o se c'e' un problema che invalida il numero.
