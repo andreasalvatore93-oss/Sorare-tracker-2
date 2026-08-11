@@ -1,0 +1,96 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-11T19:17:05.406787Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) andrew-vincent-rick: 51 pt attesi (25-74)
+   SQUADRA: philadelphia-union-chester-pennsylvania | AVVERSARIO: santos-laguna-torreon
+======================================================================
+
+######################################################################
+# GIOCATORE: andrew-vincent-rick
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: andrew-vincent-rick (squadra: philadelphia-union-chester-pennsylvania)
+Generato: 2026-08-11T19:17:05.404842Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 36
+Escluse (DID_NOT_PLAY): 24
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | RBNY vs PHI | mlspa | score=28.7 | peso=0.315
+  2025-08-23 | PHI vs CHI | mlspa | score=67.4 | peso=0.354
+  2025-08-30 | CIN vs PHI | mlspa | score=66.1 | peso=0.397
+  2025-09-14 | VAN vs PHI | mlspa | score=17.4 | peso=0.445
+  2026-02-18 | DEF vs PHI | concacaf-champions-league | score=72.5 | peso=0.500
+  2026-02-27 | PHI vs DEF | concacaf-champions-league | score=65.2 | peso=0.561
+  2026-03-10 | PHI vs AME | concacaf-champions-league | score=36.6 | peso=0.630
+  2026-03-19 | AME vs PHI | concacaf-champions-league | score=41.6 | peso=0.707
+  2026-05-13 | ORL vs PHI | mlspa | score=0.7 | peso=0.794
+  2026-08-07 | CAZ vs PHI | leagues-cup-mls | score=37.6 | peso=0.891
+  2026-08-09 | PHI vs NEC | leagues-cup-mls | score=58.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 43.13
+  di cui Punteggio decisivo (level_score) medio: 39.46 | Punteggio complessivo (granulari) medio: 3.67 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 36.35 (delta -3.11 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +1.89, delta avversario -0.23 | Possesso condizionato per venue: delta +0.32 | Goalkeeping condizionato per venue: delta +1.09 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 22.01
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 17.4 - 66.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.46 (differenza: +6.56)
+Media score in casa: 56.85 | Media score fuori casa: 37.80
+Fattore casa/trasferta applicato: 1.048 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.0
+Ranking prossimo avversario: 17
+Fattore forza avversario applicato: 1.473 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.006
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.000
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.002
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.004
+Tasso storico clean sheet (porta inviolata nei primi 60'): 36.4% (bonus atteso incorporato nella media pesata: ~9.1pt)
+Fattore trend (media ultime 5: 36.0 vs media 5 PRECEDENTI: 57.9): 1.000
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-13T23:00
+Casa: Philadelphia Union | Trasferta: Club Santos Laguna
+Competizione: leagues-cup-mls
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.1 (range 25.4 - 74.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 40.44
+Punteggio REALE ottenuto in quella partita: 58.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +17.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      55.8    36.6    -19.2    24.4        SI
+   7        7      41.0    41.6     +0.6    23.3        SI
+   8        8      53.6     0.7    -52.9    21.5        NO
+   9        9      34.7    37.6     +2.9    28.6        SI
+  10       10      54.1    58.2     +4.1    26.3        SI
+
+MAE (errore assoluto medio): 15.93
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 80.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
