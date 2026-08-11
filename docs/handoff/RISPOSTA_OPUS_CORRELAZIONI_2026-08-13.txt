@@ -1858,3 +1858,142 @@ Dati aggiornati: analisi_manager/dati/storico_grade_crowss_completamento.json,
      CLAUDE.md e' l'unico posto dove vive lo stato di modello e scouting.
      Lo lascio in Â§19 perche' il brief chiedeva qui, ma copiatelo li'.
 
+
+============================================================================
+20. RISPOSTA OPUS ESECUTORE â€” TROVATO L'ERRORE: UNA RETTA SOLA SU UNA CURVA
+    (12/08/2026, ~00:40 Roma) Risposta al brief
+    docs/handoff/BRIEF_OPUS_SOGLIE_CONFLITTO_METODI_2026-08-11.txt
+============================================================================
+
+20.0 VERDETTO DA BAR (14 righe)
+     L'ipotesi della finestra temporale e' sbagliata, e l'ho scartata nel
+     modo piu' pulito possibile: ho preso il LORO dataset, quello vecchio,
+     e ci ho applicato IL MIO metodo. Viene 285,7 per la cap 260, contro il
+     mio 285,4 misurato sulle arene nuove. Stessi dati loro, metodo mio,
+     stessa risposta: non e' il periodo, non e' la popolazione, e' il modo
+     di calcolare.
+     E il modo l'ho trovato. Il calcolo originale ha tirato UNA RETTA SOLA
+     attraverso tutti i punti, dal punteggio piu' basso al piu' alto, e ha
+     preso il punto in cui quella retta taglia lo zero. Ma il guadagno di
+     un'arena non e' una retta: in basso e' piatto (piu' del biglietto non
+     puoi perdere) e in alto esplode (i jackpot). Una retta tirata su una
+     curva cosi' si abbassa a sinistra e si impenna a destra, e il punto in
+     cui taglia lo zero finisce troppo a sinistra. Rifacendo quel conto
+     sbagliato apposta, mi tornano i loro numeri: 263,8 contro 264,5
+     codificato per la cap 260. Non e' un mistero, e' quello.
+
+20.1 L'IPOTESI FINESTRA TEMPORALE E' SCARTATA (test decisivo)
+     Invece di confrontare due numeri prodotti da due squadre diverse su
+     due dataset diversi, ho tolto una variabile alla volta: ho preso
+     dati_globali/arene_storico_full_v3.json (il LORO dataset, 2.125 arene,
+     1.677 con tabella premi) e ho calcolato il pareggio con la definizione
+     corretta â€” il punteggio a cui il NETTO ATTESO vale zero â€” usando la
+     loro stessa tabella premi.
+     Metodo: per ogni arena il campo avversario e' `punteggi` MENO il
+     proprio `mio_score` (si sostituisce la propria entry, non se ne
+     aggiunge una); per un punteggio ipotetico S il piazzamento e'
+     1 + quanti avversari stanno sopra S; il premio si legge da
+     `premi_veri_per_posizione`; netto = premio - costo. Media su tutte le
+     arene del tipo, si cerca S dove la media incrocia lo zero.
+     Risultato, contro il mio metodo diretto del Â§19 (arene nuove, premi
+     realmente incassati) e contro il valore in produzione:
+       tipo      loro dati, metodo giusto | mie arene nuove | CODIFICATO
+       cap260              285,7          |     285,4       |   264,5
+       cap220              268,7          |     262,4       |   247,1
+       beginner            280,2          |     277,3       |   256,5
+       uncapped            303,0          |   (n insuff.)   |   279,6
+     Due dataset diversi, periodi diversi, e la stessa risposta a meno di
+     qualche punto. La finestra temporale non c'entra: se il livello di
+     competizione fosse salito, il dataset vecchio avrebbe dato un numero
+     piu' BASSO del mio, e invece da' lo stesso. Ipotesi scartata.
+     (Ricaduta utile: questo chiude anche il dubbio "selezione" del vostro
+     Â§3.a â€” due popolazioni diverse, stesso numero.)
+
+20.2 L'ERRORE VERO: UNA RETTA SOLA SU TUTTO IL RANGE
+     Ho provato a riprodurre i valori codificati sbagliando apposta, in tre
+     modi diversi. Due non tornano, il terzo torna quasi al decimo.
+     - "punteggio per finire in zona premio" (la posizione piu' bassa che
+       ripaga l'ingresso): da' 309,5 per la cap 260. Troppo ALTO, non e'
+       quello.
+     - non togliere il proprio punteggio dal campo: sposta verso l'alto,
+       non verso il basso. Non e' quello.
+     - RETTA UNICA su tutto il range, sugli esiti osservati (mio_score
+       contro premio-costo), zero della retta = pareggio:
+         cap260    263,8   (codificato 264,5)   scarto 0,7
+         cap220    245,6   (codificato 247,1)   scarto 1,5
+         uncapped  277,1   (codificato 279,6)   scarto 2,5
+         beginner  241,9   (codificato 256,5)   scarto 14,6  <- l'unico che
+           non torna; e' anche l'unico tipo aggiunto dopo (09/08), forse
+           calcolato su un sottoinsieme diverso.
+       Anche le pendenze tornano vicine a GUADAGNO_PER_PUNTO (cap260 6,18
+       contro 6,96; cap220 5,22 contro 5,11; uncapped 4,91 contro 5,88).
+     Tre tipi su quattro ricostruiti entro 2,5 punti: e' quello.
+
+20.3 PERCHE' QUELLA RETTA SBAGLIA (spiegazione da bar)
+     Immagina di segnare su un grafico quanto guadagni in funzione di
+     quanto punteggio fai. Sotto una certa soglia perdi sempre e solo il
+     biglietto: la linea e' PIATTA, non puoi perdere piu' di quello. Sopra,
+     ogni punto in piu' ti fa scalare posizioni e i premi crescono a valanga
+     â€” in cima ci sono i jackpot. Quindi la vera curva e' piatta a sinistra
+     e ripidissima a destra: un gancio, non una retta.
+     Se su un gancio ci tiri una retta unica, la retta passa sopra i punti
+     a sinistra (dice che perdi meno di quanto perdi davvero) e sotto a
+     destra. Il risultato e' che incrocia lo zero troppo presto â€” ~21 punti
+     troppo presto, nel nostro caso. Ed e' esattamente l'errore che fa dire
+     al bot "entra" in arene che nella realta' perdono.
+     La verifica che lo conferma: sugli stessi identici punti, una retta
+     tirata SOLO nella zona dove la curva incrocia lo zero (invece che su
+     tutto il range) da' 281,4 per la cap 260 invece di 263,8 â€” vicina al
+     285,7 del calcolo corretto.
+
+20.4 CHE NUMERI USARE, E COME CALCOLARLI (nessun fit, nessuna scelta)
+     Il metodo giusto non richiede di stimare niente: il pareggio E' per
+     definizione il punteggio a cui il premio atteso uguaglia il costo, e
+     con la tabella dei premi veri in mano si calcola direttamente (Â§20.1).
+     Niente rette, niente finestre da scegliere, niente arbitrio.
+       PAREGGIO_ARENA proposto:  cap260 285,7 | cap220 268,7 |
+                                 beginner 280,2 | uncapped 303,0
+     Corroborato in modo indipendente dalle 2.979 arene realmente giocate
+     (285,4 / 262,4 / 277,3). Dove i due divergono di piu' (cap220, 268,7
+     contro 262,4) userei il piu' prudente finche' non si capisce perche'.
+     GUADAGNO_PER_PUNTO: nasce dallo stesso fit globale, quindi ha lo
+     stesso vizio, ma pesa molto meno (e' un moltiplicatore del netto, non
+     decide chi entra). Andrebbe ri-derivato nella zona di decisione, non
+     su tutto il range â€” dopo la soglia, non insieme.
+     Le arene dedicate per lega (262,9) non sono nel dataset in una forma
+     che permetta questo conto: restano da rifare a parte.
+
+20.5 COSA CAMBIA PER IL BACKTEST (conseguenza pratica)
+     netto_stimato = (punti - PAREGGIO_ARENA) * GUADAGNO_PER_PUNTO e' una
+     retta: la stessa approssimazione che ha causato il problema. Con la
+     soglia corretta il punto zero torna al posto giusto e le decisioni
+     vicino alla soglia diventano oneste, ma il modello continua a
+     sottostimare le code (i jackpot). Per confrontare due varianti che
+     entrano nello STESSO numero di arene va benissimo lo stesso; per
+     qualunque confronto in cui una variante entra in piu' arene
+     dell'altra, va usata la soglia corretta, altrimenti si ricasca nel
+     problema del Â§19.3.
+
+20.6 LA NOTA A MARGINE DELL'UTENTE (Â§6 del brief)
+     Il suo "il podio mi e' sembrato intorno a 290" e' coerente in ordine
+     di grandezza ma non e' la stessa grandezza del pareggio: sul dataset
+     loro, il punteggio medio necessario per finire in zona premio sulla
+     cap 260 e' 309,5 (mediana 308,8), contro un pareggio a 285,7. Sono due
+     cose diverse: 285,7 e' dove il valore atteso pareggia il biglietto
+     (contando anche le volte che prendi zero), 309,5 e' dove tipicamente
+     entri nei premi. Il suo 290 sta in mezzo, su una giornata sola: non lo
+     userei ne' come conferma ne' come smentita.
+
+20.7 COSA NON HO FATTO / COSA RESTA
+     - Non ho letto il codice di calibrazione originale (non l'ho trovato
+       con una ricerca rapida e la ricostruzione numerica del Â§20.2 ne
+       rende superflua la caccia: tre tipi su quattro entro 2,5 punti).
+       Se volete la conferma definitiva, cercate nello script che ha
+       prodotto HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt una regressione
+       lineare punteggio->netto senza restrizione di range: e' quella.
+     - Non ho spiegato lo scarto del beginner (14,6 punti).
+     - Non ho toccato NIENTE: PAREGGIO_ARENA, GUADAGNO_PER_PUNTO,
+       QUOTA_MINIMA, genera_arene_efficienti sono come li ho trovati. La
+       proposta del Â§20.4 e' una proposta, la decisione e' dell'utente â€”
+       e prima va percorsa la catena di CLAUDE.md fino allo scouting.
+
