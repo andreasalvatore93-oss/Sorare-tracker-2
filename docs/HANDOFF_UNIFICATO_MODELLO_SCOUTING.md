@@ -1072,6 +1072,53 @@ famiglia "Limited" mista 7/5 carte, bonus XP nel backtest), risolte l'08/08.
 
 ---
 
+## 8bis-bis. Gruppo del grade esteso alla giornata — APERTO, priorità 2 (11/08/2026 sera)
+
+L'idea del caso Lloris (sotto in §10bis, ora superata) è stata esplorata
+per intero l'11/08 sera. **Trovato un difetto vero, più grande di quanto
+il caso Lloris facesse pensare**: il gruppo di confronto (lega,ruolo,
+giornata) usato per lo z-score del grade ha spesso un solo giocatore — sui
+consigli veri su disco, 51% dei gruppi ha 1 solo membro, 69% ne ha al
+massimo 2. Per i gruppi <2, `_apply_grade_group()`
+(build_formazione_globale.py righe 505-548, return anticipato 514-520)
+**non applica il correttivo per niente** — non un ritocco rumoroso, un
+pezzo di modello spento a intermittenza su metà delle righe.
+
+**A livello di CARTA (9.440-10.255 righe, valido, IC esclude zero,
+100% positivo)**: sostituendo il gruppo minuscolo con due tabelle
+storiche (media/sd del voto per lega-ruolo, E media/sd dell'atteso
+calibrato, entrambe già quasi pronte — `generatore_formazioni/dati/
+grade_scala_storica.json` esiste, la seconda va costruita) la
+correlazione fra l'aggiustamento e l'errore vero di previsione quasi
+triplica (0,030 → 0,100). Confermato indipendentemente da Opus.
+
+**A livello di ESSENZE/formazioni (Binario 1/2): NON ANCORA PROVATO.**
+Un primo numero enorme (+14.387 essenze) si è rivelato quasi tutto un
+artefatto (l'aggiustamento non aveva media zero — spingeva il punteggio
+in alto per quasi tutte le carte, non solo per le migliori). La versione
+onesta (ricentrata a media zero, solo ordinamento) dà +4.260 essenze,
+IC non esclude lo zero — stesso limite di potenza già visto per il
+portiere su Binario 1.
+
+**Cosa manca prima di poter implementare in produzione** (chiesto
+esplicitamente dall'utente, risposta: non ancora pronto come lo era
+GK_ATT_AVV):
+1. tabella storica della variabilità (sd_atteso) costruita sui dati DI
+   PRODUZIONE, non sull'archivio backtest (quello usato nei test è
+   sbilanciato: chi possiede una carta di solito l'ha scelta bene);
+2. il correttivo deve avere ESPLICITAMENTE media zero (non l'aveva nel
+   test che ha dato il numero illusorio);
+3. una volta implementato, riverificare la catena fino allo scouting
+   (come fatto per GK_ATT_AVV).
+
+Funzioni riusabili già pronte in `analisi_manager/p12_backtest_
+formazione_grade.py`: `applica_gruppi_grade()` (5 modalità),
+`costruisci_tabella_sd_atteso()`. Dettaglio integrale: `docs/handoff/
+HANDOFF_SESSIONE_2026-08-11_GK_GRADE_SOGLIE.txt` §4,
+`docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt` §15-18.
+
+---
+
 ## 8ter. Scouting dopo il grade (07/08/2026) — CONTROLLATO, 2 decisioni aperte
 
 Domanda dell'utente: se il generatore aveva un problema di autenticazione lo
@@ -1736,21 +1783,11 @@ template HTML — ~130 file in più. Il marker `AMBIGUO_FIXTURE: si` è già
 scritto nel file di predizione (§9): se si vuole il badge anche lì, la
 strada è già mappata, va solo eseguita.
 
-**PRIORITARIO (aggiunto 10/08 notte, richiesta esplicita dell'utente):
-gruppo del grade esteso a TUTTA LA GIORNATA per ruolo, non per (lega,
-ruolo).** Nato da un caso reale ispezionato in scouting: Hugo Lloris
-(grade B) prende uno SCONTO di -0,53 pt sull'atteso perché nel suo
-gruppo attuale (MLS, GK, con atteso disponibile: Louro B / Lloris B /
-Sirois A) la media è 5,33 (fra B e A) — B è SOTTO media lì, anche se in
-assoluto B è un voto buono. Il gruppo oggi è piccolissimo (a volte 2-3
-carte, §8bis "difetto strutturale 23%") perché è per lega. Ipotesi da
-testare: allargare il gruppo a TUTTI i portieri (o TUTTI i giocatori di
-un ruolo) della giornata, indipendentemente dalla lega, dà una media/sd
-più stabile e meno rumorosa? Da fare per ogni ruolo (GK/DEF/MID/FWD), con
-BACKTEST prima di toccare produzione — stessa metodologia già usata per
-G (§8bis: allocazione/astensione separate, placebo, IC). Confrontare
-contro lo z-score per (lega,ruolo) attuale, non sostituirlo alla cieca.
-Nessuna implementazione fatta finché il backtest non decide.
+**ESPLORATO PER INTERO l'11/08/2026 sera — vedi §8bis-bis.** Il caso
+Lloris era solo la punta: il gruppo minuscolo tocca metà delle righe di
+produzione. Livello carta: valido, confermato. Livello essenze: non
+ancora provato. Priorità 2 quando si riprende (dopo il filone soglie,
+chiuso l'11/08 sera). Non ripartire da qui, leggere §8bis-bis.
 
 **Aggiunto 10/08 notte: difetto strutturale nella scelta della "prossima
 partita" per il predict (test_gk.py e affini, condiviso da scouting E dal
