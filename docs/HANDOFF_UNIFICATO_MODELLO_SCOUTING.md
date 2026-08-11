@@ -1180,6 +1180,46 @@ formazione_grade.py`: `applica_gruppi_grade()` (5 modalità),
 HANDOFF_SESSIONE_2026-08-11_GK_GRADE_SOGLIE.txt` §4,
 `docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt` §15-18.
 
+### Aggiornamento 12/08/2026 — tabella sd_atteso di produzione costruita, ritarato il fattore, numero essenze migliorato
+
+Fonte decisa da Opus (§ sopra), riga costruita e verificata dall'orchestratore:
+`analisi_manager/p47_sd_atteso_produzione.py` legge tutti gli 8.419
+`consiglio_*.txt`, dedup per (lega,codice,slug,kickoff) -> 2.333 righe
+distinte, salvate in `analisi_manager/dati/sd_atteso_produzione_righe.json`.
+Conteggi verificati identici a quelli di Opus (per ruolo grezzo: GK 280,
+DEF 814, MID 699, FWD 540; 90 celle lega-ruolo, 4 sopra n=100).
+
+**Card level** (`p48_grade_carta_sd_produzione.py`, replica del braccio 4 di
+p46 con la nuova tabella, n=9.440): la pendenza OLS residuo~aggiustamento
+con la tabella PRODUZIONE è **0,462** (non 0,75 — sd_atteso di produzione
+ha scala più larga, 5,87 contro 3,39 dell'archivio, come previsto da Opus:
+"il livello è assorbito da fattore_storico"). Corr(aggiustamento,residuo)
+con la fonte nuova: **+0,1141** IC95%[+0,0938;+0,1338] — leggermente
+meglio della vecchia (+0,0999). Replica del braccio 4 vecchio con questo
+script: +0,0999/pendenza 0,7527 — coincide con Opus, pipeline verificata.
+
+**Essenze level** (`p49_grade_essenze_sd_produzione.py`, n=360 GW-manager,
+bootstrap cluster manager-fixture, B=5.000): baseline lega_ruolo G=+124.021
+(identico a Opus §18.1, replica esatta). Con tabella PRODUZIONE + fattore
+ritarato 0,462:
+  - NON ricentrata: G=+139.219, delta=+15.198 IC95%[+5.512;+25.233] 99,8% positivo
+  - **RICENTRATA (media zero)**: G=+131.781, **delta=+7.761
+    IC95%[-716;+16.516] 96,0% positivo** — più grande e più vicino alla
+    significatività della vecchia versione onesta (+4.260, IC[-3.837;
+    +12.398], 84,6%). L'IC sfiora lo zero solo di poco (-716).
+
+Dump di controllo (alfo88, football-10-14-apr-2026): correttivo coerente,
+i voti A vengono spinti in alto in modo sensato (Valverde 57,1→61,6 cal,
+poi realizzato 81,5). Media aggiustamento pre-ricentraggio in quella GW:
++1,01 (stessa direzione della "spinta cieca" già diagnosticata da Opus).
+
+**NON ancora deciso**: se questo +7.761/96% basta per proporre l'accensione
+dietro flag, o se serve ancora un test dedicato/fuori campione prima. Non
+toccata la produzione, non applicato il return anticipato di
+`_apply_grade_group` (righe 514-520, ancora presente). File dati:
+`analisi_manager/dati/grade_carta_sd_produzione_2026-08-12.json`,
+`analisi_manager/dati/grade_essenze_sd_produzione_2026-08-12.json`.
+
 ---
 
 ## 8ter. Scouting dopo il grade (07/08/2026) — CONTROLLATO, 2 decisioni aperte
