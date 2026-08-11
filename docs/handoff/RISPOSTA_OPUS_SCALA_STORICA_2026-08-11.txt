@@ -1,0 +1,210 @@
+RISPOSTA OPUS — scala storica + default DNP — 11/08/2026 (Roma)
+
+
+################################################################
+IN DUE PAROLE (se leggi solo questo, hai tutto)
+################################################################
+
+1. Il voto delle carte (il "grade") FUNZIONA. Confermato di nuovo, con il
+   controllo giusto: mescolo i voti a caso fra le carte e l'effetto
+   sparisce. Su 200 mescolate, zero volte esce un risultato buono come
+   quello vero.
+
+2. Il peso da dargli e' 1,0 — cioe' ESATTAMENTE quello che il programma
+   usa gia'. Non si tocca niente. Il "0,33" di ieri e il "0,55" di
+   stanotte erano tutti e due rimpiccioliti dal metro storto: raddrizzando
+   il metro viene fuori 1,01.
+
+3. Il placebo che non tornava a zero NON e' un problema, ed e' spiegato
+   (non era sd_atteso, era un'altra cosa: dimostrazione al punto 2 sotto).
+   Separando le due parti, quella pulita dice la stessa identica cosa.
+
+4. Quindi: il filone grade si CHIUDE, e si chiude bene. Era gia' giusto
+   com'era. Non c'e' nessuna modifica da fare alla produzione.
+
+5. L'inversione del filtro DNP l'ho ricontrollata sui file: e' a posto.
+
+
+################################################################
+PER CHI VUOLE CONTROLLARE I CONTI
+################################################################
+
+Non ho toccato produzione, non ho committato codice, non ho lanciato
+query. Ho rifatto i conti dal grezzo (binario2_pool_rows.json +
+grade_scala_storica.json) con codice mio, letto p26 e ricontrollato i due
+file binario1_*.
+
+
+== 1. REPLICA ==
+
+  n = 10.093   a = +1,702   b = +0,549
+  SE classico 0,101 (t=5,43)  |  SE cluster fixture (22 gruppi) 0,181 (t=3,04)
+Identici a p26. Ho anche riletto p26: replica correttamente
+`_scala_storica_per` (fallback lega+ruolo -> ruolo -> globale) e tiene
+sd_atteso dal gruppo locale come la produzione. Codice giusto.
+
+Verificato anche il default DNP invertito:
+  binario1_out.json (default, ORA senza filtro): 1.099 formazioni,
+    M +11.500, A +13.550, G +17.050, 143 discordanti
+  binario1_con_filtro_dnp_storico_out.json: 895, M +42.500, ecc.
+  p23 riga 113: ESCLUDI_DNP = os.environ.get('ESCLUDI_DNP') == '1'
+Corrispondono ai numeri che avevo verificato io stanotte sul file
+_senza_filtro_dnp. Fatto bene, niente da correggere.
+
+
+== 2. RISPOSTA ALLA DOMANDA 2 — perche' il placebo non torna a zero ==
+
+La tua ipotesi (sd_atteso fisso sotto permutazione) e' SBAGLIATA, ma
+avevi ragione a fermarti e a segnalarlo: e' un artefatto meccanico, solo
+di un altro tipo. E l'ho dimostrato invece di ipotizzarlo.
+
+Il meccanismo vero. L'aggiustamento di ogni carta si scompone in due
+pezzi: la MEDIA DEL SUO GRUPPO piu' lo SCARTO DENTRO IL GRUPPO.
+  varianza dell'aggiustamento: 3,268
+    di cui FRA gruppi  1,676 (51,3%)
+    di cui DENTRO      1,592 (48,7%)
+Quando rimescoli i grade DENTRO un gruppo, la media di quel gruppo non
+cambia: stai solo riassegnando gli stessi valori alle stesse carte.
+Misurato: scostamento massimo fra media-di-gruppo vera e permutata =
+0,00e+00, cioe' IDENTICHE al bit.
+
+Quindi il tuo placebo distrugge solo il 48,7% della variazione e lascia
+intatto il 51,3%. Se quella meta' correla con l'esito, il placebo si
+ferma a meta' strada — che e' esattamente quello che hai visto (+0,273
+contro +0,549: giusto la meta').
+
+Perche' con p25 tornava a zero e qui no: con la scala di GRUPPO la z era
+calcolata dentro il gruppo, quindi per costruzione i valori del gruppo
+sommavano a zero -> parte "fra gruppi" = 0 -> il rimescolamento
+distruggeva tutto -> placebo a zero. Con la scala STORICA la z e'
+calcolata contro una tabella esterna, quindi un gruppo puo' avere una
+media diversa da zero. Cambiando la scala e' cambiato cosa il placebo
+riesce a distruggere. Non c'entra sd_atteso.
+
+Esempio da bar. Vuoi sapere se in una classe i piu' alti prendono voti
+piu' alti. Mescoli le altezze DENTRO ogni classe e rifai il conto: hai
+distrutto il confronto fra compagni di classe, ma se le classi restano
+una piu' alta dell'altra (perche' una e' la quinta e una la prima), il
+confronto FRA classi sopravvive al mescolamento e ti resta mezzo
+risultato in mano. Non e' un imbroglio: e' che stavi mescolando solo
+dentro le classi.
+
+
+== 3. LA STIMA PULITA (e il fatto che le due meta' dicono la stessa cosa) ==
+
+Ho rifatto la regressione usando SOLO lo scarto dentro il gruppo (in
+gergo: effetti fissi di gruppo), cioe' buttando via la meta' che il
+placebo non riesce a toccare:
+
+  beta DENTRO il gruppo = +0,554
+    SE classico 0,134 (t=4,14) | SE cluster fixture 0,283 (t=1,96)
+    (5.488 gruppi assorbiti, gradi di liberta' corretti; 5.255 righe su
+     10.093 hanno scarto dentro-gruppo non nullo)
+
+  PLACEBO su questa stima pulita, 200 rimescolamenti:
+    media -0,004  mediana -0,016  IC90 [-0,222, +0,218]
+    permutazioni che arrivano a +0,554: 0 su 200  ->  p = 0,005
+  Adesso il placebo e' centrato a zero, come deve.
+
+E il controllo piu' importante:
+  beta DENTRO i gruppi  = +0,554
+  beta FRA i gruppi     = +0,544
+Le due meta', che sono soggette a difetti completamente diversi, danno
+lo stesso numero. Quando succede questo, vuol dire che il risultato
+complessivo non e' guidato da un confondimento a livello di gruppo. E'
+il controllo standard e passa.
+(Nota: il beta "fra gruppi" preso da solo NON e' interpretabile come
+effetto del grade — a quel livello varia anche la lega, il ruolo, la
+giornata e il mazzo. Vale come conferma di coerenza, non come misura.)
+
+Il numero onesto e conservativo: t fra 1,96 (stima pulita + clustering
+piu' prudente) e 3,04 (stima completa + stesso clustering). Entrambi
+escludono lo zero al 5%, nessuno dei due e' schiacciante. Piu' il
+placebo a p=0,005, che non dipende da nessuna assunzione sugli errori
+standard.
+
+
+== 4. RISPOSTA ALLE DOMANDE 1 e 3 — l'attenuazione e il peso ==
+
+Si', va rifatta la correzione, e NO, non e' trascurabile: il metro e'
+migliorato ma non e' guarito. Righe con aggiustamento zero: 42,8% (erano
+54,2%). Il pezzo che restava rotto non era la scala del grade, era
+sd_atteso, che continua a venire dal gruppo locale (come in produzione,
+per carita', ma in produzione quel gruppo ha centinaia di carte, qui ne
+ha una o due).
+
+Rimisurata l'affidabilita' con lo stesso metodo di ieri (stessa carta,
+stessa giornata, mazzi diversi: li' l'aggiustamento cambia SOLO per colpa
+del metro):
+  2.331 coppie (giocatore, giornata) presenti in >= 2 mazzi
+  ICC = 0,542   (era 0,507 con la scala vecchia: migliorato di poco)
+
+  beta corretto per attenuazione:
+    dalla stima completa: 0,549 / 0,542 = +1,013
+      IC95 [+0,358 ; +1,667]   (esclude 0, contiene 1,0)
+    dalla stima pulita:   0,554 / 0,542 = +1,022
+      IC95 [-0,002 ; +2,046]   (piu' larga, stesso centro)
+
+Il punto di stima cade su 1,01-1,02. Cioe' sul peso che la produzione
+USA GIA'.
+
+Questo cambia la conclusione rispetto a ieri, e in meglio: ieri potevo
+dire solo "non abbiamo prove che il peso sia sbagliato" (assenza di
+prova). Oggi posso dire "la misura migliore che abbiamo cade esattamente
+sul peso attuale" (prova a favore). Sono due cose diverse.
+
+Quindi sulla domanda 3, `GRADE_WEIGHT`: NON scriverlo. Ieri avevo detto
+"scrivilo spento a 1,0, servira' per la griglia". Mi correggo: la griglia
+non serve piu', perche' il valore l'abbiamo misurato ed e' 1,0. Aggiungere
+una manopola che nessuno deve girare e' solo un'altra cosa che si puo'
+rompere. Il posto giusto dove mettere questo risultato e' il riassunto
+unificato, non un flag nel codice.
+
+Avvertenza onesta sulla correzione per attenuazione: assume che il rumore
+del metro sia indipendente dal valore vero (errore di misura "classico").
+E' un'assunzione ragionevole qui — la carta e' la stessa, cambia solo in
+che mazzo capita — ma resta un'assunzione, non una misura. Il beta grezzo
+(0,549, che esclude lo zero) non ne dipende; il "vale 1,0" si'.
+
+
+== 5. RISPOSTA ALLA DOMANDA 4 — prossimo passo ==
+
+1. CHIUDERE IL FILONE GRADE. Ha una risposta: funziona, ed e' gia' pesato
+   giusto. Non c'e' nessuna modifica di produzione da fare. Scriverlo nel
+   riassunto unificato (`docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md`) con
+   i tre numeri che contano: placebo p=0,005, beta grezzo 0,549 (t=3,04
+   col clustering prudente), beta corretto 1,01 IC95 [0,36 ; 1,67].
+   Aggiornare anche INDICE.md e l'handoff dell'orchestratore, che citano
+   ancora i numeri del campione filtrato.
+
+2. Aggiungere a p26 le due righe che mancano (stima dentro-gruppo +
+   placebo su quella), cosi' chi rilancia lo script vede il numero giusto
+   e non ricasca sul placebo spostato. Zero query. E' l'unica modifica di
+   codice che vale la pena fare adesso.
+
+3. NON riaprire il tema peso, NON estrarre altri manager, NON toccare le
+   soglie.
+
+4. Resta aperto un solo tema vero, ed e' un ALTRO tema: la soglia
+   d'ingresso, misurata in PUNTI e fuori campione. I dati di stanotte
+   dicono che A e G migliorano entrambi allargando un po' la banda
+   (+13.550 -> +23.850 e +17.050 -> +23.700 passando da X=0 a X=10), ma
+   e' ottimizzazione sugli stessi dati con cui la misuro, quindi non e'
+   una raccomandazione. Se si vuole aprire, si apre come filone nuovo e
+   con un metodo fuori campione deciso PRIMA di guardare i numeri.
+   Un tema alla volta: prima si chiude il grade.
+
+
+== 6. FILE DI RIFERIMENTO ==
+
+- archivio_ufficiale/aggregato/binario2_pool_rows.json (10.093 righe)
+- generatore_formazioni/dati/grade_scala_storica.json (la scala)
+- analisi_manager/p26_test_carta_scala_storica.py (corretto; gli mancano
+  la stima dentro-gruppo e il placebo su quella, vedi §5.2)
+- analisi_manager/p23_binario1_mga.py riga 113 (ESCLUDI_DNP, verificato)
+- archivio_ufficiale/aggregato/binario1_out.json (ora SENZA filtro)
+- archivio_ufficiale/aggregato/binario1_con_filtro_dnp_storico_out.json
+- docs/handoff/RISPOSTA_OPUS_ESITO_TESTCARTA_DNP_2026-08-11.txt
+    (mia risposta precedente: la raccomandazione "scrivi GRADE_WEIGHT
+     spento" e' superata, vedi §4 qui)
+- docs/handoff/BRIEF_OPUS_SCALA_STORICA_2026-08-11.txt (il brief)
