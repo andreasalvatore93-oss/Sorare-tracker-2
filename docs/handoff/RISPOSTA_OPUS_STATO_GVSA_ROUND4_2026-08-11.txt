@@ -1,0 +1,504 @@
+RISPOSTA OPUS al BRIEF_OPUS_STATO_GVSA_ROUND4 — 11/08/2026, mattina (Roma)
+
+Non ho eseguito niente in produzione, non ho committato codice, non ho
+toccato script, non ho lanciato query. Ho riletto il grezzo
+(archivio_ufficiale/aggregato/binario1_out.json e binario2_out.json) con
+script usa-e-getta nello scratchpad, piu' p23/p24 e le costanti di
+build_formazione_globale.py. Ogni numero qui sotto viene da li'. Dove
+faccio una proiezione invece di una misura, lo scrivo.
+
+
+================================================================
+VERDETTO SECCO (le tre cose che contano)
+================================================================
+
+1. NO, il segnale non si sta consolidando: si sta INDEBOLENDO. Il campione
+   e' quasi raddoppiato (55 -> 103 decisioni) e OGNI indicatore e'
+   peggiorato. t da 1,02 a 0,62. Permutazione da p=0,167 a p=0,272.
+   Bootstrap da 85,1% a 72,9%. Effetto per decisione da +54,5 a +23,3.
+   Questo e' il comportamento tipico di un effetto che in realta' vale
+   zero e che al primo giro era stato pescato fortunato.
+
+2. IL TEST "TOGLI LE 3 DECISIONI PRO-G PIU' PESANTI" E' VIZIATO, e la
+   colpa e' mia: l'ho proposto io il 10/08 e non regge. Togliendo le 3
+   pro-A piu' pesanti il delta va a +5.200. Il test giusto e' simmetrico
+   (togli 3 da una parte e 3 dall'altra) e da' +2.200, cioe' praticamente
+   il totale. La "fragilita' scoperta ieri sera sul binario2" e' lo stesso
+   artefatto: simmetrico fa +2.317 su +3.518. Non c'e' nessuna fragilita'
+   da spiegare. C'e' un effetto piccolo e non significativo, punto.
+
+3. LA STRADA "ALTRI MANAGER" E' CHIUSA. Con l'effetto misurato oggi
+   servono ~1.050 decisioni discordanti (non 213) per il binario1: sono
+   circa 240 manager nuovi. E ~1.290 coppie manager-GW per il binario2:
+   circa 80 manager nuovi. Non e' un obiettivo raggiungibile.
+   La via d'uscita non e' piu' campione: e' MISURARE UN'ALTRA COSA, con
+   dati che sono GIA' in repo e zero query. Sezione 5.
+
+
+================================================================
+1. RISPOSTA ALLA DOMANDA 1 — il segnale si consolida?
+================================================================
+
+No. Tutti i numeri, ricalcolati stamattina su binario1_out.json:
+
+  campione      n_disc   delta    per decisione   t      P(>0) boot   p perm
+  10/08 (Opus)     55   +3.000        +54,5      1,02      85,1%      0,167
+  round 2+3        80   +1.650        +20,6       n.d.      n.d.       n.d.
+  round 4         103   +2.400        +23,3      0,62      72,9%      0,272
+
+Il totale in essenze cresce (+1.650 -> +2.400) e da' l'impressione di
+consolidamento. Ma il totale cresce solo perche' crescono le osservazioni:
+il numero che conta e' l'effetto PER DECISIONE, ed e' sceso di oltre la
+meta' e non si e' piu' mosso da li'.
+
+Esempio da bar. Hai una moneta che sospetti truccata. Primi 10 lanci: 7
+teste, ti sembra truccata. Arrivi a 103 lanci: 58 teste. Il 58% e' molto
+piu' vicino al 50% del 70% di prima. Ogni lancio in piu' l'ha fatta
+sembrare piu' normale, non piu' truccata. E' esattamente cosa e'
+successo qui.
+
+Numeri di appoggio, tutti su n=103:
+  - 58 decisioni pro-G, 45 pro-A. Test dei segni: p = 0,237 (non
+    significativo). Mediana del contributo: +100.
+  - media +23,3, deviazione standard 379,2, t = 0,62.
+  - bootstrap 20.000 ricampionamenti: P(delta>0) = 72,9%,
+    IC90 = [-3.950, +8.650].
+  - bootstrap a grappoli per MANAGER: P(>0) = 74,2%.
+  - bootstrap a grappoli per GIORNATA: P(>0) = 70,3% (le 103 decisioni
+    cadono in sole 14 giornate distinte).
+  - permutazione dei segni: P(uscire >= +2.400 per puro caso) = 0,272.
+
+Una prova aggiuntiva, secondo me la piu' convincente di tutte, che il
+numero in essenze e' inutilizzabile a questa numerosita'. Ho rigiocato le
+decisioni con la regola "salta solo se atteso < soglia - X", per X
+crescente (dati gia' in binario1_out.json, zero query):
+
+    X      arene_A   netto_A      arene_G   netto_G     delta G-A
+    0        436     +23.600        416     +26.300       +2.700
+    2        510     +23.100        497     +27.550       +4.450
+    5        618     +27.100        604     +33.950       +6.850
+   10        761     +47.600        730     +42.550       -5.050
+   15        818     +50.500        794     +45.950       -4.550
+   20        840     +47.100        834     +47.450         +350
+   25        853     +45.550        849     +46.350         +800
+   40+       860     +43.450        860     +43.450            0
+
+Guarda la colonna a destra: +6.850 a X=5, poi -5.050 a X=10. Stessi dati,
+stesse formazioni, una modifica banale della regola e il verdetto si
+ribalta di 12.000 essenze. Quando un confronto e' cosi' instabile rispetto
+a un dettaglio arbitrario, quel confronto non sta misurando niente.
+(Il perche' e' nella sezione 4: il premio e' una lotteria.)
+
+
+================================================================
+2. RISPOSTA ALLA DOMANDA 2 — i due manager grandi sono un problema?
+================================================================
+
+No, ed e' un caso di ritaglio del campione. La preoccupazione nasce da 2
+manager scelti guardando il risultato. Ho fatto il conteggio per gruppo,
+su binario2 (delta in essenze, arene di A come misura di taglia):
+
+  manager GRANDI (>= 50 arene): 9 manager, 823 arene, delta +3.673
+     -> +4,46 per arena
+  manager PICCOLI (< 50 arene): 17 manager, 285 arene, delta -155
+     -> -0,54 per arena
+
+Cioe' l'esatto contrario di quello che dice il brief: sono i manager
+grandi a portare TUTTO il segnale positivo, e i piccoli a stare a zero.
+tsubasa_451 (-3) e crowss (-144) sono due dei nove grandi, e i loro numeri
+sono minuscoli rispetto agli altri sette (karew +1.490, elkenodescansa
++1.006, maltazars +722, golden_goal +564, sweggaausbrazil +241, tekato-dan
++32, tigermila11 -234).
+
+Attenzione pero': questo NON e' una buona notizia, e' la stessa notizia.
+Con 26 manager si puo' costruire qualunque racconto scegliendo il
+sottogruppo giusto. Il brief ne ha scelto uno che dava torto a G, io ne ho
+appena trovato uno che gli da' ragione, e nessuno dei due significa niente.
+
+L'unica unita' di misura non ritagliabile e' la coppia manager-giornata.
+Su quella, binario2 non e' 26 voti: sono 316 osservazioni appaiate.
+Ricalcolate:
+
+  - delta totale +3.518 su 316 coppie manager-GW
+  - media per coppia +11,1, sd 199,9, t = 0,99
+  - MEDIANA del delta per coppia: 0,0
+  - coppie con delta diverso da zero: 169. Di queste, G>A in 81 (47,9%).
+    Test dei segni: p = 0,645.
+  - bootstrap: P(delta>0) = 83,8% (iid), 87,7% (a grappoli per manager)
+  - trim simmetrico 3+3: +2.317 (togliendo solo le 3 pro-G: +631;
+    togliendo solo le 3 pro-A: +5.204 — di nuovo il test asimmetrico)
+
+Traduzione: sulla giornata mediana G e A fanno esattamente la stessa cosa,
+e quando fanno cose diverse vince A nella meta' esatta dei casi. Il +3.518
+sta tutto nella grandezza di poche giornate, non nella frequenza.
+
+Quindi: NON pesare per numerosita' del manager, e nemmeno contare i
+manager. Contare le coppie manager-GW. E' gia' quello che fa lo script:
+va solo stampato come numero principale, come si e' fatto per le decisioni
+discordanti del binario1.
+
+Ultimo controllo, quello che chiude la domanda. Se G avesse un vantaggio
+vero e costante per arena, il delta di ogni manager dovrebbe crescere in
+PROPORZIONE alle sue arene. Se e' rumore, cresce come la RADICE delle
+arene. Misurato:
+  correlazione(delta, n_arene)   = +0,223
+  correlazione(|delta|, n_arene) = +0,147
+  correlazione(|delta|, radice(n_arene)) = +0,227
+La correlazione con la radice batte quella lineare. E' il profilo del
+rumore, non quello di un effetto costante. Con 26 punti nessuna delle due
+e' conclusiva, ma nessuna delle due sostiene "effetto reale".
+
+
+================================================================
+3. RISPOSTA ALLA DOMANDA 3 — quanto campione servirebbe ora
+================================================================
+
+BINARIO 1 (euro, decisioni discordanti):
+  media +23,3, sd 379,2. Per t=2 servono (2*379,2/23,3)^2 = 1.059
+  decisioni discordanti. Oggi ne abbiamo 103.
+  Resa misurata: 0,354 decisioni discordanti per coppia manager-GW
+  (103 su 291). Un manager nuovo rende in media 11,2 coppie, cioe' ~4
+  decisioni discordanti.
+  -> servono circa 240 manager nuovi. Con lo sconto per correlazione fra
+     manager sulla stessa giornata (0,67, misurato il 10/08), di piu'.
+
+BINARIO 2 (euro, coppie manager-GW):
+  media +11,1, sd 199,9. Per t=2 servono (2*199,9/11,1)^2 = 1.289 coppie.
+  Oggi 316. A 12,2 coppie per manager -> circa 80 manager nuovi.
+
+Va detto con onesta': questi due numeri NON sono "quanto manca". Sono
+"quanto mancherebbe SE l'effetto vero fosse esattamente quello misurato
+oggi". La stima e' salita da 213 a 1.059 in un giro proprio perche'
+l'effetto misurato si e' dimezzato. Se l'effetto vero e' zero, nessuna n
+basta: il traguardo si allontana ogni volta che ci si avvicina. Ed e'
+esattamente quello che si e' visto fra il 10 e l'11 agosto.
+
+Quindi la mia risposta alla domanda "quanti manager servono ancora" e':
+NESSUNO. Estrarne altri e' il modo piu' caro possibile di ottenere lo
+stesso "non lo so". Fermare le estrazioni e' la prima raccomandazione
+concreta di questa risposta.
+
+
+================================================================
+4. PERCHE' IL CONFRONTO IN ESSENZE NON PUO' FUNZIONARE
+================================================================
+
+Ho guardato come sono fatti i premi reali nel campione (866 formazioni):
+
+  premio_netto: mediana -100, media +48,7, minimo -300, massimo +3.700
+  valori piu' frequenti: -300 (239 volte), -100 (228), +500 (59), -200 (55)
+  I 20 premi piu' grandi su 860 valgono il 75% di TUTTO il valore.
+
+E' una lotteria: quasi tutte le arene perdono una cifra piccola e fissa
+(il costo d'ingresso), e pochissime pagano moltissimo. Con una struttura
+cosi', il totale in essenze e' deciso da una ventina di osservazioni. Non
+importa quante ne aggiungi: 20 biglietti vincenti su 860 restano 20.
+
+Da qui discendono tre cose:
+
+(a) il test "togli le 3 migliori" e' viziato per costruzione. In una
+    lotteria togliere le 3 vincite grosse azzera chiunque, anche una
+    strategia perfetta. Il numero onesto e' il trim simmetrico:
+      binario1: totale +2.400 | trim 3+3 -> +2.200 | trim 5+5 -> +1.500
+      binario2: totale +3.518 | trim 3+3 -> +2.317
+    Sono stabili. Ripeto: quella "fragilita'" non esiste, e l'avevo
+    introdotta io. Non cambia il verdetto (resta non significativo), ma
+    cambia la diagnosi: il problema non e' che il vantaggio dipende da 3
+    colpi, e' che il vantaggio e' piccolo rispetto al rumore.
+
+(b) la stessa identica decisione misurata in PUNTI invece che in essenze
+    e' molto meno rumorosa. Sulle stesse 103 decisioni discordanti:
+      arene che gioca solo G: margine reale medio +19,78 punti sopra la
+        soglia (sd 45,9, n=41), sopra soglia 28 su 41
+      arene che gioca solo A: margine reale medio +0,28 punti (sd 44,6,
+        n=61), sopra soglia 28 su 61
+      differenza +19,49 punti, errore standard 9,17, t = 2,13
+    Stesse decisioni, stesso campione: t=0,62 in essenze, t=2,13 in punti.
+    Il premio e' una funzione a gradini e casuale dei punti; misurare in
+    premi butta via quasi tutta l'informazione.
+    ATTENZIONE, non e' una prova a favore di G: e' un confronto fra due
+    gruppi diversi di arene, l'ho calcolato dopo aver visto i dati, e
+    t=2,13 e' al limite. E' una prova che LO STRUMENTO DI MISURA CAMBIA
+    TUTTO, e che stiamo usando quello sbagliato.
+
+(c) sia A che G si perdono meta' dei biglietti vincenti:
+      dei 10 premi piu' grandi: A ne gioca 4, G ne gioca 5
+      dei 20 premi piu' grandi: A ne gioca 9, G ne gioca 11
+    Due delle quattro arene da +3.700 sono state saltate da entrambi.
+
+
+================================================================
+5. RISPOSTA ALLA DOMANDA 4 — dove sbaglia il modello, e cosa misurare
+================================================================
+
+5.1 IL TEST GIA' FATTO, AD ALTA POTENZA: il grade NON migliora la
+    previsione dei punti a livello di formazione.
+
+Su tutte e 860 le formazioni con punteggio valorizzato (non solo le 103
+discordanti), confrontando l'atteso con il punteggio realmente fatto:
+
+  MAE:          A 36,83   G 36,84   (G peggio di 0,011 punti)
+  RMSE:         A 46,77   G 46,75   (G meglio di 0,021)
+  correlazione atteso/realizzato: A 0,2204   G 0,2197
+  test appaiato sull'errore assoluto: media -0,011, t = -0,08 (n=860)
+  su sole righe col grade attivo (742): G meglio in 382 su 742 = 51,5%
+
+Questo e' un risultato NULLO ma PRECISO, che vale piu' di tutti i test in
+essenze messi insieme: con n=860 l'errore standard sulla differenza di MAE
+e' 0,142, quindi possiamo escludere qualunque miglioramento del grade piu'
+grande di ~0,28 punti su una base di 36,8. Non e' "non lo sappiamo": e'
+"se c'e', vale meno dell'1% dell'errore".
+
+Ho anche misurato quanto peso ANDREBBE dato all'aggiustamento, con una
+regressione del residuo di A sull'aggiustamento del grade (n=860):
+  aggiustamento (atteso_G - atteso_A): sd 4,39, mediana in valore
+    assoluto 2,11, massimo 21,55
+  residuo di A (reale - atteso_A): sd 45,61
+  pendenza ottima beta = +0,477, errore standard 0,354, t = 1,35,
+    IC95 = [-0,217, +1,171], correlazione +0,046
+
+Lettura: beta=1 vorrebbe dire "grade applicato col peso giusto", beta=0
+"rumore puro", beta<0 "peggiora". Il nostro intervallo contiene sia 0 che
+1: a questo livello di aggregazione la domanda non e' decidibile. Ma
+l'intervallo NON e' vuoto e la stima puntuale e' positiva: non e' vero che
+il grade sia dimostrato inutile, e' vero che a livello di FORMAZIONE non
+si riesce a vedere.
+
+5.2 IL TEST DECISIVO CHE NON E' MAI STATO FATTO: la stessa cosa a livello
+    di CARTA. Zero query, dati gia' calcolati.
+
+Il motivo per cui 5.1 non decide e' che una formazione somma 5 carte: gli
+aggiustamenti delle 5 carte si annullano fra loro e il rumore no. La
+stessa identica regressione fatta carta per carta ha molte piu'
+osservazioni e molto meno annullamento.
+
+Il materiale c'e' gia': p24_binario2_ga.py, dentro prepara_pool_rows(),
+calcola per OGNI carta del pool sia '_cal' (atteso senza grade) sia
+'_combinato' (con grade) sia 'reale' (punteggio vero, gia' ripulito dal
+bonus capitano). Semplicemente non li scrive nel JSON: dumpa solo le
+formazioni scelte. Basta aggiungere il dump di pool_rows.
+
+Quanto materiale: sommando i pool di tutte le 316 coppie manager-GW sono
+9.732 osservazioni carta-giornata, di cui 8.945 col grade (91,9%). La
+ridondanza fra manager (stesso giocatore, stessa giornata, in piu' mazzi)
+misurata sulle arene giocate e' 1,41, quindi le osservazioni davvero
+distinte sono circa 6.900.
+
+Proiezione (e' una proiezione, non una misura): l'errore standard di beta
+vale sd_residuo / (sd_aggiustamento * radice(n)). Al livello di formazione
+il rapporto sd_residuo/sd_aggiustamento e' 45,61/4,39 = 10,4, e infatti
+10,4/radice(860) = 0,355, che coincide con lo 0,354 misurato — il conto
+torna. Lo stesso rapporto a livello carta su ~6.900 osservazioni distinte
+da un errore standard di circa 0,125. Con beta = 0,477 sarebbe t ~ 3,8:
+DECIDIBILE, e senza una singola query nuova.
+
+Cosa produce, concretamente:
+  - se beta e' significativamente > 0: il grade porta informazione, e beta
+    dice DI QUANTO va moltiplicato l'aggiustamento oggi in produzione
+    (se beta = 0,5 stiamo applicando il doppio del dovuto);
+  - se beta e' indistinguibile da 0 con quell'errore standard: il filone
+    grade si chiude per davvero, con una misura che regge, e si smette di
+    estrarre manager;
+  - in entrambi i casi si ottiene anche il "lift di selezione" richiesto da
+    CLAUDE.md (ordina le carte del pool per _cal e per _combinato, confronta
+    il punteggio reale medio delle prime K), cioe' la terza gamba della
+    regola MAE + correlazione + lift, che oggi non e' mai stata misurata a
+    livello carta.
+
+Da fare come modifica minima a p24 (misura, non produzione):
+  in processa_fixture(), aggiungere al dizionario restituito una chiave
+  'pool_rows' con, per ogni riga: manager, fixture, slug, codice, lega,
+  _cal, _combinato, _grade, _zgrade, reale.
+  Poi uno script di regressione con errori standard a grappoli su
+  (slug, fixture) e su fixture. Costo: minuti, zero rete.
+  Nota: il file di output crescera' (oggi binario2_out.json e' 1,9 MB);
+  se da' fastidio, scrivere il dump carta in un file separato.
+
+5.3 SULL'IDEA "G FISSO" DELL'UTENTE — l'intuizione e' giusta, il modo
+    proposto no.
+
+L'intuizione (separare "quale carta schierare" da "se entrare") e'
+esattamente la mossa corretta, ed e' il motivo per cui il test 5.2 e'
+quello giusto: il test carta E' il test della selezione allo stato puro.
+
+Ma il confronto binario1-contro-binario2 per manager NON puo' fare quel
+lavoro, perche' i due binari non hanno la stessa unita' di misura:
+  - binario1 misura PREMI VERI incassati davvero dal manager;
+  - binario2 misura un netto STIMATO, (punti reali - pareggio) *
+    guadagno_per_punto, su formazioni ricostruite che nessuno ha mai
+    giocato.
+Il caso tekato-dan (-2.300 in binario1, +32 in binario2) mette a confronto
+un premio reale con un premio modellato: la differenza fra i due numeri
+dice soprattutto che nel binario1 quel manager ha incassato o mancato un
+premio grosso, non che "per lui il problema e' la soglia". Su 4 sole
+decisioni discordanti, poi, -2.300 e' un singolo colpo di fortuna
+rovesciata, non una diagnosi.
+
+Il modo pulito di separare le due decisioni, con i dati di oggi:
+  a) la SOGLIA da sola e' gia' isolata: e' esattamente il binario1, dove
+     la formazione e' fissa e l'unica differenza fra A e G e' entra/salta.
+  b) la SELEZIONE da sola si isola nel binario2 obbligando A e G a giocare
+     lo STESSO numero e lo STESSO tipo di arene (per esempio quelle
+     scelte da A), lasciando variare solo QUALI carte ci vanno dentro, e
+     confrontando i PUNTI REALI, non le essenze. Cosi' il confronto e'
+     appaiato arena per arena e non passa dalla lotteria dei premi.
+  c) la versione completa e' un 2x2: selezione A/G incrociata con soglia
+     A/G. Prima di scriverlo va verificato dentro
+     genera_arene_efficienti() se le due decisioni si possono davvero
+     scollegare (oggi p24 passa una sola chiave-obiettivo per entrambe):
+     non l'ho verificato e non voglio darlo per fatto.
+  d) resta comunque vero che (b) e (c) sono meno potenti del test carta di
+     5.2, perche' lavorano su 316 unita' invece che su ~6.900.
+
+5.4 ALTRI TAGLI GIA' MISURATI, per orientare il prossimo passo (nessuno
+    e' significativo da solo: sono indizi su dove guardare, non verdetti)
+
+Per ampiezza dell'aggiustamento del grade (binario1, 103 discordanti):
+    |atteso_G - atteso_A| in [0,2):  n=12  delta   -200
+                          in [2,4):  n=27  delta +1.400
+                          in [4,6):  n=29  delta +2.200
+                          in [6,9):  n=19  delta   -700
+                          in [9,+):  n=16  delta   -300
+  Non c'e' nessuna monotonia. L'ipotesi che avevo avanzato il 10/08
+  ("applica il grade solo quando sposta l'atteso di almeno X") non trova
+  conferma: le correzioni grandi non vanno meglio delle piccole, vanno
+  leggermente peggio. Se qualcosa, suggerisce che le correzioni grandi
+  sono le piu' rumorose — ed e' un'altra cosa che il test carta di 5.2
+  misura in modo diretto e pulito.
+
+Per tipo di arena (binario1, 103 discordanti):
+    beginner  n=50  delta   +200      cap220  n=13  delta  +500
+    cap260    n=33  delta +2.200      uncapped n=7  delta  -500
+  Quasi tutto il delta del binario1 sta nella cap260. E' anche il tipo con
+  i premi piu' grandi (le quattro arene da +3.700 sono tutte cap260):
+  cioe' e' il tipo dove la lotteria e' piu' forte, non necessariamente
+  quello dove il modello funziona meglio.
+
+
+================================================================
+6. LA COSA PIU' GRANDE CHE HO TROVATO, E NON RIGUARDA IL GRADE
+================================================================
+
+Guardando gli stessi dati per rispondere alle domande sopra, sono
+inciampato in due numeri molto piu' grandi del +2.400 di cui si discute
+da tre giorni. Li metto qui perche' secondo me spostano le priorita' del
+filone, ma con tutti i loro difetti in chiaro: NON sono verdetti pronti.
+
+6.1 IL FILTRO ENTRA/SALTA, COSI' COM'E', COSTA PIU' DI QUANTO IL GRADE
+    POSSA MAI RENDERE.
+
+Sulle stesse 860 formazioni:
+    M (entra sempre, cioe' quello che e' successo davvero): +43.450
+    A (entra in 436): +23.600   ->  il filtro costa -19.850
+    G (entra in 416): +26.300   ->  il filtro costa -17.150
+
+Il filtro di ingresso butta via circa il 40% del valore. Il dibattito
+G-contro-A vale +2.400, cioe' un ottavo di quello che si perde con la
+soglia. E dalla tabella della sezione 1 si vede che il massimo non e' ne'
+a X=0 ne' a "entra sempre": sta intorno a X=10-20 (A tocca +50.500 a
+X=15). Le arene che G salta hanno un premio medio di +38,6 essenze: sono
+mediamente profittevoli.
+
+Guardando dove il valore diventa davvero negativo:
+    scarto atteso-soglia [-40,-30): n=  2  premio medio -300,0
+                         [-30,-25): n=  9  premio medio -255,6
+                         [-25,-20): n= 15  premio medio  -73,3
+                         [-20,-15): n= 40  premio medio  +37,5
+                         [-15,-10): n= 64  premio medio  +53,1
+                         [-10, -5): n=126  premio medio  +68,3
+                         [ -5,  0): n=126  premio medio  +40,7
+Il modello riconosce benissimo le arene DAVVERO brutte (sotto -20 il
+valore e' nettamente negativo, ed e' un risultato per il modello, non
+contro). Ma la soglia di produzione taglia a 0, mentre nei dati il valore
+cambia segno intorno a -20.
+
+6.2 MA PRIMA DI TOCCARE QUALSIASI COSA: IL CAMPIONE E' MUTILATO IN MODO
+    CHE SPINGE PROPRIO IN QUELLA DIREZIONE.
+
+p23_binario1_mga.py esclude le formazioni intere che contengono anche una
+sola carta a 0/DNP. Sono 487 formazioni su 2.521: il 19,3% del campione,
+e sono precisamente i casi andati male.
+
+L'atteso, invece, il rischio DNP ce l'ha dentro. Risultato misurato:
+    bias medio (atteso_A - reale) = -10,51 punti su 860 formazioni
+    per tipo: cap260 -14,65 | beginner -9,93 | uncapped -9,08 | cap220 +0,70
+Il modello "sbaglia per difetto" di 10 punti — ma quasi certamente perche'
+gli abbiamo tolto dal campione i casi in cui aveva ragione a essere
+prudente. Ed e' esattamente della stessa taglia dei ~20 punti di sconto
+che i dati sembrano chiedere sulla soglia: buona parte di quel "-20" puo'
+essere l'artefatto, non un difetto di PAREGGIO_ARENA (che e' calibrato su
+5.031 premi veri, un campione molto piu' solido di questo).
+
+Secondo difetto, indipendente: l'archivio contiene solo arene che un
+essere umano ha DECISO di giocare. "Entra sempre" qui significa "entra in
+tutte le arene che un manager aveva gia' scelto di giocare", non "entra in
+un'arena a caso". Il confronto vero per la produzione (che le formazioni
+se le costruisce da sola) e' il binario2, non il binario1.
+
+Terzo: la tabella della banda morta e' ottimizzata sugli stessi dati su
+cui e' misurata. Il massimo a X=15 non e' un valore da portare in
+produzione.
+
+Conseguenza operativa, e secondo me e' il secondo passo dopo il test carta:
+rilanciare il binario1 SENZA il filtro DNP (le formazioni ci sono, i premi
+veri pure: e' un `if` da spegnere, zero query) e rifare 6.1. Se anche
+senza filtro la soglia continua a costare piu' di 10.000, allora il tema
+vero di questo filone non e' mai stato il grade — e' la soglia d'ingresso,
+e vale 5-8 volte tanto.
+Nota importante: il filtro DNP NON invalida il confronto G-contro-A, che
+e' differenziale (A e G vedono lo stesso campione mutilato). Invalida solo
+i confronti che coinvolgono M / "entra sempre" / la taratura della soglia.
+Tutta la sezione 1-5 resta in piedi.
+
+
+================================================================
+7. COSA FAREI, IN ORDINE
+================================================================
+
+1. FERMARE LE ESTRAZIONI DI MANAGER. Servirebbero ~240 manager per il
+   binario1 e ~80 per il binario2 con l'effetto misurato oggi, e la stima
+   si allontana ad ogni giro. E' la voce di spesa piu' alta del filone e
+   sta comprando la risposta piu' cara possibile.
+
+2. TEST CARTA (5.2). Dumpare pool_rows da p24 e regredire il punteggio
+   reale sull'aggiustamento del grade, ~6.900 osservazioni distinte, zero
+   query, errore standard atteso ~0,125 contro 0,354 di oggi. E' l'unico
+   test in mano che puo' CHIUDERE la domanda sul grade, in un verso o
+   nell'altro, e in piu' restituisce il peso giusto da dare
+   all'aggiustamento se il grade funziona. Esecutore: Sonnet.
+
+3. RILANCIARE BINARIO1 SENZA FILTRO DNP (6.2) e ricontrollare 6.1. Zero
+   query. Se la soglia continua a costare decine di migliaia di essenze,
+   il filone cambia oggetto. Esecutore: Sonnet, insieme al punto 2.
+
+4. Cambiare l'unita' di misura di default in tutti e due i binari: PUNTI
+   per giudicare i componenti del modello, essenze solo per la decisione
+   finale di produzione. Sulle stesse 103 decisioni: t=0,62 in essenze,
+   t=2,13 in punti.
+
+5. Stampare in cima ad ogni report anche per il binario2 la n vera
+   (169 coppie manager-GW discordanti su 316) e il trim SIMMETRICO, non
+   piu' quello asimmetrico che ho proposto io il 10/08. Due righe di
+   codice, e vale anche per p23.
+
+6. Solo dopo il punto 2: griglia fissa del grade, oppure ricalibrazione
+   del peso dell'aggiustamento col beta misurato. Non prima: amplificare
+   un effetto di cui non conosciamo il segno resta la mossa sbagliata.
+
+
+================================================================
+8. FILE DI RIFERIMENTO
+================================================================
+
+- archivio_ufficiale/aggregato/binario1_out.json  (grezzo riletto)
+- archivio_ufficiale/aggregato/binario2_out.json  (grezzo riletto)
+- analisi_manager/p23_binario1_mga.py  (filtro DNP: escludi_dnp(), riga 104)
+- analisi_manager/p24_binario2_ga.py   (pool_rows con _cal/_combinato/reale
+  gia' calcolati ma non dumpati: prepara_pool_rows(), righe 137-177)
+- generatore_formazioni/build_formazione_globale.py righe 574-731
+  (PAREGGIO_ARENA, GUADAGNO_PER_PUNTO, COSTO_INGRESSO, QUOTA_MINIMA=0,10:
+  il margine sopra il pareggio vale 3,9-5,1 punti a seconda del tipo)
+- docs/handoff/RISPOSTA_OPUS_ANALISI_BINARIO1_2026-08-10.txt (la mia
+  risposta precedente: il test "senza le 3 migliori" proposto li' e'
+  sbagliato, vedi sezione 4a — il resto regge)
+- docs/handoff/BRIEF_OPUS_STATO_GVSA_ROUND4_2026-08-11.txt (il brief)
