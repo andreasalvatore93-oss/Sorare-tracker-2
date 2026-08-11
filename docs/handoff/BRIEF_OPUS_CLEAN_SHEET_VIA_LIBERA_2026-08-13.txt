@@ -1,0 +1,51 @@
+VIA LIBERA sul clean sheet + una precisazione sul favorito_odds. Orchestratore
+Sonnet, 13/08/2026 sera. Segue docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_
+2026-08-13.txt §9 (le quote catturano 4,8 dei 52 punti di tetto, 9%).
+
+===============================================================================
+1. VIA LIBERA: costruisci la probabilita' di clean sheet vera
+===============================================================================
+L'utente ha detto "procediamo". Prossimo passo come proposto da te al punto
+5 del tuo §9: gol subiti attesi della squadra contro forza d'attacco
+dell'avversario, dalla cache game-log, zero query. Obiettivo dichiarato da
+te: portare l'AUC da 0,585 (quote) a ~0,70. Stessa disciplina di sempre:
+- SOLO MISURA, nessuna modifica alla produzione.
+- Valida sull'AUC del clean sheet (l'evento vero), il lift sul GK solo come
+  conferma finale -- l'hai gia' scritto tu stesso in §9 punto 6, lo confermo.
+- IC a grappolo (squadra-giornata, non singola carta).
+- Se porta davvero l'AUC a ~0,70, il passo successivo (non ora, si decide
+  con l'utente) e' vedere l'effetto sulla catena intera: score_atteso GK ->
+  soglie arena -> scouting, come sempre.
+
+===============================================================================
+2. PRECISAZIONE DELL'UTENTE SU favorito_odds: NON e' la stessa cosa di prima
+===============================================================================
+L'utente ricorda che il filone favorito_odds fu scartato, e chiede se sia mai
+stato provato ruolo per ruolo E per correlazioni specifiche come quella che
+stiamo misurando ora (gol/forza avversario -> clean sheet -> portiere e
+DIFENSORE ACCOPPIATO). Ho controllato il repo prima di risponderti, per
+onestà: la risposta e' PARZIALE, dillo cosi' all'utente quando riporti, non
+come "mai testato".
+
+- GIA' TESTATO: favorito_odds ruolo per ruolo, griglia pulita, 07/08
+  (docs/handoff/BRIEF_ODDS_4RUOLI_2026-08-07.txt, script
+  taratura_confronto_parametri.py, verificato non toccato dal bug D6):
+  DEF 7/9 varianti passano il criterio severo (MAE+corr+lift), GK 0/9,
+  MID 0/9, FWD 1/9. Quindi "mai provato ruolo per ruolo" non e' esatto.
+- MAI TESTATO (questo e' il pezzo nuovo, e l'utente ha ragione che manca):
+  quel filone usava le quote 1X2 come CORREZIONE LINEARE GENERICA sul
+  punteggio (score + k*odds o score*(1+k*odds)), uguale per ogni carta
+  dello stesso ruolo. Quello che stiamo facendo ora e' diverso nella
+  SOSTANZA, non solo nel dettaglio tecnico: costruire una probabilita' di
+  UN EVENTO SPECIFICO (clean sheet) e usarla per correggere SOLO il pezzo
+  del punteggio che dipende da quell'evento (GK quasi tutto, DEF il bonus
+  correlato +10 gia' misurato). Non e' "favorito_odds versione 2": e' un
+  ingrediente nuovo (probabilita' di evento) al posto di una correzione
+  lineare generica sul totale. Riportalo cosi' quando scrivi, per non far
+  sembrare che si stia rifacendo un test gia' bocciato.
+
+===============================================================================
+3. DOVE SCRIVERE
+===============================================================================
+Continua in coda a RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt (stesso filone).
+Rispondimi con mcp__ccd_session_mgmt__send_message come sempre.
