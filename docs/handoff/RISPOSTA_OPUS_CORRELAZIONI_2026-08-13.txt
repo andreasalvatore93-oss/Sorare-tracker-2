@@ -901,3 +901,143 @@ Dati aggiornati: analisi_manager/dati/storico_grade_crowss_completamento.json,
                  archivio_ufficiale/aggregato/binario2_out.json,
                  archivio_ufficiale/aggregato/binario2_pool_rows.json,
                  generatore_formazioni/dati/gk_attacco_avversario.json
+
+============================================================================
+14. RISPOSTA OPUS ESECUTORE â€” SI ACCENDE GK_ATT_AVV? (11/08/2026, ~20:15 Roma)
+    Risposta al brief docs/handoff/BRIEF_OPUS_GK_SECCA_PRODUZIONE_2026-08-11.txt
+============================================================================
+
+14.0 VERDETTO DA BAR (10 righe)
+     SI', si accende. Ho rifatto io i due backtest da zero e ho ritrovato gli
+     stessi numeri del brief, quindi non e' un numero raccontato: e' vero.
+     Il punto che cambia tutto e' questo: Binario 1 non dice "non funziona",
+     dice "non ho abbastanza casi per accorgermene". Su 362 giornate il
+     correttivo cambia idea solo 36 volte, e ogni volta e' un tutto-o-niente
+     da centinaia di essenze: con quel rumore, per vedere qualcosa servirebbe
+     un effetto da 4.190 essenze, e noi ne cerchiamo qualche centinaio. E'
+     come voler capire se una moneta e' truccata lanciandola sei volte.
+     Binario 2, che di occasioni ne ha 144 e le pesa in modo continuo, il
+     guadagno lo vede â€” e lo vede anche sul braccio A, che il grade non lo
+     usa nemmeno: due regole di scelta diverse, stesso verso. Ho controllato
+     pure il sospetto piu' serio (la tabella sa il futuro): pesa 0,096 punti
+     su un correttivo che ne vale 1,7 di dispersione, cioe' niente.
+     Si accende, con una verifica gia' scritta da fare fra tre giornate vere.
+
+14.1 COSA HO RIFATTO IO (non mi sono fidato del brief, riprodotto da zero)
+     - p24_binario2_ga.py con GK_ATT_AVV_ENABLED=1/FORMULA=secca, confronto
+       appaiato contro il binario2_out.json gia' committato (= run flag off).
+     - p23_binario1_mga.py idem.
+     - Bootstrap appaiato riscritto da me (B=5000, resample sulle unita'
+       manager-GW, seed 20260811). NON e' lo script dell'orchestratore.
+     I file di lavoro sono in scratchpad, non committati; i due out.json in
+     archivio_ufficiale/aggregato/ sono stati RIPRISTINATI a git HEAD dopo le
+     run (questa sessione non lascia modifiche sul repo oltre a questo Â§14).
+
+14.2 NUMERI TROVATI â€” coincidono col brief, piu' due righe nuove
+     BINARIO 2 (360 GW appaiate):
+       G_on - G_off  = +5.556  IC95% [+652 ; +10.531]  positivo 98,7%
+                       144 discordanti, mediana +23, 77/144 positivi,
+                       trim 3+3 estremi +5.192 (non e' una coda)
+                       17/29 manager con contributo positivo
+       A_on - A_off  = +6.794  IC95% [+1.360 ; +12.320]  positivo 99,2%  <-- NUOVO
+                       146 discordanti, trim 3+3 +6.668
+       Base: G_off totale = 118.465 essenze su 360 GW -> +5.556 = +4,7%.
+     BINARIO 1 (362 GW appaiate):
+       G_on - G_off  = -1.500  IC95% [-5.900 ; +2.550]  positivo 24,0%
+                       36 discordanti, sd dei delta discordanti 350,
+                       mediana -100, 16/36 positivi, trim 3+3 -1.300
+       A_on - A_off  = -1.200  IC95% [-5.300 ; +2.600]  positivo 28,7%
+                       41 discordanti
+     Controlli superati: B2 flag off riproduce esattamente tot_A 114.977 /
+     tot_G 118.465 / delta 3.488 gia' su disco; B1 flag off riproduce delta
+     G-A +3.700; B1 flag on da' G +14.350 (era +15.850).
+
+14.3 IL PUNTO CHE DECIDE: BINARIO 1 NON HA LA POTENZA PER VEDERE L'EFFETTO
+     Errore standard del totale B1 (dal mio bootstrap): 2.138 essenze.
+     Soglia di rilevabilita' al 95%: circa 4.190 essenze.
+     Effetto atteso in B1 SE fosse vero e grande come in B2: 36 decisioni
+     discordanti per l'ordine di grandezza per-decisione visto in B2
+     (mediana +23) = qualche centinaio di essenze. Un ventesimo della soglia.
+     Il -1.500 osservato dista 0,7 errori standard dallo zero.
+     Quindi B1 non e' "un test che dice di no": e' un test che NON POTEVA
+     dire ne' si' ne' no. Non va usato come contro-prova. E non serve un test
+     dedicato per capire perche' e' piatto (dubbio aperto Â§7 del brief): la
+     risposta e' aritmetica. L'ipotesi dell'orchestratore (soglia binaria) e'
+     giusta come meccanismo ed e' proprio cio' che produce quella sd 350.
+
+14.4 LOOK-AHEAD DELLA TABELLA: MISURATO, IRRILEVANTE (era il mio sospetto n.1)
+     Problema reale: p24/p23 sono walk-forward puliti sul giocatore
+     (cutoff_giornata = primo kickoff), ma gk_att_avv_aggiustamento legge una
+     tabella STATICA costruita su TUTTA la storia fino al 2026-08-09
+     (aggiorna_gk_attacco_avversario.py non ha nessun taglio per data). Nelle
+     GW testate (apr-ago 2026) la media dell'avversario contiene percio'
+     anche partite successive alla GW, e persino la partita stessa.
+     MISURATO (zero query, solo file gia' in repo): per ognuna delle 25
+     fixture ho ricalcolato att_medio con le sole partite precedenti al primo
+     giorno della GW e confrontato l'aggiustamento risultante.
+       quota di partite "dal futuro": 11,8% sulla fixture piu' vecchia
+         (3-7 apr 2026), 0,2% sulla piu' recente (7-11 ago)
+       |differenza dell'aggiustamento|: media 0,096 punti su tutte le
+         fixture (peggiore singola fixture 0,195; p90 0,488; max 3,2 su
+         una manciata di squadre)
+       per confronto l'aggiustamento stesso ha sd 1,727 punti
+         (741 squadre, min -6,73 max +5,96, mediana 57 partite a squadra)
+     Il look-ahead vale il 5,6% della dispersione del correttivo: non puo'
+     spiegare +5.556. NON serve rifare i backtest in versione walk-forward.
+     Era il test piu' economico capace di far crollare il filone: fatto, non
+     lo fa crollare.
+
+14.5 QUELLO CHE RESTA APERTO (e non e' un blocco)
+     Selezione sulla stessa base dati. La 'secca' e' stata SCELTA fra almeno
+     cinque candidate (u10, taglio a 5, taglio a 10, half-life esponenziali
+     40-80) misurate sullo stesso aggregato, e le tre "conferme" (337 GW,
+     360 GW, oggi) sono campioni annidati: dai 337 ai 360 sono entrate 23 GW
+     nuove, il 6%. Non sono tre repliche indipendenti: e' una misura rifatta
+     tre volte. Il 98,7% va quindi letto come "su questi dati", non come
+     probabilita' che funzioni la prossima giornata; e l'estremo basso
+     dell'IC (+652) e' solo il 12% della stima puntuale, percio' la lettura
+     onesta e' "fra un guadagno piccolo e uno grande", non "+5.556 sicuri".
+     Cio' che mitiga: A_on-A_off (+6.794, 99,2%) e' una regola di scelta
+     DIVERSA da G (nessun blend col grade) e va nello stesso verso sugli
+     stessi dati. Non e' indipendenza vera, ma non e' lo stesso test contato
+     due volte.
+
+14.6 CATENA DI PRODUZIONE â€” terzo anello controllato
+     PAREGGIO_ARENA / GUADAGNO_PER_PUNTO: tarati su esiti arena reali (punti
+     che servono per pareggiare), non sulle nostre predizioni, quindi non si
+     muovono per questo cambio. Cio' che cambia e' il confronto
+     atteso >= soglia_decisione, ed e' esattamente cio' che B1 ha misurato
+     (36 ribaltamenti su 1.091 formazioni).
+     SCOUTING: verificato che scouting_gw.py NON passa da
+     load_league_role_data e quindi NON chiama _apply_gk_att_avv (costruisce
+     le righe con best_five._parse_consiglio_calibrato, scouting_gw.py:1189-1231).
+     A flag acceso, per un PORTIERE generatore e scouting daranno numeri
+     diversi (fino a ~6,7 punti). E' CORRETTO cosi': il correttivo dipende
+     dall'avversario della singola giornata, mentre un acquisto e' una
+     decisione su molte giornate future. Ma va scritto qui, perche' il
+     commento a scouting_gw.py:1213 mette in guardia proprio contro
+     "comprato su un numero, schierato su un altro": la prossima sessione
+     rischia di scambiarlo per un bug e "aggiustarlo". NON e' un bug.
+
+14.7 VERDETTO E CONDIZIONE
+     ACCENDERE GK_ATT_AVV_ENABLED=1 con GK_ATT_AVV_FORMULA=secca.
+     Motivi in ordine: (a) l'unico test con la potenza per vedere l'effetto
+     lo vede, su due bracci decisionali diversi, e regge al trim degli
+     estremi; (b) l'unico test che sembra dire il contrario e' aritmeticamente
+     incapace di decidere; (c) il sospetto di look-ahead e' misurato e vale il
+     5,6% dell'effetto; (d) il NameError e' gia' corretto (362108da0b), il
+     refresh della tabella e' gia' agganciato al workflow, e tornare indietro
+     costa una variabile d'ambiente.
+     CONDIZIONE, da registrare ADESSO prima di vedere i dati nuovi:
+     alla terza fixture reale giocata col flag acceso, rifare SOLO su quelle
+     GW nuove il confronto G_on vs G_off. Atteso pre-registrato: segno
+     positivo, ordine di grandezza +15 essenze per GW-manager. Se su tre
+     fixture nuove il totale esce negativo, si rispegne il flag e si riapre
+     il filone. Sara' il primo dato davvero fuori campione che avremo.
+
+14.8 COSA NON HO FATTO
+     Non ho toccato la produzione (il flag resta a 0 in
+     build_formazione_globale.py: accenderlo e' una decisione dell'utente,
+     non mia), non ho committato output di backtest, non ho testato la 'u10'
+     (fuori scope, scelta gia' fatta dall'utente).
+
