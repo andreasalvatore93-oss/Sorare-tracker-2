@@ -1,4 +1,12 @@
-# REGOLA SUPREMA — RISPARMIO TOKEN (sovrasta tutte le altre)
+# REGOLE FONDAMENTALI, IN ORDINE DI PRIORITA' (12/08/2026)
+
+Le 5 regole che seguono sono TUTTE vincolanti, in questo ordine: se sembrano
+in conflitto, vince quella che sta più in alto. Erano 5 blocchi separati che
+si dichiaravano ciascuno "sovrasta tutte le altre" — confusionario, non
+contraddittorio nel contenuto. Ordine = priorità, non serve più ripeterlo
+in ogni sezione.
+
+## REGOLA SUPREMA — RISPARMIO TOKEN (sovrasta tutte le altre)
 
 La priorita' assoluta e' il risparmio di token. Prima di qualunque operazione,
 mi chiedo se esiste un modo alternativo di ottenere lo stesso risultato
@@ -6,7 +14,7 @@ spendendo meno token: se esiste, uso quello. Non eseguo un'operazione costosa
 (run, query, lettura di file grossi, fetch) quando una via piu' economica da'
 la stessa risposta. Questa regola viene prima di ogni altra in questo file.
 
-# I BACKTEST SONO IL MODELLO CONTRO SE STESSO (09/08/2026)
+## I BACKTEST SONO IL MODELLO CONTRO SE STESSO (09/08/2026)
 
 Regola nuova, dettata dall'utente. Sovrasta il modo in cui sono stati
 impostati TUTTI i backtest fino a oggi.
@@ -52,7 +60,7 @@ Da adesso:
    adesso e lo dico subito, invece di girarlo su un campione che non basta
    a decidere.
 
-# LA FONTE DI VERITA' E' IL CODICE IN PRODUZIONE, NON I RIASSUNTI (08/08/2026)
+## LA FONTE DI VERITA' E' IL CODICE IN PRODUZIONE, NON I RIASSUNTI (08/08/2026)
 
 Regola nuova, dettata dall'utente. Sovrasta tutte le regole precedenti che
 dicono di partire dagli handoff o dai riassunti.
@@ -83,7 +91,7 @@ piu' una fonte affidabile. Da adesso:
    sessioni), ma non si LEGGONO come base di partenza. Chi scrive un handoff
    scrive per un lettore che verifichera' tutto sul codice.
 
-# DIVIETO TOTALE DI ALLUCINAZIONI E ASSUNZIONI (06/08/2026, 22:50 Roma)
+## DIVIETO TOTALE DI ALLUCINAZIONI E ASSUNZIONI (06/08/2026, 22:50 Roma)
 
 Divieto assoluto, senza eccezioni. Non affermo NIENTE che non sia:
   - letto in un file del repo, o
@@ -110,7 +118,7 @@ Questa regola vale anche contro me stesso: se sto per scrivere un numero, un
 premio, una probabilita', una meccanica di gioco, mi fermo e mi chiedo DOVE l'ho
 letto. Se la risposta e' "l'ho ricavato", non lo scrivo come fatto.
 
-## Checklist prima di affermare un fatto (07/08/2026)
+### Checklist prima di affermare un fatto (07/08/2026)
 
 Se la prima ipotesi ti sembra corretta, prima di affermarla chiediti in ordine:
 
@@ -132,7 +140,7 @@ Se la prima ipotesi ti sembra corretta, prima di affermarla chiediti in ordine:
 Questa checklist applica il principio della Regola Suprema (economia di token): il tempo
 di pensare è un microsecondo, il tempo di riparare un numero sbagliato è ore di lavoro.
 
-# BACKTEST: NESSUNO E' AFFIDABILE FINCHE' L'UTENTE NON L'HA ISPEZIONATO (06/08/2026)
+## BACKTEST: NESSUNO E' AFFIDABILE FINCHE' L'UTENTE NON L'HA ISPEZIONATO (06/08/2026)
 
 Stato di fatto, non opinione. Il 06/08 l'utente ha chiesto di vedere una
 giornata vera con i nomi dei giocatori dentro, invece dei soli numeri di
@@ -182,7 +190,7 @@ Conseguenze vincolanti:
    sono state applicate ai backtest. Valgono anche li': il pool e' un
    interruttore, e va verificato che sia acceso prima di misurare.
 
-## DIFETTI APERTI SULLA FONTE DATI MANAGER (prioritari, 06/08/2026)
+### DIFETTI APERTI SULLA FONTE DATI MANAGER (prioritari, 06/08/2026)
 
 Trovati ispezionando una sola giornata. Finche' non sono chiusi, ogni
 analisi che legge dati_globali/manager_*.json parte da dati mutilati.
