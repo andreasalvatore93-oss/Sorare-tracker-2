@@ -1,0 +1,117 @@
+BRIEF PER OPUS — esito del test a livello di carta che avevi proposto tu
+(gruppo grade), e la domanda che apre: come si traduce in produzione,
+dato che 'pool_largo' pesca da ALTRI MANAGER (dato che il generatore
+vero non ha)?
+Scritto 11/08/2026 (Roma) dall'orchestratore, stessa sessione di oggi
+(GK_ATT_AVV + gruppo grade).
+
+============================================================================
+VERDETTO DA BAR
+============================================================================
+Hai proposto tu il test (RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §15,
+punto 6): confronto a livello di CARTA sulle 10.255 righe gia' estratte,
+niente rumore da lotteria-arena. Fatto: **segnale netto, IC esclude lo
+zero, 100% dei bootstrap positivi**. Sulle carte dove oggi il grade e'
+spento per costruzione (gruppo nativo <2, il difetto che avevi trovato tu),
+lega_ruolo da' zero per definizione (nessuna correlazione misurabile),
+pool_largo trova comunque +0,057. Anche dove il grade e' gia' attivo oggi
+pool_largo vince ancora (+0,076 vs +0,047, IC esclude zero, 99,9%
+positivo). Il test che avevi chiesto per riaprire il filone (INDICE.md:
+"non riaprire senza un'idea nuova") ha dato quello che cercavi.
+
+Il problema che resta e' pratico, non statistico: 'pool_largo' in questo
+backtest pesca le carte di TUTTI I MANAGER che condividono la stessa
+fixture (dato che esiste solo perche' abbiamo 29 manager estratti). Il
+generatore vero non ha questo dato: vede solo il proprio pool di
+discovery (che tu stesso hai misurato piccolo, 51% gruppi da 1 giocatore).
+Come si traduce il meccanismo validato ("gruppo piu' largo migliora la
+correlazione") in qualcosa che il generatore puo' davvero costruire?
+
+============================================================================
+0. COSA LEGGERE PRIMA
+============================================================================
+1. RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §15 (la tua risposta di
+   prima, il test che hai proposto).
+2. analisi_manager/p46_grade_group_carta.py -- lo script di oggi, riusa
+   applica_gruppi_grade (p12_backtest_formazione_grade.py) e il
+   riferimento incrociato pool_largo gia' costruito in p24_binario2_ga.py
+   (commit db8062f780).
+3. generatore_formazioni/build_formazione_globale.py righe 505-548
+   (_apply_grade_group, il difetto che hai trovato: return anticipato
+   sotto 2 righe).
+4. generatore_formazioni/build_formazione_globale.py riga 460 e dintorni
+   (GRADE_SCALE='storica', gia' pronta ma non risolve il gruppo di 1 --
+   lo dicevi tu stesso al punto 5 della risposta precedente).
+
+============================================================================
+1. LA DOMANDA (una sola)
+============================================================================
+Il generatore vero, per un ruolo in una lega in una giornata, ha SOLO il
+proprio pool di discovery (spesso 1 giocatore, mai gli altri manager).
+'pool_largo' in questo test funzionava perche' poteva pescare da 29
+manager -- opzione non disponibile in produzione. Quali fonti userebbe TU
+per costruire un gruppo di riferimento piu' largo di (lega,ruolo) dentro
+il generatore vero? Butto li' tre idee NON testate (solo elencate, decidi
+tu se hanno senso prima che le testi):
+  a) pool = ruolo su TUTTE le leghe della stessa giornata (quello che
+     avevamo chiamato 'giornata_ruolo' oggi, testato SOLO sul pool
+     ristretto di un manager -- risultato nullo li', mai testato a
+     livello di carta come 'pool_largo').
+  b) pool = (lega,ruolo) ma su PIU' GIORNATE recenti (storia corta,
+     es. ultime 3-4 GW), non solo quella corrente -- diverso da
+     GRADE_SCALE='storica' che usa la scala storica ma non allarga il
+     numero di candidati per lo z-score della giornata.
+  c) qualcos'altro che non ho considerato.
+
+============================================================================
+2. NUMERI DI CONTROLLO DEL TEST DI OGGI
+============================================================================
+- 675 fixture-manager totali in archivio, 360 processate (le altre:
+  pool vuoto o nessuna partita-target -- stesso identico filtro di
+  sempre in p24).
+- 9.440 carte con grade noto sulle 10.255 righe aggregate (le altre non
+  hanno un grade in finestra).
+- 3.245 carte (34,4%) con gruppo nativo (lega,ruolo,manager,fixture) <2:
+  per queste lega_ruolo da' SEMPRE zgrade=0 (correlazione non definita,
+  varianza zero).
+- corr(z_lega_ruolo, residuo) = +0,0378 (n=9.440, righe con grade)
+- corr(z_pool_largo, residuo) = +0,0697
+- bootstrap cluster (manager,fixture), B=3.000: delta pool_largo-lega_ruolo
+  IC95%=[+0,0141;+0,0498], positivo nel 100,0% dei casi
+- Solo gruppo nativo <2 (n=3.245): z_lega_ruolo indefinito (varianza
+  zero), z_pool_largo corr=+0,0566
+- Solo gruppo nativo >=2 (n=6.195): lega_ruolo +0,0467, pool_largo
+  +0,0760, IC95%=[+0,0123;+0,0462], positivo 99,9%
+- 'residuo' = reale - atteso_calibrato (_cal), STESSA quantita' per
+  entrambe le varianti (non dipende dal raggruppamento, solo z_grade
+  cambia) -- quindi il confronto e' pulito, stesso denominatore.
+- Dump di 10 carte a caso con gruppo nativo <2 incluso nello script
+  (nomi, lega, entrambi gli z, residuo) -- riportalo se vuoi controllare
+  a mano un caso.
+
+============================================================================
+3. COSA NON HO FATTO
+============================================================================
+- Non ho implementato NESSUNA modifica a build_formazione_globale.py.
+- Non ho testato le idee (a)/(b) del §1 -- sono solo abbozzate.
+- Non ho controllato se GRADE_SCALE='storica' (gia' in produzione come
+  opzione, mai attivata) da sola, SENZA toccare il gruppo, avrebbe dato
+  un risultato comparabile su questo stesso test a livello di carta --
+  potrebbe essere un confronto piu' onesto prima di disegnare qualcosa di
+  nuovo (riusa infrastruttura gia' pronta, zero implementazione).
+
+============================================================================
+4. COSA CI SERVE DA TE
+============================================================================
+Un parere su come tradurre il meccanismo in qualcosa che il generatore
+vero puo' costruire (§1), e se vale la pena testare PRIMA la 'storica'
+gia' pronta (§3) come confronto, prima di disegnare una modalita' nuova.
+Non serve altro codice da parte tua: solo la direzione, poi lo testiamo
+noi.
+
+============================================================================
+5. DOVE RIFERIRE
+============================================================================
+mcp__ccd_session_mgmt__send_message a questa sessione. Se scrivi un file,
+aggiungilo in coda a RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt (nuova
+sezione §16), non un file nuovo.
