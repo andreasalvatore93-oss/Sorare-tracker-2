@@ -19,7 +19,11 @@ portieri**. È diventata la priorità, sostituendo il piano originale
 (la soglia arena in punti, ora in terza posizione — vedi §3).
 
 ============================================================================
-1. LA TUA PRIORITÀ: IL PORTIERE — il modello non lo prevede
+1. IL PORTIERE — CHIUSO il 12/08/2026, esito NEGATIVO-UTILE (vedi §1sexies
+   in fondo a questa sezione per il verdetto finale, LEGGERE QUELLO PRIMA
+   del resto — il resto è cronologia intermedia, alcune conclusioni sono
+   state ribaltate strada facendo, tenuto per i numeri grezzi non perché
+   siano tutte ancora valide)
 ============================================================================
 
 **Il fatto, misurato su 1.932 portieri reali**: la correlazione fra quanto
@@ -243,6 +247,75 @@ anello.
 Script di Opus non committato: `analisi_manager/_tmp_gk_diagnosi_opus.py`
 (rigenera tutto in ~2 minuti, zero rete). Risposta integrale di Opus
 disponibile nella sessione "Opus Esecutore" se serve il dettaglio.
+
+============================================================================
+1sexies. VERDETTO FINALE (12/08/2026, Opus Esecutore round 2 + verifica
+   orchestratore) — CHIUSO, esito NEGATIVO-UTILE. LEGGERE QUESTO PRIMA
+   DI TUTTO IL RESTO DELLA SEZIONE 1.
+============================================================================
+
+**L'orchestratore aveva sbagliato un passaggio** (§1quater/1quinquies):
+confrontava "storico personale" e "pcs squadra" fra loro, ma NON contro la
+PRODUZIONE VERA — che il blend pcs (GK_TEAM_CS_WEIGHT) ce l'ha già dentro
+dal 03/08. Era un confronto contro un modello di paglia, non contro quello
+che gira oggi. Opus l'ha rifatto fuori campione (metà portieri per
+stimare, metà mai vista per giudicare) contro la produzione reale.
+Orchestratore ha riverificato di persona i numeri chiave (corrispondenza
+esatta) e rilanciato lo script del punto decisivo (k-sweep): output
+identico. Nessun dubbio residuo sui dati.
+
+**Il verdetto**: NESSUNA delle varianti provate batte la produzione sui
+tre criteri insieme (correlazione + MAE + lift, regola del progetto). Il
+blend pcs (03/08) è confermato buono (spegnerlo costa -0,039 di
+correlazione, IC95 [-0,060,-0,019], esclude lo zero — è un pezzo
+misurato e reale). Lo storico personale del portiere è ridondante rispetto
+a pcs (correlazione parziale +0,013, IC95 [-0,025,+0,050], zero) ma
+INNOCUO — toglierlo non migliora, per il motivo per cui la correlazione
+grezza non basta da sola (vedi sotto).
+
+**Perché nessun tentativo di ritarare vince, in una riga**: la
+CORRELAZIONE cresce sempre aumentando il peso di pcs (fino a un modello
+palesemente rotto, scarto medio +2 punti), il MAE peggiora sempre
+aumentandolo, e il lift di selezione non distingue nulla a questa
+numerosità (191-387 pool oscillano di ±3 punti per il solo modo in cui
+si formano i pool, a parità di modello — non è uno strumento abbastanza
+preciso da arbitrare differenze di mezzo punto). I tre criteri vanno in
+direzioni diverse: la regola del progetto ("si applica solo se si muovono
+tutti nello stesso verso") blocca correttamente ogni proposta.
+
+**Perché il tetto è strutturale, non un difetto da riparare**: pcs
+prevede bene il CLEAN SHEET (corr +0,134 col livello) ma il portiere si
+sceglie sul punteggio TOTALE, dove pcs scende a +0,097 — perché una
+squadra forte fa parare meno il proprio portiere (corr pcs/parate -0,156)
+e subire meno gol (corr pcs/gol subiti -0,230, quest'ultimo già "dentro"
+al concetto di clean sheet). Un quarto del segnale si perde per
+costruzione: non è rumore, è come funziona il punteggio Sorare per questo
+ruolo.
+
+**Nel cassetto, non in produzione**: una variante "pulizia" (sostituire lo
+storico+blend con una sola stima pcs a scala ristretta, 37,7+13,5*pcs)
+migliora MAE (16,08 contro 16,45) e riduce il bias (scarto medio +0,37
+contro +0,73) senza muovere la correlazione — toglierebbe il doppio
+conteggio ma non vale punti in più. Non implementarla ora: nessun urgenza,
+nessun costo a lasciarla nel cassetto.
+
+**Cosa NON toccare**: `CALIB_PER_RUOLO['GK']`, `GK_TEAM_CS_WEIGHT`,
+`GK_TEAM_CS_POINTS`, `GK_TEAM_CS_BASELINE`, `TREND_INTENSITY` (GK) — tutti
+già alla configurazione migliore misurata oggi.
+
+**Prossima priorità**: §2 CAPITANO (invariata, di seguito) — Opus la
+raccomanda esplicitamente: stesso ordine di grandezza di guadagno
+potenziale (+4,59 punti sul piatto, ne prendiamo solo +0,69 oggi = 15%),
+dati già in repo, zero query.
+
+Script non committati (Opus, riproducibili senza rete):
+`analisi_manager/_tmp_gk_passo2bis_opus.py` (rigenera le righe con pcs +
+granulare + totale + squadra, salva
+`analisi_manager/dati/_tmp_gk_passo2bis_rows.json`),
+`_tmp_gk_passo2bis_analisi.py` (parziali/calibrazione pcs),
+`_tmp_gk_passo2ter_selezione.py` (confronto varianti fuori campione),
+`_tmp_gk_passo2quater_ksweep.py` (lo sweep di k, girato di persona
+dall'orchestratore, output identico a quello riportato).
 
 ============================================================================
 2. SECONDA PRIORITÀ: IL CAPITANO — riaprire, il vecchio verdetto non regge
