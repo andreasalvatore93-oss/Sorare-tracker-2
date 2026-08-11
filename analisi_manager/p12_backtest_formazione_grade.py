@@ -268,7 +268,7 @@ def _applica_da_riferimento(target, riferimento):
         m['_combinato'] = m['_cal'] + sd_atteso * m['_zgrade']
 
 
-def applica_gruppi_grade(rows, modo='lega_ruolo', soglia_piccolo=5):
+def applica_gruppi_grade(rows, modo='lega_ruolo', soglia_piccolo=5, riferimento_esterno=None):
     """Imposta _zgrade/_combinato su ogni riga di `rows` (deve gia' avere
     '_cal', '_grade', 'lega', 'codice'), per TUTTI i ruoli insieme (GK/DEF/
     MID/FWD, non solo GK). Filone 'gruppo grade esteso alla giornata'
@@ -276,7 +276,7 @@ def applica_gruppi_grade(rows, modo='lega_ruolo', soglia_piccolo=5):
     (lega,ruolo) a volte 2-3 carte, troppo piccolo per uno z-score
     affidabile).
 
-    Tre modalita' (env var GRADE_GROUP_MODE nei chiamanti, default
+    Quattro modalita' (env var GRADE_GROUP_MODE nei chiamanti, default
     'lega_ruolo' = comportamento INVARIATO rispetto a prima di oggi):
       - 'lega_ruolo' (baseline/produzione): gruppo = (lega, ruolo) della
         singola giornata, come sempre. Refactor puro rispetto al codice
@@ -291,7 +291,17 @@ def applica_gruppi_grade(rows, modo='lega_ruolo', soglia_piccolo=5):
         stabile), le SOLE righe di quel gruppo piccolo usano invece le
         statistiche di tutta la giornata per quel ruolo. I gruppi gia'
         abbastanza grandi restano invariati -- e' un cerotto mirato, non
-        una sostituzione generale."""
+        una sostituzione generale.
+      - 'pool_largo' (11/08/2026 sera, "pool largo del generatore"):
+        gruppo = (lega, ruolo) ma pescato da `riferimento_esterno`
+        (obbligatorio in questa modalita'), un dict {(lega,ruolo): [righe]}
+        costruito dal CHIAMANTE pescando le righe di TUTTI i manager che
+        condividono la stessa fixture -- non solo quelle di `rows` (un
+        singolo manager). Non si puo' costruire qui dentro: questa funzione
+        vede solo il pool di UN manager per volta. Approssima il pool di
+        discovery della produzione (molti candidati per lega/ruolo, non
+        solo le carte possedute da un manager) riusando dati gia' estratti
+        in archivio_ufficiale, zero query nuove."""
     per_lega_ruolo = collections.defaultdict(list)
     per_ruolo = collections.defaultdict(list)
     for r in rows:
@@ -310,6 +320,12 @@ def applica_gruppi_grade(rows, modo='lega_ruolo', soglia_piccolo=5):
                 _applica_da_riferimento(membri, per_ruolo[_ruolo])
             else:
                 _applica_da_riferimento(membri, membri)
+    elif modo == 'pool_largo':
+        if riferimento_esterno is None:
+            raise ValueError("modo='pool_largo' richiede riferimento_esterno")
+        for chiave, membri in per_lega_ruolo.items():
+            rif = riferimento_esterno.get(chiave) or membri
+            _applica_da_riferimento(membri, rif)
     else:
         raise ValueError(f"GRADE_GROUP_MODE sconosciuto: {modo!r}")
 

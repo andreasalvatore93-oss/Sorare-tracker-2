@@ -156,7 +156,9 @@ def costruisci_pool(pulite):
     return pool
 
 
-def prepara_pool_rows(pool, primo_kickoff, fine_giornata, idx_grade, lega_di):
+def prepara_pool_rows_grezze(pool, primo_kickoff, fine_giornata, idx_grade, lega_di):
+    """Righe SENZA gruppo grade (vedi gemella in p24_binario2_ga.py: serve
+    per 'pool_largo', che raggruppa dopo aver visto tutti i manager)."""
     rows = []
     scarti = collections.Counter()
     for cid, c in pool.items():
@@ -180,7 +182,6 @@ def prepara_pool_rows(pool, primo_kickoff, fine_giornata, idx_grade, lega_di):
         rows.append({'carta': cid, 'slug': c['slug'], 'nome': c['nome'], 'ruolo': ruolo,
                     'codice': cod, 'lega': lega_di.get(c['slug']) or 'senza_lega',
                     'atteso_raw': res['atteso'], '_cal': cal, '_grade': gnum})
-    S21.applica_gruppi_grade(rows, modo=GRADE_GROUP_MODE)
     return rows, scarti
 
 
@@ -199,7 +200,8 @@ def decidi_entra(riga_per_carta, formazione, chiave):
     return atteso, soglia_decisione, (atteso >= soglia_decisione)
 
 
-def processa_fixture(manager, fx, path, lega_di, idx_grade):
+def processa_fixture_pass1(manager, fx, path, lega_di, idx_grade):
+    """Prima passata: pool + righe grezze, SENZA gruppo grade."""
     righe = carica_formazioni(path)
     pulite, escluse = escludi_dnp(righe)
     if not pulite:
@@ -209,11 +211,21 @@ def processa_fixture(manager, fx, path, lega_di, idx_grade):
     if primo_kickoff is None:
         return None
     pool = costruisci_pool(pulite)
-    pool_rows, scarti = prepara_pool_rows(pool, primo_kickoff, fine_giornata, idx_grade, lega_di)
+    pool_rows, scarti = prepara_pool_rows_grezze(pool, primo_kickoff, fine_giornata, idx_grade, lega_di)
+    return {'manager': manager, 'fixture': fx, 'righe': righe, 'pulite': pulite,
+            'escluse': escluse, 'primo_kickoff': primo_kickoff, 'pool': pool,
+            'pool_rows': pool_rows, 'scarti': scarti}
+
+
+def processa_fixture_pass2(pre):
+    """Seconda passata: il gruppo grade e' gia' applicato a pre['pool_rows']
+    da main(). Qui solo decisione entra/salta e assemblaggio esito."""
+    manager, fx = pre['manager'], pre['fixture']
+    pool_rows = pre['pool_rows']
     riga_per_carta = {r['carta']: r for r in pool_rows}
 
     risultati = []
-    for r in pulite:
+    for r in pre['pulite']:
         atteso_A, soglia_dec, entra_A = decidi_entra(riga_per_carta, r, '_cal')
         atteso_G, _sd2, entra_G = decidi_entra(riga_per_carta, r, '_combinato')
         if entra_A is None:
@@ -227,11 +239,11 @@ def processa_fixture(manager, fx, path, lega_di, idx_grade):
             'soglia_decisione': soglia_dec, 'capitano': r['capitano']['slug'],
         })
     return {
-        'manager': manager, 'fixture': fx, 'formazioni_totali': len(righe),
-        'escluse_dnp': len(escluse), 'primo_kickoff': primo_kickoff.isoformat(),
-        'n_pool': len(pool), 'n_pool_con_atteso': len(pool_rows),
+        'manager': manager, 'fixture': fx, 'formazioni_totali': len(pre['righe']),
+        'escluse_dnp': len(pre['escluse']), 'primo_kickoff': pre['primo_kickoff'].isoformat(),
+        'n_pool': len(pre['pool']), 'n_pool_con_atteso': len(pool_rows),
         'n_con_grade': sum(1 for r in pool_rows if r['_grade'] is not None),
-        'scarti': dict(scarti), 'risultati': risultati,
+        'scarti': dict(pre['scarti']), 'risultati': risultati,
     }
 
 
@@ -246,13 +258,33 @@ def main():
     lega_di = AG.indice_lega()
     idx_grade, _ = S21.carica_indice_grade()
 
+    pre_ok, pre_skip = [], []
+    for manager, fx, path in fixtures:
+        pre = processa_fixture_pass1(manager, fx, path, lega_di, idx_grade)
+        if pre is None:
+            pre_skip.append((manager, fx))
+        else:
+            pre_ok.append(pre)
+
+    if GRADE_GROUP_MODE == 'pool_largo':
+        esterno_per_fixture = collections.defaultdict(lambda: collections.defaultdict(list))
+        for pre in pre_ok:
+            for r in pre['pool_rows']:
+                esterno_per_fixture[pre['fixture']][(r['lega'], r['codice'])].append(r)
+        for pre in pre_ok:
+            S21.applica_gruppi_grade(pre['pool_rows'], modo='pool_largo',
+                                     riferimento_esterno=esterno_per_fixture[pre['fixture']])
+    else:
+        for pre in pre_ok:
+            S21.applica_gruppi_grade(pre['pool_rows'], modo=GRADE_GROUP_MODE)
+
     tutti_risultati = []
     per_gw = []
-    for manager, fx, path in fixtures:
-        esito = processa_fixture(manager, fx, path, lega_di, idx_grade)
-        if esito is None:
-            print(f'{manager:12s} {fx:32s}  SALTATA (nessuna formazione pulita o nessuna partita-target trovata)')
-            continue
+    for manager, fx in pre_skip:
+        print(f'{manager:12s} {fx:32s}  SALTATA (nessuna formazione pulita o nessuna partita-target trovata)')
+    for pre in pre_ok:
+        esito = processa_fixture_pass2(pre)
+        manager, fx = esito['manager'], esito['fixture']
         per_gw.append(esito)
         tutti_risultati.extend(esito['risultati'])
         n = len(esito['risultati'])
