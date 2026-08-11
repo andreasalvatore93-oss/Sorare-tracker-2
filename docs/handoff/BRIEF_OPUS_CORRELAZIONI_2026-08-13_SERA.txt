@@ -1,0 +1,231 @@
+BRIEF PER OPUS ESECUTORE -- filone nuovo: correlazioni compagni di squadra
+e margini residui. Scritto dall'orchestratore Sonnet, 13/08/2026 sera.
+Nessuna modifica alla produzione richiesta in questo brief: solo misura.
+
+Contesto per chi apre questa chat pulita: oggi si sono chiusi tutti i
+filoni in coda (CALIB_PER_RUOLO, DEF peso, GK, QUOTA_MINIMA, leakage
+grade -- vedi docs/handoff/HANDOFF_ORCHESTRATORE_NUOVO_2026-08-13_SERA.txt
+per la cronologia completa). L'utente non intende fermarsi: è convinto che
+il modello abbia margini di miglioramento ancora alti, e ha chiesto di
+aprire il filone "correlazioni fra compagni di squadra e fra leghe" (era
+nel cassetto, mai aperto prima). Questo brief traduce le sue domande
+dirette, quasi testuali.
+
+===============================================================================
+0. COSA LEGGERE PRIMA (in ordine)
+===============================================================================
+1. CLAUDE.md (radice) -- tutte le regole fondamentali, in particolare
+   "DIVIETO ALLUCINAZIONI", "prima di misurare l'effetto di un componente
+   dimostro che l'interruttore funziona", "Cosa deve riprodursi: il delta,
+   non il valore assoluto".
+2. docs/handoff/HANDOFF_ORCHESTRATORE_NUOVO_2026-08-13_SERA.txt per intero
+   -- lo stato di TUTTI i filoni chiusi oggi, incluso perché non si tocca
+   più CALIB_PER_RUOLO/DEF/QUOTA_MINIMA.
+3. docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md sezione 3 ("Le regole del
+   gioco Sorare") e sezioni 5.3 (capitano, chiuso), 5.6 (portiere, chiuso).
+4. Codice: `generatore_formazioni/build_formazione_globale.py` (soglie
+   arena, righe 574-761), `formazione_mls/build_formazione_finale.py:1645`
+   (`pick_captain`), `analisi_manager/p24_binario2_ga.py` (pipeline
+   dell'archivio pulito, riusare `prepara_pool_rows` per qualunque campo
+   mancante nel dump -- pattern già usato 5 volte oggi).
+5. Il file `archivio_ufficiale/README.md` -- Binario 1 (formazione fissa,
+   M/G/A) vs Binario 2 (pool libero, G/A): quale usare dipende dalla
+   domanda, vedi §2-§6 sotto.
+
+===============================================================================
+1. LA DOMANDA GENERALE, E PERCHÉ SONO SEI SOTTO-DOMANDE E NON UNA
+===============================================================================
+L'utente ha posto sei domande collegate dallo stesso tema (segnale non
+ancora sfruttato nelle correlazioni fra carte della stessa formazione/
+squadra). Trattale come SEI TEST SEPARATI, ciascuno col suo verdetto: non
+mescolare i risultati, non lasciare che l'esito di uno influenzi la lettura
+di un altro. Se una richiede più tempo delle altre, consegna le altre e
+segnala quella in sospeso -- non bloccare tutto per una sola.
+
+Ordine consigliato (dal più economico al più costoso): §5 (rilettura
+G-vs-A esistente, zero calcoli nuovi) -> §3 (GK/DEF clean sheet) -> §4
+(capitano per ruolo) -> §6 (fullstack, il più complesso) -> §2 (quali altre
+correlazioni, la tua proposta) -> §7 (idee libere, ci pensi tu).
+
+===============================================================================
+2. DOMANDA A -- QUALI CORRELAZIONI CONVIENE INDAGARE (il tuo giudizio)
+===============================================================================
+L'utente chiede esplicitamente la TUA opinione, non solo l'esecuzione delle
+altre cinque domande: quali correlazioni fra carte/formazione/squadra
+pensi valga la pena misurare, che non siano già in questa lista? Rispondi
+con un elenco breve, per ciascuna: cosa misureresti, con quali dati già in
+repo (zero query se possibile), e perché pensi ci sia segnale.
+
+===============================================================================
+3. DOMANDA B -- RILETTURA DEI DATI G-vs-A: PATTERN CURIOSI?
+===============================================================================
+Ripresi in mano i risultati di G e di A sulle formazioni REALI (l'archivio
+corretto, `archivio_ufficiale/`, NON i vecchi backtest su
+`dati_globali/manager_*.json` -- quelli sono storia, mai base di misura,
+vedi CLAUDE.md "I BACKTEST SONO IL MODELLO CONTRO SE STESSO"), noti pattern
+curiosi? Esempio SOLO indicativo dell'utente, NON un'ipotesi da confermare
+a tutti i costi: "il modello sbaglia più spesso l'attaccante che il
+difensore". Guarda con occhio libero: errore sistematico per ruolo, per
+lega, per fascia di punteggio (formazioni forti vs deboli), quello che
+salta all'occhio confrontando `atteso_G`/`atteso_A` con `punteggio_totale`
+riga per riga su `archivio_ufficiale/aggregato/binario1_out.json` e
+`binario2_pool_rows.json`. Riporta quello che vedi, comprese le cose che
+NON portano a un'azione chiara -- l'utente vuole il tuo occhio, non solo
+un verdetto sì/no.
+
+===============================================================================
+4. DOMANDA C -- CORRELAZIONE PORTIERE/DIFENSORE SUL CLEAN SHEET
+===============================================================================
+IPOTESI DELL'UTENTE (dettata a voce, PRIMA di guardare i numeri -- fonte:
+regola di gioco dichiarata dall'utente, valida per CLAUDE.md "regole del
+gioco -- nessuna deducibile dai dati, tutte date dall'utente"): un clean
+sheet del portiere vale +25 (level_score GK: 35 senza CS, 60 con -- questo
++25 è GIÀ verificato nel repo, vedi HANDOFF_UNIFICATO §5.6/1794) e fa
+scattare ANCHE un bonus di circa +10 per il difensore della stessa
+squadra nella stessa partita. Se questo è vero, un errore del modello sul
+clean sheet (previsto e non arrivato, o non previsto e arrivato) dovrebbe
+"sbagliare" GK e DEF della stessa squadra INSIEME, nella stessa direzione.
+
+CONTROARGOMENTO, sempre dell'utente, da NON scartare: il portiere può fare
+un punteggio alto anche senza clean sheet (tante parate), il difensore può
+prendere un punteggio alto (es. 100) anche senza clean sheet (gol,
+assist, altri bonus granulari) -- capita. Quindi la correlazione potrebbe
+essere debole o assente anche se il meccanismo di gioco esiste.
+
+DA MISURARE: sul pool 995-1932 portieri/carte già usato oggi (dedup
+slug+fixture, stessi dati di `analisi_manager/dati/gk_segnali_alternativi_
+2026-08-13.json` e `binario2_pool_rows.json`), per ogni coppia GK+DEF
+della STESSA squadra nella STESSA fixture (serve il campo `squadra`, non
+scritto nel dump aggregato -- ricalcolalo con `prepara_pool_rows`, come
+fatto 5 volte oggi, zero query di rete):
+  1. il residuo (reale - atteso) del GK e quello del DEF della stessa
+     squadra/fixture sono correlati? (Pearson + IC a grappolo per
+     squadra-fixture, non per singola carta)
+  2. quanto del residuo GK è spiegabile da "CS previsto ma non arrivato"
+     vs "CS non previsto ma arrivato" (serve un proxy di CS reale --
+     controlla se `punteggio realizzato GK >= 60` o simile è un proxy
+     accettabile, o se c'è un dato più diretto in cache)
+  3. quella correlazione, se esiste, è già catturata dentro l'atteso di
+     oggi (perché entrambi dipendono dalla stessa forza-avversario) o è
+     un residuo NUOVO, non ancora sfruttato?
+CONTROLLO POOL/SLOT: qui non si applica (non è una selezione fra carte,
+è una correlazione fra residui) -- dillo comunque esplicitamente nel
+report, non ometterlo.
+
+===============================================================================
+5. DOMANDA D -- CAPITANO PER RUOLO SPECIFICO
+===============================================================================
+Già chiuso (HANDOFF_UNIFICATO §5.3): dare il capitano alla carta col grade
+più alto IN GENERALE non batte `pick_captain()` (t=-1,93, negativo).
+L'utente chiede una variante MAI testata: e se si desse il capitano al
+grade più alto SOLO QUANDO quella carta è di un ruolo specifico (es. solo
+se il grade più alto in formazione è un difensore -- poi ripeti per
+centrocampista, poi per attaccante, tre test separati, non uno solo)?
+
+IPOTESI PRIMA DEI NUMERI (tua, da scrivere esplicitamente prima di
+guardare l'esito): perché potrebbe funzionare quando prima non
+funzionava? Ha senso se un ruolo ha un rapporto grade/punteggio più
+affidabile degli altri (es. dalla sezione 4 del brief precedente,
+RISPOSTA_OPUS_DOVE_CERCARE_SEGNALE_2026-08-13.txt, il grade DA SOLO batte
+la produzione su MID in entrambi i periodi -- indizio non decisivo li',
+potrebbe essere la stessa causa qui). Scrivi la tua ipotesi PRIMA, poi
+misura. Se esce il contrario, è un risultato valido e va scritto.
+
+METODO: stesso della simulazione capitano già fatta per il §5.3 (vedi
+`analisi_manager/p21_capitano_grade_backtest.py` o equivalente più
+recente) -- riusa `pick_captain()` come baseline, NON riscrivere la
+selezione formazione. Confronta SOLO la scelta del capitano a formazione
+fissa (le 5 carte reali, cambia solo chi è capitano), sul realizzato.
+
+===============================================================================
+6. DOMANDA E -- "FULLSTACK": PIÙ CARTE DELLA STESSA SQUADRA NELLE PARTITE FACILI
+===============================================================================
+IPOTESI DELL'UTENTE (prima dei numeri): in partite dove la squadra è
+chiaramente favorita (grade alto, o quote di vittoria alte), schierare
+insieme 3-5 giocatori della STESSA squadra in una formazione rende di più
+che schierare 5 carte sparse su squadre diverse -- perché una partita
+facile "tira su" tutti i suoi giocatori insieme (gol, assist, clean
+sheet), mentre il rischio si concentra invece di diversificarsi.
+
+DA MISURARE: sul pool `binario2_pool_rows.json` (o ricostruito con
+`squadra`+quote vittoria via `prepara_pool_rows`), per le fixture con
+diverse carte della stessa squadra forte disponibili: confronta il
+punteggio REALE medio di formazioni sintetiche "fullstack" (es. 3+ carte
+della stessa squadra favorita) contro formazioni "sparse" (5 squadre
+diverse), a parità di atteso totale (altrimenti stai solo misurando "le
+squadre forti hanno atteso più alto", non l'effetto di raggrupparle).
+Serve un controllo esplicito: la correlazione fra i residui (non fra i
+punteggi grezzi) delle carte della stessa squadra nella stessa fixture --
+se il residuo di un giocatore forte prevede il residuo di un compagno di
+squadra nella stessa partita, quello È il segnale "fullstack"; se i
+residui sono scorrelati, l'ipotesi cade anche con quote alte.
+Nota metodologica (dalla sezione 4 del cassetto, mai misurata prima):
+questa è ESATTAMENTE la "correlazione attacco-centrocampo/portiere-
+difensore" già segnalata come filone-cassetto -- probabilmente la stessa
+misura di base (correlazione dei residui per squadra-fixture) risponde a
+questa domanda E alla D del §4 sopra. Non duplicare il lavoro: una sola
+misura di correlazione-residui-per-squadra, letta da due angolazioni.
+
+===============================================================================
+7. DOMANDA F -- ALTRE IDEE (libere, tue)
+===============================================================================
+L'utente chiede esplicitamente: "altre idee che lui testerebbe, ci deve
+pensare -- dove può esserci segnale?". Non è un'aggiunta di cortesia:
+scrivi almeno 2-3 idee tue, anche non misurate, con una riga su perché
+pensi ci sia margine li'. L'utente è convinto che il modello abbia margini
+di miglioramento alti e vuole il tuo contributo, non solo l'esecuzione.
+
+===============================================================================
+8. CONTESTO NUMERICO DA TENERE PRESENTE (non una prova, un dato reale)
+===============================================================================
+La PRIMA giornata schierata interamente con G (nessun intervento manuale,
+`manuale=False` su tutte le righe): crowss, `football-7-11-aug-2026`,
+`archivio_ufficiale/manager_crowss/dal_2026-08-07/football-7-11-aug-2026_
+arene_limited.json`. VERIFICATO da me oggi (numeri di controllo, devi
+ritrovarli identici prima di usare questo file):
+  n formazioni = 27, tutte manuale=False, tutte annullata=False
+  cap260:    n=19  punteggio medio 305,0  premio netto totale +5.700
+  beginner:  n= 5  punteggio medio 302,7  premio netto totale   +650
+  uncapped:  n= 3  punteggio medio 303,0  premio netto totale   -100
+  TOTALE:    n=27  punteggio totale 8.218,2  premio netto totale +6.250
+Campione BASSISSIMO (27 formazioni, 1 sola GW): l'utente stesso dice "può
+essere un caso", non è una prova. Non trattarlo come tale nei tuoi
+verdetti -- è contesto motivazionale, non un dato su cui misurare le sei
+domande sopra (per quello servono i 22 GW già in archivio_ufficiale,
+molto più ampi). Se torna utile come ESEMPIO nel dump leggibile (§9), usalo
+pure: è un caso reale con nomi veri.
+
+===============================================================================
+9. CONTROLLI OBBLIGATORI E COSA CONSEGNARE
+===============================================================================
+- Per ogni sotto-domanda: l'n esatto del campione usato, e se cambia da
+  Binario 1 a Binario 2 dillo esplicitamente e perché.
+- IC/errore standard con BOOTSTRAP SUL CLUSTER GIUSTO -- qui il cluster
+  naturale è manager+fixture O squadra+fixture a seconda della domanda
+  (non la singola carta: le carte della stessa formazione non sono
+  indipendenti, ed è proprio quello che si sta misurando).
+- DUMP LEGGIBILE di almeno un caso completo (una formazione vera, nomi dei
+  giocatori, ruoli, atteso, realizzato, squadra) per la domanda C
+  (GK/DEF) e la E (fullstack) -- consegnalo insieme ai numeri.
+- Se una domanda non ha potenza statistica sufficiente per decidere,
+  dillo chiaramente con l'n che servirebbe (stesso stile del report di
+  oggi su QUOTA_MINIMA) invece di forzare un verdetto.
+- Non toccare la produzione. Non lanciare query di rete senza chiedere
+  (tutto quello sopra è fattibile sui dati già in repo). Non "sistemare"
+  eventuali difetti trovati per strada: annotali in fondo al report.
+
+===============================================================================
+10. DOVE SCRIVERE L'ESITO
+===============================================================================
+Nuovo file (filone nuovo, mai aperto prima): scrivi in
+`docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt` (o data del giorno
+in cui rispondi se diversa). Committa quello + eventuali script nuovi in
+`analisi_manager/p36...` in poi (controlla l'ultimo numero libero con
+`ls analisi_manager/p3*.py` prima di scegliere il nome). NON pushare (lo fa
+l'orchestratore/l'utente a fine sessione).
+
+Rispondimi con `mcp__ccd_session_mgmt__send_message` come hai fatto oggi
+per gli altri tre brief -- sai già l'ID di questa sessione dall'header dei
+messaggi che ti arrivano. Nel messaggio: percorso del file, e cinque righe
+di verdetto da bar per ciascuna delle sei domande (una riga a testa se
+possibile). Il resto sta nel file.
