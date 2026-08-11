@@ -755,6 +755,87 @@ cap 260 = miniera, arena division/Beginner da evitare, l'atteso ordina il
 realizzato ma non discrimina dentro una cap. Cronistoria completa e numeri
 integrali in `analisi_manager/VALIDAZIONE_SOGLIE.md`.
 
+### Sessione 11/08/2026 sera — SOGLIE PAREGGIO_ARENA SOSPETTE TROPPO BASSE, APERTO, NON APPLICATO
+
+Filone nuovo, nato da un'osservazione dell'utente sul proprio comportamento
+reale (schiera solo ~60% delle arene che il bot consiglia, salta le
+"marginali") + una "spinta cieca" di Opus che sembrava indicare il contrario
+(soglia troppo alta) mas'e' rivelata un artefatto circolare (vedi sotto).
+
+**Trovato nel codice (verificato, non solo letto)**: la selezione VERA
+(`genera_arene_efficienti`, build_formazione_globale.py:1411-1479, usata sia
+in produzione sia nel Binario 2) entra in qualunque arena con
+`atteso > PAREGGIO_ARENA`, margine ZERO — `QUOTA_MINIMA` (10%) esiste ma
+serve SOLO all'etichetta visiva "SCHIERA/MARGINALE/LASCIA PERDERE"
+(`_etichetta_arena`, righe 868-892), non filtra la formazione proposta. Il
+Binario 1 (`p23_binario1_mga.py`) invece USA il 10% nella sua regola: due
+regole diverse misurate finora senza saperlo. `verdetto_arena()`
+(righe 895-907) contiene la stessa regola a margine zero e non e' MAI
+chiamata da nessuna parte nel repo (grep sull'intero repo, non solo il
+file) — funzione morta, il commento "+9.800→+54.700 essenze" non va
+verificato, va cancellato insieme alla funzione quando si pulisce.
+
+**Misura di Opus (RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §19), su dati
+REALI (premio_netto, non netto_stimato — regola nuova: qualunque test sulla
+soglia usa SOLO l'esito vero, mai una grandezza calcolata con la stessa
+costante sotto esame, altrimenti il test e' circolare)**:
+
+| tipo | soglia CODIFICATA (oggi in produzione) | soglia VERA (da 2.979 arene realmente giocate, IC95%) | margine mancante |
+|---|---|---|---|
+| cap260 | 264,5 | 285,4 [282,8;288,4] | +20,9 pt (48% del costo) |
+| beginner | 256,5 | 277,3 [275,3;279,6] | +20,8 pt (51% del costo) |
+| cap220 | 247,1 | 262,4 [258,8;267,1] | +15,3 pt (39% del costo) |
+
+Tutti e tre gli IC escludono il valore codificato, stessa direzione: le
+soglie scritte oggi sono troppo BASSE (il bot entra troppo facilmente),
+non troppo alte. La pendenza (quanto rende un punto extra) resta quasi
+giusta — e' il punto-zero (il pareggio) a essere spostato.
+
+**Secondo pezzo, separato**: l'atteso calibrato e' anche sistematicamente
+PESSIMISTA (sottostima), misurato SENZA nessuna soglia (previsione contro
+punteggio reale, 10.255 righe): +2,084 pt/carta IC95%[+1,670;+2,469]
+(+10,4 pt/formazione). Per ruolo: FWD +2,98, MID +2,79, DEF +2,51,
+**GK -0,74 (unico ottimista)**.
+
+**Le due cose si separano cosi'** (dallo stesso spostamento nella
+decisione entra/salta non si può distinguere "atteso basso" da "soglia
+bassa" — matematicamente equivalenti li' — separabili solo confrontando
+ciascuna con una verita' diversa: atteso vs reale per la prima, reale vs
+premio per la seconda). Sommando: atteso da alzare ~10 pt/formazione,
+soglia da alzare ~21 pt/tipo — **compensano solo in parte: restano ~11
+punti netti di margine IN PIU' da pretendere. Il bot dovrebbe entrare in
+MENO arene, non di piu'** — l'opposto di quanto sembrava dalla spinta
+cieca iniziale (ritirata da Opus stesso, era un artefatto circolare: la
+"spinta cieca" muoveva netto_stimato, calcolato con la stessa soglia
+sospetta).
+
+**PERCHE' NON E' ANCORA APPLICABILE**: le soglie codificate oggi (264,5/
+247,1/256,5) vengono da un metodo diverso — `rewardsConfig` teorico su
+2.125 arene avversarie e 5.031 premi osservati (09/08, vedi commento
+inline righe 704-708 di build_formazione_globale.py) — dal metodo di Opus
+(2.979 arene REALMENTE giocate, esito diretto). Due metodi, due risultati
+diversi, non e' chiaro a priori quale sia piu' affidabile: va chiarito
+PRIMA di riscrivere qualunque costante.
+
+**Conseguenza per GK_ATT_AVV (gia' acceso in produzione oggi stesso)**:
+il verdetto del §14 (RISPOSTA_OPUS_CORRELAZIONI...) e' stato misurato con
+`netto_stimato`, la stessa unita' ora sospetta. Contaminazione stimata
+BASSA (GK_ATT_AVV sposta la decisione entra/salta solo su 8 arene su
+1.113, 0,7%) contro quella ALTA di 'storica_completa' del gruppo grade
+(+100 arene su 1.105, 9%, coerente col 45% di spinta cieca gia' isolato
+li'). Il verdetto GK probabilmente regge ma **non e' da considerare
+definitivamente chiuso finche' non si ri-misura con premio_netto**.
+
+**Se/quando si toccasse la soglia**: catena di produzione (§1bis) —
+PAREGGIO_ARENA sposta l'efficienza delle arene e quindi i consigli di
+ACQUISTO dello scouting, non solo quali arene entrare.
+
+Nessuna modifica al codice fatta. Prossimo passo: chiarire il conflitto
+fra i due metodi (rewardsConfig teorico vs esito reale) prima di
+proporre un numero nuovo. Dettaglio integrale:
+`docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt` §18-19,
+`docs/handoff/BRIEF_OPUS_TEMA_SOGLIE_2026-08-11.txt`.
+
 ### Cosa serve per vincere, e cosa resta da esplorare
 - **Soglie reali** (punteggio formazione, cap. incluso): media 261, podio ≈294,
   vittoria ≈352. Scalino 3°→4° solo 12 pt: podio su margini stretti. Una carta
