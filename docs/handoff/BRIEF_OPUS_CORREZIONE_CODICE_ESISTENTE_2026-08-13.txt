@@ -1,0 +1,99 @@
+CORREZIONE AL TUO REPORT DI CORRELAZIONI -- leggi la produzione prima di
+proporre. Orchestratore Sonnet, 13/08/2026 sera. L'utente ha letto il tuo
+report e ha dato il via libera a proseguire sul clean sheet (§3 sotto), MA
+prima due correzioni importanti sul resto.
+
+===============================================================================
+1. LE TUE IDEE A1/A2 (avversario condiviso) SONO GIA' IN PRODUZIONE
+===============================================================================
+Leggi `formazione_mls/build_formazione_finale.py` righe 164-260 e 580-700
+PRIMA di proporre altre correlazioni fra compagni/avversari: gran parte del
+lavoro che hai in mente e' gia' stato fatto, misurato piu' volte, ed e'
+IN PRODUZIONE oggi. Nello specifico:
+
+- `ANTI_SYNERGY_PENALTY` (riga 176): un MID/FWD schierato contro il
+  portiere gia' scelto viene penalizzato nell'ORDINE di scelta -- esiste
+  dal 26/07. E' esattamente la tua idea A2 ("mai portiere di A con
+  attaccante di B"), gia' fatta.
+- `CROSS_TEAM_PENALTY_BY_PAIR` (righe 587-612): la TABELLA COMPLETA delle
+  correlazioni cross-team, tutte le coppie di ruolo, misurata su decine di
+  migliaia di coppie (GK-FWD n=10.237 rho=-0,227 la piu' forte, poi
+  DEF-FWD, GK-MID, DEF-MID, MID-MID, MID-FWD, DEF-DEF -- GK-DEF cross-team
+  e' invece ASSENTE, IC include lo zero). E' la tua idea A1, gia' fatta e
+  gia' in produzione con pesi calibrati.
+- `GK_DEF_PAIR_BONUS`/`SAME_TEAM_SYNERGY_BONUS_BY_PAIR` (righe 178-194,
+  667-693): la STESSA correlazione GK-DEF che hai trovato tu oggi (+0,268
+  sui tuoi residui) e' gia' misurata in produzione da mesi, con numeri
+  molto vicini ai tuoi: rho +0,341 same-team (misurato 02/08 su 69.151
+  coppie), "quando il portiere fa piu' di 55, il suo difensore fa in media
+  60,6 contro 47,5 -- tredici punti di differenza" (commento a riga 671,
+  quasi identico al tuo +10,1). C'e' anche `diagnostics/
+  measure_teammate_correlation.py` e `diagnostics/
+  ab_arena_synergy_threshold.py`: leggili prima di rimisurare, ti risparmi
+  ore.
+
+IMPORTANTE, la distinzione che conta: tutta questa infrastruttura NUDGE
+SOLO L'ORDINE DI SCELTA (quale DEF preferire dato il portiere gia' scelto),
+MAI il numero `atteso`/`score_atteso` del portiere stesso. Quindi il tuo
+finding di oggi resta valido e utile per un motivo preciso, non nonostante
+tutto questo lavoro precedente ma AGGIUNTIVO ad esso: nessuno ha mai messo
+una probabilita' di clean sheet DENTRO la previsione del portiere. La
+selezione sa gia' che GK e DEF della stessa squadra si somigliano; la
+PREVISIONE del portiere no. Leggi il codice prima di riproporre correlazioni
+gia' misurate: ti aiuta a vedere subito dove NON c'e' ancora nulla, invece
+di rimisurare cose gia' fatte.
+
+===============================================================================
+2. IL +10 AL DIFENSORE NON E' UNA CORRELAZIONE DA VERIFICARE: E' UNA REGOLA
+   DI GIOCO (dichiarata dall'utente, valida per CLAUDE.md)
+===============================================================================
+Nel tuo report (§1c) scrivi "io ho misurato l'effetto, NON ho verificato la
+regola" e lasci aperta l'ipotesi che i +10 vengano da "le squadre che non
+subiscono gol sono anche quelle che dominano" invece che da un vero bonus
+di gioco. L'utente ha chiarito oggi stesso: NON e' un'ipotesi da verificare,
+e' una regola di Sorare che dichiara direttamente (stesso status del salto
+35->60 del level_score GK, gia' verificato nel repo) -- il clean sheet
+della squadra fa scattare un bonus sul difensore. Trattalo come fatto
+acquisito, non come correlazione da smontare in cerca di spiegazioni
+alternative. Il tuo numero (+10,1) e' la CONFERMA quantitativa di una
+regola nota, non una scoperta empirica da mettere in dubbio.
+
+===============================================================================
+3. VIA LIBERA: PROCEDI SUL CLEAN SHEET (la tua idea F1)
+===============================================================================
+L'utente ha detto esplicitamente "procediamo" su questo. E' il pezzo piu'
+grande trovato in due giorni: il portiere non ordina niente (Spearman
+-0,004) perche' il modello non ha NESSUNA informazione sulla probabilita'
+di clean sheet (atteso identico 48,8/48,7 che il CS arrivi o no).
+
+Prossimo passo, SOLO MISURA (nessuna modifica alla produzione, nessun
+default cambiato -- stessa regola di sempre): costruisci una probabilita'
+di clean sheet ex-ante e verifica se ordina meglio del niente che abbiamo
+oggi. Hai gia' scritto che i proxy grezzi fatti da te oggi sono deboli
+(AUC 0,50-0,58) e che le quote vere di vittoria (winOddsBasisPoints) non
+sono nel dump ma esistono nella rotta gia' usata da
+`analisi_manager/grade_snapshot.py` -- quella pero' e' per-leaderboard e
+serve un cookie/rete per l'estrazione storica. PRIMA di chiedere
+un'estrazione nuova (va autorizzata, "avvisare prima di ogni run"),
+controlla se le quote 1X2 storiche sono GIA' in cache da qualche parte:
+`backtest_arene_previsioni.py` ha gia' `_p_own_opp_odds`/`_favorito` usate
+da `delta_favorito_odds` (vedi righe 549-586) -- quella funzione legge
+odds gia' cachate per il filone favorito_odds (chiuso il 07/08 per altri
+scopi, ma i DATI potrebbero essere ancora li'). Controlla PRIMA se basta
+quello, a costo zero, prima di proporre una nuova raccolta.
+
+Obiettivo della misura: una probabilita' di clean sheet (dalle quote gia'
+in cache, se ci sono) predice meglio di 0,58 di AUC? Se si', quanto
+sposterebbe l'ordinamento GK se sostituisse/integrasse l'atteso attuale
+(walk-forward, fuori campione, stessi tre criteri di sempre)? Resta una
+MISURA: qualunque cambio alla produzione (score_atteso GK, poi la catena
+soglie-arena e scouting) si decide con l'utente dopo, non ora.
+
+===============================================================================
+4. DOVE SCRIVERE
+===============================================================================
+Aggiungi in coda a docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt
+(stesso filone, non un file nuovo) una sezione "SEGUITO: quote gia' in
+cache?" con l'esito del controllo, poi la misura sul clean sheet se le
+quote ci sono. Rispondimi come sempre con
+`mcp__ccd_session_mgmt__send_message`.
