@@ -662,7 +662,7 @@ def _apply_gk_att_avv(rows):
             r['_att_avv'] = None
             r['atteso_att_avv'] = r.get('atteso')
             continue
-        aggiustamento = GK_ATT_AVV_K * (att_medio - GK_ATT_AVV_MEDIA_GLOBALE)
+        aggiustamento = gk_att_avv_aggiustamento(avv)
         r['_att_avv'] = att_medio
         r['atteso_att_avv'] = round(r['atteso'] + aggiustamento, 1)
         if GK_ATT_AVV_ENABLED:
