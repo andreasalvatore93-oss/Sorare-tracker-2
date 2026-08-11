@@ -20,13 +20,15 @@ Tre filoni chiusi oggi, tutti "nessun cambio alla produzione":
    partite-giocatore, zero query di rete). Il voto NON segue il risultato.
    Punto fisso scritto in CLAUDE.md, non riaprire senza nuove prove.
 
-Un filone RESTA APERTO, non chiuso (correzione importante fatta oggi
-all'utente: "non basta campione" non e' la stessa cosa di "si chiude"):
-4. QUOTA_MINIMA (soglia arena): non e' indecisione da poco campione, e' un
-   VERO cambio di regime fra primavera (guadagno) ed estate (perdita),
-   3,2 errori standard di differenza. Serve piu' campione SPECIFICO al
-   regime recente per decidere con sicurezza (vedi §2). Fino ad allora resta
-   a 0,10 (in mezzo ai due ottimi).
+4. QUOTA_MINIMA -- CHIUSO IN SERATA, capovolto rispetto a stamattina: NON
+   era un cambio di regime. Opus ha trovato il vero motivo (§2): la fascia
+   di confine estiva ha il DOPPIO di formazioni con una carta panchinata
+   (30,9% contro 18-19% ovunque altrove). Separando con/senza panchinato,
+   entrare CONVIENE in entrambi i periodi, stesso segno. QUOTA_MINIMA resta
+   0,10, e' la leva sbagliata per questo problema -- non toccarla. La leva
+   giusta (starter_odds piu' severo vicino alla soglia) e' un'IDEA NUOVA,
+   non ancora decisa ne' misurata come regola applicabile: portarla
+   all'utente prima di aprire quel filone (un tema alla volta).
 
 Il GK e' stato riesaminato oggi (priorita' che Opus aveva proposto come piu'
 urgente) e il verdetto "chiuso" del 12/08 e' stato RICONFERMATO tre volte,
@@ -60,8 +62,11 @@ Script: analisi_manager/p32_gk_segnali_alternativi.py (riproducibile, zero
 rete). Dato: analisi_manager/dati/gk_segnali_alternativi_2026-08-13.json.
 
 ===============================================================================
-2. QUOTA_MINIMA -- APERTO, cambio di regime vero, servono piu' dati
+2. QUOTA_MINIMA -- CHIUSO, non era un regime: era la carta panchinata
 ===============================================================================
+AGGIORNAMENTO SERALE (capovolge il verdetto di meta' giornata, vedi §2bis
+sotto): il "cambio di regime" era un artefatto di composizione. Riassunto
+qui sotto per intero, tenuto per la cronologia (utile a capire il ragionamento).
 Riassunto della catena di oggi (tre misure, ciascuna verificata
 indipendentemente da chi scrive, non solo riportata):
 
@@ -90,36 +95,72 @@ indipendentemente da chi scrive, non solo riportata):
      delle leghe europee in pausa. Cautela: n piccoli per lega (max 15),
      lega dedotta dal solo capitano (proxy imperfetto, le arene all-star
      mischiano leghe). Nessuna spiegazione alternativa migliore emersa
-     oggi -- il "perche'" resta aperto.
+     oggi -- il "perche'" resta aperto A QUESTO PUNTO DELLA GIORNATA (vedi
+     §2bis, si e' chiuso poco dopo).
 
-COSA NON REGGE come spiegazione comoda (controllato da Opus, non solo
-affermato): "il modello e' tarato peggio d'estate" -- la pendenza
-reale/atteso non e' distinguibile fra i due periodi (differenza 1,5 err.std,
-dentro il rumore). Lo scarto e' concentrato SOLO nella fascia di confine.
+-------------------------------------------------------------------------------
+2bis. IL VERO PERCHE' (Opus, in serata) -- VERIFICATO DI PERSONA, numeri
+      identici al centesimo
+-------------------------------------------------------------------------------
+p34 cercava la causa nella lega/mercato e non trovava niente perche' cercava
+nel posto sbagliato. Il controllo decisivo: il residuo per CARTA (reale meno
+atteso, su binario2_pool_rows.json) e' +2,22 in train (n=7.953) e +1,57 in
+test (n=1.928) -- SOSTANZIALMENTE UGUALE, anche nel quarto piu' basso di
+atteso (+2,77 vs +1,43). Il modello prevede i singoli giocatori ESATTAMENTE
+uguale in estate: nessuna spiegazione di lega/mercato/forma puo' reggere,
+perche' passerebbe da li' e li' non c'e' niente da spiegare.
 
-IPOTESI ANCORA APERTA (non provata, non esclusa): mercato/precampionato
-rende gli attesi di confine troppo ottimisti d'estate. Prossimo test, se si
-vuole scioglierla con QUESTI dati (nessuna nuova estrazione): controllare se
-la fascia di confine estiva e' concentrata nei giocatori con transfermarkt/
-squadra cambiata di recente, o in leghe in preseason vs leghe a stagione
-regolare -- richiede incrociare `lega`/`squadra` (gia' in binario2, non in
-binario1: servirebbe un merge, mezz'ora di lavoro, nessuna query).
+Il problema e' nella FORMAZIONE, non nel giocatore: quante hanno una carta
+a punteggio 0 (non ha giocato). Appaiate 1.050 righe (0 scarti):
 
-PER DECIDERE DAVVERO (numeri di Opus, non ricalcolati da me ma verosimili
-dato che il resto ha retto): ~6 giornate in piu' nel regime recente (21
-lug-7 ago), oppure ~47 manager sulle stesse 5 GW invece di 21. ENTRAMBE
-richiedono ESTRAZIONE NUOVA (rete/query) -- non ho lanciato nulla, la regola
-"avvisare prima di ogni run GitHub" vale anche sotto autorizzazione generale
-ad agire in autonomia (l'autorizzazione di oggi copriva analisi, non nuove
-estrazioni).
+  insieme                   formazioni   con >=1 carta a 0
+  TRAIN intero                  778          18,5%
+  TRAIN fascia di confine       198          18,7%
+  TEST intero                   272          18,0%
+  TEST fascia di confine         68          30,9%   <- quasi il doppio
 
-Azione consigliata quando l'utente torna: decidere se vale la spesa di
-un'estrazione mirata (~26-47 manager in piu' sulle 5 GW recenti, o aspettare
-le prossime GW naturali) per sciogliere il regime estivo, oppure lasciare
-QUOTA_MINIMA a 0,10 e chiudere il filone come "regime-dipendente, non
-risolvibile senza piu' dati".
+Solo la fascia di confine ESTIVA ha il tasso doppio di panchinati. E la
+scomposizione del guadagno chiude il discorso (RIVERIFICATO DA ME, numeri
+esatti al decimale):
 
-File: analisi_manager/p29_soglia_quota_minima.py, p30 (di Opus, non mio),
+  TRAIN senza carta a 0   n=161   +82,8 essenze
+  TRAIN con carta a 0     n= 37   -88,9 essenze
+  TEST  senza carta a 0   n= 47   +19,6 essenze
+  TEST  con carta a 0     n= 21  -239,9 essenze
+
+SENZA panchinati, entrare conviene in ENTRAMBI i periodi (stesso segno:
++82,8 e +19,6). Il "cambio di regime" di stamattina (3,2 err.std) era
+un artefatto: due popolazioni (con/senza panchinato) mescolate in
+proporzioni diverse fra train e test. La MISURA di stamattina era corretta,
+la LETTURA ("serve alzare q") era sbagliata -- rettificata qui.
+
+VERDETTO OPERATIVO: QUOTA_MINIMA resta 0,10, NON e' la leva giusta per
+questo problema (alzarla farebbe pagare a TUTTE le formazioni il rischio di
+UNA carta panchinata). Idea nuova proposta da Opus, NON ancora misurata come
+regola applicabile, da portare all'utente prima di aprire un filone:
+richiedere uno starter_odds piu' severo (o un tetto di carte "a rischio")
+SOLO per le formazioni vicine alla soglia d'ingresso -- oggi il filtro e'
+un'unica soglia fissa (0,80) uguale per una formazione forte e una sul filo
+(`build_formazione_globale.py:1789`).
+
+Limiti dichiarati da Opus: si condiziona su un esito noto solo a posteriori
+(la carta ha preso 0) -- identifica il meccanismo, non e' la regola pronta
+(l'equivalente ex-ante e' starter_odds). n piccoli nella scomposizione (21 e
+47): tiene il segno, non il valore esatto. p33/p34 andrebbero riletti
+separando con/senza panchinati (non rifatto oggi).
+
+File: analisi_manager/p35_banda_dnp.py (rilanciabile, ~3 min, zero rete).
+Fonte: RISPOSTA_OPUS_QUOTA_MINIMA_IL_PERCHE_2026-08-13.txt.
+
+SUPERATO da §2bis (tenuto solo come cronologia del ragionamento): "cosa non
+regge come spiegazione comoda" (modello tarato peggio d'estate -- NON e' la
+spiegazione, ma nemmeno serviva: la spiegazione vera e' il panchinato,
+§2bis), l'ipotesi mercato/precampionato (RITIRATA da Opus in §2bis), e il
+piano "serve un'estrazione di 26-47 manager in piu'" (NON serve piu': il
+problema non era il campione, era la composizione. Vedi §2bis per l'azione
+vera da proporre all'utente).
+
+File: analisi_manager/p29_soglia_quota_minima.py, p30/p35 (di Opus),
 p33_quota_minima_per_tipo.py, p34_quota_minima_per_lega.py. Dati:
 analisi_manager/dati/quota_minima_*.json.
 
