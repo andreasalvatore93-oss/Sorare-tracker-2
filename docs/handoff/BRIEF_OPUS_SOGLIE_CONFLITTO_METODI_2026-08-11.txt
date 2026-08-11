@@ -1,0 +1,112 @@
+BRIEF PER OPUS — perche' il metodo rewardsConfig-teorico (264,5/247,1/
+256,5, produzione) e il tuo metodo diretto (285,4/262,4/277,3, §19) non
+concordano? Un indizio trovato, non sviluppato a fondo -- zero query.
+Scritto 11/08/2026 (Roma) dall'orchestratore.
+
+============================================================================
+VERDETTO DA BAR
+============================================================================
+GK_ATT_AVV riverificato e confermato (§20 sotto, gia' in
+HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §7): scomposto il +5.556 in parte
+robusta alla soglia (89% delle coppie manager-GW, +5.318, IC esclude
+zero) e parte sensibile (11%, +238) -- il grosso del guadagno non passa
+dalla soglia sospetta, nessun altro lavoro necessario li'.
+
+Sul conflitto fra i due metodi di soglia: ho trovato una differenza che
+potrebbe spiegarlo, ma non l'ho verificata a fondo (mi sono fermato per
+non spendere token su una pista che potrebbe non essere quella giusta --
+meglio dirtelo e farla verificare a te che continuare a tentoni).
+
+============================================================================
+0. COSA LEGGERE PRIMA
+============================================================================
+1. RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §19 (le tue soglie vere).
+2. generatore_formazioni/build_formazione_globale.py righe 700-714
+   (PAREGGIO_ARENA, con la storia dei calcoli in commento).
+3. docs/handoff/HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt (il metodo
+   rewardsConfig-teorico, lungo e denso -- §confronto coi "premi veri"
+   verso la fine e' la parte piu' rilevante).
+
+============================================================================
+1. LA DOMANDA
+============================================================================
+Le soglie di produzione (264,5/247,1/256,5) vengono da un calcolo su
+`dati_globali/arene_storico_full_v3.json` (2.125 arene AVVERSARIE, con
+`rewardsConfig` che da' il premio VERO per ogni piazzamento). Le tue
+(285,4/262,4/277,3) vengono da 2.979 arene REALMENTE giocate
+dall'archivio_ufficiale (`premio_netto` osservato direttamente). Perche'
+divergono di 15-21 punti, sempre nella stessa direzione?
+
+============================================================================
+2. L'INDIZIO TROVATO (non sviluppato a fondo)
+============================================================================
+Le due fonti coprono finestre temporali MOLTO diverse:
+  - `arene_storico_full_v3.json` (2.125 arene, base del calcolo teorico):
+    fixture da football-8-8-aug-2025 fino a football-1-4-jul-2026 --
+    quasi UN ANNO, 71 fixture uniche, include mesi vecchi (ago-dic 2025)
+    mai toccati dall'archivio nuovo.
+  - `archivio_ufficiale/` (2.979 arene, base del tuo calcolo): solo
+    aprile-agosto 2026, la finestra piu' recente.
+  Ipotesi (mia, NON verificata): se il livello di competizione nelle
+  arene e' salito nel tempo (piu' manager, mazzi piu' forti, meta' piu'
+  ottimizzata), un calcolo che include mesi vecchi (fine 2025) sottostima
+  sistematicamente la soglia di OGGI. Ho provato una verifica veloce
+  (media di `mio_score` di crowss per mese sulle cap260 del dataset
+  teorico) e NON ha mostrato un trend pulito (275->278->267->276->262->253
+  da feb a lug 2026) -- ma quello e' il punteggio di crowss, non il
+  livello reale dell'AVVERSARIO/soglia di piazzamento, quindi non e' il
+  test giusto e non esclude l'ipotesi.
+
+============================================================================
+3. ALTRE IPOTESI, NON VERIFICATE, SOLO ELENCATE
+============================================================================
+a) Selezione: i manager (noi compresi) potrebbero entrare in arena piu'
+   spesso quando si sentono forti quel giorno -- se questo capita SIA nel
+   dataset teorico SIA in quello reale, non spiegherebbe la differenza fra
+   i due; se capita in modo diverso nei due periodi, si'.
+b) Il dataset teorico usa "arene AVVERSARIE" (probabilmente osservate
+   guardando chi gioca contro crowss/altri manager, non necessariamente
+   la stessa popolazione di "arene che i NOSTRI manager hanno giocato").
+   Se la composizione qualitativa del campo avversari e' diversa dalla
+   popolazione delle 2.979 arene reali, i due numeri misurano popolazioni
+   leggermente diverse.
+c) Errore nel calcolo teorico stesso (non ricontrollato oggi, il codice
+   di calibrazione originale e' negli handoff dell'8-9/08, non riletto
+   a fondo).
+
+============================================================================
+4. COSA NON HO FATTO
+============================================================================
+- Non ho splittato le 2.979 arene reali di Opus per mese per vedere se
+  MOSTRANO un trend interno (se la soglia vera dentro l'archivio recente
+  sta gia' salendo mese su mese, sarebbe una conferma diretta indipendente
+  dal confronto con l'altro dataset).
+- Non ho riletto il codice di calibrazione originale
+  (probabilmente in un file p1x_* di analisi_manager o in uno script
+  dedicato citato in HANDOFF_SOGLIE_DEFINITIVE_2026-08-08.txt) per
+  verificare esattamente come "arene avversarie" viene campionato.
+- Non ho controllato la sovrapposizione fra le due fonti (quante delle
+  2.979 arene reali sono ANCHE dentro le 2.125 teoriche, se lo sono).
+
+============================================================================
+5. COSA CI SERVE DA TE
+============================================================================
+Verificare l'ipotesi finestra-temporale (o scartarla) e, se non regge,
+indicare quale altra verifica farebbe. Non serve che tu lanci nulla:
+guida noi, come per il resto di oggi.
+
+============================================================================
+6. NOTA A MARGINE, DA VERIFICARE ANCHE QUESTA
+============================================================================
+L'utente ha detto, a occhio, su UNA sola giornata: la soglia per il
+podio (terzo posto) gli e' sembrata intorno a 290 di recente -- coerente
+in ordine di grandezza con la tua soglia di pareggio 285,4 per la
+cap260 (il podio dovrebbe stare sopra il pareggio, non allo stesso
+livello: 290 per il 3o posto e 285 per pareggiare e' plausibile, ma
+e' un singolo dato aneddotico dell'utente stesso, non una misura).
+
+============================================================================
+7. DOVE RIFERIRE
+============================================================================
+mcp__ccd_session_mgmt__send_message a questa sessione. File di risposta:
+coda a RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt, nuova §20.
