@@ -1,0 +1,284 @@
+HANDOFF PER IL NUOVO ORCHESTRATORE — si riparte dal REFIT DI CALIB_PER_RUOLO
+Scritto 12/08/2026 sera (Roma), fine sessione, per la sessione successiva.
+Leggi questo file per intero prima di fare qualunque cosa. NON leggere
+altri handoff per "prendere contesto" oltre a quelli citati qui esplicita-
+mente: questo file è pensato per essere autosufficiente. Se qualcosa non
+torna col codice, vince il codice (regola CLAUDE.md), correggi questo file.
+
+============================================================================
+0. VERDETTO DA BAR — 8 righe, poi il resto
+============================================================================
+
+Oggi si sono chiusi DUE filoni, entrambi con una DIMOSTRAZIONE (non solo
+una misura che poteva sbagliare): il PORTIERE (il modello non lo prevede,
+ma è un tetto strutturale — nessuna variante batte la produzione) e il
+CAPITANO (il modello prende già tutto quello che la sua vista permette,
+dimostrato con una simulazione: +0,69 punti/arena = esattamente quanto
+rende un criterio con la correlazione vera dei ruoli di movimento, 0,156).
+Non riaprire NESSUNO dei due senza un'idea davvero nuova.
+
+È emerso un problema vero e non ancora risolto: `CALIB_PER_RUOLO` (le
+costanti che convertono l'atteso grezzo in punti) sottostima le carte di
+movimento di ~2,4 punti l'una, ~9,5 punti/formazione in totale. Non tocca
+il capitano (dimostrato: una retta monotona non cambia mai l'ordine
+dentro un ruolo), ma tocca la SOGLIA D'INGRESSO ARENA e lo SCOUTING, che
+vivono sulla scala assoluta dei punti. È la tua priorità.
+
+============================================================================
+1. PRIMA PRIORITÀ: RIFARE CALIB_PER_RUOLO SU DATI ATTUALI
+============================================================================
+
+**Il fatto, misurato il 12/08 sull'archivio pulito** (`archivio_ufficiale/
+aggregato/binario2_pool_rows.json`, dedup per (slug,fixture), IC a
+grappolo per giocatore):
+
+  ruolo | scarto medio (atteso - reale)          | pendenza vera (ideale 1,00)
+  GK    | +0,48 punti [-0,67,+1,56] include zero  | 0,54 [-0,70,1,74]
+  DEF   | -2,29 punti [-3,06,-1,51] ESCLUDE zero   | 0,87 [0,62,1,10]
+  MID   | -2,36 punti [-3,20,-1,55] ESCLUDE zero   | 0,89 [0,70,1,10]
+  FWD   | -2,48 punti [-3,34,-1,58] ESCLUDE zero   | 1,26 [0,97,1,55]
+
+Le pendenze sono tutte compatibili con 1,00 (gli IC lo contengono): a
+questa numerosità NON si può dire che la scala INTERNA di un ruolo sia
+sbagliata. Lo scarto medio invece è solido su tutti e tre i ruoli di
+movimento, sempre nello stesso verso (sottostima).
+
+**Perché non si sa ancora la causa, e perché non cambia l'azione**: può
+essere (i) deriva vera delle costanti — sono ferme da quando il modello
+era "A grezzo", mai rifatte dopo i passaggi ad "A calibrato" e poi "G" —
+oppure (ii) compressione: le carte che i manager possiedono davvero sono
+sopra la media del giocatore generico, quindi il campione su cui si
+misura lo scarto non è rappresentativo del giocatore medio su cui la
+retta fu tarata. Le due cause non sono separabili con questi dati, ma
+portano ALLA STESSA azione: rifare le costanti su un campione
+rappresentativo di dove il modello si applica davvero (le carte dei
+manager, non un pool generico).
+
+**Perché NON tocca il capitano** (verificato, non solo affermato): la
+scelta capitano è "chi ha l'atteso più alto in una formazione di 5", e
+`calibra(x) = a + b*x` con b>0 per tutti i ruoli è una retta CRESCENTE —
+correggere le costanti di 2,4 punti UGUALI su tutti e tre i ruoli di
+movimento non cambia mai CHI è il più alto. Non aspettarti che questo
+refit "sblocchi" niente sul capitano: quel filone è chiuso a parte.
+
+**Dove tocca davvero**: la soglia d'ingresso arena
+(`PAREGGIO_ARENA`/`GUADAGNO_PER_PUNTO` in
+`generatore_formazioni/build_formazione_globale.py`) e lo scouting
+(`scouting_gw.py`, Ess/GW e €/EssGW) sono tarati sul totale atteso di una
+formazione — se quel totale è sottostimato di ~9,5 punti, la soglia è
+tarata su un numero sbagliato. Rifare la soglia PRIMA del refit
+significherebbe farla assorbire l'errore e poi rifarla due volte (è la
+stessa ragione per cui la soglia arena era già stata retrocessa due
+volte in due sessioni consecutive — vedi §3 sotto).
+
+**Metodo consigliato** (non ancora eseguito, decidi tu i dettagli):
+1. Decidi il campione PRIMA di guardare un solo numero (stessa regola già
+   valsa per la soglia arena — due sweep sullo stesso parametro hanno già
+   dato risultati opposti per dettagli del campione, non ripetere l'errore).
+   Deve somigliare a dove il modello si applica: le carte REALMENTE
+   possedute dai manager nell'archivio, non un pool generico di giocatori.
+2. Rifitta (OLS o equivalente) reale = a + b*atteso_grezzo, per ruolo,
+   sull'archivio pulito (`archivio_ufficiale/aggregato/
+   binario2_pool_rows.json` ha `_cal`/`reale`, ma serve l'ATTESO GREZZO
+   pre-calibrazione, non `_cal` — stesso problema già risolto oggi per il
+   portiere: va ricalcolato passando per `P.score_atteso(...)` in
+   `backtest_arene_previsioni.py`, o meglio ancora si rigenera passando da
+   `p24_binario2_ga.py::prepara_pool_rows` che lo calcola già in memoria
+   ma non lo scrive su disco — stesso pattern usato tre volte oggi per
+   `atteso_raw`, `l10`, `squadra`).
+3. Confronta le nuove costanti contro quelle attuali SUI TRE CRITERI
+   INSIEME (correlazione + MAE + lift), fuori campione, prima di
+   proporle. Se anche solo uno dei tre non si muove nello stesso verso
+   degli altri due, non si applica (regola generale del progetto,
+   confermata oggi su due filoni diversi: GK e DEF).
+4. SE si cambia `CALIB_PER_RUOLO`: percorri TUTTA la catena di CLAUDE.md
+   — soglie arena, poi scouting — prima di considerare il lavoro chiuso.
+   Non fermarti al primo anello.
+
+**Chi esegue**: il refit vero e proprio (fit + fuori campione + tre
+criteri) è un lavoro da Sonnet esecutore con supervisione, possibilmente
+in due passaggi (uno stima i coefficienti, l'altro verifica fuori
+campione — MAI la stessa persona/sessione stima e giudica sullo stesso
+campione, è già stato un problema di metodo oggi sul portiere). Se emerge
+un dubbio o serve decidere se applicare il cambio in produzione, passa da
+Opus: tocca la produzione.
+
+============================================================================
+2. SECONDA PRIORITÀ: IL DIFENSORE — peso decisivo/granulare
+============================================================================
+
+Unico indizio reale trovato oggi oltre alla calibrazione. Tutti i ruoli
+sommano `grezzo = w*decisivo + granulare` con w=1 in produzione
+(`compute_score_atteso_{gk,def,mid,fwd}`, stessa struttura in tutti e
+quattro i file `formazione_mls/predict/test_*.py`). Per il DEF, w=0 batte
+w=1 fuori campione (corr +0,165 contro +0,142), refit OLS suggerisce un
+rapporto ~1:5 invece di 1:1, delta di correlazione fuori campione **+0,018
+IC95 [+0,0061,+0,0278] esclude lo zero**, confermato su due split
+indipendenti. MID e FWD sono già vicini al loro ottimo (w=0,8/0,6 contro
+w=1,0 di oggi — differenza minima, NON riaprire per quei due, è stato
+già escluso oggi con lo stesso metodo).
+
+Da fare: stesso test ma sulla FORMULA VERA di produzione
+(`compute_score_atteso_def`, non sulla scomposizione grezza usata oggi
+per orientarsi — quella non ha trend, casa/trasferta, shrinkage, Stadio D,
+moltiplicatore avversario), con un interruttore ESPLICITO (mai
+un'assenza di dato), fuori campione, tre criteri insieme, confermato
+sull'archivio come secondo campione indipendente (oggi le due fonti,
+cache dettaglio multi-lega e archivio manager, hanno dato lo stesso
+numero entro 0,01 — buon segno, riusa entrambe per confermarti a vicenda).
+Vale qualche decimo di punto/formazione: non è il grade, non è il
+capitano, è una rifinitura.
+
+Fallo DOPO il refit di CALIB_PER_RUOLO (§1): se le costanti cambiano, la
+misura del guadagno DEF va rifatta comunque.
+
+============================================================================
+3. TERZA PRIORITÀ (retrocessa per la terza volta, stesso motivo ogni
+   volta): la soglia d'ingresso arena in PUNTI, fuori campione
+============================================================================
+
+Storia: era la priorità #1 la sera dell'11/08, retrocessa dietro il
+portiere; poi retrocessa ancora dietro il refit CALIB_PER_RUOLO (12/08).
+Motivo INVARIATO: è una regola di decisione che sta SOPRA il modello.
+Tararla mentre la scala dei punti è sbagliata di ~9,5 punti/formazione
+significa tararla sull'errore, e rifarla quando la scala si sistema.
+
+Se decidi comunque di partire da qui (non è una scelta sbagliata, solo
+meno efficiente): stesso metodo di sempre — dividi il campione in due
+metà PRIMA di guardare un solo numero (già successo due volte che due
+sweep sullo stesso parametro dessero risultati opposti per dettagli del
+campione), tara sulla prima metà, verifica sulla seconda mai guardata.
+Dati: `archivio_ufficiale/aggregato/binario1_out.json` -> `per_gw` ->
+`risultati` (`atteso_A`, `atteso_G`, `soglia_decisione`,
+`punteggio_totale` — usa questo, non `premio_netto`, i premi in essenze
+sono una lotteria che nasconde il segnale). Formula oggi: `decidi_entra()`
+in `analisi_manager/p23_binario1_mga.py:176-188`.
+
+============================================================================
+4. QUARTA PRIORITÀ (invariata, cassetto): correlazioni fra compagni di
+   squadra, differenze fra leghe
+============================================================================
+
+Due idee mai aperte come filone, invariate da ieri:
+- **Correlazioni portiere-difensore / attacco-centrocampo**: sposta la
+  VARIABILITÀ della formazione (conta perché i 20 premi più grandi su 860
+  valgono il 75% del valore totale — i premi arena sono una lotteria).
+  Manca il campo `squadra` nel dump (`p24_binario2_ga.py::
+  prepara_pool_rows` lo calcola già, non lo scrive — stesso lavoro
+  ripetuto tre volte oggi per altri campi, cinque minuti quando serve).
+- **Leghe**: Germania (corr 0,28) e MLS (0,22) ordinano bene, Giappone
+  (0,03) e Argentina (0,01) quasi per niente — stesso tipo di buco del
+  portiere ma per lega. Non aprire ora: se in futuro si cerca "il secondo
+  buco dopo il portiere", si guarda qui prima di ripartire da zero.
+
+============================================================================
+5. REGOLA CHE VALE PIÙ DELLA CLASSIFICA (confermata due volte oggi)
+============================================================================
+
+"UNO ALLA VOLTA." Oggi sono stati aperti e chiusi in sequenza portiere,
+capitano, "altri ruoli" (con esito: aprine solo uno, il DEF) — MAI più di
+un filone attivo insieme. Non iniziare il punto 2 prima che il punto 1
+abbia una risposta scritta, anche se la risposta è "non conviene".
+
+============================================================================
+6. COSA NON FARE
+============================================================================
+
+- Non riaprire PORTIERE (§1sexies del vecchio handoff, sotto) o CAPITANO
+  (§2quater) con altre idee di selezione: entrambi chiusi con una
+  dimostrazione, non solo una misura che potrebbe sbagliare.
+- Non riaprire MID o FWD sul peso decisivo/granulare: già escluso oggi
+  con lo stesso metodo usato per il DEF.
+- Non toccare `CALIB_PER_RUOLO`, `pick_captain()`, `GK_CAPTAIN_MARGIN`,
+  `GK_TEAM_CS_WEIGHT`/`POINTS`/`BASELINE`, `TREND_INTENSITY` (GK) finché
+  non hai un refit completo, fuori campione, sui tre criteri insieme.
+- Non estrarre altri manager solo per allargare il campione senza uno
+  scopo preciso (ma l'estrazione dati NON è un vincolo generale — l'utente
+  ha confermato che si può arrivare a migliaia di manager se un test lo
+  richiede davvero: dillo chiaramente se è quello il caso).
+
+============================================================================
+7. MODALITÀ DI LAVORO — NUOVA (12/08/2026 sera, decisione dell'utente,
+   vale da ora in poi, aggiunta anche a CLAUDE.md come regola durevole)
+============================================================================
+
+L'utente lavorerà da un ALTRO ACCOUNT rispetto a quello di questa
+sessione. Il repo è condiviso: tutto quello che serve sapere sta nel repo
+(commit, questo handoff), non nella memoria di nessuna sessione.
+
+**L'orchestratore di domani sarà (verosimilmente) Sonnet**, ma il modello
+esatto può cambiare — la procedura sotto resta la stessa indipendentemente
+da quale modello gioca il ruolo di orchestratore.
+
+**Come delegare a un esecutore (Opus/Sonnet/Haiku) — imparato oggi a
+proprie spese, con un errore reale che ha fatto perdere un giro intero**:
+
+1. **Prima di scrivere qualunque brief, chiedi all'utente se esiste già
+   una sessione esecutore aperta per quel ruolo** ("Opus Esecutore",
+   "Sonnet Esecutore", "Haiku Esecutore" o nomi simili). NON dare per
+   scontato che esista: se non c'è, chiedi all'utente di aprirne una
+   apposita PRIMA di mandare il brief.
+2. **Ogni messaggio cross-sessione (`mcp__ccd_session_mgmt__send_message`)
+   deve indicare l'ID ESATTO della sessione**, mai il titolo. I titoli
+   possono ripetersi fra sessioni vecchie e nuove (è successo oggi: una
+   sessione chiusa si chiamava "Orchestratore Sonnet" e un esecutore ci
+   ha mandato un report intero che si è perso lì, perché il brief diceva
+   "rispondi alla sessione intitolata X" invece di dare l'ID). Il tuo
+   session_id esatto ti arriva nell'intestazione dei messaggi cross-
+   sessione che ricevi (`<cross-session-message from="ID_ESATTO"
+   name="titolo">`) — usalo, non indovinare.
+3. **Nel brief, specifica sempre esplicitamente**: (a) l'ID esatto della
+   TUA sessione (dove l'esecutore deve rispondere), (b) l'istruzione di
+   usare `mcp__ccd_session_mgmt__send_message` con quell'ID esatto, non
+   `SendMessage` (quello è per agenti interni alla STESSA sessione, non
+   fra chat diverse — altro errore reale di oggi) e non una ricerca per
+   titolo.
+4. Se un esecutore non riesce a raggiungerti (l'ID sbagliato, sessione
+   chiusa), NON farlo aspettare: mandagli subito un messaggio correttivo
+   col tuo ID giusto, oppure chiedi all'utente di fare da navetta come
+   fallback (resta sempre valido, è più lento ma non fallisce mai).
+
+Questo è il nuovo metodo standard, non un'eccezione di oggi. Vale anche
+per te, orchestratore di domani.
+
+============================================================================
+8. STATO DEL REPO (fine sessione 12/08/2026)
+============================================================================
+
+Branch: main. Ultimo commit locale: 7a762a4e4b ("hf unificato: portiere e
+capitano chiusi..."). 10 commit avanti rispetto a origin/main al momento
+in cui scrivo — verrà fatto `git push` a fine sessione (regola CLAUDE.md,
+"alla fine di ogni sessione... faccio git push"); se lo trovi già fatto,
+`git log origin/main` ti conferma tutto qui sopra è pubblicato.
+
+Nessuna modifica al codice di PRODUZIONE in tutta la sessione di oggi:
+solo script di misura (`analisi_manager/_tmp_*.py`, alcuni committati per
+riproducibilità, altri no — cercali con `git log --oneline` sul tema se
+ti servono, i nomi sono descrittivi).
+
+File non tracciati rimasti in working tree (lasciati apposta, temporanei):
+`analisi_manager/_tmp_gk_atteso_raw.py`,
+`analisi_manager/_tmp_gk_diagnosi_opus.py`,
+`analisi_manager/dati/gk_atteso_raw_2026-08-12.json`,
+`docs/handoff/BRIEF_SONNET_GK_GREZZO_2026-08-12.txt` — puoi ignorarli o
+pulirli, non servono più (il loro contenuto è già riassunto nei commit).
+
+============================================================================
+9. FILE DI RIFERIMENTO
+============================================================================
+
+- `docs/handoff/HANDOFF_ORCHESTRATORE_NUOVO_2026-08-12.txt` — il diario
+  completo di oggi: portiere (§1-§1sexies), capitano (§2-§2quater), altri
+  ruoli (§3), tutti i numeri per esteso, tutte le risposte di Opus.
+  Leggilo come STORIA/dettaglio, non come punto di partenza — quello è
+  questo file.
+- `docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md` — riassunto unico
+  modello+scouting, aggiornato oggi (§5.3, §5.6, §5.7). Consultalo per un
+  dettaglio, non leggerlo tutto come priming (regola CLAUDE.md).
+- `generatore_formazioni/build_formazione_globale.py` righe 403-408
+  (`CALIB_PER_RUOLO`) — quello che rifarai.
+- `formazione_mls/build_formazione_finale.py` righe 1642-1691
+  (`GK_CAPTAIN_MARGIN`, `pick_captain`) — non toccare, capitano chiuso.
+- `analisi_manager/p24_binario2_ga.py` — pipeline che genera l'archivio
+  pulito, riusata più volte oggi per ricalcolare campi mancanti
+  dall'aggregato (`atteso_raw`, `l10`, `squadra`, `df`/`dfo`).
