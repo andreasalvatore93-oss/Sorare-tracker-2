@@ -1373,6 +1373,51 @@ costante sul campione di misura.
 dalla configurazione pre-fix); costanti di ricentraggio stimate in-sample;
 molteplicità delle varianti provate.
 
+### Il +1,02 del voto: p53 ha ragione, il resto NON va chiuso (Opus, 12/08/2026 notte)
+
+`p53_grade_scala_produzione.py` chiude solo +0,15 del gap e **è il
+comportamento giusto**: quello è il gap vero e spedibile. Il resto è un
+artefatto del backtest, misurato:
+
+    righe del pool di backtest (slug+data specifici)      voto medio 4,029
+    STESSI slug, TUTTE le loro date nell'indice grade     voto medio 2,993   <-- -1,04
+    slug diversi da quelli del pool                       voto medio 2,292
+    indice grade intero                                   voto medio 2,706
+    popolazione dei consigli (produzione, p53)            voto medio 3,185
+
+Cioè: **a parità di giocatore**, le date che finiscono nel pool di backtest
+hanno un voto più alto di 1,04 rispetto alle altre date dello stesso
+giocatore. Il mix di giocatori conta poco (+0,29). La causa è nel codice del
+backtest: `p24_binario2_ga.costruisci_pool_carte:114` scarta ogni carta con
+`punteggio == 0` (non ha giocato), e `prepara_pool_rows_grezze` richiede un
+`reale` non nullo — cioè il pool tiene, per ogni giocatore, **solo le
+giornate in cui ha giocato**, che sono esattamente quelle in cui non era F.
+È la stessa "contaminazione dal filtro DNP" già segnalata altrove.
+
+Correzione a quanto avevo scritto sopra: la causa NON è il filtro
+starter-odds, ed è più grande di quanto suggerisca il contatore
+`escluse_dnp` (671 carte): l'esclusione agisce per (carta, giornata) su
+tutto l'archivio.
+
+**Conseguenze operative:**
+- La popolazione giusta per la tabella del voto è quella dei consigli
+  (p53), non il pool di backtest: quest'ultimo è filtrato sull'ESITO, e
+  costruirci sopra la tabella sarebbe circolare. Il +0,87 residuo non si
+  chiude — non esiste in produzione.
+- **Le costanti di ricentraggio per ruolo misurate sul backtest (+1,42
+  DEF … +1,51 MID) non vanno spedite**: correggono una spinta che in
+  produzione vale ~0,15 di voto (≈0,2-0,3 pt), non 1,4 pt. Spedirle
+  significherebbe abbassare l'atteso di oltre un punto per carta senza
+  motivo. Nel backtest il ricentraggio serve (corregge l'artefatto); in
+  produzione va ricalcolato sulla popolazione dei consigli, dove è piccolo.
+- Ne segue che **una parte del +7.577 è la correzione di un artefatto del
+  backtest** e non si trasferisce in produzione. Il placebo resta valido su
+  ciò che dimostra (il voto porta segnale, p≤0,048); la taglia continua a
+  ridursi ogni volta che la si guarda da vicino.
+- Limite di misura da tenere presente: il backtest valuta il grade su un
+  pool da cui è già stata tolta l'informazione più forte del grade
+  (chi non gioca). Qualunque numero di taglia esce da lì è distorto.
+
 ---
 
 ## 8ter. Scouting dopo il grade (07/08/2026) — CONTROLLATO, 2 decisioni aperte
