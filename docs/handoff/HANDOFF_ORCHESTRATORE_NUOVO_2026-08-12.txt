@@ -342,10 +342,54 @@ arene su 1.145 (13,7%) — in parte è corretto (non punti forte su chi non
 sai prevedere), in parte è lo stesso buco del punto 1.
 
 ============================================================================
-3. NUOVA PRIORITÀ (12/08/2026, domanda dell'utente, in coda dopo il
-   portiere — DA CHIEDERE AD OPUS, non ancora inviato): gli ALTRI ruoli
-   sono calibrati su un modello A primordiale, mai rivisitati dopo G —
-   vale la pena ispezionarli come il portiere?
+2bis. PRIMO TEST FATTO (12/08/2026, Sonnet esecutore, verificato
+   dall'orchestratore) — il GRADE non risolve il capitano
+============================================================================
+
+Domanda: scegliere il capitano per grade invece che per `atteso_cal`
+cattura più del 15% attuale, sull'archivio PULITO (non `dati_globali`
+contaminato da D6, come invece faceva il vecchio verdetto "GRADE NON
+VINCE" del 09/08 — verificato nel codice: `p21_capitano_grade_backtest.py`
+importava `p20_g_odds_arene_backtest.py` che legge `dati_globali/
+manager_*.json`, non l'archivio pulito).
+
+Campione: 1.145 arene con capitano (stesso numero di controllo di sopra),
+join 5/5 carte su tutte le 1.145 arene, test A/A sulla variante "oggi"
+riprodotta dallo script del test = 11,36 identico al dato di produzione.
+
+  variante                          bonus   guadagno  %max    n
+  oggi (produzione, `_cal`)         11,36   +0,69     15,0%   1.145
+  (a) grade puro (`_zgrade`)        11,11   +0,44      9,5%   1.145  PEGGIO
+  (b) combinato (`_cal`+sd*`_zgrade`)11,49  +0,82     17,8%   1.145  incerto
+  senno di poi                      15,26   +4,59    100,0%   1.145
+  a caso (esatto)                   10,67    0,00      0,0%   1.145
+
+Significatività: (a) grade puro PEGGIORA in modo netto (t=-1,93). (b)
+combinato è nominalmente meglio ma NON solido (t=1,68, sotto la soglia
+convenzionale di 2; bootstrap a grappolo sul manager, IC95 del delta
+[-0,0039,+0,2507] — attraversa lo zero). Il vecchio verdetto "grade non
+vince" REGGE anche sull'archivio pulito per la variante pura; per la
+combinata resta un'ipotesi debole, non un fatto da usare.
+
+**Verdetto**: il grade (da solo o in combinazione naive con l'atteso) NON
+è la leva che chiude l'85% mancante sul capitano. Nessuna modifica alla
+produzione. Script temporaneo non committato:
+`analisi_manager/_tmp_capitano_grade.py`.
+
+**Prossimo candidato, non ancora testato**: delle vecchie 8 ipotesi
+(`docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md` §5.3, tutte su dati
+contaminati D6), la più vicina alla significatività era "favorita/
+sfavorita" (IC95 [−0,0015,+0,14]). Richiede un dato NON ancora nel dump
+pulito (odds/favorito per carta) — stesso tipo di lavoro già fatto per
+`atteso_raw` (portiere) e già previsto per `squadra`/`opp_slug`
+(priorità 5): va ricalcolato ripassando dal pool in memoria di
+`p24_binario2_ga.py`, non è nell'aggregato su disco. Non fatto, in coda.
+
+============================================================================
+3. NUOVA PRIORITÀ (12/08/2026, domanda dell'utente — INVIATA a Opus
+   Esecutore, risposta in attesa): gli ALTRI ruoli sono calibrati su un
+   modello A primordiale, mai rivisitati dopo G — vale la pena
+   ispezionarli come il portiere?
 ============================================================================
 
 Domanda testuale dell'utente: "visto quanto è emerso dai portieri, ha
