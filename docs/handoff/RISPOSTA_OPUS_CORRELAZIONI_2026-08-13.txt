@@ -1997,3 +1997,158 @@ Dati aggiornati: analisi_manager/dati/storico_grade_crowss_completamento.json,
        proposta del Â§20.4 e' una proposta, la decisione e' dell'utente â€”
        e prima va percorsa la catena di CLAUDE.md fino allo scouting.
 
+
+============================================================================
+21. RISPOSTA OPUS ESECUTORE â€” MIO ERRORE: LE SOGLIE DEL Â§20 VANNO TOLTE
+    DALLA PRODUZIONE. E ANCHE IL Â§19.5 ERA SBAGLIATO.
+    (12/08/2026, ~01:30 Roma) Risposta al brief
+    docs/handoff/BRIEF_OPUS_SOGLIE_APPLICATE_GK_2026-08-11.txt
+============================================================================
+
+21.0 VERDETTO DA BAR (16 righe)
+     Cosa fare subito: RIMETTERE LE SOGLIE VECCHIE. Il commit c7b298f507 va
+     annullato. Non e' un dubbio, e' misurato: sulle 1.091 arene vere con
+     premio vero, la soglia che ho consigliato io fa incassare ~14.000
+     essenze IN MENO di quella che c'era prima.
+     Dove ho sbagliato: 285,7 e' il punteggio VERO a cui un'arena si ripaga,
+     e quello resta giusto. Ma la soglia in produzione non si confronta col
+     punteggio vero â€” si confronta con la PREVISIONE, che e' un'altra cosa.
+     La previsione ci azzecca in media ma sbaglia di ~50 punti in su o in
+     giu' ogni singola volta. E siccome il premio e' un gancio (sotto perdi
+     solo il biglietto, sopra si vola coi jackpot), conviene entrare anche
+     quando la previsione sta SOTTO il pareggio vero: e' un biglietto della
+     lotteria che costa poco e ogni tanto paga tantissimo. Ho preso il
+     numero giusto e l'ho messo nel posto sbagliato.
+     Devo correggere anche un'altra cosa che avevo scritto: NON e' vero che
+     l'atteso e' pessimista di 10 punti a formazione. Quel +10 lo avevo
+     ricavato da un conto per carta che escludeva chi non gioca. Sulle
+     formazioni vere il divario e' +0,6 punti: praticamente zero. Quindi
+     l'opzione (a) del brief â€” correggere anche l'atteso â€” NON va fatta:
+     aggiungerebbe 10 punti di ottimismo che non esistono.
+
+21.1 LA MISURA CHE DECIDE (fatta sulle arene vere, con i premi veri)
+     archivio_ufficiale/aggregato/binario1_out.json contiene, per 1.091
+     arene REALI: la previsione ex-ante della formazione ('atteso_G',
+     calcolata walk-forward col cutoff al primo kickoff) e il premio
+     REALMENTE incassato ('premio_netto'). E' tutto cio' che serve per
+     tarare la soglia nelle unita' in cui viene davvero usata.
+     Politica "entra se previsione >= T", valutata sul premio vero:
+       T=250 -> +14.350   T=255 -> +16.550   T=260 -> +18.400
+       T=265 -> +14.200   T=270 -> +11.300   T=275 -> +10.000
+       T=280 ->  +3.000   T=285 ->    -150   T=290 ->    +100
+     Confronto diretto con la soglia che ho fatto mettere in produzione
+     (bootstrap 3.000, ricampionando le coppie manager-fixture):
+       T=255  contro 285,7:  +16.900  IC95% [ -6.300;+41.050]  meglio 91,9%
+       T=260  contro 285,7:  +18.750  IC95% [ -2.900;+41.900]  meglio 94,9%
+       T=265  contro 285,7:  +14.550  IC95% [ -3.750;+33.700]  meglio 94,0%
+       T=270  contro 285,7:  +11.650  IC95% [ -2.700;+27.650]  meglio 93,7%
+       T=275  contro 285,7:  +10.350  IC95% [   -350;+22.850]  meglio 96,6%
+       264,5 (la VECCHIA) contro 285,7: +13.900 IC95% [-4.200;+33.250] 92,5%
+     Nessuno di questi IC esclude formalmente lo zero, ma cinque soglie
+     diverse vanno tutte nella stessa direzione con la stessa ampiezza: la
+     285,7 e' peggio di qualunque valore fra 255 e 275.
+     E la vecchia 264,5 e' indistinguibile dall'ottimo di griglia:
+       264,5 contro 260: -4.850  IC95% [-18.350;+6.600]  (lo zero e' dentro)
+     Quindi non c'e' niente da guadagnare a ritoccarla: si torna indietro e
+     ci si ferma.
+
+21.2 PERCHE' MI SONO SBAGLIATO (la stessa curva del Â§20, al contrario)
+     La soglia di produzione viene confrontata con la PREVISIONE, non col
+     punteggio realizzato. Sulle 1.077 formazioni vere:
+       previsione:  media 264,5  sd 11,9   (min 230, max 318)
+       realizzato:  media 265,0  sd 49,8   (min 127, max 433)
+       correlazione 0,254 â€” pendenza di regressione realizzato~previsione 1,07
+     La previsione e' giusta IN MEDIA (pendenza ~1, nessuna distorsione), ma
+     attorno a ogni previsione il risultato vero e' sparso di ~50 punti.
+     Ora si aggiunge la convessita' gia' vista al Â§20: il premio e' piatto
+     sotto (perdi al massimo il biglietto) ed esplode sopra. Con una
+     distribuzione larga su una curva convessa, il guadagno atteso DATA la
+     previsione e' piu' alto del guadagno calcolato NEL punto della
+     previsione. Percio' il pareggio espresso in unita' di PREVISIONE sta
+     piu' in basso di quello espresso in unita' di punteggio realizzato.
+     Detto all'utente: 285,7 e' "quanto devo fare davvero perche' l'arena
+     si ripaghi". Ma io non so quanto faro': so una previsione che sbaglia
+     di cinquanta punti per volta. Siccome se va male perdo solo il
+     biglietto e se va bene prendo il jackpot, mi conviene entrare anche
+     con una previsione piu' bassa di 285. Non e' imprudenza: e' che la
+     lotteria vale piu' del suo prezzo anche partendo un po' indietro.
+     Il Â§20 resta valido per quello che dice davvero (il pareggio in
+     punteggio VERO e' 285,7, e la vecchia calibrazione lo sbagliava
+     tirando una retta unica su una curva). Sbagliato e' stato l'USO:
+     quel numero non e' la soglia da mettere nel confronto con la
+     previsione. Sono due grandezze diverse con lo stesso nome.
+
+21.3 CORREZIONE AL Â§19.5: L'ATTESO NON E' PESSIMISTA
+     Avevo scritto: residuo +2,084 a carta -> +10,4 a formazione. Il primo
+     numero e' giusto, la moltiplicazione no.
+     Misurato direttamente sulle formazioni vere (binario1_out, n=1.077):
+       bias (realizzato - previsto) a FORMAZIONE = +0,62 (atteso_A) e
+       +0,47 (atteso_G). Praticamente zero.
+     Perche' i due non tornavano: binario2_pool_rows.json ESCLUDE le carte
+     con punteggio 0 (costruisci_pool_carte salta i DNP), quindi il +2,084
+     e' condizionato all'"ha giocato". Nelle arene vere il 4,42% delle carte
+     schierate e' a 0 (659 su 14.895). Riconciliazione:
+       0,9558 x (+2,084) + 0,0442 x (0 - 46) = -0,04 per carta
+       -> circa -0,2 a formazione, contro +0,62 misurato. Torna.
+     Conseguenza operativa: l'opzione (a) del brief va SCARTATA. Non c'e'
+     nessun pessimismo da correggere; sommare +10 punti all'atteso
+     introdurrebbe un ottimismo inventato. Il sistema NON era "corretto a
+     meta'": era corretto nella meta' sbagliata.
+
+21.4 E QUINDI GK_ATT_AVV? NON DECIDERE ORA
+     Il +3.101 (IC che include lo zero) e' stato misurato con una soglia
+     troppo severa che ha tagliato il campione di arene da ~1.105 a ~281.
+     Non e' un'informazione su GK_ATT_AVV: e' un'informazione sulla soglia
+     sbagliata. Ordine giusto: prima si rimette la soglia vecchia, poi si
+     rifa' la misura, e a quel punto il numero di riferimento torna a
+     essere quello gia' verificato due volte (+5.556, e la vostra
+     scomposizione robusta/sensibile +5.318 su 89% delle coppie).
+     Nessuna azione su GK_ATT_AVV nel frattempo: lasciarlo acceso com'e'.
+     Ne' (a) ne' (c): la risposta e' (d) â€” annullare c7b298f507, poi
+     ri-misurare.
+
+21.5 COSA RESTA VALIDO DI Â§19-20 (non buttare tutto)
+     - Il pareggio in punteggio REALIZZATO e' 285,7 / 268,7 / 280,2 / 303,0
+       e la vecchia calibrazione lo sbagliava di ~21 punti tirando una retta
+       unica su una curva convessa (Â§20.2-20.3, ricostruito su tre tipi su
+       quattro entro 2,5 punti). Vero, e utile per rispondere a "quanto devo
+       fare per ripagarmi l'ingresso" â€” non per decidere se entrare.
+     - La circolarita' del Â§19.3 resta in piedi: netto_stimato usa la stessa
+       costante che decide, quindi qualunque confronto in cui una variante
+       entra in PIU' arene dell'altra e' contaminato. Vale ancora per il
+       gruppo grade (+100 arene) e non per GK_ATT_AVV (-8).
+     - Le UNCAPPED sono un pozzo: -10.300 essenze reali su 98 arene vere, e
+       restano negative a QUALUNQUE soglia della griglia. Questo si', e'
+       azionabile da subito ed e' indipendente da tutto il resto.
+
+21.6 CORREGGO ANCHE Â§19.7.c (l'utente ha ragione?)
+     Avevo scritto che i premi veri davano ragione all'utente che salta le
+     marginali. Era basato sul pareggio in punteggio realizzato, cioe' sul
+     metro sbagliato. Con il metro giusto: fra le arene REALMENTE giocate,
+     essere piu' severi di ~265 di previsione costa soldi, non li fa
+     risparmiare. Pero' â€” e qui va detto il limite â€” l'archivio contiene
+     solo le arene che l'utente HA giocato, non quelle che ha saltato:
+     su quelle non posso dire niente. Quindi la conclusione onesta e':
+     non dimostrato ne' in un senso ne' nell'altro. Ritiro il "ha ragione
+     da mesi"; non lo sostituisco con "ha torto".
+
+21.7 COME SI TARA DAVVERO LA SOGLIA, SE MAI SI VORRA' RIFARLO
+     Non con un pareggio teorico, ma esattamente come al Â§21.1: politica
+     "entra se previsione >= T" applicata alle arene vere, valutata sul
+     premio realmente incassato, con bootstrap sulle coppie manager-fixture.
+     E' l'unico modo che tiene dentro sia la convessita' dei premi sia
+     l'imprecisione della previsione, senza doverle modellare.
+     Avvertenza: la griglia del Â§21.1 e' ottimizzata sugli stessi dati, con
+     un massimo largo e piatto fra 255 e 265. La ragione piu' forte per
+     tornare a 264,5 non e' che sia l'ottimo, e' che sta dentro
+     l'altopiano e non e' distinguibile da esso: cambiarla non porterebbe
+     niente di misurabile.
+
+21.8 COSA NON HO FATTO
+     Nessuna query di rete. Non ho toccato il codice: l'annullamento di
+     c7b298f507 lo fate voi (e' vostro il commit). Non ho ri-misurato
+     GK_ATT_AVV con la soglia vecchia (e' la stessa configurazione di prima
+     del commit: basta il numero gia' noto). Non ho tarato una soglia
+     per-tipo sui premi veri: i sottoinsiemi cap220 (n=106) e uncapped
+     (n=98) sono troppo piccoli per farlo bene.
+
