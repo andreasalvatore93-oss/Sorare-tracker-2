@@ -1320,6 +1320,59 @@ riproducibile di p50/p51, non quello vecchio.
 
 File: `analisi_manager/dati/grade_essenze_fix_2026-08-12.json`.
 
+### Controllo placebo, 12/08/2026 sera (Opus) — il segnale c'è; il braccio scelto però non è spedibile
+
+Primo numero della giornata che REGGE a un controllo, ma non è quello che
+sembrava. `analisi_manager/p52_placebo_grade_essenze.py`: stessa identica
+macchina (stesso pool, stessa tabella, stesso fattore, fix i+ii, stesso
+bootstrap), si rompe SOLO il legame voto-giocatore rimescolando il grade
+fra le righe della stessa GW-manager. 20 permutazioni:
+
+    VERO (archivio 0,75, fix i+ii)   delta = +7.577   (replica esatta di p51)
+    20 placebo                       mediana -10.860, min -16.881, max -5.080
+    placebo con delta >= del vero    0 / 20      ->  p <= 0,048 (test di permutazione)
+    placebo che arrivano a >=95%     0 / 20
+
+Lettura corretta: il guadagno **non** è un artefatto della macchina (scala,
+ricentraggio, aumento di dispersione). Un voto finto della stessa taglia e
+distribuzione **costa** ~10.900 essenze; solo il voto vero guadagna. Quindi
+il grade porta informazione vera anche a livello essenze — è la prima volta
+che si dimostra, il livello carta lo diceva già.
+
+Attenzione a cosa NON dimostra: la taglia del guadagno resta incerta
+(IC bootstrap [-12;+15.283], e il 51% dei +7.577 viene da 5 GW-manager su
+360, 119 positive contro 103 negative, mediana 0). E non giustifica la
+scelta della variante: sullo stesso campione oggi ne sono state provate ~10.
+
+**Il braccio "archivio" NON è spedibile in produzione.** In
+`p51_grade_essenze_fix.py:118` la tabella archivio è costruita sulle righe
+del pool di test stesso (`[r for pre in pre_ok for r in pre['pool_rows']]`):
+è una scala tarata sul campione che si misura, e in produzione non esiste
+(non si può avere la sd dei pool dei 29 manager della giornata che si sta
+decidendo). Quindi la conclusione "bastano i due fix sopra la fonte già
+esistente" va corretta: la fonte spedibile è quella di produzione
+(consigli, +6.109, 92,2%), che è **statisticamente indistinguibile**
+dall'archivio (appaiato -1.468, IC include zero). Si sceglie la produzione
+non perché vinca, ma perché l'altra non esiste fuori dal backtest.
+
+**Sulla granularità del ricentraggio** (domanda dell'orchestratore): per
+ruolo è il minimo giusto, più fine NO — per (lega,ruolo) si stimerebbero
+~100 costanti sullo stesso campione e si cancellerebbe l'informazione vera
+fra leghe. Ma il ricentraggio resta un cerotto: la causa è misurata ed è
+una **discrepanza di popolazione nella tabella del voto**. Sul pool di
+backtest il voto medio ricostruito è 4,12 contro 3,10 della tabella
+(`grade_scala_storica.json`), scarto +1,02 presente in TUTTI i ruoli
+(DEF +1,12, MID +1,07, GK +0,98, FWD +0,89): la tabella è costruita su
+tutte le carte mai viste, il pool che si punteggia è post-DNP e post-filtro
+starter-odds, cioè solo probabili titolari, che hanno voti migliori. Se la
+tabella del voto viene costruita sulla stessa popolazione che si punteggia,
+la spinta cieca sparisce per costruzione e non serve stimare nessuna
+costante sul campione di misura.
+
+**Restano aperti**: fattori 0,75/0,462 mai ritarati dopo i fix (vengono
+dalla configurazione pre-fix); costanti di ricentraggio stimate in-sample;
+molteplicità delle varianti provate.
+
 ---
 
 ## 8ter. Scouting dopo il grade (07/08/2026) — CONTROLLATO, 2 decisioni aperte
