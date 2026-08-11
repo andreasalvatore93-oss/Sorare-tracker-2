@@ -1,0 +1,106 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-11T18:21:57.110726Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) carlos-joaquim-dos-santos: 52 pt attesi (34-71)
+   SQUADRA: san-diego-san-diego | AVVERSARIO: puebla-puebla
+======================================================================
+
+######################################################################
+# GIOCATORE: carlos-joaquim-dos-santos
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: carlos-joaquim-dos-santos (squadra: san-diego-san-diego)
+Generato: 2026-08-11T18:21:57.108846Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 45
+Escluse (DID_NOT_PLAY): 27
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | SJ vs SD | mlspa | score=23.5 | peso=0.177
+  2025-08-24 | SD vs POR | mlspa | score=75.6 | peso=0.198
+  2025-09-01 | LAFC vs SD | mlspa | score=51.9 | peso=0.223
+  2025-09-14 | SD vs MIN | mlspa | score=35.8 | peso=0.250
+  2025-09-20 | ATL vs SD | mlspa | score=37.4 | peso=0.281
+  2025-09-28 | SD vs SJ | mlspa | score=36.5 | peso=0.315
+  2025-10-05 | HOU vs SD | mlspa | score=35.8 | peso=0.354
+  2025-10-19 | POR vs SD | mlspa | score=72.0 | peso=0.397
+  2025-10-27 | SD vs POR | mlspa | score=43.8 | peso=0.445
+  2026-05-03 | SD vs LAFC | mlspa | score=20.7 | peso=0.500
+  2026-05-24 | SD vs VAN | mlspa | score=38.9 | peso=0.561
+  2026-07-23 | RAP vs SD | mlspa | score=34.9 | peso=0.630
+  2026-07-26 | SD vs DAL | mlspa | score=77.4 | peso=0.707
+  2026-08-02 | MIN vs SD | mlspa | score=70.6 | peso=0.794
+  2026-08-07 | AME vs SD | leagues-cup-mls | score=56.1 | peso=0.891
+  2026-08-10 | SD vs TIJ | leagues-cup-mls | score=66.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 52.24
+  di cui Punteggio decisivo (level_score) medio: 39.97 | Punteggio complessivo (granulari) medio: 12.27 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 41.39 (delta +1.42 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.59, delta avversario +1.47 | Possesso condizionato per venue: delta +0.13 | Goalkeeping condizionato per venue: delta -3.78 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 17.82
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.9 - 72.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.20 (differenza: +2.61)
+Media score in casa: 49.35 | Media score fuori casa: 47.78
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.9
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.353 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.006
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.998
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.993
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.000
+Tasso storico clean sheet (porta inviolata nei primi 60'): 25.0% (bonus atteso incorporato nella media pesata: ~6.2pt)
+Fattore trend (media ultime 5: 61.9 vs media 5 PRECEDENTI: 41.2): 1.000
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-13T02:15
+Casa: San Diego FC | Trasferta: Puebla FC
+Competizione: leagues-cup-mls
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.7 (range 34.4 - 71.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.18
+Punteggio REALE ottenuto in quella partita: 66.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +15.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      33.4    35.8     +2.4    17.4        SI
+   7        7      37.5    72.0    +34.5    15.9        NO
+   8        8      51.8    43.8     -8.0    19.8        SI
+   9        9      40.3    20.7    -19.6    18.1        NO
+  10       10      33.9    38.9     +5.0    19.8        SI
+  11       11      50.5    34.9    -15.6    18.3        SI
+  12       12      40.1    77.4    +37.3    17.1        NO
+  13       13      49.3    70.6    +21.3    21.6        SI
+  14       14      39.8    56.1    +16.3    22.3        SI
+  15       15      42.7    66.1    +23.4    20.9        NO
+
+MAE (errore assoluto medio): 18.36
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
