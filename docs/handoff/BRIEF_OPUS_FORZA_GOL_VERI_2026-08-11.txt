@@ -1,0 +1,201 @@
+BRIEF PER OPUS ESECUTORE -- rifare forza difensiva/offensiva del clean sheet
+con GOL VERI al posto del proxy binario. Chat pulita, nessuna memoria di
+questa conversazione: tutto quello che serve e' scritto qui o nei file
+indicati.
+
+Rispondi con mcp__ccd_session_mgmt__send_message a session_id
+local_6b270595-476d-4338-98c5-645611c8ce23 (NON SendMessage, quello e' per
+agenti interni alla stessa sessione). Il tuo report finale va scritto in
+coda a docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt (sezione 11,
+nuova), MAI in un file nuovo -- e' li' che vive tutto il filone. Committa
+solo i tuoi file (script nuovo + l'aggiornamento dell'handoff).
+
+===============================================================================
+0. COSA LEGGERE PRIMA (in ordine)
+===============================================================================
+1. CLAUDE.md (radice del repo) -- in particolare "divieto di allucinazioni",
+   "prima di misurare l'effetto di un componente dimostro che l'interruttore
+   funziona", e la sezione backtest.
+2. docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt, tutto il §9 e il
+   §10 -- e' la TUA stessa analisi precedente: §9 misura le quote 1X2 (AUC
+   0,585), §10 prova forza-difesa/forza-attacco sul PROXY binario (score
+   portiere >=60) e fallisce su tutta la linea (AUC 0,522/0,504, nessun
+   delta positivo contro le quote). La causa che tu stesso hai scritto al
+   §10.1: "la cache non ha i gol, ne' fatti ne' subiti" -- QUESTO ora non e'
+   piu' vero, vedi punto 1 sotto.
+3. analisi_manager/p39_clean_sheet_forza_difesa.py -- lo script che hai
+   scritto tu per il §10: tabella_clean_sheet() (righe 51-71) e il blocco
+   principale in main() (righe 74-219) costruiscono forza_dif/
+   debolezza_att_avv walk-forward sul PROXY. La logica di shrinkage
+   (righe 126-135, MIN_STORICO=4, PRIOR=0.29, PESO_PRIOR=5.0) e le funzioni
+   auc()/boot_delta() (righe 155-181) sono riusabili cosi' come sono, solo
+   l'INGREDIENTE cambia.
+4. analisi_manager/p38_clean_sheet_da_quote.py -- costruisce
+   analisi_manager/dati/clean_sheet_quote_2026-08-13.json, il campione di
+   valutazione (portieri con quote 1X2, atteso di produzione, punteggio
+   reale) che p39 riusa in main() riga 138-140. Leggi come sono fatte le
+   righe (campi 'squadra', 'avversario', 'data', 'cs', 'atteso', 'reale',
+   'p_own', 'p_draw').
+
+===============================================================================
+1. COSA E' CAMBIATO DA STAMATTINA: I GOL VERI ORA CI SONO (per un sottoinsieme)
+===============================================================================
+Ho verificato oggi (11/08/2026, zero rischio, query pubbliche, no cookie)
+che Sorare espone `homeGoals`/`awayGoals` sul tipo Game via la query bulk
+`nodes(ids: [ID!]!)`, fino a 100 id per richiesta. Ho estratto i gol reali
+di TUTTE le partite (stagione 2025/26 + oggi, dal 2025-08-01) delle squadre
+coperte dall'archivio crowss (quello pulito per costruzione, verificato riga
+per riga -- vedi archivio_ufficiale/README.md).
+
+File nuovo: analisi_manager/dati/gol_squadre_crowss_2025-26_2026-08-11.json
+Formato: dict {game_id: {"date": "YYYY-MM-DD", "home": slug_squadra,
+"away": slug_squadra, "home_goals": int, "away_goals": int}}.
+Copertura: 6.041/6.041 partite estratte (100%, zero mancanti), 201 squadre,
+derivate dai 649 giocatori distinti che compaiono nell'archivio
+archivio_ufficiale/manager_crowss/{pre,dal}_2026-08-07/*.json (18 giornate).
+Script che l'ha generato (rilanciabile, ~35s, 61 richieste):
+analisi_manager/p40_estrai_gol_squadre_crowss.py -- leggi
+squadre_crowss() (righe 40-52) per capire come sono state derivate le 201
+squadre (giocatore -> squadra propria via
+analisi_manager/dati/_cache_index_gamelog.json, campo 'squadra' gia'
+calcolato da p36 come maggioranza sulle sue partite).
+
+FINESTRA E SCOPO SCELTI DA TE STESSO OGGI (secco, in chat, non su file):
+"Stagione 2025/26 (6.054 partite, 61 richieste). Perche': il mio §10.5
+mostra che ALZANDO lo storico l'AUC PEGGIORA... conta la forma recente, non
+la storia profonda... una stagione da' a ogni squadra ~30-40 partite di
+lead-in dentro lo stesso anno: il giusto mezzo." Il numero finale estratto
+(6.041) e' leggermente diverso dalla tua stima (6.054, calcolata con un
+metodo di dedup diverso, per data+squadre invece che per Game.id univoco):
+la differenza e' nel dedup, non e' un errore, non serve indagarla.
+
+===============================================================================
+2. LA DOMANDA, UNA SOLA
+===============================================================================
+Con i gol VERI al posto del proxy binario (score portiere >=60), forza
+difensiva e debolezza offensiva battono le quote 1X2 sull'AUC del clean
+sheet? Rifai la stessa identica misura del tuo §10.4, cambiando solo
+l'ingrediente sotto forza_dif/debolezza_att_avv.
+
+===============================================================================
+3. LA TUA IPOTESI PRIMA DEI NUMERI (scrivila tu, non copiare questa)
+===============================================================================
+Al §10.6 hai scritto: "il collo di bottiglia non e' il modello, sono i
+dati: servirebbero gol subiti veri". Prima di misurare, scrivi la tua
+aspettativa esplicita (es. "mi aspetto che il margine di gol dia un segnale
+piu' fine del binario CS e che l'AUC salga sopra le quote" oppure il
+contrario) e il PERCHE'. Se esce il contrario, e' un risultato valido e va
+scritto cosi', non aggiustato per farlo tornare -- stessa regola che hai
+gia' applicato tu stesso al §10.
+
+===============================================================================
+4. IL VINCOLO DI SCOPO CHE DEVI GESTIRE (leggi con attenzione)
+===============================================================================
+ATTENZIONE, e' il punto piu' delicato di questo brief: il file dei gol veri
+copre SOLO le 201 squadre derivate dall'archivio crowss. Il campione di
+valutazione di p38/p39 (clean_sheet_quote_2026-08-13.json) viene invece dal
+pool binario2_pool_rows.json, che e' MULTI-MANAGER (29 manager, 22
+giornate) -- un universo di squadre piu' largo delle 201 coperte dai gol.
+
+Quindi, per ogni riga del campione di valutazione:
+  - la squadra PROPRIA (per forza_dif) e' calcolabile solo se e' fra le 201
+    squadre coperte E ha almeno MIN_STORICO partite precedenti nel file gol
+    (stesso identico vincolo walk-forward di p39, righe 126-135);
+  - la squadra AVVERSARIA (per debolezza_att_avv) idem;
+  - IMPORTANTE: ora che hai i gol veri per queste partite, puoi anche
+    ricalcolare l'ETICHETTA clean sheet vera (gol_subiti == 0) per le righe
+    dove la partita e' presente nel file gol, invece di usare il proxy
+    'cs' gia' in clean_sheet_quote_2026-08-13.json. Fallo, e confronta le
+    due etichette (proxy vs vera) sulle righe dove entrambe sono disponibili:
+    quante discordano? E' un controllo di qualita' del proxy che nessuno ha
+    ancora fatto, riportalo.
+
+Aspettati che l'n cali parecchio rispetto ai 424 del §10.4 (li' l'universo
+era piu' largo). SE L'N CALA SOTTO ~100, fermati e dillo chiaramente prima
+di dare un verdetto: un'AUC su meno di 100 righe non decide niente (stessa
+regola che hai gia' applicato tu quando hai scritto "campione insufficiente"
+in p39 riga 149-151).
+
+===============================================================================
+5. NUMERI DI CONTROLLO (verifica PRIMA di procedere, fermati se non tornano)
+===============================================================================
+- n righe nel file gol nuovo: deve essere 6.041 (dict con 6.041 chiavi)
+- n squadre distinte fra home/away nel file gol: deve essere 201 (se conti
+  bene, alcune squadre potrebbero comparire meno se non hanno mai giocato
+  in coppia con un'altra squadra crowss nella finestra -- normale)
+- n righe nel campione di valutazione originale (clean_sheet_quote_2026-08-13.json):
+  deve essere 731 (portieri con quote, dal tuo §9.1)
+- Se uno di questi numeri non torna, hai preso il file sbagliato o la
+  finestra sbagliata: fermati e dillo, non proseguire a costruire l'AUC su
+  dati diversi da quelli che pensi.
+
+===============================================================================
+6. IL METODO
+===============================================================================
+Riusa la struttura di p39 (non riscriverla da zero):
+a) Costruisci una tabella (squadra, data) -> gol_subiti, gol_fatti dal file
+   nuovo (per ogni game, la squadra 'home' subisce gli away_goals e fa gli
+   home_goals; la squadra 'away' il contrario). Questo sostituisce
+   tabella_clean_sheet() (p39 righe 51-71): non serve piu' passare dal
+   punteggio del portiere, i gol li hai diretti.
+b) Storico per squadra ordinato per data (come p39 righe 108-115), ma ora
+   con gol_subiti invece del solo booleano CS: puoi costruire sia una MEDIA
+   di gol subiti (segnale continuo, invertito: meno gol subiti = piu' forte
+   in difesa) sia il tasso di CS vero (gol_subiti==0) con lo stesso
+   shrinkage (righe 126-135, stessi MIN_STORICO/PRIOR/PESO_PRIOR, o
+   ritarali se hai un motivo dichiarato). Prova ENTRAMBE le forme e
+   riporta quale ordina meglio -- non e' scontato che la media di gol batta
+   il tasso CS, dillo con i numeri.
+c) debolezza_att_avv: stesso procedimento sui gol FATTI dall'avversario
+   (quanti gol segna di solito, invertito: meno segna = piu' debole).
+d) Righe di valutazione: parti da clean_sheet_quote_2026-08-13.json, unisci
+   (join per squadra+data, o per game se riesci a recuperare il Game.id --
+   controlla se clean_sheet_quote ha un riferimento diretto alla partita,
+   altrimenti la chiave (squadra, data) basta) le forze nuove e l'etichetta
+   vera dove disponibile.
+e) AUC e delta appaiato: stesse funzioni auc()/boot_delta() di p39
+   (righe 155-181), stesso bootstrap sul cluster squadra-giornata.
+
+===============================================================================
+7. CONTROLLI OBBLIGATORI PRIMA DEI NUMERI DI SINTESI
+===============================================================================
+- Dump leggibile di ALMENO 10 righe del campione finale: squadra, data,
+  gol_subiti storici medi, forza_dif, debolezza_att_avv, etichetta CS
+  proxy, etichetta CS vera (se disponibile), reale del portiere.
+- Test A/A: se rilanci lo script due volte sugli stessi dati, i numeri
+  devono essere identici bit per bit (nessuna casualita' non seedata).
+- Confronto proxy vs vera (vedi punto 4): quante etichette discordano, in
+  che direzione (il proxy sovrastima o sottostima il clean sheet vero?).
+- Se un ingrediente (es. media gol subiti) non muove l'AUC di un decimo
+  rispetto a un valore assurdo di prova, e' probabile un bug nella pipeline
+  prima di dedurre che "non funziona" -- verificalo con un caso a mano.
+
+===============================================================================
+8. COSA CONSEGNARE
+===============================================================================
+- n righe campione finale (dopo i filtri del §4), con l'avvertenza se sotto
+  100
+- AUC per: atteso di produzione, quote (p_own+p_draw), forza_dif (versione
+  media-gol E versione tasso-CS-vero), debolezza_att_avv (idem),
+  combinazioni, con IC95% bootstrap
+- delta appaiato contro le quote, come p39 righe 203-208
+- confronto etichetta proxy vs vera: n discordanti, direzione
+- il dump del punto 7
+- eventuali difetti trovati per strada, annotati in fondo, NON sistemati
+
+===============================================================================
+9. COSA NON FARE
+===============================================================================
+- Non toccare CALIB_PER_RUOLO ne' altre costanti di produzione.
+- Non modificare/sovrascrivere archivio_ufficiale/ o binario2_pool_rows.json.
+- Non lanciare query di rete (il file gol e' gia' estratto, ti basta).
+- Non buttare via il confronto col proxy: e' un controllo di qualita' che
+  vale anche se l'AUC finale non migliora.
+- Non forzare un verdetto positivo se l'n e' troppo basso: dillo e basta,
+  come hai gia' fatto tu stesso al §10.7a.
+
+File nuovo atteso: analisi_manager/p41_clean_sheet_gol_veri.py (o simile,
+numero libero, controlla l'ultimo pXX usato prima di scegliere).
+Dati: analisi_manager/dati/clean_sheet_gol_veri_<data>.json.
+Report: in coda a RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt, nuova sezione
+"11. SEGUITO 3 -- GOL VERI (crowss, stagione 2025/26)".
