@@ -157,6 +157,94 @@ se è un bug (dovrebbe muoversi e non lo fa), potrebbe nascondere altro
 segnale.
 
 ============================================================================
+1ter. RETTIFICA (12/08/2026, Opus Esecutore + verifica orchestratore) —
+   IL §1bis SOPRA È SBAGLIATO PER PSEUDO-REPLICAZIONE. Il pezzo (b) NON è
+   invertito.
+============================================================================
+
+**L'errore, verificato di persona**: le "1932 righe GK" del §1bis non sono
+1932 osservazioni indipendenti. Sono 995 coppie (slug, fixture) uniche
+(243 portieri distinti), perché lo stesso portiere/giornata compare una
+volta per ogni manager che lo schiera (`hyun-woo-cho` compare 10 volte
+sulla stessa giornata). Ricalcolando la stessa identica correlazione dopo
+deduplica su (slug, fixture): `corr(atteso_raw, reale)` passa da **-0,0037
+a +0,0276** (verificato dall'orchestratore su
+`analisi_manager/dati/gk_atteso_raw_2026-08-12.json`, Opus aveva trovato
++0,0290 — la piccola differenza è nota e spiegata: l'atteso cambia di
+qualche decimo/punto da manager a manager perché il cutoff dipende dal
+pool di quel manager). Il segno "invertito" del §1bis era rumore da
+campione clusterizzato: l'IC95 vero (ricampionando i 243 PORTIERI, non le
+righe) è **[-0,036, +0,096]** — dentro lo zero da entrambi i lati, ma
+positivo, non negativo.
+
+**Conferma su campione indipendente** (Opus, cache dettaglio game-log,
+walk-forward proprio, 3369 punti, 201 portieri, 31 leghe, NON gli stessi
+dati del binario2): `corr(level_atteso, level_reale) = +0,0632`, IC95
+[+0,029, +0,097] — **esclude lo zero**, positivo. Il pezzo (b) e' quindi
+il MIGLIORE dei due pezzi storici del portiere, non il colpevole.
+
+**Cosa NON era sbagliato nel §1bis**: il quadro complessivo (GK ha
+segnale ~zero/debole contro DEF/MID/FWD che ordinano bene) regge. Numeri
+per ruolo rifatti bene da Opus (dedup + IC a grappolo sui giocatori):
+  GK : 995 coppie/243 giocatori, corr dedup +0,029, IC95 [-0,036,+0,096]
+  DEF: 1877 coppie/683 giocatori, corr dedup +0,150, IC95 [+0,107,+0,195]
+  MID: 1834 coppie/664 giocatori, corr dedup +0,202, IC95 [+0,155,+0,248]
+  FWD: 1615 coppie/535 giocatori, corr dedup +0,206, IC95 [+0,145,+0,255]
+DEF/MID/FWD sopravvivono alla deduplica. Il GK resta l'unico ruolo con
+l'IC che include lo zero: poco segnale, non segnale rovesciato.
+
+**Perché il fattore trend è fisso a 1,0 (punto c del §1bis) — CHIUSO, non
+un bug**: `TREND_INTENSITY = 0.0` per il portiere (`test_gk.py:273`,
+verificato), abbassato da 0,7 il 31/07 dopo due misure indipendenti (grid
+search: MAE peggiora monotono col trend; portieri in serie di
+miglioramento rendono -6,19 pt sotto il loro livello, IC95
+[-11,15,-1,22]). Comportamento voluto, non un bug — ma la costante non è
+mai stata ritarata dopo il fix delle finestre sovrapposte del 03/08:
+scaduta, non urgente, un filone da mezz'ora se e quando serve.
+
+**La domanda strutturale vera (Opus, PASSO 2 proposto, non ancora
+eseguito)**: l'89% del punteggio decisivo del portiere è CLEAN SHEET (un
+evento di SQUADRA), stimato oggi DUE VOLTE: (b) lo deduce dallo storico
+personale del portiere via Poisson, (d, il blend team_cs) ci somma una
+correzione a scala fissata a mano (GK_TEAM_CS_POINTS=35, peso 0,629). Test
+proposto (nessuna modifica prod): confrontare `corr(pcs_squadra,
+level_reale)` con `corr(level_atteso_storico, level_reale)=+0,0632`. Se
+`pcs` vince, il termine si ricostruisce da modello_partita e lo storico
+personale resta solo un prior per il 10,5% dei casi senza pcs — non è una
+ritaratura, è togliere un doppio conteggio.
+
+**Attenzione sul "+4 punti/formazione" del §1 originale**: Opus stima che
+NON regga. Dai numeri già misurati, guadagno per unità di correlazione è
+~18-38 punti (MID 0,194→+3,42; FWD 0,189→+4,26; DEF 0,135→+5,18). Il GK
+oggi è a +0,029 dedup; anche raddoppiandolo a 0,06-0,08 (già ambizioso)
+vale **~+0,5/+1,5 punti/formazione**, non +4. Per +4 servirebbe corr
+~0,15-0,22 (un portiere che ordina come un centrocampista) — niente di
+misurato lo sostiene. Vale comunque farlo (è pulito, toglie un doppio
+conteggio), ma va venduto come "+1 punto e un difetto in meno", non "+4".
+
+**Regola generale da questo episodio** (da applicare sempre d'ora in poi
+su questo tipo di dati): PRIMA di qualunque correlazione su
+`archivio_ufficiale/aggregato/binario2_pool_rows.json` (o simili),
+deduplicare per (slug, fixture) — la stessa carta/giornata compare una
+volta per manager — e calcolare l'IC ricampionando i GIOCATORI, non le
+righe. Non fatto la prima volta (§1bis), causa dell'intero abbaglio.
+
+**Soglie per decidere se il PASSO 2 va in produzione** (Opus, regola
+MAE+corr+lift insieme, delta nello stesso run): (a) delta di correlazione
+positivo con IC95 del delta che esclude lo zero, ordine di grandezza
+minimo sensato +0,03; (b) MAE non peggiora di più di 0,2 punti (oggi
+16,31 sul campione indipendente di Opus); (c) lift di selezione sui pool
+veri (binario2, GK, ≥3 carte) col segno giusto, ma solo come controllo di
+sanità — 191 pool non bastano a decidere da soli (l'errore di misura è di
+alcuni punti); (d) solo dopo a+b+c: ricalcolare `CALIB_PER_RUOLO['GK']` e
+risalire la catena (soglie arena, poi scouting) — non fermarsi al primo
+anello.
+
+Script di Opus non committato: `analisi_manager/_tmp_gk_diagnosi_opus.py`
+(rigenera tutto in ~2 minuti, zero rete). Risposta integrale di Opus
+disponibile nella sessione "Opus Esecutore" se serve il dettaglio.
+
+============================================================================
 2. SECONDA PRIORITÀ: IL CAPITANO — riaprire, il vecchio verdetto non regge
 ============================================================================
 
