@@ -1104,12 +1104,75 @@ portiere su Binario 1.
 esplicitamente dall'utente, risposta: non ancora pronto come lo era
 GK_ATT_AVV):
 1. tabella storica della variabilità (sd_atteso) costruita sui dati DI
-   PRODUZIONE, non sull'archivio backtest (quello usato nei test è
-   sbilanciato: chi possiede una carta di solito l'ha scelta bene);
+   PRODUZIONE — **fonte decisa il 12/08/2026 (Opus esecutore), vedi il
+   riquadro sotto: i `consiglio_*.txt` già su disco. La motivazione
+   originaria di questo punto ("l'archivio backtest è sbilanciato: chi
+   possiede una carta di solito l'ha scelta bene") è SBAGLIATA e va
+   ritirata** — resta valido il punto di igiene (tabella costruita sullo
+   stesso campione che si misura);
 2. il correttivo deve avere ESPLICITAMENTE media zero (non l'aveva nel
    test che ha dato il numero illusorio);
 3. una volta implementato, riverificare la catena fino allo scouting
    (come fatto per GK_ATT_AVV).
+
+### Fonte per sd_atteso: i consigli di produzione (12/08/2026, Opus esecutore)
+
+**Decisione: i `consiglio_*.txt` in `formazione_<lega>/output/<lega>_<ruolo>_all/`.**
+Non la cache game-log, non `player_card_counts.json`.
+
+*Perché è la fonte giusta*: in produzione le righe su cui `_apply_grade_group`
+calcola la sd sono LETTERALMENTE quei file —
+`build_formazione_globale.py:1109-1132` fa `bff.parse_consiglio(bff.latest_consiglio(dir))`
++ `calibra_riga(row, role)`, e chiama `_apply_grade_group(rows)` alla 1152.
+Una tabella costruita sui consigli PASSATI è quindi la stessa grandezza,
+sulla stessa popolazione, con le stesse due funzioni. Zero query, zero
+ricalcolo del modello. Misurato il 12/08 su disco: 8.419 file consiglio,
+41.584 righe, **2.333 righe distinte (lega,ruolo,slug,kickoff)**; 90 celle
+(lega,ruolo), 4 sopra n=100 (le altre cadono sul livello ruolo, come già
+fa la gerarchia). Punti GREZZI per ruolo (pre-`calibra_riga`, che è lineare
+per ruolo: sd_cal = |a_ruolo| × sd_grezza): DEF n=814 sd 6,74 · FWD n=540
+sd 9,87 · GK n=280 sd 8,53 · MID n=699 sd 7,13.
+
+*Trappola obbligatoria*: **deduplicare per (lega,ruolo,slug,kickoff)**. La
+stessa giornata viene riconsigliata decine di volte al giorno (41.584 righe
+→ 2.333 distinte, fattore ~18): un builder ingenuo su tutti i file peserebbe
+18 volte le fixture ri-girate di più. Il cutoff walk-forward si fa col
+timestamp nel nome file / KICKOFF di riga, come `p18.costruisci_scala(cutoff)`.
+
+*Perché NON la cache game-log*: (a) popolazione sbagliata — contiene ogni
+giocatore mai tracciato, indipendentemente dal possesso, mentre la produzione
+non ordina mai quell'insieme; (b) l'atteso non è una proprietà del giocatore
+ma della coppia giocatore-partita (avversario, casa/trasferta, finestra): la
+cache ha i game-log passati, non la lista candidati di una fixture, quindi
+andrebbe ricalcolato `score_atteso` + `calibra()` su ogni riga storica — la
+strada più costosa del repo, contro la Regola Suprema. `player_card_counts.json`
+è escluso per un motivo diverso: viene sovrascritto ad ogni run, oggi
+contiene 134 entry TOTALI su 152 file (solo l'ultimo stato, nessuna storia).
+
+*Premessa da ritirare (bias di possesso)*: la produzione parte dalle carte
+POSSEDUTE — `discovery_fixture.py` interroga `myFilteredBench` (il bench del
+manager) e filtra per starter-odds. Il pool dell'archivio backtest (29 manager)
+ha quindi la STESSA natura di popolazione del pool di produzione: il "bias di
+possesso" c'è in entrambi, non è una divergenza. Correggere verso un universo
+più largo introdurrebbe un disallineamento, non lo toglierebbe. Ciò che
+davvero differisce è il mix leghe/ruoli e l'igiene in-sample (nessun leakage:
+nella tabella non entra nessun esito realizzato).
+
+*Avvertenza che vale più della scelta della fonte*: il LIVELLO di sd_atteso è
+una scala di comodo, assorbita da `fattore_storico`. La quantità tarata
+empiricamente è il PRODOTTO `fattore_storico × sd_atteso` (lo 0,75 è stato
+misurato contro la tabella da archivio backtest). Cambiando fonte, **0,75 va
+ritarato**, altrimenti il correttivo cambia di taglia in silenzio. Della
+tabella conta la FORMA relativa fra celle, non il valore assoluto.
+
+*Problema separato, non confonderlo col punto 1*: l'altra tabella,
+`grade_scala_storica.json` (media/sd del VOTO), è costruita da
+`dati_globali/manager_*.json` — che CLAUDE.md punto 4 classifica come STORIA,
+non base di misura — più l'approssimazione "ruolo maggioritario" (D7). I
+consigli non possono sostituirla (non contengono il grade storico). Va decisa
+a parte. E attenzione: passare in produzione a `storica_completa` significa
+accendere anche `GRADE_SCALE=storica` (oggi default `gruppo`), cioè due
+cambiamenti insieme, non uno.
 
 Funzioni riusabili già pronte in `analisi_manager/p12_backtest_
 formazione_grade.py`: `applica_gruppi_grade()` (5 modalità),
