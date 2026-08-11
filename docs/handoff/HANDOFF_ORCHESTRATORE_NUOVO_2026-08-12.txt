@@ -427,16 +427,125 @@ soglie andrebbero rifatte comunque — meglio saperlo prima di tararle.
 Dopo il portiere perché il portiere resta l'unico buco vero (corr vicino
 a zero) misurato finora, priorità assoluta per severità del problema.
 
-**Cosa NON fare finché non risponde Opus**: non aprire il filone, non
-lanciare backtest sugli altri ruoli. Prima domanda formale a Opus
-(prossimo brief, quando la sessione "Opus Esecutore" è libera dal brief
-attuale sul portiere — l'utente ha chiesto di mettere la domanda in coda,
-non di inviarla subito, per parsimonia su Opus): se e come impostare una
-scomposizione per DEF/MID/FWD analoga a quella fatta per GK (stessa
-metodologia: pezzi della formula contro il punteggio vero, dedup per
-(slug, fixture), IC a grappolo per giocatore), e se conviene farla ora o
-aspettare che il filone portiere sia chiuso (regola "uno alla volta",
-§7 sotto).
+**RISPOSTA DI OPUS (12/08/2026, round 3) — RISPOSTA DATA, filone NON
+aperto come "revisione generale":**
+
+Fatto verificato prima di tutto il resto, e chiude da solo il dubbio
+dell'utente: `calibra()` è `a + b*x` con **b>0 per tutti e 4 i ruoli**
+(GK 0,264, DEF 0,831, MID 0,740, FWD 0,789 — righe 404-407, verificato
+anche dall'orchestratore: tutti positivi). Una retta crescente non cambia
+mai l'ORDINE di chi schieri: rifare `CALIB_PER_RUOLO` non può farci
+scegliere un giocatore diverso DENTRO lo stesso ruolo. Il timore
+("ruoli tarati su un modello primordiale ci fa scegliere male") è
+un'intuizione giusta ma punta nel posto sbagliato: non morde sulla scelta
+dentro il ruolo, morde su tutto ciò che CONFRONTA ruoli diversi o guarda
+la scala assoluta — cioè il capitano, lo slot extra dell'arena
+(`FORMATION_SHAPES`, extra scelto fra DEF/MID/FWD), la soglia arena, lo
+scouting.
+
+Scomposizione fatta (stessa metodologia del portiere, cache dettaglio
+multi-lega, walk-forward, IC a grappolo per giocatore, ~4 minuti zero
+rete): il segnale utile sta nel GRANULARE (passaggi/contrasti/duelli,
+si ripete), non nel "decisivo" (gol/assist, lotteria) — tranne che per il
+GK dove il decisivo è l'unico pezzo buono (vedi §1sexies). Due fonti
+indipendenti (cache dettaglio vs archivio manager dedup) tornano entro
+0,01 sulla correlazione totale per ruolo: DEF ~+0,14/+0,15, MID
+~+0,20/+0,21, FWD ~+0,21.
+
+Trovato UN margine reale, isolato con una manopola sulla forma esatta di
+produzione (`grezzo = w*decisivo + granulare`, w=1 oggi in tutti i
+ruoli), fuori campione, due divisioni indipendenti: **solo il DIFENSORE**.
+w=0 batte w=1 in correlazione (+0,1646 vs +0,1415), refit OLS conferma un
+rapporto ~1:5 (decisivo pesa troppo), delta di correlazione fuori
+campione **+0,018 IC95 [+0,0061,+0,0278] esclude lo zero**, regge a due
+split indipendenti. MID e FWD sono già vicini al loro ottimo (w=0,8/0,6
+contro w=1,0 — differenza minima). Per il FWD la metrica di selezione è
+risultata rumore puro fra split (esattamente l'avvertimento del giro
+sul portiere: non è un giudice).
+
+Trovato anche un difetto separato e più grosso, sulla SCALA non
+sull'ordine: `CALIB_PER_RUOLO` sottostima le carte di movimento di **~2,4
+punti l'una** (DEF -2,29, MID -2,36, FWD -2,48, tutti IC che escludono lo
+zero; GK +0,48, include lo zero) — su una formazione da 5 fa ~-9,5 punti
+di sottostima. Causa non separabile con questi dati (deriva vera delle
+costanti vs compressione da campione sopra-media), ma le due cause
+portano alla STESSA azione: rifare le costanti su dati attuali.
+`GK_CAPTAIN_MARGIN=6,7` in produzione è già una pezza scritta a mano per
+questo stesso problema (il commento del codice lo dice testualmente).
+
+**Raccomandazione di Opus, adottata**: NON aprire "revisione di tutti i
+ruoli" (l'orientamento fatto oggi è già la risposta, tre ruoli su quattro
+non hanno margine misurabile). Ordine aggiornato: finire il capitano →
+**rifare `CALIB_PER_RUOLO` su dati attuali** (è la continuazione naturale
+del capitano, non un filone a parte: il capitano confronta ruoli, e le
+costanti oggi sbagliano proprio lì) → poi un test mirato sul DIFENSORE
+(peso decisivo/granulare, sulla formula vera con interruttore esplicito,
+non sulla scomposizione grezza di oggi) → la soglia arena in punti (§4
+sotto) passa DOPO il refit calibrazione, non solo dopo il portiere: se si
+tara ora, assorbe l'errore di ~9,5 punti/formazione e va rifatta due
+volte. Vedi §"STATO ATTUALE DELLA CODA" più sotto per l'ordine vivo.
+
+Script Opus non committato: `analisi_manager/_tmp_ruoli_esplorativo_opus.py`.
+
+============================================================================
+2ter. TEST FAVORITA/SFAVORITA FATTO (12/08/2026, orchestratore in proprio,
+   come da istruzione utente "prova a impostarlo tu") — NEGATIVO
+============================================================================
+
+Stesso schema del test grade (§2bis), stesse 1.145 arene, stesso A/A
+(bonus oggi ricalcolato 11,3556 vs 11,3610 di produzione — coincide).
+Criterio: `delta_favorito`/`delta_favorito_odds` (funzioni GIA' in
+produzione, `backtest_arene_previsioni.py:417/549` — quanto la partita di
+QUESTA carta è più facile della sua media storica, da modello interno o
+da quote di mercato reali in `dati_globali/odds_1x2_index.json`, già in
+repo, zero query). GK escluso dal confronto per costruzione (scala non
+comparabile col margine in punti, e il modello non lo capitana comunque).
+
+  variante                 bonus    guadagno   %max    n
+  oggi (_cal, A/A)          11,36   +0,684     14,9%   1.145
+  favorito interno (df)     11,19   +0,514     11,2%   1.145
+  favorito quote (dfo)      11,17   +0,497     10,8%   1.145
+  combinato cal+df (z 50/50) 11,24  +0,569     12,4%   1.145
+
+t-test appaiato contro oggi: favorito interno t=-1,26 (non solido);
+**favorito quote t=-2,42, delta -0,187 — PEGGIORA in modo netto**;
+combinato t=-1,04 (non solido). Copertura quote reali: solo 410/1.145
+arene hanno almeno una carta con quota nota (finestra dati da fine
+2025 in poi, non tutte le fixture coperte).
+
+**Verdetto**: il contrario di quanto la vecchia ipotesi §5.3 suggeriva
+(era la più vicina alla significatività, ma su dati sporchi, verso
+positivo non specificato). Su dati puliti va nel verso SBAGLIATO, e per
+le quote di mercato in modo statisticamente netto. Nessuna modifica alla
+produzione. Script non committato:
+`analisi_manager/_tmp_capitano_favorito.py`.
+
+Da CONTROLLARE (Opus — l'utente ha chiesto controllo su qualunque cosa
+emerga da questo test): il t=-2,42 è un risultato vero o un artefatto
+della copertura parziale (solo 410/1.145, non a caso rispetto a
+manager/lega/periodo)? Non ancora verificato.
+
+============================================================================
+STATO ATTUALE DELLA CODA (12/08/2026 tardo pomeriggio) — leggere QUESTO
+per l'ordine vivo, i numeri §1-§7 sotto restano come storia/dettaglio
+============================================================================
+
+1. [CHIUSO] Portiere — §1sexies.
+2. [IN CORSO] Capitano — 2 idee testate e chiuse in negativo (grade
+   §2bis, favorita/sfavorita §2ter — quest'ultima da far controllare a
+   Opus). 85% del valore resta sul tavolo, non ancora spiegato da nessuna
+   delle idee vecchie provate finora.
+3. [NUOVO, da fare] Rifare `CALIB_PER_RUOLO` su dati attuali (attaccato
+   al capitano, non un filone a parte — raccomandazione Opus round 3).
+   Tocca la produzione: catena CLAUDE.md completa, soglie arena e
+   scouting da riverificare dopo.
+4. [NUOVO, da fare DOPO il refit] Test mirato peso decisivo/granulare sul
+   DIFENSORE, sulla formula vera con interruttore esplicito, fuori
+   campione, confermato sull'archivio.
+5. [RETROCESSA ancora] Soglia arena in punti — ora dopo il refit
+   calibrazione, non solo dopo il portiere (vedi motivo sopra).
+6. Correlazioni compagni di squadra — invariata, dopo il resto.
+7. Leghe (Argentina/Giappone) — cassetto, invariata.
 
 ============================================================================
 4. QUARTA PRIORITÀ (era la terza, RETROCESSA da Opus stesso nel piano
