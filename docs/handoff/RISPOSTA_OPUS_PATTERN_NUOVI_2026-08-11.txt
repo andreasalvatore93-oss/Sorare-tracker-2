@@ -1,0 +1,214 @@
+RISPOSTA OPUS — quali pattern analizzare sui dati gia' raccolti — 11/08/2026
+
+
+################################################################
+IN DUE PAROLE (se leggi solo questo, hai tutto)
+################################################################
+
+1. Ho trovato una cosa grossa mentre rispondevo, e non era nella lista:
+   IL MODELLO NON SA PREVEDERE I PORTIERI. Per niente. Su 1.932 portieri
+   veri, il legame fra quello che prevede e quello che poi fanno e' ZERO
+   (-0,002, cioe' come tirare una monetina). Per difensori, centrocampisti
+   e attaccanti il legame c'e'.
+
+2. Non e' un sospetto, e' scritto nel codice: al portiere il modello
+   assegna un voto che va da 45,5 a 51,7 e basta. Sei punti di
+   differenza fra il miglior portiere del mondo e il peggiore, quando poi
+   sul campo fanno da 0 a 90.
+
+3. Conseguenza pratica: in OGNI formazione d'arena uno dei cinque posti
+   e' scelto a caso. L'ho misurato: scegliendo il portiere col modello
+   invece che a caso non si guadagna niente (-0,17 punti). Con gli altri
+   tre ruoli si guadagna da +3,4 a +5,2.
+
+4. Vale quanto tutto il filone grade appena chiuso, ma e' un BUCO invece
+   che una rifinitura. Secondo me si fa questo per primo, prima della
+   soglia e prima delle correlazioni.
+
+5. Secondo posto: il CAPITANO. Il vecchio verdetto era su backtest
+   sbagliati (D6), e rifacendolo pulito il modello prende solo il 15% di
+   quello che potrebbe prendere. Costo: zero.
+
+
+################################################################
+PER CHI VUOLE CONTROLLARE I CONTI
+################################################################
+
+Tutti i numeri sotto vengono da binario2_pool_rows.json (10.035 righe
+carta con atteso e punteggio vero) e binario2_out.json. Zero query, zero
+modifiche. Nessuna delle idee della lista era stata misurata prima: le ho
+misurate, e la classifica sotto viene dai numeri, non dal mio gusto.
+
+
+== 1. IL PORTIERE (idea nuova, non era nella tua lista) ==
+
+Quanto il previsto assomiglia al realizzato, ruolo per ruolo:
+
+  ruolo    n     BIAS    MAE    corr(previsto, realizzato)   IC95
+  GK    1.932   -0,77  15,72        -0,0018                +/-0,045
+  DEF   2.807   +2,38  14,82        +0,1350                +/-0,037
+  MID   2.824   +2,80  14,50        +0,1938                +/-0,037
+  FWD   2.472   +3,12  15,24        +0,1888                +/-0,039
+
+Lo zero del portiere e' dentro il suo margine d'errore da tutte le parti:
+non e' "debole", e' assente. E il grade non lo salva (con grade: -0,0232).
+
+Il perche' e' nel codice, non e' un'ipotesi
+(build_formazione_globale.py righe 403-407, CALIB_PER_RUOLO):
+  GK : a=35,78  b=0,264
+  DEF: a= 7,28  b=0,831
+  MID: a=11,61  b=0,740
+  FWD: a= 8,40  b=0,789
+La pendenza del portiere e' un terzo di quella degli altri. Risultato
+misurato sull'atteso calibrato vero:
+  GK : va da 45,5 a 51,7  (dispersione 0,97)
+  DEF: da 40,2 a 62,0     (3,24)
+  MID: da 38,9 a 68,1     (4,00)
+  FWD: da 42,2 a 67,2     (2,93)
+mentre il punteggio VERO dei portieri ha dispersione 18,72, esattamente
+come gli altri ruoli.
+
+ATTENZIONE, e' importante: la calibrazione NON e' il bug. Una pendenza
+0,264 e' esattamente cio' che si ottiene quando la previsione grezza
+contiene poco segnale — la calibrazione fa il suo mestiere e la schiaccia
+verso la media. Il problema sta A MONTE, nella previsione grezza dei
+portieri. Chi va a metterci le mani deve guardare la pipeline di
+predizione GK, non la costante 0,264 (spostarla peggiorerebbe e basta).
+
+Prova diretta dell'effetto pratico (dentro ogni pool con almeno 3 carte
+di quel ruolo, prendo la migliore secondo il modello e la confronto con
+la media del pool = scegliere a caso):
+  GK : 191 pool | modello 47,85 | a caso 48,03 | guadagno -0,17 (t=-0,14)
+  DEF: 211 pool | modello 58,61 | a caso 53,43 | guadagno +5,18 (t=+3,91)
+  MID: 227 pool | modello 57,35 | a caso 53,93 | guadagno +3,42 (t=+3,40)
+  FWD: 212 pool | modello 57,00 | a caso 52,74 | guadagno +4,26 (t=+3,58)
+
+Quanto vale: se il portiere arrivasse dove stanno gli altri ruoli sarebbero
+circa +4 punti per formazione. Per confronto, tutto il filone grade appena
+chiuso vale +0,687 punti/carta sul top-5, cioe' +3,4 punti per formazione.
+Stesso ordine di grandezza. Ma il grade era una rifinitura di una cosa che
+funzionava; questo e' un pezzo che non funziona per niente.
+Onesta': NON e' garantito che il portiere si possa portare a +4. I
+portieri potrebbero essere intrinsecamente meno prevedibili (il clean
+sheet dipende da dieci compagni). Quello che e' certo e' che oggi vale
+esattamente zero, e che nessuno lo sapeva.
+
+Primo passo che proporrei, sempre a zero query: guardare la previsione
+GREZZA dei portieri (prima di calibra()) e misurare la sua correlazione
+col realizzato. Se e' zero anche li', il problema e' nelle feature; se e'
+positiva, allora e' la calibrazione ad averla schiacciata troppo e si
+rifa' la retta. Sono due mondi diversi e la misura costa dieci minuti.
+
+
+== 2. IL CAPITANO (era nella tua lista: SI', vale la pena) ==
+
+Rifatto pulito sull'archivio (1.145 arene con capitano, punteggi veri per
+carta, nessun bonus da togliere a mano — il difetto D6 qui non c'e'):
+
+  bonus capitano incassato dal modello: +11,36 punti/arena
+  scegliendo il capitano A CASO fra le 5:  +10,67
+  scegliendo col senno di poi:             +15,26
+
+  guadagno vero del modello sul caso: +0,69 punti/arena (t=6,91)
+  massimo possibile sul caso:         +4,59
+  -> il modello ne prende il 15%
+
+Quindi: la scelta del capitano funziona (t=6,91, non e' casuale), ma
+raccoglie un sesto di quello che c'e' sul piatto. Il vecchio verdetto
+"chiuso" non regge, ed era basato su backtest con i bonus dentro.
+
+Un dettaglio che lega i due temi: il modello non nomina MAI capitano un
+portiere (0 volte su 1.145), ma il portiere e' la carta che ha fatto piu'
+punti in 157 arene su 1.145 (13,7%). In parte e' giusto cosi' (se non sai
+prevederli, non ci puntare sopra il 20% in piu'), in parte e' il sintomo
+dello stesso buco.
+
+
+== 3. LE CORRELAZIONI portiere-difensore e attacco-centrocampo
+      (erano nella tua lista: SI' come idea, NO come priorita' adesso) ==
+
+Stato tecnico: nel dump delle righe carta il campo `squadra` NON c'e'
+(campi presenti: manager, fixture, slug, codice, lega, _cal, _combinato,
+_grade, _zgrade, reale). p24 lo calcola gia' in prepara_pool_rows
+(res.get('squadra'), res.get('opp_slug')) ma non lo scrive. Servono due
+campi in piu' nel dump: zero query, cinque minuti.
+
+Perche' comunque la metterei dopo, e non e' pigrizia:
+  - la correlazione fra compagni di squadra non cambia i PUNTI ATTESI di
+    una formazione, cambia la sua VARIABILITA'. Serve a decidere se
+    conviene una formazione "tutto o niente" oppure una prudente.
+  - questo conta davvero, perche' i premi arena sono una lotteria: sui
+    dati di stanotte i 20 premi piu' grandi su 860 valgono il 75% di tutto
+    il valore. Quindi cercare la coda ha senso.
+  - ma con un quinto della formazione (il portiere) previsto a caso, la
+    variabilita' vera e' gia' dominata da quel buco. Misurare la
+    correlazione fra portiere e difensore mentre il portiere non e'
+    previsto e' misurare il legame fra due cose di cui una non la sai.
+  - e' un'ottimizzazione di secondo ordine su un modello con un buco di
+    primo ordine. Prima il buco.
+
+
+== 4. LA SOGLIA IN PUNTI FUORI CAMPIONE (mia proposta di stanotte:
+      la retrocedo io stesso al terzo posto) ==
+
+Resta valida e la rifarei, ma dopo. Motivo: la soglia e' una REGOLA DI
+DECISIONE che sta sopra al modello. Tarare la regola mentre il modello ha
+uno slot su cinque cieco significa tarare la regola sul rumore di quello
+slot, e poi doverla ritarare quando il portiere si sistema (e' la catena
+di produzione di CLAUDE.md: se si muove un valore di predizione, le
+soglie vanno riverificate — quindi conviene muovere prima la predizione).
+Se pero' l'utente vuole partire da qui perche' e' il tema che ha in
+testa, non e' una scelta sbagliata: e' solo un ordine meno efficiente.
+
+
+== 5. UN'ALTRA COSA CHE SALTA FUORI DAGLI STESSI NUMERI: LE LEGHE ==
+
+Non era nella lista e non merita un filone suo, ma va scritto perche' e'
+gratis e chi lavora sul portiere lo trovera' comunque:
+
+  lega            n     BIAS    MAE    corr
+  mls          1.805   +2,58   15,30   0,2214
+  kleague        994   +2,03   13,56   0,1624
+  germania       821   +0,89   14,43   0,2796
+  inghilterra    681   +3,28   14,89   0,1207
+  spagna         529   +1,46   14,32   0,1896
+  giappone       468   -1,04   15,75   0,0265
+  argentina      392   +1,51   15,13   0,0054
+
+Germania e MLS ordinano bene, Argentina e Giappone non ordinano affatto
+(come i portieri). Non aprirei un filone adesso, ma se dopo il portiere
+si cerca il secondo buco, e' li' che lo cercherei.
+
+Nota su tutti i BIAS di questa risposta: il pool delle righe carta
+esclude le carte a punteggio zero, quindi il bias positivo (+2,07
+complessivo) e' lo stesso artefatto da sopravvivenza che abbiamo trovato
+ieri sul filtro DNP. Le CORRELAZIONI e i confronti FRA ruoli/leghe non
+ne sono toccati (il filtro vale uguale per tutti), i livelli assoluti di
+bias si'.
+
+
+== 6. LA CLASSIFICA, IN UNA RIGA CIASCUNA ==
+
+1. PORTIERE. Buco di primo ordine, misurato, mai visto prima. Primo passo
+   a costo zero: correlazione della previsione GREZZA (pre-calibrazione)
+   col realizzato, per capire se il problema e' nelle feature o nella
+   retta.
+2. CAPITANO. Filone da riaprire (vecchio verdetto nullo per D6), costo
+   zero, +3,9 punti/arena sul tavolo di cui oggi ne prendiamo 0,69.
+3. SOGLIA IN PUNTI FUORI CAMPIONE. Valida, ma dopo il portiere.
+4. CORRELAZIONI FRA COMPAGNI DI SQUADRA. Idea buona, richiede due campi
+   in piu' nel dump, ma e' secondo ordine finche' il portiere e' cieco.
+5. LEGHE (Argentina, Giappone). Da tenere nel cassetto.
+
+E la raccomandazione che conta piu' della classifica: UNO ALLA VOLTA. Se
+l'handoff di domani ne apre tre, non se ne chiude nessuno.
+
+
+== 7. FILE DI RIFERIMENTO ==
+
+- archivio_ufficiale/aggregato/binario2_pool_rows.json (10.035 righe usate)
+- archivio_ufficiale/aggregato/binario2_out.json (1.145 arene col capitano)
+- generatore_formazioni/build_formazione_globale.py righe 395-418
+  (CALIB_PER_RUOLO e calibra(): la pendenza GK 0,264 contro 0,74-0,83)
+- p24_binario2_ga.py prepara_pool_rows (calcola 'squadra' ma non la dumpa)
+- CLAUDE.md sezione D6 (perche' il vecchio verdetto sul capitano e' nullo)
