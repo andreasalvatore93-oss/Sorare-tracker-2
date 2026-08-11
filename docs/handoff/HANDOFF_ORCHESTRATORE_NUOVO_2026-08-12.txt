@@ -345,6 +345,56 @@ risposta).
   peggiora, non migliora.
 
 ============================================================================
+1quater. PASSO 2 ESEGUITO (12/08/2026, orchestratore) — pcs squadra batte
+   nettamente lo storico personale, la somma naive DILUISCE il segnale
+============================================================================
+
+Test proposto da Opus nel §1ter: confrontare `corr(pcs_squadra, level_reale)`
+con `corr(level_atteso_storico, level_reale)`. Fatto, script
+`analisi_manager/_tmp_gk_passo2_pcs_vs_storico.py` (non committato in
+produzione, temporaneo — rigenera in ~1 minuto, zero rete). Stessa
+metodologia di Opus (walk-forward dalla cache dettaglio, IC95 a grappolo
+per portiere, half_life di produzione), estesa per calcolare `squadra`/
+`opp_slug`/`cutoff` per ogni partita (maggioranza home/away sulle ultime 5
+partite giocate, stessa logica di `_squadra()` in
+`backtest_arene_previsioni.py:113-126`) e passarli a
+`P._pcs_squadra(ctx)`.
+
+  n = 2898 punti, 195 portieri (347 scartati per pcs None, storico
+  insufficiente nel modello_partita walk-forward — stesso comportamento
+  già noto, non un bug)
+
+  corr(level_atteso_storico, level_reale) = +0,0583  IC95 [+0,0195,+0,0949]
+  corr(pcs_squadra,          level_reale) = +0,1336  IC95 [+0,0900,+0,1764]
+  corr(media(z_storico, z_pcs), level_reale) = +0,1171  IC95 [+0,0785,+0,1532]
+
+**Verdetto**: `pcs_squadra` da solo prevede più del DOPPIO di quanto fa
+oggi lo storico personale del portiere (0,134 contro 0,058, entrambi con
+IC che esclude lo zero). E quando li si combina in modo naive (media
+semplice dei due, non è il blend di produzione — vedi limite sotto), il
+risultato PEGGIORA rispetto a pcs da solo (0,117 < 0,134): lo storico
+personale non aggiunge, diluisce.
+
+**Limite dichiarato**: la "media semplice" qui sopra NON è il blend reale
+di produzione (che soma additivamente `team_cs_weight * GK_TEAM_CS_POINTS
+* (pcs - baseline)` con pesi fissati a mano, non una media z-standardizzata
+50/50). Non è quindi la controprova diretta che il blend attuale sia
+sub-ottimale, solo l'indizio qualitativo che pcs merita più peso di quanto
+oggi gliene dia lo storico personale nella somma finale — coerente col
+fatto già misurato nel §1bis/1ter che SENZA il blend CS la corr era
+-0,045 e CON il blend sale (di poco) verso lo zero: il blend c'è già e
+aiuta, solo che lo storico personale (il pezzo più a monte, non il blend)
+lo trascina indietro.
+
+**Prossimo passo, non fatto**: provare pesi diversi fra `pcs_squadra` e
+`level_atteso_storico` (non media 50/50, una griglia, es. 0/100,
+25/75, 50/50, 75/25, 100/0) sullo stesso campione walk-forward, e vedere
+se un peso più sbilanciato su pcs batte sia pcs-da-solo sia
+lo-storico-da-solo — solo allora avrebbe senso proporre una modifica
+reale a `compute_score_atteso_gk`. Nessuna modifica al codice di
+produzione fatta finora.
+
+============================================================================
 8. FILE DI RIFERIMENTO
 ============================================================================
 
