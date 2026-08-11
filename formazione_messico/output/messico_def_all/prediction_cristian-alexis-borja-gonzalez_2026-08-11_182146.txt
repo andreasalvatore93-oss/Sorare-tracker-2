@@ -1,0 +1,137 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-11T18:21:46.425446Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) cristian-alexis-borja-gonzalez: 60 pt attesi (37-79)
+   ORDINAMENTO: 61.54
+   SQUADRA: america-ciudad-de-mexico-d-f | AVVERSARIO: austin-austin-texas
+======================================================================
+
+######################################################################
+# GIOCATORE: cristian-alexis-borja-gonzalez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: cristian-alexis-borja-gonzalez (squadra: america-ciudad-de-mexico-d-f)
+Generato: 2026-08-11T18:21:46.424283Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 40
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-28 | AME vs PUM | liga-mx | score=72.0 | peso=0.512
+  2025-10-05 | AME vs SAN | liga-mx | score=67.5 | peso=0.524
+  2025-10-19 | CAZ vs AME | liga-mx | score=32.3 | peso=0.536
+  2025-10-22 | AME vs PUE | liga-mx | score=50.8 | peso=0.548
+  2025-11-02 | AME vs LEO | liga-mx | score=57.0 | peso=0.561
+  2025-11-09 | TOL vs AME | liga-mx | score=21.9 | peso=0.574
+  2025-11-27 | MON vs AME | liga-mx | score=65.6 | peso=0.588
+  2025-11-29 | AME vs MON | liga-mx | score=53.4 | peso=0.602
+  2026-01-10 | TIJ vs AME | liga-mx | score=43.9 | peso=0.616
+  2026-01-15 | AME vs ASL | liga-mx | score=65.5 | peso=0.630
+  2026-01-19 | PAC vs AME | liga-mx | score=73.9 | peso=0.645
+  2026-01-31 | AME vs NEC | liga-mx | score=81.4 | peso=0.660
+  2026-02-04 | OLI vs AME | concacaf-champions-league | score=48.0 | peso=0.675
+  2026-02-08 | AME vs MON | liga-mx | score=47.6 | peso=0.691
+  2026-02-12 | AME vs OLI | concacaf-champions-league | score=81.2 | peso=0.707
+  2026-02-15 | CHI vs AME | liga-mx | score=38.9 | peso=0.724
+  2026-02-21 | PUE vs AME | liga-mx | score=53.9 | peso=0.741
+  2026-03-01 | AME vs TIG | liga-mx | score=35.6 | peso=0.758
+  2026-03-07 | QUE vs AME | liga-mx | score=71.2 | peso=0.776
+  2026-03-10 | PHI vs AME | concacaf-champions-league | score=82.2 | peso=0.794
+  2026-03-16 | AME vs MAZ | liga-mx | score=80.5 | peso=0.812
+  2026-03-19 | AME vs PHI | concacaf-champions-league | score=35.4 | peso=0.831
+  2026-03-22 | PUM vs AME | liga-mx | score=45.3 | peso=0.851
+  2026-04-15 | AME vs NSH | concacaf-champions-league | score=34.5 | peso=0.871
+  2026-04-19 | AME vs TOL | liga-mx | score=49.1 | peso=0.891
+  2026-04-22 | LEO vs AME | liga-mx | score=72.5 | peso=0.912
+  2026-07-19 | QUE vs AME | liga-mx | score=78.0 | peso=0.933
+  2026-07-25 | ATL vs AME | liga-mx | score=65.9 | peso=0.955
+  2026-08-02 | AME vs SAN | liga-mx | score=61.0 | peso=0.977
+  2026-08-07 | AME vs SD | leagues-cup-mls | score=73.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 58.60
+  di cui Punteggio decisivo (level_score) medio: 38.22 | Punteggio complessivo (granulari) medio: 20.38 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.10, delta avversario +0.82 | Passaggio condizionato: delta venue +0.56, delta avversario -0.28 | Clean sheet/disimpegni condizionato: delta venue +0.18, delta avversario +1.09 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 16.81
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.6 - 78.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.56 (differenza: +1.25)
+Media score in casa: 59.14 | Media score fuori casa: 56.69
+Fattore casa/trasferta applicato: 1.002 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.9
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 1.622 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.994
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.999
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.001
+Fattore trend (media ultime 5: 70.2 vs media 5 PRECEDENTI: 48.7): 1.000
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T00:30
+Casa: Club América | Trasferta: Austin FC
+Competizione: leagues-cup-mls
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 60.1 (range 37.1 - 79.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 61.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 57.87
+Punteggio REALE ottenuto in quella partita: 73.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +15.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      36.3    65.6    +29.3    19.8        NO
+   7        7      42.1    53.4    +11.3    19.3        SI
+   8        8      37.9    43.9     +6.0    17.9        SI
+   9        9      66.3    65.5     -0.8    17.1        SI
+  10       10      58.2    73.9    +15.7    16.8        SI
+  11       11      47.0    81.4    +34.4    17.4        NO
+  12       12      56.2    48.0     -8.2    18.6        SI
+  13       13      47.5    47.6     +0.1    18.0        SI
+  14       14      57.0    81.2    +24.2    17.5        NO
+  15       15      52.9    38.9    -14.0    18.4        SI
+  16       16      59.2    53.9     -5.3    18.5        SI
+  17       17      74.1    35.6    -38.5    17.9        NO
+  18       18      49.3    71.2    +21.9    18.2        NO
+  19       19      64.0    82.2    +18.2    18.1        NO
+  20       20      73.4    80.5     +7.1    18.9        SI
+  21       21      68.4    35.4    -33.0    19.2        NO
+  22       22      42.9    45.3     +2.4    19.6        SI
+  23       23      42.2    34.5     -7.7    19.3        SI
+  24       24      65.1    49.1    -16.0    19.6        SI
+  25       25      65.1    72.5     +7.4    19.2        SI
+  26       26      50.5    78.0    +27.5    19.1        NO
+  27       27      42.0    65.9    +23.9    19.3        NO
+  28       28      74.8    61.0    -13.8    19.0        SI
+  29       29      66.4    73.7     +7.3    18.6        SI
+
+MAE (errore assoluto medio): 15.59
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
