@@ -1,0 +1,119 @@
+BRIEF PER OPUS — test a 4 bracci fatto, ordine 1<3<4 rispettato ma 4<=2
+VIOLATO. Come da tua istruzione ("se esce 4>2 e' un errore di
+implementazione, non una scoperta -- fermati") mi fermo e chiedo la tua
+lettura prima di proporre qualunque cosa in produzione.
+Scritto 11/08/2026 (Roma) dall'orchestratore, stessa sessione di oggi.
+
+============================================================================
+VERDETTO DA BAR
+============================================================================
+Fatto esattamente il test che avevi disegnato: correlazione(aggiustamento
+= sd_atteso*z, residuo), non piu' solo z come nel round 1 (correggeva il
+tuo rilievo: pool_largo cambiava due scale, il round 1 ne misurava una).
+1<3<4 regge, IC escludono zero, pulito. Ma **4 batte 2** (storica_completa
++0,0999 contro pool_largo +0,0695 su tutte le righe; +0,1016 contro
++0,0419 sul sottoinsieme dove oggi il grade e' spento) -- l'ordine che
+avevi scritto come "se lo vedete, e' un bug" dice 4<=2. Ho controllato la
+tabella storica prima di scriverti (meta.cutoff=null, 20.955
+osservazioni, contributo marginale di una riga trascurabile: non sembra
+una fuga d'informazione) ma non sono sicuro che basti a escludere un
+errore mio altrove. Fermato qui, come chiesto.
+
+============================================================================
+0. COSA LEGGERE PRIMA
+============================================================================
+1. Il tuo §16 di prima (RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt) -- il
+   disegno a 4 bracci e la pre-registrazione 1<3<4<=2.
+2. analisi_manager/p46_grade_group_carta.py -- lo script (riscritto da
+   zero rispetto al round 1: ora l'aggiustamento e' sd_atteso*z, non z
+   nudo -- vedi funzione main(), bracci 1-4 righe ~140-175).
+3. generatore_formazioni/dati/grade_scala_storica.json campo 'meta' --
+   cutoff:null, n_osservazioni_usate:20955.
+4. analisi_manager/dati/grade_group_carta_bracci_2026-08-11.json --
+   dettaglio riga per riga (residuo + i 4 aggiustamenti), se vuoi
+   ricontrollare un caso a mano.
+
+============================================================================
+1. LA DOMANDA (una sola)
+============================================================================
+4 batte 2 e' un bug di implementazione (come avevi previsto in caso di
+violazione) o e' una scoperta reale -- "la storia intera, grande e
+stabile, batte il pool multi-manager stesso-giorno, piccolo (mediana 3
+carte anche allargato) e rumoroso"?
+
+============================================================================
+2. NUMERI DI CONTROLLO
+============================================================================
+Base: 9.440 carte con grade noto (su 10.255 aggregate), stessa fonte del
+round 1. Correlazione(aggiustamento, residuo=reale-atteso_calibrato),
+bootstrap cluster (manager,fixture), B=3.000.
+
+TUTTE LE RIGHE (n=9.440):
+  1 lega_ruolo         +0,0299
+  2 pool_largo (tetto)  +0,0695
+  3 storica_grade       +0,0530
+  4 storica_completa    +0,0999
+  1 vs 3: IC95%=[+0,0041;+0,0423]  positivo 99,0%
+  1 vs 4: IC95%=[+0,0474;+0,0921]  positivo 100,0%
+  1 vs 2: IC95%=[+0,0223;+0,0579]  positivo 100,0%
+  3 vs 4: IC95%=[+0,0252;+0,0683]  positivo 100,0%
+  4 vs 2: IC95%=[-0,0459;-0,0145]  positivo (2>4) 0,0%  <- QUI la violazione
+
+SOLO GRUPPO NATIVO >= 2 (n=6.195, il numero che conta per te):
+  1 lega_ruolo         +0,0370
+  2 pool_largo (tetto)  +0,0817
+  3 storica_grade       +0,0666
+  4 storica_completa    +0,0990
+  4 vs 2: IC95%=[-0,0366;+0,0028]  positivo (2>4) 4,4%  <- qui l'ordine
+  quasi regge (IC sfiora lo zero, 4 leggermente sotto 2 ma non
+  significativo)
+
+SOLO GRUPPO NATIVO < 2 (n=3.245, dove oggi il grade e' spento):
+  1 lega_ruolo         indefinita (varianza zero per costruzione)
+  2 pool_largo (tetto)  +0,0419
+  3 storica_grade       indefinita (stesso motivo di 1: sd_atteso nativo
+                        e' 0 su un gruppo di 1 carta, l'aggiustamento e'
+                        sempre 0 anche se lo z sotto e' definito -- hai
+                        gia' spiegato tu questo meccanismo)
+  4 storica_completa    +0,1016
+  4 vs 2: IC95%=[-0,0846;-0,0339]  positivo (2>4) 0,0%  <- violazione piu'
+  netta, proprio dove serve di piu' decidere bene
+
+============================================================================
+3. QUELLO CHE HO GIA' CONTROLLATO (per non farti perdere tempo sulle
+   stesse cose)
+============================================================================
+- Tabella grade storica: nessun cutoff temporale (meta.cutoff=null),
+  20.955 osservazioni totali -- il peso di una singola riga sulla propria
+  statistica di riferimento e' ~1/20.955, trascurabile.
+- Tabella sd_atteso storica (nuova, costruita in p46 da
+  binario2_pool_rows.json): stessa logica, stessa fonte, 10.255
+  osservazioni, nessun cutoff nemmeno li' -- stesso ordine di grandezza
+  di trascurabilita'.
+- Pool_largo (braccio 2) resta piccolo anche allargato a tutti i manager
+  della fixture: mediana 3 carte per (fixture,lega,ruolo) (misurato nel
+  round precedente, commit db8062f780) -- molto meno degli n a 4 cifre
+  delle tabelle storiche.
+- NON ho verificato: se c'e' un bug nel modo in cui applico
+  bfg._scala_storica_per() o nella costruzione della tabella sd_atteso
+  dentro p46 (es. una chiave sbagliata, un fallback che scatta quando non
+  dovrebbe). Ho riletto il codice ma non l'ho testato con un caso a mano
+  costruito apposta per isolare un errore.
+
+============================================================================
+4. COSA CI SERVE DA TE
+============================================================================
+- Un secondo occhio su p46_grade_group_carta.py (bracci 3/4, righe
+  ~140-175): c'e' un errore che spiegherebbe 4>2, o l'implementazione e'
+  pulita e la violazione e' un fatto vero sui dati?
+- Se e' un fatto vero: si puo' proporre 'storica_completa' come
+  candidato per produzione (e' l'unico dei 4 bracci REALMENTE
+  implementabile: non serve nessun altro manager, solo le due tabelle
+  storiche gia' quasi pronte)? O serve prima chiudere il cerchio su
+  "perche' batte anche il tetto teorico" prima di fidarsene?
+
+============================================================================
+5. DOVE RIFERIRE
+============================================================================
+mcp__ccd_session_mgmt__send_message a questa sessione. File di risposta,
+se serve: coda a RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt, nuova §17.
