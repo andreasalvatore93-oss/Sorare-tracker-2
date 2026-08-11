@@ -220,12 +220,17 @@ def processa_fixture(manager, fx, path, lega_di, idx_grade):
 
     ris_A = gioca([dict(r) for r in pool_rows], leghe, '_cal')
     ris_G = gioca([dict(r) for r in pool_rows], leghe, '_combinato')
+    carta_rows = [
+        {'manager': manager, 'fixture': fx, 'slug': r['slug'], 'codice': r['codice'],
+         'lega': r['lega'], '_cal': r['_cal'], '_combinato': r['_combinato'],
+         '_grade': r['_grade'], '_zgrade': r['_zgrade'], 'reale': r['reale']}
+        for r in pool_rows]
     return {
         'manager': manager, 'fixture': fx, 'pool_size': len(pool),
         'pool_con_atteso': len(pool_rows),
         'n_con_grade': sum(1 for r in pool_rows if r['_grade'] is not None),
         'escluse_dnp': escluse, 'primo_kickoff': primo_kickoff.isoformat(),
-        'ris_A': ris_A, 'ris_G': ris_G,
+        'ris_A': ris_A, 'ris_G': ris_G, 'carta_rows': carta_rows,
     }
 
 
@@ -262,11 +267,36 @@ def main():
     print(f'  A: {tot_A:+.0f}  ({n_A} arene totali)')
     print(f'  G: {tot_G:+.0f}  ({n_G} arene totali)')
 
+    # n vera + trim SIMMETRICO (non piu' asimmetrico, vedi RISPOSTA_OPUS_STATO_GVSA_ROUND4:
+    # togliere solo i pro-G e' viziato in una struttura a premi-lotteria, va tolto 3+3).
+    pair_deltas = [sum(r['netto_stimato'] for r in e['ris_G'])
+                   - sum(r['netto_stimato'] for r in e['ris_A']) for e in per_gw]
+    delta_totale = sum(pair_deltas)
+    n_discordanti = sum(1 for d in pair_deltas if d != 0)
+    ordinati = sorted(pair_deltas)
+    top3_pro_g = ordinati[-3:] if len(ordinati) >= 3 else ordinati
+    top3_pro_a = ordinati[:3] if len(ordinati) >= 3 else ordinati
+    trim_simmetrico = delta_totale - sum(top3_pro_g) - sum(top3_pro_a)
+
+    print(f'\n  *** la n vera del confronto G-vs-A e\' {n_discordanti} coppie manager-GW '
+          f'(su {len(per_gw)}), non {len(per_gw)} ***')
+    print(f'  delta G-A totale: {delta_totale:+.0f}  |  trim simmetrico (tolte le 3 coppie '
+          f'piu\' pro-G e le 3 piu\' pro-A): {trim_simmetrico:+.0f}')
+
     out_path = os.path.join(ARCHIVIO_ROOT, 'aggregato', 'binario2_out.json')
     with open(out_path, 'w', encoding='utf-8') as fh:
-        json.dump({'per_gw': per_gw, 'tot_A': tot_A, 'tot_G': tot_G, 'n_A': n_A, 'n_G': n_G},
+        json.dump({'per_gw': [{k: v for k, v in e.items() if k != 'carta_rows'} for e in per_gw],
+                   'tot_A': tot_A, 'tot_G': tot_G, 'n_A': n_A, 'n_G': n_G,
+                   'n_discordanti': n_discordanti, 'delta_G_A_totale': delta_totale,
+                   'delta_G_A_trim_simmetrico': trim_simmetrico},
                   fh, ensure_ascii=False, indent=1)
     print(f'\ndettaglio scritto in {out_path}')
+
+    pool_rows_path = os.path.join(ARCHIVIO_ROOT, 'aggregato', 'binario2_pool_rows.json')
+    tutti_carta_rows = [r for e in per_gw for r in e['carta_rows']]
+    with open(pool_rows_path, 'w', encoding='utf-8') as fh:
+        json.dump(tutti_carta_rows, fh, ensure_ascii=False, indent=1)
+    print(f'{len(tutti_carta_rows)} righe carta scritte in {pool_rows_path}')
 
 
 if __name__ == '__main__':

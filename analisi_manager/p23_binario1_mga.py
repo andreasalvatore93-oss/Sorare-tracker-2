@@ -101,7 +101,15 @@ def carica_formazioni(path):
     return d['righe'] if isinstance(d, dict) else d
 
 
+INCLUDI_DNP = os.environ.get('INCLUDI_DNP') == '1'
+
+
 def escludi_dnp(righe):
+    """Se INCLUDI_DNP=1 non esclude nulla (misura, vedi RISPOSTA_OPUS_STATO_GVSA_ROUND4
+    sez. 6.2: il filtro toglie il 19,3% delle formazioni ed e' precisamente i casi
+    andati peggio, distorcendo 'M entra sempre' verso l'alto). Default INVARIATO."""
+    if INCLUDI_DNP:
+        return righe, []
     pulite, escluse = [], []
     for r in righe:
         dnp = [c['nome'] for c in r['carte'] if (c.get('punteggio') or 0.0) == 0.0]
@@ -270,18 +278,24 @@ def main():
     contributi = [
         (r['premio_netto'] if r['entra_G'] else -r['premio_netto']) for r in discordanti]
     delta_totale = sum(contributi)
-    top3_pro_g = sorted([c for c in contributi if c > 0], reverse=True)[:3]
-    delta_senza_top3_pro_g = delta_totale - sum(top3_pro_g)
+    # Trim SIMMETRICO (RISPOSTA_OPUS_STATO_GVSA_ROUND4 sez. 4a): il trim "solo pro-G"
+    # proposto il 10/08 e' viziato nella struttura a premi-lotteria di Sorare -- toglie
+    # solo le vincite grandi da UN lato, che azzera chiunque. Va tolto 3+3.
+    ordinati = sorted(contributi)
+    top3_pro_a = ordinati[:3] if len(ordinati) >= 3 else ordinati
+    top3_pro_g = ordinati[-3:] if len(ordinati) >= 3 else ordinati
+    delta_trim_simmetrico = delta_totale - sum(top3_pro_g) - sum(top3_pro_a)
 
     print(f'\n  *** la n vera del confronto G-vs-A e\' {n_diverse} (decisioni discordanti), non {n_tot} ***')
-    print(f'  delta G-A totale: {delta_totale:+.0f}  |  delta G-A senza le 3 decisioni pro-G piu\' pesanti: {delta_senza_top3_pro_g:+.0f}')
+    print(f'  delta G-A totale: {delta_totale:+.0f}  |  trim simmetrico (tolte le 3 decisioni '
+          f'piu\' pro-G e le 3 piu\' pro-A): {delta_trim_simmetrico:+.0f}')
 
     out_path = os.path.join(ARCHIVIO_ROOT, 'aggregato', 'binario1_out.json')
     with open(out_path, 'w', encoding='utf-8') as fh:
         json.dump({'per_gw': per_gw, 'tot_M': tot_M, 'tot_A': tot_A, 'tot_G': tot_G,
                    'n_entra_A': n_A, 'n_entra_G': n_G, 'n_totale': n_tot,
                    'n_discordanti': n_diverse, 'delta_G_A_totale': delta_totale,
-                   'delta_G_A_senza_top3_pro_g': delta_senza_top3_pro_g}, fh,
+                   'delta_G_A_trim_simmetrico': delta_trim_simmetrico}, fh,
                   ensure_ascii=False, indent=1)
     print(f'\ndettaglio scritto in {out_path}')
 
