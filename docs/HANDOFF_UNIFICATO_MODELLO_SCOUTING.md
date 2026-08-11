@@ -1287,6 +1287,39 @@ forma per cella — e per il 56% da cinque giornate.
 Prima di qualunque fuori campione: (i) fix celle n<2; (ii) ricentraggio per
 ruolo; (iii) spiegare lo scarto +4.260/+5.067.
 
+### Fix (i)+(ii) applicati, 12/08/2026 sera — la SORGENTE non decide più, i fix sì
+
+`analisi_manager/p51_grade_essenze_fix.py`: celle (lega,codice) con n<2
+tolte dalla tabella (fallback naturale a livello ruolo, nessuna soglia
+alta — quelle peggiorano, punto 2 sopra); ricentraggio calcolato PER
+RUOLO (GK/DEF/MID/FWD separati), non con una costante unica. Stesso pool,
+stesso bootstrap (n=360, B=5.000, cluster manager-fixture) di p50.
+
+    G baseline                                   = +124.021  (replica esatta)
+    archivio 0,75 (fix i+ii)   vs baseline   delta = +7.577  IC95%[-12;+15.283]     97,5%
+    produzione 0,462 (fix i+ii) vs baseline  delta = +6.109  IC95%[-2.146;+14.693]  92,2%
+    >>> produzione - archivio (APPAIATO)     delta = -1.468  IC95%[-7.235;+4.285]   31,1%
+
+Celle n<2 tolte: 5 (archivio) / 8 (produzione). Ricentraggio per ruolo,
+punto di controllo: archivio DEF+1,42 FWD+0,94 GK+0,50 MID+1,51; produzione
+DEF+1,46 FWD+1,55 GK+0,30 MID+1,21 (nessuno resta grosso come il -0,93 GK
+del ricentraggio globale).
+
+**Lettura, DA VERIFICARE prima di crederci** (pattern di oggi: ogni numero
+buono finora è stato smontato al giro successivo): con i due fix ENTRAMBE
+le fonti si avvicinano alla significatività (97,5% e 92,2%), ma il
+confronto diretto fonte-vecchia/fonte-nuova è vicino a zero e leggermente
+A FAVORE dell'archivio (-1.468, 31,1% positivo per la produzione). Sembra
+che i fix (i)+(ii) fossero il vero guadagno, non il cambio di fonte — cosa
+che, se confermata, semplificherebbe molto la strada in produzione (niente
+tabella nuova da mantenere, bastano i due fix sopra la fonte già esistente).
+Punto (iii) (scarto +4.260/+5.067) non risolto a parte: nessuno script nel
+repo produce +4.260 in modo riproducibile (solo citato nell'handoff
+dell'11/08), quindi il numero di riferimento andando avanti è quello
+riproducibile di p50/p51, non quello vecchio.
+
+File: `analisi_manager/dati/grade_essenze_fix_2026-08-12.json`.
+
 ---
 
 ## 8ter. Scouting dopo il grade (07/08/2026) — CONTROLLATO, 2 decisioni aperte
