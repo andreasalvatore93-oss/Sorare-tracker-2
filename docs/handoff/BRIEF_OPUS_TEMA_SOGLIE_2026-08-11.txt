@@ -1,0 +1,141 @@
+BRIEF PER OPUS — nuovo filone: la soglia d'ingresso arena. Nato dalla tua
+"spinta cieca" (§18) e da un'osservazione dell'utente sul proprio
+comportamento reale. Come impostare il test?
+Scritto 11/08/2026 (Roma) dall'orchestratore, stessa sessione di oggi
+(GK_ATT_AVV chiuso e acceso, gruppo grade chiuso a livello di carta e
+non provato a livello di essenze).
+
+============================================================================
+VERDETTO DA BAR
+============================================================================
+Nel tuo §18 hai trovato che una "spinta cieca" (nessuna informazione,
+solo +1,15 punti a tutte le carte) vale +9.254 essenze (IC esclude lo
+zero) -- piu' di GK_ATT_AVV, e hai segnalato che questo apre il tema
+soglia MAI iniziato (INDICE.md), ma trovato frugando, non pre-registrato.
+
+L'utente, a valle, ha fatto un'osservazione concreta sul proprio
+comportamento: nella realta' NON schiera tutto quello che il bot
+consiglia. Salta le arene che il bot segnala come "marginali" e in
+generale tiene un margine piu' alto di quello minimo codificato --
+"molto spesso schiero forse il 60% delle arene consigliate". Esempio
+concreto dato: GW3 (football-7-11-aug-2026, la prima con G integrale),
+27 arene REALMENTE schierate, netto +6.250 essenze -- ma non sa quante
+ne avesse consigliate il bot quella settimana, ne' come sarebbe andata
+schierandole tutte.
+
+Ho controllato il codice PRIMA di scriverti, per non farti perdere tempo
+sulle stesse cose (sez.2). Trovata una cosa che secondo me e' il cuore
+del problema: la soglia REALE che decide quali arene entrano nella
+formazione proposta (sia in produzione che nei nostri backtest) e'
+margine ZERO, non il 10% che pensavamo. C'e' anche una funzione morta con
+un numero clamoroso nel commento, mai collegata a niente (sez.2.3).
+
+============================================================================
+0. COSA LEGGERE PRIMA
+============================================================================
+1. §18 di RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt (la tua spinta cieca,
+   il punto che avevi lasciato aperto su "soglia troppo alta" vs "atteso
+   sistematicamente pessimista").
+2. generatore_formazioni/build_formazione_globale.py, tre punti (righe
+   esatte sotto, sez.2): QUOTA_MINIMA (857), _etichetta_arena (868-892),
+   verdetto_arena (895-907, MAI chiamata), genera_arene_efficienti
+   (1411-1479, la selezione VERA).
+3. archivio_ufficiale/manager_crowss/dal_2026-08-07/football-7-11-aug-2026_arene_limited.json
+   -- il caso concreto dell'utente (27 arene, netto +6.250).
+
+============================================================================
+1. LA DOMANDA (una sola)
+============================================================================
+Come si disegna un test che distingua le due diagnosi che avevi gia'
+separato tu (§18 punto finale) -- "la soglia d'ingresso e' tarata troppo
+in basso" contro "l'atteso e' sistematicamente un po' pessimista,
+indipendentemente da qualunque soglia" -- E che tenga conto di un terzo
+elemento nuovo: il comportamento REALE dell'utente e' piu' prudente di
+ENTRAMBE le regole gia' scritte nel codice (margine zero in produzione,
+margine 10% nel nostro Binario 1). Cosa sta effettivamente "funzionando"
+quando l'utente e' piu' prudente del bot?
+
+============================================================================
+2. COSA HO GIA' VERIFICATO NEL CODICE (per non farti perdere tempo)
+============================================================================
+
+2.1 LA SELEZIONE VERA E' A MARGINE ZERO, NON AL 10%.
+`genera_arene_efficienti()` (riga 1411-1479, usata SIA in produzione SIA
+nel nostro Binario 2/p24) si ferma quando `resa <= 0` (riga 1468:
+`if migliore is None or migliore[0] <= 0: break`) -- cioe' entra in
+QUALUNQUE arena con `atteso > soglia_pareggio`, margine ZERO. Non usa
+QUOTA_MINIMA da nessuna parte.
+
+2.2 QUOTA_MINIMA (10%, riga 857) esiste ma serve SOLO all'ETICHETTA.
+`_etichetta_arena()` (riga 868-892) mostra "SCHIERA" (verde) se il
+guadagno supera il 10% del costo, "MARGINALE" (giallo) se e' positivo ma
+sotto quella soglia, "LASCIA PERDERE" (rosso) se negativo. E' SOLO
+visuale (chiamata una volta, riga 2298, per il colore/testo nell'HTML):
+non esclude nulla dalla formazione proposta. Il bot PROPONE anche le
+"MARGINALI"; e' l'utente che poi decide se seguirle.
+
+2.3 IL NOSTRO BINARIO 1 (p23) USA IL 10%, IL BINARIO 2 (p24) NO.
+p23's decidi_entra() calcola `soglia_decisione = soglia + costo *
+QUOTA_MINIMA / guad_punto` (riga ~198) -- USA il margine 10%. p24 invece
+chiama S21.bfg.genera_arene_efficienti() (margine zero, sez.2.1). Oggi
+abbiamo misurato DUE regole diverse nei due binari senza accorgercene:
+un fatto da tenere a mente leggendo qualunque confronto B1-vs-B2 di
+oggi (GK_ATT_AVV incluso).
+
+2.4 verdetto_arena() E' MORTA. Riga 895-907, docstring dice "misurato:
+applicare questa regola avrebbe portato il saldo da +9.800 a +54.700
+essenze" -- ma grep sull'intero repo (non solo questo file) non trova
+NESSUNA chiamata, in nessun altro file. O e' un residuo di una misura
+mai completata, o il numero nel commento va verificato prima di fidarsene
+(regola CLAUDE.md: un commento non e' una prova).
+
+============================================================================
+3. IL CASO CONCRETO DELL'UTENTE (non ancora confrontato col bot)
+============================================================================
+crowss, football-7-11-aug-2026 (dal_2026-08-07/, "modello G integrale"
+per la documentazione di archivio_ufficiale -- ma l'utente dice che in
+pratica applica comunque filtro suo): 27 arene REALI, netto +6.250
+essenze. NON ho ancora verificato quante arene il generatore avrebbe
+proposto quella settimana (servirebbe rilanciare la pipeline su quella
+finestra, o trovare un output storico committato vicino a quella data se
+esiste in git log su generatore_formazioni/output/).
+
+============================================================================
+4. COSA NON HO FATTO
+============================================================================
+- Non ho disegnato nessun test. Non ho toccato QUOTA_MINIMA,
+  genera_arene_efficienti, ne' verdetto_arena.
+- Non ho verificato se esiste un output storico del generatore per
+  quella settimana specifica (7-11 agosto) per contare quante arene
+  furono PROPOSTE contro le 27 REALMENTE giocate.
+- Non ho ripetuto lo sweep di spinte cieche con la regola margine-10%
+  del nostro Binario 1 invece che margine-zero del Binario 2 -- potrebbe
+  dare un quadro diverso, dato il punto 2.3.
+
+============================================================================
+5. COSA CI SERVE DA TE
+============================================================================
+Un disegno di test (non serve che tu lo lanci: lo facciamo noi) che
+separi le due diagnosi del tuo §18, tenendo conto che ora sappiamo che
+la soglia vera di produzione e' margine zero (non 10%) e che l'utente si
+comporta in modo ancora piu' prudente di entrambe. Punti su cui vorremmo
+un parere:
+  a) Ha senso ri-testare la spinta cieca sulla regola margine-10% (quella
+     del nostro Binario 1) invece che margine-zero (Binario 2/produzione),
+     visto che sono regole diverse?
+  b) Come isolare "soglia troppo permissiva" da "atteso pessimista di un
+     punto" -- hai gia' detto che la spinta cieca da sola non li separa:
+     quale disegno lo farebbe?
+  c) Il comportamento reale dell'utente (piu' prudente di tutto quello
+     che e' scritto nel codice) e' un dato da incorporare nel test, o e'
+     rumore/preferenza personale che va tenuto fuori dal confronto G-vs-A
+     (che per definizione non giudica mai il manager, solo G contro se
+     stesso)?
+
+============================================================================
+6. DOVE RIFERIRE
+============================================================================
+mcp__ccd_session_mgmt__send_message a questa sessione. File di risposta:
+coda a RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt, nuova §19 (o nuovo file
+se preferisci separare questo filone da quello delle correlazioni --
+decidi tu, e' un tema nuovo).
