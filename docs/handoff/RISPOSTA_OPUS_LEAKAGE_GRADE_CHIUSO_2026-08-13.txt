@@ -1,0 +1,153 @@
+RISPOSTA OPUS ESECUTORE -- "il test su Bolla chiude la preoccupazione leakage?"
+Sessione Opus esecutore, 13/08/2026 (ora di Roma). Zero query di rete: tutto
+misurato su dati gia' in repo. Script nuovo:
+analisi_manager/p31_leakage_grade_pre_post.py (solo misura, nessun cambio
+alla produzione).
+
+===============================================================================
+IL VERDETTO IN DIECI RIGHE, DA BAR
+===============================================================================
+1. Si', concordo: il leakage sistematico e' chiuso. Ma non per il test su
+   Bolla -- quello e' un giocatore solo, tre partite, e da solo non basta.
+   L'ho chiuso con 120 partite-giocatore, senza fare nemmeno una query.
+2. Il test vero non era mai stato fatto perche' si pensava servisse la rete.
+   Non serviva: gli scatti del voto PRIMA della partita erano gia' in repo
+   (grade_snapshot_*.json) e il voto letto DOPO pure (storico_grade_*.json).
+   Bastava incrociarli. Fatto.
+3. Il voto CAMBIA fra prima e dopo in 42 casi su 120 (35%). Questo il test su
+   Bolla non lo mostrava, e da solo suonerebbe malissimo.
+4. Ma cambia nel verso sbagliato per essere leakage. I cambi sono quasi tutti
+   "F diventa D o E" (16 casi) e "D o E diventa F" (9): cioe' seguono il
+   GIOCA / NON GIOCA, non il punteggio.
+5. La prova che conta: chi e' stato promosso dopo la partita ha segnato in
+   media 46,8; chi e' stato retrocesso 48,4; chi e' rimasto uguale 66,3. Se il
+   voto fosse riscritto sul risultato, i promossi sarebbero quelli che hanno
+   fatto i punteggi ALTI. Sono i piu' bassi. E' l'opposto del leakage.
+6. Come ordinatore del punteggio il voto PRE e il voto POST valgono uguale
+   (0,22 contro 0,29 su tutti; 0,30 contro 0,24 su chi ha giocato). Non c'e'
+   il salto che il leakage produrrebbe.
+7. Un punto su cui NON concordo con la conclusione girata: i casi "F che
+   diventa D perche' a sorpresa ha giocato" NON sono esclusi dal filtro DNP.
+   Il filtro toglie chi ha preso 0. Quello li' ha giocato e ha un punteggio
+   vero: resta dentro, col voto D che prima della partita era F. Sono 16 casi
+   su 120, cioe' ~13% delle righe.
+8. La buona notizia: quella contaminazione gioca CONTRO il grade, non a
+   favore (i promossi hanno segnato poco). Quindi il vantaggio del grade che
+   ho misurato ieri e' semmai sottostimato, non gonfiato. Ma e' su 5 casi con
+   punteggio: e' un'indicazione, non una prova.
+
+===============================================================================
+1. COSA HO CONFRONTATO E COME
+===============================================================================
+PRE  = grade catturato PRIMA del kickoff, rotta compose:
+       analisi_manager/dati/grade_snapshot_*.json (7 file, 4-7 ago e 7-11 ago).
+POST = grade letto DOPO la partita, rotta anyPlayer.playerGameScores:
+       analisi_manager/dati/storico_grade_*.json (51.205 coppie slug/data).
+PUNTEGGIO = cache game-log condivisa (264.297 coppie slug/data).
+
+DEDUP OBBLIGATORIO: le 5 catture del 4-7 ago contengono quasi gli stessi
+giocatori. Contando le righe di file uscivano 595 confronti, ma sono 5 copie
+delle stesse persone. L'unita' giusta e' (slug, data partita): 120 unita'
+distinte confrontabili. Chi legge il numero 595 sta contando cinque volte lo
+stesso giocatore.
+
+===============================================================================
+2. IL GRADE CAMBIA (e il test su un giocatore solo non poteva vederlo)
+===============================================================================
+  unita' confrontabili (dedup)   120
+  grade identico prima/dopo       78   (65,0%)
+  grade DIVERSO                   42   (35,0%)
+
+  passaggi con almeno 3 casi:
+    F -> D   10      E -> F    5
+    F -> E    6      D -> F    4
+    F -> C    3      E -> D    4
+                     D -> C    3
+
+Lettura: 16 promozioni partono da F (il voto di chi non ci si aspetta che
+giochi) e 9 retrocessioni finiscono in F. Il grosso del movimento e' il
+passaggio di stato "gioca / non gioca", che dopo la partita e' noto e prima
+no. Questo e' esattamente il margine che l'utente aveva descritto, ed e'
+piu' frequente di quanto suoni: un terzo dei voti si muove.
+
+===============================================================================
+3. IL MOVIMENTO NON SEGUE IL RISULTATO (la domanda vera)
+===============================================================================
+Su 120 unita', 40 hanno anche il punteggio nella cache (39 hanno giocato).
+
+  correlazione d'ordine col punteggio realizzato:
+                          tutti (n=40)   solo chi ha giocato (n=39)
+    grade PRE                +0,219            +0,295
+    grade POST               +0,285            +0,237
+    (POST meno PRE)          -0,085            -0,202
+
+  punteggio medio per verso del cambiamento (n=40):
+    promossi dopo la partita   (5 casi)   46,8
+    voto invariato            (30 casi)   66,3
+    retrocessi                 (5 casi)   48,4   (60,5 sui soli giocanti)
+
+Se il voto fosse riscritto sul risultato, il grade POST dovrebbe staccare
+nettamente il PRE come ordinatore, e i promossi dovrebbero essere quelli coi
+punteggi alti. Non succede ne' l'una ne' l'altra cosa: sui giocanti il PRE e'
+addirittura leggermente migliore, e la correlazione fra il cambiamento e il
+punteggio e' NEGATIVA.
+
+ONESTA' SUI NUMERI: n=40 e' piccolo. Con 40 osservazioni una correlazione
+d'ordine ha un tremolio tipico di circa 0,16, quindi tutte le differenze qui
+sopra stanno dentro il rumore. Il valore di questo test non e' "il PRE e'
+meglio del POST" (non lo dimostra): e' che NON si vede il salto grosso che il
+leakage produrrebbe. Un voto copiato dal risultato darebbe correlazioni del
+tipo 0,7-0,8, non 0,24 contro 0,30.
+
+===============================================================================
+4. DOVE NON CONCORDO CON LA CONCLUSIONE GIRATA
+===============================================================================
+"Quei casi sono GIA' esclusi dai backtest binario2 (filtro DNP: formazioni
+con carte a 0 non entrano)". Non regge, e il verso dell'errore e' quello che
+conta:
+  - il caso descritto e' "F, poi a sorpresa GIOCA, e il voto sale a E/D";
+  - se ha giocato, ha un punteggio vero, non zero -> il filtro DNP non lo
+    tocca -> la riga resta dentro il backtest;
+  - dentro al backtest quella riga porta il voto D, mentre il giorno della
+    scelta si vedeva F. E' informazione che al momento della decisione non
+    c'era.
+Frequenza misurata: 16 unita' su 120 = 13,3% delle righe.
+
+Perche' comunque non ribalta niente (ma con cautela): quei promossi hanno
+segnato 46,8 in media contro 66,3 di chi non e' stato toccato. Cioe' la
+contaminazione mette un voto ALTO su punteggi BASSI: peggiora la resa
+apparente del grade, non la migliora. Il vantaggio del grade misurato ieri
+(MID/FWD) e' semmai sottostimato. MA questa e' una media su 5 casi con
+punteggio: la prendo come indicazione della direzione, non come prova.
+
+===============================================================================
+5. LIMITI DI QUESTO TEST (li dico io, prima che li trovi qualcun altro)
+===============================================================================
+- 120 unita', tutte concentrate su due giornate (4-7 e 7-11 ago). Non copre
+  aprile-luglio, cioe' il grosso dell'archivio su cui girano i backtest. Se
+  Sorare avesse cambiato comportamento nel tempo, questo test non lo vede.
+- Solo 40 delle 120 hanno il punteggio in cache: le altre 80 sono giocatori
+  di leghe senza pipeline. Il sottoinsieme con punteggio potrebbe non essere
+  rappresentativo.
+- Il POST viene da un indice accumulato in momenti diversi, non da una
+  rilettura fatta oggi tutta insieme. Se il voto continuasse a muoversi per
+  settimane dopo la partita, quello che ho in mano e' una fotografia a
+  distanze diverse dal kickoff.
+- Il test NON dimostra che il grade PRE valga piu' del POST. Dimostra che il
+  POST non contiene il risultato.
+
+===============================================================================
+6. RISPOSTA SECCA
+===============================================================================
+Concordo: la priorita' A (leakage sistematico) si chiude. Non sul singolo
+giocatore, ma su 120 partite-giocatore, ed e' un risultato piu' forte di
+quello girato.
+Correzione da recepire: il margine residuo NON e' gia' filtrato dal DNP,
+vale ~13% delle righe, e per fortuna spinge nel verso che ci penalizza. Chi
+scrivera' l'handoff non deve scrivere "gia' escluso": deve scrivere "presente
+al 13%, direzione conservativa".
+Cosa NON serve piu': il run di rete con cookie che avevo proposto. Costo
+zero, gia' fatto.
+
+File: analisi_manager/p31_leakage_grade_pre_post.py (rilanciabile, ~2 min,
+nessuna rete).
