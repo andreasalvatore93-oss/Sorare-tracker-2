@@ -597,10 +597,14 @@ def _apply_grade_group(rows):
 # salto enorme -- ma il modello attuale cattura ZERO, quindi e' un
 # miglioramento netto sotto il criterio scelto dall'utente, SE il segnale
 # regge sui dati nuovi (in verifica).
-# INTERRUTTORE SPENTO DI DEFAULT (GK_ATT_AVV_ENABLED='0'): a spento,
-# 'atteso'/'sort_score' non vengono MAI toccati, stesso identico
-# comportamento di oggi -- stesso schema di GRADE_ENABLED sopra.
-GK_ATT_AVV_ENABLED = os.environ.get('GK_ATT_AVV_ENABLED', '0') == '1'
+# ACCESO IN PRODUZIONE (11/08/2026, formula 'secca'): B2 su 360 GW-manager
+# mostra G migliora se stesso di +5.556 essenze (IC95%[+649;+10.638],
+# 98,7% positivo, replica esatta dello storico). B1 piatto ma sotto-potenza
+# (36 decisioni discordanti, non contro-prova -- verdetto Opus, vedi
+# docs/handoff/BRIEF_OPUS_GK_SECCA_PRODUZIONE_2026-08-11.txt e
+# RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §14). Ri-misura pre-registrata
+# dopo 3 fixture giocate col flag acceso: docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §5.6.
+GK_ATT_AVV_ENABLED = os.environ.get('GK_ATT_AVV_ENABLED', '1') == '1'
 GK_ATT_AVV_DATA_PATH = os.environ.get(
     'GK_ATT_AVV_DATA_PATH',
     os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dati', 'gk_attacco_avversario.json'))

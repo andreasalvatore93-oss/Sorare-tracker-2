@@ -53,9 +53,9 @@ on:
         required: false
         default: '1'
       gk_att_avv:
-        description: 'Correttivo GK da forza attacco storica avversario (half-life 40 partite). Default spento (0). Testato: +3.900 essenze nette su 337 GW aggregate, ma bootstrap solo 91,3% positivo (non e'' una certezza) -- vedi RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §11-12.'
+        description: 'Correttivo GK da forza attacco storica avversario, formula "secca" (media storica tutta la carriera, refresh automatico). Default ACCESO (1) da 11/08/2026: su 360 GW-manager G migliora se stesso di +5.556 essenze, IC95% [+649;+10.638], 98,7% positivo -- vedi RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §13-14. Ri-misura pre-registrata dopo 3 fixture: HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §5.6.'
         required: false
-        default: '0'
+        default: '1'
 
 permissions:
   contents: write
