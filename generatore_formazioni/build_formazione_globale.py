@@ -555,16 +555,28 @@ def _apply_grade_group(rows):
 # reale): sotto il criterio "dispersione vera correlata al reale" (deciso
 # dall'utente, non piu' "batte le quote con margine sicuro") il modello
 # attuale sul portiere e' indistinguibile dal cieco. Il segnale misurato --
-# media storica di gol fatti dall'AVVERSARIO -- correla col punteggio reale
-# del portiere ed e' l'UNICO che regge su tenuta out-of-sample:
-#   - n=716 (crowss + altri manager, 2025/26): corr -0,091 circa (vedi p42)
-#   - n=1.896, blocco TEMPORALE indipendente (stagione 2024/25, p44):
-#     corr +0,067 sul segnale invertito [+0,024;+0,114], IC ESCLUDE lo zero
-#   - pendenza di regressione pooled (n=2.612, i due campioni sopra):
-#     reale = 54,49 - 4,26 * att_medio_avversario
-# Dettaglio completo: docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt
-# §11. Magnitudine onesta: ~1,3-2 punti di dispersione vera catturata, non
-# un salto enorme -- ma il modello attuale cattura ZERO, quindi e' un
+# gol fatti dall'AVVERSARIO -- correla col punteggio reale del portiere ed
+# e' l'UNICO che regge su tenuta out-of-sample (n=716 crowss+altri 2025/26,
+# n=1.896 blocco temporale 2024/25 con IC che esclude lo zero, vedi
+# docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §11).
+# PESATURA (11/08/2026, contestazione dell'utente sulla media storica secca:
+# "le squadre ruotano giocatori/allenatori, una media piatta non ha senso").
+# Testato su n=881 (stesso campione aggregato, §12 del report): finestre
+# CORTE (ultime 5-10 partite, taglio netto) fanno PEGGIO della storia intera,
+# in modo monotono. Con decadimento ESPONENZIALE (peso che si dimezza ogni
+# HALF_LIFE partite, mai un taglio netto) stesso risultato: half-life lunghe
+# (40-80) vincono, corte (3-5) perdono. Scelta: half-life=40 partite --
+# corr +0,105 (indistinguibile dalla storia intera +0,104) ma DINAMICA, si
+# muove ad ogni partita nuova invece di restare congelata. Pendenza
+# rifittata su questa versione (n=881): reale = 55,91 - 5,75*att_hl40.
+# La tabella (generatore_formazioni/dati/gk_attacco_avversario.json) si
+# aggiorna con generatore_formazioni/dati/aggiorna_gk_attacco_avversario.py,
+# che ora fa un refresh INCREMENTALE (scarica solo le partite nuove dalla
+# cache, non da rete storica intera) -- va rilanciato prima di ogni run di
+# generazione per essere davvero aggiornata: NON succede da solo/schedulato
+# ancora (nessun passo nel workflow GitHub lo fa oggi).
+# Magnitudine onesta: ~1,3-2 punti di dispersione vera catturata, non un
+# salto enorme -- ma il modello attuale cattura ZERO, quindi e' un
 # miglioramento netto sotto il criterio scelto dall'utente.
 # INTERRUTTORE SPENTO DI DEFAULT (GK_ATT_AVV_ENABLED='0'): a spento,
 # 'atteso'/'sort_score' non vengono MAI toccati, stesso identico
@@ -573,8 +585,8 @@ GK_ATT_AVV_ENABLED = os.environ.get('GK_ATT_AVV_ENABLED', '0') == '1'
 GK_ATT_AVV_DATA_PATH = os.environ.get(
     'GK_ATT_AVV_DATA_PATH',
     os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dati', 'gk_attacco_avversario.json'))
-GK_ATT_AVV_K = -4.26            # pendenza misurata, pooled n=2.612
-GK_ATT_AVV_MEDIA_GLOBALE = 1.400  # media att_medio pooled, stesso campione
+GK_ATT_AVV_K = -5.75              # pendenza misurata, half-life=40, n=881
+GK_ATT_AVV_MEDIA_GLOBALE = 1.4084  # media att_hl40 pooled, stesso campione
 GK_ATT_AVV_MIN_STORICO = 4
 _GK_ATT_AVV_TABELLA = {}
 if GK_ATT_AVV_ENABLED:
