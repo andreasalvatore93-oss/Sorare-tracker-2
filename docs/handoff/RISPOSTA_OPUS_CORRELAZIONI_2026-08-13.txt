@@ -842,3 +842,62 @@ due run identiche bit per bit.
 
 File nuovo: analisi_manager/p45_gk_recency_aggregato.py
 Dati: analisi_manager/dati/gk_recency_aggregato_2026-08-11.json
+
+===============================================================================
+13. SEGUITO 5 -- BINARIO 2 VERO, DUE FORMULE PRE-REGISTRATE, CAMPIONE ESTESO:
+    LA SECCA ESCLUDE LO ZERO.
+    (11/08/2026, orchestratore, senza Opus per il grosso del lavoro -- costo)
+===============================================================================
+13.1 TEST NEL BACKTEST VERO (non solo correlazione). p24_binario2_ga.py,
+     GK_ATT_AVV agganciato a cal PRIMA del grade (tocca sia A che G).
+     Baseline 337 GW: G +116.104. Con half-life=40: G +120.004 (+3.900,
+     bootstrap positivo 91,3%, IC95% [-1.768;+9.426] -- non esclude zero).
+     Con la secca originale: G +120.517 (+4.413, positivo 95,9%, IC
+     [-487;+9.387] -- ci va vicino ma non esclude). La secca ha vinto su
+     tutti i numeri: half-life scartata.
+
+13.2 DUE FORMULE PRE-REGISTRATE (decise dall'utente PRIMA di vedere i dati
+     nuovi, per non scegliere a posteriori):
+       'secca' = media storica secca, tutta la storia -- k=-4,26,
+                 media_globale=1,400 (n=2.612)
+       'u10'   = media secca sulle ULTIME 10 partite (scelta dell'utente,
+                 nessun half-life) -- k=-2,43, media_globale=1,4225 (n=870)
+     Implementate in generatore_formazioni/build_formazione_globale.py
+     (GK_ATT_AVV_FORMULA=secca|u10) e nella tabella
+     generatore_formazioni/dati/gk_attacco_avversario.json (tiene entrambi
+     i valori per squadra).
+
+13.3 CAMPIONE ESTESO: fixture football-7-11-aug-2026 estratta per tutti i
+     28 manager mancanti (crowss gia' presente, post-G per costruzione --
+     verificato nel codice di estrai_archivio_manager.py, routing
+     automatico su TAGLIO_G, nessuna attenzione manuale richiesta). 369
+     arene nuove, 27/29 manager attivi (lorenzocodega e thetongfu a zero
+     quella settimana). Grade completato per i 154 slug nuovi (indice
+     3.275->3.429). Archivio passa da 337 a 360 GW-manager.
+
+13.4 RISULTATO SU 360 GW (bootstrap sul delta appaiato G on/off, cluster
+     manager-fixture, stesso metodo di §11.8):
+       secca: +5.556  IC95% [+652;+10.531]   positivo 98,7%   trim +5.192
+       u10:   +4.471  IC95% [-1.296;+10.357] positivo 93,6%   trim +3.397
+     LA SECCA ESCLUDE LO ZERO per la prima volta in tutto il filone. La u10
+     resta sotto soglia (IC tocca lo zero), ma il punto stimato e' cresciuto
+     anche per lei rispetto a prima (+4.413->+4.471 circa, quasi invariato)
+     -- con piu' dati la secca si e' rafforzata di piu' della u10, non
+     ridimensionata: e' il verso "buono" del rischio che avevo segnalato
+     al tuo §quesito 1) (piu' dati POTEVANO ridimensionare l'effetto,
+     invece l'hanno confermato per la secca).
+
+13.5 NON ANCORA UNA DECISIONE DI PRODUZIONE. GK_ATT_AVV_ENABLED resta
+     spento di default. Il refresh della tabella (media storica + ultime
+     10, entrambe insieme) e' agganciato come step automatico in
+     .github/workflows/formazione_giornata.yml, gira ad ogni run
+     indipendentemente dal flag. GK_ATT_AVV_FORMULA di default e' 'secca'
+     (quella coi numeri migliori oggi), ma la scelta finale spetta
+     all'utente.
+
+File nuovi: archivio_ufficiale/manager_*/football-7-11-aug-2026_arene_limited.json
+           (28 manager)
+Dati aggiornati: analisi_manager/dati/storico_grade_crowss_completamento.json,
+                 archivio_ufficiale/aggregato/binario2_out.json,
+                 archivio_ufficiale/aggregato/binario2_pool_rows.json,
+                 generatore_formazioni/dati/gk_attacco_avversario.json
