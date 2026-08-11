@@ -11,9 +11,12 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 11/08/2026, notte (Roma, CEST)** — filone
-grade sulle arene CHIUSO (§8bis), test a livello carta invece che
-formazione, nessuna modifica alla produzione.
+Ultimo aggiornamento: **sessione 12/08/2026, sera (Roma, CEST)** —
+filoni PORTIERE (§5.6) e CAPITANO (§5.3) chiusi con esito dimostrato
+(non solo misurato): il modello è già al meglio possibile su entrambi.
+Aperta priorità nuova: refit `CALIB_PER_RUOLO` (§5.7, serve alla scala
+assoluta — soglia arena e scouting — non al capitano). Indizio minore sul
+DIFENSORE (§5.7). Nessuna modifica alla produzione in questa sessione.
 
 ## REGOLA NUOVA — I BACKTEST SONO IL MODELLO CONTRO SE STESSO (09/08/2026, decisa dall'utente)
 
@@ -489,16 +492,24 @@ Conseguenze operative, tutte dimostrate:
 - **Bonus additivi vs moltiplicativi**: la formula additiva è verificata al
   centesimo (§3).
 
-### 5.3 Capitano — otto ipotesi, tutte chiuse
-Testate su 3.130 formazioni reali: bias di ruolo, volatilità, forma
-L5/L10/L40, margine-soglia, stabilità per lega, favorita/sfavorita,
-combinazioni, profondità storico, rischio sostituzione precoce, ambiente
-gol. **`pick_captain()` non si tocca.** Unico segnale mai vicino alla
-significatività: favorita/sfavorita (IC95 [−0,0015, +0,14]), riprovabile
-solo con un altro campione reale. Chiuse anche: capitano per tipo di
-competizione (il capitano cambia il premio in <2% delle arene), capitano
-scelto con la p_win di mercato, formazione concentrata per il capitano
-(correlazione −0,006, indifferente).
+### 5.3 Capitano — CHIUSO per la seconda volta, ora con un motivo dimostrato (12/08/2026)
+Le "otto ipotesi chiuse" originarie giravano su `dati_globali/manager_*.json`
+(bug D6, §5.8): riaperto il 12/08 sull'archivio pulito (`archivio_ufficiale/`,
+1.145 arene con capitano). Ri-testate grade e favorita/sfavorita: entrambe
+NEGATIVE anche sui dati veri (grade peggiora, t=-1,93; favorito interno
+nessun effetto, t=-0,62 su confronto equo; favorito da quote copertura
+insufficiente per essere testabile). **`pick_captain()` non si tocca.**
+
+Motivo per cui non si tocca, dimostrato non solo misurato: il modello
+oggi cattura +0,69 punti/arena di bonus captain sul caso (15% del massimo
+possibile +4,59). Simulando un criterio con correlazione r nota col
+punteggio vero, il guadagno che +0,69 rappresenta corrisponde esattamente
+a r≈0,156 — la stessa correlazione media che il modello ha davvero sui
+ruoli di movimento (DEF/MID/FWD). **Il capitano prende già tutto quello
+che la vista del modello permette**: non è un problema di regola di
+scelta, è un tetto di previsione. Non riaprire con altre idee di
+selezione — dettaglio completo in
+`docs/handoff/HANDOFF_ORCHESTRATORE_NUOVO_2026-08-12.txt` §2quater.
 
 ### 5.4 Boom — tutto chiuso
 "Boom" = realizzato ≥75. I boom **decidono il podio** (0 boom → podio
@@ -528,37 +539,71 @@ l'incertezza sul totale formazione (σ=49,4 pt) è troppo grande perché la
 non-linearità del premio conti in pratica. La regola attuale del bot è già
 quella giusta.
 
-### 5.6 Portiere — i parametri e la deroga al metro
-- **`level_score` binario**: il valore vero è 35 senza clean sheet e 60 con,
-  mai intermedio; il modello ne prevede uno continuo. Mitigato dal blend con
-  la P(clean sheet) di squadra, non risolto: **resta la leva più grande mai
-  lasciata sul tavolo per il GK**.
-- **Blend GK, `c` alzato da 17,5 a 22** (`GK_TEAM_CS_WEIGHT` 0,5→0,63): la
-  correlazione cresce monotona con `c`, il MAE peggiora monotono —
-  compromesso puro, nessun valore dominante. Scelto 22 (dcorr +0,0033 con
-  IC che esclude lo zero, dMAE +0,0227 contro una guardia di +0,05);
-  scartato 26 perché il guadagno diventa rumore mentre il degrado raddoppia.
-  **Prima e unica deroga al metro a tre gambe**, limitata a questo
-  parametro: per il GK conta l'ordinamento (se ne schiera uno solo), non il
-  voto. Bocciate le tre "correzioni ovvie" (POINTS→25, baseline
-  per-portiere, `p_cal` affine): migliorano il MAE e peggiorano la
-  correlazione, e `p_cal` è algebricamente identico ad abbassare il peso.
-- **Il lift di selezione non discrimina sui portieri** (IC larghi 4-8 punti
-  su 120 giornate): sul GK il metro è di fatto a due gambe. Non costruire
-  una terza metrica per aggirarlo — deciso, non riproporre.
+### 5.6 Portiere — CHIUSO il 12/08/2026, il modello è già al meglio misurabile
+Riaperto il 12/08 da una scomposizione della formula grezza (mai fatta
+prima su questo ruolo): il modello NON prevede il portiere (corr
+atteso/reale ≈0, dedup per slug+fixture, IC a grappolo per giocatore
+[-0,036,+0,096]). Diagnosi: il pezzo storico personale (parate/gol
+subiti via Poisson) è ridondante rispetto al blend "porta inviolata di
+squadra" (`GK_TEAM_CS_WEIGHT`, già in produzione dal 03/08) ma innocuo,
+non dannoso. Provate 4 varianti (togliere il blend, sostituire lo storico
+con pcs a scale diverse, pesi diversi) FUORI CAMPIONE contro la
+produzione vera coi tre criteri insieme (corr+MAE+lift): **nessuna
+batte la produzione**. Tetto strutturale, non un bug: il 90% del
+punteggio decisivo del GK è il clean sheet (evento di squadra), e la
+squadra forte fa parare meno il proprio portiere (corr pcs/parate
+-0,156) — un quarto del segnale si perde per come funziona il punteggio
+Sorare, non per un errore del modello.
+Nel cassetto, non implementata (guadagno solo su MAE/bias, non su
+ordinamento): sostituire storico+blend con una sola stima pcs a scala
+ristretta (37,7+13,5·pcs). `CALIB_PER_RUOLO['GK']`, `GK_TEAM_CS_WEIGHT`,
+`GK_TEAM_CS_POINTS`, `GK_TEAM_CS_BASELINE`, `TREND_INTENSITY` (GK) — non
+toccare, già al meglio misurato. Dettaglio completo in
+`docs/handoff/HANDOFF_ORCHESTRATORE_NUOVO_2026-08-12.txt` §1sexies.
+- **`level_score` binario** (nota storica, ancora valida): il valore vero
+  è 35 senza clean sheet e 60 con, mai intermedio; il modello ne prevede
+  uno continuo — è compressione monotona (non sposta l'ordinamento),
+  sparirebbe da sola con la variante "sola pcs" nel cassetto sopra.
+- **Blend GK, `c` alzato da 17,5 a 22** (`GK_TEAM_CS_WEIGHT` 0,5→0,63,
+  storico): confermato di nuovo il 12/08 su campione indipendente —
+  spegnerlo costa -0,039 di correlazione (IC esclude lo zero).
 
 ### 5.7 Difetti nati qui e ancora aperti
-- **`CALIB_PER_RUOLO` — chiarita il 09/08, verificata sul codice.** Il
-  confronto produzione-contro-refit **è stato fatto**, ma solo sul FWD
-  (`analisi_manager/p11_calib_fwd_confronto.py`: 8.40/0.789 contro il
-  refit OLS −11.06/1.172) ed è risultato **senza effetto rilevante** —
-  detto dall'utente e coerente con l'esistenza dello script. Quindi la
-  voce NON è "mai completata".
-  Quello che davvero non esiste nel repo è uno script che **calcoli** i
-  quattro coefficienti: il confronto li prende come dati già noti. In
-  produzione restano hardcoded con override da env
+- **`CALIB_PER_RUOLO` — ORA PRIORITARIO (12/08/2026), non più "non blocca
+  niente".** Il vecchio confronto sul FWD (`p11_calib_fwd_confronto.py`,
+  8.40/0.789 vs refit OLS −11.06/1.172, "senza effetto rilevante") era
+  costruito su script del bug D6 (§5.8): risposta giusta sull'ORDINAMENTO
+  per un motivo strutturale (vedi sotto: `calibra()` è monotona, non può
+  cambiare l'ordine), ma inaffidabile sulla SCALA — proprio quello che
+  serve rifare. Misurato il 12/08 sull'archivio pulito, dedup, IC a
+  grappolo: le tre carte di movimento sono sottostimate di ~2,4 punti
+  l'una (DEF -2,29, MID -2,36, FWD -2,48, tutti IC che escludono lo
+  zero; GK +0,48, include lo zero) — ~9,5 punti/formazione di
+  sottostima totale. Fatto chiave: `calibra()` è `a+b·x` con b>0 per
+  tutti i ruoli, quindi rifare le costanti NON cambia mai quale carta
+  scegli dentro un ruolo (il capitano non ne beneficia, §5.3) — serve
+  alla SCALA ASSOLUTA, cioè alla soglia d'ingresso arena e allo scouting
+  (€/punto), che vivono su quel numero. Prossimo passo: rifittare su un
+  campione rappresentativo di dove il modello si applica davvero (dubbio
+  aperto: deriva vera delle costanti vs compressione su campione
+  sopra-media, le due cause non sono separabili con i dati di oggi ma
+  portano alla stessa azione). Poi RIVERIFICARE la catena: soglie arena,
+  poi scouting — non fermarsi al primo anello. Dettaglio:
+  `docs/handoff/HANDOFF_ORCHESTRATORE_NUOVO_2026-08-12.txt` §3/§"STATO
+  ATTUALE DELLA CODA".
+  In produzione restano hardcoded con override da env
   (`build_formazione_globale.py:403-407`: GK 35.78/0.264, DEF 7.28/0.831,
-  MID 11.61/0.740, FWD 8.40/0.789). Non blocca niente, non è una priorità.
+  MID 11.61/0.740, FWD 8.40/0.789).
+- **Difensore — unico ruolo con un margine misurato oltre la calibrazione
+  (12/08/2026).** Scomposizione `grezzo = w·decisivo + granulare` (w=1 in
+  produzione su tutti i ruoli): per il DEF w=0 batte w=1 fuori campione
+  (corr +0,165 vs +0,142), refit OLS suggerisce un rapporto ~1:5 invece di
+  1:1, delta di correlazione fuori campione +0,018 IC95 [+0,006,+0,028]
+  esclude lo zero, regge a due split indipendenti. MID/FWD già vicini al
+  loro ottimo (w=0,8/0,6 contro 1,0, differenza minima) — non riaprire per
+  quei due. Vale qualche decimo di punto/formazione, da testare sulla
+  formula vera (`compute_score_atteso_def`) con interruttore esplicito
+  prima di proporre qualunque modifica.
 - **`backtest_arene_previsioni.py:257-260`, default `GK_TEAM_CS_WEIGHT=0.5`
   — SCELTA VOLUTA dell'utente, non un difetto** (chiarito il 09/08). Resta
   qui come voce **informativa**: chi usa quel modulo senza esportare la
