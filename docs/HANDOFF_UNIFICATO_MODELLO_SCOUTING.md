@@ -809,13 +809,46 @@ cieca iniziale (ritirata da Opus stesso, era un artefatto circolare: la
 "spinta cieca" muoveva netto_stimato, calcolato con la stessa soglia
 sospetta).
 
-**PERCHE' NON E' ANCORA APPLICABILE**: le soglie codificate oggi (264,5/
-247,1/256,5) vengono da un metodo diverso — `rewardsConfig` teorico su
-2.125 arene avversarie e 5.031 premi osservati (09/08, vedi commento
-inline righe 704-708 di build_formazione_globale.py) — dal metodo di Opus
-(2.979 arene REALMENTE giocate, esito diretto). Due metodi, due risultati
-diversi, non e' chiaro a priori quale sia piu' affidabile: va chiarito
-PRIMA di riscrivere qualunque costante.
+**CHIARITO l'11/08/2026 sera (§20 di RISPOSTA_OPUS_CORRELAZIONI...13.txt):
+trovato l'errore vero, non era un conflitto fra due dataset.** Opus ha
+applicato la definizione corretta di pareggio (punteggio dove il premio
+ATTESO, con la tabella premi vera, uguaglia il costo — nessuna stima, nessuna
+retta) sia al dataset vecchio (`arene_storico_full_v3.json`, ago 2025-lug
+2026) sia a quello nuovo (archivio_ufficiale, apr-ago 2026): stessa risposta
+da entrambi (cap260 285,7 vs 285,4). L'ipotesi "la competizione e' salita nel
+tempo" e' SCARTATA — non e' questione di finestra temporale.
+
+**L'errore vero**: le soglie codificate oggi vengono da una RETTA UNICA
+adattata su tutto l'intervallo di punteggio (mio_score contro premio-costo).
+Ma il guadagno di un'arena non e' una retta: sotto una certa soglia si perde
+sempre e solo il biglietto (linea piatta, non si puo' perdere di piu'),
+sopra sale a valanga con la classifica fino ai jackpot (una specie di
+gancio/uncino). Una retta unica su un gancio passa sopra i punti a sinistra
+e sotto a destra, e incrocia lo zero troppo presto — Opus ha riprodotto i
+valori codificati quasi esatti rifacendo apposta questo errore (cap260
+263,8 contro 264,5 codificato, cap220 245,6 contro 247,1, uncapped 277,1
+contro 279,6 — 3 tipi su 4 entro 2,5 punti. Beginner non torna, unico tipo
+aggiunto dopo, il 09/08, probabile calibrazione diversa).
+
+**Soglie corrette proposte (metodo diretto, nessuna stima)**:
+cap260 285,7 | cap220 268,7 (o 262,4 dal calcolo su archivio_ufficiale — i
+due metodi divergono qui piu' che altrove, usare il piu' prudente finche'
+non si capisce perche') | beginner 280,2 | uncapped 303,0 (arene dedicate
+per lega, 262,9, non ricalcolabili su questi dati: da rifare a parte).
+`GUADAGNO_PER_PUNTO` nasce dallo stesso fit sbagliato (stesso vizio) ma
+pesa meno (moltiplica il netto, non decide chi entra): da riderivare SOLO
+nella zona vicino alla soglia, dopo aver sistemato la soglia stessa.
+
+**Sull'osservazione dell'utente ("podio ~290")**: non e' la stessa cosa
+del pareggio. Sul dataset di controllo, il punteggio TIPICO per entrare
+nei premi (podio) sulla cap260 e' 309,5 (mediana 308,8) — il pareggio
+285,7 e' dove il valore atteso ripaga il biglietto contando anche le volte
+che prendi zero, non "di solito vinci qualcosa". Il 290 dell'utente sta in
+mezzo, su una sola giornata: non conferma ne' smentisce nessuno dei due
+numeri.
+
+**NON ANCORA APPLICATO** (proposta, decide l'utente + catena di produzione
+§1bis fino allo scouting prima di considerarlo chiuso).
 
 **Conseguenza per GK_ATT_AVV -- RIVERIFICATO l'11/08/2026 sera, REGGE.**
 Il verdetto del §14 era misurato con `netto_stimato`, la stessa unita'
