@@ -11,7 +11,9 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 10/08/2026, pomeriggio (Roma, CEST)**.
+Ultimo aggiornamento: **sessione 11/08/2026, notte (Roma, CEST)** — filone
+grade sulle arene CHIUSO (§8bis), test a livello carta invece che
+formazione, nessuna modifica alla produzione.
 
 ## REGOLA NUOVA — I BACKTEST SONO IL MODELLO CONTRO SE STESSO (09/08/2026, decisa dall'utente)
 
@@ -769,90 +771,52 @@ permutazioni (percentile 100), e **la mediana placebo è negativa** (−1,51
 e −3,72) — dare voti a caso peggiora, che è la firma di un'informazione
 vera. Bootstrap sui manager: IC [+4,87, +10,38] e [+2,58, +12,12].
 
-**ARENE — dimostrato il 09/08, dopo due tentativi inconcludenti.** I test
-precedenti non distinguevano G dal rumore, ma giravano su una copertura
-del grade del 54,6% (cap 220: 42,9%). Portata al **98,8%**, il risultato
-esce netto. Campione: 825 formazioni, 24 manager, 6 GW, sette competizioni
-arena limited. Metrica in **essenze nette** (premi standard, jackpot in
-colonna a parte), due regimi separati:
-- **allocazione** (53 unità, pool > slot): G batte A di **+29.050**
-  essenze col set di soglie vecchio e **+24.150** col nuovo. Placebo al
-  percentile 100 su entrambi (il massimo del rumore è 12 volte più
-  piccolo del valore vero). Il bot gioca **meno** arene del manager (547
-  contro 617) e guadagna: concentra invece di spalmare;
-- **astensione** (37 unità, pool = slot): nessun ramo significativo.
-Tre limiti noti **comprimono** il vantaggio invece di gonfiarlo: il rank
-si calcola sulla classifica completa (il bot compete anche col manager che
-c'era davvero), il capitano è scelto col criterio del baseline in tutti i
-rami, e le formazioni senza arena reale a cui assegnarle contano come non
-premiate. Dettaglio: `docs/handoff/HANDOFF_G_ODDS_ARENE_2026-08-09.txt`.
-
-**AGGIORNAMENTO 10/08 sera — il risultato ARENE sopra usa l'archivio dei
-24 manager, che la regola in testa a CLAUDE.md (dal 09/08) NON considera
-più base di misura.** È stata avviata una riverifica pulita su
-`archivio_ufficiale/` (dati verificati riga per riga, walk-forward senza
-leak, G vs A mai "vs manager"). Esito ad oggi: **non conferma ancora il
-segnale**. Su 350 formazioni (binario1, 4 manager) solo 55 sono decisioni
-in cui G e A scelgono diverso — la n vera è 55, non 350 — e il vantaggio
-di G sparisce del tutto togliendo le 3 decisioni pro-G più pesanti
-(bootstrap: 85% di probabilità che il segno sia positivo, non un dato
-solido). Servono stimati ~11-20 manager in più per un campione decisivo.
-Round di estrazione in corso. Non trattare "G validato sulle arene" come
-chiuso finché questa riverifica non ha campione sufficiente — stato
-completo e prossimi passi in
+**ARENE — CHIUSO l'11/08/2026, con una domanda diversa da quella iniziale.**
+Tre giorni di tentativi (09-11/08) a misurare "G batte A in essenze" su
+`archivio_ufficiale/` non hanno mai raggiunto un campione sufficiente:
+n_discordanti (formazioni dove G e A decidono diverso) è salito 55→80→103→143
+in quattro round di estrazione manager, sempre sotto la soglia (~213, poi
+rivista a ~1.000 quando l'effetto misurato si è dimezzato) che servirebbe per
+un segnale non spiegabile dal caso. **Servivano centinaia di manager in più:
+irraggiungibile, estrazioni fermate.** Cronologia completa in
 `docs/handoff/HANDOFF_ORCHESTRATORE_BINARIO_GVSA_2026-08-10.txt`.
 
-**LA RISERVA CHE RESTA — RIDIMENSIONATA il 09/08 notte**: si diceva che
-il +29.050 potesse sparire sopra il filtro starting odds 0,80 che il bot
-applica in produzione. Falso come premessa: il pool del backtest è fatto
-delle carte REALMENTE SCHIERATE dai manager, quindi già filtrate per
-titolarità a monte, e P_noF è già proxy di quel filtro. Resta aperto solo
-il pezzo stretto (i 23 manager con criterio di filtro ignoto): dettaglio
-e trappola-leakage in §10bis voce 1.
+La domanda giusta era un'altra, proposta da Opus l'11/08: non "il modello
+completo batte l'altro" (poche formazioni, gli errori delle 5 carte si
+annullano a vicenda), ma **"il grade sposta la previsione della singola
+carta nella direzione giusta?"** — stesso archivio, stessi dati, zero query
+nuove, ma 10.093 osservazioni invece di poche centinaia
+(`analisi_manager/p26_test_carta_scala_storica.py`):
+- **placebo** (voti rimescolati a caso fra le carte, 200 volte): il
+  segnale vero non è mai raggiunto per caso, p=0,005 — non è rumore.
+- **beta** (quanto del voto si traduce in punti veri): stima pulita
+  (isolata dal livello medio di gruppo) **+0,554**, t=1,96 col
+  raggruppamento più prudente.
+- **corretto per l'errore del metro di misura** (lo stesso giocatore vale
+  un voto diverso a seconda di quanti compagni ha nel gruppo quel giorno,
+  ICC=0,542): beta **≈1,01**, intervallo di confidenza [0,36 ; 1,67] —
+  **contiene esattamente il peso 1,0 già usato in produzione.**
 
-**DIFETTO STRUTTURALE, ancora aperto**: il grade entra come confronto coi
-pari dentro il gruppo (lega, ruolo) di quella giornata
-(`_apply_grade_group`, righe 452-491). Se il gruppo ha meno di 2 carte col
-grade, o se hanno tutte lo stesso voto, **il grade viene ignorato**: su un
-mazzo reale, 19 gruppi su 57 hanno un solo membro, e il grade sposta
-qualcosa sul 77% delle carte, viene ignorato sul 23%. La cura provata
-(**scala storica**, flag `GRADE_SCALE`, default spento) è stata **misurata
-e scartata**: pareggia sul non-arena e sull'arena peggiora proprio sulle
-Cap 260, il tipo più giocato. Non riproporla senza un'idea nuova.
-Riserva collegata mai misurata: dove il gruppo ha esattamente 2 carte col
-grade lo spostamento è meccanico ±1 sd.
+**Verdetto: il grade funziona, ed è già pesato giusto. Nessuna modifica
+alla produzione.** Metodo e numeri integrali:
+`docs/handoff/RISPOSTA_OPUS_SCALA_STORICA_2026-08-11.txt` (la risposta che
+chiude) e i tre scambi precedenti dello stesso giorno nella stessa cartella.
 
-**TABELLA FISSA per lettera — TUTTO QUELLO CHE SEGUE È STORIA, NON UN
-VERDETTO (riclassificato il 09/08 notte, decisione dell'utente).**
-Il file conteneva due verdetti opposti sullo stesso test: qui sotto
-"CHIUSA, il fisso non vince"; in §10bis.14 il riesame che dice che quel
-verdetto valeva solo in un riquadro stretto e che fuori da lì la tabella
-fissa non perdeva affatto. **Non è che una delle due avesse ragione: sono
-state misurate entrambe sull'archivio dei 24 manager, che dalla regola in
-testata non è più base di misura.** Quindi nessuna delle due decide.
-La domanda "z-score o tabella fissa" **si riapre da zero sulle giornate
-dell'utente**: verifica fissata per l'**11/08/2026, a fixture 7-11
-chiusa**. Fino ad allora resta in produzione lo z-score, che è lo stato
-attuale del codice — non perché abbia vinto, ma perché è quello che c'è.
-Si legge quel che segue per sapere cosa è già stato provato e come, non
-per concludere.
+**Bug trovato e corretto nello stesso filone**: il confronto "quanto costa
+la soglia d'ingresso arena" era distorto da un filtro che escludeva il 19%
+delle formazioni — proprio le peggiori (una carta a 0 punti/DNP). Con
+l'archivio corretto la soglia non costa valore, lo crea (formazione fissa
+sempre schierata +11.500 contro chi filtra: A +13.550, G +17.050, su 1.099
+formazioni). `analisi_manager/p23_binario1_mga.py` ha ora questo
+comportamento di default; il vecchio filtro resta con `ESCLUDI_DNP=1`, solo
+per confronto storico.
 
-*(storia, 09/08 sera)* **SECONDA cura al 23%.**
-Idea: dare a ogni lettera un valore FISSO (invece dello z-score di gruppo), così
-il grade agisce anche dove il gruppo è <2. Come e perché il test: si è confrontato
-G variabile (z-score) contro G fisso, ma con tre pulizie che i giri precedenti non
-avevano (§20-26 di `HANDOFF_TABELLA_GRADE_2026-08-09.txt`): (a) stesso pool ridotto
-ai due rami; (b) popolazione = pool SENZA carte F (proxy di titolarità ≥0,80, vedi
-verifica live sotto), perché sotto 0,80 l'utente non schiera; (c) i valori fissi
-NON assunti ma cercati a **griglia** (7 tabelle × versione centrata × 2 set soglie),
-letti a **parità di arene**. Esito: NESSUNA tabella batte lo z-score su entrambe le
-soglie — **il fisso NON vince**. L'apparente "+8000" della tabella empirica sul pool
-intero era tutto l'affossamento delle F post-partita: tolte le F, svanisce. Unico
-segnale residuo sulle arene-PAESE piccole (US/Korea/Scotland, n=6), dove però anche
-il placebo "grade spento" pareggia il fisso: non è vittoria del fisso, è lo z-score
-che su leghe minuscole (gruppi <2) è lievemente controproducente — indizio per la
-riserva del 23% qui sopra, non una cura. Non riproporre la tabella fissa senza
-un'idea nuova.
+*(Le sezioni precedenti su "difetto strutturale dei gruppi piccoli" e
+"tabella fissa vs z-score", scritte il 09/08 su un archivio che non è più
+base di misura, sono superate dal lavoro sopra — non riaprirle: il
+meccanismo che sembrava un difetto (gruppi piccoli) è lo stesso che l'11/08
+ha permesso di misurare e correggere con la scala storica. Storia completa
+nel git log se serve.)*
 
 **Verifica live 09/08 (Genk-Zulte, cattura pre e post ufficiali, §23 stesso
 handoff grade):** sulle carte già date ≥0,80 al lock il grade NON cambia con le
