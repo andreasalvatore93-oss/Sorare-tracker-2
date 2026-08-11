@@ -817,14 +817,19 @@ inline righe 704-708 di build_formazione_globale.py) — dal metodo di Opus
 diversi, non e' chiaro a priori quale sia piu' affidabile: va chiarito
 PRIMA di riscrivere qualunque costante.
 
-**Conseguenza per GK_ATT_AVV (gia' acceso in produzione oggi stesso)**:
-il verdetto del §14 (RISPOSTA_OPUS_CORRELAZIONI...) e' stato misurato con
-`netto_stimato`, la stessa unita' ora sospetta. Contaminazione stimata
-BASSA (GK_ATT_AVV sposta la decisione entra/salta solo su 8 arene su
-1.113, 0,7%) contro quella ALTA di 'storica_completa' del gruppo grade
-(+100 arene su 1.105, 9%, coerente col 45% di spinta cieca gia' isolato
-li'). Il verdetto GK probabilmente regge ma **non e' da considerare
-definitivamente chiuso finche' non si ri-misura con premio_netto**.
+**Conseguenza per GK_ATT_AVV -- RIVERIFICATO l'11/08/2026 sera, REGGE.**
+Il verdetto del §14 era misurato con `netto_stimato`, la stessa unita'
+ora sospetta. Scomposto il +5.556 per isolare la parte sensibile alla
+soglia: su 360 coppie manager-GW, 322 (89%) hanno lo STESSO numero di
+arene entrate a flag spento/acceso -- il correttivo cambia solo quale
+portiere schierare dentro un'arena che si sarebbe giocata comunque,
+indipendente dal dibattito sulla soglia. Da sola questa parte vale
++5.318 (96% del totale), bootstrap IC95%=[+997;+9.866], 99,3% positivo
+-- esclude ancora lo zero. Le sole 38 coppie (11%) dove cambia anche
+QUANTE arene entrare (parte davvero sensibile alla soglia) valgono solo
++238 (4% del totale). **GK_ATT_AVV confermato, non serve altro lavoro su
+questo per ora** -- il grosso del guadagno non passa dalla soglia
+sospetta.
 
 **Se/quando si toccasse la soglia**: catena di produzione (§1bis) —
 PAREGGIO_ARENA sposta l'efficienza delle arene e quindi i consigli di
