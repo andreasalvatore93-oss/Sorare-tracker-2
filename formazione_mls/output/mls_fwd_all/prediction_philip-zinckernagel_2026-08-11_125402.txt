@@ -1,0 +1,129 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-11T12:54:02.298883Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) philip-zinckernagel: 60 pt attesi (34-92)
+   ORDINAMENTO: 65.07
+   SQUADRA: chicago-fire-bridgeview-illinois | AVVERSARIO: cruz-azul-ciudad-de-mexico-d-f
+======================================================================
+
+######################################################################
+# GIOCATORE: philip-zinckernagel
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: philip-zinckernagel (squadra: chicago-fire-bridgeview-illinois)
+Generato: 2026-08-11T12:54:02.296687Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 32
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | CHI vs STL | mlspa | score=98.4 | peso=0.050
+  2025-08-23 | PHI vs CHI | mlspa | score=36.4 | peso=0.056
+  2025-09-07 | CHI vs NE | mlspa | score=90.8 | peso=0.062
+  2025-09-14 | CHI vs NYC | mlspa | score=77.4 | peso=0.070
+  2025-09-21 | MIN vs CHI | mlspa | score=84.2 | peso=0.079
+  2025-09-28 | CHI vs CLB | mlspa | score=49.8 | peso=0.088
+  2025-10-05 | CHI vs TOR | mlspa | score=73.9 | peso=0.099
+  2025-10-18 | NE vs CHI | mlspa | score=76.2 | peso=0.111
+  2025-10-23 | CHI vs ORL | mlspa | score=97.0 | peso=0.125
+  2025-11-01 | CHI vs PHI | mlspa | score=41.5 | peso=0.140
+  2026-02-22 | HOU vs CHI | mlspa | score=40.6 | peso=0.157
+  2026-02-28 | CHI vs MTL | mlspa | score=42.9 | peso=0.177
+  2026-03-08 | CLB vs CHI | mlspa | score=37.2 | peso=0.198
+  2026-03-15 | CHI vs DC | mlspa | score=39.6 | peso=0.223
+  2026-04-05 | CHI vs NSH | mlspa | score=86.1 | peso=0.250
+  2026-04-12 | CHI vs ATL | mlspa | score=37.9 | peso=0.281
+  2026-04-18 | CIN vs CHI | mlspa | score=93.0 | peso=0.315
+  2026-04-26 | CHI vs SKC | mlspa | score=100.0 | peso=0.354
+  2026-05-03 | CHI vs CIN | mlspa | score=100.0 | peso=0.397
+  2026-05-09 | CHI vs RBNY | mlspa | score=57.5 | peso=0.445
+  2026-05-13 | DC vs CHI | mlspa | score=80.9 | peso=0.500
+  2026-05-16 | MTL vs CHI | mlspa | score=81.8 | peso=0.561
+  2026-05-24 | CHI vs TOR | mlspa | score=70.1 | peso=0.630
+  2026-07-22 | MIA vs CHI | mlspa | score=55.5 | peso=0.707
+  2026-07-25 | NYC vs CHI | mlspa | score=44.4 | peso=0.794
+  2026-08-02 | CHI vs CLT | mlspa | score=99.2 | peso=0.891
+  2026-08-07 | CHI vs NEC | leagues-cup-mls | score=40.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 67.26
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=27): 62.43 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 49.80 | Punteggio complessivo (granulari) medio: 17.46 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 6.77 (delta -2.05) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 23.16
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.8 - 99.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 22.58 (differenza: +0.59)
+Media score in casa: 70.76 | Media score fuori casa: 63.02
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.7
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.003 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.005
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.991
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore trend (media ultime 5: 62.0 vs media 5 PRECEDENTI: 84.0): 1.000
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T01:00
+Casa: Cruz Azul FC | Trasferta: Chicago Fire FC
+Competizione: leagues-cup-mls
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 60.0 (range 33.5 - 91.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 65.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 70.67
+Punteggio REALE ottenuto in quella partita: 40.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -29.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 21 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      81.7    73.9     -7.8    24.5        SI
+   7        7      57.6    76.2    +18.6    22.0        SI
+   8        8      78.3    97.0    +18.7    20.0        SI
+   9        9      93.0    41.5    -51.5    21.0        NO
+  10       10      61.6    40.6    -21.0    24.4        SI
+  11       11      77.8    42.9    -34.9    25.8        NO
+  12       12      67.3    37.2    -30.1    25.7        NO
+  13       13      60.1    39.6    -20.5    26.0        SI
+  14       14      41.5    86.1    +44.6    25.4        NO
+  15       15      75.2    37.9    -37.3    26.3        NO
+  16       16      53.5    93.0    +39.5    26.0        NO
+  17       17      75.8   100.0    +24.2    27.8        SI
+  18       18      62.3   100.0    +37.7    29.7        NO
+  19       19      68.8    57.5    -11.3    30.5        SI
+  20       20      69.1    80.9    +11.8    29.0        SI
+  21       21      80.4    81.8     +1.4    27.6        SI
+  22       22      79.4    70.1     -9.3    26.2        SI
+  23       23      53.7    55.5     +1.8    24.7        SI
+  24       24      60.2    44.4    -15.8    23.9        SI
+  25       25      63.2    99.2    +36.0    24.4        NO
+  26       26      69.5    40.8    -28.7    25.8        NO
+
+MAE (errore assoluto medio): 23.93
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 57.1%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
