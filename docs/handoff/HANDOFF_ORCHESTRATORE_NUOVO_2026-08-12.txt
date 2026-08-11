@@ -513,37 +513,91 @@ combinato t=-1,04 (non solido). Copertura quote reali: solo 410/1.145
 arene hanno almeno una carta con quota nota (finestra dati da fine
 2025 in poi, non tutte le fixture coperte).
 
-**Verdetto**: il contrario di quanto la vecchia ipotesi §5.3 suggeriva
-(era la più vicina alla significatività, ma su dati sporchi, verso
-positivo non specificato). Su dati puliti va nel verso SBAGLIATO, e per
-le quote di mercato in modo statisticamente netto. Nessuna modifica alla
-produzione. Script non committato:
-`analisi_manager/_tmp_capitano_favorito.py`.
-
-Da CONTROLLARE (Opus — l'utente ha chiesto controllo su qualunque cosa
-emerga da questo test): il t=-2,42 è un risultato vero o un artefatto
-della copertura parziale (solo 410/1.145, non a caso rispetto a
-manager/lega/periodo)? Non ancora verificato.
+**Verdetto AGGIORNATO dopo il controllo di Opus (round 4, verificato
+dall'orchestratore rilanciando lo script — numeri identici)**: il
+t=-2,42 era un ARTEFATTO, non un peggioramento vero. Causa: il criterio
+"favorito quote" nel 67% delle arene in cui aveva almeno una quota (239
+su 359) vedeva UNA SOLA carta coperta — "scegliere il favorito" degenerava
+in "capitana quell'unica carta, qualunque sia", perdendo per costruzione
+contro un modello che sceglie fra 4. Confronto EQUO (stesse carte viste
+da entrambi i criteri): con ≥2 carte coperte delta -0,151 t=-0,40 (n=120);
+con ≥3 delta +0,762 t=+1,08 (n=43) — **nessun effetto misurabile in
+nessuna direzione**, solo copertura insufficiente (dati odds partono da
+fine novembre 2025, non tutte le fixture coperte). Riga corretta per lo
+storico: "favorito da quote: non testabile con la copertura attuale, non
+'peggiora'". Il favorito INTERNO (`delta_favorito`, copertura 4/4 in 637
+arene) invece è misurato bene e la chiusura in negativo (t=-0,62 sul
+confronto equo) regge senza riserve. Nessuna modifica alla produzione.
+Script non committati: `analisi_manager/_tmp_capitano_favorito.py`
+(orchestratore), `_tmp_capitano_favorito_dump.py` + `_tmp_capitano_
+controllo_opus.py` (Opus, entrambi verificati rilanciandoli).
 
 ============================================================================
-STATO ATTUALE DELLA CODA (12/08/2026 tardo pomeriggio) — leggere QUESTO
-per l'ordine vivo, i numeri §1-§7 sotto restano come storia/dettaglio
+2quater. IL CAPITANO È CHIUSO (12/08/2026, Opus round 4, verificato
+   dall'orchestratore) — NON per esaurimento di idee, ma perché il
+   bersaglio non esiste: il modello prende già tutto quello che può
+============================================================================
+
+Fatto nuovo, decisivo, misurato sulle stesse 1.145 arene (nessuna
+assunzione sulla forma della distribuzione — si simula un criterio con
+correlazione r nota col punteggio vero e si guarda quanto rende, stesso
+schema di selezione della produzione):
+
+  r (corr criterio-realtà)   guadagno   % del massimo
+  0,05                        +0,208       4,5%
+  0,10                        +0,442       9,6%
+  0,156                       +0,692      15,1%   <- corrisponde a oggi
+  0,20                        +0,873      19,0%
+  0,30                        +1,357      29,6%
+  0,40                        +1,800      39,2%
+  0,60                        +2,776      60,5%
+  1,00                        +4,588     100,0%
+
+Il modello oggi prende +0,684 (14,9%). Sulla tabella questo corrisponde a
+r≈0,156 — **che è esattamente la correlazione media misurata sui ruoli di
+movimento (DEF +0,150, MID +0,202, FWD +0,206, §1ter)**. Due misure
+indipendenti (il guadagno vero sul capitano, e la correlazione vera del
+modello sui ruoli) coincidono. **Il capitano non lascia niente sul
+tavolo**: prende esattamente quello che un criterio con la vista del
+modello può prendere. Per arrivare al 30% del massimo servirebbe r=0,30
+(il doppio della correlazione migliore misurata su qualunque ruolo), per
+il 50% servirebbe il triplo. Nessuna regola di scelta del capitano può
+darlo: serve una previsione migliore, che è un problema diverso (il
+refit calibrazione, il test difensore — ma quelli non sono "capitano").
+
+**RETTIFICA sulla raccomandazione precedente**: Opus si è corretto da
+solo. Il refit di `CALIB_PER_RUOLO` NON serve al capitano — gli scarti
+dei tre ruoli di movimento sono quasi uguali (DEF -2,29, MID -2,36, FWD
+-2,48): correggerli tutti della stessa quantità non cambia CHI è il più
+alto, quindi non cambia mai la scelta del capitano. Il refit serve alla
+SCALA ASSOLUTA (soglia arena, scouting), non al confronto interno.
+
+**Il filone Capitano è CHIUSO.** Non riaprire con altre idee di
+selezione: il tetto è dimostrato, non misurato per esclusione. Se in
+futuro riemerge un dubbio, si riparte da questa tabella, non da zero.
+
+============================================================================
+STATO ATTUALE DELLA CODA (12/08/2026 sera) — leggere QUESTO per l'ordine
+vivo, i numeri §1-§7 sotto restano come storia/dettaglio
 ============================================================================
 
 1. [CHIUSO] Portiere — §1sexies.
-2. [IN CORSO] Capitano — 2 idee testate e chiuse in negativo (grade
-   §2bis, favorita/sfavorita §2ter — quest'ultima da far controllare a
-   Opus). 85% del valore resta sul tavolo, non ancora spiegato da nessuna
-   delle idee vecchie provate finora.
-3. [NUOVO, da fare] Rifare `CALIB_PER_RUOLO` su dati attuali (attaccato
-   al capitano, non un filone a parte — raccomandazione Opus round 3).
-   Tocca la produzione: catena CLAUDE.md completa, soglie arena e
+2. [CHIUSO] Capitano — §2quater, tetto matematico dimostrato. Non riaprire.
+3. [PROSSIMO] Rifare `CALIB_PER_RUOLO` su dati attuali. NON serve più al
+   capitano (rettificato sopra) — serve alla SCALA ASSOLUTA: le carte di
+   movimento sono sottostimate di ~2,4 punti l'una (~9,5 punti/formazione),
+   e su quella scala vivono la soglia d'ingresso arena e lo scouting
+   (€/punto). Prima di rifittare, decidere il campione (deve somigliare a
+   quello su cui il modello viene applicato — dubbio aperto di Opus: deriva
+   vera vs compressione su campione sopra-media, non separabile con questi
+   dati). Tocca la produzione: catena CLAUDE.md completa, soglie arena e
    scouting da riverificare dopo.
-4. [NUOVO, da fare DOPO il refit] Test mirato peso decisivo/granulare sul
+4. [DOPO il refit] Soglia d'ingresso arena in punti — dopo il refit
+   calibrazione (non solo dopo il portiere): tararla ora le farebbe
+   assorbire i ~9,5 punti di errore e andrebbe rifatta due volte.
+5. [ULTIMO, indizio minore] Test mirato peso decisivo/granulare sul
    DIFENSORE, sulla formula vera con interruttore esplicito, fuori
-   campione, confermato sull'archivio.
-5. [RETROCESSA ancora] Soglia arena in punti — ora dopo il refit
-   calibrazione, non solo dopo il portiere (vedi motivo sopra).
+   campione, confermato sull'archivio. Vale qualche decimo di punto.
 6. Correlazioni compagni di squadra — invariata, dopo il resto.
 7. Leghe (Argentina/Giappone) — cassetto, invariata.
 
