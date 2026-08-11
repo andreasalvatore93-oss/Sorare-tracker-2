@@ -539,7 +539,18 @@ l'incertezza sul totale formazione (σ=49,4 pt) è troppo grande perché la
 non-linearità del premio conti in pratica. La regola attuale del bot è già
 quella giusta.
 
-### 5.6 Portiere — CHIUSO il 12/08/2026, il modello è già al meglio misurabile
+### 5.6 Portiere — CHIUSO il 12/08/2026, RICONFERMATO 3 VOLTE il 13/08 (non riaprire senza dati nuovi)
+Aggiornamento 13/08: Opus ha rimisurato da zero (Spearman -0,004 su n=1.932,
+stesso numero delle sessioni precedenti) e provato due segnali MAI testati
+prima come ordinatori: L10 (media ultime 10, spearman -0,04, peggio
+dell'atteso) e casa/trasferta da solo (differenza +0,03 punti su 995
+portieri, nullo). Le quote di vittoria squadra erano già state escluse il
+07/08 (GK 0/9 varianti). Il solo segnale NON testabile a costo zero è lo
+starter_odds INDIVIDUALE del portiere (serve una raccolta nel tempo, non
+uno storico cachato). Script: `analisi_manager/p32_gk_segnali_alternativi.py`.
+Il tetto è confermato su 4 segnali indipendenti, non un'unica misura.
+
+### 5.6 (storico) Portiere — CHIUSO il 12/08/2026, il modello è già al meglio misurabile
 Riaperto il 12/08 da una scomposizione della formula grezza (mai fatta
 prima su questo ruolo): il modello NON prevede il portiere (corr
 atteso/reale ≈0, dedup per slug+fixture, IC a grappolo per giocatore
@@ -569,41 +580,22 @@ toccare, già al meglio misurato. Dettaglio completo in
   spegnerlo costa -0,039 di correlazione (IC esclude lo zero).
 
 ### 5.7 Difetti nati qui e ancora aperti
-- **`CALIB_PER_RUOLO` — ORA PRIORITARIO (12/08/2026), non più "non blocca
-  niente".** Il vecchio confronto sul FWD (`p11_calib_fwd_confronto.py`,
-  8.40/0.789 vs refit OLS −11.06/1.172, "senza effetto rilevante") era
-  costruito su script del bug D6 (§5.8): risposta giusta sull'ORDINAMENTO
-  per un motivo strutturale (vedi sotto: `calibra()` è monotona, non può
-  cambiare l'ordine), ma inaffidabile sulla SCALA — proprio quello che
-  serve rifare. Misurato il 12/08 sull'archivio pulito, dedup, IC a
-  grappolo: le tre carte di movimento sono sottostimate di ~2,4 punti
-  l'una (DEF -2,29, MID -2,36, FWD -2,48, tutti IC che escludono lo
-  zero; GK +0,48, include lo zero) — ~9,5 punti/formazione di
-  sottostima totale. Fatto chiave: `calibra()` è `a+b·x` con b>0 per
-  tutti i ruoli, quindi rifare le costanti NON cambia mai quale carta
-  scegli dentro un ruolo (il capitano non ne beneficia, §5.3) — serve
-  alla SCALA ASSOLUTA, cioè alla soglia d'ingresso arena e allo scouting
-  (€/punto), che vivono su quel numero. Prossimo passo: rifittare su un
-  campione rappresentativo di dove il modello si applica davvero (dubbio
-  aperto: deriva vera delle costanti vs compressione su campione
-  sopra-media, le due cause non sono separabili con i dati di oggi ma
-  portano alla stessa azione). Poi RIVERIFICARE la catena: soglie arena,
-  poi scouting — non fermarsi al primo anello. Dettaglio:
-  `docs/handoff/HANDOFF_ORCHESTRATORE_NUOVO_2026-08-12.txt` §3/§"STATO
-  ATTUALE DELLA CODA".
-  In produzione restano hardcoded con override da env
-  (`build_formazione_globale.py:403-407`: GK 35.78/0.264, DEF 7.28/0.831,
-  MID 11.61/0.740, FWD 8.40/0.789).
-- **Difensore — unico ruolo con un margine misurato oltre la calibrazione
-  (12/08/2026).** Scomposizione `grezzo = w·decisivo + granulare` (w=1 in
-  produzione su tutti i ruoli): per il DEF w=0 batte w=1 fuori campione
-  (corr +0,165 vs +0,142), refit OLS suggerisce un rapporto ~1:5 invece di
-  1:1, delta di correlazione fuori campione +0,018 IC95 [+0,006,+0,028]
-  esclude lo zero, regge a due split indipendenti. MID/FWD già vicini al
-  loro ottimo (w=0,8/0,6 contro 1,0, differenza minima) — non riaprire per
-  quei due. Vale qualche decimo di punto/formazione, da testare sulla
-  formula vera (`compute_score_atteso_def`) con interruttore esplicito
-  prima di proporre qualunque modifica.
+- **`CALIB_PER_RUOLO` — TESTATO E CHIUSO (13/08/2026), non applicare.** La
+  sottostima di ~2,4 punti/carta sui ruoli di movimento (misurata il 12/08,
+  vedi sopra) è reale in media ma NON STABILE nel tempo: split cronologico
+  train (apr-inizio giu) vs test (fine lug-ago), sia OLS pieno sia sola
+  correzione d'intercetta PEGGIORANO il MAE fuori campione su DEF/MID/FWD
+  (es. DEF bias -2,40 in train ma -1,79 in test — periodi diversi, bias
+  diverso). Non si rifà. Script: `analisi_manager/p27_refit_calib_per_ruolo.py`.
+  Costanti di produzione INVARIATE (`build_formazione_globale.py:403-407`:
+  GK 35.78/0.264, DEF 7.28/0.831, MID 11.61/0.740, FWD 8.40/0.789).
+- **Difensore, peso decisivo/granulare — TESTATO E CHIUSO (13/08/2026),
+  w=1 resta ottimo.** Il margine misurato il 12/08 (w=0 batte w=1) veniva
+  da una scomposizione SEMPLIFICATA (senza shrinkage/casa-trasferta/Stadio
+  D). Rifatto sulla formula vera (`compute_score_atteso_def`, test A/A
+  scarto 0,000000 contro produzione): su una griglia w=[0..2], w=1,0 è il
+  MASSIMO di correlazione e il MINIMO di MAE sia in train che in test.
+  Nessun cambio. Script: `analisi_manager/p28_def_peso_decisivo.py`.
 - **`backtest_arene_previsioni.py:257-260`, default `GK_TEAM_CS_WEIGHT=0.5`
   — SCELTA VOLUTA dell'utente, non un difetto** (chiarito il 09/08). Resta
   qui come voce **informativa**: chi usa quel modulo senza esportare la
@@ -630,6 +622,36 @@ toccare, già al meglio misurato. Dettaglio completo in
 - **Prima di riusare dati o script di una sessione precedente, verifica che
   l'`n` coincida** con quello dichiarato nel report. Due casi reali di
   numeri "già misurati" non riproducibili dal materiale ereditato.
+
+### 5.9 QUOTA_MINIMA (soglia d'ingresso arena) — CHIUSO 13/08/2026, non è un problema di soglia
+Sembrava un cambio di regime primavera/estate (train preferiva q basso,
+test q alto, 3,2 errori standard di differenza) — ERA un artefatto di
+composizione. Il modello prevede i singoli giocatori ugualmente bene nei
+due periodi (residuo per carta +2,22 train vs +1,57 test, sostanzialmente
+uguale). Il vero motivo: nella fascia di formazioni "di confine" (quelle la
+cui decisione entra/non-entra dipende dalla soglia), il 30,9% ha una carta
+a punteggio 0 (non ha giocato) in estate contro 18-19% ovunque altrove.
+Separando con/senza carta a 0: entrare CONVIENE in ENTRAMBI i periodi
+(+82,8 essenze/formazione train, +19,6 test — stesso segno). `QUOTA_MINIMA`
+resta 0,10, NON si tocca: è la leva sbagliata per questo problema (alzarla
+farebbe pagare a TUTTE le formazioni il rischio di una singola carta
+panchinata). Idea proposta ma NON misurata: uno starter_odds più severo
+solo per le formazioni vicine alla soglia — **valutata e scartata il
+13/08**: le starter_odds su Sorare le impostano tracker umani indipendenti
+per squadra (non un bookmaker/algoritmo), sono un margine di comodità
+soggettivo, non una probabilità calibrata — non vale la pena costruirci
+sopra una regola più fine. Script: `analisi_manager/p29_soglia_quota_minima.py`,
+p35 (di Opus, `docs/handoff/RISPOSTA_OPUS_QUOTA_MINIMA_IL_PERCHE_2026-08-13.txt`).
+
+### 5.10 Leakage grade Sorare — CHIUSO 13/08/2026, punto fisso in CLAUDE.md
+Il voto A-F NON viene riscritto sul risultato della partita (due test
+indipendenti, 120 partite-giocatore, zero query di rete: un punteggio di
+100 resta un voto basso quanto un 31). Un margine residuo ACCETTATO
+(~13% delle righe: un giocatore dato F che a sorpresa gioca può arrivare
+nel backtest con un voto D/E che al momento della scelta era F) gioca
+CONTRO il grade, non a favore — non gonfia le misure, semmai le sottostima.
+Dettaglio completo e non riproporre: vedi CLAUDE.md, sezione "IL GRADE
+SORARE NON HA LEAKAGE SISTEMATICO".
 
 ## 6. Il numero da portarsi via
 
