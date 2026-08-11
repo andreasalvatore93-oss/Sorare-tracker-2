@@ -1620,40 +1620,26 @@ di nuovo questa voce.
 
 ---
 
-## 10bis. COSE DA FARE — riscritto il 09/08 notte
+## 10bis. COSE DA FARE — riscritto il 09/08 notte, ripulito 11/08 (verificato contro il codice, non a memoria)
 
-**PRIORITARIO IN CORSO (10/08 sera): riverifica pulita di G-vs-A sulle
-arene su `archivio_ufficiale/`.** Vedi §8bis addendum sopra per il
-perché. Prossimo passo già scritto e pronto — non ripartire da zero:
-`docs/handoff/HANDOFF_ORCHESTRATORE_BINARIO_GVSA_2026-08-10.txt` (stato
-esatto: si attende un round di estrazione di 13 manager nuovi, brief
-Haiku già pronto, poi rilancio binari e verifica se il campione basta).
-
-**IDEA, non ancora un filone — 10/08 pomeriggio, richiesta esplicita
-dell'utente di non perderla.** Funzione SPERIMENTALE nel generatore che
-sfrutti anche i giocatori con starter-odds **0,60-0,70** (oggi tagliati
-fuori dalla soglia dura `MIN_STARTER_ODDS=0.80`). Nessuna analisi fatta,
-nessun backtest, nessuna decisione — solo l'idea segnata perché l'utente
-vuole riprenderla in un'altra sessione. Prima di implementare: capire se
-si tratta di un pool a parte (extra, non sostitutivo dei 0.80+) o di un
-abbassamento della soglia globale, e misurare quanto guadagno/rischio
-comporta con lo stesso metodo a tre gambe (MAE+correlazione+selezione)
-già in uso per gli altri parametri.
-
-**Aperto 10/08 notte: collo di bottiglia git push nel job `predict`.**
-Misurato su log reali (4 job campione): checkout ~15s, pip ~3s, predict
-vero 2-6s, **commit+push con retry 40-90s (60-80% del tempo del job)** —
-20 job paralleli che scrivono sullo stesso branch, 2-3 tentativi falliti
-a job con sleep 5-17s ciascuno. Fix proposto (non implementato): ogni job
-della matrice carica un **artifact** invece di pushare, un job unico a
-fine matrice scarica tutti gli artifact (`actions/download-artifact@v4`,
-`merge-multiple: true`) e fa **un solo commit**. Attenzione se lo si
-riprende: verificare se `prediction_log.json` (scritto da più job dello
-stesso lega/ruolo) ha voci che si sovrascrivono a vicenda con
-`merge-multiple` (con la sequenza push-per-job attuale, il conflitto lo
-risolve git riga per riga; con gli artifact, l'ultimo scaricato vince
-per intero sul file, rischio di perdita silenziosa se il file non è
-append-only riga per riga).
+**FATTO, non più aperto (verificato 11/08 leggendo codice/repo, questa
+sezione era rimasta ferma al 09-10/08):**
+- Riverifica G-vs-A su `archivio_ufficiale/`: fatto, 29 manager (non più
+  13 in attesa), è l'archivio usato oggi stesso per il filone GK_ATT_AVV.
+- Pool supplementare starter-odds 0,60-0,70: implementato e IN PRODUZIONE
+  (`EXTEND_ODDS_060_070`, acceso di default nel workflow).
+- Collo di bottiglia git push nel job `predict`: risolto, il job ora è
+  interamente artifact-based (`upload-artifact`/`download-artifact`),
+  nessun commit+push per shard.
+- `GK_TEAM_CS_WEIGHT` "default fasullo 0,5": non è vero nel codice attuale
+  — il default è `22.0/35.0≈0,629`, un valore calibrato (`test_gk.py:190`).
+- Fix "prossima partita" (caso Freese, `anyFutureGames`): propagato a
+  tutti i predict, commit `8e6e1df8a7`. Resta aperto solo il pezzo
+  cosmetico (badge nel generatore, non nello scouting) già descritto sotto
+  correttamente come bassa priorità.
+- "`level_score` binario del portiere, leva mai raccolta": non è vero,
+  `test_gk.py` ha lavoro esteso (Stadio A/B/D, `extract_level_score`,
+  `expected_level_from_rates`) già fatto su questo fronte.
 
 **Aperto 10/08 notte: badge "fixture ambigua" solo in scouting, non nel
 generatore** (scelta dell'utente, non dimenticanza). Il fix
