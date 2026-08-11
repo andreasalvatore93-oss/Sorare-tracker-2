@@ -57,6 +57,10 @@ import completa_grade_mancante as CG
 
 cache = CACHE.CacheLocale()
 
+# Gruppo grade (11/08/2026, filone "gruppo esteso alla giornata" -- vedi
+# docstring di S21.applica_gruppi_grade). Default 'lega_ruolo' = INVARIATO.
+GRADE_GROUP_MODE = os.environ.get('GRADE_GROUP_MODE', 'lega_ruolo')
+
 ROLE_CODE = {'Goalkeeper': 'GK', 'Defender': 'DEF', 'Midfielder': 'MID', 'Forward': 'FWD'}
 TIPO_TO_BFG = {
     'cap260': 'ARENA_ALLSTARS_260', 'cap220': 'ARENA_ALLSTARS_220',
@@ -176,22 +180,7 @@ def prepara_pool_rows(pool, primo_kickoff, fine_giornata, idx_grade, lega_di):
         rows.append({'carta': cid, 'slug': c['slug'], 'nome': c['nome'], 'ruolo': ruolo,
                     'codice': cod, 'lega': lega_di.get(c['slug']) or 'senza_lega',
                     'atteso_raw': res['atteso'], '_cal': cal, '_grade': gnum})
-    gruppi = collections.defaultdict(list)
-    for row in rows:
-        gruppi[(row['lega'], row['codice'])].append(row)
-    for _key, membri in gruppi.items():
-        _z, sd_atteso, _m = S21.zscore_gruppo([m['_cal'] for m in membri])
-        gp = [m['_grade'] for m in membri if m['_grade'] is not None]
-        if len(gp) >= 2:
-            zg, _, _ = S21.zscore_gruppo(gp)
-            it = iter(zg)
-            for m in membri:
-                m['_zgrade'] = next(it) if m['_grade'] is not None else 0.0
-        else:
-            for m in membri:
-                m['_zgrade'] = 0.0
-        for m in membri:
-            m['_combinato'] = m['_cal'] + sd_atteso * m['_zgrade']
+    S21.applica_gruppi_grade(rows, modo=GRADE_GROUP_MODE)
     return rows, scarti
 
 

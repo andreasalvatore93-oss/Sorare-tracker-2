@@ -239,6 +239,81 @@ def zscore_gruppo(vals):
     return [(v - m) / sd for v in vals], sd, m
 
 
+def _media_sd(vals):
+    n = len(vals)
+    if n == 0:
+        return 0.0, 0.0
+    m = sum(vals) / n
+    sd = (sum((v - m) ** 2 for v in vals) / n) ** 0.5
+    return m, sd
+
+
+def _applica_da_riferimento(target, riferimento):
+    """Imposta _zgrade/_combinato su ogni riga di `target`, usando media/sd
+    (dell'atteso calibrato '_cal' e del grade '_grade') calcolate su
+    `riferimento` -- che puo' coincidere con `target` (gruppo si valuta su
+    se stesso, comportamento di sempre) o essere piu' ampio (fallback/
+    gruppo esteso, filone 11/08/2026). Stessa formula/soglie di sempre
+    (zscore_gruppo): serve almeno 2 grade validi nel riferimento, altrimenti
+    zgrade=0 per tutto il target (fallback esplicito, mai un numero
+    inventato)."""
+    _m_atteso, sd_atteso = _media_sd([m['_cal'] for m in riferimento])
+    gp = [m['_grade'] for m in riferimento if m['_grade'] is not None]
+    gm, gsd = _media_sd(gp) if len(gp) >= 2 else (0.0, 0.0)
+    for m in target:
+        if m['_grade'] is not None and len(gp) >= 2 and gsd > 0:
+            m['_zgrade'] = (m['_grade'] - gm) / gsd
+        else:
+            m['_zgrade'] = 0.0
+        m['_combinato'] = m['_cal'] + sd_atteso * m['_zgrade']
+
+
+def applica_gruppi_grade(rows, modo='lega_ruolo', soglia_piccolo=5):
+    """Imposta _zgrade/_combinato su ogni riga di `rows` (deve gia' avere
+    '_cal', '_grade', 'lega', 'codice'), per TUTTI i ruoli insieme (GK/DEF/
+    MID/FWD, non solo GK). Filone 'gruppo grade esteso alla giornata'
+    (11/08/2026, richiesta esplicita utente, caso Hugo Lloris: gruppo
+    (lega,ruolo) a volte 2-3 carte, troppo piccolo per uno z-score
+    affidabile).
+
+    Tre modalita' (env var GRADE_GROUP_MODE nei chiamanti, default
+    'lega_ruolo' = comportamento INVARIATO rispetto a prima di oggi):
+      - 'lega_ruolo' (baseline/produzione): gruppo = (lega, ruolo) della
+        singola giornata, come sempre. Refactor puro rispetto al codice
+        precedente: deve riprodurre risultati bit-per-bit identici (test
+        A/A).
+      - 'giornata_ruolo' (generale, SEMPRE): gruppo = ruolo, tutte le leghe
+        della stessa chiamata (= la giornata) insieme.
+      - 'suppletivo' (fallback MIRATO): gruppo nativo (lega, ruolo)
+        normalmente; se ha MENO di `soglia_piccolo` membri (pre-registrato
+        a 5, prima di vedere risultati: sotto quella soglia lo z-score gia'
+        oggi richiede solo >=2 grade validi, troppo poco per una stima
+        stabile), le SOLE righe di quel gruppo piccolo usano invece le
+        statistiche di tutta la giornata per quel ruolo. I gruppi gia'
+        abbastanza grandi restano invariati -- e' un cerotto mirato, non
+        una sostituzione generale."""
+    per_lega_ruolo = collections.defaultdict(list)
+    per_ruolo = collections.defaultdict(list)
+    for r in rows:
+        per_lega_ruolo[(r['lega'], r['codice'])].append(r)
+        per_ruolo[r['codice']].append(r)
+
+    if modo == 'lega_ruolo':
+        for membri in per_lega_ruolo.values():
+            _applica_da_riferimento(membri, membri)
+    elif modo == 'giornata_ruolo':
+        for membri in per_ruolo.values():
+            _applica_da_riferimento(membri, membri)
+    elif modo == 'suppletivo':
+        for (_lega, _ruolo), membri in per_lega_ruolo.items():
+            if len(membri) < soglia_piccolo:
+                _applica_da_riferimento(membri, per_ruolo[_ruolo])
+            else:
+                _applica_da_riferimento(membri, membri)
+    else:
+        raise ValueError(f"GRADE_GROUP_MODE sconosciuto: {modo!r}")
+
+
 def main():
     idx_grade, data_min = carica_indice_grade()
     _n_coppie = sum(len(v) for v in idx_grade.values())
