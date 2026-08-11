@@ -11,12 +11,15 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 12/08/2026, sera (Roma, CEST)** —
-filoni PORTIERE (§5.6) e CAPITANO (§5.3) chiusi con esito dimostrato
-(non solo misurato): il modello è già al meglio possibile su entrambi.
-Aperta priorità nuova: refit `CALIB_PER_RUOLO` (§5.7, serve alla scala
-assoluta — soglia arena e scouting — non al capitano). Indizio minore sul
-DIFENSORE (§5.7). Nessuna modifica alla produzione in questa sessione.
+Ultimo aggiornamento: **sessione 11/08/2026 (Roma, CEST)** — filone
+PORTIERE RIAPERTO (§5.6): trovato un segnale nuovo (GK_ATT_AVV, forza
+d'attacco storica dell'avversario, da gol veri mai usati prima), confermato
+su blocco temporale indipendente e nel Binario 2 vero (IC che esclude lo
+zero). Implementato dietro flag `GK_ATT_AVV_ENABLED`, **default spento,
+NON e' la scelta ufficiale** — due formule ancora in gara (secca vs ultime
+10 partite), decisione dell'utente ancora aperta. Nessun'altra modifica
+alla produzione in questa sessione. Handoff sessione:
+`docs/handoff/HANDOFF_SESSIONE_GK_ATT_AVV_2026-08-11.txt`.
 
 ## REGOLA NUOVA — I BACKTEST SONO IL MODELLO CONTRO SE STESSO (09/08/2026, decisa dall'utente)
 
@@ -539,16 +542,39 @@ l'incertezza sul totale formazione (σ=49,4 pt) è troppo grande perché la
 non-linearità del premio conti in pratica. La regola attuale del bot è già
 quella giusta.
 
-### 5.6 Portiere — CHIUSO il 12/08/2026, RICONFERMATO 3 VOLTE il 13/08 (non riaprire senza dati nuovi)
-Aggiornamento 13/08: Opus ha rimisurato da zero (Spearman -0,004 su n=1.932,
-stesso numero delle sessioni precedenti) e provato due segnali MAI testati
-prima come ordinatori: L10 (media ultime 10, spearman -0,04, peggio
-dell'atteso) e casa/trasferta da solo (differenza +0,03 punti su 995
-portieri, nullo). Le quote di vittoria squadra erano già state escluse il
-07/08 (GK 0/9 varianti). Il solo segnale NON testabile a costo zero è lo
-starter_odds INDIVIDUALE del portiere (serve una raccolta nel tempo, non
-uno storico cachato). Script: `analisi_manager/p32_gk_segnali_alternativi.py`.
-Il tetto è confermato su 4 segnali indipendenti, non un'unica misura.
+### 5.6 Portiere — RIAPERTO l'11/08/2026, segnale nuovo trovato (GK_ATT_AVV, NON ancora in produzione)
+Tutto quello sotto (§5.6 storico) restava valido come tetto sui segnali
+GIA' TESTATI: nessuno batteva la produzione. L'11/08 e' entrato un
+ingrediente MAI provato prima — i gol VERI (homeGoals/awayGoals, dati
+pubblici Sorare via `nodes(ids)`, non c'erano nella cache game-log) — e la
+diagnosi cambia: l'atteso GK di produzione e' praticamente PIATTO (1.932
+righe, range 45,5-51,7, sd 0,97 contro sd 18,7 del reale — sotto il
+criterio "dispersione vera correlata al reale", non "batte le quote con
+margine", il modello e' indistinguibile dal cieco). Segnale che REGGE, unico
+su 5+ tentativi indipendenti: **quanto segna di solito la squadra
+AVVERSARIA** (non la propria difesa, quella resta morta su ogni test,
+quinta conferma). Confermato su blocco temporale indipendente (stagione
+2024/25, n=1.896, IC esclude lo zero) e nel backtest vero Binario 2
+(337→360 GW dopo l'estensione dell'11/08, bootstrap sul delta appaiato):
+con la formula "media storica secca" G guadagna +5.556 essenze, IC95%
+[+652;+10.531] — **esclude lo zero per la prima volta nel filone**.
+NON DECISO: due formule pre-registrate in gara (secca vs media ultime 10
+partite, quest'ultima sotto soglia: IC [-1.296;+10.357]). Implementato in
+`generatore_formazioni/build_formazione_globale.py`
+(`GK_ATT_AVV_ENABLED`, default **'0' spento** — NON e' la scelta ufficiale,
+e' solo pronto per essere testato/attivato quando si decide la formula) e
+`generatore_formazioni/dati/aggiorna_gk_attacco_avversario.py` (tabella
+dinamica, refresh incrementale agganciato a `formazione_giornata.yml`).
+Dettaglio integrale: `docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt`
+§9-13, e `docs/handoff/HANDOFF_SESSIONE_GK_ATT_AVV_2026-08-11.txt` per il
+prossimo passo. NON toccare `CALIB_PER_RUOLO`/`GK_TEAM_CS_WEIGHT` per
+questo filone: il correttivo nuovo si somma DOPO la calibrazione, non la
+sostituisce.
+
+Vecchio tetto (chiuso il 12-13/08, resta valido SOLO per i segnali gia'
+provati allora — L10, casa/trasferta, quote di vittoria: nessuno batteva la
+produzione, Spearman atteso/reale ≈0). Script:
+`analisi_manager/p32_gk_segnali_alternativi.py`.
 
 ### 5.6 (storico) Portiere — CHIUSO il 12/08/2026, il modello è già al meglio misurabile
 Riaperto il 12/08 da una scomposizione della formula grezza (mai fatta

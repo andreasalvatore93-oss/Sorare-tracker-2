@@ -1,0 +1,200 @@
+HANDOFF DI SESSIONE — per il prossimo orchestratore (altro account).
+Scritto 11/08/2026 sera (Roma, CEST/CET). Leggilo tutto prima di aprire
+altri file: e' la sintesi di una sessione lunga.
+
+===============================================================================
+IL VERDETTO DA BAR, IN DIECI RIGHE
+===============================================================================
+1. Il portiere in produzione oggi e' praticamente CIECO: prevede sempre un
+   numero fra 45 e 52, il reale va da 38 a 72. Non distingue niente.
+2. Trovato un pezzo vero che mancava: "quanto segna di solito la squadra
+   AVVERSARIA" (non la propria difesa, quella resta inutile). Confermato
+   quattro volte con metodi diversi, l'ultima volta sui dati veri esclude
+   lo zero statisticamente — non e' piu' un sospetto.
+3. E' SCRITTO NEL CODICE ma SPENTO. C'e' un interruttore
+   (`GK_ATT_AVV_ENABLED`, default '0') dentro
+   `generatore_formazioni/build_formazione_globale.py`. A spento non cambia
+   NULLA rispetto a oggi (verificato bit per bit).
+4. NON E' UNA DECISIONE PRESA. Ci sono DUE formule in gara, nessuna delle
+   due e' "quella ufficiale": la storia intera dei gol (oggi messa meglio
+   nei numeri) o le ultime 10 partite (quella che l'utente preferiva
+   d'istinto, ma nei test regge un po' meno). L'utente deve ancora
+   scegliere. Non presentarla mai come "fatta".
+5. La tabella dei dati (quanto segna ogni squadra) e' ORA dinamica: si
+   aggiorna da sola con le partite nuove quando gira lo script apposito, e
+   questo script e' gia' agganciato alla pipeline GitHub (ma il flag resta
+   spento, quindi la run normale non cambia comportamento).
+6. Ho estratto 369 arene nuove (fixture 7-11 agosto, 28 manager) e
+   recuperato il grade mancante per farci girare il Binario 2 con piu'
+   dati: e' cosi' che la formula "storia intera" ha superato la soglia.
+7. TUTTO E' STATO PUSHATO su main (repo aggiornato, altri account possono
+   fare git pull e vedere tutto). C'era una divergenza con 4 commit remoti
+   (run GitHub automatiche): unita senza conflitti prima del push.
+8. Ho usato Opus pochissimo (l'utente ha chiesto di limitarlo, costa): ho
+   fatto quasi tutto io in locale, Opus solo per due secondi pareri mirati.
+9. Prossimo passo naturale: l'utente decide fra le due formule (o ne chiede
+   una terza), poi si valuta se/quando accendere il flag per davvero —
+   E SOLO DOPO si riverificano soglie arena e scouting (catena di
+   produzione, mai saltata finora perche' il flag e' spento).
+10. Nessun'altra area del progetto e' stata toccata in questa sessione.
+
+===============================================================================
+1. STATO DEL REPO
+===============================================================================
+Branch: main. Pushato fino a d228e71fff (merge con 4 commit remoti di run
+GitHub automatiche, nessun conflitto). Tutto quello descritto qui e'
+sull'origin, chiunque puo' fare `git pull` e vederlo.
+
+Commit principali di questa sessione (ordine cronologico):
+  6c6eabe744  Estrazione gol veri 2025/26, 201 squadre crowss
+  ff6fbe903a  Primo test clean-sheet coi gol veri (attacco avversario si accende)
+  56490065ff  Estensione gol veri a tutti i 29 manager (378 squadre)
+  197f68ba20  Tenuta OOS per squadra: attacco-avv regge, quote crollano
+  187fa15701  Tolto vincolo quote, campione piu' ampio
+  348b609355  Tenuta OOS TEMPORALE (stagione 2024/25, n=1.896, IC esclude zero)
+  e0a6f3e1d9  GK_ATT_AVV scritto in produzione, flag spento (prima versione)
+  47af477724  Brief a Opus su test recency
+  bcfcfce7fa  Recency: finestra corta perde, storia lunga vince
+  b24f7b8049  Prima scelta half-life=40 (poi scartata, vedi sotto)
+  7fa1ee3a48  Estrazione fixture 7-11 agosto, 28 manager, recupero grade
+  5ac2777679  Due formule pre-registrate (secca/u10), Binario 2 esteso: la
+              secca esclude lo zero
+  d06ad3c8d4  Aggiornamento handoff correlazioni §13
+
+Niente e' rimasto solo locale: push fatto a fine sessione.
+
+===============================================================================
+2. PERCHE' ESISTEVA QUESTO LAVORO
+===============================================================================
+Il filone precedente ("clean sheet prevedibile?") era chiuso due volte con
+esito negativo (vedi CLAUDE.md e RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt
+§9-10): ne' le quote 1X2 ne' la forza difensiva storica battevano il caso.
+L'utente ha fatto notare che il modello sul portiere e' praticamente piatto
+(range 45-52 contro un reale 38-72) e ha chiesto di riaprire la domanda con
+un ingrediente mai provato: i GOL VERI delle partite (non solo l'evento
+clean-sheet). Da li' e' partita questa sessione.
+
+===============================================================================
+3. COSA HO COSTRUITO O TOCCATO
+===============================================================================
+- Scoperta tecnica: Sorare espone `homeGoals`/`awayGoals` su `Game` via
+  `nodes(ids: [ID!])`, pubblica (no cookie), bulk fino a 100 id/richiesta.
+- Estrazione gol veri: `analisi_manager/p40_estrai_gol_squadre_crowss.py`,
+  `p42_estrai_gol_tutte_squadre_archivio.py`,
+  `p43_estrai_gol_2023_25.py` — file dati in `analisi_manager/dati/
+  gol_squadre_archivio_*.json` (~20mila partite in tutto, 2023-2026).
+- Script di misura: `p41_clean_sheet_gol_veri.py` (di Opus),
+  `p44_gk_tenuta_2024_25.py`, `p45_gk_recency_aggregato.py` (di Opus).
+- Codice di PRODUZIONE (dietro flag spento):
+  `generatore_formazioni/build_formazione_globale.py` — blocco
+  `GK_ATT_AVV_*` (cerca quella stringa), funzioni `gk_att_avv_valore()` e
+  `gk_att_avv_aggiustamento(avv_slug)` riusabili anche fuori dal generatore.
+  `generatore_formazioni/dati/aggiorna_gk_attacco_avversario.py` — tabella
+  dinamica (media secca E ultime-10 insieme), refresh incrementale.
+  `.github/workflows/formazione_giornata.yml` — nuovo input
+  `gk_att_avv` (default '0') e step di refresh tabella prima del generatore.
+- Estensione archivio: fixture `football-7-11-aug-2026` per 28 manager
+  (mancava per tutti tranne crowss), via `estrai_archivio_manager.py`
+  (nessuna modifica allo script, gia' gestiva da solo il routing
+  pre/post-G per crowss). Grade recuperato per 154 slug nuovi via
+  `analisi_manager/completa_grade_mancante.py`.
+- `analisi_manager/p24_binario2_ga.py` — aggiunta chiamata a
+  `gk_att_avv_aggiustamento()` dopo `calibra()` per righe GK, per poter
+  testare G con/senza il correttivo nel backtest vero.
+
+Come rilanciare il test principale (Binario 2, ~45s, zero query):
+  cd analisi_manager
+  python p24_binario2_ga.py                                   # baseline
+  GK_ATT_AVV_ENABLED=1 GK_ATT_AVV_FORMULA=secca python p24_binario2_ga.py
+  GK_ATT_AVV_ENABLED=1 GK_ATT_AVV_FORMULA=u10   python p24_binario2_ga.py
+ATTENZIONE: questo script SOVRASCRIVE
+`archivio_ufficiale/aggregato/binario2_out.json` e `binario2_pool_rows.json`
+(file canonici). Salvane una copia prima di lanciare varianti, e ripristina
+con `git checkout` la versione flag-off a fine test (e' quella che deve
+restare come stato di riferimento).
+
+===============================================================================
+4. OUTPUT NUMERICO INTEGRALE
+===============================================================================
+Correlazione segnale/reale portiere (vari campioni, Pearson, bootstrap
+cluster squadra-giornata):
+  quote 1X2 (§9)                          AUC 0,585 (non decide, IC risicato)
+  forza difensiva propria (§10, §11, §12) sempre morta: 0,498/0,522/0,514/
+                                           +0,028 — QUATTRO conferme indipendenti
+  attacco avversario, quote-coperto (§11) corr +0,151 [+0,082;+0,215] n=716
+  attacco avversario, pool pieno (§11.9)  corr +0,101 [+0,038;+0,162] n=875
+  attacco avversario, OOS temporale (§12) corr +0,067 [+0,024;+0,114] n=1.896
+    -- QUESTO esclude lo zero, primo segnale mai confermato sul portiere
+  half-life 40 partite (§12)              corr +0,105 (~uguale alla storia intera)
+  finestre corte 5-10-20 partite          SEMPRE peggio, monotono
+
+Binario 2 (netto essenze reali, non atteso), bootstrap sul delta appaiato
+G on/off, cluster manager-fixture:
+  337 GW, half-life=40      G +3.900   IC95% [-1.768;+9.426]   positivo 91,3%
+  337 GW, media secca       G +4.413   IC95% [  -487;+9.387]   positivo 95,9%
+  360 GW, media secca       G +5.556   IC95% [  +652;+10.531]  positivo 98,7% <- ESCLUDE LO ZERO
+  360 GW, ultime 10 partite G +4.471   IC95% [-1.296;+10.357]  positivo 93,6%
+(360 GW = 337 + 23 dalla fixture 7-11 agosto appena estratta)
+
+Nota: nel Binario 2 il correttivo entra PRIMA del grade (in `_cal`), quindi
+solleva sia A che G quasi ugualmente: NON e' G che seleziona meglio i
+portieri, e' un ritocco di calibrazione che migliora entrambi. Il vantaggio
+di G su A si restringe leggermente con la correzione attiva (osservazione
+di Opus, non ancora riverificata su 360 GW).
+
+===============================================================================
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+===============================================================================
+- Il flag e' spento e la formula NON e' scelta. Non dedurre "usiamo la
+  secca" solo perche' e' il default nel codice: e' un default tecnico
+  (serviva un valore per non rompere nulla), non una decisione dell'utente.
+- La u10 e' quella che l'utente preferiva concettualmente ("le squadre
+  ruotano giocatori, una media a 3 anni non ha senso") ma nei numeri e'
+  sempre un filo sotto la secca, su ogni test fatto finora (correlazione,
+  Binario 2 piccolo, Binario 2 esteso). Non e' stata sconfitta in modo
+  schiacciante, solo costantemente un po' peggio.
+- Magnitudine onesta: ~1,3-2 punti di dispersione vera catturata sul
+  portiere, su una scala dove il reale oscilla di ±19 punti. E' il
+  "non-cieco" richiesto dall'utente, non un salto enorme.
+- CATENA DI PRODUZIONE NON ANCORA PERCORSA: se un giorno si accende
+  GK_ATT_AVV per davvero, `score_atteso` del GK cambia scala/dispersione,
+  quindi vanno riverificate le soglie arena (`PAREGGIO_ARENA`,
+  `GUADAGNO_PER_PUNTO`) e a valle lo scouting. Questa sessione NON l'ha
+  fatto (l'utente ha chiesto esplicitamente di restare sulla produzione,
+  scouting escluso per ora).
+- Il file `analisi_manager/dati/_cache_index_gamelog.json` (20MB) resta
+  volutamente NON committato: si rigenera da solo (~2 min) alla prima
+  esecuzione di uno script che ne ha bisogno.
+- File orfani visti a inizio sessione, MAI toccati (probabile lavoro
+  interrotto di un'altra sessione, non miei): `analisi_manager/
+  _tmp_gk_atteso_raw.py`, `_tmp_gk_diagnosi_opus.py`,
+  `analisi_manager/dati/gk_atteso_raw_2026-08-12.json`,
+  `docs/handoff/BRIEF_SONNET_GK_GREZZO_2026-08-12.txt`. Restano
+  untracked, chiedere all'utente se buttarli o riprenderli.
+
+===============================================================================
+6. DECISIONE APERTA (dell'utente, non mia)
+===============================================================================
+a) Quale formula tenere: secca (vince sui numeri oggi) o ultime-10
+   (preferenza concettuale dell'utente, numeri leggermente sotto)? O
+   provarne altre prima di scegliere?
+b) Se/quando accendere `GK_ATT_AVV_ENABLED` per davvero in produzione —
+   e a quel punto, riverificare soglie arena e scouting (§5 sopra).
+c) Se continuare a far crescere il campione Binario 2 (altre fixture
+   passate da estrarre) prima di fidarsi ulteriormente, o fermarsi qui.
+
+===============================================================================
+7. FILE DI RIFERIMENTO
+===============================================================================
+- docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §5.6 — aggiornato oggi, e'
+  il riassunto di riferimento per il tema "modello predittivo".
+- docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt — tutto il
+  dettaglio tecnico dei test (§9-13, questa sessione ha scritto l'§11-13).
+- generatore_formazioni/build_formazione_globale.py — cerca "GK_ATT_AVV"
+  per il blocco completo, commenti aggiornati con lo stato ESATTO
+  (non deciso) di oggi.
+- generatore_formazioni/dati/aggiorna_gk_attacco_avversario.py — refresh
+  tabella, rilanciabile a mano o dentro la pipeline.
+- .github/workflows/formazione_giornata.yml — input `gk_att_avv` (cercare
+  la stringa) per capire come si accenderebbe in una run vera.
+- analisi_manager/p24_binario2_ga.py — il test che decide, riusabile.
