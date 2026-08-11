@@ -723,3 +723,46 @@ un salto enorme.
 
 File nuovi: analisi_manager/p42_gk_dispersione_tenuta_oos.py
 Dati: analisi_manager/dati/gk_dispersione_tenuta_2026-08-11.json
+
+===============================================================================
+11.9 TOLTO IL VINCOLO QUOTE: PIU' CAMPIONE, MA LA STIMA SI RIDIMENSIONA.
+     (11/08/2026, spunto dell'orchestratore)
+===============================================================================
+L'attacco-avversario non usa le quote, quindi il campione non deve piu' essere
+filtrato a "portieri con quote" (731/899). Ricostruito dal pool GK pieno
+(correlazioni_compagni 'arricchite', 899 portieri), attacco-avv calcolabile
+(avversario con >=4 partite nello storico esteso): 875 righe.
+  recupero: 731 -> 875 (+144 totali). OOS (squadre non crowss): 171 -> 193 (+22).
+  Il grosso del pool GK e' crowss, quindi togliere le quote NON raddoppia l'OOS.
+
+MA il dato importante e' un altro: le righe SENZA quote DILUISCONO la
+correlazione. Erano tipicamente partite/leghe che odds_1x2_index non copriva,
+e li' il segnale attacco-avversario e' piu' debole.
+  correlazione attacco-avv / punteggio reale GK (Pearson, cluster sq-giornata):
+                        con quote (§11.8)        pool pieno (senza vincolo)
+    IN-SAMPLE crowss    +0,168 [+0,095;+0,243]   +0,115 [+0,046;+0,187]  (n 545->682)
+    OOS squadre nuove   +0,112 [-0,024;+0,244]   +0,057 [-0,074;+0,182]  (n 171->193)
+    pooled              +0,156 [+0,089;+0,220]   +0,101 [+0,038;+0,162]  (n 716->875)
+
+LETTURA ONESTA: il +0,15 era la stima del SOTTOINSIEME quote-coperto (partite di
+profilo piu' alto), non dell'universo GK. Sull'universo pieno il segnale e'
+REALE ma piu' piccolo: pooled +0,101 [+0,038;+0,162] (esclude ancora lo zero),
+OOS da solo +0,057 [-0,074;+0,182] (stesso segno ma NON significativo). E' la
+classica contrazione dell'effetto quando si esce dal campione di scoperta -- ed
+e' un campanello, non un via libera, sotto il mandato "niente in produzione che
+possa far danno". Magnitudine aggiornata: OOS +0,057 x sd 18,9 = ~1,1 punti
+(pooled +0,10 = ~1,9 punti).
+
+RADDOPPIARE L'OOS NON BASTA PIU'. Con l'effetto sceso a ~+0,10, per un IC OOS
+che escluda lo zero non servono 2x ma ~4-5x le righe OOS attuali (~900 contro
+193). Via piu' economica a quel volume: la STAGIONE 2024/25. I punteggi reali
+GK sono GIA' in cache game-log (77.051 entry pre-2025-08, 202/243 portieri del
+pool coperti: zero query); serve solo estrarre i gol veri 2024/25 (stessa query
+pubblica nodes di p40, ~cheap). Il test di tenuta dell'attacco-avv NON richiede
+l'atteso di produzione (correla il segnale col reale diretto), quindi non serve
+ricalcolare predizioni sul passato. Da' un periodo davvero indipendente.
+
+DECISIONE APERTA (utente): +0,10 di correlazione (~1,9 punti di dispersione)
+vale il rischio di toccare lo score_atteso GK? Se si', estrarre 2024/25 e
+rifare il test su ~900 OOS. Se il margine e' troppo magro per il rischio, il
+segnale resta documentato qui e non si tocca la produzione.
