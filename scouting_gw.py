@@ -1547,9 +1547,12 @@ def _atteso_dai_consigli(pool, gg=None):
     due partite future con odds pubblicate insieme -- vedi _prossima_partita_
     vera in test_gk.py e affini). Informativo, non filtra nulla da solo."""
     ruolo_per_slug = {}
+    avversario_per_slug = {}
     for g in pool['giocatori']:
         if g.get('slug') and g.get('ruoli'):
             ruolo_per_slug[g['slug']] = g['ruoli'][0]
+        if g.get('slug') and g.get('avversario'):
+            avversario_per_slug[g['slug']] = g['avversario']
     inizio = (pool['fixture'].get('startDate') or '')[:10]
     fine = (pool['fixture'].get('endDate') or '')[:10]
     slugs_pool = {g['slug'] for g in pool['giocatori'] if g.get('slug')}
@@ -1597,6 +1600,20 @@ def _atteso_dai_consigli(pool, gg=None):
     if gg is not None and hasattr(gg, 'calibra'):
         per_slug = {slug: gg.calibra(v, ruolo_per_slug.get(slug)) if v is not None else v
                     for slug, v in per_slug.items()}
+        # GK_ATT_AVV (11/08/2026): stesso correttivo del generatore
+        # (build_formazione_globale._apply_gk_att_avv, GK_ATT_AVV_ENABLED/
+        # _FORMULA). Questa funzione legge le predizioni grezze per un
+        # percorso SEPARATO dal generatore: senza questo, a flag acceso, un
+        # portiere avrebbe un atteso diverso fra generatore e scouting
+        # (fino a ~6-7 punti, segnalato da Opus -- catena
+        # produzione->soglie->scouting, CLAUDE.md). Rispetta lo stesso
+        # flag/formula: a GK_ATT_AVV_ENABLED spento l'aggiustamento e'
+        # sempre 0.0, nessun cambiamento per chi non ha il generatore.
+        if hasattr(gg, 'gk_att_avv_aggiustamento') and getattr(gg, 'GK_ATT_AVV_ENABLED', False):
+            per_slug = {
+                slug: (round(v + gg.gk_att_avv_aggiustamento(avversario_per_slug.get(slug)), 1)
+                       if v is not None and ruolo_per_slug.get(slug) == 'GK' else v)
+                for slug, v in per_slug.items()}
     return per_slug, ambigui
 
 
