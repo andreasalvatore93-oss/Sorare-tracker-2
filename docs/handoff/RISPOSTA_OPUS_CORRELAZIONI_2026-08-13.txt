@@ -555,3 +555,121 @@ Script: analisi_manager/p39_clean_sheet_forza_difesa.py. Zero query.
 
 File nuovo: analisi_manager/p39_clean_sheet_forza_difesa.py
 Dati: analisi_manager/dati/clean_sheet_forze_2026-08-13.json
+
+===============================================================================
+11. SEGUITO 3 -- GOL VERI (crowss, stagione 2025/26). LA DIFESA RESTA CIECA,
+    L'ATTACCO DELL'AVVERSARIO MIGLIORA MA NON BASTA.
+    (11/08/2026, dopo BRIEF_OPUS_FORZA_GOL_VERI_2026-08-11.txt)
+===============================================================================
+Script: analisi_manager/p41_clean_sheet_gol_veri.py. Zero query (i gol erano
+gia' estratti dall'orchestratore, file
+analisi_manager/dati/gol_squadre_crowss_2025-26_2026-08-11.json, 6.041 partite,
+stagione 2025/26). Test A/A: due run identiche bit per bit (tutto seedato).
+
+11.0 LA MIA IPOTESI PRIMA DEI NUMERI (come chiede il brief §3).
+     Al §10.6 avevo scritto che il collo di bottiglia erano i dati, non il
+     modello: "servirebbero gol subiti veri". Quindi mi aspettavo che il
+     MARGINE di gol (0/1/3 subiti, segnale continuo) desse un ordinamento piu'
+     fine del binario C>=60 e alzasse l'AUC, soprattutto sul lato difensivo
+     della MIA squadra. Esito: SBAGLIATA a meta'. Il margine aiuta, ma sul lato
+     dell'AVVERSARIO, non sul mio; il lato difensivo resta rumore; e nulla
+     batte le quote 1X2. Lo scrivo come e' uscito, non lo aggiusto.
+
+11.1 CONTROLLI PRELIMINARI (numeri di controllo del brief §5).
+     - file gol: 6.041 partite (torna). Squadre distinte in home/away: 681,
+       NON 201. Non e' il file sbagliato: p40 (riga 79) tiene la partita se
+       ALMENO UNA delle due squadre e' crowss, quindi in home/away entrano
+       anche gli avversari non-crowss. Le crowss "vere" (storico completo)
+       sono 201, ricalcolate qui da squadre_crowss(). Il "201" nel §5 del
+       brief era una stima sbagliata dell'orchestratore, non un errore di file.
+     - campione di valutazione originale: 731 (torna).
+     - dopo i filtri walk-forward (>=4 partite precedenti sia mia squadra sia
+       avversario): n=697. Ben sopra i 100, si decide.
+       Di cui avversario crowss (storico avversario COMPLETO): 413; avversario
+       non-crowss (storico PARZIALE, solo partite contro crowss): 284.
+
+11.2 CONTROLLO QUALITA' DEL PROXY (proxy GK>=60 vs clean sheet VERO gol==0).
+     Nessuno l'aveva mai fatto. Su 599 righe con entrambe le etichette:
+       concordi           571  (95,3%)
+       proxy dice CS, VERO no (sovrastima)   26
+       proxy dice no, VERO CS (sottostima)    2
+     Il proxy e' BUONO e sbaglia quasi solo in una direzione: sovrastima
+     leggermente il clean sheet (un portiere fa >=60 anche in una vittoria
+     4-1). Il verdetto negativo del §10 NON e' colpa del proxy: era gia'
+     un'etichetta quasi giusta.
+
+11.3 ESITO -- AUC SUL CLEAN SHEET (n=697, 0,50 = a caso).
+       segnale                                  AUC     IC95%
+       atteso di produzione (oggi)             0,570  [0,524; 0,619]
+       quote: p_own + p_draw                   0,619  [0,570; 0,669]  <- il migliore
+       forza dif - MEDIA gol subiti            0,514  [0,465; 0,565]  <- RUMORE
+       forza dif - TASSO CS vero               0,515  [0,466; 0,564]  <- RUMORE
+       debolezza att avv - MEDIA gol fatti     0,578  [0,531; 0,627]
+       debolezza att avv - TASSO avv non segna 0,581  [0,532; 0,633]
+       dif+att (media ranghi, gol)             0,558  [0,509; 0,609]
+       dif+att+quote (media ranghi)            0,597  [0,548; 0,645]
+
+     Delta appaiato contro le SOLE quote (bootstrap squadra-giornata):
+       forza dif - MEDIA gol subiti        -0,105  IC [-0,166;-0,047]  pos 0,0%
+       forza dif - TASSO CS vero           -0,105  IC [-0,162;-0,048]  pos 0,0%
+       debolezza att avv - MEDIA gol fatti -0,041  IC [-0,098;+0,014]  pos 7,0%
+       debolezza att avv - TASSO non segna -0,039  IC [-0,097;+0,018]  pos 8,6%
+       dif+att (gol)                       -0,061  IC [-0,116;-0,007]  pos 1,4%
+       dif+att+quote                       -0,023  IC [-0,056;+0,010]  pos 8,8%
+     NESSUN segnale, e nessuna combinazione, batte le quote. Aggiungere le due
+     forze alle quote PEGGIORA (0,597 < 0,619): sono ridondanti con le quote.
+
+11.4 LA COSA NUOVA E VERA (che il §10 col proxy non poteva vedere).
+     Il lato OFFENSIVO dell'avversario migliora molto passando dal binario ai
+     gol veri: nel §10.4 la "debolezza offensiva avversario" faceva AUC 0,504
+     (esattamente il caso); coi gol veri fa 0,578-0,581. Il margine di gol
+     dell'avversario (quanti gol segna di solito) E' un'informazione reale,
+     che il proxy binario buttava via. Sul lift del punteggio reale del
+     portiere e' il segnale piu' forte di tutti: quintile basso 43,4, alto
+     52,8, delta +9,44 (le quote fanno +3,15). Ma sull'evento clean sheet
+     (l'AUC, che e' la metrica che decide) resta sotto le quote.
+     Il lato DIFENSIVO della MIA squadra invece resta cieco anche coi gol veri
+     (0,514/0,515): e' la TERZA misura indipendente che dice la stessa cosa
+     -- §1e (storia CS della squadra, 0,498), §10.5 (proxy, 0,522), e ora i
+     gol veri (0,514). La quota storica di clean sheet/gol subiti di una
+     squadra non anticipa il suo prossimo clean sheet. Non e' un bug: la stessa
+     macchina walk-forward, cambiando solo il campo (gol fatti invece di
+     subiti), fa muovere l'AUC sul lato attacco -- l'interruttore funziona,
+     e' il segnale difensivo che non c'e'.
+
+11.5 IL SOTTOCAMPIONE PULITO CONFERMA (avversari crowss, storico completo,
+     n=413): att 0,557-0,574, dif 0,504-0,511, quote 0,620. Identico al quadro
+     generale: lo storico parziale dei 284 avversari non-crowss NON stava
+     distorcendo niente.
+
+11.6 VERDETTO E PROPOSTA (decide l'utente).
+     a) La domanda del brief -- "coi gol veri le due forze battono le quote?"
+        -- ha risposta NO, netta, su n solido (697). Confermo la chiusura del
+        §10.7a: prevedere il clean sheet con quello che abbiamo (quote, storia
+        difensiva/offensiva, gol veri di stagione) non supera AUC ~0,62, tutto
+        catturato gia' dalle quote 1X2.
+     b) MA c'e' un pezzo nuovo da non buttare: il MARGINE DI GOL FATTI
+        DALL'AVVERSARIO e' informazione reale (0,504->0,581, lift +9,44 sul
+        punteggio GK) che oggi non usiamo. Non basta a battere le quote da
+        solo, ma e' l'unico ingrediente "difesa/attacco" che coi gol veri si
+        accende. Se un giorno si volesse un modello di clean sheet piu' fine,
+        e' da li' (attacco avversario), non dalla forza difensiva propria.
+     c) Non tocco la produzione. Un delta negativo contro le quote non
+        giustifica nessun anello della catena (score_atteso GK -> soglie
+        arena -> scouting).
+
+11.7 DIFETTI TROVATI PER STRADA (annotati, non sistemati).
+     - Discrepanza AUC vs lift: la debolezza offensiva avversario ordina male
+       l'EVENTO clean sheet (AUC 0,581) ma bene il PUNTEGGIO reale del portiere
+       (lift +9,44). Segnale che il punteggio GK ha una parte continua (non
+       solo il gradino CS) che l'attacco avversario cattura: chi un giorno
+       modellera' il portiere come "probabilita' del gradino + resto continuo"
+       dovrebbe guardarci.
+     - 98 righe su 697 del campione finale non hanno etichetta clean sheet
+       VERA (la loro partita non e' nel file gol crowss, tipicamente avversario
+       fuori copertura in una data limite): per quelle l'AUC usa ancora il
+       proxy. E' l'11% del campione; il quadro non cambia togliendole, ma va
+       detto.
+
+File nuovo: analisi_manager/p41_clean_sheet_gol_veri.py
+Dati: analisi_manager/dati/clean_sheet_gol_veri_2026-08-11.json
