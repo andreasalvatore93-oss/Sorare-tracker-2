@@ -1,0 +1,242 @@
+BRIEF PER OPUS — GK_ATT_AVV: si porta in produzione la formula 'secca'
+(dinamica, refresh automatico) sì o no?
+Scritto 11/08/2026 (Roma) dall'orchestratore. Sessione Opus appena aperta,
+nessuna memoria di questa chat: leggi tutto prima di rispondere.
+
+============================================================================
+VERDETTO DA BAR (10 righe, poi sotto il rigore)
+============================================================================
+L'utente vuole portare in produzione il correttivo portiere "secca dinamica"
+(media storica gol-fatti dell'avversario, tutta la storia disponibile,
+aggiornata da sola a ogni run). Prima di accendere il flag ha chiesto
+un ultimo giro di controlli sull'archivio pieno (2975 formazioni / 360
+GW-manager, non solo le ~300 arene della fixture nuova 7-11 agosto).
+Risultato: su Binario 2 (pool libero) il segnale regge e si conferma quasi
+identico a quello già visto (G migliora se stesso di +5.556 essenze,
+intervallo di confidenza che non tocca lo zero, 98,7% delle simulazioni
+positive). Su Binario 1 (formazione fissa), testato per la PRIMA volta
+oggi, il segnale è invece piatto: G non migliora né peggiora in modo
+distinguibile dal rumore (intervallo di confidenza che include lo zero).
+Un bug reale nel codice di produzione è stato trovato e corretto oggi
+(vedi sez. 2) — non stava dando risultati sbagliati nei test perché i
+test non passavano da quel pezzo di codice, ma se il flag fosse stato
+acceso in produzione senza il fix, sarebbe crashato al primo portiere con
+avversario noto. Chiediamo a te: con questi due segnali (uno solido, uno
+piatto), si spegne il semaforo verde o si procede comunque?
+
+============================================================================
+0. COSA LEGGERE PRIMA (in ordine)
+============================================================================
+1. CLAUDE.md (repo root) — in particolare "I BACKTEST SONO IL MODELLO
+   CONTRO SE STESSO" (la domanda è sempre "G batte se stesso/A?", mai
+   "battiamo i manager") e "BACKTEST: NESSUNO E' AFFIDABILE FINCHE'
+   L'UTENTE NON L'HA ISPEZIONATO".
+2. docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §13 — la storia
+   del filone fino ad oggi: due formule pre-registrate (secca/u10), il
+   risultato sui 337 GW poi esteso a 360 GW con la fixture 7-11 agosto
+   (quello che TU (Opus) avevi già letto). Nota: il nome del file dice
+   "13-08" ma il timestamp reale del commit è 11/08 — è solo un'etichetta
+   incoerente di una sessione precedente, non un problema di dati.
+3. docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §5.6 — stato attuale
+   sintetico del filone (flag spento, formula non ancora decisa).
+4. Codice, con i numeri di riga verificati oggi:
+   - generatore_formazioni/build_formazione_globale.py righe 603-671:
+     definizione flag/formule (GK_ATT_AVV_ENABLED, GK_ATT_AVV_FORMULA
+     default 'secca'), funzioni gk_att_avv_valore/gk_att_avv_aggiustamento
+     (corrette) e _apply_gk_att_avv (il percorso REALE di produzione,
+     chiamato riga 1150 per ogni riga ruolo GK).
+   - analisi_manager/p23_binario1_mga.py e p24_binario2_ga.py — i due
+     backtest usati oggi (vedi sez. 4).
+
+============================================================================
+1. LA DOMANDA (una sola)
+============================================================================
+Con i numeri di oggi su TUTTO l'archivio ufficiale (non solo la fixture
+nuova), un segnale solido su Binario 2 ma piatto su Binario 1 è
+sufficiente per accendere GK_ATT_AVV_ENABLED=1 con GK_ATT_AVV_FORMULA=secca
+in produzione, o serve altro prima?
+
+============================================================================
+2. BUG TROVATO E CORRETTO OGGI (fatto, non da rifare)
+============================================================================
+_apply_gk_att_avv() in build_formazione_globale.py (righe 653-671) — la
+funzione REALMENTE agganciata alla generazione formazioni — referenziava
+due costanti mai definite in nessun punto del file (GK_ATT_AVV_K,
+GK_ATT_AVV_MEDIA_GLOBALE): residuo del refactor "due formule
+pre-registrate" che aveva introdotto _GK_ATT_AVV_FORMULE (dict per
+formula) senza aggiornare questa funzione. Con GK_ATT_AVV_ENABLED=0
+(default) il bug è INERTE (la tabella è vuota, la riga esce prima di
+arrivare al punto che crasha) — per questo nessun test l'aveva mai
+incontrato: p24_binario2_ga.py e p23_binario1_mga.py chiamano invece la
+funzione standalone corretta gk_att_avv_aggiustamento(), mai
+_apply_gk_att_avv(). Ma il momento in cui qualcuno avesse acceso il flag
+per un run vero (non di backtest), sarebbe stato un NameError certo al
+primo portiere con avversario in tabella.
+Fix: _apply_gk_att_avv ora chiama gk_att_avv_aggiustamento() invece di
+ricalcolare a mano. Verificato: flag off -> output bit-per-bit identico a
+prima (test A/A); flag on -> nessun crash, aggiustamento applicato
+correttamente su un caso di controllo (sint-truiden, att_medio 1.392 vicino
+alla media globale 1.400 -> aggiustamento quasi nullo, atteso invariato a
+un decimale). Commit 362108da0b.
+Conseguenza per la tua risposta: questo bug NON invalida nessuno dei numeri
+storici del filone (§13 di RISPOSTA_OPUS_CORRELAZIONI), che passavano tutti
+dalla funzione corretta. Riguarda solo la sicurezza di un accensione reale
+in produzione, oggi risolta.
+
+============================================================================
+3. IL CAMPIONE DI OGGI — con i numeri di controllo
+============================================================================
+Fonte: archivio_ufficiale/ (mai dati_globali/manager_*.json), stesso
+principio di sempre — crowss solo pre_2026-08-07/ (dopo quella data è già
+schierato dal modello G, non ha senso confrontarlo con se stesso),
+qualunque altro manager tutte le sue fixture reali.
+
+BINARIO 1 (formazione fissa, p23_binario1_mga.py):
+  - formazioni totali in archivio: 2975
+  - formazioni con atteso calcolabile su tutte le carte (quelle
+    effettivamente usate nel confronto): 1091, su 362 GW-manager
+  - formazioni escluse per DNP: 0 su entrambi i run (off e on) — NON è un
+    errore: dall'11/08 (raccomandazione tua precedente, vedi commento
+    inline righe 104-113 del file) il filtro DNP resta spento di default
+    perché gonfiava artificialmente M (+42.500 vs +11.500 reale,
+    escludeva il 19,3% delle formazioni, sistematicamente le peggiori).
+    Qui inoltre M, A e G giocano SEMPRE la stessa formazione reale: se
+    c'è un DNP dentro, lo prendono tutti e tre allo stesso modo, quindi
+    non serve escluderlo per equità (confermato con l'utente in sessione).
+  - PRIMA VOLTA che Binario 1 testa questo correttivo: prima d'oggi
+    p23_binario1_mga.py non applicava affatto gk_att_avv_aggiustamento (a
+    differenza di p24). Aggiunto oggi, stesso pattern di p24 (correzione
+    sommata a '_cal' PRIMA del blend col grade, quindi tocca sia la
+    decisione di A che quella di G — stesso principio già in uso in p24).
+
+BINARIO 2 (pool libero, p24_binario2_ga.py):
+  - 360 GW-manager, 10.255 righe-carta nel pool aggregato
+  - carte a 0/DNP escluse dal pool: 671, identico sia a flag off che on
+    (l'esclusione è sulle carte, non sulle formazioni, e non dipende dal
+    flag GK)
+  - riproduce ESATTAMENTE il totale già committato in
+    archivio_ufficiale/aggregato/binario2_out.json (delta G-A flag off:
+    +3488, trim +2509) — nessuna deriva rispetto all'ultima misura nota.
+
+Se rigiri questi due script e non ritrovi questi numeri di controllo,
+fermati e dillo prima di fidarti del resto.
+
+============================================================================
+4. IL METODO — bootstrap di oggi
+============================================================================
+La domanda che conta secondo l'utente non è "G batte A" (A è solo il
+braccio di confronto/parametro), ma "G MIGLIORA SE STESSO col correttivo
+acceso?" — cioè il delta appaiato G_on - G_off, per ogni singola coppia
+manager-GW, bootstrappato ricampionando le GW-manager (cluster corretto:
+le righe della stessa GW non sono indipendenti fra loro).
+Non esisteva in repo uno script già pronto per questo confronto specifico
+(il numero storico +5.556 di §13.4 era stato prodotto ad-hoc, senza file
+committato). Script scritto oggi: bootstrap standard (resample con
+reinserimento sulle unità GW-manager, B=5000, IC95% = percentili 2.5/97.5),
+stessa logica di bootstrap_delta_allocazione in p20_gfisso_backtest.py e
+simili già in uso nel repo. Non salvato in repo (era in scratchpad locale,
+riproducibile con la formula sopra se serve).
+
+============================================================================
+5. CONTROLLI OBBLIGATORI — fatti oggi
+============================================================================
+- Interruttore: verificato che flag=off riproduce ESATTAMENTE i numeri già
+  committati (sez. 3), sia su B1 (ripetuto due volte, stesso risultato
+  bit-per-bit: deterministico) sia su B2 (identico al file già su disco
+  prima di oggi).
+- DNP: verificato sopra (sez. 3), nessun errore, comportamento atteso per
+  entrambi i binari.
+- Dump leggibile (6 carte GK reali, dal run flag=on/secca, campo 'reale' =
+  punteggio vero, 'cal' = atteso calibrato+corretto):
+    manager                                          fixture                    slug                          cal    reale
+    crowss                                            football-31-jul-4-aug-2026 facundo-nicolas-cambeses      51.6    9.2
+    golden_goal-699e9a95-...-a26226e5d4e9              football-24-28-apr-2026    shusaku-nishikawa             48.0   25.7
+    sweggaausbrazil                                    football-23-26-may-2026    alisson-ramses-becker        47.6   31.1
+    tsubasa_451                                        football-31-jul-4-aug-2026 camilo-andres-vargas-gil     49.0   35.6
+    tsubasa_451                                        football-10-14-apr-2026    hyun-woo-cho                 49.3   44.6
+    tsubasa_451                                        football-31-jul-4-aug-2026 jeremias-ledesma             48.0   71.3
+
+============================================================================
+6. NUMERI DI SINTESI — QUESTI SONO QUELLI CHE CONTANO
+============================================================================
+Metrica: G_on - G_off (essenze nette), appaiato per GW-manager, bootstrap
+cluster GW-manager, B=5000.
+
+BINARIO 1 (362 GW appaiate, 36 con G diverso fra on/off):
+  punto stimato: -1.500  (media -4,1/GW)
+  IC95%: [-5.650 ; +2.550]
+  bootstrap positivo: 22,9%
+  -> IC INCLUDE LO ZERO. Nessun segnale distinguibile dal rumore. Se
+  qualcosa, il punto stimato pende leggermente negativo, ma con un
+  intervallo così ampio non si può dire "peggiora": si può solo dire "non
+  è provato che migliori".
+
+BINARIO 2 (360 GW appaiate, 145 con G diverso fra on/off):
+  punto stimato: +5.556  (media +15,4/GW)
+  IC95%: [+649 ; +10.638]
+  bootstrap positivo: 98,7%
+  -> IC ESCLUDE LO ZERO. Replica quasi esatta del numero storico di §13.4
+  (+5.556, IC [+652;+10.531], 98,7%) — la misura di oggi (rifatta da zero,
+  stesso codice) coincide col punto stimato in modo esatto e con l'IC in
+  modo quasi identico (differenza dovuta solo al seed/iterazioni del
+  bootstrap, non ai dati).
+
+Nota metodologica per completezza (non è la domanda principale secondo
+l'utente, ma segnalato per trasparenza): guardando invece il margine G-A
+(non G contro se stesso), il margine PEGGIORA col flag acceso su entrambi
+i binari (B1: +3700->+3400; B2: +3488->+2250), perché il correttivo
+migliora anche A (che condivide la stessa base 'atteso' calibrata prima
+del blend col grade) più di quanto migliori G. L'utente ha già chiarito
+che la metrica che conta è G_on vs G_off (sez. 4), non G-A: questo
+paragrafo è solo per completezza, non cambia la sez. 6.
+
+============================================================================
+7. QUELLO CHE NON SAPPIAMO / DUBBI APERTI
+============================================================================
+- Perché Binario 1 è piatto mentre Binario 2 è solido? Ipotesi non
+  verificata dell'orchestratore: B1 decide ENTRA/SALTA con una soglia
+  binaria secca (soglia_decisione), quindi un piccolo aggiustamento del
+  punteggio atteso o fa scattare la soglia (effetto grande, discreto) o
+  non la fa scattare (effetto zero) — molto più rumoroso di B2 dove il
+  pool libero ricompone la formazione con margini continui. Non
+  verificato con un test dedicato: solo un'ipotesi.
+- B1 è un test nuovo di oggi (mai fatto prima su questo correttivo):
+  non c'è uno storico con cui confrontare la tenuta nel tempo, a
+  differenza di B2 che ha già mostrato lo stesso numero due volte (337 GW
+  e 360 GW, oggi confermato una terza volta).
+- N vera dei GW "discordanti" (dove flag on/off cambiano davvero qualcosa)
+  è piccola in entrambi i casi: 36/362 su B1, 145/360 su B2. Il resto
+  delle coppie ha G_on=G_off esatto (l'avversario non era in tabella o
+  sotto la soglia minima di 4 partite storiche).
+
+============================================================================
+8. COSA NON è STATO FATTO (fuori scope di oggi)
+============================================================================
+- Non si è testata la formula 'u10' su questo aggregato esteso (l'utente
+  ha già scelto 'secca', §13.5 di RISPOSTA_OPUS_CORRELAZIONI).
+- GK_ATT_AVV_ENABLED resta spento in produzione: nessuna modifica al
+  default, questa è solo la misura pre-decisione.
+- Il refresh automatico della tabella (media storica, ricalcolata ad ogni
+  run di generazione formazioni) è già agganciato e funzionante in
+  .github/workflows/formazione_giornata.yml righe 477-523 (gira SEMPRE,
+  indipendentemente dal flag) — non richiede altro lavoro se si decide di
+  accendere il flag.
+
+============================================================================
+9. COSA CI SERVE DA TE
+============================================================================
+Un verdetto: si accende GK_ATT_AVV_ENABLED=1 (formula secca) in produzione
+con questi due segnali (B2 solido, B1 piatto), o no? E se la risposta è
+"serve altro", cosa esattamente — un test mirato su perché B1 è piatto, o
+altro.
+
+============================================================================
+10. DOVE RIFERIRE
+============================================================================
+Rispondi in chat alla sessione orchestratore (l'utente farà da navetta se
+il canale diretto non arriva) oppure, se hai l'ID esatto della sessione
+orchestratore for mcp__ccd_session_mgmt__send_message, usa quello — MAI
+SendMessage (quello è per agenti interni alla stessa sessione). Se scrivi
+un file di risposta, mettilo in coda a
+docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt (§14), non in un
+file nuovo — è li' che vive lo storico di questo filone specifico.
