@@ -766,3 +766,79 @@ DECISIONE APERTA (utente): +0,10 di correlazione (~1,9 punti di dispersione)
 vale il rischio di toccare lo score_atteso GK? Se si', estrarre 2024/25 e
 rifare il test su ~900 OOS. Se il margine e' troppo magro per il rischio, il
 segnale resta documentato qui e non si tocca la produzione.
+
+===============================================================================
+12. SEGUITO 4 -- RECENCY vs STORIA LUNGA (aggregato binario 2).
+    (11/08/2026, contestazione dell'utente sulla media storica a 3 anni)
+===============================================================================
+Script: analisi_manager/p45_gk_recency_aggregato.py. Zero query (gol gia'
+estratti, 19.883 partite unite dai due file 2023_25 + 2025-26). Test A/A:
+due run identiche bit per bit.
+
+12.0 SCOPE, CORRETTO DALL'UTENTE IN CHAT. Il brief diceva "solo le 266
+     formazioni del manager crowss". L'utente ha fermato e chiarito: per
+     "archivio crowss" intende l'AGGREGATO di binario 2 (lui + i 28 manager di
+     cui abbiamo estratto le arene, aprile->oggi), lo stesso universo su cui
+     girano i test G-vs-A, NON solo le sue 266. Campione usato: le 899 righe GK
+     di correlazioni_compagni 'arricchite' (squadra/avversario/data/reale gia'
+     risolti). LETTURA del segnale (dichiarata): (a) att_finestra = media gol
+     FATTI dall'avversario nelle sue N partite precedenti; testata anche (b)
+     dif_finestra = gol SUBITI dalla mia squadra nelle sue N precedenti.
+
+12.1 LA MIA IPOTESI PRIMA DEI NUMERI. Il segnale e' TEAM-level (gol
+     dell'attacco avversario), non player-level: quanti gol produce un attacco
+     e' una proprieta' di squadra/sistema che resta abbastanza stabile anche
+     se ruotano 3-4-5 giocatori. Quindi mi aspettavo che la storia lunga
+     TENESSE e che la finestra corta NON la battesse -- cioe' che la
+     preliminare "sporca" dell'orchestratore si replicasse. Esito: confermata.
+
+12.2 CONFRONTO ONESTO -- STESSO SOTTOCAMPIONE (n=846, righe dove sia la
+     finestra N=20 sia la storia lunga sono calcolabili). Correlazione di
+     Pearson fra segnale attacco-avversario e punteggio reale del portiere,
+     bootstrap sul cluster (squadra, giornata):
+
+       finestra              corr      IC95%
+       ultime 5 partite     +0,057   [-0,007; +0,117]
+       ultime 8 partite     +0,052   [-0,019; +0,117]
+       ultime 10 partite    +0,070   [+0,002; +0,132]
+       ultime 12 partite    +0,070   [+0,006; +0,133]
+       ultime 15 partite    +0,068   [+0,003; +0,132]
+       ultime 20 partite    +0,092   [+0,028; +0,153]
+       storia lunga (tutta) +0,105   [+0,042; +0,167]
+
+     E' MONOTONO AL CONTRARIO di quanto si aspettava l'utente: piu' e' LUNGA la
+     finestra, MEGLIO correla. Le finestre corte (5-10 partite) fanno PEGGIO
+     (+0,05-0,07), non meglio. La storia lunga e' la migliore (+0,105). Stessa
+     forma sul campione massimo di ciascun N (non solo sul sottocampione
+     comune). Replica esatta della preliminare sporca dell'orchestratore
+     (+0,067 storia, finestre corte leggermente sotto): non era un artefatto
+     del campione non-crowss.
+
+12.3 PERCHE' (spiegazione, coerente coi dati). La contestazione dell'utente
+     -- "le squadre ruotano i giocatori, la media storica e' una follia" -- e'
+     giusta in generale ma non morde QUI, perche' il segnale non misura la
+     bravura di giocatori specifici: misura quanti gol segna l'ATTACCO di una
+     squadra, che e' una proprieta' del sistema-squadra e resta relativamente
+     stabile attraverso il ricambio. Empiricamente piu' partite = meno rumore
+     su una quantita' abbastanza stabile, quindi la storia lunga vince. Se il
+     ricambio la rendesse inutile, le finestre corte dovrebbero batterla: fanno
+     il contrario.
+
+12.4 LETTURA (b) -- DIFESA PROPRIA SU FINESTRA CORTA: MORTA ANCHE COSI'.
+     dif_finestra (gol subiti dalla mia squadra nelle ultime N) resta attorno a
+     zero su OGNI N (5: +0,023; 10: +0,026; 20: +0,014; lunga: +0,028), IC
+     sempre a cavallo dello zero. E' la QUINTA conferma che la difesa propria
+     non porta segnale, ora anche su finestra corta (prima solo su media
+     lunga). Il combinato att10+dif10 (+0,052) fa PEGGIO di att10 da solo
+     (+0,065): la difesa propria diluisce.
+
+12.5 VERDETTO. La finestra corta chiesta dall'utente NON migliora il segnale;
+     lo peggiora, in modo regolare. Se un domani si attiva il correttivo
+     GK_ATT_AVV in produzione, la media su piu' storia disponibile (com'e' ora
+     in aggiorna_gk_attacco_avversario.py) e' la scelta giusta, NON una
+     finestra di N partite recenti. Nessuna modifica alla produzione fatta:
+     GK_ATT_AVV_ENABLED resta spento, la tabella storica non e' toccata.
+     Resta valido il quadro dei §11.8/11.9: segnale reale ma modesto (~+0,10).
+
+File nuovo: analisi_manager/p45_gk_recency_aggregato.py
+Dati: analisi_manager/dati/gk_recency_aggregato_2026-08-11.json
