@@ -755,134 +755,89 @@ cap 260 = miniera, arena division/Beginner da evitare, l'atteso ordina il
 realizzato ma non discrimina dentro una cap. Cronistoria completa e numeri
 integrali in `analisi_manager/VALIDAZIONE_SOGLIE.md`.
 
-### Sessione 11/08/2026 sera — SOGLIE PAREGGIO_ARENA SOSPETTE TROPPO BASSE, APERTO, NON APPLICATO
+### Sessione 11/08/2026 sera — FILONE SOGLIE, CHIUSO: PAREGGIO_ARENA RESTA INVARIATA
 
-Filone nuovo, nato da un'osservazione dell'utente sul proprio comportamento
-reale (schiera solo ~60% delle arene che il bot consiglia, salta le
-"marginali") + una "spinta cieca" di Opus che sembrava indicare il contrario
-(soglia troppo alta) mas'e' rivelata un artefatto circolare (vedi sotto).
+Filone lungo (§15-21 di `RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt`), nato
+da un'osservazione dell'utente sul proprio comportamento reale (schiera
+solo ~60% delle arene consigliate, salta le "marginali") + una "spinta
+cieca" di Opus poi riconosciuta artefatto circolare. Passato per un
+tentativo di correzione APPLICATO IN PRODUZIONE e poi ANNULLATO nella
+stessa sera (commit c7b298f507, revert `ca87663dfe`) quando Opus ha
+trovato il proprio errore. Risultato finale: **`PAREGGIO_ARENA` resta
+264,5/247,1/279,6/256,5, INVARIATA — il valore vecchio era gia' vicino
+all'ottimo misurabile, non serve toccarlo.**
 
-**Trovato nel codice (verificato, non solo letto)**: la selezione VERA
-(`genera_arene_efficienti`, build_formazione_globale.py:1411-1479, usata sia
-in produzione sia nel Binario 2) entra in qualunque arena con
-`atteso > PAREGGIO_ARENA`, margine ZERO — `QUOTA_MINIMA` (10%) esiste ma
-serve SOLO all'etichetta visiva "SCHIERA/MARGINALE/LASCIA PERDERE"
-(`_etichetta_arena`, righe 868-892), non filtra la formazione proposta. Il
-Binario 1 (`p23_binario1_mga.py`) invece USA il 10% nella sua regola: due
-regole diverse misurate finora senza saperlo. `verdetto_arena()`
-(righe 895-907) contiene la stessa regola a margine zero e non e' MAI
-chiamata da nessuna parte nel repo (grep sull'intero repo, non solo il
-file) — funzione morta, il commento "+9.800→+54.700 essenze" non va
-verificato, va cancellato insieme alla funzione quando si pulisce.
+**Cosa e' vero e resta utile**:
+- La selezione vera (`genera_arene_efficienti`, riga 1411-1479, produzione
+  E Binario 2) entra con margine ZERO (`atteso > PAREGGIO_ARENA`).
+  `QUOTA_MINIMA` (10%) e `_etichetta_arena` (righe 868-892, label
+  "SCHIERA/MARGINALE/LASCIA PERDERE") sono SOLO visivi, non filtrano la
+  formazione proposta. `verdetto_arena()` (895-907) e' funzione morta (mai
+  chiamata in tutto il repo), stessa regola a margine zero — il commento
+  "+9.800→+54.700" non e' mai stato verificato, da cancellare insieme alla
+  funzione quando capita.
+- Il punteggio REALIZZATO di pareggio (quanto serve DAVVERO per ripagare
+  il biglietto, calcolato diretto dalla tabella premi vera, nessuna stima)
+  E' 285,7/268,7/280,2/303,0 per cap260/220/beginner/uncapped — la vecchia
+  calibrazione del 09/08 lo sbagliava con una retta unica su una curva
+  convessa (piatta sotto soglia, a valanga sopra), riprodotto l'errore
+  quasi esatto rifacendolo apposta (3 tipi su 4 entro 2,5 pt).
+- **MA questo numero risponde alla domanda sbagliata per decidere se
+  entrare.** La soglia di DECISIONE va confrontata con la PREVISIONE
+  (`atteso`), non col punteggio realizzato: sulle formazioni vere la
+  previsione media (264,5) e' giusta ma il vero oscilla di ~50 punti
+  intorno ad ogni previsione (correlazione 0,25), e per la convessita' dei
+  premi (vinci il jackpot se va bene, perdi solo il biglietto se va male)
+  il guadagno atteso DATA la previsione e' piu' alto del guadagno calcolato
+  AL punto della previsione (disuguaglianza di Jensen). Tradotto semplice
+  per l'utente: la lotteria vale piu' del suo prezzo anche partendo un po'
+  indietro — conviene entrare anche con una previsione sotto il "pareggio
+  vero" in punti realizzati. Sono due grandezze diverse con lo stesso nome
+  ("pareggio"), ed e' li' che si e' annidato l'errore.
+- **Misurato direttamente** (binario1_out.json, 1.091 arene reali, premio
+  VERO, bootstrap cluster manager-fixture): soglia sul valore di
+  PREVISIONE T=250 -> +14.350, T=255 -> +16.550, **T=260 -> +18.400
+  (ottimo della griglia)**, T=265 -> +14.200, ..., T=285 -> -150. La
+  vecchia soglia 264,5 (+13.900, 92,5% positivo) e' STATISTICAMENTE
+  INDISTINGUIBILE dall'ottimo 260 (delta -4.850, IC[-18.350;+6.600]):
+  niente da guadagnare a ritoccarla. Nessun IC esclude formalmente lo
+  zero, ma 5 soglie diverse concordano nella stessa direzione/ampiezza.
+- **L'atteso NON e' sistematicamente pessimista** (ritrattata la misura
+  precedente, +2,084 pt/carta): quel numero era condizionato su "il
+  giocatore ha giocato" (il calcolo escludeva le carte a 0/DNP). Sulle
+  formazioni VERE (DNP inclusi) il bias e' +0,62/+0,47 pt — sostanzialmente
+  zero (4,42% delle carte reali segna 0, e la riconciliazione torna:
+  0,9558×2,084 + 0,0442×(−46) ≈ −0,04). Aggiungere punti fissi all'atteso
+  sarebbe stato ottimismo inventato — SCARTATO.
+- **Trovata una cosa vera e azionabile, separata da tutto il resto**: le
+  arene **UNCAPPED perdono soldi davvero**, −10.300 essenze reali su 98
+  arene vere, negative a QUALUNQUE soglia testata nella griglia. Non
+  ancora deciso cosa farne (disattivarle? altro?) — filone aperto, piccolo,
+  se si vuole riprenderlo.
+- **Sull'osservazione dell'utente ("gioco solo il 60%, salto le
+  marginali")**: NON PROVATO ne' in un senso ne' nell'altro. Una prima
+  lettura (col metro sbagliato) sembrava dargli ragione; col metro giusto,
+  fra le arene REALMENTE giocate essere piu' severi di ~265 di previsione
+  costa soldi — ma l'archivio contiene solo le arene che ha giocato, non
+  quelle saltate, quindi non si puo' dire nulla su quella scelta specifica.
+  Punto aperto, non risolto contro di lui.
+- Resta valida un'attenzione generale: `netto_stimato` (calcolato con
+  `PAREGGIO_ARENA`) contamina un confronto SOLO quando le due varianti
+  confrontate entrano in un NUMERO DIVERSO di arene (es. gruppo grade,
+  dove una variante spingeva ad entrare di piu' — vedi §5.6bis); se il
+  numero di arene resta uguale (es. GK_ATT_AVV, che sceglie solo quale
+  portiere schierare) non c'e' contaminazione.
 
-**Misura di Opus (RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §19), su dati
-REALI (premio_netto, non netto_stimato — regola nuova: qualunque test sulla
-soglia usa SOLO l'esito vero, mai una grandezza calcolata con la stessa
-costante sotto esame, altrimenti il test e' circolare)**:
+**GK_ATT_AVV**: nessuna azione necessaria, resta il verdetto gia'
+verificato due volte (+5.556, scomposto in +5.318 sull'89% delle coppie
+robusto alla soglia). Il tentativo di riverificarlo con la soglia
+(sbagliata) del §20 aveva indebolito il segnale — era un artefatto della
+soglia troppo severa applicata in quel momento, non un problema di
+GK_ATT_AVV: tolto insieme al revert.
 
-| tipo | soglia CODIFICATA (oggi in produzione) | soglia VERA (da 2.979 arene realmente giocate, IC95%) | margine mancante |
-|---|---|---|---|
-| cap260 | 264,5 | 285,4 [282,8;288,4] | +20,9 pt (48% del costo) |
-| beginner | 256,5 | 277,3 [275,3;279,6] | +20,8 pt (51% del costo) |
-| cap220 | 247,1 | 262,4 [258,8;267,1] | +15,3 pt (39% del costo) |
-
-Tutti e tre gli IC escludono il valore codificato, stessa direzione: le
-soglie scritte oggi sono troppo BASSE (il bot entra troppo facilmente),
-non troppo alte. La pendenza (quanto rende un punto extra) resta quasi
-giusta — e' il punto-zero (il pareggio) a essere spostato.
-
-**Secondo pezzo, separato**: l'atteso calibrato e' anche sistematicamente
-PESSIMISTA (sottostima), misurato SENZA nessuna soglia (previsione contro
-punteggio reale, 10.255 righe): +2,084 pt/carta IC95%[+1,670;+2,469]
-(+10,4 pt/formazione). Per ruolo: FWD +2,98, MID +2,79, DEF +2,51,
-**GK -0,74 (unico ottimista)**.
-
-**Le due cose si separano cosi'** (dallo stesso spostamento nella
-decisione entra/salta non si può distinguere "atteso basso" da "soglia
-bassa" — matematicamente equivalenti li' — separabili solo confrontando
-ciascuna con una verita' diversa: atteso vs reale per la prima, reale vs
-premio per la seconda). Sommando: atteso da alzare ~10 pt/formazione,
-soglia da alzare ~21 pt/tipo — **compensano solo in parte: restano ~11
-punti netti di margine IN PIU' da pretendere. Il bot dovrebbe entrare in
-MENO arene, non di piu'** — l'opposto di quanto sembrava dalla spinta
-cieca iniziale (ritirata da Opus stesso, era un artefatto circolare: la
-"spinta cieca" muoveva netto_stimato, calcolato con la stessa soglia
-sospetta).
-
-**CHIARITO l'11/08/2026 sera (§20 di RISPOSTA_OPUS_CORRELAZIONI...13.txt):
-trovato l'errore vero, non era un conflitto fra due dataset.** Opus ha
-applicato la definizione corretta di pareggio (punteggio dove il premio
-ATTESO, con la tabella premi vera, uguaglia il costo — nessuna stima, nessuna
-retta) sia al dataset vecchio (`arene_storico_full_v3.json`, ago 2025-lug
-2026) sia a quello nuovo (archivio_ufficiale, apr-ago 2026): stessa risposta
-da entrambi (cap260 285,7 vs 285,4). L'ipotesi "la competizione e' salita nel
-tempo" e' SCARTATA — non e' questione di finestra temporale.
-
-**L'errore vero**: le soglie codificate oggi vengono da una RETTA UNICA
-adattata su tutto l'intervallo di punteggio (mio_score contro premio-costo).
-Ma il guadagno di un'arena non e' una retta: sotto una certa soglia si perde
-sempre e solo il biglietto (linea piatta, non si puo' perdere di piu'),
-sopra sale a valanga con la classifica fino ai jackpot (una specie di
-gancio/uncino). Una retta unica su un gancio passa sopra i punti a sinistra
-e sotto a destra, e incrocia lo zero troppo presto — Opus ha riprodotto i
-valori codificati quasi esatti rifacendo apposta questo errore (cap260
-263,8 contro 264,5 codificato, cap220 245,6 contro 247,1, uncapped 277,1
-contro 279,6 — 3 tipi su 4 entro 2,5 punti. Beginner non torna, unico tipo
-aggiunto dopo, il 09/08, probabile calibrazione diversa).
-
-**Soglie corrette proposte (metodo diretto, nessuna stima)**:
-cap260 285,7 | cap220 268,7 (o 262,4 dal calcolo su archivio_ufficiale — i
-due metodi divergono qui piu' che altrove, usare il piu' prudente finche'
-non si capisce perche') | beginner 280,2 | uncapped 303,0 (arene dedicate
-per lega, 262,9, non ricalcolabili su questi dati: da rifare a parte).
-`GUADAGNO_PER_PUNTO` nasce dallo stesso fit sbagliato (stesso vizio) ma
-pesa meno (moltiplica il netto, non decide chi entra): da riderivare SOLO
-nella zona vicino alla soglia, dopo aver sistemato la soglia stessa.
-
-**Sull'osservazione dell'utente ("podio ~290")**: non e' la stessa cosa
-del pareggio. Sul dataset di controllo, il punteggio TIPICO per entrare
-nei premi (podio) sulla cap260 e' 309,5 (mediana 308,8) — il pareggio
-285,7 e' dove il valore atteso ripaga il biglietto contando anche le volte
-che prendi zero, non "di solito vinci qualcosa". Il 290 dell'utente sta in
-mezzo, su una sola giornata: non conferma ne' smentisce nessuno dei due
-numeri.
-
-**NON ANCORA APPLICATO** (proposta, decide l'utente + catena di produzione
-§1bis fino allo scouting prima di considerarlo chiuso).
-
-**NOTA CRITICA (11/08/2026 sera, da non perdere): quando/se si applica,
-TUTTI i backtest di oggi su essenze vanno RIFATTI.** `p23_binario1_mga.py`
-e `p24_binario2_ga.py` leggono `PAREGGIO_ARENA`/`GUADAGNO_PER_PUNTO` da
-`S21.bfg` (importati dalla produzione), sia per la decisione entra/salta
-sia per `netto_stimato`. Cambiando le soglie in produzione, ogni verdetto
-di oggi misurato su queste due unita' (GK_ATT_AVV essenze, gruppo grade
-essenze — storica_completa, pool_largo, tutte le varianti) smette di
-valere finche' non si rilancia con le soglie nuove. Priorita': GK_ATT_AVV
-(gia' acceso in produzione) prima di tutto il resto.
-
-**Conseguenza per GK_ATT_AVV -- RIVERIFICATO l'11/08/2026 sera, REGGE.**
-Il verdetto del §14 era misurato con `netto_stimato`, la stessa unita'
-ora sospetta. Scomposto il +5.556 per isolare la parte sensibile alla
-soglia: su 360 coppie manager-GW, 322 (89%) hanno lo STESSO numero di
-arene entrate a flag spento/acceso -- il correttivo cambia solo quale
-portiere schierare dentro un'arena che si sarebbe giocata comunque,
-indipendente dal dibattito sulla soglia. Da sola questa parte vale
-+5.318 (96% del totale), bootstrap IC95%=[+997;+9.866], 99,3% positivo
--- esclude ancora lo zero. Le sole 38 coppie (11%) dove cambia anche
-QUANTE arene entrare (parte davvero sensibile alla soglia) valgono solo
-+238 (4% del totale). **GK_ATT_AVV confermato, non serve altro lavoro su
-questo per ora** -- il grosso del guadagno non passa dalla soglia
-sospetta.
-
-**Se/quando si toccasse la soglia**: catena di produzione (§1bis) —
-PAREGGIO_ARENA sposta l'efficienza delle arene e quindi i consigli di
-ACQUISTO dello scouting, non solo quali arene entrare.
-
-Nessuna modifica al codice fatta. Prossimo passo: chiarire il conflitto
-fra i due metodi (rewardsConfig teorico vs esito reale) prima di
-proporre un numero nuovo. Dettaglio integrale:
-`docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt` §18-19,
-`docs/handoff/BRIEF_OPUS_TEMA_SOGLIE_2026-08-11.txt`.
+Nessuna modifica netta al codice da questo filone (il tentativo e' stato
+applicato e poi tolto lo stesso giorno). Dettaglio integrale:
+`docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt` §15-21.
 
 ### Cosa serve per vincere, e cosa resta da esplorare
 - **Soglie reali** (punteggio formazione, cap. incluso): media 261, podio ≈294,
