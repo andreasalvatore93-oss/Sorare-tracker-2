@@ -1194,3 +1194,164 @@ Dati aggiornati: analisi_manager/dati/storico_grade_crowss_completamento.json,
      slug nuovi servirebbero per feb-mar (Â§15.2): inutile, la strada e'
      chiusa prima.
 
+
+============================================================================
+16. RISPOSTA OPUS ESECUTORE â€” COME SI TRADUCE 'POOL_LARGO' IN PRODUZIONE
+    (11/08/2026, ~21:40 Roma) Risposta al brief
+    docs/handoff/BRIEF_OPUS_GRADE_GROUP_CARTA_2026-08-11.txt
+============================================================================
+
+16.0 VERDETTO DA BAR (12 righe)
+     Prima la buona notizia: il test a livello di carta e' quello giusto e
+     il risultato tiene. Poi quella che conta di piu'.
+     Il gruppo largo non serviva per avere piu' CARTE fra cui scegliere:
+     serviva per avere due numeri â€” dove sta il centro dei voti e quanto
+     sono sparpagliati. Due numeri, non un mazzo. Quindi non servono altri
+     manager: servono piu' dati per stimare quei due numeri, e ce li
+     abbiamo gia' in casa da giorni (grade_scala_storica.json, da 100 a 400
+     partite per lega-ruolo invece di 1-3 carte).
+     La brutta notizia e' che accendere quella tabella, da sola, NON dara'
+     il guadagno misurato. Perche' il modello non usa solo il voto: lo
+     moltiplica per "quanto sono diversi fra loro gli attesi del gruppo", e
+     quel secondo numero e' ancora calcolato sul gruppetto. Su un gruppo di
+     una carta vale zero, e zero per qualunque cosa fa zero. Nel test la
+     modalita' pool_largo allargava ENTRAMBI i numeri insieme senza che
+     nessuno lo notasse: e' quello che va replicato, non solo meta'.
+     Ho anche controllato la mia idea (usare i file di discovery come fonte
+     piu' larga): non funziona, 141 voci in tutto, mediana 1 per gruppo.
+
+16.1 PRIMA DI TUTTO: COSA HA VALIDATO DAVVERO IL TEST DI OGGI
+     Letto `_applica_da_riferimento` (p12_backtest_formazione_grade.py,
+     righe ~250-268): dal gruppo di riferimento la funzione ricava DUE
+     scale, non una:
+       sd_atteso = sd degli '_cal' del riferimento
+       gm, gsd   = media e sd dei GRADE del riferimento
+       _combinato = _cal + sd_atteso * (grade - gm)/gsd
+     'pool_largo' passa un riferimento piu' largo a quella funzione, quindi
+     allarga TUTTE E DUE le scale in un colpo solo. Il test di oggi ha
+     correlato solo lo z (la parte grade) col residuo, quindi il numero
+     +0,0697 misura la bonta' del PRIMO pezzo; ma cio' che e' stato
+     effettivamente cambiato nella variante e' anche il secondo. Tenerlo a
+     mente quando si sceglie cosa portare in produzione: la variante
+     validata e' "allarga entrambe", non "allarga il metro del voto".
+
+16.2 CAVEAT DI LETTURA SUI NUMERI DEL Â§2 DEL BRIEF (non invalida niente)
+     Sul sottoinsieme con gruppo nativo <2 (n=3.245), z_lega_ruolo non e'
+     "poco correlato": e' identicamente ZERO per costruzione, e la
+     correlazione di una costante non e' definita. Quindi "+0,0566 contro
+     indefinito" significa "qualcosa batte niente", che e' vero e utile ma
+     non e' un confronto. Il numero che regge il verdetto e' l'altro: sul
+     sottoinsieme >=2 (n=6.195), dove entrambe le varianti sono definite,
+     pool_largo vince +0,0760 contro +0,0467 con IC che esclude lo zero
+     (99,9%). Quello e' il dato buono, ed e' sufficiente: citate quello
+     quando si decide, non il primo.
+
+16.3 LA MIA IDEA (c) â€” CONTROLLATA E BOCCIATA, non perdeteci tempo
+     Ipotesi: il generatore ha una fonte piu' larga di `rows` gia' in casa,
+     cioe' player_card_counts.json scritto da discovery (che e' anche la
+     fonte del grade, via _grade_from_counts). Misurato su tutti i file di
+     discovery su disco:
+       45 file non vuoti, 141 voci TOTALI, 132 con grade
+       voci con grade per gruppo (lega,ruolo): mediana 1, max 18
+       solo 6 gruppi su 45 arrivano a >=5 voci con grade
+     E' la stessa identica popolazione di `rows`, non una piu' larga: dopo
+     il filtro starter-odds i candidati sono quelli e basta. Dentro una
+     giornata, per una (lega,ruolo), NON esiste in produzione un gruppo piu'
+     largo da cui pescare. Questa e' la ragione strutturale per cui
+     'pool_largo' non e' traducibile alla lettera: gli altri 28 manager
+     erano l'unico modo di avere piu' righe per la stessa lega-ruolo-GW.
+
+16.4 IL BLOCCO VERO IN PRODUZIONE (due punti, entrambi verificati in codice)
+     build_formazione_globale.py, _apply_grade_group:
+       riga 514-520: `vals` = attesi delle righe del gruppo; se len(vals)<2
+         la funzione RITORNA subito, atteso_combinato = atteso. Scatta
+         PRIMA di guardare GRADE_SCALE, quindi la scala storica non viene
+         nemmeno consultata.
+       riga 522: `sd` = sd degli attesi DEL GRUPPO. E' il moltiplicatore di
+         z. Con 1 riga non esiste, con 2 righe e' la meta' della loro
+         distanza: un numero erratico.
+       righe 532-536: solo gm/gsd (il metro del VOTO) possono venire dalla
+         tabella storica con GRADE_SCALE='storica'.
+     Conseguenza operativa, ed e' il punto principale di questa risposta:
+     accendere GRADE_SCALE='storica' da sola NON puo' produrre il guadagno
+     misurato sul sottoinsieme piu' danneggiato (gruppo <2, il 34,4% delle
+     carte nel test e il 51% dei gruppi in produzione), perche' quelle
+     righe muoiono sull'ALTRA scala, non su quella che 'storica' sistema.
+     Per replicare pool_largo servono tre cose insieme:
+       (i)   togliere il ritorno anticipato sotto 2 righe;
+       (ii)  gm/gsd dalla tabella storica (gia' pronta);
+       (iii) un sd_atteso di riserva quando il gruppo e' troppo piccolo â€”
+             oggi NON esiste una tabella storica per questo, va costruita
+             (sd degli attesi calibrati per (lega,ruolo), stesso schema e
+             stessi fallback di grade_scala_storica.json).
+     Il (iii) e' l'unico pezzo di lavoro nuovo, ed e' piccolo: la materia
+     prima sono gli stessi consigli storici gia' su disco.
+
+16.5 RISPOSTA ALLE TRE IDEE DEL Â§1 DEL BRIEF
+     (a) 'giornata_ruolo' (ruolo su tutte le leghe, stessa giornata).
+         E' l'UNICO allargamento davvero disponibile dentro la giornata:
+         132 voci con grade in totale fanno ~33 per ruolo, contro una
+         mediana di 1 per (lega,ruolo). Ma mescola leghe con livelli
+         diversi, e la tabella storica mostra che le leghe differiscono
+         davvero (mls|GK mean 3,64 contro brasile|GK 4,29, su n=421 e 100).
+         Quindi: buona come RETE DI SICUREZZA quando la storica non ha la
+         voce, cattiva come scelta principale. Nota che il risultato nullo
+         gia' visto su questa modalita' non conta contro di lei: era
+         misurato sul pool ristretto e sull'endpoint essenze, cioe' il test
+         che abbiamo appena dimostrato incapace di decidere.
+     (b) (lega,ruolo) sulle ultime 3-4 giornate.
+         La metterei per ultima, e non per gusto: e' una 'storica' con meno
+         dati. Vale solo se la distribuzione dei voti DERIVA nel tempo, e su
+         questo il repo ha gia' una lezione dallo stesso giorno, sul filone
+         portiere: finestre corte (ultime 5-10 partite, taglio netto o
+         decadimento) facevano PEGGIO della storia intera in modo monotono
+         (aggiorna_gk_attacco_avversario.py, nota in cima, n=881). Stessa
+         forma di problema, stessa risposta attesa. Se il timore della
+         deriva resta, la si affronta come li': non un taglio a 3-4 GW, ma
+         un decadimento sulla storia intera â€” e comunque DOPO aver visto se
+         la storica secca basta.
+     (c) la mia: bocciata da me stesso, Â§16.3.
+
+16.6 COSA TESTEREI, NELL'ORDINE (tutto sullo stesso test carta, zero query)
+     Quattro bracci sulla stessa infrastruttura di p46_grade_group_carta.py,
+     stesso residuo, stesso bootstrap cluster (manager,fixture):
+       1. lega_ruolo (baseline, gia' fatto: +0,0378 / +0,0467 sul >=2)
+       2. pool_largo (tetto teorico, gia' fatto: +0,0697 / +0,0760)
+       3. STORICA-GRADE: gm/gsd dalla tabella grade_scala_storica.json,
+          sd_atteso lasciato al gruppo nativo. E' esattamente cio' che
+          l'env var GRADE_SCALE='storica' fa oggi in produzione.
+       4. STORICA-PIENA: gm/gsd dalla tabella E sd_atteso da una scala
+          storica per (lega,ruolo) calcolata al volo dal riferimento
+          aggregato che avete gia' (binario2_pool_rows.json contiene _cal
+          per 10.255 righe con lega e codice: la sd per (lega,ruolo) si
+          calcola da li' senza toccare la rete).
+     La domanda che decide: il braccio 4 arriva vicino al braccio 2? Se si',
+     la traduzione in produzione e' fatta e non serve inventare niente â€”
+     e in piu' si sa quanto pesa ciascuno dei due pezzi (3 contro 4).
+     Se il braccio 3 da solo gia' basta, ancora meglio: e' una variabile
+     d'ambiente e zero codice nuovo.
+     PRE-REGISTRARE prima di girare, per non scegliere a posteriori: ci si
+     aspetta 1 < 3 < 4 <= 2. Se esce 3 > 4 o 4 > 2, c'e' un errore
+     nell'implementazione, non una scoperta.
+
+16.7 UNA COSA DA DIRE ALL'UTENTE IN LINGUA SEMPLICE
+     Il voto A-F oggi viene confrontato con gli altri giocatori della stessa
+     lega e ruolo schierabili quel giorno. Meta' delle volte quel confronto
+     ha un solo giocatore dentro: e' come dire "sei il piu' alto della
+     stanza" quando nella stanza ci sei solo tu â€” non significa niente, e
+     infatti il modello butta via il voto. La tabella storica e' l'elenco
+     delle altezze di tutti quelli passati da quella stanza negli ultimi
+     mesi: con quella, anche uno da solo si puo' misurare. Manca pero' il
+     secondo pezzo: il modello usa il voto per spostare il punteggio "di
+     tanto quanto sono diversi fra loro i giocatori del gruppo", e se nel
+     gruppo c'e' una persona sola quella differenza e' zero. Va data una
+     misura storica anche a quella, altrimenti si sistema meta' del
+     problema e non si vede nessun miglioramento.
+
+16.8 COSA NON HO FATTO
+     Nessuna query di rete, nessuna modifica alla produzione, nessun codice
+     nuovo. Non ho girato i bracci 3 e 4 del Â§16.6 (proposta, non
+     risultato). Non ho riesaminato riga per riga p46_grade_group_carta.py:
+     ho verificato la funzione che sta sotto (_applica_da_riferimento) e i
+     numeri di controllo dichiarati nel brief, non l'intero script.
+
