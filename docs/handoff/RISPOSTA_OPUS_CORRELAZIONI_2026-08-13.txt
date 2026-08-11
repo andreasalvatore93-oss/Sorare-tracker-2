@@ -673,3 +673,53 @@ stagione 2025/26). Test A/A: due run identiche bit per bit (tutto seedato).
 
 File nuovo: analisi_manager/p41_clean_sheet_gol_veri.py
 Dati: analisi_manager/dati/clean_sheet_gol_veri_2026-08-11.json
+
+===============================================================================
+11.8 CAMBIO DI CRITERIO (deciso dall'utente) + TEST DI TENUTA OOS.
+     (11/08/2026, dopo l'estensione del campione a 29 manager)
+===============================================================================
+NUOVO CRITERIO. L'utente NON vuole piu' "il delta batte le quote con margine
+sicuro". L'atteso GK di produzione oggi e' piatto (1.932 righe, range
+45,5-51,7, sd 0,97 contro sd 18,7 del reale) e la sua correlazione col
+punteggio reale include lo zero (+0,061 [-0,017; +0,136]): sotto il criterio
+"dispersione vera correlata al reale" il modello attuale e' indistinguibile dal
+cieco. Citazione utente: "modello cieco e' peggiore di modello che sbaglia ma
+meno rispetto a quanto ha ragione". Scope ridotto: SOLO score_atteso GK, per
+ora niente soglie arena ne' scouting.
+
+PRECISIONE SUI 697 (bootstrap cluster squadra-giornata), correlazione di
+Pearson fra segnale e punteggio reale del portiere:
+  debolezza attacco AVVERSARIO (media gol fatti)  +0,151 [+0,082; +0,215]  lift +9,44
+  quote p_own+p_draw                              +0,096 [+0,021; +0,170]  lift +3,15
+  atteso di produzione                            +0,061 [-0,017; +0,136]  lift +4,33
+  forza difensiva MIA squadra                     +0,028 [-0,046; +0,099]  lift +2,22
+L'attacco-avversario e' l'unico segnale robusto e batte gia' il modello di
+produzione (che include lo zero). La difesa propria e' inutile (quarta
+conferma). L'EXISTENCE della dispersione utile e' gia' decisa sui 697.
+
+TEST DI TENUTA OOS (p42). Storico esteso a tutte le 29 squadre dei manager
+(file gol_squadre_archivio_2025-26_2026-08-11.json, 9.102 partite, 378 squadre
+proprie). Split: IN-SAMPLE = 545 righe con squadra crowss; OOS = 171 righe di
+squadre nuove indipendenti.
+
+  segnale                          IN-SAMPLE (n=545)        OOS (n=171)
+  attacco-avv (media gol fatti)    +0,168 [+0,095;+0,243]   +0,112 [-0,024;+0,244]
+  quote p_own+p_draw               +0,143 [+0,053;+0,226]   -0,045 [-0,201;+0,109]
+  atteso di produzione             +0,066 [-0,019;+0,147]   +0,068 [-0,086;+0,219]
+  (pooled, n=716) attacco-avv: +0,156 [+0,089;+0,220], lift +8,26 [+3,68;+12,57]
+
+VERDETTO TENUTA: l'attacco-avversario REGGE in direzione e ordine di grandezza
+(+0,168 -> +0,112, stesso segno, ~3/4 dell'effetto). E' l'UNICO che regge: le
+quote CROLLANO fuori campione (+0,143 -> -0,045, cambio di segno), l'atteso
+resta piatto. Sotto il criterio "dispersione" questo contrasto e' il risultato
+vero: il segnale attacco-avversario e' piu' robusto delle quote.
+CAVEAT ONESTO: OOS n=171 e' piccolo, il suo IC da solo include lo zero
+[-0,024; +0,244] -- non e' una smentita (il punto stimato tiene), e' potenza
+insufficiente sul solo blocco OOS. Per un IC OOS che escluda lo zero servirebbe
+~raddoppiare le squadre nuove.
+MAGNITUDINE ONESTA: OOS corr +0,112 x sd 18,9 = ~2,1 punti di dispersione vera
+catturata (in-sample ~2,8). Modesto: e' il "non-cieco" che l'utente vuole, non
+un salto enorme.
+
+File nuovi: analisi_manager/p42_gk_dispersione_tenuta_oos.py
+Dati: analisi_manager/dati/gk_dispersione_tenuta_2026-08-11.json
