@@ -1,0 +1,379 @@
+RISPOSTA OPUS — esito test carta + senza filtro DNP — 11/08/2026 (Roma)
+
+Non ho toccato produzione, non ho committato codice di misura, non ho
+lanciato query. Ho RIVERIFICATO i numeri dell'esecutore sui grezzi
+(binario2_pool_rows.json, binario1_out.json,
+binario1_senza_filtro_dnp_out.json), ho letto p25 e il pezzo di
+produzione che applica il grade (_apply_grade_group, righe 505-550 di
+build_formazione_globale.py), e ho aggiunto DUE TEST che mancavano.
+
+
+================================================================
+VERDETTO SECCO
+================================================================
+
+1. SI'. Per la prima volta in questo filone c'e' una misura che regge.
+   Ho replicato b=+0,330 esatto, e ho aggiunto i due controlli che
+   mancavano: wild cluster bootstrap (p=0,023) e soprattutto il PLACEBO
+   sul grade (0 permutazioni su 200 arrivano a +0,330, p=0,005). Il grade
+   porta informazione vera. Non e' piu' un "forse".
+
+2. NO al `GRADE_WEIGHT=0.33`. Quel numero e' SCHIACCIATO da un difetto
+   del backtest, non della produzione: nel backtest la z del grade si
+   calcola dentro il pool del singolo manager, e quei gruppi hanno
+   dimensione MEDIANA 1 carta (media 1,8). Il 54,2% delle righe ha
+   aggiustamento esattamente zero. Ho misurato l'affidabilita' di quella
+   z (ICC=0,507): meta' della sua varianza e' rumore di misura. Corretto
+   per l'attenuazione, beta = 0,65 con IC95 [0,11 - 1,19] — e **1,0 sta
+   dentro l'intervallo**. I dati dicono "il grade funziona", NON dicono
+   "il peso e' sbagliato". Produzione resta a 1,0.
+
+3. LA MIA SEZIONE 6.1 DI STANOTTE ERA SBAGLIATA e il test dell'esecutore
+   la smonta. Avevo scritto che la soglia d'ingresso "butta via il 40% del
+   valore". Falso: era tutto l'artefatto del filtro DNP, che avevo
+   segnalato come rischio in 6.2 e che si e' rivelato essere la storia
+   intera. Senza filtro la soglia AGGIUNGE valore (M +11.500 contro G
+   +17.050). Ritiro il punto 6.1. Il punto 6.2 e' confermato in pieno.
+
+
+================================================================
+1. COSA HO VERIFICATO E COSA HO AGGIUNTO
+================================================================
+
+1.1 REPLICA ESATTA (rifatta con codice mio, non rileggendo il suo output)
+
+  n = 10.093   a = +2,073   b = +0,330
+  SE classico                         0,1043   t = 3,16
+  SE cluster su slug      (2.066 gr.) 0,1323   t = 2,49
+  SE cluster su fixture   (   22 gr.) 0,1392   t = 2,37
+Identici ai suoi. Aggiunti due raggruppamenti che non aveva provato:
+  SE cluster su manager+fixture (347) 0,1253   t = 2,63
+  SE cluster su slug+fixture  (6.283) 0,1259   t = 2,62
+Il piu' prudente resta quello per giornata. Va bene cosi'.
+
+Ho anche verificato che la formula del backtest sia LA STESSA della
+produzione, perche' altrimenti beta non si trasferisce: produzione fa
+`atteso_combinato = atteso + sd * z` (riga 543), con `calibra_riga`
+chiamata PRIMA (riga 1006) e `_apply_grade_group` dopo (riga 1026);
+p23/p24 fanno `_cal + sd_atteso * _zgrade`. Stessa formula, stesso ordine,
+peso 1,0 in entrambi. L'interruttore e' lo stesso interruttore. Su questo
+l'esecutore ha ragione.
+
+1.2 TEST CHE MANCAVA n.1 — WILD CLUSTER BOOTSTRAP
+
+22 cluster sono POCHI. Il sandwich cluster-robust con cosi' pochi gruppi
+e' noto per sottostimare l'errore, quindi t=2,37 poteva essere gonfiato.
+La correzione standard e' il wild bootstrap sui cluster (segni casuali
+per giornata, ipotesi nulla imposta). Fatto, 4.999 repliche:
+  p-value = 0,0234
+  valore critico empirico al 5%: |t| = 2,03 (non 1,96)
+  t osservato = 2,37 > 2,03
+Regge. Il numero non era gonfiato.
+
+1.3 TEST CHE MANCAVA n.2 — IL PLACEBO SUL GRADE (il piu' importante)
+
+Questo e' l'"interruttore" che CLAUDE.md pretende prima di credere a una
+misura, e non era stato fatto: l'esecutore ha validato lo SCRIPT su dati
+sintetici (giusto, e ben fatto: il test dei duplicati e' esattamente il
+controllo corretto), ma non ha mai verificato che il beta sui dati veri
+sparisca quando si toglie il grade e si lascia tutto il resto identico.
+
+L'ho fatto: dentro ogni gruppo (manager, giornata, lega, ruolo) ho
+MESCOLATO i grade fra le carte, ricalcolato la z, riapplicato la stessa
+sd, rifatto la stessa regressione. Se il +0,330 nascesse da un artefatto
+della costruzione (gruppi piccoli, sd, struttura del pool) sopravviverebbe
+al mescolamento.
+
+  beta VERO                         = +0,330
+  beta PLACEBO, 200 permutazioni    : media +0,002, mediana +0,004,
+                                      IC90 [-0,148, +0,149]
+  permutazioni che arrivano a +0,330: 0 su 200   -> p = 0,005
+
+Va esattamente a zero, come deve. Questo e' il singolo risultato piu'
+solido prodotto da questo filone in quattro giorni: non dipende da
+assunzioni sugli errori standard, non dipende dalla forma dei premi, non
+dipende da quanti manager abbiamo. E' il grade e basta.
+
+1.4 LIFT — verificato e rinforzato
+
+Confermo i suoi numeri (top-5 +0,687 punti/carta, top-10 +0,157) e ci
+aggiungo la versione appaiata, che e' piu' informativa:
+  top-5:  284 pool, in 139 G e A scelgono carte diverse -> G fa meglio in
+          83 su 139 (60%), t = 2,77
+  top-10: 219 pool, 142 con scelta diversa -> G meglio in 77 (54%), t=0,79
+Il lift si assottiglia allargando la selezione, come nota lui, ed e'
+coerente: il grade sposta l'ordine in cima, non in fondo.
+
+Tre test indipendenti fra loro (regressione con SE prudente p=0,023;
+placebo p=0,005; lift appaiato top-5 t=2,77) puntano nello stesso verso.
+Nessuno dei tre e' schiacciante da solo. Insieme, si'.
+
+
+================================================================
+2. RISPOSTA ALLA DOMANDA 1 — e' la risposta che cercavamo?
+================================================================
+
+Si', ma sposta la domanda. Con i test di sopra la domanda "il grade porta
+informazione?" e' CHIUSA: si'. La domanda "quanto pesarlo?" e' APERTA, e i
+dati di oggi non la risolvono. Non e' un dettaglio: era la parte che
+l'esecutore dava per risolta.
+
+Cosa lo renderebbe piu' solido, senza una singola query nuova, in ordine
+di resa:
+
+(a) CALCOLARE LA z DEL GRADE SU UN GRUPPO DECENTE. E' il problema numero
+    uno, ed e' anche il motivo per cui beta esce basso (sezione 3). Oggi
+    nel backtest il gruppo e' (manager, giornata, lega, ruolo):
+      gruppi: 5.488   dimensione MEDIANA 1 carta, media 1,8, massimo 19
+      righe in gruppi da <=3 carte: 6.827 su 10.093 (67,6%)
+      righe con aggiustamento esattamente 0: 5.474 (54,2%)
+    Una z calcolata su 2 carte vale +1 e -1 per costruzione: non dice
+    quasi niente. In PRODUZIONE il gruppo e' (lega, ruolo) su TUTTO il
+    pool di discovery — centinaia di candidati (`_apply_grade_group(rows)`
+    con rows = tutti i candidati di quella lega/ruolo, riga 1026). Sono
+    due z diverse, e stiamo misurando quella peggiore.
+    Due modi di sistemarlo, entrambi a costo zero:
+      - `GRADE_SCALE=storica` ESISTE GIA' IN PRODUZIONE (riga 460, con
+        `_scala_storica_per` alle righe 532-535): calcola media e sd del
+        grade da una distribuzione storica invece che dal gruppo locale.
+        E' esattamente la medicina per il gruppo da 2 carte, ed e' gia'
+        scritta. Rifare il test carta con quella scala e' la mossa numero
+        uno.
+      - in alternativa, allargare il gruppo di riferimento alla GIORNATA
+        (tutte le carte di tutti i manager, stessa lega/ruolo).
+        NOTA SUL VINCOLO DI CLAUDE.md 2bis: quel vincolo vieta di MESCOLARE
+        LE CARTE FRA MANAGER NEL POOL DI SELEZIONE (nessuno possiede
+        l'unione di due mazzi) e resta intoccabile. Usare una popolazione
+        piu' ampia solo come METRO per standardizzare un grade non presta
+        carte a nessuno: nessun manager schiera una carta che non ha. Detto
+        questo, e' una lettura del vincolo, e la decisione e' dell'utente:
+        se ha un dubbio, si usa la scala storica e il problema non si pone.
+(b) BUTTARE I GRUPPI DA 2. Sono 1.104 righe in cui la z e' +/-1 per
+    costruzione: portano rumore quasi puro. beta misurato su quel
+    sottogruppo: +0,263 con SE 0,246 (t=1,07), cioe' niente.
+(c) NON serve toccare il clustering: ho gia' provato i quattro
+    raggruppamenti sensati (§1.1) e il piu' prudente e' quello che stiamo
+    gia' usando. Il wild bootstrap conferma che regge. Questa strada e'
+    esaurita, non spenderci altro tempo.
+
+
+================================================================
+3. RISPOSTA ALLA DOMANDA 2 — che fare con b=0,33? NIENTE, per ora
+================================================================
+
+La proposta `GRADE_WEIGHT=0.33` e' la conclusione sbagliata da trarre da
+un numero giusto. Il motivo e' un errore statistico classico e ha un nome:
+ATTENUAZIONE DA ERRORE DI MISURA.
+
+Esempio da bar. Vuoi sapere se essere alti aiuta a prendere il barattolo
+sullo scaffale alto. Misuri l'altezza di 100 persone con un metro di
+gomma, che sbaglia di 8 cm a caso. Ti esce che ogni centimetro in piu'
+aiuta un terzo di quanto aiuta davvero. La conclusione giusta non e'
+"l'altezza conta tre volte meno di quel che pensavamo": e' "compra un
+metro decente". Il nostro metro di gomma e' la z calcolata su gruppi da
+una carta e mezza.
+
+L'ho misurato invece di dedurlo. La stessa carta nella stessa giornata
+compare nei pool di piu' manager, e li' l'aggiustamento cambia SOLO perche'
+cambia il gruppo di riferimento — cioe' e' esattamente rumore di misura,
+isolato:
+  coppie (giocatore, giornata) presenti in >= 2 mazzi: 2.331
+  MSB = 4,9286   MSW = 1,3270   k0 = 2,63
+  affidabilita' ICC = 0,507
+Cioe': meta' della varianza dell'aggiustamento e' rumore del metro.
+
+  beta misurato                 = 0,330  (SE prudente 0,139)
+  beta corretto per attenuazione= 0,330 / 0,507 = 0,651  (SE 0,275)
+  IC95 sul beta corretto        = [0,113 ; 1,189]
+
+**1,0 e' dentro l'intervallo.** Non abbiamo nessuna base per dire che il
+peso di produzione sia sbagliato, tantomeno "tre volte troppo alto".
+
+Controprova nella stessa direzione, beta per dimensione del gruppo:
+  gruppi da 2 carte : n=1.104  beta +0,263  (t 1,07)
+  gruppi da 3-4     : n=1.545  beta +0,327  (t 1,76)
+  gruppi da 5-7     : n=1.203  beta +0,436  (t 2,37)
+  gruppi da 8+      : n=  767  beta +0,231  (t 0,95)
+Non e' una scala pulita (l'ultima riga ha n piccolo e t sotto 1: non la
+userei per niente), ma la parte con i gruppi minuscoli sta in basso, come
+prevede l'attenuazione.
+
+Quindi, in pratica:
+  - NON introdurre `GRADE_WEIGHT` adesso, e non toccare il peso 1,0.
+    Sarebbe una modifica di produzione basata su una stima che sappiamo
+    distorta verso il basso, e nella direzione di indebolire un componente
+    che abbiamo appena dimostrato funzionare.
+  - PRIMA rifare il test carta con la scala storica (§2a). Se anche li'
+    beta esce basso con un metro decente, allora il discorso peso si
+    riapre con dati veri, e a quel punto un flag spento di default e'
+    la mossa giusta.
+  - Un `GRADE_WEIGHT` come parametro POTREBBE comunque essere utile
+    scriverlo ora (spento, valore 1,0 = comportamento identico), perche'
+    e' l'interruttore che servira' per la griglia. Ma va scritto e
+    verificato A/A (valore 1,0 -> output bit-identico all'attuale), non
+    acceso.
+
+
+================================================================
+4. RISPOSTA ALLA DOMANDA 3 — il dubbio sul campione DNP
+================================================================
+
+Il dubbio e' legittimo ed e' esattamente la domanda giusta da farsi. Ma la
+misura per rispondere l'hai gia' prodotta senza accorgertene, ed e' la
+riga piu' importante di tutto il tuo test.
+
+Ho ricalcolato il bias del modello sui due campioni:
+  CON filtro DNP  : bias (atteso_A - reale) = -10,51 punti su   860 formazioni
+  SENZA filtro DNP: bias (atteso_A - reale) =  -0,77 punti su 1.085 formazioni
+
+Rimettendo dentro le formazioni con DNP, il bias del modello va
+praticamente a ZERO. Questo e' il test di rappresentativita': se il tasso
+di DNP del nostro archivio fosse diverso da quello che il modello si
+aspetta, il bias non atterrerebbe sullo zero, atterrerebbe altrove. Ci
+atterra. In piu' e' una bella notizia indipendente: la calibrazione
+dell'atteso, su 1.085 formazioni vere, e' corretta entro 0,8 punti.
+
+Numero derivato utile (aritmetica, non misura diretta: assume che i DNP
+delle 5 carte siano indipendenti fra loro, cosa non garantita): il 19,3%
+delle formazioni ha almeno una carta a zero su cinque, il che implica un
+tasso di DNP per carta di circa il 4,2%. E' un numero confrontabile con
+quello che la produzione si aspetta dai suoi `starter_odds`: se qualcuno
+vuole chiudere il dubbio del tutto, il confronto e' quello, e costa zero.
+
+Il residuo di verita' nel tuo dubbio, che tengo aperto: l'archivio
+contiene solo arene che un umano ha scelto di giocare, e un umano
+potrebbe scegliere titolari piu' sicuri di quanto farebbe il generatore.
+Se cosi' fosse, il 4,2% sottostima l'esposizione della produzione. Ma con
+il bias a -0,77 l'effetto e' di secondo ordine. Non ci fermerei sopra.
+
+Non stavi vedendo un fantasma: stavi facendo la domanda giusta. La
+risposta e' che il dato per rispondere c'era gia'.
+
+
+================================================================
+5. IL FILTRO DNP: cosa cambia davvero (e la mia ritrattazione)
+================================================================
+
+Verificato da me sui due file di output:
+                          CON filtro        SENZA filtro
+  formazioni                    895               1.099
+  M (entra sempre)          +42.500             +11.500
+  A (entra)          +25.750 (460)       +13.550 (567)
+  G (entra)          +28.150 (441)       +17.050 (542)
+  discordanti                   105                 143
+  delta G-A                  +2.400              +3.500
+  trim simmetrico 3+3        +2.200              +2.900
+  premio medio per arena      +47,5               +10,5
+
+Tre letture, in ordine di importanza:
+
+5.1 LA SOGLIA D'INGRESSO NON DISTRUGGE VALORE: LO CREA. Senza filtro,
+    entrare sempre rende +11.500, A rende +13.550, G rende +17.050. Il
+    filtro di G vale +5.550 rispetto a "entra sempre". La mia sezione 6.1
+    di stanotte diceva il contrario (-17.150) ed era sbagliata: il
+    campione filtrato toglieva proprio le arene andate male, cioe'
+    esattamente quelle che la soglia esiste per evitare. Ritirata.
+    E c'e' un corollario positivo che nessuno aveva ancora in mano: il
+    valore della soglia viene in buona parte dal fatto che l'atteso PREZZA
+    GIA' il rischio che un giocatore non scenda in campo. Con il filtro
+    acceso quella capacita' era invisibile per costruzione.
+
+5.2 IL FILTRO VA SPENTO DI DEFAULT, non tenuto come opzione. Tutto quello
+    che e' stato misurato sul campione filtrato e che coinvolge M o la
+    soglia e' sistematicamente sbagliato, non "un po' ottimista". Propongo
+    di invertire il default di `INCLUDI_DNP` (default = includi) e di
+    lasciare il filtro come variante esplicita solo per confrontarsi con
+    le misure vecchie. Il rischio, se resta com'e', e' che fra due
+    settimane qualcuno rilanci p23 con il default e riscriva un verdetto
+    sbagliato senza saperlo.
+
+5.3 IL CONFRONTO G-vs-A IN ESSENZE MIGLIORA MA RESTA NON DECIDIBILE.
+    Ricalcolato da me sulle decisioni discordanti:
+      con filtro : n=105  media +22,9  sd 377,8  t=0,62  pro-G 59 (56%)
+      senza      : n=143  media +24,5  sd 315,3  t=0,93  pro-G 82 (57%)
+      per t=2 servirebbero 664 decisioni discordanti (erano 1.093)
+    Meglio, ma sempre fuori portata. E la banda morta rifatta senza filtro
+    resta instabile come prima (delta G-A: +3.500 a X=0, +10.900 a X=5,
+    -150 a X=10, -100 a X=20): il premio in essenze continua a essere una
+    lotteria e continua a non essere lo strumento giusto per giudicare un
+    componente del modello. Il test carta lo e'.
+    Nota su quei numeri: A e G migliorano ENTRAMBI molto passando da X=0 a
+    X=10 (+13.550 -> +23.850 e +17.050 -> +23.700). E' un indizio che la
+    soglia sia ancora un filo stretta, ma e' ottimizzazione sugli stessi
+    dati su cui la misuro: non e' una raccomandazione, e' una cosa da
+    verificare fuori campione piu' avanti.
+
+
+================================================================
+6. RISPOSTA ALLA DOMANDA 4 — prossimo passo, i tre risultati insieme
+================================================================
+
+1. NON TOCCARE LA PRODUZIONE. Niente `GRADE_WEIGHT=0.33`, niente modifica
+   alle soglie. Oggi sappiamo che il grade funziona; non sappiamo che sia
+   pesato male, e le due cose vengono confuse facilmente.
+
+2. RIFARE IL TEST CARTA CON `GRADE_SCALE=storica` (o comunque con un
+   gruppo di riferimento decente). E' la mossa che vale di piu': fa
+   crescere le righe utili da 4.619 a ~10.000, alza l'affidabilita' del
+   metro dal 0,507 di oggi, e soprattutto misura LA STESSA z che usa la
+   produzione invece di una versione mutilata. Zero query, esecutore
+   Sonnet. E' anche la vecchia idea della "griglia fissa" che avevo messo
+   al terzo posto il 10/08: allora era prematura perche' non sapevamo il
+   segno dell'effetto; adesso il segno lo sappiamo (placebo p=0,005) e la
+   ragione per farla e' cambiata — non "amplificare", ma "misurare con un
+   metro fermo".
+
+3. INVERTIRE IL DEFAULT DI `INCLUDI_DNP` in p23 (§5.2), e ricontrollare
+   che nessun altro script/documento in repo poggi sui numeri del campione
+   filtrato. Zero query.
+
+4. Solo dopo il punto 2: decidere sul peso del grade. Se con la scala
+   storica beta resta sotto 1 con un intervallo che ESCLUDE 1, allora si
+   scrive `GRADE_WEIGHT`, si verifica A/A che a 1,0 l'output sia
+   identico, e si prova il valore misurato dietro flag. Non prima.
+
+5. Sempre valido: NIENTE NUOVE ESTRAZIONI DI MANAGER. Il round5 fermato a
+   meta' e' stata la decisione giusta. Il campione carta che abbiamo gia'
+   (10.093 righe) non e' ancora stato sfruttato per meta' delle domande
+   che ci stiamo facendo.
+
+6. Da tenere per dopo, non adesso: la soglia d'ingresso misurata in PUNTI
+   e fuori campione (§5.3).
+
+
+================================================================
+7. UNA COSA CHE HA FATTO BENE L'ESECUTORE, DA TENERE COME REGOLA
+================================================================
+
+Il test A/A sui duplicati (punto 1b del suo brief) e' il modo corretto di
+validare un errore standard cluster-robust, e non l'aveva chiesto nessuno:
+duplicare le stesse righe deve lasciare la SE cluster quasi ferma e
+dimezzare quella classica, ed e' esattamente quello che ha misurato
+(0,0306 -> 0,0302 cluster, 0,0216 classica). Quella e' la regola di
+CLAUDE.md "prima di misurare, dimostro che l'interruttore funziona"
+applicata bene e di propria iniziativa.
+L'unico pezzo che mancava era il gemello sui DATI VERI (il placebo di
+§1.3): validare lo strumento non basta, va anche verificato che il segnale
+sparisca quando si toglie la causa. Da qui in avanti i due test vanno
+sempre in coppia.
+
+
+================================================================
+8. FILE DI RIFERIMENTO
+================================================================
+
+- archivio_ufficiale/aggregato/binario2_pool_rows.json (10.093 righe carta)
+- archivio_ufficiale/aggregato/binario1_out.json
+- archivio_ufficiale/aggregato/binario1_senza_filtro_dnp_out.json
+- analisi_manager/p25_test_carta_grade.py (corretto; gli mancano solo
+  placebo e wild bootstrap, che ho fatto a parte)
+- analisi_manager/p23_binario1_mga.py (INCLUDI_DNP: default da invertire)
+- generatore_formazioni/build_formazione_globale.py:
+    riga 440  GRADE_ENABLED (default 1)
+    riga 460  GRADE_SCALE (default 'gruppo'; 'storica' gia' implementata)
+    righe 505-550 _apply_grade_group -> `atteso + sd * z`, peso 1,0
+    riga 1006 calibra_riga, riga 1026 _apply_grade_group (ordine verificato)
+- docs/handoff/RISPOSTA_OPUS_STATO_GVSA_ROUND4_2026-08-11.txt
+    (mia risposta precedente: la sezione 6.1 e' RITIRATA, vedi §5.1 qui;
+     la 6.2 e' confermata)
+- docs/handoff/BRIEF_OPUS_ESITO_TESTCARTA_DNP_2026-08-11.txt (il brief)
