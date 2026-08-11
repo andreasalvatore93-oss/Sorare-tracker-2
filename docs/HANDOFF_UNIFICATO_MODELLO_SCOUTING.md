@@ -12,14 +12,17 @@ come riferimento corrente):
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
 Ultimo aggiornamento: **sessione 11/08/2026 (Roma, CEST)** — filone
-PORTIERE RIAPERTO (§5.6): trovato un segnale nuovo (GK_ATT_AVV, forza
-d'attacco storica dell'avversario, da gol veri mai usati prima), confermato
-su blocco temporale indipendente e nel Binario 2 vero (IC che esclude lo
-zero). Implementato dietro flag `GK_ATT_AVV_ENABLED`, **default spento,
-NON e' la scelta ufficiale** — due formule ancora in gara (secca vs ultime
-10 partite), decisione dell'utente ancora aperta. Nessun'altra modifica
-alla produzione in questa sessione. Handoff sessione:
-`docs/handoff/HANDOFF_SESSIONE_GK_ATT_AVV_2026-08-11.txt`.
+PORTIERE: GK_ATT_AVV **ACCESO IN PRODUZIONE l'11/08/2026** (formula
+"secca", media storica tutta la carriera, refresh automatico ad ogni run).
+Decisione dell'utente dopo verdetto Opus su Binario 1 e Binario 2
+sull'archivio completo (2975 formazioni/360 GW-manager, non solo la
+fixture nuova). `GK_ATT_AVV_ENABLED` default ora **'1' acceso** in
+`build_formazione_globale.py` e nell'input del workflow. Allineato anche
+`scouting_gw.py` (prima non applicava il correttivo: portiere avrebbe
+avuto un atteso diverso fra generatore e scouting). **Ri-misura
+pre-registrata dopo 3 fixture giocate col flag acceso — data e condizione
+fissate in §5.6, non un promemoria "a voce": l'utente lavora su 3 account
+diversi, va letto qui.** Dettaglio: §5.6.
 
 ## REGOLA NUOVA — I BACKTEST SONO IL MODELLO CONTRO SE STESSO (09/08/2026, decisa dall'utente)
 
@@ -542,34 +545,73 @@ l'incertezza sul totale formazione (σ=49,4 pt) è troppo grande perché la
 non-linearità del premio conti in pratica. La regola attuale del bot è già
 quella giusta.
 
-### 5.6 Portiere — RIAPERTO l'11/08/2026, segnale nuovo trovato (GK_ATT_AVV, NON ancora in produzione)
-Tutto quello sotto (§5.6 storico) restava valido come tetto sui segnali
-GIA' TESTATI: nessuno batteva la produzione. L'11/08 e' entrato un
-ingrediente MAI provato prima — i gol VERI (homeGoals/awayGoals, dati
-pubblici Sorare via `nodes(ids)`, non c'erano nella cache game-log) — e la
-diagnosi cambia: l'atteso GK di produzione e' praticamente PIATTO (1.932
-righe, range 45,5-51,7, sd 0,97 contro sd 18,7 del reale — sotto il
-criterio "dispersione vera correlata al reale", non "batte le quote con
-margine", il modello e' indistinguibile dal cieco). Segnale che REGGE, unico
-su 5+ tentativi indipendenti: **quanto segna di solito la squadra
-AVVERSARIA** (non la propria difesa, quella resta morta su ogni test,
-quinta conferma). Confermato su blocco temporale indipendente (stagione
-2024/25, n=1.896, IC esclude lo zero) e nel backtest vero Binario 2
-(337→360 GW dopo l'estensione dell'11/08, bootstrap sul delta appaiato):
-con la formula "media storica secca" G guadagna +5.556 essenze, IC95%
-[+652;+10.531] — **esclude lo zero per la prima volta nel filone**.
-NON DECISO: due formule pre-registrate in gara (secca vs media ultime 10
-partite, quest'ultima sotto soglia: IC [-1.296;+10.357]). Implementato in
-`generatore_formazioni/build_formazione_globale.py`
-(`GK_ATT_AVV_ENABLED`, default **'0' spento** — NON e' la scelta ufficiale,
-e' solo pronto per essere testato/attivato quando si decide la formula) e
-`generatore_formazioni/dati/aggiorna_gk_attacco_avversario.py` (tabella
-dinamica, refresh incrementale agganciato a `formazione_giornata.yml`).
+### 5.6 Portiere — ACCESO IN PRODUZIONE l'11/08/2026 (GK_ATT_AVV, formula secca)
+Tutto quello sotto (§5.6 storico) resta valido come tetto sui segnali GIA'
+TESTATI PRIMA dell'11/08: nessuno batteva la produzione (L10, casa/
+trasferta, quote di vittoria, difesa propria — morta su ogni test). Il
+segnale che ha rotto il tetto: **quanto segna di solito la squadra
+AVVERSARIA** (gol veri, homeGoals/awayGoals, dati pubblici Sorare via
+`nodes(ids)`, mai usati prima). Confermato su blocco temporale indipendente
+(stagione 2024/25, n=1.896, IC esclude lo zero) e nel backtest vero.
+
+**DECISIONE (11/08/2026, utente + verdetto Opus):** formula "secca" (media
+storica di tutta la carriera disponibile, tabella dinamica che si
+riaggiorna da sola). `GK_ATT_AVV_ENABLED` default ora **'1' ACCESO** sia in
+`build_formazione_globale.py` sia nell'input del workflow
+`formazione_giornata.yml`. Motivo: su tutto l'archivio ufficiale (2975
+formazioni/360 GW-manager, non solo la fixture nuova 7-11 agosto) —
+  - **Binario 2** (pool libero): G migliora SE STESSO (non A: A e' solo il
+    braccio di confronto) di **+5.556 essenze**, IC95% [+649;+10.638],
+    **98,7% positivo** — combacia quasi esatto con la misura storica sui
+    337→360 GW, replicata due volte da sessioni indipendenti (orchestratore
+    e Opus).
+  - **Binario 1** (formazione fissa): primo test mai fatto su questo
+    correttivo. Punto stimato -1.500 (IC [-5.650;+2.550], include lo zero)
+    ma **sotto-potenza**, non contro-prova: con solo 36 decisioni
+    discordanti su 1091 la soglia minima rilevabile e' ~4.190 essenze,
+    contro un effetto atteso di poche centinaia — il -1.500 dista 0,7
+    deviazioni standard dallo zero, dentro il rumore.
+  - A_on-A_off = +6.794 (IC [+1.360;+12.320], 99,2% positivo): il
+    correttivo migliora anche il braccio SENZA grade — due regole di
+    scelta diverse, stesso verso, argomento a favore.
+  - Look-ahead della tabella (costruita su tutta la storia, senza taglio
+    per data) misurato e scartato: ricalcolo walk-forward su 25 fixture,
+    differenza 0,096 punti contro sd 1,727 del correttivo (5,6%,
+    irrilevante).
+
+Allineato anche `scouting_gw.py` (`_atteso_dai_consigli`): prima non
+applicava affatto il correttivo, un portiere avrebbe avuto un atteso
+diverso fra generatore e scouting (fino a ~6-7 punti). Stesso flag/formula,
+stessa funzione `gk_att_avv_aggiustamento` del modulo generatore.
+
+**RI-MISURA PRE-REGISTRATA — DATA FISSA, NON UN PROMEMORIA A VOCE**
+(l'utente lavora su 3 account diversi, un reminder per-account non basta:
+va letto qui). Motivo: la formula "secca" e' stata scelta fra 5 candidate
+sugli stessi dati, quindi le conferme viste finora sono campioni annidati
+(337→360 GW = +6% di dati nuovi), non repliche indipendenti.
+
+Fixture tracciate (verificate l'11/08/2026 via query pubblica Sorare
+`so5Fixtures`, non stimate — GW4 `football-11-14-aug-2026` era gia'
+'started' quando si e' acceso il flag, quindi la PRIMA giornata realmente
+giocabile col correttivo e' la GW5):
+  1. GW5 `football-14-18-aug-2026` (chiude 2026-08-18)
+  2. GW6 `football-18-21-aug-2026` (chiude 2026-08-21)
+  3. GW7 `football-21-25-aug-2026` (chiude 2026-08-25)
+
+**Quando GW7 e' chiusa (dal 25/08/2026 in poi):** riestrarre queste 3
+fixture in `archivio_ufficiale/` per i manager disponibili, rilanciare
+`analisi_manager/p24_binario2_ga.py` flag on/off e rifare il bootstrap
+appaiato G_on-G_off **SOLO su queste 3 GW nuove** (mai mischiate con le
+360 gia' usate per scegliere la formula — altrimenti si torna a
+misurare lo stesso campione con cui si e' decisa la formula). Atteso
+(Opus): ~+15 essenze/GW-manager. **Se il segno esce negativo su queste 3
+GW, si rispegne `GK_ATT_AVV_ENABLED` di default** (spento in
+`build_formazione_globale.py` e nell'input del workflow).
+
 Dettaglio integrale: `docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt`
-§9-13, e `docs/handoff/HANDOFF_SESSIONE_GK_ATT_AVV_2026-08-11.txt` per il
-prossimo passo. NON toccare `CALIB_PER_RUOLO`/`GK_TEAM_CS_WEIGHT` per
-questo filone: il correttivo nuovo si somma DOPO la calibrazione, non la
-sostituisce.
+§9-14, `docs/handoff/BRIEF_OPUS_GK_SECCA_PRODUZIONE_2026-08-11.txt`. NON
+toccare `CALIB_PER_RUOLO`/`GK_TEAM_CS_WEIGHT` per questo filone: il
+correttivo si somma DOPO la calibrazione, non la sostituisce.
 
 Vecchio tetto (chiuso il 12-13/08, resta valido SOLO per i segnali gia'
 provati allora — L10, casa/trasferta, quote di vittoria: nessuno batteva la
