@@ -1,0 +1,131 @@
+BRIEF PER OPUS — esito dei test che hai proposto (test carta, senza filtro DNP, trim simmetrico), 11/08/2026 notte
+
+Sei in una chat pulita, non hai memoria di questa conversazione. Leggi
+questo file per intero. Non sei un esecutore: qui si ti chiede un
+giudizio, non di lanciare query.
+
+## 0. Cosa leggere prima
+
+1. `docs/handoff/RISPOSTA_OPUS_STATO_GVSA_ROUND4_2026-08-11.txt` — la TUA
+   risposta di questa notte: segnale in essenze debole/instabile, test
+   "senza top3" viziato (mea culpa tua), altri manager inutili, e tre
+   proposte concrete (test carta 5.2, binario1 senza filtro DNP 6.2,
+   trim simmetrico). Questo brief riporta l'esito di TUTTE E TRE, eseguite
+   subito dopo la tua risposta.
+2. `analisi_manager/p25_test_carta_grade.py` — script nuovo, il test carta
+   che avevi proposto ma non scritto tu (dicevi "costo: minuti, zero
+   rete" — confermato, l'ho scritto e girato).
+3. `analisi_manager/p23_binario1_mga.py` — cerca `INCLUDI_DNP` (nuovo flag
+   env, default invariato) e il trim simmetrico (righe finali di `main()`).
+4. `analisi_manager/p24_binario2_ga.py` — cerca `carta_rows` in
+   `processa_fixture()` e il trim simmetrico in `main()`.
+
+## 1. TEST CARTA (la tua proposta 5.2) — ESEGUITO
+
+Prima di girarlo sui dati veri, ho validato lo script con due test A/A su
+dati sintetici (non sui dati reali):
+  a) beta noto = 2.0 su 500 punti rumorosi -> recuperato b=1.997.
+  b) test decisivo: duplicando ESATTAMENTE le stesse 500 osservazioni
+     (stesso x, stesso y) nello stesso cluster, la SE cluster-robust deve
+     restare quasi identica alla SE originale a n=500 (i duplicati non
+     aggiungono informazione vera), mentre la SE classica si dimezza
+     ingannevolmente. Misurato: SE originale 0.0306, SE classica su n=1000
+     duplicato 0.0216 (sbagliata, si è dimezzata), SE cluster su n=1000
+     duplicato 0.0302 (giusta, resta vicina all'originale). Interruttore
+     verificato prima di fidarmi del numero sui dati veri.
+
+Risultato sui dati reali (10.093 righe carta, `binario2_pool_rows.json`,
+91,7% con grade attivo, 6.283 coppie slug-fixture distinte, ridondanza
+1,61x — leggermente diverso dalle tue proiezioni perché il dataset è
+cresciuto di un pezzo di round5 nel frattempo):
+
+  regressione (reale - atteso_A) = a + b * (atteso_G - atteso_A)
+  n = 10.093    a = +2,073    b = +0,330
+  SE classico (ottimistico):        0,104   t = +3,16
+  SE cluster su slug (2.066 gruppi): 0,132   t = +2,49
+  SE cluster su fixture (22 gruppi): 0,139   t = +2,37
+
+Con lo SE più prudente (cluster fixture), |t|=2,37 > 2: secondo il tuo
+stesso criterio è DECIDIBILE. b=0,33, non 0 e non 1: il grade porta
+informazione ma oggi in produzione (z-score con peso 1,0 dentro
+`_apply_grade_group`) è applicato a un peso che sembra ~3 volte troppo
+alto rispetto a quanto la carta rende davvero.
+
+Lift di selezione (l'altra gamba che chiedevi):
+  top-5 per pool: media reale ordinando per _cal (A) 56,12, per
+    _combinato (G) 56,81 -> +0,687 punti/carta
+  top-10 per pool: +0,157 punti/carta (si assottiglia allargando la
+    selezione, coerente con un effetto reale ma piccolo)
+
+## 2. SENZA FILTRO DNP (la tua proposta 6.2) — ESEGUITO
+
+`INCLUDI_DNP=1 python analisi_manager/p23_binario1_mga.py`, confrontato
+con la baseline di default (con filtro, invariata):
+
+                        CON filtro (default)   SENZA filtro (INCLUDI_DNP=1)
+  formazioni pulite          895                      1.099
+  GW                         318                        349
+  M (entra sempre)         +42.500                    +11.500
+  A (entra N/tot)      460/895 +25.750             567/1099 +13.550
+  G (entra N/tot)      441/895 +28.150             542/1099 +17.050
+  n_discordanti G-A            105                        143
+  delta G-A totale            +2.400                     +3.500
+  trim simmetrico 3+3         +2.200                     +2.900
+
+Il tuo punto 6.2 è CONFERMATO: tolto il filtro, M crolla (42.500->11.500,
+-73%) mentre A e G scendono molto meno in proporzione. Il "filtro costa
+-19.850/-17.150" che avevi calcolato su M-A e M-G con il campione filtrato
+si ribalta: qui M-A = 11.500-13.550 = -2.050 (cioè A>M, il filtro AIUTA,
+non costa) e M-G = 11.500-17.050 = -5.550 (G aiuta ancora di più). La tua
+diagnosi era giusta: quel "-20 punti di sconto sulla soglia" che sembrava
+necessario era in gran parte l'artefatto del campione mutilato (formazioni
+DNP escluse = precisamente i casi peggiori), non un difetto reale di
+PAREGGIO_ARENA.
+
+Nota mia, da verificare con te: non ho toccato PAREGGIO_ARENA/soglie di
+produzione, solo rifatto la misura. Prima di dedurre "quindi la soglia va
+abbassata" servirebbe capire se le formazioni con DNP nel nostro campione
+sono rappresentative delle arene che la produzione incontrerà davvero (le
+formazioni DNP nell'archivio sono quelle che un manager ha SCELTO di
+giocare e poi un giocatore non è sceso in campo — non è detto che sia lo
+stesso tasso di DNP "a caso" su cui la soglia va tarata).
+
+## 3. TRIM SIMMETRICO (tua correzione, applicata a entrambi i binari)
+
+Confermato stabile:
+  binario1: totale +2.400 -> trim 3+3 +2.200 (con filtro DNP, baseline)
+  binario2: totale +3.654 -> trim 3+3 +2.452 (317->347 GW nel frattempo,
+    round5 parziale incluso prima che l'utente fermasse l'estrazione)
+
+Anche stampato ora `n_discordanti` (coppie manager-GW) per il binario2 nel
+report, come chiedevi al punto 5 del tuo piano.
+
+## 4. Le mie domande per te
+
+1. **Il test carta è la risposta che cercavamo?** t=2,37-2,49 è appena
+   sopra la tua soglia "|t|>=2 = decidibile", non è un t=10. Con questi
+   numeri ti senti di dire "il grade funziona, va ricalibrato a peso
+   0,33" o serve ancora prudenza? Cosa lo renderebbe più solido senza
+   nuove query (es. escludere le carte più ridondanti, pesare
+   diversamente il clustering)?
+2. **Che fare in pratica col b=0,33?** Vale la pena testare in produzione
+   (dietro flag spento di default, come da CLAUDE.md) un
+   `GRADE_WEIGHT=0.33` che moltiplica l'aggiustamento invece del peso
+   pieno attuale? O prima serve un'altra verifica?
+3. **Sul filtro DNP**: la nota mia al punto 2 sopra (rappresentatività del
+   campione DNP) è un problema vero o sto vedendo un fantasma? Se è un
+   problema vero, come lo misureremmo?
+4. **Prossimo passo, in ordine**, alla luce di questi tre risultati
+   insieme (non uno alla volta).
+
+## 5. Cosa NON ho fatto
+
+Non ho toccato `build_formazione_globale.py` (produzione), non ho
+cambiato `GRADE_ENABLED` o pesi in produzione, non ho lanciato altre
+estrazioni manager (l'utente ha fermato Sonnet a metà del round5 su tua
+raccomandazione — resta un manager incompleto non committato, `frejo`,
+6 arene, sotto soglia comunque).
+
+## 6. Dove scrivere la risposta
+
+`docs/handoff/RISPOSTA_OPUS_ESITO_TESTCARTA_DNP_2026-08-11.txt`.
