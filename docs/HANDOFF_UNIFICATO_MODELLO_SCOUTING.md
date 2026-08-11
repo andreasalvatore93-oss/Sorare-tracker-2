@@ -1402,6 +1402,52 @@ controllo fuori campione sulle prossime GW reali, come per GK_ATT_AVV.
 File: `analisi_manager/dati/grade_essenze_finale_2026-08-12.json`,
 `analisi_manager/dati/grade_scala_produzione_2026-08-12.json`.
 
+#### Controllo Opus sulla ricetta finale — passa tutti e tre i test (12/08/2026 notte)
+
+`analisi_manager/p56_placebo_ricetta_finale.py`. Il placebo di p52 girava
+sulla ricetta VECCHIA: rifatto sulla ricetta finale esatta, più due
+controlli di meccanismo che potevano smontarla.
+
+    VERO (ricetta finale)   delta +10.102 (98,8%)   arene giocate 1.071 (-34 vs baseline 1.105)
+    20 placebo              mediana -10.656, min -16.131, max -4.077
+    placebo >= del vero     0 / 20        ->  p <= 0,048
+    placebo a >=95%         0 / 20
+    arene: baseline 1.105, vero 1.071, placebo in media 1.095
+
+1. **Placebo: passa.** Con il voto rimescolato dentro la GW-manager, la
+   stessa ricetta PERDE ~10.700 essenze. Il guadagno viene
+   dall'informazione del voto, non dalla macchina.
+2. **Ipotesi "guadagna perché gioca meno arene": smentita.** La ricetta
+   gioca 34 arene in meno (-3,1%), ma i placebo ne giocano 10 in meno e
+   perdono lo stesso: togliere arene a caso non paga, toglierle con il
+   voto sì. (Da sapere comunque, è un cambio di comportamento reale: in
+   produzione si entrerebbe in ~3% di arene in meno.)
+3. **Ipotesi "è il ribasso sistematico sui portieri": smentita.** Il
+   ricentraggio globale lascia GK -0,673 pt (DEF +0,268, FWD +0,326,
+   MID -0,092). Rifatta la stessa ricetta col ricentraggio PER RUOLO
+   (che azzera il residuo per costruzione): **+9.888 IC95%[+1.324;
+   +18.575] 98,8%**, praticamente identico. Il risultato non dipende
+   dalla granularità del ricentraggio.
+
+**Limiti che restano** (nessuno è un difetto della ricetta, tutti vanno
+nella pre-registrazione): fattore 0,482 stimato sullo stesso campione;
+~12 varianti provate oggi sullo stesso campione, quindi il 98,8% è
+condizionato alla ricerca; il 45-46% del guadagno viene da 5 GW-manager su
+360 (126 positive, 103 negative, mediana 0) — è il motivo per cui l'IC è
+largo, non un errore; e il caveat DNP (il backtest giudica il voto su un
+pool da cui è già stata tolta l'informazione più forte del voto).
+
+**Verdetto Opus: pronta per il passo fuori campione pre-registrato, NON
+per la produzione diretta.** Condizioni da mettere nella
+pre-registrazione, prima di guardare i nuovi dati: (a) le due tabelle
+(voto e sd) vanno ricostruite con un **cutoff temporale** — `p47` ce l'ha
+già come parametro, `p53` no — altrimenti il "fuori campione" non è fuori
+campione; (b) si congelano fattore 0,482 e regola di ricentraggio; (c) si
+dichiara PRIMA la metrica, la n minima e la regola di decisione; (d) si
+dichiara PRIMA che l'effetto atteso è **molto più piccolo** di +10.102
+(quel numero è in-sample e scelto fra ~12 varianti): non si può mettere
+l'asticella a "riprodurre +10.000".
+
 ### Controllo placebo, 12/08/2026 sera (Opus) — il segnale c'è; il braccio scelto però non è spedibile
 
 Primo numero della giornata che REGGE a un controllo, ma non è quello che
