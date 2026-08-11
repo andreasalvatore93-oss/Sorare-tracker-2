@@ -561,23 +561,42 @@ def _apply_grade_group(rows):
 # docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §11).
 # PESATURA (11/08/2026, contestazione dell'utente sulla media storica secca:
 # "le squadre ruotano giocatori/allenatori, una media piatta non ha senso").
-# Testato su n=881 (stesso campione aggregato, §12 del report): finestre
-# CORTE (ultime 5-10 partite, taglio netto) fanno PEGGIO della storia intera,
-# in modo monotono. Con decadimento ESPONENZIALE (peso che si dimezza ogni
-# HALF_LIFE partite, mai un taglio netto) stesso risultato: half-life lunghe
-# (40-80) vincono, corte (3-5) perdono. Scelta: half-life=40 partite --
-# corr +0,105 (indistinguibile dalla storia intera +0,104) ma DINAMICA, si
-# muove ad ogni partita nuova invece di restare congelata. Pendenza
-# rifittata su questa versione (n=881): reale = 55,91 - 5,75*att_hl40.
-# La tabella (generatore_formazioni/dati/gk_attacco_avversario.json) si
-# aggiorna con generatore_formazioni/dati/aggiorna_gk_attacco_avversario.py,
-# che ora fa un refresh INCREMENTALE (scarica solo le partite nuove dalla
-# cache, non da rete storica intera) -- va rilanciato prima di ogni run di
-# generazione per essere davvero aggiornata: NON succede da solo/schedulato
-# ancora (nessun passo nel workflow GitHub lo fa oggi).
+# Testato su n=881 (correlazione, stesso campione aggregato, §12 del report):
+# finestre CORTE (ultime 5-10 partite, taglio netto o decadimento
+# esponenziale) fanno PEGGIO della storia intera, in modo monotono --
+# half-life lunghe (40-80) pareggiano la secca (+0,105 vs +0,104). MA nel
+# BACKTEST VERO (Binario 2, analisi_manager/p24_binario2_ga.py, 337 GW
+# aggregate, bootstrap sul delta appaiato) la media secca vince su tutti i
+# numeri: +4.413 essenze (half-life +3.900), bootstrap positivo nel 95,9%
+# (half-life 91,3%), IC95% [-487;+9.387] (half-life [-1.768;+9.426]).
+# DUE FORMULE PRE-REGISTRATE (11/08/2026), scelte PRIMA di vedere i dati
+# nuovi (fixture 7-11 agosto, tutti i 29 manager) per non scegliere a
+# posteriori su cosa esce meglio -- disciplina esplicita dell'utente, stessa
+# di un pre-registration:
+#   'secca'  = media storica secca, tutta la storia -- reale = 54,49 -
+#              4,26*att_medio (n=2.612, §11 del report). Nel Binario 2 di
+#              oggi (337 GW) e' quella andata meglio: +4.413 essenze,
+#              bootstrap positivo 95,9%, IC95% [-487;+9.387] (ancora non
+#              esclude lo zero).
+#   'u10'    = media secca sulle ultime 10 partite (scelta dell'utente,
+#              nessun half-life) -- reale = 51,18 - 2,43*att_u10 (n=870,
+#              rifit su gk_recency_aggregato_2026-08-13.json).
+# (la versione half-life=40 provata in mezzo, +3.900/91,3%/IC piu' larga,
+# NON e' una delle due opzioni finali: era solo la prima idea, la secca
+# l'ha battuta su tutti i numeri -- vedi commento sopra per il dettaglio).
+# Selezione: GK_ATT_AVV_FORMULA ('secca' default, o 'u10').
+# La tabella (generatore_formazioni/dati/gk_attacco_avversario.json) tiene
+# ENTRAMBI i valori per squadra (att_medio, att_u10), calcolati insieme da
+# generatore_formazioni/dati/aggiorna_gk_attacco_avversario.py -- che scarica
+# solo le partite NUOVE dalla cache (refresh incrementale, mai congelato) e
+# ricalcola entrambe le medie in un colpo solo. Agganciato come step in
+# .github/workflows/formazione_giornata.yml prima del generatore, gira ad
+# ogni run indipendentemente dal flag (cosi' resta fresca per quando si
+# accende).
 # Magnitudine onesta: ~1,3-2 punti di dispersione vera catturata, non un
 # salto enorme -- ma il modello attuale cattura ZERO, quindi e' un
-# miglioramento netto sotto il criterio scelto dall'utente.
+# miglioramento netto sotto il criterio scelto dall'utente, SE il segnale
+# regge sui dati nuovi (in verifica).
 # INTERRUTTORE SPENTO DI DEFAULT (GK_ATT_AVV_ENABLED='0'): a spento,
 # 'atteso'/'sort_score' non vengono MAI toccati, stesso identico
 # comportamento di oggi -- stesso schema di GRADE_ENABLED sopra.
@@ -585,18 +604,50 @@ GK_ATT_AVV_ENABLED = os.environ.get('GK_ATT_AVV_ENABLED', '0') == '1'
 GK_ATT_AVV_DATA_PATH = os.environ.get(
     'GK_ATT_AVV_DATA_PATH',
     os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dati', 'gk_attacco_avversario.json'))
-GK_ATT_AVV_K = -5.75              # pendenza misurata, half-life=40, n=881
-GK_ATT_AVV_MEDIA_GLOBALE = 1.4084  # media att_hl40 pooled, stesso campione
+GK_ATT_AVV_FORMULA = os.environ.get('GK_ATT_AVV_FORMULA', 'secca')
+_GK_ATT_AVV_FORMULE = {
+    'secca': {'campo': 'att_medio', 'k': -4.26, 'media_globale': 1.400},
+    'u10':   {'campo': 'att_u10',   'k': -2.4292, 'media_globale': 1.4225},
+}
 GK_ATT_AVV_MIN_STORICO = 4
 _GK_ATT_AVV_TABELLA = {}
 if GK_ATT_AVV_ENABLED:
-    if os.path.exists(GK_ATT_AVV_DATA_PATH):
+    if GK_ATT_AVV_FORMULA not in _GK_ATT_AVV_FORMULE:
+        print(f"ATTENZIONE: GK_ATT_AVV_FORMULA='{GK_ATT_AVV_FORMULA}' sconosciuta "
+              f"(valide: {list(_GK_ATT_AVV_FORMULE)}) -- correttivo GK disattivato.")
+        GK_ATT_AVV_ENABLED = False
+    elif os.path.exists(GK_ATT_AVV_DATA_PATH):
         with open(GK_ATT_AVV_DATA_PATH, encoding='utf-8') as _f:
             _GK_ATT_AVV_TABELLA = json.load(_f).get('squadre', {})
     else:
         print(f"ATTENZIONE: GK_ATT_AVV_ENABLED=1 ma {GK_ATT_AVV_DATA_PATH} non esiste "
               "-- correttivo GK disattivato per questa run (nessun dato, nessuna riga toccata).")
         GK_ATT_AVV_ENABLED = False
+
+
+def gk_att_avv_valore(avv_slug):
+    """Valore dell'avversario secondo GK_ATT_AVV_FORMULA ('secca'/'u10'), o
+    None se non in tabella, sotto GK_ATT_AVV_MIN_STORICO, o a
+    GK_ATT_AVV_ENABLED spento (tabella vuota in quel caso, stesso
+    fallback). Riusabile da chiunque debba applicare lo STESSO correttivo
+    fuori da load_league_role_data() (es. analisi_manager/p24_binario2_ga.py,
+    per testare G con/senza il correttivo nel backtest Binario 2)."""
+    info = _GK_ATT_AVV_TABELLA.get(avv_slug) if avv_slug else None
+    if not info or info.get('n_partite', 0) < GK_ATT_AVV_MIN_STORICO:
+        return None
+    campo = _GK_ATT_AVV_FORMULE.get(GK_ATT_AVV_FORMULA, {}).get('campo', 'att_medio')
+    return info.get(campo)
+
+
+def gk_att_avv_aggiustamento(avv_slug):
+    """Delta in punti da sommare a un atteso GK gia' calibrato, o 0.0 se
+    l'avversario non e' in tabella (fallback esplicito, mai un valore
+    inventato)."""
+    valore = gk_att_avv_valore(avv_slug)
+    if valore is None:
+        return 0.0
+    f = _GK_ATT_AVV_FORMULE.get(GK_ATT_AVV_FORMULA, _GK_ATT_AVV_FORMULE['secca'])
+    return f['k'] * (valore - f['media_globale'])
 
 
 def _apply_gk_att_avv(rows):
@@ -606,12 +657,11 @@ def _apply_gk_att_avv(rows):
     partite, la riga resta invariata (adjustment=0, fallback esplicito)."""
     for r in rows:
         avv = r.get('opponent_team_slug')
-        info = _GK_ATT_AVV_TABELLA.get(avv) if avv else None
-        if not info or info.get('n_partite', 0) < GK_ATT_AVV_MIN_STORICO or r.get('atteso') is None:
+        att_medio = gk_att_avv_valore(avv)
+        if att_medio is None or r.get('atteso') is None:
             r['_att_avv'] = None
             r['atteso_att_avv'] = r.get('atteso')
             continue
-        att_medio = info['att_medio']
         aggiustamento = GK_ATT_AVV_K * (att_medio - GK_ATT_AVV_MEDIA_GLOBALE)
         r['_att_avv'] = att_medio
         r['atteso_att_avv'] = round(r['atteso'] + aggiustamento, 1)

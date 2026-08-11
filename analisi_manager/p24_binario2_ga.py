@@ -152,6 +152,13 @@ def prepara_pool_rows(pool, primo_kickoff, fine_giornata, idx_grade, lega_di):
             scarti['no_reale'] += 1
             continue
         cal = S21.bfg.calibra(res['atteso'], cod)
+        if cod == 'GK':
+            # Correttivo GK_ATT_AVV (11/08/2026): a GK_ATT_AVV_ENABLED spento
+            # (default) l'aggiustamento e' sempre 0.0 -- vedi
+            # generatore_formazioni/build_formazione_globale.py,
+            # gk_att_avv_aggiustamento(). Serve a testare G col correttivo
+            # acceso/spento nel Binario 2 senza duplicare la formula.
+            cal = round(cal + S21.bfg.gk_att_avv_aggiustamento(res.get('opp_slug')), 1)
         gnum = S21.grade_in_finestra(idx_grade, c['slug'], fine_giornata.strftime('%Y-%m-%d'))
         rows.append({'carta': cid, 'slug': c['slug'], 'nome': c['nome'], 'ruolo': ruolo,
                     'codice': cod, 'lega': lega_di.get(c['slug']) or 'senza_lega',

@@ -1,23 +1,22 @@
-"""Costruisce la tabella squadra -> forza d'attacco (gol fatti, pesati per
-recenza), usata dal correttivo GK_ATT_AVV in build_formazione_globale.py
+"""Costruisce la tabella squadra -> forza d'attacco (media storica secca dei
+gol fatti), usata dal correttivo GK_ATT_AVV in build_formazione_globale.py
 (flag GK_ATT_AVV_ENABLED, spento di default).
 
 STORIA DEL METODO (11/08/2026, contestazione dell'utente sulla media
-storica secca): la prima versione usava una media semplice di TUTTA la
-storia disponibile (~3 anni, nessun peso). L'utente ha obiettato che le
-squadre ruotano giocatori/allenatori e una media piatta non ha senso.
-Testato (analisi_manager/dati/gk_halflife_2026-08-11.json, n=881, stesso
-campione aggregato di Opus): finestre CORTE (ultime 5-10 partite, hard cut)
-fanno PEGGIO della storia intera (monotono: piu' corto, peggio). Poi
-ritestato con decadimento ESPONENZIALE invece di un taglio netto: anche li'
-half-life piu' lunghe vincono (40-80 partite ~uguali alla storia intera,
-half-life 3-5 partite molto peggio) -- ma la versione a mezza vita, a
-differenza della media secca, SI MUOVE ad ogni nuova partita e da' piu' peso
-al presente, quindi risponde meglio all'obiezione dell'utente pur restando
-sulla parte della curva che funziona. Scelta: half-life=40 partite (corr
-+0,105 su n=881, indistinguibile dalla storia intera +0,104, ma dinamico).
-Pendenza di regressione rifittata su questa versione: k=-5.75, intercetta
-55.91, media globale att_hl40 1.4084. Dettaglio:
+storica secca): l'utente ha obiettato che le squadre ruotano
+giocatori/allenatori e una media piatta non ha senso. Testato
+(analisi_manager/dati/gk_halflife_2026-08-11.json, n=881, stesso campione
+aggregato di Opus): finestre CORTE (ultime 5-10 partite, hard cut o
+decadimento esponenziale) fanno PEGGIO della storia intera, in modo
+monotono -- half-life lunghe (40-80) pareggiano la secca sulla
+CORRELAZIONE (+0,105 vs +0,104), ma nel BACKTEST VERO (Binario 2,
+analisi_manager/p24_binario2_ga.py, 337 GW aggregate, bootstrap sul delta
+appaiato) la media secca vince su tutti i numeri: +4.413 essenze (vs +3.900
+half-life), bootstrap positivo nel 95,9% (vs 91,3%), IC95% [-487;+9.387]
+(vs [-1.768;+9.426]). Decisione dell'utente (11/08/2026): tenere la media
+secca (equilibrio migliore misurato), ma resa DINAMICA (vedi sotto) per
+rispondere all'obiezione sul turnover. Pendenza di regressione: k=-4.26,
+media globale att_medio 1.400 (n=2.612, §11 del report). Dettaglio:
 docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §11-12.
 
 DINAMICO (11/08/2026): questo script ora fa un aggiornamento INCREMENTALE,
@@ -49,7 +48,6 @@ CORRENTE_GLOB = 'analisi_manager/dati/gol_squadre_archivio_2025-26_*.json'
 STORICO_GLOB = 'analisi_manager/dati/gol_squadre_archivio_2023_25_*.json'
 OUT = os.path.join('generatore_formazioni', 'dati', 'gk_attacco_avversario.json')
 MIN_STORICO = 4
-HALF_LIFE = 40  # partite, misurato -- vedi docstring
 
 
 def _ultimo_file(pattern):
@@ -132,26 +130,34 @@ def main():
     print(f"file usati: {gol_files}")
     print(f"partite totali: {n_partite}  squadre: {len(fatti)}")
 
+    # Due formule pre-registrate (11/08/2026, PRIMA di vedere i dati nuovi
+    # 7-11 agosto, per non scegliere a posteriori su cosa esce meglio):
+    #   'att_medio' = storica secca, tutta la storia disponibile
+    #   'att_u10'   = secca sulle ultime 10 partite (scelta dell'utente,
+    #                 "quella che mi convince di piu'"), nessun half-life
+    N_ULTIME = 10
     tabella = {}
     for sq, partite in fatti.items():
         if len(partite) < MIN_STORICO:
             continue
-        pesi_somma = 0.0
-        val_somma = 0.0
-        for rank, (_d, g) in enumerate(reversed(partite)):  # rank 0 = piu' recente
-            w = 0.5 ** (rank / HALF_LIFE)
-            pesi_somma += w
-            val_somma += w * g
-        tabella[sq] = {'att_medio': round(val_somma / pesi_somma, 3), 'n_partite': len(partite)}
+        gols = [g for _d, g in partite]
+        entry = {'att_medio': round(sum(gols) / len(gols), 3), 'n_partite': len(partite)}
+        if len(gols) >= N_ULTIME:
+            ultime = gols[-N_ULTIME:]
+            entry['att_u10'] = round(sum(ultime) / len(ultime), 3)
+        tabella[sq] = entry
     print(f"squadre con storico >= {MIN_STORICO} partite: {len(tabella)}")
+    n_con_u10 = sum(1 for v in tabella.values() if 'att_u10' in v)
+    print(f"  di cui con >= {N_ULTIME} partite (att_u10 calcolabile): {n_con_u10}")
 
     tutti = [v['att_medio'] for v in tabella.values()]
-    print(f"media att_medio fra le squadre (pesata half-life={HALF_LIFE}): {sum(tutti)/len(tutti):.3f}")
+    print(f"media att_medio fra le squadre (storica secca): {sum(tutti)/len(tutti):.3f}")
 
     out_obj = {
         '_generato': datetime.date.today().isoformat(),
         '_min_storico': MIN_STORICO,
-        '_half_life_partite': HALF_LIFE,
+        '_n_ultime': N_ULTIME,
+        '_metodo': 'due formule pre-registrate: att_medio (storica secca) e att_u10 (ultime 10), refresh incrementale',
         '_fonte': gol_files,
         'squadre': tabella,
     }

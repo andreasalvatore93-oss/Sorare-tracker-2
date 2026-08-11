@@ -52,6 +52,10 @@ on:
         description: 'Pool suppletivo Arena Beginner/All Stars/Under23 con odds 0.60-0.70 se la tornata a 0.80+ non riempie il richiesto. Default acceso (1), 0 per disattivarlo.'
         required: false
         default: '1'
+      gk_att_avv:
+        description: 'Correttivo GK da forza attacco storica avversario (half-life 40 partite). Default spento (0). Testato: +3.900 essenze nette su 337 GW aggregate, ma bootstrap solo 91,3% positivo (non e'' una certezza) -- vedi RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §11-12.'
+        required: false
+        default: '0'
 
 permissions:
   contents: write
@@ -470,8 +474,20 @@ jobs:
           path: _artifacts
           pattern: pred-*
       - run: python pipeline_artifacts.py apply _artifacts
+      # GK_ATT_AVV (11/08/2026): refresh INCREMENTALE della tabella
+      # attacco-avversario (solo partite nuove, query pubbliche, no cookie).
+      # Gira SEMPRE (anche a gk_att_avv=0) cosi' la tabella resta aggiornata
+      # per quando la si accende. ATTENZIONE COSTO: il checkout e' shallow e
+      # non porta analisi_manager/dati/_cache_index_gamelog.json (20MB, mai
+      # committato di proposito): la prima volta che gira in un checkout
+      # fresco si ricostruisce da zero dai *_gamelog.json tracciati (~2 min),
+      # non e' un bug -- pero' vuol dire ~2 min in piu' ad OGNI run finche'
+      # non si trova un modo di persistere quell'indice fra run (cache
+      # actions/cache o committarlo): da valutare se il costo infastidisce.
+      - run: python generatore_formazioni/dati/aggiorna_gk_attacco_avversario.py
       - env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          GK_ATT_AVV_ENABLED: ${{ github.event.inputs.gk_att_avv }}
           # NUOVO (31/07, fix bug reale kyriani-sabbe): servono per risolvere
           # ESATTAMENTE la stessa giornata gia' usata da discovery_fixture.py
           # (vedi _risolvi_finestra_esplicita in build_formazione_globale.py)
@@ -499,6 +515,12 @@ jobs:
           git config user.name "generatore-formazioni-bot"
           git config user.email "generatore-formazioni-bot@users.noreply.github.com"
           git add generatore_formazioni/output/*.html || true
+          # GK_ATT_AVV: persiste l'aggiornamento incrementale (partite nuove
+          # + tabella ricalcolata) cosi' il prossimo run riparte da qui,
+          # senza rifare il lavoro. Se lo script non ha trovato niente di
+          # nuovo questi add sono no-op (git diff --cached vuoto).
+          git add analisi_manager/dati/gol_squadre_archivio_2025-26_*.json \
+                  generatore_formazioni/dati/gk_attacco_avversario.json || true
           # I file applicati dagli artifact li committa salva_output: qui
           # restano come modifiche non committate e bloccherebbero il
           # 'git merge' del retry-loop sotto (bug reale run 30496069817:
