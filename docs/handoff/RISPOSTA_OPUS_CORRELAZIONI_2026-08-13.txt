@@ -1,0 +1,356 @@
+RISPOSTA OPUS ESECUTORE -- filone CORRELAZIONI fra compagni di squadra.
+Brief: docs/handoff/BRIEF_OPUS_CORRELAZIONI_2026-08-13_SERA.txt (sei domande).
+Sessione Opus esecutore, 13/08/2026 (ora di Roma). Zero query di rete.
+Nessuna modifica alla produzione.
+Script nuovi: analisi_manager/p36_correlazioni_compagni.py,
+              analisi_manager/p37_capitano_ruolo_e_fullstack.py
+Tutte e sei le domande hanno una risposta. Nessuna in sospeso.
+
+===============================================================================
+IL VERDETTO IN DIECI RIGHE, DA BAR
+===============================================================================
+1. L'utente ha ragione sul portiere e il difensore, e ha ragione col numero
+   giusto. Quando il portiere prende clean sheet, il difensore della stessa
+   squadra guadagna +10,1 punti oltre a quello che il modello si aspettava.
+   Lui aveva detto "circa +10". Misurato su 202 difensori contro 476.
+2. E c'e' di piu': il clean sheet e' TUTTO il portiere. Un portiere con clean
+   sheet fa 72,4 punti, senza ne fa 37,9. Sono 34 punti di differenza, e
+   capita nel 29% delle partite.
+3. Il nostro modello, davanti a questa cosa, e' cieco al 100%: prevede 48,8
+   per i portieri che faranno clean sheet e 48,7 per quelli che non lo
+   faranno. Non e' "poco bravo": e' esattamente zero.
+4. Questo spiega finalmente perche' stamattina il portiere non ordinava
+   niente, e perche' nessuna variante lo batteva. Non mancava un dettaglio:
+   mancava l'unica cosa che conta.
+5. Un solo pezzo nuovo -- la probabilita' di clean sheet -- aggiusterebbe il
+   ruolo peggiore E darebbe un pezzo di difensore in regalo. E' il margine
+   piu' grande che ho visto in due giorni di misure.
+6. Il legame fra compagni esiste solo nella meta' difensiva: portiere con
+   difensore +0,27, difensore con difensore +0,16, centrocampista con
+   attaccante +0,04 (cioe' niente). Il controllo placebo (due giocatori della
+   stessa giornata ma di squadre diverse) da' +0,01: quindi e' davvero un
+   effetto della squadra, non della giornata.
+7. Fullstack: mettere 5 carte della stessa squadra NON alza il punteggio in
+   modo dimostrato, ma alza la dispersione del 59% (da 46 a 73). E' una
+   scommessa piu' rischiosa a parita' di attesa, non un pasto gratis.
+8. Capitano per ruolo: no. Nessuna delle tre varianti (solo DEF, solo MID,
+   solo FWD) batte la regola attuale. Restringere per ruolo non salva
+   un'idea che gia' non funzionava.
+
+===============================================================================
+0. CAMPIONI E CONTROLLI
+===============================================================================
+Fonte unica: archivio_ufficiale/ (mai dati_globali/manager_*.json).
+  binario2_pool_rows.json  10.035 righe, 29 manager, 22 giornate (3 apr - 7 ago).
+  binario1_out.json        1.091 formazioni reali con esito.
+  formazioni grezze        archivio_ufficiale/manager_*/**/*.json.
+
+SQUADRA: non e' nel dump. NON ho rifatto prepara_pool_rows (costoso): la
+squadra si ricava dalla cache game-log gia' in repo, perche' la squadra
+PROPRIA di un giocatore compare in TUTTE le sue partite mentre l'avversaria
+cambia. Una passata, zero query, indice salvato in
+analisi_manager/dati/_cache_index_gamelog.json (4.828 giocatori).
+  unita' (giocatore, giornata) distinte      6.244
+  agganciate a squadra + una sola partita    5.568  (scartate 676: nessuna
+     partita, o due partite nella stessa finestra -- ambigue, escluse)
+  gruppi squadra-giornata con >=2 compagni   1.319  (3,51 compagni in media)
+
+CONTROLLO POOL vs SLOT: NON SI APPLICA alle domande C ed E, che non sono
+selezioni fra carte ma correlazioni fra residui a formazione data. Lo scrivo
+esplicitamente come chiede il brief. Si applica invece alla domanda D
+(capitano), dove pero' la formazione e' FISSA e cambia solo chi porta la
+fascia: 5 candidati per 1 slot di capitano, selezione reale.
+
+INCERTEZZA: bootstrap sul CLUSTER, mai sulla singola carta -- squadra-giornata
+per le correlazioni, manager-giornata per il capitano e per il fullstack.
+
+===============================================================================
+1. DOMANDA C -- PORTIERE E DIFENSORE, CLEAN SHEET  [IPOTESI CONFERMATA]
+===============================================================================
+1a. La correlazione dei residui fra compagni (misura di base, risponde anche
+    alla E come previsto dal brief):
+
+  coppie (stessa squadra, stessa giornata)   n coppie   r        IC95%
+  TUTTE                                       14.994   +0,095   [+0,065; +0,124]
+  GK con DEF                                     711   +0,268   [+0,198; +0,333]
+  DEF con DEF                                  1.358   +0,160   [+0,085; +0,235]
+  GK/DEF fra loro (blocco difensivo)           2.852   +0,205   [+0,153; +0,259]
+  MID con FWD                                  1.128   +0,042   [-0,021; +0,103]
+  GK con MID/FWD                               1.259   +0,070   [+0,018; +0,126]
+  MID/FWD fra loro (blocco offensivo)          4.072   +0,072   [+0,023; +0,121]
+  PLACEBO: stessa giornata, SQUADRE DIVERSE    5.391   +0,010   [-0,014; +0,036]
+
+  Il placebo e' la riga che rende credibili le altre: due giocatori a caso
+  della stessa giornata non hanno NESSUN legame (+0,01). Quindi il +0,27 fra
+  portiere e difensore e' della squadra, non del calendario.
+
+1b. Il clean sheet, misurato. Proxy: punteggio del portiere >= 60 (il repo ha
+    gia' verificato che il level_score GK e' 35 senza CS e 60 con). Sui 899
+    portieri agganciati:
+
+    con CS (>=60)   n=263 (29,3%)   reale medio 72,4   atteso medio 48,8   residuo +23,6
+    senza CS        n=636 (70,7%)   reale medio 37,9   atteso medio 48,7   residuo -10,8
+
+    Il proxy si comporta come deve (due popolazioni nettamente separate).
+    L'atteso e' IDENTICO nei due gruppi: 48,8 contro 48,7. Il modello non
+    anticipa il clean sheet nemmeno di un decimo di punto.
+
+1c. Il travaso sul difensore (l'ipotesi testuale dell'utente):
+
+    difensori il cui portiere ha fatto CS    n=202   residuo medio  +9,15   reale 60,0
+    difensori il cui portiere NON l'ha fatto n=476   residuo medio  -0,94   reale 50,0
+    differenza                                       +10,1 punti
+
+    Coincide con il "+10 circa" dichiarato dall'utente come regola di gioco.
+    ATTENZIONE: io ho misurato l'effetto, NON ho verificato la regola. Che i
+    +10 vengano dal bonus clean-sheet del difensore e non da altro (le
+    squadre che non subiscono gol sono anche quelle che dominano, e un
+    difensore di una squadra dominante prende bonus ovunque) questo test non
+    lo distingue. Per la decisione pratica cambia poco: l'effetto c'e' ed e'
+    fuori dall'atteso.
+
+1d. E' gia' catturato dall'atteso di oggi? NO, ma non e' zero:
+    correlazione fra gli ATTESI di GK e DEF della stessa squadra: +0,200
+    correlazione fra i REALI  di GK e DEF della stessa squadra: +0,251
+    correlazione fra i RESIDUI (quello che resta fuori):        +0,268
+    Il modello sa gia' che due compagni si somigliano (+0,20, viene dalla
+    forza-avversario condivisa), ma cio' che AVANZA e' altrettanto grande.
+    Il pezzo non sfruttato e' pieno.
+
+1e. Il clean sheet e' prevedibile prima della partita? Prova a costo zero con
+    i soli dati in repo (nessuna quota disponibile nel dump):
+      AUC = probabilita' che una squadra-giornata CON clean sheet mostri il
+      segnale piu' alto di una SENZA. 0,50 = tirare a caso.
+        tasso CS storico della squadra (leave-one-out)  0,498  n=686
+        tasso di CS concesso dall'avversario            0,580  n=357
+        media dei due                                   0,546  n=357
+        giocare in casa                                 0,554  n=686
+    Lettura: la storia della squadra NON serve (0,498, esattamente il caso);
+    conta CHI HAI DAVANTI (0,580) e il campo (0,554). Sono proxy grezzi
+    costruiti dal nulla; le quote di vittoria vere non sono nel dump ma
+    esistono nella rotta gia' usata dal repo (winOddsBasisPoints, vedi la
+    query in analisi_manager/grade_snapshot.py) e quasi certamente fanno
+    meglio di 0,58. NON l'ho misurato: servirebbe estrarle.
+
+===============================================================================
+2. DOMANDA E -- FULLSTACK  [IPOTESI NON CONFERMATA COME "RENDE DI PIU'"]
+===============================================================================
+881 formazioni reali con tutte e 5 le carte agganciate (22 giornate, 28
+manager). "Stack" = quante carte vengono dalla squadra piu' rappresentata.
+
+  stack   n     residuo medio (IC95%)        dispersione   atteso medio
+    1    537   +22,22  [+18,5; +25,9]           46,0          265,1
+    2    232   +21,40  [+14,8; +27,7]           47,5          264,6
+    3     73   +19,04  [ +6,8; +31,4]           49,6          265,7
+    4     25   +25,58  [ +5,1; +50,1]           54,3          266,3
+    5     14   +50,34  [ +2,6; +89,1]           73,2          263,6
+
+L'atteso medio e' praticamente identico su tutte le righe (263-266): il
+confronto e' gia' "a parita' di atteso" come chiedeva il brief, senza dover
+appaiare nulla.
+
+Cosa si vede:
+  - la DISPERSIONE cresce in modo netto e regolare: da 46,0 a 73,2 (+59%).
+    Questo era prevedibile dalla correlazione dei residui ed e' la conferma
+    che il meccanismo esiste: i compagni sbagliano insieme.
+  - la MEDIA non cresce in modo dimostrabile fino a stack 4. Il +50 dello
+    stack 5 poggia su 14 formazioni con IC da +2,6 a +89,1: e' compatibile
+    con "uguale alle altre" e anche con "molto meglio". Non decide.
+  - per decidere sullo stack 5 a questo livello di effetto servirebbero circa
+    120-150 formazioni con stack 5 contro le 14 di oggi: dieci volte tanto.
+
+Come si legge per l'arena (mia lettura, non una misura): in arena si deve
+SUPERARE una soglia fissa, non fare piu' punti in assoluto. Piu' dispersione
+e' un vantaggio quando l'atteso e' SOTTO la soglia (serve un colpo di
+fortuna) e uno svantaggio quando e' SOPRA (basta non rovinare tutto). Se
+qualcuno vorra' usare il fullstack, la regola sensata non e' "sempre" ma
+"quando sei sotto soglia e vuoi provarci".
+
+ATTENZIONE, selezione da dichiarare: le 881 formazioni sono quelle con tutte
+e 5 le carte presenti nel pool, e il pool contiene solo giocatori che hanno
+giocato. Quindi questa tabella e' condizionata a "nessun panchinato", il che
+spiega il residuo medio +22 (le formazioni senza panchinati vanno meglio,
+misurato stamattina in RISPOSTA_OPUS_QUOTA_MINIMA_IL_PERCHE_2026-08-13.txt).
+Il confronto FRA le righe resta valido: e' la stessa selezione per tutte.
+
+===============================================================================
+3. DOMANDA D -- CAPITANO AL GRADE PIU' ALTO SOLO SE DI UN CERTO RUOLO  [NO]
+===============================================================================
+LA MIA IPOTESI, SCRITTA PRIMA DI MISURARE: mi aspettavo un piccolo guadagno
+sul centrocampista, perche' nel report di stamattina il grade da solo
+sceglieva meglio dell'atteso proprio su MID in entrambi i periodi. Mi
+aspettavo invece un peggioramento sul portiere (il grade sul GK peggiora
+l'ordinamento, misurato stamattina).
+ESITO: la prima meta' dell'ipotesi e' SBAGLIATA (MID non guadagna niente), la
+seconda e' confermata.
+
+881 formazioni, 227 cluster manager-giornata. Formazione fissa, cambia solo
+il capitano. Baseline = atteso piu' alto fra i giocatori di movimento
+(approssimazione di pick_captain: la regola vera aggiunge un margine per il
+portiere, qui reso escludendo il GK dai candidati -- differenza dichiarata).
+
+  regola                        cambia il cap.   delta medio   IC95%
+  grade piu alto (sempre)       428 (48,6%)      -0,34 punti   [-0,65; -0,04]
+  grade piu alto SOLO se DEF     97 (11,0%)      -0,06 punti   [-0,17; +0,06]
+  grade piu alto SOLO se MID     49 ( 5,6%)      +0,02 punti   [-0,10; +0,13]
+  grade piu alto SOLO se FWD     85 ( 9,6%)      +0,12 punti   [-0,03; +0,26]
+  grade piu alto SOLO se GK     197 (22,4%)      -0,42 punti   [-0,60; -0,23]
+
+Verdetto: nessuna variante per ruolo batte la produzione. Le tre varianti
+DEF/MID/FWD hanno intervalli che contengono lo zero: sono indistinguibili da
+"non fare niente". Il GK e' l'unico segno chiaro, ed e' NEGATIVO -- conferma
+che pick_captain fa bene a tenere il portiere fuori dai candidati.
+L'unica riga che qualcuno potrebbe voler riprovare con piu' campione e' il
+FWD (+1,20 punti sulle sole 85 formazioni in cui cambia qualcosa), ma
+l'intervallo tocca lo zero e non lo consiglio: e' la stessa forma di indizio
+che stamattina ho gia' detto di non inseguire senza giornate nuove.
+
+===============================================================================
+4. DOMANDA B -- PATTERN CURIOSI NEI DATI G-vs-A
+===============================================================================
+Stato del confronto (binario1_out.json, 1.091 formazioni):
+  tot_M 11.300   tot_A 12.150   tot_G 15.650
+  G meno A = +3.500 (con trim simmetrico +2.900), decisioni discordanti 143.
+  G entra in 538 arene, A in 563.
+
+4a. IL MODELLO E' PRUDENTE OVUNQUE, NON SBILANCIATO PER RUOLO. Residuo
+    (reale meno atteso) per ruolo e fascia di atteso (terzili):
+      GK   n=1932   basso +0,88   medio -1,51   alto -1,67
+      DEF  n=2807   basso +3,26   medio +1,98   alto +1,89
+      MID  n=2824   basso +2,82   medio +3,47   alto +2,10
+      FWD  n=2472   basso +3,46   medio +2,20   alto +3,70
+    Tutti i ruoli di movimento sono sottostimati di 2-3,5 punti, in TUTTE le
+    fasce. Sull'esempio dell'utente ("sbaglia piu' l'attaccante del
+    difensore"): l'attaccante e' effettivamente il ruolo con la sottostima
+    piu' grande (+3,7 nella fascia alta contro +1,9 del difensore), ma e' un
+    errore di LIVELLO, non di ordinamento -- e un errore di livello uguale
+    per tutti non cambia nessuna scelta dentro il ruolo.
+    Il portiere e' l'unico che va nella direzione opposta in alto (-1,67):
+    i portieri che il modello ama di piu' rendono meno del previsto. Coerente
+    col fatto che il modello dei portieri non ordina (report di stamattina).
+
+4b. LA SOTTOSTIMA CAMBIA MOLTO DA LEGA A LEGA (residuo per carta, marcate
+    con <<< quelle a piu' di 3 errori standard da zero):
+      mls          n=1805  +2,58 <<<     spagna     n= 529  +1,46
+      kleague      n= 994  +2,03 <<<     giappone   n= 468  -1,04
+      germania     n= 821  +0,89         argentina  n= 392  +1,51
+      inghilterra  n= 681  +3,28 <<<     olanda     n= 384  +3,55 <<<
+      belgio       n= 363  +3,71 <<<     francia    n= 352  +2,07
+      cina         n= 345  +2,79         messico    n= 340  +1,97
+    Il Giappone e' l'unica lega col segno opposto. La tentazione e' una
+    calibrazione per lega: la SCONSIGLIO, ed e' la stessa lezione del refit
+    CALIB_PER_RUOLO chiuso stamattina -- un bias medio reale su un periodo
+    non e' stabile sull'altro, e correggerlo peggiora fuori campione. Prima
+    di provarci si misuri se il bias di lega e' stabile fra i due periodi:
+    e' un test da mezz'ora e va fatto PRIMA, non dopo.
+
+4c. Curiosita' che segnalo senza saperla spiegare: l'atteso medio delle
+    formazioni e' identico a qualunque livello di stack (263-266) pur
+    cambiando completamente la composizione. I manager, senza saperlo,
+    costruiscono formazioni di pari valore atteso sia pescando da 5 squadre
+    sia da una sola.
+
+===============================================================================
+5. DOMANDA A -- ALTRE CORRELAZIONI CHE INDAGHEREI (mio giudizio)
+===============================================================================
+In ordine di rapporto valore/costo. Tutte fattibili sui dati gia' in repo
+tranne dove indicato.
+
+A1. AVVERSARIO CONDIVISO, NON SQUADRA CONDIVISA. Ho misurato i compagni; il
+    contrario e' altrettanto interessante e non l'ha mai guardato nessuno:
+    due giocatori di squadre DIVERSE che si affrontano fra loro hanno residui
+    ANTI-correlati? Se l'attaccante di A fa bene perche' la difesa di B ha
+    sbagliato, allora schierare insieme un attaccante e il portiere
+    avversario e' la copertura naturale del rischio. Costo: zero, ho gia'
+    l'avversario nell'indice. Dieci minuti.
+A2. STESSA PARTITA, LATI OPPOSTI, RUOLI SPECIFICI: portiere di A contro
+    attaccanti di B. Se la correlazione e' fortemente negativa, esiste una
+    regola di costruzione formazione ("mai il portiere di A con l'attaccante
+    di B") che non costa niente applicare.
+A3. CORRELAZIONE FRA GIORNATE DELLO STESSO GIOCATORE (persistenza del
+    residuo): se un giocatore ha sorpreso in positivo la settimana scorsa,
+    sorprende ancora? E' il test che dice se il modello sta lasciando fuori
+    la FORMA recente. Costo: zero, la cache ha tutte le partite.
+A4. CORRELAZIONE FRA IL RESIDUO E I MINUTI GIOCATI. La cache ha minsPlayed.
+    Se il residuo e' spiegato in gran parte da "ha giocato 60 minuti invece
+    di 90", allora il pezzo mancante non e' la qualita' ma il minutaggio
+    atteso -- e li' c'e' un dato ex ante (starter_odds) che oggi usiamo solo
+    come filtro a 0,80 e come spareggio. Questa e' la stessa famiglia del
+    problema panchinati trovato stamattina.
+A5. CORRELAZIONE INTERNA ALLA GIORNATA DI UN MANAGER: le formazioni dello
+    stesso manager nella stessa giornata condividono carte e squadre. Se i
+    loro esiti sono correlati, allora "quante arene fare" non e' una
+    decisione indipendente per arena, e le soglie calcolate su arene
+    indipendenti sottostimano il rischio complessivo. Tocca direttamente
+    l'anello soglie-arena della catena di produzione.
+
+===============================================================================
+6. DOMANDA F -- IDEE MIE, LIBERE
+===============================================================================
+F1. PREVEDERE IL CLEAN SHEET E' LA COSA PIU' GRANDE SUL TAVOLO. Non e' una
+    correlazione da studiare: e' un pezzo del modello che manca del tutto.
+    Oggi il portiere e' l'unico ruolo che non ordina niente (Spearman -0,004
+    su 1.932 carte, misurato stamattina) e adesso sappiamo perche': il 100%
+    del suo punteggio dipende da un evento binario che prevediamo a caso.
+    Una probabilita' di clean sheet decente aggiusta il portiere E regala
+    +10 sul difensore. Ingrediente ex ante gia' disponibile nella rotta che
+    il repo usa gia' (winOddsBasisPoints): non serve inventare niente, serve
+    estrarlo e metterlo nel dump.
+F2. IL MODELLO PREVEDE UN NUMERO, MA LA REALTA' E' A GRADINI. Un portiere fa
+    37,9 o 72,4, quasi mai 50. Prevedere la MEDIA di una cosa a due gradini
+    e' il modo garantito di non azzeccare mai niente e di avere previsioni
+    tutte uguali fra loro (sd 0,97 sui portieri contro 18,7 della realta').
+    Prevedere la PROBABILITA' del gradino, e poi comporre, e' un cambio di
+    impostazione, non un parametro -- ma e' la spiegazione strutturale di
+    tutti i vicoli ciechi di questi giorni.
+F3. IL RISCHIO PANCHINA VA PREZZATO, NON FILTRATO. Oggi c'e' una soglia unica
+    starter_odds >= 0,80 uguale per tutti. Stamattina ho misurato che nella
+    fascia di confine estiva le formazioni con un panchinato perdono 240
+    essenze contro le +20 delle altre. Una carta a 0,81 e una a 0,99 non
+    sono la stessa cosa e oggi le trattiamo identiche.
+F4. MISURARE LA CORRELAZIONE FRA LE ARENE DELLO STESSO MANAGER (vedi A5)
+    prima di aggiungere altre arene: potremmo star comprando dieci volte lo
+    stesso biglietto della lotteria credendo di diversificare.
+
+===============================================================================
+7. DUMP LEGGIBILE (una formazione vera con stack >= 3)
+===============================================================================
+manager=alfo88  giornata=football-1-5-may-2026  tipo=cap260
+  giocatore              ruolo  squadra                 atteso   reale  grade  cap
+  Gunay Guvenc           GK     galatasaray-istanbul      49,1    24,2      3
+  Josip Stanisic         DEF    bayern-munchen-munchen    56,2    36,3      6
+  Jamal Musiala          MID    bayern-munchen-munchen    48,8    41,3      4
+  Baris Yilmaz           FWD    galatasaray-istanbul      49,5    43,0      4
+  Konrad Laimer          MID    bayern-munchen-munchen    59,3    41,7      5   C
+  TOTALE atteso 274,8   reale 194,9
+Tre carte del Bayern e due del Galatasaray: stack 3. Tutte e cinque sotto
+l'atteso nella stessa giornata -- e' esattamente la faccia che ha il rischio
+concentrato quando va male.
+
+===============================================================================
+8. DIFETTI TROVATI PER STRADA (annotati, non sistemati, come da brief)
+===============================================================================
+D-a. binario2_pool_rows.json contiene solo carte che HANNO GIOCATO (righe con
+     punteggio sotto 5 sono lo 0,0-0,2%). Chi lo usa per misurare formazioni
+     sta lavorando su un campione condizionato a "nessun panchinato" senza
+     che il file lo dica. Andrebbe scritto nel README dell'archivio.
+D-b. Lo stesso "atteso di formazione" vale +22 di residuo medio se calcolato
+     dai _cal del pool e circa 0 se letto come atteso_G in binario1_out.json.
+     La differenza e' quasi tutta la selezione del punto D-a (binario1 tiene
+     dentro le formazioni con panchinati, il pool no), ma non l'ho verificata
+     fino in fondo: chi confronta numeri fra i due file deve saperlo.
+D-c. 676 unita' (giocatore, giornata) su 6.244 sono state scartate perche' la
+     cache mostra zero o due partite dentro la finestra della giornata. Le
+     due partite sono casi reali (turno infrasettimanale + campionato):
+     oggi il dump aggregato non dice a quale delle due si riferisce il
+     punteggio. Vale l'11% delle righe.
+
+File prodotti:
+  analisi_manager/p36_correlazioni_compagni.py
+  analisi_manager/p37_capitano_ruolo_e_fullstack.py
+  analisi_manager/dati/correlazioni_compagni_2026-08-13.json
+  analisi_manager/dati/_cache_index_gamelog.json -- NON committato (20 MB).
+    E' l'indice riusabile squadra/avversario/punteggio/minuti per
+    giocatore-partita. Si rigenera da solo lanciando p36 (~2 minuti, nessuna
+    rete): p36 lo ricrea se non lo trova. Chi vuole fare altre correlazioni
+    parta da li' invece di riscorrere la cache.
