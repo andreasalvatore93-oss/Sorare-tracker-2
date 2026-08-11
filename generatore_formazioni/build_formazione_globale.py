@@ -1361,7 +1361,20 @@ def generate_lineups_for_type(tipo, count, role_data, pools, card_pool):
     # la generazione di una qualunque delle restanti All Stars richieste (pool
     # troppo eroso dal vincolo sulla prima), si rinuncia e si rigenera l'intera
     # serie senza forzare -- vedi retry sotto, mai un compromesso silenzioso.
-    force_cap370_first = tipo in ('ALLSTARS', 'ALLSTARS_U23') and count >= 1
+    #
+    # DISATTIVATO (13/08/2026, richiesta esplicita utente): meccanismo mai
+    # riverificato da quando fu introdotto, e un caso reale (run #166,
+    # All Stars Under23 col pool suppletivo 0.60-0.70) ha mostrato il retry
+    # "si rinuncia e si rigenera" BUTTARE VIA formazioni gia' generate con
+    # successo (#1 e #2 valide) solo perche' una successiva (#3) falliva --
+    # il retry senza forzare il cap 370 e' ripartito da un pool piu' povero
+    # e ha fallito ANCHE la #1, che nel primo giro era andata bene. Risultato
+    # reale: 0 formazioni consegnate su 4, con 2 gia' pronte scartate.
+    # Spento del tutto finche' non si riverifica se il cap 370 forzato vale
+    # ancora qualcosa E si sistema il retry per non scartare i successi gia'
+    # ottenuti. `_run(False)` sotto e' il comportamento SENZA forzatura,
+    # identico per tutti i tipi.
+    force_cap370_first = False
     apply_xp_bonus = tipo in XP_BONUS_TYPES
 
     def _run(force_first):
