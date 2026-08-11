@@ -1041,3 +1041,156 @@ Dati aggiornati: analisi_manager/dati/storico_grade_crowss_completamento.json,
      non mia), non ho committato output di backtest, non ho testato la 'u10'
      (fuori scope, scelta gia' fatta dall'utente).
 
+
+============================================================================
+15. RISPOSTA OPUS ESECUTORE â€” "GRUPPO GRADE ESTESO": SI ALLUNGA LA FINESTRA?
+    (11/08/2026, ~21:00 Roma) Risposta al brief
+    docs/handoff/BRIEF_OPUS_GRADE_GROUP_FINESTRA_2026-08-11.txt
+============================================================================
+
+15.0 VERDETTO DA BAR (12 righe)
+     NO all'estrazione, SI' al filone â€” ma per un'altra strada.
+     Il conto e' impietoso: per far uscire dallo zero quei numeri servono
+     dalle 6 alle 10 volte le giornate che abbiamo. Allungando la finestra
+     all'indietro fino a dove il grade esiste ancora (febbraio 2026, prima
+     e' vuoto) se ne guadagna una volta e mezza. E' come voler riempire una
+     piscina e discutere se usare il bicchiere grande o quello piccolo.
+     Stesso tetto della strada "piu' manager", solo con un altro nome:
+     l'INDICE.md aveva ragione e vale anche qui.
+     Pero' â€” e questo e' il punto â€” sono andato a controllare se il problema
+     di Lloris esiste davvero in produzione o e' un difetto del backtest.
+     ESISTE, ed e' peggio di come lo racconta il brief: nell'ultima run
+     vera, in 23 gruppi su 45 (il 51%) il gruppo ha UN SOLO giocatore, e in
+     quel caso il grade non sposta niente â€” zero, proprio non viene
+     applicato. Non e' "Lloris penalizzato": e' il grade spento a meta'
+     campionato senza che nessuno se ne accorga. Quello va sistemato, e si
+     misura con un test da 10.000 righe che abbiamo gia' in casa, non con
+     un'estrazione da 360 giornate.
+
+15.1 LA RISPOSTA ALLA DOMANDA DEL Â§5: QUANTO CAMPIONE SERVIREBBE
+     Dai numeri gia' committati (db8062f780), ricavo l'errore standard:
+       B1 pool_largo: +3.750, IC95% [-5.700;+13.200] -> SE 4.821, z=0,78
+       B2 pool_largo: +2.376, IC95% [-5.162;+9.691]  -> SE 3.789, z=0,63
+     Il totale e' una SOMMA su GW: raddoppiando le GW raddoppia l'effetto ma
+     l'errore cresce solo con la radice, quindi z cresce con radice(n).
+     Per arrivare a z=1,96 (IC che esclude lo zero) a parita' di effetto per
+     giornata serve:
+       B1: (1,96/0,78)^2 = 6,4 volte le GW attuali -> da 362 a ~2.300
+       B2: (1,96/0,63)^2 = 9,8 volte le GW attuali -> da 360 a ~3.500
+     Quanto se ne puo' guadagnare allungando all'indietro (misurato, non
+     stimato a spanne):
+       - ritmo reale dell'archivio: 25 fixture dal 3/4 al 7/8 = 6,0
+         fixture/mese, 27,0 manager per fixture (675 coppie grezze), resa
+         verso il backtest 360/675 = 53% (il resto cade per pool vuoto o
+         atteso non calcolabile)
+       - il grade muore prima di febbraio: dalla tua tabella Â§3a,
+         gen-2026 330 coppie contro 13.848 di aprile (2,4%), e prima di
+         gennaio <=55/mese. La finestra utile e' quindi feb+mar 2026,
+         12 fixture, non "senza limiti".
+       - 12 fixture x 27 manager x 53% = ~172 GW-manager nuove
+         -> da 360 a ~532 = 1,48 volte.
+     Effetto sul verdetto: z passerebbe da 0,78 a 0,78*radice(1,48) = 0,95
+     (B1) e da 0,63 a 0,76 (B2). Restano entrambi lontanissimi da 1,96.
+     E questo e' il conto GENEROSO: assume febbraio e marzo buoni come
+     aprile, mentre hanno il 26% e il 59% della copertura grade. Siccome il
+     test misura proprio una differenza fra due modi di raggruppare i grade,
+     meno grade = meno coppie discordanti = ancora meno resa.
+     CONCLUSIONE: e' lo STESSO tetto della strada "piu' manager", non uno
+     diverso. Non spendere l'estrazione.
+
+15.2 IL TUO PUNTO 3c (cache game-log prima di aprile): NON E' IL BLOCCO
+     La cache non e' un fotogramma per data: e' un file per GIOCATORE con
+     dentro tutta la sua storia di partite (<slug>_gamelog.json). Se un
+     giocatore e' in cache oggi, le sue partite di febbraio ci sono gia' e
+     score_atteso con cutoff a febbraio funziona. Il vincolo vero e' un
+     altro: le formazioni di feb-mar contengono carte che i manager oggi
+     magari non hanno piu', quindi slug nuovi da cachare. Non ho misurato
+     quanti â€” non serve, perche' il Â§15.1 chiude comunque la strada prima.
+
+15.3 CONTROLLO CHE HO FATTO E CHE NESSUNO AVEVA FATTO: IL DIFETTO ESISTE
+     IN PRODUZIONE? (mi aspettavo di no, mi sbagliavo)
+     Ipotesi che volevo falsificare: "il gruppo di 2-3 carte e' un artefatto
+     del backtest (un manager possiede poche carte), in produzione il gruppo
+     e' il pool di discovery della lega, quindi grande â€” e il filone
+     ottimizza un problema che in produzione non c'e'".
+     FALSA. Misurato sui consigli veri su disco (formazione_*/output/
+     <lega>_<ruolo>_all/consiglio_*.txt, che sono esattamente le righe che
+     load_league_role_data passa a _apply_grade_group):
+       ultima run (11/08), 45 gruppi (lega,ruolo) non vuoti:
+         23 gruppi con 1 solo giocatore  (51%)
+          8 gruppi con 2                 (cumulato 69%)
+          6 con 3, 2 con 4, poi 6/8/8/13/15/17 -> massimo 17
+       massimo STORICO per gruppo su tutti i consigli mai prodotti
+       (98 gruppi): mediana 5, p75 15, max 98 (mls_def); 47 gruppi su 98
+       non hanno MAI superato i 5 giocatori, 62 su 98 mai i 10.
+     Quindi il gruppo minuscolo e' la norma in produzione, non l'eccezione.
+
+15.4 E IL DIFETTO E' PEGGIORE DI COME LO RACCONTA IL BRIEF
+     build_formazione_globale.py, _apply_grade_group (righe 505-550):
+       riga 514-520: vals = attesi delle righe del gruppo; se len(vals) < 2
+         la funzione RITORNA SUBITO, atteso_combinato = atteso. Con un
+         gruppo di 1 il grade non viene proprio applicato.
+       riga 536-545: gm/gsd sono media e sd dei grade DEL GRUPPO; z=0 se
+         gsd=0, cioe' anche quando il gruppo ha 2-3 carte tutte con lo
+         stesso voto.
+     Messo insieme al Â§15.3: nel 51% dei gruppi dell'ultima run il grade e'
+     CERTAMENTE inerte (gruppo di 1), e in una quota ulteriore lo e' di
+     fatto (grade tutti uguali). Non e' "Lloris penalizzato ingiustamente":
+     per meta' delle righe il grade oggi non esiste. Vale la pena dirlo
+     all'utente in questi termini, perche' cambia la posta in gioco del
+     filone: non e' un ritocco, e' un pezzo di modello spento a intermittenza.
+
+15.5 C'E' GIA' UN INTERRUTTORE IN CODICE CHE RISOLVE META' DEL PROBLEMA
+     GRADE_SCALE (riga 460, default 'gruppo'). Con GRADE_SCALE='storica'
+     gm/gsd non vengono piu' dal gruppo ma da una tabella storica per
+     (lega,ruolo) con fallback ruolo -> globale (_scala_storica_per, righe
+     475-490). La tabella ESISTE gia' su disco:
+     generatore_formazioni/dati/grade_scala_storica.json (8,8 KB, 08/08).
+     Cosa risolve: un gruppo di 2-3 carte con voti uguali smette di dare
+     z=0, perche' il metro non e' piu' interno al gruppo.
+     Cosa NON risolve, e va detto: (a) il ritorno anticipato con gruppo di
+     1 (riga 515) scatta PRIMA di guardare la scala, quindi il 51% dei casi
+     resta inerte lo stesso; (b) il moltiplicatore `sd` (dispersione degli
+     ATTESI del gruppo, riga 522) resta group-based, e su 2 righe e' un
+     numero erratico.
+     Quindi 'storica' e 'pool_largo' non sono alternative: aggrediscono due
+     pezzi diversi della stessa formula (il metro del grade e il metro
+     dell'atteso). Il caso del gruppo di 1 non lo copre nessuno dei due.
+
+15.6 IL TEST GIUSTO ESISTE GIA' E COSTA ZERO QUERY
+     Il motivo per cui i binari non decidono non e' che mancano manager o
+     mesi: e' che l'ENDPOINT e' sbagliato per questa domanda. Le essenze
+     nette per GW sommano premi a lotteria, e la variante sposta due carte:
+     rapporto segnale/rumore pessimo per costruzione, e nessun campione
+     raggiungibile lo salva (Â§15.1).
+     La stessa domanda a livello di CARTA ha n = 10.255 righe gia' in repo
+     (archivio_ufficiale/aggregato/binario2_pool_rows.json, che contiene
+     gia' _cal, _grade, _zgrade e reale per ogni riga), cioe' ~28 volte le
+     360 GW. Ed e' esattamente il disegno che ha gia' CHIUSO in positivo la
+     domanda "il grade porta informazione a livello di carta" (placebo
+     p=0,005, beta dentro-gruppo +0,555, beta corretto ~1,01 IC [0,36;1,67]
+     â€” INDICE.md e p26_test_carta_scala_storica.py).
+     Test da fare, zero rete: per ogni riga calcolare z_grade con i due
+     metri (gruppo nativo contro riferimento largo/scala storica) e
+     confrontare quale dei due correla meglio col residuo del punteggio
+     reale rispetto all'atteso calibrato. E' un confronto appaiato sulla
+     stessa riga, quindi il rumore delle lotterie sparisce del tutto.
+     Se il metro largo vince li', si accende; se non vince li' con 10.255
+     righe, non vincera' mai con 532 giornate.
+
+15.7 RISPOSTA SECCA ALLE DUE DOMANDE DEL Â§5
+     1) Vale la pena l'estrazione? NO. Serve x6,4-x9,8, si ottiene x1,48.
+        Stesso tetto strutturale della strada "piu' manager".
+     2) Quanti mesi indietro avrebbe senso? La domanda decade, ma per
+        completezza: il muro non e' il cambio stagione, e' la copertura
+        grade â€” febbraio 2026 e' l'ultimo mese utilizzabile (26% di
+        aprile), gennaio e' gia' al 2,4%, prima e' vuoto. Quindi al
+        massimo 2 mesi, che e' appunto il x1,48 di cui sopra.
+
+15.8 COSA NON HO FATTO
+     Nessuna query di rete, nessuna estrazione, nessuna modifica alla
+     produzione, nessun ricalcolo dei binari. Non ho lanciato il test di
+     Â§15.6 (e' una proposta, non un risultato). Non ho verificato quanti
+     slug nuovi servirebbero per feb-mar (Â§15.2): inutile, la strada e'
+     chiusa prima.
+
