@@ -269,8 +269,62 @@ arene su 1.145 (13,7%) — in parte è corretto (non punti forte su chi non
 sai prevedere), in parte è lo stesso buco del punto 1.
 
 ============================================================================
-3. TERZA PRIORITÀ (era la prima nel piano di ieri sera, RETROCESSA da
-   Opus stesso): la soglia d'ingresso arena in PUNTI, fuori campione
+3. NUOVA PRIORITÀ (12/08/2026, domanda dell'utente, in coda dopo il
+   portiere — DA CHIEDERE AD OPUS, non ancora inviato): gli ALTRI ruoli
+   sono calibrati su un modello A primordiale, mai rivisitati dopo G —
+   vale la pena ispezionarli come il portiere?
+============================================================================
+
+Domanda testuale dell'utente: "visto quanto è emerso dai portieri, ha
+senso effettuare altri test sugli altri ruoli? In termini di correlazioni
+e granulari. Il mio dubbio nasce dal fatto che tutti i ruoli sono stati
+calibrati in uno stato molto primordiale del modello, quando A era solo
+una versione grezza di se stessa. Dopo A è arrivato A calibrato, superato
+a sua volta da G. MA i ruoli sono stati calibrati su un modello A grezzo,
+e mai rivisitati. Visto quanto è emerso sui portieri ('il modello è
+cieco') — vale la pena ispezionare gli altri ruoli, dove 'il modello ci
+vede meglio, ma forse può vederci ancora meglio'?"
+
+**Perché non è la stessa domanda del portiere**: DEF/MID/FWD non sono
+ciechi — reggono alla deduplica e all'IC a grappolo (§1ter: DEF +0,150,
+MID +0,202, FWD +0,206, tutti con IC che esclude lo zero abbondantemente).
+La domanda qui non è "il modello li vede?" ma "li vede quanto potrebbe,
+o ci sono pezzi interni deboli/stantii come lo era il 'decisive rates'
+del portiere prima di essere scomposto?".
+
+**Perché è un dubbio legittimo, non solo curiosità**: la scomposizione
+GK ha mostrato che un modello con corr aggregata decente può nascondere
+pezzi interni con contributi molto diversi (uno inerte come il trend
+GK, uno storico ma mai ritarato dopo un fix successivo — vedi §1ter sul
+TREND_INTENSITY scaduto). Se la stessa CALIB_PER_RUOLO/le stesse feature
+di DEF/MID/FWD risalgono a quando il modello A era grezzo (prima di A
+calibrato, prima di G), lo stesso tipo di scomposizione potrebbe trovare
+margine anche lì — non un buco come il portiere, ma un "si vede bene,
+si potrebbe vedere meglio".
+
+**Perché va inserita QUI nell'ordine di priorità (non prima, non dopo)**:
+prima delle soglie in punti (§4 sotto) per la stessa logica di CLAUDE.md
+già usata per retrocedere quella priorità: le soglie arena dipendono
+dall'atteso calibrato, e se DEF/MID/FWD si muovono (anche di poco) le
+soglie andrebbero rifatte comunque — meglio saperlo prima di tararle.
+Dopo il portiere perché il portiere resta l'unico buco vero (corr vicino
+a zero) misurato finora, priorità assoluta per severità del problema.
+
+**Cosa NON fare finché non risponde Opus**: non aprire il filone, non
+lanciare backtest sugli altri ruoli. Prima domanda formale a Opus
+(prossimo brief, quando la sessione "Opus Esecutore" è libera dal brief
+attuale sul portiere — l'utente ha chiesto di mettere la domanda in coda,
+non di inviarla subito, per parsimonia su Opus): se e come impostare una
+scomposizione per DEF/MID/FWD analoga a quella fatta per GK (stessa
+metodologia: pezzi della formula contro il punteggio vero, dedup per
+(slug, fixture), IC a grappolo per giocatore), e se conviene farla ora o
+aspettare che il filone portiere sia chiuso (regola "uno alla volta",
+§7 sotto).
+
+============================================================================
+4. QUARTA PRIORITÀ (era la terza, RETROCESSA da Opus stesso nel piano
+   originale — vedi motivo sotto): la soglia d'ingresso arena in PUNTI,
+   fuori campione
 ============================================================================
 
 Perché è stata retrocessa: è una regola di decisione che sta SOPRA il
@@ -300,7 +354,7 @@ comunque partire da qui, non è una scelta sbagliata, solo meno efficiente.
    regge. Se non regge, "la soglia va bene così" è un esito valido.
 
 ============================================================================
-4. QUARTA PRIORITÀ: correlazioni fra compagni di squadra (portiere-
+5. QUINTA PRIORITÀ: correlazioni fra compagni di squadra (portiere-
    difensore, attacco-centrocampo)
 ============================================================================
 
@@ -315,7 +369,7 @@ valgono il 75% del valore totale), ma bloccata su due cose:
   non sai prevedere. Ha senso solo DOPO il punto 1.
 
 ============================================================================
-5. DA TENERE NEL CASSETTO, non un filone: differenze fra leghe
+6. DA TENERE NEL CASSETTO, non un filone: differenze fra leghe
 ============================================================================
 
 Stessa misura del punto 1, spaccata per lega invece che per ruolo:
@@ -325,7 +379,7 @@ portiere, ma per lega. Non aprire un filone ora: se dopo il portiere si
 cerca "il secondo buco", si guarda qui prima di ripartire da zero.
 
 ============================================================================
-6. REGOLA CHE VALE PIÙ DELLA CLASSIFICA (Opus, testuale)
+7. REGOLA CHE VALE PIÙ DELLA CLASSIFICA (Opus, testuale)
 ============================================================================
 
 "UNO ALLA VOLTA. Se l'handoff di domani ne apre tre, non se ne chiude
@@ -334,12 +388,19 @@ scritta (anche se la risposta è "i dati non bastano" — è comunque una
 risposta).
 
 ============================================================================
-7. COSA NON FARE
+8. COSA NON FARE
 ============================================================================
 
 - Non riaprire il filone grade (§8bis in HANDOFF_UNIFICATO): chiuso,
   serve un'idea davvero nuova per riaprirlo, non solo altri dati.
-- Non estrarre altri manager: strada chiusa da Opus l'11/08 sera.
+- Non estrarre altri manager per l'archivio_ufficiale SOLO per allargare
+  il campione G-vs-A attuale senza un motivo preciso (strada chiusa da
+  Opus l'11/08 sera). NOTA 12/08: questo NON vieta di cachare più
+  giocatori/portieri per i test walk-forward indipendenti (§1quater/
+  §1quinquies) — l'utente ha confermato che l'estrazione dati in generale
+  non è un collo di bottiglia (si può arrivare a migliaia di manager se
+  serve), il divieto dell'11/08 riguardava l'allargare l'archivio manager
+  senza scopo, non ogni estrazione futura.
 - Non toccare `CALIB_PER_RUOLO['GK']` (la costante 0,264) finché non sai
   se il problema è a monte (feature) o nella retta — spostarla alla cieca
   peggiora, non migliora.
@@ -442,7 +503,7 @@ se la scala politica GK_TEAM_CS_POINTS/baseline andrebbe ritarata insieme.
 Nessuna modifica al codice di produzione fatta.
 
 ============================================================================
-8. FILE DI RIFERIMENTO
+9. FILE DI RIFERIMENTO
 ============================================================================
 
 - `docs/handoff/RISPOSTA_OPUS_PATTERN_NUOVI_2026-08-11.txt` — la risposta
