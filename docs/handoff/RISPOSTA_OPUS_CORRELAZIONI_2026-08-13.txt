@@ -1504,3 +1504,159 @@ Dati aggiornati: analisi_manager/dati/storico_grade_crowss_completamento.json,
      se ci fosse stato un bug in p46 i miei numeri non avrebbero coinciso).
      Non ho costruito la tabella sd_atteso di produzione del Â§17.6.b.
 
+
+============================================================================
+18. RISPOSTA OPUS ESECUTORE â€” IL +14.387 E' VERO MA NON E' IL GRADE
+    (11/08/2026, ~23:10 Roma) Risposta al brief
+    docs/handoff/BRIEF_OPUS_GRADE_GROUP_ESSENZE_2026-08-11.txt
+============================================================================
+
+18.0 VERDETTO DA BAR (14 righe)
+     L'utente ha ragione per la terza volta oggi, e il sospetto
+     dell'orchestratore al Â§4 era quello giusto.
+     Il numero e' riproducibile, non c'e' nessun errore di codice. Ma non
+     e' il grade che guadagna quelle essenze. Ho fatto la prova del nove:
+     ho preso una spinta CIECA â€” piu' 1,15 punti a TUTTE le carte, senza
+     guardare nessun voto, nessuna informazione dentro â€” e da sola porta
+     +6.524 delle +14.387. Poi ho tolto la spinta e lasciato solo la parte
+     che ORDINA meglio le carte: restano +4.260, e quel numero non esclude
+     lo zero. Tradotto: quasi meta' del guadagno lo ottiene un modello che
+     non sa niente, si limita a essere piu' ottimista su tutto e quindi
+     entra in piu' arene.
+     La buona notizia e' che questo apre una porta piu' grande del filone
+     da cui siamo partiti: se essere ciecamente ottimisti di un punto rende
+     +9.254 con l'intervallo che esclude lo zero, allora la soglia con cui
+     decidiamo se entrare in un'arena e' semplicemente troppo prudente. Vale
+     piu' del portiere e piu' del grade. Ma e' un indizio trovato frugando,
+     non un risultato: va testato apposta.
+
+18.1 RIPRODOTTO, NESSUN BUG
+     Letto il branch 'storica_completa' (p12, righe 380-389) e il
+     cablaggio in p24 (righe 283-296): implementazione pulita, coerente
+     con la ricetta del Â§17.
+     Rifatto da zero con un mio runner (passata 1 una sola volta, poi
+     quattro passate 2 sugli stessi identici pool_rows â€” cosi' i bracci
+     differiscono SOLO per come si calcola '_combinato'):
+       baseline (lega_ruolo, GK_ATT_AVV on)   G = +124.021  (1.105 arene)
+       storica_completa 0,75                  G = +138.408  (1.205 arene)
+       delta = +14.387 -> identico al vostro. Confermato.
+
+18.2 LA PROVA DEL NOVE (il test che mancava)
+     Due bracci nuovi, sullo stesso pool, stesso bootstrap appaiato
+     (cluster manager-fixture, B=5.000, seed 20260811):
+       PLACEBO: '_combinato = _cal + 1,151' per OGNI carta. Zero
+         informazione: nessun voto guardato, stessa spinta a tutti.
+       RICENTRATA: storica_completa 0,75 meno la sua stessa media globale.
+         Resta solo la parte che ordina, il livello sparisce.
+     Risultati (delta contro la baseline lega_ruolo):
+       storica_completa 0,75  +14.387  IC95% [+5.755;+23.431]  100,0%
+       PLACEBO cieco          + 6.524  IC95% [-2.878;+15.500]   91,7%
+       RICENTRATA (ordina)    + 4.260  IC95% [-3.837;+12.398]   84,6%
+     Scomposizione del +14.387:
+       45% spinta cieca (zero informazione)
+       30% ordinamento vero
+       25% interazione (i due effetti si moltiplicano: alzare tutto E
+           ordinare meglio fa entrare arene che nessuno dei due da solo
+           avrebbe preso)
+     LA RIGA CHE CONTA: la parte pulitamente attribuibile al grade â€”
+     +4.260 â€” NON esclude lo zero. Sull'endpoint essenze il filone grade
+     resta non provato, esattamente come prima. Il +14.387 non va scritto
+     da nessuna parte come "guadagno del grade".
+     Arene giocate da G: baseline 1.105, storica 1.205, placebo 1.270,
+     ricentrata 1.084. Si vede a occhio: il grosso del movimento e'
+     "entrare di piu'", e la versione ricentrata entra perfino un po' meno
+     della baseline pur guadagnando.
+
+18.3 DA DOVE VIENE IL +1,15 â€” meccanismo chiuso, non piu' ipotesi
+     L'ipotesi del vostro Â§4 e' corretta e ora e' misurata:
+       media del voto nella TABELLA STORICA (globale, n=20.955):  3,037
+       media del voto nell'ARCHIVIO, carte possedute (n=9.440):   4,029
+       (GRADE_NUM: A=6 ... F=1, quindi piu' alto = meglio)
+     L'archivio sta 0,602 deviazioni standard sopra la tabella: chi possiede
+     e schiera carte non possiede carte a caso. Quindi lo z medio e' +0,60,
+     e moltiplicato per sd_atteso (~2,5) e per 0,75 fa ~+1,13 â€” cioe'
+     esattamente il +1,151 osservato. Il conto torna al centesimo: non e'
+     un residuo misterioso, e' selezione del campione.
+
+18.4 CONTROLLO DI SANITA' SULL'ECONOMIA DELLE ARENE â€” PASSATO
+     Prima di dire "la soglia e' troppo prudente" bisognava escludere il
+     caso brutto: che nel backtest entrare in un'arena convenga SEMPRE
+     (allora non sarebbe una scoperta, sarebbe un modello dei premi
+     sbagliato). Sweep di spinte cieche crescenti, delta contro il modello
+     senza grade (G = A a spinta zero):
+       spinta  +0,00   G = +121.770  (1.157 arene)     â€”
+       spinta  +1,15   G = +131.025  (1.268)   + 9.254  IC [+2.745;+15.947]  99,7%
+       spinta  +2,50   G = +130.401  (1.322)   + 8.631  IC [  -531;+18.232]  96,5%
+       spinta  +5,00   G = +123.117  (1.350)   + 1.346  IC [-9.665;+12.722]  59,3%
+       spinta +10,00   G = +116.541  (1.355)   - 5.230  IC [-17.329;+7.014]  19,6%
+       spinta +25,00   G = +112.665  (1.354)        â€”
+     C'e' un massimo interno fra +1 e +2,5 e poi degrada, con le arene che
+     saturano a ~1.355. NON e' denaro gratis: l'economia delle arene nel
+     backtest e' internamente coerente. Il controllo passa.
+     (Nota di riproducibilita': il braccio placebo del Â§18.2 e la spinta
+     +1,15 di qui danno 130.545 e 131.025 â€” 480 essenze di scarto, 0,4%,
+     da ordine di valutazione a parita' di punteggio. E' 13-30 volte piu'
+     piccolo dei delta discussi, quindi non tocca nessuna conclusione â€”
+     regola "il delta, non il valore assoluto".)
+
+18.5 L'INDIZIO GROSSO: LA SOGLIA D'INGRESSO E' TROPPO PRUDENTE
+     Una spinta cieca di +1,15 punti â€” informazione zero â€” vale +9.254
+     essenze con IC che esclude lo zero (99,7%), su 360 GW-manager. Per
+     confronto, GK_ATT_AVV vale +5.556 e il grade ordinato vale +4.260 non
+     significativo. E' l'effetto piu' grande misurato oggi, e non richiede
+     nessun dato nuovo: e' solo la soglia con cui si decide se un'arena
+     vale l'ingresso, tarata circa un punto piu' in alto del dovuto.
+     E' esattamente il tema che INDICE.md tiene aperto e mai iniziato
+     ("la soglia d'ingresso arena misurata in PUNTI e fuori campione").
+     PERO' â€” e va detto forte â€” questo numero l'ho trovato frugando, non
+     testandolo: ho provato sei valori e riporto il migliore. Il valore
+     +1,15 non era pre-registrato (viene dalla media dell'aggiustamento del
+     grade, per puro caso). Il fatto che ci sia un altopiano largo
+     (+1,15 e +2,50 entrambi positivi) invece di una punta isolata e'
+     rassicurante, ma non sostituisce un test disegnato apposta e fuori
+     campione. Trattatelo come una porta da aprire, non come un risultato.
+
+18.6 COSA CAMBIA PER LA RICETTA DEL Â§17 (correggo me stesso)
+     La ricetta resta valida su cio' per cui l'avevo data (la correlazione a
+     livello di carta), ma va aggiunto un pezzo che non avevo previsto:
+       LO SPOSTAMENTO MEDIO VA TOLTO. L'aggiustamento del grade deve avere
+       media zero: il grade serve a ORDINARE, non a decidere quante arene
+       si giocano. Se si vuole muovere il livello, si muove la soglia, come
+       parametro suo, misurato per conto suo. Tenerli insieme significa
+       farsi pagare due volte lo stesso effetto e non sapere quale dei due
+       sta funzionando â€” e' precisamente il "guadagno gratis" contro cui
+       mette in guardia CLAUDE.md.
+     E c'e' un secondo motivo, pratico: quello spostamento in produzione
+     sarebbe piu' piccolo di meta'. La media del voto nel pool di
+     discovery vero (i candidati, non le carte possedute) e' 3,455 contro
+     4,029 dell'archivio, cioe' +0,253 sd sopra la tabella invece di
+     +0,602. Quindi il 45% del guadagno misurato non arriverebbe comunque
+     in produzione: viene dal fatto che i manager possiedono carte buone,
+     non da qualcosa che il generatore ritrovera'. (Cautela: la misura di
+     produzione e' su n=132, una sola giornata di agosto con quasi solo
+     MLS/Messico. E' indicativa, non solida.)
+
+18.7 COSA FAREI ADESSO, IN ORDINE
+     1. Rifare la misura del grade con l'aggiustamento a media zero (e'
+        gia' pronta: e' il braccio 'ricentrata'). Numero onesto +4.260, non
+        significativo: il filone grade sull'endpoint essenze resta aperto e
+        NON e' pronto per la produzione. La decisione a livello di carta
+        (Â§17) resta valida e separata.
+     2. Aprire il tema soglia come tema suo, se l'utente vuole â€” e' il piu'
+        grande sul tavolo. Prima cosa da fare li': capire se e' davvero la
+        soglia o se e' l'atteso a essere sistematicamente pessimista di un
+        punto (sono due diagnosi diverse con due rimedi diversi, e la
+        spinta cieca non le distingue).
+     3. Non toccare la produzione su nessuno dei due prima di aver
+        pre-registrato il controllo, come per GK_ATT_AVV.
+
+18.8 COSA NON HO FATTO
+     Nessuna query di rete. Nessuna modifica alla produzione ne' agli
+     script del repo: tutto in scratchpad, i file in
+     archivio_ufficiale/aggregato/ NON sono stati toccati da queste run
+     (il mio runner non scrive li'). Non ho ispezionato arena per arena
+     quali sono le 100 arene in piu' (vostro Â§5, secondo punto): la
+     scomposizione placebo/ricentrata risponde gia' alla domanda a monte.
+     Non ho testato se il grade ricentrato migliori con un fattore diverso
+     da 0,75.
+
