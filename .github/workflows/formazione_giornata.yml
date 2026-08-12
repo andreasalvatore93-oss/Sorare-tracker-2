@@ -90,7 +90,13 @@ jobs:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with:
+          python-version: "3.11"
+          # cache pip come tutti gli altri job (12/08/2026): questo era
+          # rimasto senza e rifaceva il download dei pacchetti a ogni run,
+          # ~10s di wall sul percorso critico, che e' il job che apre la run.
+          cache: "pip"
+          cache-dependency-path: requirements-formazione.txt
       - run: pip install requests curl_cffi
       - name: Raccolta grade
         env:
