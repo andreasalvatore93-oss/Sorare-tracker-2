@@ -43,14 +43,15 @@ jobs:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
 
-      # Serve anche sul self-hosted: python sulla macchina e' installato per
-      # l'UTENTE (Microsoft Store, in AppData\Local\Microsoft\WindowsApps) e
-      # il servizio del runner, che gira col PATH di sistema, non lo vede.
-      # Questa action se lo procura da sola dentro la cartella del runner --
-      # niente da installare a mano, ed e' gia' quello che fanno tutti i
-      # nostri workflow veri.
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+      # NIENTE setup-python sul self-hosted (12/08/2026). L'action prova a
+      # INSTALLARE python scrivendo nel registro di sistema, e il servizio
+      # del runner gira come SERVIZIO DI RETE, che quel permesso non ce l'ha:
+      #   Remove registry entries for Python 3.11(x64)...
+      #   ##[error]Error happened during Python installation
+      # Sul self-hosted si usa il python della macchina, installato una volta
+      # sola PER TUTTI GLI UTENTI (C:\Program Files\Python311) proprio perche'
+      # il servizio possa vederlo. Il python del Microsoft Store non va bene:
+      # sta in AppData dell'utente e quell'account non lo puo' nemmeno leggere.
 
       - name: 1. la shell e' bash e i costrutti nostri funzionano
         run: |
