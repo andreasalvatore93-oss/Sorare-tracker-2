@@ -230,7 +230,18 @@ TARGET_MIN_S = 45.0
 # contro ~440), ma vale ~30 secondi e si incassa solo se i blocchi restano a
 # zero. Da riprovare SOLO insieme al freno acceso, che e' la combinazione mai
 # testata -- non da sola.
-N_BIN = 45
+# 20 CON IL FRENO ACCESO (12/08/2026, la combinazione mai provata).
+# Scendere a 20 era gia' stato bocciato due volte, ma sempre in run che
+# prendevano blocchi -- e con meno shard ogni blocco congela una fetta piu'
+# grande di lavoro:
+#   run 31597760654 (senza chiave, no freno) 36 blocchi, predict 556s
+#   run 31620111635 (3 chiavi, no freno)     14 blocchi, predict 348s
+# Con il freno acceso i blocchi sono ZERO (run 31618793265, predict 318s con
+# 45 bin), quindi il motivo che affondava i 20 bin non c'e' piu' e resta solo
+# il guadagno sugli avvii: 45 bin sono ~990 job-secondi di solo
+# checkout+setup, 20 ne sono ~440.
+# Se i blocchi tornano, questo numero e' il primo indiziato: si rimette 45.
+N_BIN = 20
 
 
 # ---------------------------------------------------------------- stage ----
