@@ -97,6 +97,8 @@ else:
 # CONFIG / CREDENZIALI -- stesse variabili d'ambiente di Bot Supremo
 # =====================================================================================
 COOKIES = os.environ.get('SORARE_COOKIE')
+# 12/08: alza il tetto di rate/complessita' sull'account, si aggiunge al cookie.
+APIKEY = os.environ.get('SORARE_APIKEY', '')
 
 
 def _extract_csrf_from_cookie(cookie_string):
@@ -742,6 +744,7 @@ def graphql_query(query, variables=None, max_retries=None):
         'Accept': 'application/json',
         'Cookie': COOKIES,
         'x-csrf-token': CSRF_TOKEN,
+        **({'APIKEY': APIKEY} if APIKEY else {}),
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
                        '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
         'Origin': 'https://sorare.com',

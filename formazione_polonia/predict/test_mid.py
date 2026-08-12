@@ -159,6 +159,8 @@ def _trip_circuit_breaker(reason):
             pass
 
 COOKIES = os.environ.get('SORARE_COOKIE', '')
+# 12/08: alza il tetto di rate/complessita' sull'account, si aggiunge al cookie.
+APIKEY = os.environ.get('SORARE_APIKEY', '')
 
 if _HAS_CURL_CFFI:
     _http_session = curl_requests.Session(impersonate="chrome")
@@ -304,6 +306,8 @@ def graphql_query(query, variables=None, operation_name=None):
     }
     if COOKIES:
         headers['Cookie'] = COOKIES
+    if APIKEY:
+        headers['APIKEY'] = APIKEY
 
     payload = {'query': query, 'variables': variables or {}}
     if operation_name:

@@ -23,6 +23,7 @@ jobs:
       - name: Export transazioni grezze (top 50 x gruppo, gia' in classifica)
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
           SORARE_BUILD: ${{ secrets.SORARE_BUILD }}

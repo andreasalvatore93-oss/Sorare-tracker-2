@@ -77,6 +77,7 @@ jobs:
       - name: Discovery posseduti (SOLO se non esiste gia' una discovery globale)
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           PYTHONUNBUFFERED: "1"
         run: |
           LEGA="${{ github.event.inputs.lega }}"
@@ -177,6 +178,7 @@ jobs:
       - name: Grid search completo per ${{ matrix.player_slug }}
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           TARGET_SLUG: ${{ matrix.player_slug }}
           CALIBRATION_MODE: "si"
           PYTHONUNBUFFERED: "1"

@@ -168,6 +168,7 @@ jobs:
       - name: starterOdds sul proprio shard
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           BEST_FIVE_MIN_STARTER_ODDS: ${{ inputs.starter_odds || '0.80' }}
           PYTHONUNBUFFERED: "1"
         run: |
@@ -221,6 +222,7 @@ jobs:
       - name: Predict shard
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           # Riuso predizioni della stessa giornata (31/07): se il file
           # gia' su disco predice una partita ANCORA futura, e' la stessa
@@ -291,6 +293,7 @@ jobs:
           # di scanners/bot_profit.py -- serve lo stesso cookie/csrf gia' usati
           # per il predict.
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           # NUOVO (31/07, richiesta esplicita utente): "true" per rispettare
           # DAVVERO il cap L10 260 delle Arene dedicate (query extra per

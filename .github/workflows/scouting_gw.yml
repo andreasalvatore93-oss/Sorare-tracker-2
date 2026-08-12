@@ -97,6 +97,7 @@ jobs:
       - name: Trova i candidati e scrivi le discovery
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           SCOUTING_RIUSA_PREDIZIONI: ${{ inputs.riusa_predizioni && '1' || '0' }}
@@ -193,6 +194,7 @@ jobs:
       - name: Predict
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           PYTHONUNBUFFERED: "1"
@@ -254,6 +256,7 @@ jobs:
       - name: Consigli
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           PYTHONUNBUFFERED: "1"
         run: |
@@ -276,6 +279,7 @@ jobs:
       - name: Report
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           PYTHONUNBUFFERED: "1"
         run: |

@@ -64,6 +64,10 @@ except ImportError:                 # pragma: no cover
 
 GRAPHQL_URL = 'https://api.sorare.com/federation/graphql'
 COOKIE = os.environ.get('SORARE_COOKIE', '')
+# 12/08: header separato, alza il tetto di rate/complessita' sull'ACCOUNT
+# indipendentemente dal cookie (verificato: APIKEY da sola risponde 200 anche
+# senza login). Si aggiunge sempre, non sostituisce il cookie.
+APIKEY = os.environ.get('SORARE_APIKEY', '')
 PAUSA = float(os.environ.get('MANAGER_PAUSA', '0.4'))
 
 # Whitelist: SOLO le arene della famiglia LIMITED (limited, beginner,
@@ -165,6 +169,8 @@ def graphql(query, variables, con_cookie=True):
     intestazioni = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
     if con_cookie and COOKIE:
         intestazioni['Cookie'] = COOKIE
+    if APIKEY:
+        intestazioni['APIKEY'] = APIKEY
     for tentativo in range(8):
         time.sleep(PAUSA)
         try:

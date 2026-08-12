@@ -152,6 +152,7 @@ jobs:
       - name: Run AutoBuy (solo diagnostica)
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

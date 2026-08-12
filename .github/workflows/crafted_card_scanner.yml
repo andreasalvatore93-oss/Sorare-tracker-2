@@ -53,6 +53,7 @@ jobs:
       - name: Run crafted card scanner
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           # Stesso canale Telegram di track classico e zenlock (richiesta esplicita).
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}

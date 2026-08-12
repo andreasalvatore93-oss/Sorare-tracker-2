@@ -80,6 +80,7 @@ jobs:
       - name: Run auction websocket listener
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           AUCTION_TELEGRAM_TOKEN: ${{ secrets.AUCTION_TELEGRAM_TOKEN }}
           AUCTION_TELEGRAM_CHAT_ID: ${{ secrets.AUCTION_TELEGRAM_CHAT_ID }}

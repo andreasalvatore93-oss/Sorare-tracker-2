@@ -173,6 +173,8 @@ def _headers_client_web():
     }
     if base.COOKIES:
         h['Cookie'] = base.COOKIES
+    if getattr(base, 'APIKEY', ''):
+        h['APIKEY'] = base.APIKEY
     if SORARE_CSRF:
         h['x-csrf-token'] = SORARE_CSRF
     fp = os.environ.get('SORARE_DEVICE_FINGERPRINT', '')

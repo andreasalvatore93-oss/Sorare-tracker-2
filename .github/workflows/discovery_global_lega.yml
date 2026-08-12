@@ -61,6 +61,7 @@ jobs:
       - run: pip install requests curl_cffi
       - env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           PYTHONUNBUFFERED: "1"
         run: |

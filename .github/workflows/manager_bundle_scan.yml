@@ -80,6 +80,7 @@ jobs:
         id: scan
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           MANAGER_SLUG_OR_URL: ${{ github.event.inputs.manager_slug_or_url }}
           AUTO_FIND_MANAGER: ${{ github.event.inputs.auto_find_manager || 'si' }}

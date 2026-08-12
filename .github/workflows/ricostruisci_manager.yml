@@ -55,6 +55,7 @@ jobs:
       - name: Scarica, salvando dopo ogni giornata
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           MANAGER_PAUSA: ${{ github.event.inputs.pausa }}
           PYTHONUNBUFFERED: "1"
         run: |

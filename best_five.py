@@ -63,6 +63,8 @@ REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 COOKIES = os.environ.get('SORARE_COOKIE', '')
+# 12/08: alza il tetto di rate/complessita' sull'account, si aggiunge al cookie.
+APIKEY = os.environ.get('SORARE_APIKEY', '')
 _http_session = curl_requests.Session(impersonate="chrome") if _HAS_CURL_CFFI else requests.Session()
 
 # Soglia starterOdds decisa esplicitamente dall'utente (30/07): sotto il 70%
@@ -121,6 +123,8 @@ def fetch_next_match_starter_odds(slug):
     headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
     if COOKIES:
         headers['Cookie'] = COOKIES
+    if APIKEY:
+        headers['APIKEY'] = APIKEY
     payload = {'query': NEXT_MATCH_STARTER_ODDS_QUERY, 'variables': {'slug': slug},
                'operationName': 'NextMatchStarterOdds'}
 
@@ -261,6 +265,8 @@ def fetch_l10_reale(slug):
     headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
     if COOKIES:
         headers['Cookie'] = COOKIES
+    if APIKEY:
+        headers['APIKEY'] = APIKEY
     payload = {'query': L10_REALE_QUERY, 'variables': {'slug': slug}, 'operationName': 'L10Reale'}
     backoff = 1.0
     for attempt in range(3):
@@ -1535,6 +1541,8 @@ def fetch_eta_reale(slug):
     headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
     if COOKIES:
         headers['Cookie'] = COOKIES
+    if APIKEY:
+        headers['APIKEY'] = APIKEY
     payload = {'query': ETA_QUERY, 'variables': {'slug': slug}, 'operationName': 'EtaGiocatore'}
     backoff = 1.0
     for attempt in range(3):

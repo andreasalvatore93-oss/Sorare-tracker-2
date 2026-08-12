@@ -111,6 +111,7 @@ jobs:
           # mercato in_season/classic per ogni giocatore mostrato -- vedi
           # commento nello stesso punto di best_five.yml.
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           BEST_FIVE_GENERA_CHEAPEST: ${{ inputs.genera_cheapest || 'true' }}
         run: python best_five.py contender --leghe "${{ inputs.leghe }}" --backups "${{ inputs.backups }}"
