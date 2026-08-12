@@ -228,10 +228,31 @@ def stampa_confronto(misure):
     else:
         print(f"  Vince {prima_nome}: {scarto:.0f}ms in meno di {seconda_nome} su ogni")
         print("  apertura di connessione.")
-        if tremolio_prima > tremolio_seconda * 1.5:
-            print(f"  ATTENZIONE pero': {prima_nome} e' piu' ballerina ({tremolio_prima:.0f}ms di")
-            print(f"  tremolio contro {tremolio_seconda:.0f}ms). Nello sniping si perde proprio nei")
-            print("  momenti brutti, quindi vale la pena rimisurare prima di decidere.")
+        # I momenti brutti si confrontano in ASSOLUTO, non come oscillazione
+        # attorno alla propria mediana (13/08/2026: il criterio precedente
+        # guardava lo scarto p90-mediana e dava un falso allarme -- segnalava
+        # come "ballerina" una connessione i cui momenti brutti erano comunque
+        # migliori dei momenti buoni dell'altra. Nello sniping conta il
+        # millisecondo vero, non quanto uno si discosta da se stesso).
+        peggio_p90 = prima["connessione_tcp_tls"]["p90"] > seconda["connessione_tcp_tls"]["p90"]
+        peggio_max = prima["connessione_tcp_tls"]["max"] > seconda["connessione_tcp_tls"]["max"]
+        if peggio_p90 or peggio_max:
+            print(f"  ATTENZIONE pero': nei momenti brutti {prima_nome} e' PEGGIO di "
+                  f"{seconda_nome}")
+            print(f"  (p90 {prima['connessione_tcp_tls']['p90']:.0f}ms contro "
+                  f"{seconda['connessione_tcp_tls']['p90']:.0f}ms, massimo "
+                  f"{prima['connessione_tcp_tls']['max']:.0f}ms contro "
+                  f"{seconda['connessione_tcp_tls']['max']:.0f}ms).")
+            print("  Nello sniping l'annuncio si perde proprio li': rimisura prima di decidere.")
+        else:
+            print(f"  E vince anche nei momenti brutti (p90 {prima['connessione_tcp_tls']['p90']:.0f}ms "
+                  f"contro {seconda['connessione_tcp_tls']['p90']:.0f}ms, massimo "
+                  f"{prima['connessione_tcp_tls']['max']:.0f}ms contro "
+                  f"{seconda['connessione_tcp_tls']['max']:.0f}ms):")
+            print("  non c'e' nessun caso in cui conviene l'altra.")
+            print(f"  (oscilla di piu' attorno alla propria mediana -- {tremolio_prima:.0f}ms "
+                  f"contro {tremolio_seconda:.0f}ms --")
+            print("   ma e' irrilevante: quel che conta e' il millisecondo vero.)")
 
 
 def main():
