@@ -1,0 +1,135 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T17:00:33.799588Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) lionel-andres-messi-cuccittini: 75 pt attesi (52-87)
+   ORDINAMENTO: 86.77
+   SQUADRA: inter-miami | AVVERSARIO: leon-leon-de-los-aldamas
+======================================================================
+
+######################################################################
+# GIOCATORE: lionel-andres-messi-cuccittini
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: lionel-andres-messi-cuccittini (squadra: inter-miami)
+Generato: 2026-08-12T17:00:33.796286Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 41
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-09 | MIA vs NSH | mlspa | score=100.0 | peso=0.035
+  2025-11-14 | ? vs ? | friendlies | score=83.7 | peso=0.039
+  2025-11-23 | CIN vs MIA | mlspa | score=100.0 | peso=0.044
+  2025-11-29 | MIA vs NYC | mlspa | score=76.9 | peso=0.050
+  2025-12-06 | MIA vs VAN | mlspa | score=85.8 | peso=0.056
+  2026-02-22 | LAFC vs MIA | mlspa | score=54.0 | peso=0.062
+  2026-03-02 | ORL vs MIA | mlspa | score=93.6 | peso=0.070
+  2026-03-07 | DC vs MIA | mlspa | score=70.0 | peso=0.079
+  2026-03-11 | NSH vs MIA | concacaf-champions-league | score=49.5 | peso=0.088
+  2026-03-18 | MIA vs NSH | concacaf-champions-league | score=83.8 | peso=0.099
+  2026-03-22 | NYC vs MIA | mlspa | score=80.3 | peso=0.111
+  2026-03-31 | ? vs ? | friendlies | score=77.2 | peso=0.125
+  2026-04-04 | MIA vs ATX | mlspa | score=88.8 | peso=0.140
+  2026-04-11 | MIA vs RBNY | mlspa | score=64.6 | peso=0.157
+  2026-04-18 | RAP vs MIA | mlspa | score=70.0 | peso=0.177
+  2026-04-23 | RSL vs MIA | mlspa | score=68.2 | peso=0.198
+  2026-04-25 | MIA vs NE | mlspa | score=62.0 | peso=0.223
+  2026-05-02 | MIA vs ORL | mlspa | score=96.3 | peso=0.250
+  2026-05-09 | TOR vs MIA | mlspa | score=100.0 | peso=0.281
+  2026-05-13 | CIN vs MIA | mlspa | score=100.0 | peso=0.315
+  2026-05-17 | MIA vs POR | mlspa | score=87.6 | peso=0.354
+  2026-05-24 | MIA vs PHI | mlspa | score=95.1 | peso=0.397
+  2026-06-17 | ? vs ? | global-cup | score=99.7 | peso=0.445
+  2026-06-22 | ? vs ? | global-cup | score=98.7 | peso=0.500
+  2026-07-03 | ? vs ? | global-cup | score=99.7 | peso=0.561
+  2026-07-07 | ? vs ? | global-cup | score=96.6 | peso=0.630
+  2026-07-12 | ? vs ? | global-cup | score=100.0 | peso=0.707
+  2026-07-15 | ? vs ? | global-cup | score=98.9 | peso=0.794
+  2026-07-19 | ? vs ? | global-cup | score=49.3 | peso=0.891
+  2026-08-05 | MIA vs ASL | leagues-cup-mls | score=91.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 87.43
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 76.20 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 63.94 | Punteggio complessivo (granulari) medio: 23.49 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 9.12 (delta -1.03) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.94
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 64.6 - 99.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.79 (differenza: +5.15)
+Media score in casa: 84.75 | Media score fuori casa: 78.56
+Fattore casa/trasferta applicato: 1.006 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.2
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.987
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore trend (media ultime 5: 87.2 vs media 5 PRECEDENTI: 96.2): 1.000
+P(gioca): 20.00% (fonte: starterOddsBasisPoints (2000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-12T23:30
+Casa: Inter Miami CF | Trasferta: Club León
+Competizione: leagues-cup-mls
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 75.0 (range 52.2 - 87.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 86.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 86.93
+Punteggio REALE ottenuto in quella partita: 91.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +4.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      99.9    93.6     -6.3    18.8        SI
+   7        7      96.9    70.0    -26.9    17.8        NO
+   8        8      69.5    49.5    -20.0    17.2        NO
+   9        9      67.3    83.8    +16.5    20.7        SI
+  10       10      78.6    80.3     +1.7    19.3        SI
+  11       11      77.5    77.2     -0.3    17.8        SI
+  12       12     105.0    88.8    -16.2    16.5        SI
+  13       13      88.3    64.6    -23.7    16.0        NO
+  14       14      96.5    70.0    -26.5    15.9        NO
+  15       15      70.1    68.2     -1.9    15.0        SI
+  16       16      69.0    62.0     -7.0    14.4        SI
+  17       17      85.8    96.3    +10.5    14.3        SI
+  18       18      91.3   100.0     +8.7    16.0        SI
+  19       19      80.5   100.0    +19.5    17.4        NO
+  20       20      93.4    87.6     -5.8    18.1        SI
+  21       21     105.1    95.1    -10.0    17.1        SI
+  22       22      83.9    99.7    +15.8    16.8        SI
+  23       23      85.8    98.7    +12.9    16.8        SI
+  24       24      87.3    99.7    +12.4    16.5        SI
+  25       25      88.7    96.6     +7.9    16.2        SI
+  26       26      89.6   100.0    +10.4    15.5        SI
+  27       27      90.8    98.9     +8.1    15.1        SI
+  28       28      91.7    49.3    -42.4    14.5        NO
+  29       29     111.5    91.4    -20.1    20.6        SI
+
+MAE (errore assoluto medio): 13.81
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

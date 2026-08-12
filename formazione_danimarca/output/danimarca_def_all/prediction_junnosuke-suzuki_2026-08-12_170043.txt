@@ -1,0 +1,121 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T17:00:43.031638Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) junnosuke-suzuki: 52 pt attesi (36-70)
+   ORDINAMENTO: 50.97
+   SQUADRA: kobenhavn-kobenhavn | AVVERSARIO: randers-randers
+======================================================================
+
+######################################################################
+# GIOCATORE: junnosuke-suzuki
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: junnosuke-suzuki (squadra: kobenhavn-kobenhavn)
+Generato: 2026-08-12T17:00:43.030693Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: superliga-dk (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-05 | FCK vs FCM | superliga-dk | score=55.1 | peso=0.616
+  2025-10-17 | SIF vs FCK | superliga-dk | score=38.3 | peso=0.630
+  2025-10-26 | FCK vs VFF | superliga-dk | score=92.5 | peso=0.645
+  2025-11-01 | FCK vs FRE | superliga-dk | score=80.0 | peso=0.660
+  2025-11-09 | VB vs FCK | superliga-dk | score=33.7 | peso=0.675
+  2025-11-23 | FCK vs BIF | superliga-dk | score=64.3 | peso=0.691
+  2025-11-30 | AGF vs FCK | superliga-dk | score=13.8 | peso=0.707
+  2025-12-07 | FCK vs SJE | superliga-dk | score=71.3 | peso=0.724
+  2026-02-08 | FCM vs FCK | superliga-dk | score=26.2 | peso=0.741
+  2026-02-14 | FCK vs FCN | superliga-dk | score=39.0 | peso=0.758
+  2026-03-15 | OB vs FCK | superliga-dk | score=54.6 | peso=0.776
+  2026-03-22 | FCK vs FRE | superliga-dk | score=51.6 | peso=0.794
+  2026-04-05 | FCK vs SIF | superliga-dk | score=55.4 | peso=0.812
+  2026-04-12 | RFC vs FCK | superliga-dk | score=49.1 | peso=0.831
+  2026-04-19 | VB vs FCK | superliga-dk | score=51.8 | peso=0.851
+  2026-04-22 | FCK vs OB | superliga-dk | score=68.0 | peso=0.871
+  2026-04-27 | FCK vs VB | superliga-dk | score=40.3 | peso=0.891
+  2026-05-03 | FRE vs FCK | superliga-dk | score=60.0 | peso=0.912
+  2026-05-10 | SIF vs FCK | superliga-dk | score=53.0 | peso=0.933
+  2026-05-17 | FCK vs RFC | superliga-dk | score=82.5 | peso=0.955
+  2026-05-21 | BIF vs FCK | superliga-dk | score=36.8 | peso=0.977
+  2026-08-02 | SIF vs FCK | superliga-dk | score=45.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 52.74
+  di cui Punteggio decisivo (level_score) medio: 37.50 | Punteggio complessivo (granulari) medio: 15.24 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.91, delta avversario +0.74 | Passaggio condizionato: delta venue -0.52, delta avversario +0.53 | Clean sheet/disimpegni condizionato: delta venue -1.17, delta avversario +0.37 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.80
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.8 - 71.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.61 (differenza: +3.19)
+Media score in casa: 63.63 | Media score fuori casa: 42.03
+Fattore casa/trasferta applicato: 0.997 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.8
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 1.349 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.991
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.993
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 0.994
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.993
+Fattore trend (media ultime 5: 55.3 vs media 5 PRECEDENTI: 52.9): 1.000
+P(gioca): 73.33% (fonte: tasso di presenza storico (22/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T16:00
+Casa: Randers FC | Trasferta: FC København
+Competizione: superliga-dk
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.6 (range 35.7 - 70.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 51.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.21
+Punteggio REALE ottenuto in quella partita: 45.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      60.9    13.8    -47.1    23.1        NO
+   7        7      64.5    71.3     +6.8    28.2        SI
+   8        8      44.7    26.2    -18.5    27.1        SI
+   9        9      52.3    39.0    -13.3    27.6        SI
+  10       10      58.3    54.6     -3.7    26.4        SI
+  11       11      59.4    51.6     -7.7    25.0        SI
+  12       12      51.5    55.4     +3.9    23.8        SI
+  13       13      52.9    49.1     -3.8    22.8        SI
+  14       14      57.5    51.8     -5.7    21.8        SI
+  15       15      62.2    68.0     +5.8    21.0        SI
+  16       16      63.3    40.3    -23.0    20.7        NO
+  17       17      53.0    60.0     +7.0    20.3        SI
+  18       18      46.5    53.0     +6.6    19.7        SI
+  19       19      56.6    82.5    +25.8    19.1        NO
+  20       20      44.6    36.8     -7.8    20.1        SI
+  21       21      49.3    45.0     -4.3    20.0        SI
+
+MAE (errore assoluto medio): 11.92
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 81.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

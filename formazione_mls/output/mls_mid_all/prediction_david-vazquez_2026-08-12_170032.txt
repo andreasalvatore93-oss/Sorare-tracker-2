@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-12T17:00:32.709316Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) david-vazquez: 46 pt attesi (29-71)
+   SQUADRA: san-diego-san-diego | AVVERSARIO: puebla-puebla
+======================================================================
+
+######################################################################
+# GIOCATORE: david-vazquez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: david-vazquez (squadra: san-diego-san-diego)
+Generato: 2026-08-12T17:00:32.705085Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 37
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | SJ vs SD | mlspa | score=42.2 | peso=0.779
+  2026-03-12 | SD vs TOL | concacaf-champions-league | score=70.0 | peso=0.801
+  2026-03-22 | SD vs RSL | mlspa | score=27.5 | peso=0.824
+  2026-04-26 | SD vs POR | mlspa | score=37.1 | peso=0.847
+  2026-05-03 | SD vs LAFC | mlspa | score=31.6 | peso=0.871
+  2026-05-10 | SEA vs SD | mlspa | score=38.3 | peso=0.895
+  2026-05-14 | SD vs ATX | mlspa | score=82.6 | peso=0.920
+  2026-05-17 | SD vs CIN | mlspa | score=27.7 | peso=0.946
+  2026-05-24 | SD vs VAN | mlspa | score=60.4 | peso=0.973
+  2026-08-02 | MIN vs SD | mlspa | score=33.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 45.07
+  di cui Punteggio decisivo (level_score) medio: 44.55 | Punteggio complessivo (granulari) medio: 0.52 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 46.96 (delta +2.41)
+  Efficacia offensiva condizionata: delta venue +0.30, delta avversario +0.19 | Passaggio condizionato: delta venue -0.05, delta avversario +0.69 | Gol subiti condizionato: delta venue -0.11, delta avversario +0.42 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 18.28
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 27.7 - 70.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.79 (differenza: +4.49)
+Media score in casa: 48.13 | Media score fuori casa: 37.93
+Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.1
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 0.998
+Fattore trend (media ultime 5: 48.3 vs media 5 PRECEDENTI: 41.4): 1.000
+P(gioca): 40.00% (fonte: starterOddsBasisPoints (4000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-13T02:15
+Casa: San Diego FC | Trasferta: Puebla FC
+Competizione: leagues-cup-mls
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.4 (range 29.0 - 71.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.56
+Punteggio REALE ottenuto in quella partita: 33.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -13.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      53.0    82.6    +29.6    14.9        NO
+   7        7      46.6    27.7    -18.9    21.5        SI
+   8        8      36.3    60.4    +24.1    21.3        NO
+   9        9      53.9    33.3    -20.6    20.8        SI
+
+MAE (errore assoluto medio): 23.30
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
