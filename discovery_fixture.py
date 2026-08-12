@@ -1567,7 +1567,21 @@ def main():
             # il blocco fosse quasi vuoto per un motivo diverso.
             _mancanti = [sl for sl in elenco if odds_bulk.get(sl) is None]
             _cap = int(os.environ.get('ODDS_FALLBACK_MAX_PER_RUOLO', '40'))
-            if _mancanti:
+            if _mancanti and MIN_ODDS <= 0:
+                # P1 (piano 429, risposta Opus 12/08/2026 sera): a soglia 0
+                # nessuna esclusione dipende dalle odds (riga ~1622) e a
+                # inizio stagione le odds non sono comunque pubblicate per
+                # nessuno (~24-48h dal match) -- la resa attesa e' vicina a
+                # zero. Si salta il recupero individuale: data resta 'inizio'
+                # (stesso trattamento delle righe sopra, la finestra e' gia'
+                # garantita da 'elenco'), odds resta None (permissivo a
+                # soglia 0, vedi righe ~1621-1624).
+                log(f"  {position}: {len(_mancanti)} senza odds nel blocco, "
+                    f"soglia odds=0: salto il recupero individuale (nessun "
+                    f"filtro dipende da questo dato).")
+                for sl in _mancanti:
+                    risultati[sl] = (None, inizio, l10_di.get(sl))
+            elif _mancanti:
                 _da_ritentare = _mancanti[:_cap]
                 if len(_mancanti) > _cap:
                     log(f"  {position}: {len(_mancanti)} senza odds nel blocco, "
@@ -1582,9 +1596,29 @@ def main():
                     time.sleep(ODDS_L10_SLEEP)
                     if risultati[sl][0] is not None:
                         _recuperati += 1
+                    # P4 (piano 429): un 429 in questa chiamata vuol dire che
+                    # continuare macina altri 429 e attese Retry-After (fino
+                    # a 152-294s l'una, misurato) senza guadagno -- il
+                    # fallback e' un di piu', non deve poter bloccare la run.
+                    if base.LAST_HIT_429:
+                        _restanti = len(_da_ritentare) - _da_ritentare.index(sl) - 1
+                        log(f"  {position}: 429 durante il recupero individuale, "
+                            f"mi fermo qui ({_restanti} slug non ritentati).")
+                        break
                 if _recuperati:
                     log(f"  {position}: recuperati {_recuperati}/{len(_da_ritentare)} "
                         f"con odds ora pubblicate (erano mancanti nel blocco).")
+        elif MIN_ODDS <= 0:
+            # P1: stesso gate del ramo sopra, ma qui il blocco odds e'
+            # VUOTO (stagione appena iniziata, nessuno ha ancora odds
+            # pubblicate) -- il vecchio percorso senza tetto interrogherebbe
+            # l'INTERO 'elenco' uno per uno (era il ramo scattato stasera sul
+            # test GW5, causa dei 429 a raffica su tutti e 4 i job). A soglia
+            # 0 non serve: nessuna esclusione dipende dalle odds.
+            log(f"  {position}: odds di giornata non disponibili (soglia odds=0): "
+                f"salto il recupero individuale, nessun filtro ne dipende.")
+            for sl in elenco:
+                risultati[sl] = (None, inizio, l10_di.get(sl))
         else:
             # Odds di giornata non disponibili (non ancora pubblicate o query
             # a vuoto): si torna al percorso vecchio, giocatore per giocatore.
@@ -1593,6 +1627,11 @@ def main():
             for sl in elenco:
                 risultati[sl] = odds_e_l10_singola(sl, inizio, fine)
                 time.sleep(ODDS_L10_SLEEP)
+                if base.LAST_HIT_429:
+                    _idx = elenco.index(sl)
+                    log(f"  {position}: 429 durante il recupero individuale, "
+                        f"mi fermo qui ({len(elenco) - _idx - 1} slug non ritentati).")
+                    break
         # le odds si salvano QUI, prima del filtro MIN_ODDS sotto: sono il
         # valore vivo pre-deadline, l'unico non contaminato (vedi ODDS_STORICO)
         salva_odds_storico(fx.get('slug'), risultati)

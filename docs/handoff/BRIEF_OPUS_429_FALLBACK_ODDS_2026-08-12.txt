@@ -1,0 +1,66 @@
+BRIEF PER LO STREGONE SUPREMO (Opus esecutore) — 12/08/2026 sera
+Mittente: orchestratore Sonnet Alto. Sessione fresca? No, hai già lavorato
+oggi su questo filone (badge fixture ambigua). Leggi comunque questo brief
+per intero, è un problema NUOVO nato dopo il tuo ultimo contributo.
+
+VERDETTO DA BAR: ho aggiunto oggi un fallback in discovery_fixture.py che
+recupera odds mancanti dallo snapshot in blocco con una query individuale
+per giocatore. Funzionava bene testato a MIN_STARTER_ODDS=0.80 (pochi buchi
+veri, tipo 2 per ruolo). Testato ORA a MIN_STARTER_ODDS=0 su GW5 (le carte
+non hanno ancora starter odds pubblicate, stagione appena iniziata): la
+discovery ha preso 429 a raffica su tutti e 4 i job ruolo, non è uscita
+dalla fase discovery in 5+ minuti, l'utente ha dovuto cancellare la run.
+La mia IPOTESI (non ancora verificata a fondo, dimmi se sbaglio): con
+MIN_ODDS<=0 il fallback è INUTILE (le odds mancanti sarebbero incluse lo
+stesso più sotto, vedi codice) ma scatta comunque fino al tetto di 40 per
+ogni batch ruolo/lega — con la stagione non ancora iniziata quasi TUTTI i
+candidati mancano dal blocco, quindi il tetto di 40 viene raggiunto su
+MOLTI batch contemporaneamente, in 4 job paralleli → volume di query mai
+visto prima, 429.
+
+QUESTO NON È SOLO UN PROBLEMA DEL TEST DI OGGI: l'utente fa notare che da
+qui in avanti TUTTI i campionati iniziano la stagione, quindi il volume di
+carte da interrogare cresce comunque (non solo nel caso limite odds=0) —
+serve una soluzione che regga anche a regime, non solo per il test di oggi.
+
+COSA LEGGERE PRIMA:
+- discovery_fixture.py righe 1531-1595 (il blocco bulk+fallback, appena
+  scritto oggi — vedi anche il commit "Due bug reali trovati testando
+  ESSENZE_ARENA su GW4" per il contesto del perché esiste il fallback).
+- discovery_fixture.py riga 34 (MIN_ODDS), righe 1587-1591 (il downstream
+  che decide inclusione/esclusione in base a MIN_ODDS — QUESTO è il punto
+  dove, secondo la mia ipotesi, il fallback diventa superfluo se MIN_ODDS<=0).
+- ODDS_L10_SLEEP (riga 76, default 0.7s) — pausa fra query individuali,
+  esistente da prima, non toccata oggi.
+- Il fatto che i 4 job (gk/def/mid/fwd) girano in PARALLELO su GitHub
+  Actions: ogni job fa il proprio fallback indipendentemente, stesso
+  fixture_slug — non condividono un contatore di query globale.
+
+LA DOMANDA: qual è il modo migliore di risolvere, considerando ENTRAMBI i
+casi (test odds=0 di oggi E il volume crescente futuro con più campionati
+attivi)? Alcune strade che vedo, senza aver deciso:
+1. Skip totale del fallback quando MIN_ODDS<=0 (la mia ipotesi sopra: il
+   fallback non cambia nulla in quel caso, quindi è puro spreco — fix
+   mirato e piccolo, ma non risolve il problema di volume a regime con
+   MIN_ODDS>0 quando più campionati sono attivi).
+2. Abbassare il tetto ODDS_FALLBACK_MAX_PER_RUOLO, o renderlo proporzionale
+   a quanti sono i "buchi veri" attesi (pochi, per il caso originale
+   Cvetkovic/Yilmaz) invece di un numero fisso.
+3. Un backoff/retry più aggressivo sui 429 nella query individuale stessa
+   (se già esiste in graphql_query, magari non basta more query in meno
+   tempo).
+4. Qualcos'altro che non ho considerato.
+
+NON DECIDERE DA SOLO SENZA SPIEGARE IL PERCHÉ: il fallback esiste per un
+bug vero (Cvetkovic/Yilmaz, non un capriccio) — qualunque fix non deve
+farlo sparire per il caso originale, solo evitare l'esplosione di query.
+
+COSA NON FARE: non modificare il codice tu stesso se non ne sei sicuro al
+100% — è un problema urgente ma la produzione va toccata con giudizio.
+Se preferisci, dammi solo la diagnosi/il piano e lo implemento io.
+
+DOVE RISPONDERE: mcp__ccd_session_mgmt__send_message al mio session_id
+ESATTO (lo trovi nell'header <cross-session-message> di questo messaggio
+quando ti arriva) — NON usare list_sessions per indovinare, oggi è già
+successo un errore di consegna per questo motivo. Se preferisci, scrivi
+anche la risposta in coda a questo stesso file.

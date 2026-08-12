@@ -1,0 +1,177 @@
+RISPOSTA DELLO STREGONE SUPREMO (Opus esecutore) — 12/08/2026 sera, Roma
+A: orchestratore Sonnet Alto (brief BRIEF_OPUS_429_FALLBACK_ODDS_2026-08-12.txt)
+Nessuna modifica al codice, nessun commit. Diagnosi + piano, come chiesto.
+
+
+VERDETTO DA BAR (dieci righe)
+-----------------------------
+Il tuo tetto di 40 conta le QUERY, ma quello che vi ha bloccati non e' il
+numero di query: e' la CADENZA. Nel repo c'e' gia' scritto, misurato il
+28/07, che il limite vero di Sorare e' cumulativo, ~60-70 richieste al
+minuto. Una query ogni 0.7s fa 86 richieste al minuto: giusto per UN job.
+Voi ne fate girare QUATTRO insieme, e nessuno dei quattro sa degli altri:
+~343 al minuto, cinque volte il tetto. Da li' i 429. E quando arriva il 429
+il codice fa la cosa educata: legge Retry-After e aspetta — 152 secondi,
+misurati su una run vera. Cinque tentativi a testa e un solo giocatore si
+mangia minuti. Ecco i "5+ minuti fermi".
+Poi c'e' una cosa peggiore che il tuo brief non nomina, ed e' li' da prima
+di oggi: se il blocco odds torna VUOTO (stagione appena iniziata = nessuno
+ha ancora le odds), il codice non usa affatto il tuo fallback col tetto di
+40 — cade nel ramo vecchio che interroga TUTTO l'elenco uno per uno, senza
+nessun tetto. Quello, con 4 job in parallelo, non finisce piu'.
+Prima di toccare il codice va stabilito QUALE dei due rami e' scattato:
+si legge dal log della run cancellata, sono due righe diverse. Te le do sotto.
+
+
+1. NUMERI, TUTTI LETTI NEL REPO (non stimati)
+----------------------------------------------
+- discovery_fixture.py:66-75 (commento con le run citate): "a 0.2s (~5
+  richieste/s) il 429 scattava quasi sempre (run 30336178358 e altri 4
+  precedenti, attese fino a 255s)... il vero limite di Sorare e' CUMULATIVO
+  su tutto il job (~60-70 richieste/minuto)". ODDS_L10_SLEEP = 0.7s
+  (riga 76) e' stato scelto per stare sotto ~60/min CON UN JOB SOLO.
+- 0.7s = 85.7 richieste/minuto per processo. La matrice della discovery in
+  .github/workflows/formazione_giornata.yml:132-137 e'
+  {gk,,} {def,,} {mid,,} {fwd,,} = 4 job PARALLELI, stessa credenziale.
+  4 x 85.7 = ~343 richieste/minuto contro un tetto misurato di 60-70.
+  Cioe': quando il percorso per-giocatore si accende su tutti e quattro,
+  siamo 5 volte sopra il limite PER COSTRUZIONE, con o senza il tuo tetto.
+- turchia_gk_discovery.py:95-105 (base.graphql_query): sul 429 legge
+  Retry-After e dorme ESATTAMENTE quel tempo, per 5 tentativi, backoff che
+  raddoppia. discovery_fixture.py:1521 riporta un Retry-After misurato di
+  152s. Un singolo slug in fallback puo' quindi bloccare il job per minuti,
+  e il chiamante non lo sa: graphql_query ritorna {} e basta.
+- Il tetto ODDS_FALLBACK_MAX_PER_RUOLO=40 (riga 1569) e' PER PROCESSO e per
+  ruolo. Con la matrice attuale = 4 processi x 1 ruolo = fino a 160 query
+  individuali quasi simultanee, tutte in finestra ristretta.
+
+
+2. LA TUA IPOTESI: giusta al 70%, ma punta al ramo sbagliato
+-------------------------------------------------------------
+Hai ragione su: con MIN_ODDS<=0 il fallback non cambia NESSUNA inclusione.
+Verificato alle righe 1621-1624: se odds is None si esclude solo se
+MIN_ODDS > 0. Quindi a soglia 0 il recupero non salva nessun giocatore.
+
+Due precisazioni, perche' "inutile" non e' esatto e la differenza conta:
+(a) le odds recuperate NON vengono buttate: finiscono in salva_odds_storico
+    (riga 1598) e in entry['starter_odds'] (righe 1663-1671), che a valle e'
+    un tie-break vero (PREFERENZA_ODDS_* in build_formazione_globale.py).
+    Quindi il guadagno a MIN_ODDS=0 non e' zero, e' MARGINALE.
+(b) contro (a): a stagione appena iniziata le odds non sono pubblicate per
+    nessuno (escono a ~24-48h dal match, commento riga 1613-1614), quindi
+    la resa attesa di quelle query e' vicina allo zero comunque. Costo alto,
+    resa quasi nulla: il gate MIN_ODDS>0 e' giusto. Solo, non per il motivo
+    "tanto sarebbero inclusi lo stesso", ma per "tanto non troveresti nulla".
+
+DOVE INVECE L'IPOTESI NON REGGE: il tetto di 40 non spiega 5 minuti. 40
+query a 0.7s sono 28 secondi. Per stare fermi 5+ minuti servono i 429 con
+Retry-After (punto 1) OPPURE il ramo senza tetto (punto 3). Quasi certamente
+tutti e due.
+
+
+3. IL RAMO SENZA TETTO — pre-esistente, e' il vero pericolo
+------------------------------------------------------------
+discovery_fixture.py:1533 fa `if odds_bulk:` — dizionario VUOTO = falso.
+Il ramo else (righe 1588-1595) interroga UNO PER UNO L'INTERO `elenco`,
+senza nessun tetto, con lo stesso sleep di 0.7s.
+
+Quando torna vuoto il blocco? Guarda odds_per_giornata (riga 973-1013):
+ritorna {} sia quando non ci sono partite (fetch fallita/giornata sbagliata)
+sia quando le partite ci sono ma NESSUN giocatore ha ancora le odds
+pubblicate. Sono due situazioni opposte e il chiamante non le distingue:
+- caso "fetch fallita" -> ripiegare per giocatore ha senso;
+- caso "odds non ancora uscite" (= GW5 di stasera, stagione appena iniziata)
+  -> ripiegare per giocatore e' esattamente la cosa da NON fare: chiedi uno
+  per uno un dato che non esiste ancora per nessuno, su centinaia di slug,
+  in 4 job paralleli.
+Questo bug e' li' dal 07/08, non l'hai introdotto tu oggi. Ma e' lo stesso
+scenario del test di stasera, quindi va chiuso INSIEME al tuo.
+
+COME SAPERE QUALE RAMO E' SCATTATO (5 secondi, sul log della run cancellata):
+- ramo vecchio senza tetto: "odds di giornata non disponibili, ripiego sulle
+  chiamate per giocatore" (riga 1591-1592);
+- tuo fallback col tetto: "senza odds nel blocco... ritento" oppure "ritento
+  solo i primi 40 (ODDS_FALLBACK_MAX_PER_RUOLO)" (righe 1573-1578).
+Cerca anche "[odds] da artifact pool_gw.json: N giocatori con odds": se N e'
+0 o la riga manca, sei nel ramo vecchio. NON toccare il codice prima di aver
+letto quale delle due righe c'e': e' la differenza fra un fix mirato e un
+fix sul pezzo sbagliato.
+
+
+4. PIANO (in ordine: il primo da solo probabilmente basta per stasera)
+-----------------------------------------------------------------------
+P1. GATE SULL'UTILITA', non sul buco. Il fallback (e ANCHE il ramo else)
+    partono solo se MIN_ODDS > 0. A soglia 0 si salta e si logga una riga
+    ("soglia 0: nessun filtro odds, salto il recupero individuale").
+    Motivo: a soglia 0 nessuna esclusione dipende da quel dato, e a inizio
+    stagione la resa e' comunque ~0. Costo: si perde il tie-break
+    starter_odds per quei giocatori — che a soglia 0, a stagione appena
+    iniziata, non esiste comunque.
+    Questo NON tocca il caso originale Cvetkovic/Yilmaz: quello girava a
+    MIN_STARTER_ODDS=0.80, quindi dentro il gate.
+
+P2. TETTO PROPORZIONALE, con un criterio (la tua opzione 2, ma non a occhio).
+    Il fallback serve a un buco STRUTTURALE e piccolo: Cvetkovic/Yilmaz
+    mancavano dal blocco perche' la loro era una partita di COPPA, che nella
+    lista partite della giornata non c'e' per costruzione (commento tuo,
+    righe 1554-1559). Quella popolazione e' piccola e non cresce con la
+    stagione. Se invece MANCA QUASI TUTTO l'elenco, non sei in quel caso: sei
+    nel caso "odds non ancora pubblicate", dove il recupero individuale non
+    trova nulla. Regola: se i mancanti superano una frazione dell'elenco
+    (proposta: 20%), NON ritentare per niente e loggarlo. Sotto quella
+    frazione, ritenta col tetto. Cosi' il comportamento e' giusto sia oggi
+    sia a regime, senza dover indovinare un numero fisso.
+
+P3. IL TETTO VA LETTO IN CONTO ACCOUNT, NON IN CONTO JOB. Se il fallback
+    resta a 40 per processo, con la matrice a 4 job sono 160. Proposta:
+    ODDS_FALLBACK_MAX_PER_RUOLO 40 -> 10, e sleep dedicato per questo loop
+    scalato sul parallelismo (ODDS_FALLBACK_SLEEP = ODDS_L10_SLEEP x n_job,
+    con n_job passato dal workflow come env, default 4 -> 2.8s). 10 query x
+    2.8s = 28s per job, 40 query/minuto account-wide: sotto il tetto
+    misurato di 60-70/min, con margine. Numeri da rivedere se la matrice
+    cambia — il punto e' che il parametro giusto e' "richieste al minuto
+    sommate su tutti i job", non "query per job".
+
+P4. INTERRUTTORE DI EMERGENZA SUL 429 (questo e' quello che salva le run a
+    regime). Oggi graphql_query si mangia il 429 dentro e ritorna {}: il
+    chiamante non distingue "rate limited" da "nessuna odds". Serve che base
+    esponga il fatto (un contatore/flag di modulo aggiornato in
+    turchia_gk_discovery.graphql_query), e che il loop di fallback si
+    fermi dopo il PRIMO slug che ha preso 429, loggando quanti ne restavano.
+    Il fallback e' un di piu': non deve mai poter bloccare una run.
+    Il precedente idiomatico in repo esiste gia' — la probe del grade
+    distingue rate limit da sessione morta, discovery_fixture.py:422-452.
+    Aggiungerei anche un budget a orologio (ODDS_FALLBACK_BUDGET_S, ~60s):
+    scaduto quello si esce comunque, qualunque sia la causa.
+
+P5. NON fare la tua opzione 3 (backoff piu' aggressivo). E' il contrario di
+    quello che serve: Retry-After e' gia' onorato e vale 152s misurati; piu'
+    tentativi = piu' minuti fermi. Il problema non e' che rinuncia troppo
+    presto, e' che non rinuncia mai.
+
+Se devi fare UNA cosa sola stasera per sbloccare il test: P1. Se ne fai due:
+P1 + P4. P2/P3 sono quelle che tengono a regime quando partono tutti i
+campionati.
+
+
+5. COSA NON HO VERIFICATO (dillo all'utente, non nascondiamolo)
+----------------------------------------------------------------
+- Quale dei due rami sia scattato stasera: non ho il log della run
+  cancellata. Le stringhe esatte da cercare sono al punto 3.
+- Se pool_gw.json fosse presente e con odds vuote in quella run.
+- Il numero reale di slug in `elenco` a GW5 (dipende dal mazzo e dalle
+  squadre in campo): serve a dire quanto sarebbe durato il ramo senza tetto.
+  Con 4 job a 0.7s il conto e' comunque ~343 richieste/minuto contro 60-70.
+
+
+FILE DI RIFERIMENTO
+-------------------
+discovery_fixture.py: 34 (MIN_ODDS), 66-76 (limite misurato + sleep),
+  973-1013 (odds_per_giornata, il {} ambiguo), 1020-1058
+  (_odds_giornata_condivise), 1347 (loop ruoli), 1531-1595 (bulk + fallback +
+  ramo else senza tetto), 1596-1598 (salva_odds_storico), 1621-1632 (il
+  filtro che dipende da MIN_ODDS), 1663-1671 (starter_odds persistite)
+formazione_turchia/discovery/turchia_gk_discovery.py:95-121 (retry 429,
+  Retry-After onorato, 5 tentativi)
+.github/workflows/formazione_giornata.yml:132-137 (4 job paralleli),
+  181-190 (env DISCOVERY_ROLES/SHARD)

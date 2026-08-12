@@ -58,6 +58,17 @@ def log(msg):
 CSRF_TOKEN = os.environ.get('SORARE_CSRF', '')
 
 
+# Esposto al chiamante (12/08/2026, P4 del piano 429): graphql_query onora
+# gia' Retry-After e ritenta 5 volte, ma se i tentativi si esauriscono
+# ritorna {} indistinguibile da "nessun dato" -- un loop che chiama questa
+# funzione N volte in sequenza (es. il fallback odds per-giocatore in
+# discovery_fixture.py) non si accorge di essere in rate limit e continua a
+# macinare query che prenderanno lo stesso 429. Il chiamante controlla questo
+# flag DOPO ogni chiamata e puo' interrompere il proprio loop al primo 429,
+# invece di scoprirlo dopo N minuti di attese Retry-After.
+LAST_HIT_429 = False
+
+
 def graphql_query(query, variables=None, operation_name=None):
     """NB (07/08/2026): questo modulo e' importato come `base` da
     discovery_fixture.py, analisi_manager/pipeline_manager.py,
@@ -92,11 +103,14 @@ def graphql_query(query, variables=None, operation_name=None):
     if operation_name:
         payload['operationName'] = operation_name
 
+    global LAST_HIT_429
+    LAST_HIT_429 = False
     backoff = 1.0
     for attempt in range(5):
         try:
             resp = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
             if resp.status_code == 429:
+                LAST_HIT_429 = True
                 retry_after = resp.headers.get('Retry-After')
                 sleep_s = float(retry_after) if retry_after else backoff
                 log(f"[429] tentativo {attempt+1}/5, attesa {sleep_s:.1f}s")
