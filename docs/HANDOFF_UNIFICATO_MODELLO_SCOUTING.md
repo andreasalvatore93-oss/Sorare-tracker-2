@@ -1985,6 +1985,163 @@ aperta, tocca anche gli strumenti locali che leggono la stessa cache.
 
 ---
 
+## 8duodecies-quinquies. GIORNATA DEL 12/08/2026 — velocità, APIKEY, runner di casa
+
+**Sezione da leggere per prima se si riprende da qui.** Riassume una sessione
+lunghissima. Il dettaglio con tutte le misure sta in
+`docs/handoff/RISPOSTA_OPUS_VELOCITA_STRUTTURALE_2026-08-12.txt`.
+
+### 1. Dove siamo arrivati (numeri, non impressioni)
+
+| | prima | adesso |
+|---|---|---|
+| pipeline, giornata vera | 6,0-6,3 min | **~7 min, zero 429** |
+| pipeline, preseason (soglia 0) | 18,4 min | **10,4 min, zero 429** |
+| query Sorare per run | 6.857 | **1.492** |
+| secondi persi nei 429 | 6.193 | **0** |
+
+### 2. LE TRE APIKEY — come sono messe
+
+Secret GitHub: **`SORARE_APIKEY`**, **`SORARE_APIKEY_2`**, **`SORARE_APIKEY_3`**.
+⚠️ **La prima NON si chiama `_1`.** Se ne possono generare altre dal pannello
+Developer di Sorare, ma non servono: 3 × 200 = 600/min, che è il tetto del
+programma.
+
+Limiti veri (documentazione ufficiale `github.com/sorare/api`, verificati in
+laboratorio):
+
+| accesso | richieste/min | complessità GraphQL |
+|---|---|---|
+| anonimo | 20 | 500 |
+| **sessione col solo cookie** | **60** | 30.000 |
+| con APIKEY | 200 a chiave | 30.000 |
+
+più un tetto separato di **40 query contemporaneamente in volo**, che nessuna
+chiave alza.
+
+**I due fatti che costano ore se non si sanno:**
+1. **La chiave scavalca il tetto del cookie.** Misurato: 600 richieste col solo
+   cookie → 461 bloccate (si ferma alla 139ª); le stesse con cookie+chiave →
+   zero. **Non serve togliere il cookie da nessuna parte.**
+2. **I tetti delle chiavi sono indipendenti e si sommano.** Nel job `predict`
+   ogni shard ne prende una diversa con `IDX % 3` (nel workflow, lo shell la
+   assegna a `SORARE_APIKEY`: il Python non sa niente della rotazione).
+
+**Dov'è cablata**: 399 file — predict di tutte le leghe, i 164 script di
+discovery, bot, scanner, diagnostica. Più `bot_profit` con la rotazione a tre.
+**Dove NON c'è, di proposito**: `scanners/track.py` e `bots/autobuy_sorare.py`
+(in disuso, scelta dell'utente) e `scanners/crafted_card_scanner.py` (nomina
+l'endpoint solo nei commenti, non ci parla).
+
+**Il guadagno grosso non è il rate, è la complessità 30.000**: permette pagine
+molto più grandi e quindi meno richieste. Fatto per il predict
+(`PAGINA_GAME_LOG` 50, `BATCH_DETTAGLIO` 30 quando la chiave c'è).
+**ANCORA DA FARE**: **216 file del repo paginano a `first: 5`**, valore tarato
+sul vecchio tetto di 500, dove ora ci starebbero 50. Filone meccanico, tutto
+da incassare.
+
+### 3. I dieci fix di oggi, in ordine
+
+| # | commit | cosa |
+|---|---|---|
+| 1 | `cdd0019647` | il game log dei giocatori con meno di 30 partite si ri-scaricava **per intero a ogni run, per sempre** (523 su 1151) |
+| 2 | `1c2af4d3fa` | dettaglio granulare: da 1 partita per query a 6 (poi 30 con la chiave) |
+| 3 | `736ddbb0c4` | **il più grosso**: `upload-artifact` scarta i file nascosti, quindi **tutto il lavoro di cache del predict veniva buttato a fine run**. Corretto anche in `best_five.yml` e `cache_backtest_arene.yml` (quest'ultimo caricava un artifact vuoto) |
+| 4 | `ffd75f5415` | stesso problema del #1 per i panchinari (storia lunga, poche partite giocate) |
+| 5 | `358eb97aff` | link Telegram 404: il sentinella conteneva un path assoluto |
+| 6 | — | il freno delle query era **staccato**: non attraversava i processi |
+| 7 | — | il numero di job predict segue il lavoro vero, non le coppie lega/ruolo |
+| 8 | `b3b49fddd9` | **la chiave non arrivava a discovery e pool**: `getattr(base,'APIKEY','')` su un modulo che non la definiva |
+| 9 | `e20bd4ffb9` | chiave ai 17 script rimasti (7 ricevevano già il secret e lo buttavano) |
+| 10 | `b03eebf69b` | tre chiavi a rotazione nel predict + freno tarato sul budget vero |
+
+### 4. COSA NON RIPROVARE (idee mie, bocciate dai numeri)
+
+- **`N_BIN` da 45 a 20**: provato **tre volte**, in tre condizioni diverse,
+  sempre peggio. Il freno distanzia le richieste *dentro* uno shard, ma con
+  meno shard ognuno lavora più a lungo, quindi in ogni istante ce ne sono di
+  più attivi sulla stessa finestra di budget. **Meno job non è meno traffico:
+  è lo stesso traffico più concentrato.**
+- **Spegnere il freno** con tre chiavi: i blocchi tornano e costano il doppio
+  di quello che il freno costava (Retry-After medio 243s, non 120).
+- **Unire `consiglio` e `formazione`**: misurato, si prendono 5 secondi. Il
+  lavoro vero è 5 secondi, il resto è overhead di GitHub per job.
+- **Il freno tarato su 600/min avendo una chiave sola** (che ne vale 200):
+  un parametro giusto su un budget sbagliato è un parametro sbagliato.
+
+**Regola generale emersa**: *finché i job stanno dentro gli slot disponibili
+dividere conviene sempre* (discovery a 4 job: 65s di wall contro i ~176s che
+costerebbe unificata); *quando li superano, ogni job in più si somma davvero*.
+
+### 5. RUNNER SELF-HOSTED — stato al 12/08 sera
+
+**Dieci runner registrati e online** sul PC di casa (`pc-andrea`,
+`pc-andrea-2..10`), etichetta **`casa`**, installati come servizi Windows che
+ripartono da soli. Cartelle `C:\actions-runner` e `C:\actions-runner-2..10`.
+
+**Perché**: latenza misurata **82 ms da casa contro 168 ms da GitHub** (mediana
+su richieste vere; picchi 189 contro 382). Serve soprattutto a
+**`bot_definitivo`** per lo sniping, dove ogni millisecondo è una gara contro
+altri bot.
+
+**Configurazione della macchina fatta oggi** (tutta da amministratore, tutta
+permanente):
+1. `C:\Program Files\Git\bin` aggiunto al **PATH di sistema** — il servizio
+   gira col PATH di sistema e lì bash non c'era. **Solo `bin`, non `usr\bin`**:
+   quella seconda cartella sostituirebbe comandi Windows come `find` e `sort`.
+2. `Set-ExecutionPolicy RemoteSigned -Scope LocalMachine` — gli script
+   PowerShell erano bloccati.
+3. **Python 3.11.9 installato PER TUTTI GLI UTENTI** in `C:\Program
+   Files\Python311`, con `requests` e `curl_cffi`. Quello del Microsoft Store
+   non va: sta in `AppData` dell'utente e il servizio non lo può leggere.
+
+**Trappole già pagate, da non ripetere:**
+- `actions/setup-python` **non funziona** sul self-hosted: prova a installare
+  Python scrivendo nel registro e il servizio (SERVIZIO DI RETE) non ha quel
+  permesso. Va tolto e si usa il Python di sistema.
+- Il file `.path` nella cartella del runner **non viene letto** su Windows.
+- **`python3` non esiste su Windows**, solo `python` (era in `discovery_merge`).
+- **NON pre-clonare a mano gli spazi di lavoro dei runner**: se li crea
+  l'utente, il servizio non può leggerli, git fallisce con *"Permission
+  denied"* e la run si pianta cancellando la cartella. Va lasciato fare al
+  runner: il primo job che gli capita clona (~1 GB), i successivi aggiornano.
+
+**Il workflow `formazione_giornata.yml` è ATTUALMENTE puntato sui runner di
+casa** (`runs-on: [self-hosted, casa]`, `defaults.run.shell: bash`, niente
+setup-python). Per tornare a GitHub basta rimettere `runs-on: ubuntu-latest`
+e le `actions/setup-python`.
+
+### 6. DECISIONE ANCORA APERTA: il generatore in casa conviene?
+
+**Probabilmente no, e va misurato.** Il ragionamento, da rifare con i numeri
+della prima run pulita:
+- il collo di bottiglia del generatore è il **tetto di Sorare**, non la
+  macchina: 1.492 richieste ÷ 600 al minuto = **2,5 minuti di pavimento**, con
+  qualunque parallelismo;
+- GitHub dà **20 macchine gratis**, in casa ce ne sono **10**;
+- il guadagno vero sarebbe solo sui ~22 secondi di avvio per job (~900
+  job-secondi sui 45 del predict), più niente code per un runner libero (il
+  12/08 un job discovery ha aspettato 72 secondi).
+
+**Per `bot_definitivo` invece il conto si ribalta**: un job solo, lungo, dove
+la latenza è tutto. Lì il self-hosted va messo — non è ancora stato fatto.
+
+### 7. Altri fili aperti
+
+- **`bot_profit`**: prende ancora 429 (3 blocchi su 849 carte) nonostante le
+  tre chiavi. Il carico sostenuto NON è il problema (misurato: 300
+  richieste/minuto per due minuti da una macchina sola, zero blocchi): sono i
+  **10 thread** che sparano insieme. Si sistema abbassando i thread, non
+  allentando i freni. L'utente lo lancia una volta a settimana: non è
+  prioritario.
+- **Le cache ora tornano su main** e il repo cresce (297 → 317 MB in una
+  giornata). Se a regime pesa, l'alternativa è `actions/cache`, ma tocca anche
+  gli strumenti locali che leggono la stessa cache: da decidere insieme.
+- **`prova_self_hosted.yml`** è un workflow usa-e-getta: si può cancellare
+  quando il self-hosted è stabile.
+
+---
+
 ## 8duodecies-ter. Cronologia del 429 GW5 (storico, chiuso)
 
 Cronologia: primo tentativo GW5 (odds=0, champions=4) — 429 su tutti e 4 i
