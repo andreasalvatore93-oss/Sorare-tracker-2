@@ -84,6 +84,18 @@ import subprocess
 import sys
 
 
+# FINE RIGA SEMPRE \n, ANCHE SU WINDOWS (12/08/2026, runner di casa).
+# Su Windows il testo stampato con print() esce con \r\n: i sottocomandi di
+# questo modulo (`coppie`, `combos`, `slugs`) vengono letti da bash, che il
+# \r NON lo considera un separatore e se lo porta dentro l'ultimo campo.
+# Costo reale: il job `consiglio` della run 31631928081 e' morto alla prima
+# riga, perche' `read` restituiva ruolo="gk\r", il `case` non lo riconosceva,
+# la variabile del comando restava non assegnata e `set -u` uccideva il job.
+# Qui si spegne la traduzione alla fonte, una volta per tutti i sottocomandi.
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(newline='\n')
+
+
 # Path (relativi alla root del repo) considerati output della pipeline.
 DEFAULT_PATH_RE = r'^formazione_[^/]+/output/'
 DISCOVERY_PATH_RE = r'^formazione_[^/]+/output/[^/]+_discovery/'

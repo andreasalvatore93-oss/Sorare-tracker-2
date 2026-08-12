@@ -81,6 +81,19 @@ defaults:
   run:
     shell: bash
 
+# UTF-8 OVUNQUE (12/08/2026). Su Windows python stampa in cp1252, che NON
+# contiene le lettere turche (s cediglia, g con la brevis...), quelle ceche,
+# polacche, greche, giapponesi, coreane, russe. Quando il nome di una squadra
+# ne contiene una, il semplice log() ALZA UNA ECCEZIONE e il giocatore viene
+# buttato fuori dalla formazione con "ERRORE (vedi traceback)".
+# Non e' teoria: nella run 31631928081, la prima con la Turchia in calendario,
+# 24 giocatori turchi su 37 sono stati esclusi cosi -- e la run era VERDE,
+# perche' ogni predict fallito viene solo annotato. Su ubuntu il problema non
+# si vedeva: li' l'uscita standard e' gia' UTF-8.
+env:
+  PYTHONIOENCODING: utf-8
+  PYTHONUTF8: '1'
+
 jobs:
   # GRADE (07/08/2026): UNA sola fetch per run, condivisa agli shard come
   # artifact. Prima ognuno dei 20 shard la rifaceva per conto suo: 3
@@ -387,7 +400,8 @@ jobs:
             2) export SORARE_APIKEY="${SORARE_APIKEY_C:-$SORARE_APIKEY_A}" ;;
           esac
           echo "shard $IDX_CHIAVE -> chiave $(( IDX_CHIAVE % 3 + 1 )) di 3 (valore non stampato)"
-          python pipeline_artifacts.py combos "$GRUPPO" > combos.tsv
+          # tr -d '\r': vedi il commento gemello nel job consiglio.
+          python pipeline_artifacts.py combos "$GRUPPO" | tr -d '\r' > combos.tsv
           echo "Combinazioni di questo gruppo:"; cat combos.tsv
           while IFS=$'\t' read -r LEGA RUOLO SHARD <&3; do
             [ -n "$LEGA" ] || continue
@@ -396,8 +410,9 @@ jobs:
               def) PY=test_def.py ;;
               mid) PY=test_mid.py ;;
               fwd) PY=test_mls_fwd_all.py ;;
+              *)   echo "ruolo ignoto '$RUOLO' per $LEGA: salto"; continue ;;
             esac
-            SLUGS=$(python pipeline_artifacts.py slugs "$LEGA" "$RUOLO" "$SHARD")
+            SLUGS=$(python pipeline_artifacts.py slugs "$LEGA" "$RUOLO" "$SHARD" | tr -d '\r')
             echo "=== $LEGA/$RUOLO (shard '${SHARD:-nessuno}'): $SLUGS"
             for SLUG in $SLUGS; do
               echo "--- $LEGA/$RUOLO: $SLUG ---"
@@ -476,7 +491,11 @@ jobs:
           MATRICE_UNIQUE: ${{ needs.discovery_merge.outputs.matrice_unique }}
         run: |
           set -u
-          python pipeline_artifacts.py coppie > coppie.tsv
+          # `tr -d '\r'`: sui runner Windows il python stampa \r\n e bash si
+          # porterebbe il \r dentro l'ultimo campo letto (vedi commento in
+          # pipeline_artifacts.py). Qui e' la seconda rete di sicurezza:
+          # vale anche se un domani a scrivere il file e' qualcun altro.
+          python pipeline_artifacts.py coppie | tr -d '\r' > coppie.tsv
           echo "Coppie lega/ruolo:"; cat coppie.tsv
           while IFS=$'\t' read -r LEGA RUOLO <&3; do
             [ -n "$LEGA" ] || continue
@@ -485,6 +504,10 @@ jobs:
               def) CO=build_consiglio_def.py ;;
               mid) CO=build_consiglio_mid.py ;;
               fwd) CO=build_consiglio.py ;;
+              # Ruolo non riconosciuto: si salta QUESTA coppia e si continua.
+              # Senza questo ramo la variabile resta non assegnata e `set -u`
+              # ammazza il job intero (successo davvero: run 31631928081).
+              *)   echo "ruolo ignoto '$RUOLO' per $LEGA: salto"; continue ;;
             esac
             echo "=== consiglio $LEGA/$RUOLO"
             python "formazione_$LEGA/consiglio/$CO" || echo "consiglio non generato per $LEGA/$RUOLO"
