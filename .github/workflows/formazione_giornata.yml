@@ -342,6 +342,20 @@ jobs:
       matrix:
         gruppo: ${{ fromJson(needs.discovery_merge.outputs.gruppi_predict) }}
     steps:
+      # Le leghe di QUESTO gruppo, ricavate dal payload della matrice (base64
+      # del JSON delle combinazioni). Serve al checkout sparso qui sotto: un
+      # gruppo tocca due o tre leghe, non cinquantaquattro.
+      - id: cono
+        run: |
+          set -u
+          LEGHE=$(printf '%s' '${{ matrix.gruppo.g }}' | base64 -d \
+                  | grep -o '"league": *"[^"]*"' | cut -d'"' -f4 | sort -u)
+          echo "leghe di questo gruppo: $(echo $LEGHE | tr '\n' ' ')"
+          {
+            echo 'dirs<<FINE'
+            for L in $LEGHE; do echo "formazione_$L"; done
+            echo 'FINE'
+          } >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         # clean: false = niente `git clean` e niente `git reset --hard`
         # (12/08/2026). Su questa macchina il reset costa 68 secondi per
@@ -354,12 +368,25 @@ jobs:
         # dopo `.pipeline_marker` (vedi pipeline_artifacts.py). Le due
         # cose vanno sempre insieme: togliere il marker senza rimettere
         # clean:true rimanderebbe su main output di run vecchie.
-        with: { ref: main, fetch-depth: 1, clean: false }
+        with:
+          ref: main
+          fetch-depth: 1
+          clean: false
+          # CHECKOUT SPARSO (12/08/2026): a questo job servono le SUE leghe,
+          # non tutto il repo. Le cartelle arrivano dallo step 'cono' qui
+          # sopra, che le ricava dal payload del gruppo. In modalita' cono i
+          # file della RADICE ci sono sempre, quindi pipeline_artifacts.py e
+          # gli altri script di root restano disponibili.
+          sparse-checkout: ${{ steps.cono.outputs.dirs }}
       # Quello che `git clean` non fa piu' (12/08/2026): le due cartelle
       # di appoggio restano da un job all'altro sulla stessa macchina, e
       # se non si svuotano `apply` rimette dentro artifact di un'altra
       # run e `upload-artifact` carica file che non sono di questo job.
       - run: rm -rf _artifacts _artifact_stage
+      # Quanto pesa DAVVERO il checkout di questo job: serve a decidere se il
+      # cono vale la pena, e a vedersi subito se un domani smettesse di
+      # funzionare (il numero tornerebbe a quello del repo intero).
+      - run: echo "file su disco -> $(find . -type f -not -path './.git/*' | wc -l)"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
