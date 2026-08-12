@@ -1,0 +1,111 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T17:14:53.203883Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) ezequiel-eduardo-bullaude: 53 pt attesi (41-68)
+   ORDINAMENTO: 54.88
+   SQUADRA: santos-laguna-torreon | AVVERSARIO: philadelphia-union-chester-pennsylvania
+======================================================================
+
+######################################################################
+# GIOCATORE: ezequiel-eduardo-bullaude
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ezequiel-eduardo-bullaude (squadra: santos-laguna-torreon)
+Generato: 2026-08-12T17:14:53.202681Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 37
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-15 | TOL vs SAN | liga-mx | score=60.0 | peso=0.140
+  2026-01-18 | SAN vs JUA | liga-mx | score=73.9 | peso=0.157
+  2026-02-15 | SAN vs MAZ | liga-mx | score=44.3 | peso=0.177
+  2026-02-22 | LEO vs SAN | liga-mx | score=66.6 | peso=0.198
+  2026-02-28 | QUE vs SAN | liga-mx | score=27.6 | peso=0.223
+  2026-03-04 | SAN vs CAZ | liga-mx | score=60.0 | peso=0.250
+  2026-03-09 | TIJ vs SAN | liga-mx | score=85.0 | peso=0.281
+  2026-03-14 | CHI vs SAN | liga-mx | score=25.4 | peso=0.315
+  2026-03-22 | SAN vs PUE | liga-mx | score=67.7 | peso=0.354
+  2026-04-05 | SAN vs AME | liga-mx | score=45.2 | peso=0.397
+  2026-04-12 | PAC vs SAN | liga-mx | score=19.0 | peso=0.445
+  2026-04-19 | SAN vs ATS | liga-mx | score=43.3 | peso=0.500
+  2026-04-23 | ASL vs SAN | liga-mx | score=42.3 | peso=0.561
+  2026-04-26 | SAN vs MON | liga-mx | score=97.4 | peso=0.630
+  2026-07-19 | MON vs SAN | liga-mx | score=42.0 | peso=0.707
+  2026-07-26 | SAN vs ATS | liga-mx | score=40.8 | peso=0.794
+  2026-08-02 | AME vs SAN | liga-mx | score=57.2 | peso=0.891
+  2026-08-10 | CHI vs SAN | leagues-cup-mls | score=60.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 52.90
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=18): 53.28 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 45.95 | Punteggio complessivo (granulari) medio: 6.94 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 5.61 (delta -0.07) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.49
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.8 - 67.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.48 (differenza: +6.01)
+Media score in casa: 59.07 | Media score fuori casa: 48.51
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.7
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.174 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 59.5 vs media 5 PRECEDENTI: 43.5): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-13T23:00
+Casa: Philadelphia Union | Trasferta: Club Santos Laguna
+Competizione: leagues-cup-mls
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.8 (range 40.7 - 67.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 54.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.88
+Punteggio REALE ottenuto in quella partita: 60.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +8.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      41.1    85.0    +43.9    18.0        NO
+   7        7      56.2    25.4    -30.8    21.4        NO
+   8        8      60.8    67.7     +6.9    24.8        SI
+   9        9      43.1    45.2     +2.1    23.3        SI
+  10       10      65.1    19.0    -46.1    21.9        NO
+  11       11      39.6    43.3     +3.7    24.9        SI
+  12       12      60.6    42.3    -18.3    23.2        SI
+  13       13      43.1    97.4    +54.3    21.6        NO
+  14       14      48.6    42.0     -6.6    28.1        SI
+  15       15      43.1    40.8     -2.3    26.6        SI
+  16       16      39.8    57.2    +17.4    25.3        SI
+  17       17      46.5    60.0    +13.5    23.7        SI
+
+MAE (errore assoluto medio): 20.51
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
