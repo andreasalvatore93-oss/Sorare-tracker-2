@@ -57,10 +57,20 @@ POOL_ARCHIVIO = 'archivio_ufficiale/aggregato/binario2_pool_rows.json'
 # (una stat, microsecondi): se e' identica il file non e' cambiato, quindi non
 # puo' contenere partite che non abbiamo gia' visto, e non lo si apre.
 #
-# Perche' la DIMENSIONE e non la data di modifica: ogni runner ha una copia
-# sua del repo e il checkout riscrive le date, quindi l'mtime direbbe "tutto
-# nuovo" su ogni macchina. La dimensione invece dipende dal contenuto: un
-# game-log che guadagna una partita cresce sempre.
+# Perche' la DIMENSIONE e non la data di modifica: il checkout riscrive le
+# date, quindi l'mtime direbbe "tutto nuovo" ad ogni run. La dimensione invece
+# dipende dal contenuto: un game-log che guadagna una partita cresce sempre.
+#
+# LIMITE MISURATO (12/08/2026, run 31643914743): la dimensione NON attraversa
+# i sistemi operativi. L'indice costruito su Windows ha fatto centro solo su
+# 197 file su 6.565 girando su ubuntu, perche' git converte i fine riga in
+# checkout (autocrlf): lo stesso game-log pesa 62.430 byte su Windows e 60.272
+# su Linux -- esattamente 2.158 byte di differenza, cioe' un byte per ognuno
+# dei suoi 2.158 a capo. Non e' un guasto e si ripara da solo: la run
+# ricostruisce l'indice e lo committa, e dalla successiva i conti tornano
+# (l'ambiente di produzione e' uno solo). Se un domani si mescolassero
+# davvero due sistemi, la chiave giusta sarebbe l'hash del blob di git
+# (`git ls-files -s`), che e' il contenuto e non dipende dai fine riga.
 VISTI = os.path.join('generatore_formazioni', 'dati', '_gamelog_visti.json')
 VISTI_VERSIONE = 1
 
