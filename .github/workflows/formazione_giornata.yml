@@ -354,8 +354,15 @@ jobs:
           # ne costavano ~118: si pagava piu' del danno che si evitava. Il freno
           # serviva quando il budget era 200/min con una chiave sola; con tre
           # chiavi (600/min) il ritmo naturale ci sta dentro da solo.
-          # Se i 429 dovessero tornare si riaccende rimettendo qui
-          # SORARE_PACING_MIN: il meccanismo resta, e' solo spento.
+          # SPENTO E RIACCESO NEL GIRO DI UNA RUN (12/08/2026). Spegnerlo
+          # sembrava giusto -- costava ~150s di attesa voluta per evitarne
+          # ~118 di blocchi -- ma la run 31620111635 ha detto il contrario:
+          # 14 blocchi e 3406 secondi persi, predict da 318s a 348s. I
+          # blocchi, quando tornano, costano molto piu' del freno che li
+          # evita, e il Retry-After medio era 243 secondi, non 120.
+          # Configurazione buona = questa: tre chiavi + freno a 2,0s, l'unica
+          # della giornata con ZERO blocchi (run 31618793265).
+          SORARE_PACING_MIN: "2.0"
           PYTHONUNBUFFERED: "1"
         run: |
           set -u

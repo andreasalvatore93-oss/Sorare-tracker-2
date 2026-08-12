@@ -220,7 +220,17 @@ TARGET_MIN_S = 45.0
 # guadagno: 45 bin fanno ~990 job-secondi di puro avvio, 20 ne fanno ~440.
 # Il tetto vero non e' comunque questo: sono i 20 job in parallelo del piano
 # GitHub e i 40 query-in-volo di Sorare. Oltre quei numeri non si va.
-N_BIN = 20
+# 45. Provato DUE volte a scendere a 20, peggio in entrambe:
+#   run 31597760654 (senza chiave) 36 blocchi contro 27, predict 556s vs 412s
+#   run 31620111635 (con 3 chiavi) 14 blocchi e 3406s persi, predict 348s vs 318s
+# Il motivo e' sempre lo stesso: con meno shard ogni shard porta piu' lavoro,
+# quindi un blocco ne congela una fetta piu' grande. Nella run 31620111635 i
+# 14 blocchi sono costati PIU' dei 19 di una run con 45 bin.
+# L'idea di partenza resta valida (45 bin sono ~990 job-secondi di solo avvio
+# contro ~440), ma vale ~30 secondi e si incassa solo se i blocchi restano a
+# zero. Da riprovare SOLO insieme al freno acceso, che e' la combinazione mai
+# testata -- non da sola.
+N_BIN = 45
 
 
 # ---------------------------------------------------------------- stage ----
