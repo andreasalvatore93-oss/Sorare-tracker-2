@@ -1,0 +1,293 @@
+RISPOSTA DELLO STREGONE SUPREMO (Opus esecutore) — 12/08/2026 sera, Roma
+Al brief: docs/handoff/BRIEF_OPUS_VELOCITA_STRUTTURALE_2026-08-12.txt
+
+NOTA SUL MANDATO: mentre questo brief era in corso l'utente mi ha dato
+autonomia piena — implementare, committare, pushare e lanciare run di
+verifica da solo, fino a trovare un fix strutturale sulla velocita' valido
+sia con le quote sia senza. Quindi qui, a differenza dei brief precedenti,
+NON c'e' solo un piano: c'e' un fix gia' in produzione e le misure delle run
+di verifica.
+
+
+VERDETTO DA BAR (dieci righe)
+=============================
+La tua ipotesi e' giusta a meta'. Il generatore non c'entra niente: gli ho
+fatto girare in locale lo scenario vero dell'utente (30 arene efficienti + 6
+MLS + 6 K League + 4 U23 + 4 All Stars + 4 Champions = 54 formazioni) e ci
+mette 3,1 SECONDI. Le 30+ arene non fanno esplodere un bel niente. Ma non e'
+vero nemmeno che sia "solo il preseason": ho aperto i log dei 45 job di
+predict e il 60% del tempo di quella fase e' un uomo fermo davanti a un
+semaforo rosso — 6193 secondi di sola attesa dopo 45 risposte 429 di Sorare.
+E la ragione per cui Sorare protesta e' uno spreco che c'e' SEMPRE, con
+quote e senza: 523 giocatori su 1151 si ri-scaricavano l'intera carriera a
+ogni singola run, per sempre, pur avendola gia' tutta in cache. Corretto,
+testato, in produzione. Il preseason peggiora le cose (4,6 volte piu'
+giocatori), non le causa.
+
+
+1. IL §1 DEL TUO BRIEF: LA TUA LETTURA DI 'mixed' E' CORRETTA
+==============================================================
+Verificato riga per riga, come chiedevi.
+
+  build_formazione_globale.py:333-338  POOL_LEAGUE_BY_TYPE — arene All Stars
+                                       e ALLSTARS = 'mixed', U23 =
+                                       'mixed_u23', CHAMPIONS =
+                                       'mixed_champions' (unica ristretta)
+  build_formazione_globale.py:1453     leghe_pool = CHAMPIONS_LEAGUES se
+                                       'mixed_champions', altrimenti LEAGUES
+                                       — nessun'altra restrizione, nascosta
+                                       o meno
+  build_formazione_globale.py:1477-1481 _raw_view_for: 'mixed' e 'mixed_u23'
+                                       scorrono TUTTE le LEAGUES
+
+Quindi si': nello scenario reale dell'utente (arene efficienti + U23 insieme
+a Champions) l'unione delle leghe rilevanti e' "tutte", e la restrizione per
+lega non toglie niente. La tua ipotesi regge, il filone D3 generalizzato e'
+un vicolo cieco PER QUELLO SCENARIO. Resta utile solo per il caso
+"champions e basta", che e' gia' in produzione dal commit 7ceb359c7c e li'
+va lasciato.
+
+MA la conclusione operativa che ne trarresti — "allora non c'e' niente da
+fare, aspettiamo le quote" — e' sbagliata. Il collo di bottiglia era un
+altro e nessuno l'aveva mai guardato.
+
+
+2. DOMANDA 2 PRIMA DELLA 1: IL NUMERO DI FORMAZIONI NON CONTA NULLA
+====================================================================
+Rispondo prima a questa perche' e' quella che sgombra il campo.
+
+MISURA LOCALE, zero rete (consigli gia' in repo dell'ultima run, generatore
+lanciato a mano, tempi a runtime warm):
+
+  arene efficienti richieste:   0     10     30     60
+  tempo del generatore:      0,47s  1,28s  2,95s  6,55s
+
+Lineare, ~0,08-0,10 secondi per arena. E lo scenario COMPLETO dell'utente
+(ARENE_EFFICIENTI=30 ALLSTARS=4 ALLSTARS_U23=4 CHAMPIONS=4
+IN_SEASON=mls:6,kleague:6, EXTEND_ODDS_060_070=1) = **54 formazioni generate
+in 3,1 secondi**, pool suppletivo incluso (e' scattato davvero: mancavano 2
+Champions).
+
+Perche' non puo' essere altrimenti, dal codice: il pool suppletivo legge
+`role_data_ext`, che alla riga 2175 e' semplicemente `role_data` PRIMA del
+filtro >=0.80 — dati gia' in memoria, letti dai file consiglio scaricati
+come artifact. Non innesca nessuna query, nessun predict, nessuna discovery.
+E discovery_fixture.py non legge NEMMENO le variabili ARENE_EFFICIENTI/
+ALLSTARS/CHAMPIONS (elencate tutte le sue os.environ.get: non ci sono).
+
+RISPOSTA SECCA ALLA TUA DOMANDA 2: no, non esiste nessun punto in cui il
+numero di formazioni richieste influenzi quanto lavorano discovery e
+predict. Nemmeno tramite il pool suppletivo. Le 30+ arene sono gratis.
+
+Conferma sul campo: nella run 31524710859 (All Stars=4, pool suppletivo
+scattato) il job `formazione` intero e' durato 47 secondi, di cui 8,5 di
+generatore — dal `Run python build_formazione_globale.py` delle 18:54:35,1
+al "Report visivo salvato" delle 18:54:43,6.
+
+
+3. DOMANDA 1: QUANTO E' PIU' GRANDE LA BANDA 0.60-0.70
+=======================================================
+Misurata sui dati gia' in repo (dati_globali/odds_titolarita_storico.json,
+zero query di rete), prendendo per ogni giocatore l'ultimo snapshot di odds
+di ciascuna giornata:
+
+  giornata                 >=0.80   0.60-0.70   0<o<0.60   0.0   assenti
+  football-7-11-aug-2026     177        75        154       94      13
+  football-11-14-aug-2026     58        71         83       49     105
+  football-14-18-aug-2026      0         0          0        0     159
+
+Sulla giornata con quote mature (7-11 ago) la banda suppletiva aggiunge 75
+candidati a un pool primario di 177: **+42%**. Sull'11-14 ago il primario
+era ancora incompleto (105 giocatori senza quote pubblicate) e il rapporto
+si ribalta. Sul 14-18 ago (la GW5 di stasera) le quote non ci sono per
+NESSUNO: 159 su 159 assenti. E' la conferma numerica che stasera si sta
+girando in preseason puro.
+
+Ma — e qui la tua domanda parte da una premessa sbagliata — quel +42% NON
+cambia il carico di discovery/predict a seconda di quante formazioni chiedi.
+`EXTEND_ODDS_060_070` e' letto ANCHE da discovery_fixture.py (riga 50) ed e'
+acceso di default nel workflow: la banda entra nel pool scoperto SEMPRE, per
+tutte le run, indipendentemente dal numero di formazioni richieste. Le sei
+run che hai misurato (5m43s-7m16s) la stavano gia' pagando.
+
+
+4. IL VERO COLLO DI BOTTIGLIA (quello che nessuno aveva guardato)
+==================================================================
+Ho preso la run 31585784239 e ho aperto i log di tutti e 45 i job di predict,
+uno per uno.
+
+  fase        job   wall     somma job-secondi
+  pool          1     72s        72s
+  discovery     4    145s       406s
+  merge         1     31s        31s
+  PREDICT      45    723s      8084s      <- 65% del wall della run
+  consiglio     1     42s        42s
+  formazione    1     75s        75s
+  salva_output  1     45s        45s
+  TOTALE run                    1104s = 18,4 min   (run 182, riuscita)
+
+Dentro la fase predict (numeri della run 31585784239, stessa forma):
+
+  giocatori elaborati                       1151
+  query GraphQL totali                      6831   (5,9 a giocatore)
+  risposte 429                                45   (su 34 shard su 45)
+  secondi di sola attesa Retry-After        6193   = 60% della fase
+  Retry-After tipico                    194-247s   (uno solo costa 4 minuti)
+
+Distribuzione dentro un singolo shard (il piu' lento, 524s, 34 giocatori):
+mediana per giocatore **1,2 secondi**, ma due giocatori da 148s e 245s si
+sono presi il 78% del tempo. Quei due non erano lenti: erano fermi davanti a
+un 429. Composizione delle query di quello shard: 95 AllPlayerGameScores
+(game log) + 127 PlayerGameScoreDetail (dettaglio granulare).
+
+MODELLO CHE NE ESCE, e che vale la pena tenere: la fase predict e'
+LIMITATA DALLA PORTATA, non dal calcolo. 6831 query in 723 secondi = 9,4
+query al secondo, penalita' comprese. Il tempo della fase e' quindi
+≈ numero di query / 9,4. Per andare piu' veloci non serve parallelizzare di
+piu' (i 20 slot sono gia' saturi e sono un tetto d'account: verificato,
+concorrenza massima osservata esattamente 20 su 45 job): serve FARE MENO
+QUERY.
+
+
+5. LO SPRECO STRUTTURALE — c'e' sempre, con quote e senza
+===========================================================
+`fetch_game_log_incremental` decideva se ri-scaricare il game log cosi'
+(formazione_mls/predict/test_*.py, prima del fix):
+
+    if n_cached_final >= target_window_size:      # 30
+        fetch_count = GAME_LOG_REFRESH_COUNT      # 2  -> 1 query
+    else:
+        fetch_count = max(target_window_size*2, 30)   # 60 -> 6 query
+
+Per un giocatore che in tutta la sua carriera Sorare ha 21 partite — giovane,
+campionato appena aperto, lega piccola — la condizione `>= 30` non e' MAI
+soddisfatta. Quindi: ogni run ri-paginava 60 partite in 6 query, per sempre,
+pur avendo gia' in cache tutte e 21 le partite che Sorare possiede.
+
+Quanti sono: **523 giocatori su 1151, il 45%** (contati nei log: righe
+"Cache insufficiente"). Costo: ~3100 query a run, buttate, per sempre.
+
+E' importante capire perche' questo NON e' un problema del solo preseason:
+la condizione non dipende dalle quote, dipende da quante partite ha giocato
+il giocatore. Con le quote attive i giocatori sono meno (~250 invece di
+1151), quindi lo spreco e' piu' piccolo in valore assoluto, ma resta la
+stessa quota di query buttate — ed e' la voce che manda la fase contro il
+tetto di Sorare, cioe' quella che genera i 429 da 240 secondi l'uno.
+
+Nota su una misura che sembra dire il contrario: la copertura della cache
+game-log e' 94,8% (1102 dei 1162 slug scoperti hanno il file). Non voleva
+dire niente: "il file c'e'" non e' "la cache basta". Il criterio vero era
+"hai 30 partite FINAL?", e per il 45% dei giocatori la risposta e' no per
+sempre.
+
+
+6. IL FIX (commit cdd0019647, in produzione)
+==============================================
+Si annota, in un file A FIANCO alla cache, che la paginazione di quel
+giocatore e' arrivata alla FINE della sua storia:
+
+  <slug>_gamelog.meta.json  ->  {"storia_completa": true, "partite_note": 21}
+
+Alla run dopo, se il marcatore c'e' e la cache non si e' svuotata, basta UNA
+pagina di controllo (10 partite) invece di sei. Se quella pagina porta
+partite nuove, il marcatore cade e la run successiva ricontrolla tutto.
+
+Tre scelte di progetto che vale la pena non perdere:
+
+a) Il marcatore si mette SOLO quando la paginazione finisce in modo pulito
+   (`hasNextPage` falso). Le altre uscite del loop — un errore a meta', il
+   tetto di 12 pagine, la quota richiesta raggiunta — NON dimostrano che la
+   storia sia finita e lasciano il flag a False. Altrimenti un 429 a meta'
+   paginazione avrebbe marcato "storia completa" un giocatore di cui
+   avevamo scaricato meta' carriera: silenzioso e permanente.
+
+b) I metadati stanno in un FILE SEPARATO, non in una chiave dentro il JSON
+   della cache. La cache game-log e' condivisa (CLAUDE.md): generatore,
+   scouting e analisi_manager ci iterano dentro con cache.values() come se
+   fossero tutte partite — una chiave di metadati li' dentro sarebbe una
+   partita fantasma con punteggio nullo. E il suffisso non finisce per
+   '_gamelog.json', quindi i conteggi dei file in cache restano quelli.
+
+c) Il file di metadati viaggia negli artifact e viene committato come tutto
+   il resto: verificato che pipeline_artifacts.py `stage` usa
+   `git status --untracked-files=all`, quindi i file nuovi ci finiscono
+   dentro, e che `.game_log_cache` e' gia' tracciata in git (6290 file).
+
+TEST LOCALE, ZERO RETE, 5 scenari, tutti passati (fetch_game_scores
+monkeypatchato, si conta quante partite vengono RICHIESTE a ogni run):
+
+  1) giocatore con 21 partite in tutto     [60, 10, 10]  <- il caso da 45%
+  2) giocatore con 80 partite              [60,  2,  2]  <- invariato
+  3) paginazione rotta da un errore        [60, 60, 60]  <- nessun marcatore
+  4) storia completa, poi gioca di nuovo   [60, 10, 10, 60] <- marcatore cade
+  5) i .meta.json non inquinano la cache condivisa
+
+Il test ha trovato un bug PRIMA del commit: il flag di fine storia non
+veniva azzerato sul ramo a pagina singola, quindi un giocatore lo ereditava
+da quello precedente dello stesso shard e veniva marcato "storia completa"
+a torto. Corretto e ri-testato.
+
+Modificato in formazione_mls/predict (canonico) e propagato con
+propaga_modello.py: 53 leghe x 4 ruoli = 212 file, `--check` pulito.
+
+
+7. VERIFICA SUL CAMPO
+======================
+
+7.1 PREVISIONE SCRITTA PRIMA DI GUARDARE I RISULTATI
+------------------------------------------------------
+Messa qui prima di lanciare le run, cosi' non si puo' barare a posteriori.
+Modello: la fase predict e' limitata dalla portata a ~9,4 query/secondo
+(6831 query in 723s sulla run di riferimento), quindi il suo tempo dovrebbe
+essere ≈ query / 9,4.
+
+  run A (31591410268, la PRIMA dopo il fix): deve assomigliare alla
+    baseline — i marcatori non esistono ancora, li scrive lei.
+    Atteso: ~6800 query, ~700-750s di wall sulla fase predict.
+  run B (subito dopo, marcatori presenti): le query del game log devono
+    scendere da ~3800 a ~1150.
+    Atteso: ~4200 query totali, fase predict ~450s, run totale ~14 min
+    invece di 18,4.
+
+Se la run B non si muove, il modello "limitato dalla portata" e' sbagliato e
+va buttato: lo scrivo qui perche' sia un test vero e non una conferma
+costruita dopo.
+
+7.2 RISULTATI
+--------------
+(compilato appena le run finiscono)
+
+
+8. COSA NON HO FATTO / COSA NON SO
+====================================
+- Non ho toccato il generatore ne' la logica di selezione: il fix e' tutto
+  nella raccolta dati.
+- Il guadagno si vede dalla SECONDA run in poi: la prima dopo il fix deve
+  ancora scrivere i marcatori, quindi paga il fetch ampio come prima.
+- NON so quale sia il tetto vero di Sorare. So che la fase predict ha retto
+  9,4 query/secondo di media (penalita' comprese) e che un 429 costa
+  194-247 secondi. Non taro niente su un numero che non ho misurato.
+- Le query di DETTAGLIO (PlayerGameScoreDetail, ~57% del totale) NON sono
+  uno spreco: ho controllato che la loro cache si comporti bene (51% delle
+  partite FINAL in cache ha gia' il dettaglio, contro un fabbisogno teorico
+  di ~8 partite su ~17 per giocatore, cioe' il 47%). Sono il costo legittimo
+  delle partite nuove e dei giocatori mai visti prima. Non c'e' niente da
+  recuperare li' senza cambiare il modello.
+- Il caso preseason resta intrinsecamente ~4,6 volte piu' pesante (1151
+  giocatori contro ~250) perche' a MIN_STARTER_ODDS=0 non c'e' NESSUN filtro.
+  Questo il fix non lo cambia, e non puo': e' la richiesta stessa.
+
+
+FILE DI RIFERIMENTO
+====================
+formazione_mls/predict/test_{gk,def,mid,mls_fwd_all}.py  il fix (canonico)
+  - load_game_log_meta / save_game_log_meta   metadati a fianco della cache
+  - fetch_game_scores                          flag FINE_STORIA_RAGGIUNTA
+  - fetch_game_log_incremental                 uso del marcatore
+propaga_modello.py                             propagazione alle 53 leghe
+generatore_formazioni/build_formazione_globale.py:2175  role_data_ext
+  (prova che il pool suppletivo non costa query)
+dati_globali/odds_titolarita_storico.json      misura della banda 0.60-0.70
+Run analizzate: 31585784239 (45 log di predict aperti uno per uno),
+  31589100867 = run 182 (baseline riuscita), 31524710859 (job formazione),
+  31591410268 e seguenti (verifica del fix).
