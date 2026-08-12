@@ -1818,6 +1818,64 @@ Ordine consigliato: D1 → D2 → D3 ristretto al solo caso "champions e basta"
 
 ---
 
+## 8duodecies-quater. VELOCITÀ DELLA PIPELINE — sessione 12/08/2026 pomeriggio
+
+**Dettaglio completo, con tutte le misure:
+`docs/handoff/RISPOSTA_OPUS_VELOCITA_STRUTTURALE_2026-08-12.txt`.** Qui solo
+il minimo per orientarsi.
+
+Domanda di partenza: la run da 18 minuti è colpa del preseason o della scala
+della richiesta (30+ arene)? **Nessuna delle due.**
+
+- Il **generatore non c'entra**: lo scenario reale completo dell'utente (30
+  arene efficienti + 6 MLS + 6 K League + 4 U23 + 4 All Stars + 4 Champions
+  = 54 formazioni) gira in **3,1 secondi** in locale. Il numero di formazioni
+  richieste non tocca né discovery né predict, nemmeno via pool suppletivo.
+- Il tempo stava tutto nella **fase predict**, e il 60-65% di quella fase era
+  **attesa dopo le risposte 429 di Sorare** (Retry-After da 194-247s l'una).
+
+**Sei fix, tutti in produzione e misurati** (le run: 31591410268, 31593062806,
+31594791690, 31596309760, 31597760654):
+
+1. `cdd0019647` — il game log dei giocatori con meno di 30 partite FINAL si
+   ri-scaricava **per intero a ogni run, per sempre** (523 su 1151). Ora si
+   annota che la storia è completa e basta una pagina di controllo.
+2. `1c2af4d3fa` — il dettaglio granulare si chiedeva **una partita per query**:
+   ora 6 alla volta (tetto di complessità sondato sull'API: 63,1 a partita,
+   massimo teorico 7).
+3. `736ddbb0c4` — **il più grosso**: `actions/upload-artifact` scarta di
+   default i file nascosti, e le due cache condivise vivono in
+   `.game_log_cache` e `.cache`. Da quando la pipeline usa gli artifact,
+   **tutto il lavoro di cache del predict veniva buttato a fine run**. Corretto
+   anche in `best_five.yml` e `cache_backtest_arene.yml` (quest'ultimo
+   caricava un artifact completamente vuoto).
+4. `ffd75f5415` — stessa cosa del punto 1 per i panchinari (storia lunga, poche
+   partite giocate): marcatore `ampio_inutile`.
+5. `358eb97aff` — il link Telegram usciva 404 (path assoluto nel sentinella):
+   regressione del fix D2, corretta su entrambi i lati.
+6. `pipeline_artifacts.py N_BIN 45→20` + via lo stagger della discovery — i 429
+   seguono il **numero di shard**, non il volume di query.
+
+Risultato misurato: **query per run da 6857 a 1504 (−78%)**, run da 18,4 a
+12,8 minuti. Obiettivo dell'utente: 7-8 minuti, lavoro ancora in corso.
+
+**Due lezioni metodologiche da non perdere** (sono nel file, §7.9):
+- l'ipotesi "meno query = meno tempo, proporzionalmente" è **falsa**: le query
+  sono scese del 78% e il tempo solo del 43%, perché l'attesa da 429 è rimasta
+  piatta;
+- l'esperimento che sembrava falsificare "i 429 nascono dalla raffica" era
+  **rotto**: il freno delle query non attraversava i processi (ogni giocatore
+  è un processo nuovo), quindi non stavo misurando il pacing ma un
+  interruttore staccato. Corretto in un commit dedicato. È esattamente la
+  trappola descritta in CLAUDE.md.
+
+**Effetto collaterale da tenere d'occhio**: ora le cache tornano davvero su
+main, quindi il repo cresce (~135 MB grezzi la prima run, poi solo le
+differenze vere). Se a regime pesa, l'alternativa è `actions/cache` — decisione
+aperta, tocca anche gli strumenti locali che leggono la stessa cache.
+
+---
+
 ## 8duodecies-ter. Cronologia del 429 GW5 (storico, chiuso)
 
 Cronologia: primo tentativo GW5 (odds=0, champions=4) — 429 su tutti e 4 i
