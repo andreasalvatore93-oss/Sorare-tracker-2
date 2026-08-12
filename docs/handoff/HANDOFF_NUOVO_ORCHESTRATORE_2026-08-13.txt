@@ -11,9 +11,9 @@ IN LINGUA DA BAR, PRIMA DI TUTTO IL RESTO
 2. Da dove RIPARTIRE, e' l'utente che lo chiede: mettere BOT DEFINITIVO sui
    runner del suo PC di casa, per la latenza nello sniping. Ne restano due
    registrati apposta. Vedi sezione 2, e' la prima cosa da fare.
-3. C'e' una run in volo (31649024584) che prova il "checkout sparso". Va
-   controllata: la cosa che puo' rompersi non fa diventare rossa la run, quindi
-   il colore non basta. Sezione 3.
+3. Il "checkout sparso" e' stato collaudato e promosso: ogni job di predict si
+   porta 3.690 file invece di 35.899 e la run fa 7m36. Niente da rifare,
+   sezione 3 -- ma leggi l'avvertenza per il futuro.
 4. Ci sono TRE chiavi API di Sorare. Il generatore le usa tutte e tre, lo
    scouting ne usa una sola, bot definitivo ne usa una sola. Sezione 4.
 5. Il repo aveva 75.449 file, meta' dei quali copie inutili. Adesso ne ha
@@ -87,43 +87,33 @@ macchina e' spenta (il job resta in coda). Da chiedere all'utente.
 
 
 =============================================================================
-3. LA RUN IN VOLO DA CONTROLLARE (31649024584)
+3. IL CHECKOUT SPARSO -- COLLAUDATO E PROMOSSO (niente da rifare)
 =============================================================================
 
-E' il collaudo del CHECKOUT SPARSO sui job di predict: ogni job si materializza
-solo le cartelle delle SUE leghe invece di tutto il repo.
+La run 31649024584 lo ha verificato, con gli stessi identici parametri della
+run di paragone 31647598044. Esito: PROMOSSO.
 
-PARAMETRI (identici alla run di paragone 31647598044, che e' andata bene):
-  gw5, soglia 0,80, in_season mls:6,kleague:6, essenze_arena 6000,
-  allstars 4, allstars_u23 4, champions 4.
+    file su disco in un job di predict : 3.690  (erano 35.899, -90%)
+    durata del checkout                : 5s     (erano ~26s)
+    fase predict                        : 2m09  (era 2m42)
+    run intera                          : 7m36  (era 7m57)
 
-LA RUN DI PARAGONE HA DATO: 7m57 totali, 40 formazioni generate (24 di
-competizione + 20 arene), pool discovery 472 giocatori.
+E soprattutto il controllo che contava, quello che il colore verde NON dice:
+tutti i 603 file prodotti dalla run (460 predizioni + 143 consigli) sono
+TRACCIATI e committati, zero persi. Le formazioni sono identiche alla run di
+paragone: 40 su 24 richieste, stessa ripartizione (6 K League, 5 MLS, 4 Under
+23, 4 All Stars, 1 Champions), 20 arene, zero risposte 429.
 
-COSA CONTROLLARE, IN QUEST'ORDINE:
+ATTENZIONE PER IL FUTURO: se un giorno si aggiunge al predict qualcosa che
+legge FUORI dalle cartelle delle sue leghe, il cono lo taglia fuori e il job
+non se ne accorge. Oggi il predict legge solo i file di discovery (che
+arrivano dagli artifact), la cache dei game-log e quella del dettaglio, tutti
+dentro formazione_<lega>/. Lo step "file su disco -> N" all'inizio di ogni
+predict serve proprio a vedersi subito se qualcosa cambia.
 
-a) GLI ARTIFACT SONO COMPLETI? E' il rischio vero, e NON fa diventare rossa la
-   run. Con la vista parziale git marca come "fuori dal cono" tutto il resto:
-   se `stage` (che guarda `git status`) non vedesse i file prodotti dal job,
-   l'artifact uscirebbe monco e la run finirebbe verde lo stesso.
-   COME: confrontare i file committati da questa run con quelli della
-   31647598044. Devono esserci le stesse predizioni e gli stessi consigli.
-
-b) LE FORMAZIONI SONO LE STESSE 40? L'utente vuole proprio questo confronto.
-   Nel log del job `formazione`: "Formazioni generate: 40/24".
-
-c) QUANTO SI E' GUADAGNATO. Ho aggiunto uno step che stampa
-   "file su disco -> N" all'inizio di ogni predict: se il cono funziona il
-   numero e' molto sotto i 35.899 del repo intero. Confrontare anche la durata
-   della fase predict (paragone: 2m42).
-
-d) LA POTATURA AUTOMATICA. Questa e' la prima run che la esegue da sola
-   (step in salva_output). Nel commit della run devono comparire delle
-   CANCELLAZIONI, non solo aggiunte.
-
-SE (a) FALLISCE: togliere il checkout sparso, cioe' revert del commit
-2d238e1d84. Vale 30-40 secondi di run, non vale un artifact monco.
-
+In quella stessa run ha girato per la prima volta anche la POTATURA
+AUTOMATICA: zero file rimasti della run precedente della stessa giornata,
+sostituiti dai 603 nuovi. Funziona.
 
 =============================================================================
 4. LE TRE CHIAVI API -- come sono usate e dove c'e' ancora da prendere
@@ -227,7 +217,7 @@ mondo. Il generatore e' il secondo caso, bot definitivo il primo.
   d97e40f63b  potatura del repo: -23.666 file
   8bdc4adefc  potatura automatica a fine run, e anche sui consigli
   d8f0a6345e  i file ricevuti da un artifact ora si marchiano
-  2d238e1d84  checkout sparso sul predict (IN COLLAUDO, vedi sezione 3)
+  2d238e1d84  checkout sparso sul predict (collaudato, vedi sezione 3)
 
 
 =============================================================================
