@@ -1,0 +1,242 @@
+BRIEF PER OPUS (stregone supremo) -- 12/08/2026 sera, Roma
+Chi lo manda: l'utente stesso (navetta manuale), preparato dall'orchestratore.
+Nessuna modifica al codice richiesta per ora: prima diagnosi e piano, poi si
+implementa. Se una diagnosi richiede una prova, falla (query live/log gia'
+disponibili), ma NON toccare produzione senza dirlo prima.
+
+
+0. COSA LEGGERE PRIMA
+----------------------
+- CLAUDE.md (specialmente REGOLA SUPREMA risparmio token, e "un tema alla
+  volta" NON si applica qui: l'utente vuole i 3 dubbi in un brief solo).
+- docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md, sezione §8duodecies-bis
+  (contesto: la diagnosi del 429 di stanotte, gia' implementata e
+  VERIFICATA FUNZIONANTE in questa run: vedi §1 sotto).
+- docs/handoff/RISPOSTA_OPUS_429_PARALLELISMO_2026-08-12.txt (la tua
+  risposta precedente, per continuita').
+- Codice, con i numeri di riga esatti citati in ogni sezione sotto.
+
+Contesto: dopo il tuo fix P5 (discovery_fixture.py, artifact odds
+autorevole anche vuoto) + P6 (stagger), l'orchestratore ha ritestato GW5
+Champions: run 31585784239, gameweek=5, starter_odds_min=0, champions=4,
+tutto il resto a 0/default. La fase discovery e' andata LISCIA (zero 429,
+verificato coi log qui sotto) -- il tuo fix funziona. Ma sono emersi 3
+problemi nuovi, mai visti prima perche' mai arrivati cosi' lontano in una
+run reale.
+
+
+1. FASE DISCOVERY: CONFERMA CHE IL TUO FIX FUNZIONA (nessuna domanda, solo
+   per contesto -- non serve rispondere a questo punto)
+------------------------------------------------------------------------
+Run 31585784239, job pool + 4 discovery, tutti SUCCESS, zero 429:
+  pool:           10:04:29 -> 10:05:34 (65s)
+  discovery fwd:  10:05:37 -> 10:07:44
+  discovery def:  10:05:37 -> 10:07:18
+  discovery gk:   10:05:37 -> 10:06:38
+  discovery mid:  10:05:37 -> 10:07:34
+(fonte: gh run view 31585784239 --json jobs). Prima del tuo fix, la stessa
+combinazione (gw5, odds=0) aveva fatto collassare tutti e 4 i job discovery
+in 429 entro 5 minuti (run 31584309722, cancellata dall'utente). Confermato:
+P5+P6 risolvono il problema per cui erano stati scritti.
+
+
+2. DOMANDA 1 -- CRASH: UnboundLocalError su _budget_essenze
+-------------------------------------------------------------
+IPOTESI DELL'ORCHESTRATORE (prima di guardare oltre il traceback): il crash
+nasce perche' _budget_essenze viene assegnata SOLO dentro un `if` che in
+questa run non è mai vero (ne' ARENE_EFFICIENTI ne' ESSENZE_ARENA erano
+impostati, solo CHAMPIONS=4), ma viene letta piu' sotto SENZA guardia,
+dentro un blocco che invece scatta sempre di default (EXTEND_ODDS_060_070
+default '1'). Se e' cosi', il fix e' banale (inizializzare la variabile a
+None PRIMA del primo `if`) — ma voglio la tua conferma prima di toccare
+produzione, e la tua opinione su un dubbio: e' l'UNICO punto del codice con
+questo pattern (variabile condizionale letta fuori guardia), o ce ne sono
+altri simili non ancora incappati per caso?
+
+TRACEBACK ESATTO (run 31585784239, job "formazione", step "Run python
+generatore_formazioni/build_formazione_globale.py"):
+
+  Formazione Champions #1: generata (381.8 pt)
+  Formazione Champions #2: generata (343.0 pt)
+  Formazione Champions #3: generata (327.2 pt)
+  Formazione Champions #4: NON GENERATA -- Nessun candidato disponibile per
+    lo slot MID1 (copie esaurite o consiglio vuoto).
+  Traceback (most recent call last):
+    File ".../generatore_formazioni/build_formazione_globale.py", line 2830,
+      in <module>
+      main()
+    File ".../generatore_formazioni/build_formazione_globale.py", line 2357,
+      in main
+      _shortfall_champions = max(0, counts.get('CHAMPIONS', 0) - _generati_champions)
+      ^^^^^^^^^^^^^^^^^^^^
+  UnboundLocalError: cannot access local variable '_budget_essenze' where it
+  is not associated with a value
+
+(Nota: il traceback indica riga 2357 ma il nome della variabile mancante e'
+_budget_essenze, usata alla riga 2367 dentro la stessa espressione composta
+-- Python a volte riporta la riga di inizio statement, non quella esatta
+dell'errore; il messaggio col nome della variabile e' quello affidabile.)
+
+CODICE, generatore_formazioni/build_formazione_globale.py:
+
+  riga 2297: _essenze_arena = int(os.environ.get('ESSENZE_ARENA', '0') or 0)
+  riga 2298-2301: _speso_arene_eff = 0  # commento dice esplicitamente
+    "resta 0 se questo blocco non gira affatto" -- ma NON dice lo stesso
+    di _budget_essenze, che infatti non ha un default fuori dall'if.
+  riga 2302: if _n_eff > 0 or _essenze_arena > 0:
+  riga 2304:     _budget_essenze = _essenze_arena if _essenze_arena > 0 else None
+    (SOLO dentro questo if -- in questa run _n_eff=0 e _essenze_arena=0,
+    quindi l'if e' falso e _budget_essenze non viene MAI assegnata, nemmeno
+    a None)
+  ...
+  riga 2348: if EXTEND_ODDS_060_070:  # default '1', ACCESO, gira sempre
+    salvo che l'utente lo spenga esplicitamente
+  riga 2367-2368:
+        _budget_residuo = (max(0, _budget_essenze - _speso_arene_eff)
+                           if _budget_essenze is not None else 0)
+    Qui SI CONTROLLA "is not None" -- ma il controllo stesso richiede che
+    il nome _budget_essenze esista come variabile locale assegnata da
+    qualche parte nella funzione, altrimenti Python la tratta come
+    riferimento a una local non ancora assegnata (UnboundLocalError), non
+    come NameError ne' come None implicito.
+
+Condizione che fa scattare il crash: EXTEND_ODDS_060_070 acceso (default) E
+almeno un tipo richiesto in shortfall (qui: Champions #4 non generata) E
+ne' ARENE_EFFICIENTI ne' ESSENZE_ARENA impostati. Sospetto sia MAI successo
+prima perche' finora ogni run con EXTEND_ODDS_060_070 acceso aveva anche
+ARENE_EFFICIENTI o ESSENZE_ARENA > 0 (il default consigliato dall'utente
+include quasi sempre delle arene), e Champions e' una richiesta nuovissima
+(apre GW5, 12/08) mai combinata prima con "solo champions, zero arene".
+
+DOMANDA: confermi questa diagnosi? Il fix minimo e' spostare
+`_budget_essenze = None` PRIMA della riga 2302 (fuori dall'if)? C'e' un
+motivo per cui non e' gia' cosi' che mi sfugge (es. serve distinguere "mai
+valutato" da "valutato e nessun budget")? Controlla anche se
+_speso_arene_eff (riga 2298, che INVECE ha il default fuori dall'if) sia
+usato in modo coerente con lo stesso pattern altrove nel file.
+
+
+3. DOMANDA 2 -- NOTIFICA TELEGRAM ARRIVATA NONOSTANTE LA RUN FALLITA, CON
+   FORMAZIONI VECCHIE/A CASO
+----------------------------------------------------------------------------
+IPOTESI DELL'ORCHESTRATORE: la notifica Telegram non controlla affatto se
+lo step di generazione e' andato a buon fine. Sceglie l'HTML piu' recente
+per data di modifica NEL CHECKOUT LOCALE del job, che -- quando
+build_formazione_globale.py crasha PRIMA di scrivere il nuovo HTML (crash a
+riga 2357/2367, la scrittura dell'HTML e' molto piu' sotto, verso riga
+2802) -- e' semplicemente l'HTML piu' vecchio gia' presente su main da una
+run precedente. Risultato: notifica con testo "run completata" e link a un
+report di un'altra run (l'utente riporta "run 97", formazioni "a caso").
+
+CODICE:
+
+generatore_formazioni/formazione_telegram_notify.py:
+  riga 40-49, _latest_html(): `max(candidates, key=os.path.getmtime)` su
+  tutti i file 'generatore_formazioni_run*.html' presenti nel checkout --
+  NESSUN controllo su quale run li ha generati ne' se questa run e'
+  riuscita.
+  riga 57-65, main(): se un HTML esiste (sempre vero, ce ne sono di run
+  passate), MANDA IL MESSAGGIO. Nessun controllo di successo/fallimento.
+
+.github/workflows/formazione_giornata.yml, job "formazione" (righe
+~453-582):
+  Lo step che lancia build_formazione_globale.py NON ha `continue-on-error`
+  -- il crash fa fallire il JOB (conclusion: failure, confermato:
+  gh run view mostra "formazione: failure"). MA i due step successivi hanno
+  entrambi `if: always()`:
+    - step "git add generatore_formazioni/output/*.html" + commit: qui il
+      no-op e' CORRETTO (nessun nuovo HTML scritto -> git diff --cached
+      vuoto -> exit 0, nessun commit spurio). Verificato che questo step si
+      comporta bene.
+    - step "Notifica Telegram con link al report HTML" (riga ~574-581):
+      gira INCONDIZIONATAMENTE, senza alcun controllo sull'esito dello step
+      precedente (build_formazione_globale.py) ne' un `if:
+      steps.<id>.outcome == 'success'`.
+
+Prova diretta: job GitHub della run in questione,
+https://github.com/andreasalvatore93-oss/Sorare-tracker-2/actions/runs/31585784239/job/94083068654
+-- risultato "failure" sul job, ma il passo Telegram e' comunque partito e
+ha mandato il link (verificato dall'utente stesso via Telegram).
+
+DOMANDA: confermi questa diagnosi? Il fix piu' ovvio e' condizionare lo
+step Telegram su `if: steps.<id_dello_step_build>.outcome == 'success'`
+(serve dare un `id:` allo step build_formazione_globale.py che oggi non ce
+l'ha) -- sei d'accordo, o preferisci un controllo diverso (es. verificare
+che l'HTML appena aggiunto sia stato effettivamente committato in QUESTA
+run, cosi' la notifica resta valida anche per run parzialmente riuscite in
+altri scenari)? Nota per la scelta: la regola scritta nel commento del job
+alla riga ~457-462 dice che la stessa classe di bug era GIA' successa il
+28/07 (job 'formazione' con if:always() che leggeva consigli vecchi) ed e'
+stata corretta con una guardia sul job intero (needs.discovery_merge...).
+Qui il buco e' analogo ma un piano piu' sotto (nello step Telegram, non nel
+job): vale la pena capire se serve una guardia unica piu' a monte invece di
+tappare ogni step singolarmente.
+
+
+4. DOMANDA 3 -- 18 MINUTI DI RUN PER UNA RICHIESTA CHE TOCCA ~30 GIOCATORI
+------------------------------------------------------------------------------
+IPOTESI DELL'ORCHESTRATORE: la richiesta era SOLO Champions=4 (arene=0,
+allstars=0, allstars_u23=0, in_season vuoto). generatore_formazioni/
+build_formazione_globale.py:349 definisce CHAMPIONS_LEAGUES = {'inghilterra',
+'germania', 'spagna', 'francia', 'italia'} -- SOLO 5 campionati ammessi per
+questa competizione. Ma quel filtro scatta SOLO dentro il job "formazione"
+(fase di selezione finale, righe 1425-1479), DOPO che discovery e predict
+hanno gia' processato l'intero universo di carte possedute in TUTTI i
+campionati con pipeline (~50+), indipendentemente da quali tipi di
+formazione sono stati richiesti. Prova: la fase "predict" di questa run
+(10:08:25 -> 10:21:00, 45 shard) include leghe totalmente estranee alle 5
+ammesse per Champions e a qualunque altra richiesta di questa run: mls,
+kleague, olanda, belgio, austria, giappone, croazia, portogallo, turchia,
+danimarca, messico, spagna2, francia2, germania2, inghilterra2 (fonte: gh
+run view 31585784239 --json jobs, nomi degli shard). Tempi totali:
+  discovery: 10:04:29 -> 10:08:22 (~4 min, gia' ottimizzato dal tuo fix)
+  predict:   10:08:25 -> 10:21:00 (~12,5 min, IL GROSSO DEL TEMPO)
+  consiglio + formazione: 10:21:02 -> 10:22:40 (~1,5 min)
+Totale run: 10:04:25 -> 10:22:41 = 18m16s.
+
+DOMANDA: e' fattibile SENZA regressioni far si' che, quando la richiesta
+tocca SOLO tipi con pool ristretto a un insieme noto di leghe (oggi solo
+CHAMPIONS -> 5 leghe; ARENE_EFFICIENTI/ALLSTARS/ALLSTARS_U23/IN_SEASON
+restano "mixed", tutte le leghe), discovery_fixture.py costruisca la
+matrice lega/ruolo SOLO sulle leghe rilevanti invece che su tutte quelle
+con pipeline? Cose da guardare prima di rispondere:
+  a) discovery_fixture.py riceve gia' come env CHAMPIONS/ALLSTARS/
+     ARENE_EFFICIENTI eccetera (build_formazione_globale.py li legge alle
+     righe ~2067-2075) -- ma li legge discovery_fixture.py stesso, o solo
+     il job "formazione" a valle? Se non li legge, e' un cambio piu'
+     grosso (serve passare gli input anche al job discovery).
+  b) Il generatore combina PIU' richieste nella stessa run (es. arene=2 +
+     champions=4 insieme): la scoperta ristretta deve restare corretta
+     quando SIA leghe-tutte SIA leghe-ristrette servono nella stessa run
+     (unione degli insiemi, non intersezione).
+  c) Se la stima costa piu' di quanto vale (rischio di rompere la matrice
+     dinamica esistente, che gia' bilancia i costi fra shard via
+     pipeline_costi.json), dillo chiaramente e proponi un'alternativa piu'
+     piccola (es. solo per il caso "champions e basta, tutto il resto a
+     zero", il caso piu' comune adesso che la competizione e' nuova).
+
+NON e' un problema che blocca l'uso della pipeline oggi (la run FINISCE, in
+18 minuti, dentro il timeout di 15+20 min dei job -- anche se e' vicino al
+bordo). E' un problema di spreco di query/compute quando la richiesta reale
+e' molto piu' piccola di quello che gira.
+
+
+5. COSA NON FARE
+------------------
+- Non toccare produzione finche' non hai risposto qui e l'utente non ha
+  deciso di procedere.
+- Non rilanciare la run GW5 Champions: aspetta i fix (almeno la domanda 1,
+  altrimenti il test fallira' di nuovo allo stesso punto).
+- Non stimare "quanto risparmieremmo" sulla domanda 3 senza misurarlo: se
+  serve un numero, conta le leghe/pagine coinvolte nel caso ristretto vs
+  quello attuale, non una percentuale a spanne (vedi CLAUDE.md, divieto
+  allucinazioni).
+
+
+6. DOVE SCRIVERE L'ESITO
+--------------------------
+In coda a docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md, sezione §8duodecies-bis
+(o una nuova sotto-sezione se questa e' troppo lunga -- valuta tu, ma resta
+nello stesso file, non aprirne uno nuovo per lo stesso filone). Committa
+solo i tuoi file. Nel messaggio all'utente/all'orchestratore: verdetto da
+bar in 10 righe per ciascuna delle 3 domande, poi il dettaglio nel file.
