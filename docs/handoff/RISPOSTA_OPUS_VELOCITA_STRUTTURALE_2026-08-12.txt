@@ -373,7 +373,38 @@ vede a scaglioni. Previsione:
       fase predict          -> ~180s
       run intera       17-18 min -> ~9 min
 
-7.5 RISULTATI
+7.5 IL PREZZO DEL TERZO FIX: IL REPO CRESCE (da tenere d'occhio)
+-----------------------------------------------------------------
+Non lo nascondo perche' e' l'unico effetto collaterale vero dei tre fix.
+Da adesso le cache tornano davvero su main, quindi ogni run committa i file
+di cache CAMBIATI. Misure su disco oggi:
+
+  .cache          (dettaglio)  5880 file   793 MB   media 135 KB
+  .game_log_cache (game log)   6423 file   334 MB   media  52 KB
+  totale                      12303 file  1127 MB
+  pack git attuale                         399 MB (506k oggetti)
+
+Quanti file cambiano per run: nello shard predict 36 della run A, 'stage'
+ne aveva preparati 62 e ne sono stati caricati 29 -> i 33 esclusi erano
+cache CAMBIATE DAVVERO (git status vede solo le differenze reali: una
+ri-scrittura identica non produce nessun commit). Su 45 shard fa circa
+1.500 file a run, ~135 MB grezzi.
+
+DUE COSE PRIMA DI ALLARMARSI:
+  - e' un costo di RECUPERO, non di regime: la prima run dopo il fix
+    committa l'arretrato dei giorni in cui non si salvava niente. A regime
+    cambiano solo i giocatori che hanno DAVVERO giocato una partita nuova.
+  - i marcatori .meta.json sono trascurabili (~50 byte l'uno).
+
+SE a regime la crescita restasse alta, l'alternativa gia' individuata e'
+spostare le due cartelle da git a actions/cache (restore nei job predict,
+save unico in salva_output): tetto 10 GB per repo, zero crescita del
+repository. Non l'ho fatto adesso perche' e' un cambio di architettura che
+tocca anche gli strumenti locali che leggono la stessa cache (generatore,
+scouting, analisi_manager) e non va fatto di corsa in fondo a una sessione.
+Da decidere insieme dopo due o tre run a regime.
+
+7.6 RISULTATI
 --------------
 (compilato appena le run finiscono)
 
