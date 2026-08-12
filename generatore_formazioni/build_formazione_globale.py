@@ -2247,6 +2247,10 @@ def main():
     # in gioco) che non limita nulla di suo: a fermare il loop ci pensa il
     # budget stesso o "nessun tipo rende piu'", come sempre.
     _essenze_arena = int(os.environ.get('ESSENZE_ARENA', '0') or 0)
+    _speso_arene_eff = 0  # essenze spese dalla tornata primaria -- resta 0 se
+                          # questo blocco non gira affatto (ARENE_EFFICIENTI e
+                          # ESSENZE_ARENA entrambi assenti), letto dal
+                          # suppletivo piu' sotto.
     if _n_eff > 0 or _essenze_arena > 0:
         _tipi = [t for t in PRIORITY_ORDER if _is_arena_type(t)]
         _budget_essenze = _essenze_arena if _essenze_arena > 0 else None
@@ -2262,8 +2266,20 @@ def main():
             print(f"\n=== ARENE EFFICIENTI: fino a {_massimo_arene}, tipo scelto dal bot")
         print("Nessun tipo e' disattivato: quelli che non rendono non vengono")
         print("scelti, e torneranno appena il mazzo li rendera' convenienti.")
-        all_results.extend(genera_arene_efficienti(_tipi, _massimo_arene, role_data,
-                                                   pools, card_pool, budget_essenze=_budget_essenze))
+        _arene_eff_scelte = genera_arene_efficienti(_tipi, _massimo_arene, role_data,
+                                                     pools, card_pool, budget_essenze=_budget_essenze)
+        all_results.extend(_arene_eff_scelte)
+        # Essenze spese dalla tornata primaria (12/08/2026, bug reale: con
+        # SOLO ESSENZE_ARENA impostata -- senza 'arene' -- il pool suppletivo
+        # sotto non scattava mai, perche' il suo trigger guarda uno
+        # SHORTFALL DI NUMERO (_n_eff), sempre 0 in modalita' budget pura.
+        # Risultato misurato: GW4, 24 DEF disponibili nella finestra ma solo
+        # 2 con odds >=0.80 -- gli altri 22 (banda 0.60-0.70) restavano
+        # irraggiungibili anche con 900 essenze di budget ancora libere.
+        # _speso_arene_eff serve al trigger sotto per sapere se il budget e'
+        # stato usato per intero dalla sola tornata primaria.
+        _speso_arene_eff = sum(COSTO_INGRESSO.get(r.get('tipo'), 300)
+                               for r in _arene_eff_scelte if 'error' not in r)
 
     # Solo ora ALLSTARS_U23/ALLSTARS, sul pool residuo (fix sopra).
     for tipo in PRIORITY_ORDER:
@@ -2289,11 +2305,27 @@ def main():
         _generati_u23 = sum(1 for r in all_results if 'error' not in r and r.get('tipo') == 'ALLSTARS_U23')
         _shortfall_allstars = max(0, counts.get('ALLSTARS', 0) - _generati_allstars)
         _shortfall_u23 = max(0, counts.get('ALLSTARS_U23', 0) - _generati_u23)
-        if _shortfall_arene or _shortfall_allstars or _shortfall_u23:
-            print(f"\n=== POOL SUPPLETIVO (odds 0.60-0.70): mancano {_shortfall_arene} "
-                  f"Arena Beginner, {_shortfall_allstars} All Stars, {_shortfall_u23} "
-                  f"All Stars Under23 rispetto al richiesto -- provo con la banda "
-                  f"0.60-0.70 + il residuo 0.80+ non ancora usato.")
+        # FIX (12/08/2026, bug reale GW4): con SOLO ESSENZE_ARENA impostata
+        # (nessun 'arene' esplicito), _shortfall_arene sopra e' SEMPRE 0 --
+        # non misura mai un "quanto manca" perche' non c'e' un numero
+        # richiesto da confrontare. Il suppletivo va fatto scattare ANCHE
+        # quando resta budget non speso: la tornata primaria vede SOLO la
+        # banda >=0.80 (role_data), quella banda puo' essere molto piu'
+        # piccola del pool vero (misurato: GW4, 24 DEF disponibili, solo 2
+        # con odds >=0.80 -- gli altri 22 nella banda 0.60-0.70,
+        # irraggiungibili senza questo fix anche con budget libero).
+        _budget_residuo = (max(0, _budget_essenze - _speso_arene_eff)
+                           if _budget_essenze is not None else 0)
+        if _shortfall_arene or _shortfall_allstars or _shortfall_u23 or _budget_residuo > 0:
+            if _budget_residuo > 0 and not _shortfall_arene:
+                print(f"\n=== POOL SUPPLETIVO (odds 0.60-0.70): {_budget_residuo} essenze di "
+                      f"budget ancora libere dopo la tornata primaria (>=0.80) -- provo "
+                      f"con la banda 0.60-0.70 + il residuo 0.80+ non ancora usato.")
+            else:
+                print(f"\n=== POOL SUPPLETIVO (odds 0.60-0.70): mancano {_shortfall_arene} "
+                      f"Arena Beginner, {_shortfall_allstars} All Stars, {_shortfall_u23} "
+                      f"All Stars Under23 rispetto al richiesto -- provo con la banda "
+                      f"0.60-0.70 + il residuo 0.80+ non ancora usato.")
             pools_ext = build_quality_pools(role_data_ext)
             _suppl = []
             # Ordine SOLO del suppletivo (10/08, richiesta esplicita utente,
@@ -2314,9 +2346,22 @@ def main():
                         break
                     r['idx'] = _generati_u23 + i + 1
                     _suppl.append(r)
-            if _shortfall_arene:
-                _suppl.extend(genera_arene_efficienti(['ARENA_ALLSTARS_BEGINNER'], _shortfall_arene,
-                                                       role_data_ext, pools_ext, card_pool))
+            if _shortfall_arene or _budget_residuo > 0:
+                if _shortfall_arene:
+                    # Richiesta esplicita a numero (comportamento invariato):
+                    # nessun tetto in essenze qui, solo il conteggio mancante.
+                    _n_suppl_beginner = _shortfall_arene
+                    _budget_suppl_beginner = None
+                else:
+                    # Solo budget: stesso principio della tornata primaria --
+                    # tetto generoso sul numero (il budget vero decide), mai
+                    # oltre COSTO_INGRESSO['ARENA_ALLSTARS_BEGINNER'] (100)
+                    # essenze per unita'.
+                    _n_suppl_beginner = max(1, _budget_residuo // COSTO_INGRESSO.get('ARENA_ALLSTARS_BEGINNER', 100))
+                    _budget_suppl_beginner = _budget_residuo
+                _suppl.extend(genera_arene_efficienti(['ARENA_ALLSTARS_BEGINNER'], _n_suppl_beginner,
+                                                       role_data_ext, pools_ext, card_pool,
+                                                       budget_essenze=_budget_suppl_beginner))
             if _shortfall_allstars:
                 _batch = generate_lineups_for_type('ALLSTARS', _shortfall_allstars, role_data_ext, pools_ext, card_pool)
                 for i, r in enumerate(_batch):

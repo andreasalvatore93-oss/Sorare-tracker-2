@@ -1551,6 +1551,40 @@ def main():
                 # Misurato: con data=None diventavano 5 "senza partita", con
                 # data valorizzata tornano 0 come nel percorso vecchio.
                 risultati[sl] = (odds_bulk.get(sl), inizio, l10_di.get(sl))
+            # FALLBACK MIRATO SUI BUCHI DEL BLOCCO (12/08/2026, bug reale:
+            # Nenad Cvetkovic/Ridvan Yilmaz, club correttamente riconosciuto
+            # in squadre_in_campo, ma le loro odds -- partita di COPPA con
+            # kickoff lo stesso giorno -- non erano ancora pubblicate quando
+            # lo snapshot in blocco (pool_gw.json/_odds_giornata_condivise) e'
+            # stato preso a inizio run. Prima venivano scartati in silenzio,
+            # senza nessun tentativo di recupero (il fallback per-giocatore
+            # sotto scattava SOLO se l'intero blocco era vuoto, mai per un
+            # buco puntuale). Qui si ritenta UNA query individuale, solo per
+            # chi manca nel blocco -- non per tutti: il costo resta quello di
+            # pochi giocatori, non dell'intero elenco. Tetto di sicurezza
+            # (regola CLAUDE.md: run sotto i 10 minuti, minimizzare le query)
+            # per non trasformare un buco piccolo in una raffica di query se
+            # il blocco fosse quasi vuoto per un motivo diverso.
+            _mancanti = [sl for sl in elenco if odds_bulk.get(sl) is None]
+            _cap = int(os.environ.get('ODDS_FALLBACK_MAX_PER_RUOLO', '40'))
+            if _mancanti:
+                _da_ritentare = _mancanti[:_cap]
+                if len(_mancanti) > _cap:
+                    log(f"  {position}: {len(_mancanti)} senza odds nel blocco, "
+                        f"ritento solo i primi {_cap} (ODDS_FALLBACK_MAX_PER_RUOLO) "
+                        f"per non esplodere in query.")
+                else:
+                    log(f"  {position}: {len(_mancanti)} senza odds nel blocco "
+                        f"(partita pubblicata dopo lo snapshot?), ritento uno per uno.")
+                _recuperati = 0
+                for sl in _da_ritentare:
+                    risultati[sl] = odds_e_l10_singola(sl, inizio, fine)
+                    time.sleep(ODDS_L10_SLEEP)
+                    if risultati[sl][0] is not None:
+                        _recuperati += 1
+                if _recuperati:
+                    log(f"  {position}: recuperati {_recuperati}/{len(_da_ritentare)} "
+                        f"con odds ora pubblicate (erano mancanti nel blocco).")
         else:
             # Odds di giornata non disponibili (non ancora pubblicate o query
             # a vuoto): si torna al percorso vecchio, giocatore per giocatore.
