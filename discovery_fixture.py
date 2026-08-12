@@ -98,18 +98,28 @@ ODDS_L10_SLEEP = float(os.environ.get('ODDS_L10_SLEEP', '0.7'))
 # paginare si prendono solo i "50 piu' popolari" per ruolo per leaderboard
 # -> copertura crollata al 32.5% invece del 93% reale. Va SEMPRE paginato
 # fino a hasNextPage=False.
-# CARTE PER PAGINA (12/08/2026, il vero regalo dell'APIKEY). I 164 script di
-# discovery per lega hanno PAGE_SIZE = 20, un numero tarato sul tetto di
-# COMPLESSITA' 500 dell'accesso anonimo: con 50 carte per pagina la query
-# sforava. Con la chiave il tetto e' 30.000 e quel motivo non c'e' piu'; 50 e'
-# anche il massimo che il server concede per richiesta (gia' in produzione in
-# bots/bot_definitivo.py, bots/cerbero, auctions/, "confermato in
-# diagnostica"). Su un ruolo da ~600 carte si passa da 30 richieste a 12.
-# ATTENZIONE, non e' lo stesso tetto della paginazione qui sopra: quello dei
-# 50 nodi di myFilteredBench e' un cap del SERVER che nessuna chiave alza.
-# Senza chiave si resta a 20: meglio lento che con gli errori di complessita'.
-def _carte_per_pagina():
-    return 50 if getattr(base, 'APIKEY', '') else base.PAGE_SIZE
+# CARTE PER PAGINA (12/08/2026). I 164 script di discovery per lega hanno
+# PAGE_SIZE = 20, un numero tarato sul tetto di COMPLESSITA' 500 dell'accesso
+# anonimo. Questa query pero' non e' mai anonima -- chiede le carte DI UN
+# UTENTE, quindi il cookie c'e' sempre -- e col cookie il tetto e' gia'
+# 30.000. Quel 20 era prudenza sprecata.
+#
+# MISURATO, non dedotto (portieri di crowss, cookie SENZA chiave):
+#   a 20 per pagina -> 320 carte in 16 richieste
+#   a 50 per pagina -> 320 carte in  7 richieste
+#   insiemi di slug IDENTICI, nbHits dichiarato 320 in entrambi i casi
+# Lo script della prova sta in docs/handoff (prova_pagesize.py): rilanciarlo
+# se un domani Sorare cambia il cap. Il rischio da escludere era proprio che
+# il server accettasse pageSize=50, ne desse meno e dichiarasse nbPages come
+# se le avesse date tutte: li' la paginazione finirebbe presto e si
+# perderebbero carte IN SILENZIO, con la run verde. Non succede.
+#
+# 50 e' il massimo vero per richiesta, gia' in produzione in
+# bots/bot_definitivo.py, bots/cerbero e auctions/ ("confermato in
+# diagnostica"). ATTENZIONE a non confonderlo con l'altro tetto: i 50 nodi di
+# myFilteredBench sono un cap del SERVER che nessuna chiave e nessun cookie
+# alza (vedi PAGINAZIONE OBBLIGATORIA qui sotto).
+CARTE_PER_PAGINA = 50
 
 
 GRADE_NUM = {'A': 6, 'B': 5, 'C': 4, 'D': 3, 'E': 2, 'F': 1}
@@ -1402,7 +1412,7 @@ def main():
             for _retry in range(3):
                 d = base.graphql_query(CARDS_QUERY, {
                     "userSlug": base.USER_SLUG, "page": page,
-                    "pageSize": _carte_per_pagina(),
+                    "pageSize": CARTE_PER_PAGINA,
                     "advancedFilters": advanced,
                     "refinements": [{"field": "position", "operator": "EQUAL",
                                      "values": [{"stringValue": position}]}],
