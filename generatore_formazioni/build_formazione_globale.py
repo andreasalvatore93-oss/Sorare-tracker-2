@@ -2047,6 +2047,54 @@ def main():
 
     role_data, role_counts, player_names = load_league_role_data()
 
+    # Flag u23Eligible per slug (28/07): estratto da role_counts, gia'
+    # caricato da player_card_counts.json (stesso file che porta L10) --
+    # nessuna query o file in piu'. Serve solo se ALLSTARS_U23 e' richiesta.
+    global U23_ELIGIBLE
+    for lg in LEAGUES:
+        for role in ROLES:
+            for slug, entry in role_counts.get(lg, {}).get(role, {}).items():
+                if entry.get('u23'):
+                    U23_ELIGIBLE[slug] = True
+
+    # Esclusione manuale per slug (28/07, richiesta esplicita utente: carte
+    # gia' bloccate in un'Arena confermata di questa giornata -- lockedForLeaderboard
+    # resta false anche su lineup confermate, vedi sez. E del RIASSUNTO, quindi
+    # l'unico modo affidabile e' passare gli slug a mano da qui). Formato:
+    # EXCLUDE_SLUGS='slug-uno,slug-due'. Vuoto di default, nessun effetto.
+    exclude_slugs = {s.strip() for s in os.environ.get('EXCLUDE_SLUGS', '').split(',') if s.strip()}
+    if exclude_slugs:
+        print(f"\nEsclusi manualmente {len(exclude_slugs)} slug (gia' bloccati altrove): "
+              f"{sorted(exclude_slugs)}")
+        role_data = {lg: {role: [r for r in role_data[lg][role] if r['slug'] not in exclude_slugs]
+                           for role in ROLES} for lg in LEAGUES}
+
+    # FIX (12/08/2026, bug reale trovato dall'utente: Kevin Mac Allister
+    # schierato in Arena Beginner del pool suppletivo con kickoff 15/08
+    # mentre la finestra esplicita della giornata era 11-14/08 -- run175).
+    # CAUSA: 'role_data_ext' veniva catturato PRIMA di filter_by_window (piu'
+    # sotto), quindi ereditava candidati MAI passati dal filtro finestra --
+    # solo 'role_data' (il ramo principale) lo era. Il pool suppletivo
+    # (EXTEND_ODDS_060_070) legge SOLO role_data_ext, quindi era l'unico
+    # punto della run a poter proporre carte fuori giornata: tutte le altre
+    # formazioni (lette da role_data) restavano corrette, spiegando perche'
+    # l'anomalia toccava solo lui. Il filtro finestra (E l'esclusione
+    # manuale sopra) devono valere per ENTRAMBI i rami: si applicano qui,
+    # PRIMA che role_data_ext si separi da role_data (poco sotto), non piu'
+    # dopo. Stesso ordine, stesso risultato per role_data -- solo
+    # role_data_ext cambia (ora filtrato anche lui).
+    prima = {r: sum(len(role_data[lg][r]) for lg in LEAGUES) for r in ROLES}
+    role_data = filter_by_window(role_data)
+    dopo = {r: sum(len(role_data[lg][r]) for lg in LEAGUES) for r in ROLES}
+    print("")
+    print(f"Finestra giornata: solo partite fra adesso e +{MATCH_WINDOW_DAYS:g} giorni "
+          f"(MATCH_WINDOW_DAYS). Candidati " +
+          ", ".join(f"{r}: {prima[r]}->{dopo[r]}" for r in ROLES))
+    if not any(dopo.values()):
+        raise SystemExit("ERRORE: nessun giocatore ha una partita nella finestra richiesta. "
+                         "Consigli non aggiornati per questa giornata, oppure allarga "
+                         "MATCH_WINDOW_DAYS. Nessuna formazione generata.")
+
     # POOL ESTESO (10/08/2026, EXTEND_ODDS_060_070, default spento): quando il
     # flag e' acceso, discovery_fixture.py porta ANCHE candidati con
     # starter_odds nella banda 0.60-0.70 (unica banda possibile sotto 0.80: le
@@ -2055,8 +2103,9 @@ def main():
     # EFFICIENTI, ALLSTARS/ALLSTARS_U23 e FASE 1b restano quindi identici a un
     # run col flag spento anche quando la discovery ha portato di piu' -- a
     # flag spento questo filtro e' un no-op (la discovery non porta mai sotto
-    # 0.80). 'role_data_ext' (tutto, banda compresa) e' letto SOLO dal passo
-    # POOL SUPPLETIVO piu' sotto, mai dal resto.
+    # 0.80). 'role_data_ext' (tutto, banda compresa, MA sempre dentro finestra
+    # ed esclusioni -- vedi fix sopra) e' letto SOLO dal passo POOL
+    # SUPPLETIVO piu' sotto, mai dal resto.
     EXTEND_ODDS_060_070 = os.environ.get('EXTEND_ODDS_060_070', '0') == '1'
     role_data_ext = role_data
     role_data = {
@@ -2086,40 +2135,6 @@ def main():
         with open(_dump_cand_path, 'w', encoding='utf-8') as _fh:
             json.dump({'grade_scale': GRADE_SCALE, 'candidati': _cand}, _fh, ensure_ascii=False)
         print(f"\nDUMP_JSON_CANDIDATI scritto: {_dump_cand_path} ({len(_cand)} candidati)")
-
-    # Flag u23Eligible per slug (28/07): estratto da role_counts, gia'
-    # caricato da player_card_counts.json (stesso file che porta L10) --
-    # nessuna query o file in piu'. Serve solo se ALLSTARS_U23 e' richiesta.
-    global U23_ELIGIBLE
-    for lg in LEAGUES:
-        for role in ROLES:
-            for slug, entry in role_counts.get(lg, {}).get(role, {}).items():
-                if entry.get('u23'):
-                    U23_ELIGIBLE[slug] = True
-
-    # Esclusione manuale per slug (28/07, richiesta esplicita utente: carte
-    # gia' bloccate in un'Arena confermata di questa giornata -- lockedForLeaderboard
-    # resta false anche su lineup confermate, vedi sez. E del RIASSUNTO, quindi
-    # l'unico modo affidabile e' passare gli slug a mano da qui). Formato:
-    # EXCLUDE_SLUGS='slug-uno,slug-due'. Vuoto di default, nessun effetto.
-    exclude_slugs = {s.strip() for s in os.environ.get('EXCLUDE_SLUGS', '').split(',') if s.strip()}
-    if exclude_slugs:
-        print(f"\nEsclusi manualmente {len(exclude_slugs)} slug (gia' bloccati altrove): "
-              f"{sorted(exclude_slugs)}")
-        role_data = {lg: {role: [r for r in role_data[lg][role] if r['slug'] not in exclude_slugs]
-                           for role in ROLES} for lg in LEAGUES}
-
-    prima = {r: sum(len(role_data[lg][r]) for lg in LEAGUES) for r in ROLES}
-    role_data = filter_by_window(role_data)
-    dopo = {r: sum(len(role_data[lg][r]) for lg in LEAGUES) for r in ROLES}
-    print("")
-    print(f"Finestra giornata: solo partite fra adesso e +{MATCH_WINDOW_DAYS:g} giorni "
-          f"(MATCH_WINDOW_DAYS). Candidati " +
-          ", ".join(f"{r}: {prima[r]}->{dopo[r]}" for r in ROLES))
-    if not any(dopo.values()):
-        raise SystemExit("ERRORE: nessun giocatore ha una partita nella finestra richiesta. "
-                         "Consigli non aggiornati per questa giornata, oppure allarga "
-                         "MATCH_WINDOW_DAYS. Nessuna formazione generata.")
 
     for league in DEDICATED_LEAGUES:
         if not all(role_data.get(league, {}).get(r) for r in ROLES):
