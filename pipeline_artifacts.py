@@ -195,7 +195,20 @@ TARGET_MIN_S = 45.0
 # a runtime, ma si tolgono 25 shard e con loro ~2.500 job-secondi di attese.
 # Se una stima sbagliata dovesse far tornare il problema del singolo shard
 # lento, si rialza -- ma va rimisurato, non ripristinato per abitudine.
-N_BIN = 20
+# RIPORTATO A 45 il 12/08/2026, un'ora dopo averlo abbassato a 20: la misura
+# ha detto il contrario di quello che mi aspettavo. Con 20 bin (run
+# 31597760654) le risposte 429 sono state 36 e l'attesa 7904s, contro 27 e
+# 4644s con 45 bin e le STESSE 1500 query. La fase predict e' passata da 412s
+# a 556s e la run da 13,3 a 14,9 minuti: peggio.
+# Quindi "ogni shard paga circa un 429" era una lettura sbagliata di quattro
+# run: con meno shard ogni shard elabora piu' giocatori e di 429 se ne prende
+# di piu' (1,8 a shard contro 0,6). Il costo NON e' per shard.
+# ATTENZIONE per chi rimisura: le run di quel pomeriggio sono state lanciate
+# una dietro l'altra e NON sono indipendenti -- i 429 crescono di run in run
+# (20, 27, 36), come se il budget dell'account si consumasse. Prima di
+# concludere qualcosa da un confronto fra due run, lasciare passare del tempo
+# o alternare l'ordine delle varianti.
+N_BIN = 45
 
 
 # ---------------------------------------------------------------- stage ----
