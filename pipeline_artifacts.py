@@ -76,6 +76,7 @@ Sottocomandi:
 import base64
 import glob
 import json
+import math
 import os
 import re
 import shutil
@@ -503,7 +504,20 @@ def _bin_packing(combos, counts, costi, n_bins):
     usa quelli corti per riempire la coda."""
     pesate = sorted(((_peso(c, counts, costi), c) for c in combos),
                     key=lambda x: -x[0])
-    n_bins = max(1, min(n_bins, len(pesate)))
+    # QUANTI BIN SERVONO DAVVERO (12/08/2026). Prima il numero era limitato
+    # solo da quante combinazioni c'erano. Su una giornata VERA -- con lo
+    # starter-odds attivo -- le combinazioni restano tante ma minuscole: nella
+    # run 31599223469 (gw4, soglia 0,80) sopravvivevano 15 difensori su 107, e
+    # sono usciti comunque 45 job da uno o due giocatori l'uno. Ogni job costa
+    # ~22 secondi fissi di checkout+setup, quindi ~990 job-secondi di solo
+    # avvio per pochi minuti di lavoro vero -- piu' una possibilita' in piu' a
+    # testa di prendersi un 429.
+    # Qui il numero di bin viene limitato anche dal carico STIMATO diviso la
+    # soglia minima per bin (TARGET_MIN_S): con poco lavoro escono pochi job,
+    # con tanto lavoro non cambia niente rispetto a prima.
+    _tot_stimato = sum(peso for peso, _ in pesate)
+    _bin_utili = max(1, int(math.ceil(_tot_stimato / TARGET_MIN_S)))
+    n_bins = max(1, min(n_bins, len(pesate), _bin_utili))
     bins = [{'peso': 0.0, 'combos': []} for _ in range(n_bins)]
     for peso, combo in pesate:
         b = min(bins, key=lambda b: b['peso'])
