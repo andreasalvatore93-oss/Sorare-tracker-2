@@ -32,6 +32,10 @@ on:
         description: 'Quante arene, priorita 2. Il bot sceglie tipo e numero per resa in essenze. 0 = nessuna.'
         required: false
         default: '0'
+      essenze_arena:
+        description: 'Essenze da investire in arena (priorita 2, in ALTERNATIVA o insieme ad "arene"): il bot genera arene efficienti finche il costo cumulato d.ingresso non supera questo budget. Vuoto (default) = nessun limite, si ricade sul solo numero richiesto in "arene".'
+        required: false
+        default: ''
       allstars:
         description: 'Numero di All Stars da 7, priorita 3. 0 = nessuna.'
         required: false
@@ -151,6 +155,7 @@ jobs:
           GAMEWEEK: ${{ github.event.inputs.gameweek }}
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           ARENE_EFFICIENTI: ${{ github.event.inputs.arene }}
+          ESSENZE_ARENA: ${{ github.event.inputs.essenze_arena }}
           MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           EXTEND_ODDS_060_070: ${{ github.event.inputs.extend_odds_060_070 }}
           CFG: ${{ matrix.gruppo.cfg }}
@@ -514,6 +519,7 @@ jobs:
           GAMEWEEK: ${{ github.event.inputs.gameweek }}
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
           ARENE_EFFICIENTI: ${{ github.event.inputs.arene }}
+          ESSENZE_ARENA: ${{ github.event.inputs.essenze_arena }}
           IN_SEASON: ${{ github.event.inputs.in_season }}
           ALLSTARS: ${{ github.event.inputs.allstars }}
           ALLSTARS_U23: ${{ github.event.inputs.allstars_u23 }}

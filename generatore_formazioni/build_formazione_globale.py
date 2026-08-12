@@ -1521,7 +1521,7 @@ def _ripristina_pool(card_pool, stato):
         card_pool._used_per_role = usati_ruolo
 
 
-def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool):
+def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool, budget_essenze=None):
     """Genera arene scegliendo DA SOLO tipo e numero, per essenze attese.
 
     Il generatore classico e' avido sui PUNTI: costruisce la formazione col
@@ -1542,13 +1542,27 @@ def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool):
         non vengono scelti. Le uncapped, per esempio, oggi non arrivano mai a
         soglia, ma torneranno utili quando arriveranno campionati con
         giocatori di L10 alto, che li' non consumano budget.
-    """
+
+    budget_essenze (12/08/2026, richiesta esplicita utente: "Numero di
+    essenze da investire"): None = comportamento INVARIATO, il solo vincolo
+    e' 'massimo' (numero di arene). Se valorizzato, e' un TETTO aggiuntivo
+    sul costo cumulato d'ingresso (COSTO_INGRESSO) delle arene scelte -- mai
+    un cambio di criterio: si sceglie sempre la piu' efficiente fra quelle
+    che rientrano nel budget residuo, non la piu' economica. Un tipo che
+    supererebbe il budget a QUESTO passo viene escluso dal confronto SOLO in
+    quel passo (non ferma il loop: un tipo piu' economico potrebbe ancora
+    starci nei passi successivi); se nessun tipo rientra piu', ci si ferma
+    come quando nessuno rende piu' niente."""
     scelte = []
+    speso = 0
     for _ in range(max(0, massimo)):
         migliore = None
         for tipo in tipi:
             soglia = PAREGGIO_ARENA.get(tipo)
             if soglia is None:
+                continue
+            costo_tipo = COSTO_INGRESSO.get(tipo, 300)
+            if budget_essenze is not None and speso + costo_tipo > budget_essenze:
                 continue
             stato = _istantanea_pool(card_pool)
             try:
@@ -1577,18 +1591,21 @@ def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool):
             else:
                 resa_confronto = resa
             if migliore is None or resa_confronto > migliore[0]:
-                migliore = (resa_confronto, tipo, atteso, resa)
+                migliore = (resa_confronto, tipo, atteso, resa, costo_tipo)
         if migliore is None or migliore[0] <= 0:
             break
-        _resa_confronto, tipo, atteso, _resa = migliore
+        _resa_confronto, tipo, atteso, _resa, costo_tipo = migliore
         vera = generate_lineups_for_type(tipo, 1, role_data, pools, card_pool)
         for r in vera:
             if 'error' not in r:
                 scelte.append(r)
+        speso += costo_tipo
         nota_criterio = (f", resa/essenza investita {_resa_confronto:.4f}"
                         if ARENA_CRITERIO == 'capitale' else '')
+        nota_budget = (f", speso {speso}/{budget_essenze} essenze"
+                       if budget_essenze is not None else '')
         print(f"  arena efficiente #{len(scelte)}: {LABELS.get(tipo, tipo)} "
-              f"-- atteso {atteso:.1f}, resa {_resa:.0f} essenze{nota_criterio}")
+              f"-- atteso {atteso:.1f}, resa {_resa:.0f} essenze{nota_criterio}{nota_budget}")
     return scelte
 
 
@@ -2162,6 +2179,7 @@ def main():
     # Gira solo se sono coinvolte arene (il cap riguarda solo loro) e se c'e' il
     # cookie (in locale senza rete si usa quel che c'e' gia' in cache).
     arene_coinvolte = int(os.environ.get('ARENE_EFFICIENTI', '0') or 0) > 0 or \
+        int(os.environ.get('ESSENZE_ARENA', '0') or 0) > 0 or \
         any(_is_arena_type(t) and counts.get(t, 0) > 0 for t in counts)
     if arene_coinvolte and os.environ.get('SORARE_COOKIE'):
         _slugs_pool, _visti = [], set()
@@ -2218,13 +2236,34 @@ def main():
     # dedicate/Arena All Stars (priorita' piu' alta), ma PRIMA di
     # ALLSTARS_U23/ALLSTARS (priorita' piu' bassa) -- vedi fix sopra.
     _n_eff = int(os.environ.get('ARENE_EFFICIENTI', '0') or 0)
-    if _n_eff > 0:
+    # ESSENZE_ARENA (12/08/2026, richiesta esplicita utente): tetto in
+    # essenze sul costo cumulato d'ingresso delle arene efficienti, ALTERNATIVO
+    # o AGGIUNTIVO al numero massimo (ARENE_EFFICIENTI). Se entrambi sono
+    # impostati valgono INSIEME (si ferma al primo che scatta -- ne' piu' di
+    # 'arene' arene, ne' piu' di 'essenze_arena' essenze spese): non e' un
+    # OR ne' una sostituzione, sono due vincoli simultanei sullo stesso loop
+    # (vedi genera_arene_efficienti). Se solo il budget e' impostato, il tetto
+    # sul NUMERO diventa una stima generosa (budget // costo minimo fra i tipi
+    # in gioco) che non limita nulla di suo: a fermare il loop ci pensa il
+    # budget stesso o "nessun tipo rende piu'", come sempre.
+    _essenze_arena = int(os.environ.get('ESSENZE_ARENA', '0') or 0)
+    if _n_eff > 0 or _essenze_arena > 0:
         _tipi = [t for t in PRIORITY_ORDER if _is_arena_type(t)]
-        print(f"\n=== ARENE EFFICIENTI: fino a {_n_eff}, tipo scelto dal bot")
+        _budget_essenze = _essenze_arena if _essenze_arena > 0 else None
+        if _n_eff > 0:
+            _massimo_arene = _n_eff
+        else:
+            _costo_minimo = min((COSTO_INGRESSO.get(t, 300) for t in _tipi), default=100)
+            _massimo_arene = max(1, _essenze_arena // _costo_minimo)
+        if _budget_essenze is not None:
+            print(f"\n=== ARENE EFFICIENTI: fino a {_massimo_arene if _n_eff > 0 else 'quante ci stanno nel budget'}, "
+                  f"budget {_budget_essenze} essenze, tipo scelto dal bot")
+        else:
+            print(f"\n=== ARENE EFFICIENTI: fino a {_massimo_arene}, tipo scelto dal bot")
         print("Nessun tipo e' disattivato: quelli che non rendono non vengono")
         print("scelti, e torneranno appena il mazzo li rendera' convenienti.")
-        all_results.extend(genera_arene_efficienti(_tipi, _n_eff, role_data,
-                                                   pools, card_pool))
+        all_results.extend(genera_arene_efficienti(_tipi, _massimo_arene, role_data,
+                                                   pools, card_pool, budget_essenze=_budget_essenze))
 
     # Solo ora ALLSTARS_U23/ALLSTARS, sul pool residuo (fix sopra).
     for tipo in PRIORITY_ORDER:
