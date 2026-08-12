@@ -21,20 +21,19 @@ on:
 
 defaults:
   run:
-    # PERCORSO ESPLICITO, non "bash" (12/08/2026, primo tentativo fallito con
-    # "bash: command not found"). Il servizio del runner gira con il PATH di
-    # sistema, dove Git Bash NON c'e': e' nel PATH dell'utente, non in quello
-    # del servizio. Indicarlo per esteso evita di dover toccare il PATH di
-    # sistema, che e' una modifica globale alla macchina per un problema che
-    # riguarda solo noi.
-    # Il "-e {0}" e' la forma che GitHub si aspetta: -e = esci al primo
-    # comando fallito (come fa la shell dei runner Linux), {0} = il file di
-    # script che il runner genera per lo step.
-    # Barre NORMALI, non rovesciate (12/08/2026, secondo tentativo): con
-    # 'C:\Program Files\...' il runner risponde "Second path fragment must not
-    # be a drive or UNC name" -- prova a combinare il percorso invece di
-    # eseguirlo. Con le barre in avanti e' la forma degli esempi GitHub.
-    shell: 'C:/Program Files/Git/bin/bash.exe -e {0}'
+    # bash SEMPLICE (12/08/2026, terzo tentativo, quello buono).
+    # I due falliti, perche non si ripetano:
+    #   shell: bash                 -> "bash: command not found"
+    #   shell: <percorso>/bash.exe  -> "Second path fragment must not be a
+    #                                  drive or UNC name"
+    # Il runner non accetta un percorso assoluto come shell personalizzata,
+    # ne con le barre rovesciate ne con quelle in avanti.
+    # La strada giusta e rendere bash raggiungibile dal SERVIZIO, che gira
+    # col PATH di sistema dove Git Bash non c e (sta in quello utente).
+    # Fatto con il file .path nella cartella del runner: e il meccanismo
+    # previsto apposta, definisce il PATH dei job e ci abbiamo messo davanti
+    # la cartella bin di Git. Non tocca il PATH di sistema.
+    shell: bash
 
 jobs:
   prova:
