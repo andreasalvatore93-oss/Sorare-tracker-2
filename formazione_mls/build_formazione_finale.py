@@ -116,6 +116,15 @@ KICKOFF_RE = re.compile(r'^KICKOFF:\s+(\S+)\s*$')
 # pool; i punti mostrati/sommati restano 'atteso'. Riga opzionale: sui
 # consigli generati prima si continua a ordinare per 'atteso'.
 ORDINAMENTO_RE = re.compile(r'^ORDINAMENTO:\s+(-?[\d.]+)\s*$')
+# NUOVO (12/08/2026, richiesta esplicita utente): riga "AMBIGUO: si" scritta
+# da build_consiglio_<ruolo>.py quando il predict aveva trovato due partite
+# future con odds pubblicate insieme (caso Freese, 10/08 --
+# _prossima_partita_vera in test_gk.py e affini). Prima il badge esisteva
+# solo in scouting_gw.py (che lo legge direttamente dai prediction_*.txt);
+# qui arriva via il consiglio aggregato, quindi vale anche per il
+# generatore. Riga opzionale: assente = 'ambiguo' resta False, nessuna
+# regressione sui consigli vecchi.
+AMBIGUO_RE = re.compile(r'^AMBIGUO:\s*si\s*$')
 
 DEFAULT_NUM_FORMAZIONI = 1
 
@@ -858,7 +867,7 @@ def parse_consiglio(path):
                 slug, atteso, low, high = m.groups()
                 pending = {'slug': slug, 'atteso': int(atteso), 'low': int(low), 'high': int(high),
                            'team_slug': None, 'opponent_team_slug': None, 'ordinamento': None,
-                           'kickoff': None, 'opp_factor': None}
+                           'kickoff': None, 'opp_factor': None, 'ambiguo': False}
                 continue
             m = ORDINAMENTO_RE.match(stripped)
             if m and pending:
@@ -877,6 +886,10 @@ def parse_consiglio(path):
             m = OPP_FACTOR_RE.match(stripped)
             if m and pending:
                 pending['opp_factor'] = float(m.group(1))
+                continue
+            m = AMBIGUO_RE.match(stripped)
+            if m and pending:
+                pending['ambiguo'] = True
         if pending:
             rows.append(pending)
     return rows
@@ -1845,7 +1858,8 @@ def _team_vs_opponent_html(team_slug, opponent_team_slug, opp_factor):
 
 
 def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool,
-                      team_slug=None, opponent_team_slug=None, opp_factor=None, starter_odds=None):
+                      team_slug=None, opponent_team_slug=None, opp_factor=None, starter_odds=None,
+                      ambiguo=False):
     """Contenuto dinamico di una pcard (tutto tranne striscia colore/ruolo/
     badge capitano, che restano legati allo SLOT, non al giocatore) --
     fattorizzato (28/07) per essere riusato SIA per la carta reale SIA per
@@ -1861,6 +1875,14 @@ def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool,
     odds_html = (f'<div class="pcard-odds">Odds: {starter_odds:.0%}</div>'
                  if starter_odds is not None else '')
     match_html = _team_vs_opponent_html(team_slug, opponent_team_slug, opp_factor)
+    # Badge "fixture ambigua" (12/08/2026, richiesta esplicita utente): stesso
+    # marker AMBIGUO_FIXTURE gia' mostrato in scouting_gw.py (caso Freese, due
+    # partite future con odds pubblicate insieme -- vedi HANDOFF_UNIFICATO
+    # §10bis). title= per il tooltip, niente testo lungo in carta.
+    ambiguo_html = ('<div class="pcard-ambiguo" title="Due partite future con '
+                     'odds pubblicate insieme: l\'atteso potrebbe riferirsi alla '
+                     'partita sbagliata (caso Freese, 10/08).">⚠ Fixture ambigua</div>'
+                     if ambiguo else '')
     return (
         f'<span class="pcard-fatto">OK</span>'
         f'<div class="pcard-avatar">{_slug_initials(slug)}</div>'
@@ -1870,6 +1892,7 @@ def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool,
         f'{l10_html}'
         f'{odds_html}'
         f'{match_html}'
+        f'{ambiguo_html}'
         f'<div class="pcard-tags">{tags_html}</div>'
     )
 
@@ -1886,7 +1909,8 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain, apply_xp_bon
     l10 = card_pool.l10(row['slug'])
     body_html = _pcard_body_html(row['slug'], row['atteso'], row['low'], row['high'], l10, tags_html, card_pool,
                                   team_slug=row.get('team_slug'), opponent_team_slug=row.get('opponent_team_slug'),
-                                  opp_factor=row.get('opp_factor'), starter_odds=row.get('starter_odds'))
+                                  opp_factor=row.get('opp_factor'), starter_odds=row.get('starter_odds'),
+                                  ambiguo=row.get('ambiguo', False))
     # data-body (28/07): l'HTML esatto della pcard-body per QUESTO giocatore,
     # gia' pronto -- il drag&drop lato client lo scambia con quello di
     # un'alternativa senza ricalcolare nulla in JS (vedi script nel template).
@@ -2061,6 +2085,11 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   .pcard-l10 {{ font-size: 0.5rem; color: var(--muted-2); font-variant-numeric: tabular-nums; }}
   .pcard-odds {{ font-size: 0.85rem; font-weight: 800; color: #3a9de0; font-variant-numeric: tabular-nums; }}
   .pcard-match {{ font-size: 0.62rem; color: var(--text); opacity: 0.85; line-height: 1.3; text-align: center; }}
+  .pcard-ambiguo {{
+    font-size: 0.55rem; font-weight: 700; color: #f0a83b;
+    background: rgba(240,168,59,0.16); border-radius: 4px; padding: 1px 5px;
+    text-align: center; cursor: help;
+  }}
   .pcard-tags {{ display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; min-height: 14px; }}
   .tag {{ font-size: 0.5rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; }}
   .tag-classic {{ background: rgba(240,168,59,0.16); color: #f0a83b; }}

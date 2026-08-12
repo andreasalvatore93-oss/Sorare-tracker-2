@@ -1,0 +1,209 @@
+BRIEF PER SONNET ESECUTORE — 12/08/2026 sera
+Mittente: nuovo orchestratore Sonnet Alto, sessione FRESCA (nessuna memoria
+di questa conversazione). Tre compiti separati, stesso file perche' piccoli
+e slegati fra loro. Fai il primo, poi il secondo, poi il terzo, in ordine:
+non sono urgenti in un ordine diverso ma il primo tocca la produzione, gli
+altri due sono solo verifica.
+
+PRIMA DI INIZIARE, leggi: CLAUDE.md (tutto, e' corto), e questo file per
+intero prima di scrivere codice.
+
+================================================================================
+COMPITO 1 — NUOVO INPUT "essenze da investire" per genera_arene_efficienti
+================================================================================
+SI IMPLEMENTA DIETRO UN NUOVO PARAMETRO, NESSUN COMPORTAMENTO ESISTENTE
+CAMBIA SE NON LO SI USA: il default deve lasciare tutto bit-per-bit identico
+a oggi (stesso identico input non passato = stesso identico comportamento
+di ARENE_EFFICIENTI oggi).
+
+Cosa c'e' oggi (letto nel codice, non a memoria):
+- `generatore_formazioni/build_formazione_globale.py:1524` -
+  `genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool)`: ad
+  ogni passo prova TUTTI i tipi arena, tiene il migliore per resa in essenze
+  (o resa/essenza se ARENA_CRITERIO=capitale, riga 1575), si ferma quando
+  `migliore[0] <= 0` O quando ha fatto `massimo` iterazioni (riga 1547,
+  `for _ in range(max(0, massimo))`).
+- Chiamata da `main()` a riga 2211: `_n_eff = int(os.environ.get(
+  'ARENE_EFFICIENTI', '0') or 0)`, poi `genera_arene_efficienti(_tipi, _n_eff,
+  ...)`. `_n_eff` e' oggi un NUMERO DI ARENE, non un budget.
+- Costi/rese per tipo gia' in produzione, righe 925-930:
+  `COSTO_INGRESSO = {'ARENA_ALLSTARS_260': 300, 'ARENA_ALLSTARS_220': 200,
+  'ARENA_ALLSTARS_UNCAPPED': 300, 'ARENA_ALLSTARS_ELITE': 800,
+  'ARENA_ALLSTARS_BEGINNER': 100}` (+ le arene dedicate per lega, 300 ciascuna,
+  riga 930).
+- Workflow: `.github/workflows/formazione_giornata.yml:31-34` definisce
+  l'input `arene` (mappato su `ARENE_EFFICIENTI` alle righe 153 e 516).
+
+COSA VUOLE L'UTENTE: un secondo input opzionale, "numero di essenze da
+investire in arena" (intero, es. 3000). Quando presente, il vincolo di
+STOP nel loop di `genera_arene_efficienti` non e' piu' (o non SOLO) "ho
+fatto `massimo` arene", ma "il costo cumulato delle arene scelte finora +
+il costo della prossima arena migliore supererebbe il budget". Esempio
+dell'utente: con 3000 essenze puo' uscire 10x cap260 (10x300=3000) oppure
+4x260+4xuncapped+2xbeginner (1200+1200+200=2600, si ferma li' se la
+prossima non ci sta O non e' efficiente) — il mix lo decide comunque
+l'algoritmo esistente (piu' efficiente prima), il budget e' SOLO un tetto
+aggiuntivo, non cambia il criterio di scelta. Resta valido SEMPRE il
+criterio "genera solo se efficiente" (soglia `migliore[0] <= 0`, riga
+1581): un budget residuo non spende mai su un'arena che non conviene.
+
+Collegamento al SUPPLETIVO (riga 2219-2280, EXTEND_ODDS_060_070): oggi il
+suppletivo scatta se non si sono riempiti gli SLOT richiesti
+(`_shortfall_arene = richiesti - generati`, riga 2233). Con un budget in
+essenze invece che in numero di arene, "richiesti" per il ramo arena non e'
+piu' un intero fisso in partenza (dipende da quali tipi sceglie
+l'algoritmo) — va deciso come calcolare lo shortfall in questo caso
+(probabilmente: essenze budget rimaste dopo la tornata primaria, oppure
+numero di arene EFFETTIVAMENTE generate rispetto a una stima "se tutte
+fossero state la piu' economica" — DECIDI TU l'approccio piu' semplice che
+non rompe il caso classico, e SCRIVILO nel commento del codice, con la
+motivazione).
+
+IMPLEMENTAZIONE SUGGERITA (non vincolante, usa il tuo giudizio se trovi di
+meglio):
+1. Nuovo parametro opzionale `budget_essenze=None` in
+   `genera_arene_efficienti`. Se `None`, comportamento INVARIATO (nessun
+   controllo di budget, solo `massimo`). Se valorizzato, nel loop tieni un
+   `speso = 0` e, prima di accettare `migliore`, verifica
+   `speso + COSTO_INGRESSO[tipo] <= budget_essenze`; se lo sfora quel tipo
+   NON e' candidabile in quel passo (va escluso dal confronto fra tipi di
+   QUEL passo, non fermare tutto il loop: un'altra arena piu' economica
+   potrebbe ancora starci). Se NESSUN tipo rientra nel budget residuo,
+   fermati (come oggi quando `migliore is None`).
+2. Nuova env var `ESSENZE_ARENA` (int, default vuoto/0 = nessun vincolo),
+   letta in `main()` accanto a `_n_eff`. Se valorizzata, passa
+   `budget_essenze=quel_valore` E lascia `massimo` con un tetto alto
+   (es. il numero massimo di arene teoricamente comprabili col budget alla
+   tariffa piu' bassa, 100 essenze/Beginner, cosi' il `range(massimo)` del
+   loop non ferma prima il conteggio) — occhio a non rompere il caso in cui
+   SIA `arene` SIA `essenze_arena` sono passati insieme: decidi tu quale
+   vince o se si combinano (es. il piu' stringente dei due), e SCRIVILO nel
+   commento.
+3. Nuovo input workflow `essenze_arena` (stessa sezione di `arene`,
+   `.github/workflows/formazione_giornata.yml:31-34`, + i due punti dove
+   `arene`/`ARENE_EFFICIENTI` sono passati come env, righe 153 e 516 —
+   cercali con grep, potrebbero essere in job diversi, controlla che siano
+   solo questi due), mappato su `ESSENZE_ARENA`.
+
+TEST OBBLIGATORIO PRIMA DI CONSEGNARE (interruttore spento = identico a
+oggi):
+- A/A: `ESSENZE_ARENA` non impostata (o vuota) -> stesso identico output di
+  oggi a parita' di `ARENE_EFFICIENTI` e mazzo (usa un dataset locale
+  qualsiasi gia' disponibile, es. GW4 corrente se hai le carte scaricate,
+  altrimenti un mock minimo — non serve rete).
+- Test funzionale: con un budget piccolo (es. 3-4 arene equivalenti) e un
+  pool che permetterebbe piu' arene di quel budget in numero, verifica che
+  si fermi rispettando il budget e non il conteggio.
+- Dump leggibile: quali arene ha scelto, tipo per tipo, costo cumulato passo
+  per passo — consegnalo insieme al risultato, non tenerlo per te.
+
+NON FARE: non toccare `ARENA_CRITERIO`/`PAREGGIO_ARENA`/`GUADAGNO_PER_PUNTO`
+(sono la logica di efficienza, va lasciata intonsa); non cambiare il
+default di `ARENE_EFFICIENTI`; non lanciare run GitHub (solo test locale).
+
+================================================================================
+COMPITO 2 — Controllo del meccanismo "usa solo carte non schierate"
+================================================================================
+Domanda dell'utente: il generatore garantisce DAVVERO che una carta usata in
+una formazione non venga riusata in un'altra formazione della stessa run?
+Verifica leggendo il codice (non fidarti di commenti/docstring, controlla il
+comportamento vero):
+- La classe `CardPool` (`formazione_mls/build_formazione_finale.py`, cerca
+  `class CardPool` — e' l'UNICA copia in uso, vedi nota sotto) traccia le
+  copie residue per slug. Verifica che ogni punto che assegna una carta a
+  uno slot DECREMENTI il pool PRIMA che la carta successiva possa essere
+  scelta (non dopo, non in un passo separato che si puo' saltare).
+- Verifica il flag `ESCLUDI_LOCKATE` (`.github/workflows/formazione_
+  giornata.yml`, cerca `escludi_lockate`; codice in
+  `generatore_formazioni/build_formazione_globale.py`, cerca
+  `ESCLUDI_LOCKATE`): quando ACCESO, le carte gia' bloccate in una
+  formazione REALE su Sorare (`canEdit=false`) vengono escluse dal pool
+  PRIMA della generazione — verifica che il default sia SPENTO (0) e cosa
+  succede se e' spento: le carte bloccate possono finire riproposte?
+  Questo e' rilevante per il compito 3 sotto.
+- Cerca in TUTTO `generatore_formazioni/build_formazione_globale.py` e
+  `formazione_mls/build_formazione_finale.py` ogni punto che fa una copia o
+  un ripristino del pool (`_istantanea_pool`/`_ripristina_pool`, gia' visti
+  in `genera_arene_efficienti` righe 1553/1558): un ripristino chiamato nel
+  posto sbagliato potrebbe far "resuscitare" una carta gia' assegnata in una
+  formazione precedente. Traccia ogni chiamata e verifica che i ripristini
+  avvengano SOLO sulle prove scartate (i tentativi "a vuoto" per capire quale
+  tipo arena conviene), mai sulle formazioni poi tenute.
+- NOTA architetturale (trovata oggi dall'orchestratore, verificala tu):
+  `generatore_formazioni/build_formazione_globale.py:67` importa SEMPRE E
+  SOLO `formazione_mls/build_formazione_finale.py` come `bff` — le altre 25
+  copie per-lega di quel file sembrano non pesare sulla produzione. Se e'
+  vero, `CardPool` vive in un solo posto, non 26 — piu' facile da
+  verificare, ma controlla comunque che non ci sia un secondo punto di
+  ingresso che ne usi una copia diversa.
+
+CONSEGNA: non serve un backtest, e' una lettura di codice + un test locale
+(genera un paio di formazioni con un pool piccolo apposta, es. 6-7 carte
+per 2 formazioni da 5 slot ciascuna, e verifica a mano che non ci siano
+sovrapposizioni). Riporta cosa hai trovato, comprese eventuali cose che
+FUNZIONANO gia' bene (non solo difetti).
+
+================================================================================
+COMPITO 3 — McAllister schierato con partita gia' iniziata (bug strutturale?)
+================================================================================
+Caso reale dell'utente: ieri una run ha rimesso in formazione McAllister
+nonostante la sua partita fosse gia' iniziata (quindi non avrebbe dovuto
+comparire per NESSUNA prossima partita disponibile).
+
+QUESTO POTREBBE ESSERE LA STESSA CLASSE DI BUG del caso Freese (10/08,
+vedi `docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md`, cerca "Freese" — bug in
+`anyFutureGames`/`_prossima_partita_vera`, condiviso da tutti i predict:
+`formazione_<lega>/predict/test_{gk,def,mid,fwd}.py`, funzione
+`_prossima_partita_vera` — es. `formazione_mls/predict/test_mid.py:1513`).
+Quel bug era stato dichiarato FIXATO e propagato a tutti i predict (commit
+`8e6e1df8a7`, §10bis del riassunto unificato) — l'orchestratore aveva
+tolto la voce dalle cose da fare su richiesta dell'utente PRIMA di questo
+brief. Se il tuo test mostra che e' RICOMPARSO, e' un'informazione
+importante: dillo chiaro, non dare per scontato che sia gia' chiuso.
+
+MA potrebbe anche essere un bug DIVERSO: non "quale prossima partita sceglie
+il predict" ma "il generatore non esclude una carta gia' schierata/bloccata
+o gia' giocata dal pool" (vedi compito 2, `ESCLUDI_LOCKATE`). Le due cause
+sono distinguibili: se McAllister non ha PROPRIO piu' partite future (la sua
+GW4 e' l'ultima disponibile finche' non c'e' un nuovo calendario), il
+problema e' che il predict/generatore lo tratta come schierabile quando non
+dovrebbe esistere alcun "prossimo atteso" per lui in questa finestra — non
+e' un problema di pool/lock, e' un problema di "chi e' candidabile".
+
+COME VERIFICARE (l'utente dice: "ho poche carte disponibili, la maggior
+parte gia' schierate, ma puoi testare se schiera qualcosa di gia' bloccato o
+gia' giocato" — usa la GW4 corrente, genera formazioni in locale, NESSUNA
+run GitHub):
+1. Trova la squadra/lega di McAllister (cerca lo slug esatto nei file di
+   predizione/consiglio piu' recenti, `formazione_*/output/**/prediction_
+   *mcallister*.txt` o simile — se non lo trovi per nome esatto, chiedi
+   all'utente lo slug preciso PRIMA di procedere, non indovinare).
+2. Guarda il file di predizione piu' recente per quello slug: cosa dice la
+   riga `Data:` (kickoff usato)? E' nel passato rispetto a ORA (ora reale,
+   non la finestra della giornata)? Se si', e il file e' stato scritto DOPO
+   l'inizio di quella partita, la domanda e': quella partita era l'UNICA
+   `anyFutureGames` disponibile per lui in quel momento, o ce n'era
+   un'altra piu' avanti che lo script ha ignorato (replica esatta del caso
+   Freese)?
+3. Genera in locale una run con il pool disponibile oggi (poche carte, va
+   bene) e verifica se lo slug di McAllister compare in una formazione
+   proposta. Se compare, riporta ESATTAMENTE con che dati (score, kickoff
+   letto) — dump leggibile, non solo "compare/non compare".
+4. Se confermi che e' un problema di "prossima partita" (non di pool/lock),
+   verifica se il fix `_prossima_partita_vera` di 10/08 gestisce il suo
+   caso specifico o ha un buco (es. competizioni diverse che lo script non
+   distingue, come il caso Freese con la Leagues Cup).
+
+NON FARE: non modificare `test_gk.py`/`test_mid.py`/`test_def.py`/
+`test_mls_fwd_all.py` finche' non hai un caso RIPRODOTTO e capito — e'
+codice condiviso da produzione E scouting (§8ter del riassunto unificato),
+un fix va valutato con l'utente prima di toccarlo, non deciso da solo.
+
+================================================================================
+DOVE SCRIVERE L'ESITO
+================================================================================
+In coda a questo stesso file (non crearne uno nuovo). Committa solo i file
+che tocchi per il compito 1 (codice) — compiti 2 e 3 sono verifica, se non
+tocchi codice non c'e' nulla da committare per quelli. Alla fine, massimo
+5 righe di riepilogo per l'utente in chat: cosa hai fatto, cosa hai
+trovato, cosa resta aperto.

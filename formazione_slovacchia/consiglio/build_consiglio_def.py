@@ -4,7 +4,7 @@ i file prediction_<slug>_*.txt gia' prodotti dal job matrix (uno per
 giocatore). Nessun dump completo: poche righe, ordine di schieramento.
 
 Clone esatto di build_consiglio.py (attaccanti), adattato a mls_def_all/ e
-slovacchia_def_discovery/.
+mls_def_discovery/.
 """
 import os
 import re
@@ -13,11 +13,13 @@ import glob
 import datetime
 
 OUTPUT_DIR = 'formazione_slovacchia/output/slovacchia_def_all'
-# CONSIGLIO_DISCOVERY_FILE (30/07, tema Best Five; propagato qui il 31/07):
-# override opzionale -- permette a best_five.py di puntare al pool GLOBALE
-# (i sopravvissuti al prefiltro, non i posseduti) senza duplicare qui la
-# logica di parsing/sort gia' scritta in questo file. Se non impostata,
-# comportamento INVARIATO (posseduti, come sempre).
+# CONSIGLIO_DISCOVERY_FILE (30/07, tema Best Five): override opzionale --
+# permette a best_five.py di puntare al pool GLOBALE (i sopravvissuti al
+# prefiltro, non i posseduti) senza duplicare qui la logica di parsing/sort
+# gia' scritta in questo file -- un solo posto da mantenere quando cambia
+# (vedi 'Revert score_ordinamento' 30/07, che aveva reso obsoleto il ranking
+# per ORDINAMENTO duplicato in best_five.py). Se non impostata, comportamento
+# INVARIATO (posseduti, come sempre).
 DISCOVERY_FILE = os.environ.get('CONSIGLIO_DISCOVERY_FILE') or os.path.join('formazione_slovacchia/output/slovacchia_def_discovery', 'player_slugs.json')
 
 # Pattern della riga "N) slug: X pt attesi (low-high)" gia' scritta da
@@ -49,6 +51,12 @@ KICKOFF_RE = re.compile(r'^Data:\s+(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\s*$')
 # restano lo score atteso (miglior stima del punteggio). Riga opzionale: se
 # manca (file generati dalla versione precedente) si ordina come prima.
 ORDINAMENTO_RE = re.compile(r'^ORDINAMENTO:\s+(-?[\d.]+)\s*$')
+# NUOVO (12/08/2026, richiesta esplicita utente): marker gia' scritto dai
+# predict (test_gk.py e affini, riga "   AMBIGUO_FIXTURE: si" -- caso Freese,
+# due partite future con odds pubblicate insieme). Oggi lo leggeva solo
+# scouting_gw.py direttamente dai prediction_*.txt; portato qui per farlo
+# arrivare anche al generatore/Best Five via il consiglio aggregato.
+AMBIGUO_RE = re.compile(r'^AMBIGUO_FIXTURE:\s*si\s*$')
 
 
 def latest_file_for_slug(slug):
@@ -67,6 +75,7 @@ def parse_player_file(path):
     opp_factor = None
     kickoff = None
     ordinamento = None
+    ambiguo = False
     for line in content.splitlines():
         stripped = line.strip()
         m = CONSIGLIO_RE.match(stripped)
@@ -91,6 +100,10 @@ def parse_player_file(path):
         if m:
             opp_factor = float(m.group(1))
             continue
+        m = AMBIGUO_RE.match(stripped)
+        if m:
+            ambiguo = True
+            continue
         m = ESCLUSO_RE.match(stripped)
         if m:
             slug, status, note = m.groups()
@@ -102,6 +115,7 @@ def parse_player_file(path):
         consiglio['kickoff'] = kickoff
         consiglio['opp_factor'] = opp_factor
         consiglio['ordinamento'] = ordinamento
+        consiglio['ambiguo'] = ambiguo
         return consiglio
     return None
 
@@ -125,14 +139,15 @@ def main():
         else:
             excluded_count += 1
 
-    # Ordina per lo score di ordinamento (senza shrinkage) -- vedi ORDINAMENTO_RE
-    # sopra. Il fallback e' TUTTO-O-NIENTE: i due score vivono su scale diverse
-    # (senza shrinkage la dispersione fra giocatori e' piu' ampia), quindi
-    # mescolarli nella stessa sort confronterebbe grandezze non omogenee. Se anche
-    # un solo giocatore non ha la riga, si ordina tutto per pt attesi come prima.
-    # REVERTITO (30/07, richiesta esplicita utente, stesso motivo di
-    # formazione_mls/consiglio/build_consiglio_def.py): si ordina sempre per
-    # 'atteso' (score mostrato), non piu' per 'ordinamento' senza shrinkage.
+    # REVERTITO (30/07, richiesta esplicita utente, caso reale Wanderson Best
+    # Five K League: titolare a 47pt preferito a backup 58pt con storico 7x
+    # piu' lungo): il ritest di oggi con dataset molto piu' ampio/pulito
+    # (measure_reliability_vs_score_allroles.py / selection_quality_
+    # shrinkage_allroles.py, DEF 328 giornate/16 leghe vs le 123/1 lega del
+    # 27/07) mostra che ordinare SENZA shrinkage non batte piu' lo score
+    # mostrato (lift 19.5% vs 20.4% -- si e' invertito rispetto a fine
+    # luglio, campione di allora gia' segnalato come "sottile"). Si ordina
+    # sempre per 'atteso' (lo stesso score mostrato), come GK/MID.
     ok_rows.sort(key=lambda r: r['atteso'], reverse=True)
 
     lines = []
@@ -147,6 +162,8 @@ def main():
             lines.append(f"   AVV_FACTOR: {r['opp_factor']:.3f}")
         if r.get('kickoff'):
             lines.append(f"   KICKOFF: {r['kickoff']}")
+        if r.get('ambiguo'):
+            lines.append("   AMBIGUO: si")
         # Propagata a build_formazione_finale/globale, che ordinano i pool.
         if r.get('ordinamento') is not None:
             lines.append(f"   ORDINAMENTO: {r['ordinamento']:.2f}")

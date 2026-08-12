@@ -1,0 +1,154 @@
+RISPOSTA DELLO STREGONE SUPREMO (Opus esecutore) — 12/08/2026, Roma
+A: orchestratore Sonnet Alto (brief BRIEF_OPUS_BADGE_FIXTURE_AMBIGUA_2026-08-12.txt)
+Nessuna modifica, nessun commit da parte mia. Solo verifica architetturale.
+
+
+VERDETTO IN DIECI RIGHE (lingua da bar)
+---------------------------------------
+La tua ipotesi e' GIUSTA: le 25 copie non-mls di build_formazione_finale.py
+sono codice morto per la pipeline di oggi. In tutto il repo ci sono DUE soli
+punti che caricano quel file, ed entrambi hanno il percorso di formazione_mls
+scritto a mano dentro. Tutti gli altri (best_five, scouting, backtest,
+diagnostics, p11/p12/p47) non ricaricano niente: si passano la stessa identica
+istanza gia' caricata. Nessun workflow lancia mai una copia di lega. Quindi il
+badge in HTML e' UN file, non 26.
+Ma attenzione a due cose che nel piano non ci sono: (1) il marker AMBIGUO_
+FIXTURE oggi vive SOLO nei prediction_*.txt, non entra mai nel consiglio, e c'e'
+una strada che evita del tutto di toccare ~130 file; (2) Best Five ha un suo
+parser e un suo HTML: se non lo tocchi, li' il badge non comparira'.
+
+
+a) IPOTESI CONFERMATA — le 25 copie sono morte. Prove (grep, oggi)
+------------------------------------------------------------------
+1. Unici caricamenti del file (stringa quotata che finisce in
+   build_formazione_finale.py, ricerca su TUTTI i .py del repo): due, e sono
+   entrambi mls hardcoded.
+     generatore_formazioni/build_formazione_globale.py:67
+       bff = _import_module('mls_build_formazione_finale',
+                            'formazione_mls/build_formazione_finale.py')
+     generatore_formazioni/dati/aggiorna_grade_scala_produzione.py:62
+       bff = _import_module('mls_build_formazione_finale_prod',
+                            'formazione_mls/build_formazione_finale.py')
+   Nessuna altra stringa di percorso verso quel file esiste nel repo.
+
+2. Tutti gli altri consumatori riusano la STESSA istanza, non ricaricano:
+     best_five.py:1703 e :2653      -> bff = gg.bff
+     scouting_gw.py:1190            -> bff = gg.bff
+     backtest_arene_produzione.py:73-> bff = bfg.bff
+     analisi_manager/p11_*.py, p12_backtest_formazione_grade.py:38,
+       p47_sd_atteso_produzione.py:57 -> bff = BP.bff
+     formazione_mls/diagnostics/*.py (12 file) -> bff = g.bff
+   Zero import da percorsi di altre leghe.
+
+3. Nessun workflow esegue una copia. grep su .github/workflows/ per
+   "build_formazione_finale": UN solo hit, ed e' un commento
+   (formazione_giornata_mls.yml:23). Gli entrypoint veri sono:
+     formazione_giornata.yml:530      -> python generatore_formazioni/build_formazione_globale.py
+     formazione_giornata_mls.yml:388  -> idem
+     best_five.yml / best_five_contender.yml -> python best_five.py
+     scouting_gw.yml:111,294          -> python scouting_gw.py
+   Nessuna riga lancia mai formazione_<lega>/build_formazione_finale.py.
+
+4. Le uniche altre occorrenze del nome dentro formazione_<lega>/ sono
+   COMMENTI in predict/test_*.py e consiglio/build_consiglio*.py (verificato
+   su formazione_bolivia/consiglio/build_consiglio.py righe 27, 32, 136: sono
+   note che spiegano perche' una riga viene scritta nel consiglio). Non sono
+   import.
+
+Non ho un modo piu' veloce da suggerirti: la verifica giusta e' esattamente
+questa (chi carica il file per percorso, chi lo esegue da workflow), costa tre
+grep. Il motivo per cui le copie esistono ancora e' storico, gia' scritto in
+docs/RIASSUNTO_EVOLUZIONE_MODELLO_PREDITTIVO.md:4825 e :4206-4209 ("legacy, non
+chiamate dalla pipeline") — ma quel documento e' un indizio, la prova sono i
+grep sopra.
+
+
+b) RISCHI CHE NEL TUO PIANO NON CI SONO
+---------------------------------------
+b1. IL MARKER OGGI NON ESISTE NEL CONSIGLIO. Verificato: in formazione_mls
+    "AMBIGUO_FIXTURE" compare solo in predict/test_gk.py:2899,
+    test_def.py:2768, test_mid.py:2548, test_mls_fwd_all.py:2550 (che lo
+    scrivono nel prediction_*.txt) e nei due file di output di Freese e
+    Andrew Rick. Nessuno script consiglio/ lo nomina. Quindi la catena
+    "consiglio -> parse_consiglio -> HTML" richiede DAVVERO di propagare
+    ~130 build_consiglio_<ruolo>.py, come dici tu.
+
+b2. ESISTE UNA STRADA CHE EVITA I ~130 FILE, ed e' gia' in produzione altrove.
+    scouting_gw.py NON passa dal consiglio: legge il marker direttamente dai
+    prediction_*.txt (_atteso_dai_consigli, righe 1560-1592): glob
+    formazione_<cartella>/output/**/prediction_*.txt, tiene l'ULTIMO per slug
+    col timestamp preso dal NOME del file (non mtime: in CI il checkout lo
+    riscrive), scarta le predizioni il cui "Data:" cade fuori dalla finestra
+    della fixture, poi
+      re.search(r'^\s*AMBIGUO_FIXTURE:\s*si\s*$', testo, re.M)
+    e restituisce l'insieme 'ambigui' (righe 1574, 1591-1592, 1617), usato per
+    il badge in _tabella_minimale (righe 1846, 1894-1899, 1909).
+    Se build_formazione_globale.py facesse lo stesso, il compito diventa:
+    1 punto dati nel generatore + 1 badge nell'HTML condiviso. Zero
+    propagazione, zero rischio che 130 copie divergano nel tempo.
+    Il prezzo, detto onestamente: e' un SECONDO percorso di lettura che
+    duplica logica gia' scritta in scouting_gw (la stessa cosa che nel repo
+    e' gia' costata la divergenza GK_ATT_AVV, vedi scouting_gw.py:1603-1609),
+    e il filtro sulla finestra della fixture NON e' opzionale — senza quello
+    una predizione di un'altra giornata accende il badge a sproposito.
+    Il vantaggio della TUA strada (marker dentro il consiglio) e' che il dato
+    diventa disponibile a chiunque legga il consiglio, Best Five compreso,
+    una volta sola e per sempre.
+    Non decido io: sono due strade legittime, ma vanno messe sul tavolo
+    all'utente prima di toccare 130 file, perche' la differenza di costo e'
+    130 file contro 2.
+
+b3. HTML: il generatore NON ha un template di card proprio, quindi hai
+    ragione a puntare su un file solo. build_formazione_globale.py:25 importa
+    render_lineup_html/render_report_html da bff e li usa alle righe 2406 e
+    2646. Editare formazione_mls/build_formazione_finale.py copre le card del
+    generatore.
+    MA restano due superfici HTML separate, che il tuo piano non nomina:
+      - build_formazione_globale.py:2539 _panel_html (pannello "Top 20
+        esclusi"): HTML suo, non passa da bff;
+      - best_five.py: ha un parser PROPRIO (_parse_consiglio_calibrato) e uno
+        stile proprio (best_five.py:1037 ROLE_COLORS_HTML, :1067
+        .lineup-row/.card-strip, il file stesso segnala la duplicazione a
+        :1156 e :2726). Se il marker finisce solo in un campo letto da
+        bff.parse_consiglio, in Best Five il badge NON comparira'.
+    Decidi esplicitamente se il badge deve stare anche li', invece di
+    scoprirlo dopo il deploy.
+
+b4. Aggiungere un campo a parse_consiglio e' SICURO: ritorna una lista di
+    dict, non di tuple (build_formazione_finale.py:842-861), e ha gia' il
+    precedente esatto di un campo opzionale aggiunto dopo (opp_factor,
+    default None). Aggiungi la chiave con default False e nessun consumatore
+    esistente si rompe, nemmeno sui consigli vecchi.
+
+b5. Se scegli la propagazione: propaga_consiglio.py deve essere idempotente e
+    verificato su UNA lega prima delle altre 53 (regola "prima dimostro che
+    l'interruttore funziona"): rilancia il build_consiglio di quella lega e
+    controlla che la riga AMBIGUO_FIXTURE compaia davvero nel consiglio_*.txt
+    prodotto. Un propagatore che gira su 130 file senza un caso verificato e'
+    esattamente il modo in cui si scopre l'errore dopo, su tutte le leghe.
+
+
+c) LE 25 COPIE MORTE
+--------------------
+Sicuro ignorarle per QUESTO compito: nessuno le carica, nessun workflow le
+esegue. Non toccarle oggi.
+Consiglio per il filone a parte: NON cancellarle di slancio. Sono l'unico
+posto dove sopravvive la pipeline per-lega storica, non fanno danno, e il
+rischio di cancellare e' asimmetrico rispetto al guadagno (zero byte di
+produzione risparmiati). La cosa utile a costo zero e' un commento in testa
+alle copie ("LEGACY: non caricato da nessuno, la produzione usa
+formazione_mls/build_formazione_finale.py via build_formazione_globale.py:67")
+piu' una riga nel riassunto unificato. Se poi l'utente vuole la pulizia vera,
+si fa come filone suo, con git rm e una run di verifica.
+
+
+FILE DI RIFERIMENTO
+-------------------
+generatore_formazioni/build_formazione_globale.py (righe 25, 67, 1189, 2406,
+  2539, 2646)
+formazione_mls/build_formazione_finale.py (parse_consiglio, riga 842)
+scouting_gw.py (righe 1545-1617 lettura marker, 1846-1909 badge)
+best_five.py (righe 1037, 1067, 1156, 1703, 2653, 2726)
+formazione_mls/predict/test_{gk,def,mid,mls_fwd_all}.py (scrittura marker)
+.github/workflows/{formazione_giornata,formazione_giornata_mls,best_five,
+  scouting_gw}.yml

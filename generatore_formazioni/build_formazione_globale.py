@@ -2521,6 +2521,16 @@ def main():
         squadra = bff._short_team(row.get('team_slug'))
         avversario = bff._short_team(row.get('opponent_team_slug'))
         vs = f'{squadra} vs {avversario}' if row.get('team_slug') else 'N/D'
+        # Badge "fixture ambigua" (12/08/2026, richiesta esplicita utente),
+        # stesso marker AMBIGUO_FIXTURE del badge in pcard -- vedi
+        # build_formazione_finale.py:_pcard_body_html. Qui la tabella e'
+        # compatta, quindi solo un'icona col tooltip invece del testo lungo.
+        ambiguo_marker = (
+            '<span title="Fixture ambigua: due partite future con odds '
+            'pubblicate insieme, l\'atteso potrebbe riferirsi alla partita '
+            'sbagliata (caso Freese, 10/08)." style="cursor:help">⚠ </span>'
+            if row.get('ambiguo') else ''
+        )
         # punteggio spostato SUBITO dopo il numero, a sinistra del nome
         # (29/07, bug segnalato dall'utente: prima era in fondo a destra
         # e la colonna nome veniva tagliata con ellissi). Nome ora senza
@@ -2529,7 +2539,7 @@ def main():
         return (
             f'<tr><td style="padding:2px 6px 2px 0;color:var(--muted)">{i+1}.</td>'
             f'<td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">{(row.get("atteso") or 0):.1f} pt</td>'
-            f'<td style="padding:2px 6px 2px 0;white-space:normal">{player_names.get(row["slug"], row["slug"])}</td>'
+            f'<td style="padding:2px 6px 2px 0;white-space:normal">{ambiguo_marker}{player_names.get(row["slug"], row["slug"])}</td>'
             f'<td style="padding:2px 6px 2px 0;color:var(--muted)">{r}</td>'
             f'<td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;'
             f'max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" '

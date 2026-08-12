@@ -2053,12 +2053,22 @@ def scrivi_html(pool, dest, formazioni=(), minimal=False):
                 note.append("<span class='ko'>infortunato</span>")
             if scremati and g.get('idoneo') is False:
                 note.append("<span class='warn'>non 2su3</span>")
+            # Stesso avviso "fixture ambigua" gia' presente nella tabella
+            # minimale (12/08/2026, richiesta esplicita utente: copertura
+            # coerente anche nella tabella verdetto/"candidati" di questa
+            # modalita' non-minimale, che prima non lo mostrava).
+            avviso_ambiguo = (
+                " <span class='warn' title=\"Due partite future avevano gia' le "
+                "starter odds pubblicate insieme: scelta la piu' tardiva. "
+                "Verifica a mano se e' quella giusta (caso limite, vedi HANDOFF_"
+                "UNIFICATO_MODELLO_SCOUTING.md §8bis).\">⚠️</span>"
+            ) if g['slug'] in fixture_ambigue else ''
 
             pezzi.append(
                 "<tr>"
                 f"<td>{verdetto}</td>"
                 f"<td><a href='https://sorare.com/football/players/{g['slug']}' "
-                f"target='_blank' rel='noopener'>{(g.get('nome') or g['slug'])}</a></td>"
+                f"target='_blank' rel='noopener'>{(g.get('nome') or g['slug'])}</a>{avviso_ambiguo}</td>"
                 f"<td>{'/'.join(g['ruoli'])}</td>"
                 f"<td class='n'>{'&mdash;' if atteso is None else '%.1f' % atteso}</td>"
                 f"<td class='n'><a href='https://sorare.com/football/players/{g['slug']}/cards' "

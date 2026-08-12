@@ -44,6 +44,12 @@ KICKOFF_RE = re.compile(r'^Data:\s+(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\s*$')
 # calcolato senza shrinkage. Riga opzionale: se manca (file generati prima di
 # questo fix) si ordina come prima sui pt attesi.
 ORDINAMENTO_RE = re.compile(r'^ORDINAMENTO:\s+(-?[\d.]+)\s*$')
+# NUOVO (12/08/2026, richiesta esplicita utente): marker gia' scritto dai
+# predict (test_gk.py e affini, riga "   AMBIGUO_FIXTURE: si" -- caso Freese,
+# due partite future con odds pubblicate insieme). Oggi lo leggeva solo
+# scouting_gw.py direttamente dai prediction_*.txt; portato qui per farlo
+# arrivare anche al generatore/Best Five via il consiglio aggregato.
+AMBIGUO_RE = re.compile(r'^AMBIGUO_FIXTURE:\s*si\s*$')
 
 
 def latest_file_for_slug(slug):
@@ -62,6 +68,7 @@ def parse_player_file(path):
     opp_factor = None
     kickoff = None
     ordinamento = None
+    ambiguo = False
     for line in content.splitlines():
         stripped = line.strip()
         m = CONSIGLIO_RE.match(stripped)
@@ -86,6 +93,10 @@ def parse_player_file(path):
         if m:
             opp_factor = float(m.group(1))
             continue
+        m = AMBIGUO_RE.match(stripped)
+        if m:
+            ambiguo = True
+            continue
         m = ESCLUSO_RE.match(stripped)
         if m:
             slug, status, note = m.groups()
@@ -97,6 +108,7 @@ def parse_player_file(path):
         consiglio['kickoff'] = kickoff
         consiglio['opp_factor'] = opp_factor
         consiglio['ordinamento'] = ordinamento
+        consiglio['ambiguo'] = ambiguo
         return consiglio
     return None
 
@@ -140,6 +152,8 @@ def main():
             lines.append(f"   KICKOFF: {r['kickoff']}")
         if r.get('ordinamento') is not None:
             lines.append(f"   ORDINAMENTO: {r['ordinamento']:.2f}")
+        if r.get('ambiguo'):
+            lines.append("   AMBIGUO: si")
     lines.append("")
     lines.append(f"({excluded_count} esclusi/non disponibili questa giornata)")
 

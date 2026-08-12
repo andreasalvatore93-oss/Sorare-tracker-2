@@ -4,7 +4,7 @@ i file prediction_<slug>_*.txt gia' prodotti dal job matrix (uno per
 giocatore). Nessun dump completo: poche righe, ordine di schieramento.
 
 Clone esatto di build_consiglio.py (attaccanti), adattato a mls_mid_all/ e
-francia2_mid_discovery/.
+mls_mid_discovery/.
 """
 import os
 import re
@@ -13,11 +13,13 @@ import glob
 import datetime
 
 OUTPUT_DIR = 'formazione_francia2/output/francia2_mid_all'
-# CONSIGLIO_DISCOVERY_FILE (30/07, tema Best Five; propagato qui il 31/07):
-# override opzionale -- permette a best_five.py di puntare al pool GLOBALE
-# (i sopravvissuti al prefiltro, non i posseduti) senza duplicare qui la
-# logica di parsing/sort gia' scritta in questo file. Se non impostata,
-# comportamento INVARIATO (posseduti, come sempre).
+# CONSIGLIO_DISCOVERY_FILE (30/07, tema Best Five): override opzionale --
+# permette a best_five.py di puntare al pool GLOBALE (i sopravvissuti al
+# prefiltro, non i posseduti) senza duplicare qui la logica di parsing/sort
+# gia' scritta in questo file -- un solo posto da mantenere quando cambia
+# (vedi 'Revert score_ordinamento' 30/07, che aveva reso obsoleto il ranking
+# per ORDINAMENTO duplicato in best_five.py). Se non impostata, comportamento
+# INVARIATO (posseduti, come sempre).
 DISCOVERY_FILE = os.environ.get('CONSIGLIO_DISCOVERY_FILE') or os.path.join('formazione_francia2/output/francia2_mid_discovery', 'player_slugs.json')
 
 # Pattern della riga "N) slug: X pt attesi (low-high)" gia' scritta da
@@ -41,6 +43,12 @@ OPP_FACTOR_RE = re.compile(r'^Fattore forza avversario applicato:\s+([\d.]+)\s*$
 # giocatori con partita fra una settimana (che per giunta non hanno ancora le
 # starter odds, quindi passavano indenni anche il filtro sulla soglia).
 KICKOFF_RE = re.compile(r'^Data:\s+(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\s*$')
+# NUOVO (12/08/2026, richiesta esplicita utente): marker gia' scritto dai
+# predict (test_gk.py e affini, riga "   AMBIGUO_FIXTURE: si" -- caso Freese,
+# due partite future con odds pubblicate insieme). Oggi lo leggeva solo
+# scouting_gw.py direttamente dai prediction_*.txt; portato qui per farlo
+# arrivare anche al generatore/Best Five via il consiglio aggregato.
+AMBIGUO_RE = re.compile(r'^AMBIGUO_FIXTURE:\s*si\s*$')
 
 
 def latest_file_for_slug(slug):
@@ -58,6 +66,7 @@ def parse_player_file(path):
     team_slug = opp_slug = None
     opp_factor = None
     kickoff = None
+    ambiguo = False
     for line in content.splitlines():
         stripped = line.strip()
         m = CONSIGLIO_RE.match(stripped)
@@ -78,6 +87,10 @@ def parse_player_file(path):
         if m:
             opp_factor = float(m.group(1))
             continue
+        m = AMBIGUO_RE.match(stripped)
+        if m:
+            ambiguo = True
+            continue
         m = ESCLUSO_RE.match(stripped)
         if m:
             slug, status, note = m.groups()
@@ -88,6 +101,7 @@ def parse_player_file(path):
         consiglio['opponent_team_slug'] = None if opp_slug == 'N/D' else opp_slug
         consiglio['kickoff'] = kickoff
         consiglio['opp_factor'] = opp_factor
+        consiglio['ambiguo'] = ambiguo
         return consiglio
     return None
 

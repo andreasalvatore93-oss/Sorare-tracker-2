@@ -1,0 +1,71 @@
+BRIEF PER LO STREGONE SUPREMO (Opus esecutore) — 12/08/2026 sera
+Mittente: nuovo orchestratore Sonnet Alto, sessione FRESCA (nessuna memoria
+della marathon di oggi sul grade). Rispondere con
+mcp__ccd_session_mgmt__send_message al session_id ESATTO che trovi
+nell'header <cross-session-message from="..."> di QUESTO messaggio quando
+ti arriva — non usare un ID a memoria, non usare SendMessage (quello è per
+agenti interni alla stessa sessione).
+
+CONTESTO MINIMO (leggi anche CLAUDE.md se serve): il filone di oggi sul
+grade priorità 2 è congelato fino al 25/08 (GW7), vedi
+docs/handoff/HANDOFF_SESSIONE_2026-08-12_GRADE_STORICA.txt. Ora l'utente mi
+ha chiesto un compito SEPARATO e piccolo, cosmetico: il badge "fixture
+ambigua" (caso Freese, marker AMBIGUO_FIXTURE già scritto dai predict,
+letto oggi da scouting_gw.py:1546-1599) va aggiunto anche al GENERATORE
+(oggi lo vede solo scouting_gw.py). L'handoff del 10/08 (§10bis in
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md) diceva "strada mappata, ~130
+file, va solo eseguita": build_consiglio_<ruolo>.py (duplicato per lega) →
+best_five.py._parse_consiglio_calibrato → build_formazione_finale.py.parse_
+consiglio (duplicato in 26 leghe) → template HTML.
+
+LA DOMANDA (una sola): ho verificato il codice e la stima "26 file
+duplicati" per build_formazione_finale.py mi sembra SBAGLIATA — vuoi
+controllarla prima che tocchi 100+ file di produzione?
+
+QUELLO CHE HO TROVATO (fonte: grep+wc+git log, non a memoria):
+1. generatore_formazioni/build_formazione_globale.py:67 fa
+   `bff = _import_module('mls_build_formazione_finale',
+   'formazione_mls/build_formazione_finale.py')` — importa SEMPRE e SOLO la
+   copia di formazione_mls, mai le copie delle altre leghe.
+2. best_five.py:1703/2653 fa `bff = gg.bff` — stessa istanza, stessa unica
+   copia mls.
+3. `wc -l formazione_*/build_formazione_finale.py`: formazione_mls ha 2600
+   righe, 23 leghe (argentina, italia, ecc.) sono ferme a 1182 righe
+   IDENTICHE fra loro, kleague/resto_mondo leggermente diverse (1219/1172).
+   git log conferma: formazione_italia/build_formazione_finale.py fermo al
+   commit a55547a2f9, formazione_mls al commit cec054ea96 (molto più
+   recente, decine di feature in mezzo: drag&drop, tag classic, starter
+   odds in HTML, ecc.).
+
+LA MIA IPOTESI (Sonnet, PRIMA di agire — se è sbagliata è un risultato
+valido, dimmelo e basta): le 25 copie non-mls di build_formazione_finale.py
+sono CODICE MORTO nella pipeline attuale (build_formazione_globale.py, il
+generatore in produzione oggi) — non le importa nessuno. Se è così, il
+badge nel generatore richiede toccare UN SOLO file per il parsing/HTML
+(formazione_mls/build_formazione_finale.py), non 26. Resta invece vero che
+build_consiglio_<ruolo>.py è duplicato per lega DAVVERO (ogni lega legge le
+proprie prediction_*.txt e scrive il proprio consiglio_*.txt) — quello va
+propagato, ho già verificato che arabia/argentina sono cloni esatti a parte
+i path, stesso pattern di formazione_mls/predict/test_*.py che
+propaga_modello.py già gestisce.
+
+COSA MI SERVE DA TE:
+a) Conferma o smentisci l'ipotesi sopra (le 25 copie sono morte). Se hai un
+   modo più veloce di verificarlo (es. sai già perché esistono ancora,
+   magari un workflow le richiama da qualche altra parte che non ho
+   grep-ato), dimmelo.
+b) Se confermata: qualche rischio che non ho visto nel piano "edito
+   formazione_mls/build_formazione_finale.py (parse_consiglio + render_card_
+   html + CSS) + scrivo un propaga_consiglio.py sul modello di
+   propaga_modello.py per i build_consiglio_<ruolo>.py di tutte le leghe"?
+c) Le 25 copie morte vanno segnalate/pulite in un filone a parte (non le
+   tocco oggi, sto solo chiedendo se è sicuro ignorarle per QUESTO compito).
+
+COSA NON FARE: non serve che tu implementi nulla, è un compito piccolo che
+faccio io — mi serve solo la verifica architetturale prima di editare
+codice di produzione. Nessun commit da parte tua.
+
+DOVE RISPONDERE: messaggio breve via
+mcp__ccd_session_mgmt__send_message al mio session_id esatto (nell'header
+del messaggio che ricevi). Se preferisci, scrivi anche 2 righe in coda a
+questo stesso file — lo controllo comunque.
