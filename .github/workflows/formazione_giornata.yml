@@ -44,6 +44,10 @@ on:
         description: 'Numero di All Stars Under 23 da 7, priorita 4. 0 = nessuna.'
         required: false
         default: '0'
+      champions:
+        description: 'Numero di Champions da 7 (competizione nuova, apre GW5), priorita 5 -- ultima, dopo le All Stars. Regole identiche alle All Stars, pool ristretto ai 5 top campionati (Premier League, Bundesliga, LaLiga, Ligue 1, Serie A). 0 = nessuna.'
+        required: false
+        default: '0'
       arena_leghe_abilitate:
         description: 'Arene dedicate per lega (es. mls,kleague o "tutte"). Vuoto = disattivate (default): solo Arena All Stars.'
         required: false
@@ -523,6 +527,7 @@ jobs:
           IN_SEASON: ${{ github.event.inputs.in_season }}
           ALLSTARS: ${{ github.event.inputs.allstars }}
           ALLSTARS_U23: ${{ github.event.inputs.allstars_u23 }}
+          CHAMPIONS: ${{ github.event.inputs.champions }}
           ARENA_LEAGUES_ENABLED: ${{ github.event.inputs.arena_leghe_abilitate }}
           # Hardcoded (10/08, tolti dagli input per non confondere in fase di
           # lancio): LIST_UNUSED_CANDIDATES e' solo log, zero costo, sempre
