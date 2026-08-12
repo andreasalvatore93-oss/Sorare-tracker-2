@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T20:52:29.197910Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) alvaro-garcia-rivera: 53 pt attesi (32-73)
+   ORDINAMENTO: 54.88
+   SQUADRA: rayo-vallecano-madrid | AVVERSARIO: sevilla-sevilla-1890
+======================================================================
+
+######################################################################
+# GIOCATORE: alvaro-garcia-rivera
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: alvaro-garcia-rivera (squadra: rayo-vallecano-madrid)
+Generato: 2026-08-12T20:52:29.189899Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-15 | GIR vs RAY | laliga-es | score=69.3 | peso=0.099
+  2025-08-25 | ATH vs RAY | laliga-es | score=37.9 | peso=0.111
+  2025-08-31 | RAY vs FCB | laliga-es | score=42.1 | peso=0.125
+  2025-09-14 | OSA vs RAY | laliga-es | score=39.7 | peso=0.140
+  2025-09-21 | RAY vs CEL | laliga-es | score=69.5 | peso=0.157
+  2025-09-28 | RAY vs SEV | laliga-es | score=53.7 | peso=0.177
+  2025-11-01 | VIL vs RAY | laliga-es | score=35.5 | peso=0.198
+  2025-11-09 | RAY vs RMA | laliga-es | score=34.5 | peso=0.223
+  2025-11-23 | OVI vs RAY | laliga-es | score=30.8 | peso=0.250
+  2025-12-01 | RAY vs VCF | laliga-es | score=75.7 | peso=0.281
+  2025-12-15 | RAY vs BET | laliga-es | score=33.6 | peso=0.315
+  2025-12-21 | ELC vs RAY | laliga-es | score=53.6 | peso=0.354
+  2026-01-02 | RAY vs GET | laliga-es | score=39.8 | peso=0.397
+  2026-01-11 | RAY vs MLL | laliga-es | score=79.1 | peso=0.445
+  2026-01-18 | CEL vs RAY | laliga-es | score=44.2 | peso=0.500
+  2026-01-24 | RAY vs OSA | laliga-es | score=41.4 | peso=0.561
+  2026-02-01 | RMA vs RAY | laliga-es | score=72.5 | peso=0.630
+  2026-02-28 | RAY vs ATH | laliga-es | score=34.5 | peso=0.707
+  2026-03-04 | RAY vs OVI | laliga-es | score=91.8 | peso=0.794
+  2026-04-03 | RAY vs ELC | laliga-es | score=69.7 | peso=0.891
+  2026-04-12 | MLL vs RAY | laliga-es | score=48.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 55.72
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=21): 54.89 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 45.82 | Punteggio complessivo (granulari) medio: 9.90 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.86 (delta -0.43) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.03
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.5 - 75.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.56 (differenza: +3.48)
+Media score in casa: 55.45 | Media score fuori casa: 48.01
+Fattore casa/trasferta applicato: 0.994 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.3
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.003 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.994
+Fattore trend (media ultime 5: 63.4 vs media 5 PRECEDENTI: 51.6): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T19:30
+Casa: Sevilla FC | Trasferta: Rayo Vallecano
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.0 (range 31.8 - 73.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 54.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.69
+Punteggio REALE ottenuto in quella partita: 48.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      37.0    35.5     -1.5    14.8        SI
+   7        7      35.6    34.5     -1.1    15.3        SI
+   8        8      63.3    30.8    -32.5    15.3        NO
+   9        9      42.2    75.7    +33.5    15.5        NO
+  10       10      40.9    33.6     -7.3    19.5        SI
+  11       11      54.0    53.6     -0.4    19.1        SI
+  12       12      42.9    39.8     -3.1    17.9        SI
+  13       13      60.0    79.1    +19.1    16.8        NO
+  14       14      42.4    44.2     +1.8    20.3        SI
+  15       15      62.7    41.4    -21.3    19.1        NO
+  16       16      33.9    72.5    +38.6    18.1        NO
+  17       17      55.8    34.5    -21.3    19.2        NO
+  18       18      66.9    91.8    +24.9    19.1        NO
+  19       19      63.7    69.7     +6.0    23.9        SI
+  20       20      69.5    48.6    -20.9    23.1        SI
+
+MAE (errore assoluto medio): 15.55
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 53.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
