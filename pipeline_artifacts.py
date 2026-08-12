@@ -178,7 +178,24 @@ TARGET_MIN_S = 45.0
 # congelato in un'assegnazione statica. Il prezzo sono ~22s fissi di
 # checkout+setup per bin in piu' (45 bin = ~990 job-secondi = ~50s di wall a
 # 20 slot), che si ripagano al primo shard mal stimato evitato.
-N_BIN = 45
+# ABBASSATO da 45 a 20 il 12/08/2026, dopo aver misurato quanto costa DAVVERO
+# un bin in piu'. Il commento sopra contava solo i ~22s di checkout+setup. La
+# voce vera e' un'altra: nella fase predict ogni shard prende in media ~1
+# risposta 429 da Sorare, con Retry-After da 194-247 secondi, e quel costo
+# NON dipende da quante query fa lo shard. Misurato su quattro run della
+# stessa giornata mentre le query scendevano da 6857 a 1504 (-78%):
+#   run A  6857 query -> 31 x 429, 6525s di attesa
+#   run B  4775 query -> 29 x 429, 4401s
+#   run C  2499 query -> 20 x 429, 4728s
+#   run D  1504 query -> 27 x 429, 4644s
+# L'attesa da 429 e' rimasta piatta mentre le query crollavano: segue il
+# NUMERO DI SHARD, non il lavoro. A 45 bin fa ~103s di attesa per bin, cioe'
+# cinque volte il costo di setup che il commento sopra considerava.
+# Con 20 bin (uno per slot di concorrenza) si perde il bilanciamento dinamico
+# a runtime, ma si tolgono 25 shard e con loro ~2.500 job-secondi di attese.
+# Se una stima sbagliata dovesse far tornare il problema del singolo shard
+# lento, si rialza -- ma va rimisurato, non ripristinato per abitudine.
+N_BIN = 20
 
 
 # ---------------------------------------------------------------- stage ----

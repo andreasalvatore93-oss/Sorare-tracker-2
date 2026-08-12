@@ -168,10 +168,16 @@ jobs:
         run: |
           set -u
           set -o pipefail
-          # Stagger: 4 job discovery partono quasi insieme e si sommano sul
-          # tetto cumulativo dell'account (RISPOSTA_OPUS_429_PARALLELISMO_
-          # 2026-08-12.txt, P6). Non risparmia query, toglie la simultaneita'.
-          sleep $(( IDX * 25 ))
+          # STAGGER TOLTO (12/08/2026). Era stato messo qualche ora prima (P6)
+          # sull'ipotesi che i 429 nascessero dalla simultaneita'. Quell'ipotesi
+          # e' stata poi FALSIFICATA nella fase predict: alzando il pacing da
+          # 0,2s a 1,0s per runner i 429 non sono diminuiti (27 contro 20) pur
+          # avendo un terzo delle query. La causa vera del 429 in discovery era
+          # un'altra e gia' corretta a monte (P5: ogni job rifaceva le 216 query
+          # odds che il job 'pool' aveva gia' fatto). Lo stagger costava fino a
+          # 75 secondi di wall sull'ultimo shard a ogni run, per niente.
+          # Se i 429 in discovery dovessero tornare, si rimette -- ma dopo
+          # averli visti nei log, non per precauzione.
           # La matrice lega/ruolo di ogni shard viene raccolta da stdout e
           # scritta in _artifact_stage/_matrici/: NON puo' piu' passare dagli
           # output di job (un job che esegue piu' shard scriverebbe piu' volte
@@ -316,17 +322,16 @@ jobs:
           SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           ESCLUDI_LOCKATE: ${{ github.event.inputs.escludi_lockate }}
           GRUPPO: ${{ matrix.gruppo.g }}
-          # PACING DI PARTENZA (12/08/2026). Il limite di Sorare e'
-          # d'ACCOUNT, non di runner: 20 job predict in parallelo con la pausa
-          # storica di 0,2s puntano a 100 query/secondo verso un account che
-          # ne regge circa 9. Il primo 429 e' garantito e costa 194-247s.
-          # Misurato sulla run 31594791690: 2499 query, 20 risposte 429, 4728
-          # secondi buttati ad aspettare = 65% della fase. Il tasso di 429 per
-          # query non era sceso nemmeno dopo aver tagliato le query del 64%:
-          # non e' il volume a farli scattare, e' la raffica.
-          # 1,0s x 20 runner = al massimo 20 query/secondo. Costa ~55 secondi
-          # a shard (55 query in media) per evitarne 240.
-          SORARE_PACING_MIN: "1.0"
+          # PACING: PROVATO E SCARTATO (12/08/2026, run 31596309760).
+          # Ipotesi: i 429 nascono dalla raffica (20 runner a 0,2s =
+          # fino a 100 query/s verso un account che ne regge ~9), quindi
+          # partire piu'piano dovrebbe evitarli. MISURATO CON
+          # SORARE_PACING_MIN=1.0: 27 risposte 429 e 4644s di attesa
+          # contro 20 e 4728s della run precedente a 0,2s, con un TERZO
+          # delle query. Nessun effetto: l'ipotesi e' falsa, i 429 non
+          # dipendono dalla velocita' con cui si chiede.
+          # Il parametro resta configurabile nel modello
+          # (SORARE_PACING_MIN, default 0,2s) ma qui non si imposta.
           PYTHONUNBUFFERED: "1"
         run: |
           set -u
