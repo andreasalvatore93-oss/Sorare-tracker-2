@@ -549,7 +549,48 @@ Anche azzerando il predict si resterebbe a ~6,3 minuti: le fasi fisse pesano
 Per l'obiettivo "7-8 minuti" chiesto dall'utente servono quindi entrambe le
 cose: predict verso i 150s e qualche decina di secondi tolti alle fasi fisse.
 
-7.11 RISULTATI DELLE RUN SUCCESSIVE
+7.11 RUN E: LA RIDUZIONE DEGLI SHARD E' STATA SMENTITA DALLA MISURA
+--------------------------------------------------------------------
+Terza ipotesi mia, terza smentita. Con N_BIN da 45 a 20:
+
+                  shard  query   429   attesa    predict   RUN
+  run D (45 bin)     45   1504    27    4644s      412s    13,3 min
+  run E (20 bin)     20   1509    36    7904s      556s    14,9 min
+
+Stesse query, meno shard, PEGGIO su tutto. Cade quindi la lettura "ogni
+shard paga circa un 429": con meno shard ogni shard elabora piu' giocatori e
+di 429 se ne prende di piu' (1,8 a shard contro 0,6). N_BIN e' tornato a 45.
+
+E QUI VIENE FUORI IL PROBLEMA METODOLOGICO, che vale piu' del risultato:
+le sei run di questo pomeriggio sono state lanciate una dietro l'altra e NON
+SONO INDIPENDENTI. Guardando i 429 in ordine cronologico a parita' di query:
+
+  run C  20 x 429      run D  27 x 429      run E  36 x 429
+
+crescono di run in run, come se il budget dell'account si consumasse e non
+facesse in tempo a ricaricarsi fra una run e l'altra. Se e' cosi', una parte
+del "peggioramento" della run E non e' colpa dei 20 bin: e' colpa del fatto
+che era la sesta run in due ore.
+Regola per chi rimisura: NON confrontare due run consecutive. Lasciare
+passare del tempo, o alternare l'ordine delle varianti (A-B-A), altrimenti
+si attribuisce alla modifica quello che e' solo il logorio dell'account.
+E' anche il motivo per cui mi fermo qui col tuning a colpi di run: senza
+indipendenza fra le misure, continuare significherebbe tarare sul rumore.
+
+7.12 QUELLO CHE RESTA, E CHE E' SOLIDO
+----------------------------------------
+Indipendentemente dal tuning, questi sono guadagni strutturali misurati e
+non discutibili, perche' non dipendono dal capriccio del rate limit:
+
+  query per run          6857 -> 1504   (-78%)
+  discovery (wall)        144s -> 82s   (tolto lo stagger)
+  generatore                          gia' 3,1s per 54 formazioni
+  run intera             18,4 -> 12,8 min nella migliore misurata
+
+E valgono TUTTI anche nello scenario con le quote attive, dove i giocatori
+sono ~250 invece di 1150.
+
+7.13 RISULTATI DELLE RUN SUCCESSIVE
 -------------------------------------
 (compilato via via)
 
