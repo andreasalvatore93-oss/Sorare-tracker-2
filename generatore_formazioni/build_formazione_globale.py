@@ -490,6 +490,63 @@ def _scala_storica_per(league, role):
     return None
 
 
+# --- GRADE_GROUP_STORICA_ENABLED (12/08/2026) -- filone "gruppo grade
+# esteso alla giornata", priorita' 2. SPENTO DI DEFAULT: Opus ha verificato
+# col placebo che il segnale e' vero (p<=0,048, docs/HANDOFF_UNIFICATO_
+# MODELLO_SCOUTING.md §8bis-bis "Controllo Opus sulla ricetta finale") ma
+# ha detto testualmente "pronta per il fuori campione pre-registrato, NON
+# per la produzione diretta" -- quel test (GW5/6/7, chiude 25/08/2026,
+# analisi_manager/p57_grade_fuoricampo_preregistrato.py) NON e' ancora
+# stato fatto. NON accendere prima di allora.
+#
+# Sostituisce il "gruppo nativo" (lega,ruolo DENTRO la singola giornata,
+# spento per il 51%+ delle righe quando il gruppo ha <2 membri -- il
+# difetto che ha aperto questo filone) con due tabelle storiche costruite
+# sulla popolazione dei consiglio_*.txt (non l'archivio backtest, biased):
+# voto (grade_scala_produzione.json, riusa la stessa _scala_storica_per
+# sopra) e sd_atteso (sd_atteso_produzione.json, nuova). Fattore_storico
+# 0,482 e ricentraggio PER RUOLO calcolato FRESCO su tutte le leghe di
+# QUESTA run (non una costante congelata) -- vedi _recentra_grade_per_ruolo
+# sotto, chiamata da load_league_role_data() dopo il doppio ciclo lega/ruolo.
+GRADE_GROUP_STORICA_ENABLED = os.environ.get('GRADE_GROUP_STORICA_ENABLED', '0') == '1'
+GRADE_FATTORE_STORICO = float(os.environ.get('GRADE_FATTORE_STORICO', '0.482'))
+SD_ATTESO_PRODUZIONE_PATH = os.environ.get(
+    'SD_ATTESO_PRODUZIONE_PATH',
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dati', 'sd_atteso_produzione.json'))
+_SD_ATTESO_TABLE = None
+_GRADE_SCALA_PRODUZIONE_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'dati', 'grade_scala_produzione.json')
+if GRADE_GROUP_STORICA_ENABLED:
+    if os.path.exists(SD_ATTESO_PRODUZIONE_PATH) and os.path.exists(_GRADE_SCALA_PRODUZIONE_PATH):
+        with open(SD_ATTESO_PRODUZIONE_PATH, encoding='utf-8') as _f:
+            _SD_ATTESO_TABLE = json.load(_f)
+        with open(_GRADE_SCALA_PRODUZIONE_PATH, encoding='utf-8') as _f:
+            _GRADE_SCALE_TABLE = json.load(_f)  # sovrascrive quella di GRADE_SCALE=storica, se caricata sopra
+    else:
+        print("ATTENZIONE: GRADE_GROUP_STORICA_ENABLED=1 ma le tabelle "
+              f"({SD_ATTESO_PRODUZIONE_PATH}, {_GRADE_SCALA_PRODUZIONE_PATH}) non esistono -- "
+              "rilanciare generatore_formazioni/dati/aggiorna_grade_scala_produzione.py. "
+              "Fallback: GRADE_GROUP_STORICA_ENABLED spento per questa run.")
+        GRADE_GROUP_STORICA_ENABLED = False
+
+
+def _sd_atteso_storico_per(league, role):
+    """(sd, livello) dalla tabella sd_atteso di produzione, stesso fallback
+    di _scala_storica_per. None se la tabella non c'e'."""
+    if not _SD_ATTESO_TABLE:
+        return None
+    voce = _SD_ATTESO_TABLE.get('per_lega_ruolo', {}).get(f'{league}|{role}')
+    if voce:
+        return voce['sd'], 'lega_ruolo'
+    voce = _SD_ATTESO_TABLE.get('per_ruolo', {}).get(role)
+    if voce:
+        return voce['sd'], 'ruolo'
+    voce = _SD_ATTESO_TABLE.get('globale')
+    if voce:
+        return voce['sd'], 'globale'
+    return None
+
+
 def _grade_per_riga(row):
     """Fonte del grade per una riga: PRIMA quello letto da
     player_card_counts.json (produzione, scritto da discovery_fixture.py
@@ -511,6 +568,28 @@ def _apply_grade_group(rows):
     formula."""
     if not rows:
         return
+
+    if GRADE_GROUP_STORICA_ENABLED:
+        # Ricetta 12/08/2026 (SPENTA di default, vedi commento sul flag
+        # sopra): niente return anticipato per gruppi piccoli -- le due
+        # tabelle storiche non dipendono dal gruppetto nativo. Il
+        # ricentraggio per ruolo e l'applicazione a 'atteso'/'sort_score'
+        # avvengono DOPO, in _recentra_grade_per_ruolo (serve vedere tutte
+        # le leghe insieme, qui si vede solo una lega+ruolo alla volta).
+        scala = _scala_storica_per(rows[0].get('league'), rows[0].get('role_key'))
+        gm, gsd, _liv = scala if scala else (0.0, 0.0, None)
+        sd_info = _sd_atteso_storico_per(rows[0].get('league'), rows[0].get('role_key'))
+        sd_atteso = sd_info[0] if sd_info else 0.0
+        for r in rows:
+            g = _grade_per_riga(r)
+            gn = GRADE_NUM.get(g) if g else None
+            r['_grade'] = g
+            r['_grade_num'] = gn
+            z = (gn - gm) / gsd if (gn is not None and gsd > 0) else 0.0
+            r['atteso_cal'] = r['atteso']
+            r['atteso_combinato'] = r['atteso'] + GRADE_FATTORE_STORICO * sd_atteso * z
+        return
+
     vals = [r['atteso'] for r in rows if r.get('atteso') is not None]
     if len(vals) < 2:
         for r in rows:
@@ -1156,7 +1235,41 @@ def load_league_role_data():
             print(f"[{league}/{role}] {path or 'NESSUN FILE TROVATO'} -> {len(rows)} giocatori")
             role_data[league][role] = rows
             role_counts[league][role] = counts
+    if GRADE_GROUP_STORICA_ENABLED:
+        _recentra_grade_per_ruolo(role_data)
     return role_data, role_counts, names
+
+
+def _recentra_grade_per_ruolo(role_data):
+    """Secondo passo della ricetta 12/08/2026 (GRADE_GROUP_STORICA_ENABLED):
+    _apply_grade_group ha gia' scritto 'atteso_combinato' per ogni riga di
+    ogni (lega,ruolo), ma NON ha ancora tolto la spinta cieca ne' applicato
+    GRADE_ENABLED -- serve vedere TUTTE le leghe insieme per ruolo, cosa
+    impossibile dentro _apply_grade_group (chiamata una lega+ruolo alla
+    volta). Qui si raccolgono tutte le righe per ruolo (su tutte le leghe
+    di QUESTA run), si sottrae la media dell'aggiustamento (atteso_combinato
+    - atteso_cal) PER RUOLO -- non una costante congelata, ricalcolata ad
+    ogni run sulla popolazione che si sta davvero punteggiando, come
+    raccomandato da Opus (docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md
+    §8bis-bis) -- e solo alla fine si sovrascrivono 'atteso'/'sort_score'
+    se GRADE_ENABLED."""
+    per_ruolo = defaultdict(list)
+    for lg, roles in role_data.items():
+        for role, rows in roles.items():
+            for r in rows:
+                if r.get('atteso_combinato') is not None and r.get('atteso_cal') is not None:
+                    per_ruolo[role].append(r)
+    for role, rows in per_ruolo.items():
+        diffs = [r['atteso_combinato'] - r['atteso_cal'] for r in rows]
+        media = sum(diffs) / len(diffs) if diffs else 0.0
+        for r in rows:
+            r['atteso_combinato'] = round(r['atteso_combinato'] - media, 2)
+            if GRADE_ENABLED:
+                r['atteso'] = r['atteso_combinato']
+                if r.get('sort_score') is not None:
+                    r['sort_score'] = r['atteso_combinato']
+        print(f"[grade_storica] ricentraggio ruolo {role}: media aggiustamento tolta {media:+.3f} "
+              f"({len(rows)} righe)")
 
 
 GROW_BATCH = int(os.environ.get('QUALITY_GROW_BATCH', '3'))

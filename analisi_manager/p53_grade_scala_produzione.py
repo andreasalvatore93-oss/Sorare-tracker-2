@@ -36,8 +36,14 @@ sys.path.insert(0, os.path.join(ROOT, 'analisi_manager'))
 
 import p12_backtest_formazione_grade as S21
 
-SD_PRODUZIONE_PATH = os.path.join('analisi_manager', 'dati', 'sd_atteso_produzione_righe.json')
-OUT_PATH = os.path.join('analisi_manager', 'dati', 'grade_scala_produzione_2026-08-12.json')
+SD_PRODUZIONE_PATH_DEFAULT = os.path.join('analisi_manager', 'dati', 'sd_atteso_produzione_righe.json')
+OUT_PATH_DEFAULT = os.path.join('analisi_manager', 'dati', 'grade_scala_produzione_2026-08-12.json')
+KICKOFF_CUTOFF = os.environ.get('KICKOFF_CUTOFF') or None
+SD_PRODUZIONE_PATH = (os.path.join('analisi_manager', 'dati',
+                                    f'sd_atteso_produzione_righe_cutoff_{KICKOFF_CUTOFF}.json')
+                       if KICKOFF_CUTOFF else SD_PRODUZIONE_PATH_DEFAULT)
+OUT_PATH = (os.path.join('analisi_manager', 'dati', f'grade_scala_produzione_cutoff_{KICKOFF_CUTOFF}.json')
+            if KICKOFF_CUTOFF else OUT_PATH_DEFAULT)
 SOGLIA_LEGA_RUOLO = 30  # piu' bassa di p18 (100): qui la popolazione e' piccola (2.333 righe
                         # contro 20.955), e Opus ha misurato che soglie alte peggiorano (§8bis-bis
                         # punto 2) -- soglia bassa solo per evitare celle a n<2, non per "pulire" il rumore

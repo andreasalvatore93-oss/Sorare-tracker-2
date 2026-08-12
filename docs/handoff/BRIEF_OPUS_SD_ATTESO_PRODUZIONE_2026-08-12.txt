@@ -1,0 +1,94 @@
+BRIEF PER OPUS ESECUTORE — quale fonte dati per la tabella sd_atteso "di
+produzione" (filone gruppo grade esteso alla giornata, priorità 2)
+Scritto 12/08/2026 (Roma), orchestratore Sonnet. Sessione tua precedente:
+questa è l'idea che avevi proposto tu (round 2/3 del filone, §16-17 del tuo
+RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt) — qui serve il tuo giudizio su
+come completarla, hai già verificato i dati sottostanti, quindi presta
+attenzione particolare: l'utente lo considera il filone più promettente
+apertoo oggi.
+
+================================================================================
+0. COSA LEGGERE PRIMA (in ordine)
+================================================================================
+1. CLAUDE.md (radice repo) — in particolare "I BACKTEST SONO IL MODELLO
+   CONTRO SE STESSO" e "divieto di allucinazioni".
+2. docs/handoff/HANDOFF_SESSIONE_2026-08-11_GK_GRADE_SOGLIE.txt §4 — il
+   riassunto della sessione che ha aperto questo filone (Round 1/2/3,
+   scoperta del return anticipato in _apply_grade_group per gruppi <2,
+   correlazione a livello carta valida, essenze non ancora provate).
+3. docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8bis-bis — versione
+   compressa, stessa storia, "cosa manca prima di implementare" (3 punti,
+   il primo è l'oggetto di questo brief).
+4. docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §15-18 (il TUO
+   lavoro precedente) — la scoperta "storica_completa" batte "pool_largo",
+   il fattore_storico 0.75, e la diagnosi del +14.387 come "spinta cieca"
+   (media aggiustamento +1.15 non zero, poi ricentrata a +4.260 non
+   significativo).
+5. Codice, con i numeri di riga esatti (verificati oggi da me):
+   - analisi_manager/p12_backtest_formazione_grade.py righe 271-301:
+     `costruisci_tabella_sd_atteso(tutte_le_righe)` — oggi prende in input
+     le righe del pool BACKTEST (archivio_ufficiale, i 29 manager), calcola
+     media/sd di `_cal` per (lega,ruolo) -> ruolo -> globale.
+   - stesso file, righe 380-389: modo 'storica_completa' di
+     `applica_gruppi_grade()` — usa `bfg._scala_storica_per()` (mean/sd del
+     GRADE, produzione, file generatore_formazioni/dati/
+     grade_scala_storica.json) + `_sd_atteso_storico(tabella_sd_storica,...)`
+     (sd dell'ATTESO, quella che oggi viene dal backtest).
+   - analisi_manager/p18_grade_scala_storica.py — lo script che costruisce
+     grade_scala_storica.json: fonti = dati_globali/manager_*.json (7 fonti
+     "crowss+esteso"), STESSO universo biased di cui parla il punto 1 sotto.
+   - generatore_formazioni/build_formazione_globale.py righe 505-548
+     (`_apply_grade_group`) — il return anticipato per gruppi con <2 righe
+     con 'atteso' (righe 514-520 secondo l'handoff, verificare il numero
+     esatto rileggendo).
+
+================================================================================
+1. LA DOMANDA (una sola)
+================================================================================
+La tabella sd_atteso (dispersione dell'atteso calibrato, per lega-ruolo)
+usata dal modo 'storica_completa' va costruita su quale fonte, per essere
+davvero "dati di produzione" e non sull'archivio backtest biased?
+
+Ho controllato io stesso cosa c'è in repo (per non farti perdere tempo):
+- `player_card_counts.json` (uno per lega/ruolo, scritto da
+  discovery_fixture.py) — NON utilizzabile: contiene solo le carte
+  POSSEDUTE da un singolo manager in un run, 1-3 righe per lega/ruolo.
+  Stesso identico bias di possesso del problema originale, in scala minore.
+- La cache game-log condivisa (`formazione_<lega>/output/<lega>_<ruolo>_
+  all/.game_log_cache/`) — contiene ogni giocatore mai tracciato,
+  indipendentemente da chi lo possiede. Sembra la fonte giusta ma non ho
+  verificato se è praticabile in tempo/costo (serve calcolare atteso_raw +
+  calibra() per OGNI giocatore-fixture in cache, non solo per le carte di
+  un pool).
+
+Ipotesi mia: la cache game-log è la fonte corretta perché è la stessa
+identica cache che legge il generatore/scouting/analisi (regola CLAUDE.md
+"cache condivisa"), quindi è per definizione "dati di produzione" e non
+soffre del bias "chi possiede una carta di solito l'ha scelta bene". Se
+hai un'idea diversa (es. una fonte che già hai usato/verificato nel tuo
+lavoro precedente e che io non ho trovato), dimmelo — la tua idea originale
+del filone conta più della mia ricerca di oggi.
+
+Se la risposta è "usa la cache game-log", la seconda domanda pratica è:
+è già stato fatto un calcolo simile da qualche parte (per risparmiare
+query/tempo, regola suprema CLAUDE.md) o va scritto da zero uno script che
+itera sulla cache calcolando atteso_raw (via score_atteso, root del repo,
+funzione in backtest_arene_previsioni.py) + calibra() per ogni riga?
+
+================================================================================
+2. COSA NON SERVE FARE ORA
+================================================================================
+Non lanciare tu lo script (decidiamo insieme la fonte prima). Non toccare
+la produzione. Non correggere il return anticipato in _apply_grade_group
+(fa parte di un passo successivo, dopo aver deciso la fonte dati e aver
+ricentrato a media zero — punto 2 di "cosa manca" in §8bis-bis).
+
+================================================================================
+3. DOVE RISPONDERE
+================================================================================
+Rispondi con mcp__ccd_session_mgmt__send_message alla sessione che ti ha
+scritto (arriva già etichettata "From ..." con link di ritorno, non serve
+che tu specifichi altro ID). Se preferisci scrivere anche su file, in coda
+a docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8bis-bis (non un file nuovo).
+Risposta in chat: la fonte scelta + perché, in poche righe — il
+ragionamento lungo se vuoi metterlo a verbale nel file.

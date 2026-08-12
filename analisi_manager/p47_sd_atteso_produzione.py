@@ -59,13 +59,24 @@ bff = BP.bff
 OUT_PATH = os.path.join(ROOT, 'analisi_manager', 'dati', 'sd_atteso_produzione_righe.json')
 
 
-def costruisci_righe_produzione(cutoff=None):
+def costruisci_righe_produzione(cutoff=None, kickoff_cutoff=None):
     """Ritorna (righe_dedup, stats). righe_dedup: lista di dict {lega,
     codice, slug, kickoff, atteso_raw, _cal}. stats: conteggi di controllo
-    (n_file, n_righe_totali, n_righe_distinte, per_ruolo_grezzo)."""
+    (n_file, n_righe_totali, n_righe_distinte, per_ruolo_grezzo).
+
+    cutoff: filtra sul TIMESTAMP DEL FILE (quando il consiglio e' stato
+    scritto) -- walk-forward su "cosa sapevamo allora".
+    kickoff_cutoff (stringa 'YYYY-MM-DD', 12/08/2026 -- richiesto da Opus
+    per il fuori campione pre-registrato del filone grade): filtra sul
+    KICKOFF della riga stessa -- un consiglio scritto oggi che predice una
+    partita del test-set futuro NON deve entrare nella tabella, anche se
+    il file e' "vecchio". Senza questo secondo filtro il fuori campione
+    non e' fuori campione (la tabella vedrebbe le righe della stessa
+    fixture su cui poi si misura)."""
     scelte = {}  # (lega, codice, slug, kickoff) -> (ts_file, atteso_raw)
     n_file = 0
     n_righe_totali = 0
+    n_scartate_kickoff = 0
 
     for lega in bfg.LEAGUES:
         for codice in bfg.ROLES:
@@ -85,6 +96,9 @@ def costruisci_righe_produzione(cutoff=None):
                     atteso_raw = row.get('atteso')
                     if slug is None or kickoff is None or atteso_raw is None:
                         continue
+                    if kickoff_cutoff is not None and kickoff[:10] >= kickoff_cutoff:
+                        n_scartate_kickoff += 1
+                        continue
                     chiave = (lega, codice, slug, kickoff)
                     prec = scelte.get(chiave)
                     if prec is None or ts > prec[0]:
@@ -102,25 +116,34 @@ def costruisci_righe_produzione(cutoff=None):
         'n_file': n_file,
         'n_righe_totali': n_righe_totali,
         'n_righe_distinte': len(righe),
+        'n_scartate_kickoff_cutoff': n_scartate_kickoff,
         'per_ruolo_grezzo': dict(per_ruolo_grezzo),
     }
     return righe, stats
 
 
 def main():
-    righe, stats = costruisci_righe_produzione(cutoff=None)
+    kickoff_cutoff = os.environ.get('KICKOFF_CUTOFF') or None
+    out_path = OUT_PATH
+    if kickoff_cutoff:
+        out_path = os.path.join('analisi_manager', 'dati',
+                                 f'sd_atteso_produzione_righe_cutoff_{kickoff_cutoff}.json')
+    righe, stats = costruisci_righe_produzione(cutoff=None, kickoff_cutoff=kickoff_cutoff)
     print('=' * 78)
     print('RIGHE DI PRODUZIONE PER sd_atteso (fonte: consiglio_*.txt, deduplicate)')
     print('=' * 78)
+    if kickoff_cutoff:
+        print(f"KICKOFF_CUTOFF attivo: {kickoff_cutoff} (righe con kickoff >= cutoff escluse)")
     print(f"file consiglio letti: {stats['n_file']}")
     print(f"righe totali (pre-dedup): {stats['n_righe_totali']}")
     print(f"righe distinte (lega,codice,slug,kickoff): {stats['n_righe_distinte']}")
+    print(f"scartate per kickoff_cutoff: {stats['n_scartate_kickoff_cutoff']}")
     print(f"per ruolo (grezzo, pre-calibrazione): {stats['per_ruolo_grezzo']}")
 
-    os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
-    with open(OUT_PATH, 'w', encoding='utf-8') as fh:
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, 'w', encoding='utf-8') as fh:
         json.dump(righe, fh, ensure_ascii=False, indent=1)
-    print(f"\nsalvato: {OUT_PATH}")
+    print(f"\nsalvato: {out_path}")
 
     tabella = S21.costruisci_tabella_sd_atteso(righe)
     print('\n--- anteprima aggregazione (costruisci_tabella_sd_atteso) ---')

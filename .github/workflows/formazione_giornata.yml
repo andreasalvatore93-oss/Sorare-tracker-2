@@ -56,6 +56,10 @@ on:
         description: 'Correttivo GK da forza attacco storica avversario, formula "secca" (media storica tutta la carriera, refresh automatico). Default ACCESO (1) da 11/08/2026: su 360 GW-manager G migliora se stesso di +5.556 essenze, IC95% [+649;+10.638], 98,7% positivo -- vedi RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt §13-14. Ri-misura pre-registrata dopo 3 fixture: HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §5.6.'
         required: false
         default: '1'
+      grade_group_storica:
+        description: 'NON ACCENDERE prima del 25/08/2026 (test fuori campione pre-registrato non ancora fatto). Correttivo voto A-F con tabelle storiche di produzione (non il gruppetto lega/ruolo della singola giornata, spento per il 51%+ delle righe). Opus (12/08/2026): "pronta per il fuori campione pre-registrato, NON per la produzione diretta" -- placebo passato (p<=0,048, il voto ha segnale vero) ma la taglia (+10.102 essenze sul backtest) e la migliore di ~12 varianti sullo stesso campione, sovrastimata. Vedi HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8bis-bis e analisi_manager/p57_grade_fuoricampo_preregistrato.py (da lanciare dopo che GW7 chiude, PRIMA di decidere se accendere qui). Default SPENTO (0).'
+        required: false
+        default: '0'
 
 permissions:
   contents: write
@@ -492,9 +496,16 @@ jobs:
       # ~1-2 min in piu' ad OGNI run finche' non si persiste l'indice fra run
       # (cache actions/cache o commit) -- da valutare se il costo infastidisce.
       - run: python generatore_formazioni/dati/aggiorna_gk_attacco_avversario.py
+      # GRADE_GROUP_STORICA (12/08/2026, SPENTO di default -- vedi input
+      # grade_group_storica sopra): refresh delle due tabelle (voto +
+      # sd_atteso) dai consiglio_*.txt di QUESTA run. Gira SEMPRE (anche a
+      # flag spento) cosi' le tabelle non sono stantie per quando si decide
+      # di accendere, zero query di rete.
+      - run: python generatore_formazioni/dati/aggiorna_grade_scala_produzione.py
       - env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           GK_ATT_AVV_ENABLED: ${{ github.event.inputs.gk_att_avv }}
+          GRADE_GROUP_STORICA_ENABLED: ${{ github.event.inputs.grade_group_storica }}
           # NUOVO (31/07, fix bug reale kyriani-sabbe): servono per risolvere
           # ESATTAMENTE la stessa giornata gia' usata da discovery_fixture.py
           # (vedi _risolvi_finestra_esplicita in build_formazione_globale.py)
