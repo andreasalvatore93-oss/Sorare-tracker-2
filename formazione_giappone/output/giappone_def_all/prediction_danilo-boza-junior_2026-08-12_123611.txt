@@ -1,0 +1,111 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T12:36:11.309697Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) danilo-boza-junior: 48 pt attesi (22-70)
+   ORDINAMENTO: 49.49
+   SQUADRA: urawa-reds-saitama | AVVERSARIO: sanfrecce-hiroshima-hiroshima
+======================================================================
+
+######################################################################
+# GIOCATORE: danilo-boza-junior
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: danilo-boza-junior (squadra: urawa-reds-saitama)
+Generato: 2026-08-12T12:36:11.308506Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: j1-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | RED vs GRA | j1-league | score=51.8 | peso=0.691
+  2025-08-22 | REY vs RED | j1-league | score=19.4 | peso=0.707
+  2025-08-31 | RED vs ALB | j1-league | score=47.1 | peso=0.724
+  2025-09-13 | GAM vs RED | j1-league | score=46.6 | peso=0.741
+  2025-09-20 | RED vs ANT | j1-league | score=27.9 | peso=0.758
+  2025-09-23 | SSP vs RED | j1-league | score=65.5 | peso=0.776
+  2025-09-27 | VER vs RED | j1-league | score=53.5 | peso=0.794
+  2025-10-18 | FMA vs RED | j1-league | score=10.7 | peso=0.812
+  2025-10-25 | RED vs MAC | j1-league | score=55.0 | peso=0.831
+  2025-11-09 | SFR vs RED | j1-league | score=63.8 | peso=0.851
+  2025-11-30 | FAG vs RED | j1-league | score=54.2 | peso=0.871
+  2026-02-21 | FMA vs RED | j1-100-year-vision-league | score=73.3 | peso=0.891
+  2026-02-28 | RED vs ANT | j1-100-year-vision-league | score=27.7 | peso=0.912
+  2026-05-09 | HOL vs RED | j1-100-year-vision-league | score=61.6 | peso=0.933
+  2026-05-31 | FAG vs RED | j1-100-year-vision-league | score=84.3 | peso=0.955
+  2026-06-06 | RED vs FAG | j1-100-year-vision-league | score=80.7 | peso=0.977
+  2026-08-07 | GAM vs RED | j1-league | score=24.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 50.66
+  di cui Punteggio decisivo (level_score) medio: 39.75 | Punteggio complessivo (granulari) medio: 10.90 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.40, delta avversario -0.53 | Passaggio condizionato: delta venue -0.10, delta avversario -0.96 | Clean sheet/disimpegni condizionato: delta venue -0.78, delta avversario -0.15 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 21.29
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 24.7 - 73.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.06 (differenza: +3.22)
+Media score in casa: 48.38 | Media score fuori casa: 50.68
+Fattore casa/trasferta applicato: 1.002 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.4
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.665 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.994
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.997
+Fattore trend (media ultime 5: 55.9 vs media 5 PRECEDENTI: 52.0): 1.000
+P(gioca): 50.00% (fonte: tasso di presenza storico (17/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T10:00
+Casa: Urawa Red Diamonds | Trasferta: Sanfrecce Hiroshima
+Competizione: j1-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.6 (range 21.6 - 70.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.62
+Punteggio REALE ottenuto in quella partita: 24.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -27.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 11 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      40.0    53.5    +13.5    16.9        SI
+   7        7      45.1    10.7    -34.4    16.1        NO
+   8        8      34.6    55.0    +20.4    19.7        NO
+   9        9      38.2    63.8    +25.6    19.2        NO
+  10       10      44.0    54.2    +10.1    19.6        SI
+  11       11      46.7    73.3    +26.6    18.9        NO
+  12       12      38.8    27.7    -11.1    20.1        SI
+  13       13      51.9    61.6     +9.7    20.2        SI
+  14       14      48.0    84.3    +36.3    19.9        NO
+  15       15      62.6    80.7    +18.1    22.0        SI
+  16       16      46.7    24.7    -22.0    22.9        SI
+
+MAE (errore assoluto medio): 20.72
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 54.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
