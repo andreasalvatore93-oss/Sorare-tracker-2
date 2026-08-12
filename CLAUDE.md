@@ -359,6 +359,15 @@ rapido che potrebbe dargli torto, e lanciarlo subito.
 ## Sorare API
 - **L'introspezione GraphQL è disabilitata** su Sorare (`__type`/`__schema` → errore). Non riprovarci mai: per scoprire lo schema, prova una query mirata e leggi il messaggio d'errore, che indica i campi validi.
 - **Minimizzare le query**: tempi e carico API sono fondamentali. Prima di ogni test o soluzione, valuto se si può fare in **bulk** (es. odds di tutta la giornata dalle ~37 partite invece di una query a giocatore). Non seguo la prima strada ovvia: esploro le alternative bulk prima di procedere.
+- **Dal 12/08/2026 l'utente ha una APIKEY Sorare** (header HTTP `APIKEY`,
+  si aggiunge al cookie, non lo sostituisce): tetto salito da 60 a 200
+  query/min sull'account, e complessità GraphQL da 500 a 30000. Ne ha
+  create 2 e può generarne altre. Già cablata (secret `SORARE_APIKEY`) in
+  `formazione_mls/predict` (propagato a tutte le leghe), `ricostruisci_manager.py`,
+  `best_five.py`, `scanners/bot_profit.py` e nei workflow GitHub. Non
+  elimina la regola sopra (minimizzare resta buona pratica), ma il vincolo
+  duro sull'account non è più 60/min — dettaglio in
+  `docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md`.
 
 ## Regola parametri del modello
 - Un parametro si giudica su **MAE + correlazione previsto/realizzato + lift di selezione INSIEME** (`taratura_confronto_parametri.py`). Si applica solo se si muovono tutte e tre nello stesso verso. Il MAE da solo premia i modelli che non ordinano niente.
