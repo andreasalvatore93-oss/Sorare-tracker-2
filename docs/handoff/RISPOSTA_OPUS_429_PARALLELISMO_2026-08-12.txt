@@ -1,0 +1,285 @@
+RISPOSTA DELLO STREGONE SUPREMO (Opus esecutore) — 12/08/2026 sera, Roma
+Al brief: docs/handoff/BRIEF_OPUS_429_PARALLELISMO_2026-08-12.txt
+Nessuna modifica al codice fatta da me. Solo lettura + log grezzi della run.
+
+
+VERDETTO DA BAR (dieci righe)
+-----------------------------
+Non sono i 4 job che si pestano i piedi all'avvio. Ho letto i log veri della
+run 31584309722 e il colpevole ha nome e cognome: il job 'discovery def'
+alle 09:46:55 ha sparato 216 query IN 6 SECONDI con 6 thread, per riprendersi
+le odds della giornata che il job 'pool' aveva GIA' preso 70 secondi prima.
+Le ha rifatte perche' le odds della GW5 sono ZERO (non ancora pubblicate) e
+il codice scambia "artifact con zero odds" per "artifact inutile, rifaccio
+tutto". Quella raffica ha svuotato il credito dell'account, e gli altri 3 job
+— che stavano facendo la loro innocente prima query nello stesso istante —
+si sono presi il 429 in faccia per colpa sua. Con 4 job avresti avuto 864
+query identiche e tutte inutili. Il fix vero e' tre righe: se l'artifact e'
+della giornata giusta, ci si fida ANCHE quando dice "odds: nessuna". Lo
+stagger dei job serve, ma e' la seconda cosa, non la prima.
+
+
+1. I NUMERI, LETTI NEI LOG DELLA RUN (gh api, non stimati)
+----------------------------------------------------------
+Job 'pool' (id 94074443882), 09:44:52 -> 09:46:10, conclusion SUCCESS:
+  09:45:36.7  [pool] giornata: football-14-18-aug-2026 (gw 5, opened)
+  09:45:42.9  [discovery_fixture] Odds giornata da 216 partite: 0 giocatori
+              con odds (0 sopra 0.80)
+              -> 216 query in 6,2 secondi (6 thread), ZERO 429, ZERO odds.
+  09:45:43.0  PROBE auth: currentUser='crowss'  (la sessione autentica)
+  09:45:54 / 09:46:05 / 09:46:06  tre leaderboard grade: 1304 + 1304 + 198
+              nodi bench, pageSize 50 -> ~57 richieste
+  09:46:06.6  [grade] TOTALE slug distinti con grade: 0
+  09:46:07.4  scritto pool_gw.json: 0 odds, 0 grade
+  Totale richieste del job 'pool': ~280 in 31 secondi. NESSUN 429 (verificato
+  con grep: le 4 occorrenze di "429" nel log sono cifre dentro altri numeri).
+
+Job 'discovery def' (id 94074783025):
+  09:46:41.9  === discovery ruoli=def
+  09:46:51.8  [discovery_fixture] Giornata: football-14-18-aug-2026  <- OK
+  09:46:51.9  Partite nella giornata: 216 | squadre in campo: 430  <- OK
+  09:46:55.7  SEI righe "[429] tentativo 1/5, attesa 185.0s" nello stesso
+              decimo di secondo, poi altre a raffica.
+  Le prime DUE query del job sono passate lisce. Il muro arriva alla terza
+  cosa che fa: _odds_giornata_condivise -> odds_per_giornata(worker=6).
+  Le sei righe simultanee sono i sei thread del ThreadPoolExecutor.
+
+Job 'discovery gk' (id 94074783004):
+  09:46:55.7  primo 429, sulla PRIMA query in assoluto.
+  Stesso decimo di secondo del def. Il gk non ha fatto niente di male: e'
+  stato travolto dalla raffica del def.
+
+Conclusione di fatto: 09:45:42 -> 216 query in 6s passano senza un 429;
+09:46:55 -> le stesse 216 query prendono 429 immediato con Retry-After 185s.
+In mezzo ci sono ~280 richieste del pool. Il credito e' cumulativo e con un
+tempo di ricarica di minuti, non di secondi.
+
+
+2. LA TUA DOMANDA E' GIUSTA MA LA DIAGNOSI NEL BRIEF E' SBAGLIATA
+------------------------------------------------------------------
+Nel brief scrivi: "i 4 job partono quasi in contemporanea e ognuno fa la sua
+prima query nella stessa finestra stretta". Quattro richieste non fanno male
+a un limite che 70 secondi prima ne aveva accettate 216 in 6 secondi. Il
+danno non e' 4, e' 216 x 4 = 864.
+
+Il meccanismo esatto, in discovery_fixture.py:1033-1057
+(_odds_giornata_condivise):
+
+    if fixture_slug in _odds_giornata_cache: return ...
+    odds = {}
+    if os.path.exists('pool_gw.json'):
+        ... odds = d.get('odds') or {}          # <- GW5: {} (nessuna odds)
+    if not odds:                                 # <- {} e' falsy: RIFA' TUTTO
+        odds = odds_per_giornata(fixture_slug)   # <- 216 query, 6 thread
+
+L'artifact 'pool_gw.json' esiste, e' della giornata giusta, ed e' arrivato
+regolarmente (download-artifact ok). Dice la verita': "per questa giornata
+non ci sono odds". Ma "nessuna odds" e "artifact assente/di un'altra
+giornata" finiscono nello stesso ramo, e ogni job rifa' la fetch che il pool
+ha gia' fatto per tutti. L'intera ragione di esistere del job 'pool' (scritta
+in cima a fetch_grade_gw.py: "una volta per run") si spegne da sola PROPRIO
+nel caso in cui le odds non ci sono — cioe' a inizio stagione e su ogni GW
+lontana dal kickoff, che e' esattamente il caso in cui stai lavorando.
+
+Nota che P1/P4 (gia' in produzione) non c'entrano e non sono regrediti:
+agiscono piu' a valle, sul recupero per-giocatore. Il job def e' morto prima
+di arrivarci. Erano fix giusti, semplicemente il buco era un altro.
+
+E nota la taglia: 216 partite, non 37. La fixture GW5 e' football-14-18-aug
+-2026, 5 giorni, 430 squadre in campo. A regime, con piu' campionati aperti,
+questo numero cresce ancora.
+
+
+3. IL PIANO (i numeri fra parentesi sono query risparmiate su questa run)
+-------------------------------------------------------------------------
+
+P5. L'ARTIFACT E' AUTOREVOLE ANCHE QUANDO E' VUOTO.   (-864 query)
+    E' il fix che risolve il caso di stasera. Serve distinguere "il pool non
+    ha risposto" da "il pool ha risposto: non ce ne sono".
+
+    In fetch_grade_gw.py, dentro il dict 'dati' (riga ~64):
+
+        dati = {'fixture': fixture_slug, 'odds': odds,
+                'odds_fetched': True,          # <-- nuovo
+                'copertura': copertura, 'grade_map': grade_map}
+
+    In discovery_fixture.py, _odds_giornata_condivise, sostituire il blocco
+    letture/fallback (righe ~1035-1057) con:
+
+        odds = {}
+        _autorevole = False
+        p = 'pool_gw.json'
+        if os.path.exists(p):
+            try:
+                with open(p, encoding='utf-8') as f:
+                    d = json.load(f)
+                if d.get('fixture') == fixture_slug:
+                    odds = d.get('odds') or {}
+                    _autorevole = bool(d.get('odds_fetched'))
+                    if odds:
+                        log(f"[odds] da artifact {p}: {len(odds)} giocatori "
+                            f"con odds (nessuna query).")
+                    elif _autorevole:
+                        log(f"[odds] artifact {p}: il pool ha gia' interrogato "
+                            f"le partite di questa giornata e le odds NON sono "
+                            f"ancora pubblicate. NON rifaccio la fetch (era "
+                            f"216 query x job, tutte a vuoto).")
+                else:
+                    log(f"[odds] {p} e' della giornata {d.get('fixture')!r}, "
+                        f"non {fixture_slug!r}: lo IGNORO.")
+            except Exception as e:
+                log(f"[odds] {p} illeggibile ({e}).")
+        if not odds and not _autorevole:
+            try:
+                odds = odds_per_giornata(fixture_slug) or {}
+            except Exception as e:
+                log(f"[odds] fetch in bulk fallita ({e}).")
+                odds = {}
+        _odds_giornata_cache[fixture_slug] = odds
+        return odds
+
+    Perche' 'odds_fetched' e non "basta che il fixture combaci": il flag e'
+    scritto solo dopo che odds_per_giornata e' TORNATA, quindi distingue
+    anche il caso in cui il pool fallisce a meta' e scrive un file monco.
+    Se l'artifact e' vecchio (senza il campo), _autorevole=False e il
+    comportamento resta identico a oggi: nessuna regressione.
+    Comportamento a valle invariato: con odds={} si entra nel ramo
+    'elif MIN_ODDS <= 0' (riga ~1611, P1 gia' in produzione) e nessuno viene
+    escluso. A soglia >0 si entra nel ramo per-giocatore di sempre.
+
+P6. STAGGER DEI 4 JOB DISCOVERY.   (non risparmia query, toglie la
+    simultaneita')
+    Anche con P5, i 4 job restano capaci di partire nello stesso secondo e
+    sommarsi. Una riga nel workflow, primo comando dello step Discovery
+    (IDX e' gia' esportato come env, riga ~166):
+
+        sleep $(( IDX * 25 ))
+
+    Costa al massimo 75s di wall sul job piu' lento e vale come cintura di
+    sicurezza permanente: qualunque raffica futura di un job trova gli altri
+    non ancora partiti. Da mettere anche se P5 sembra bastare.
+
+P7. NESSUN PROCESSO PUO' FARE 36 RICHIESTE AL SECONDO.   (mette un tetto
+    fisico a tutto il resto)
+    odds_per_giornata gira a worker=6 senza nessuna pausa: 216 query in 6,2s.
+    E' quella la forma d'onda che rompe il credito, e a regime la rifara'
+    qualcun altro. Due mosse, entrambe minime:
+
+    a) in turchia_gk_discovery.graphql_query, un distanziatore di processo
+       (subito prima del post, dentro il for):
+
+           _MIN_INTERVAL = float(os.environ.get('SORARE_MIN_INTERVAL', '0'))
+           _ULTIMA = [0.0]
+           _LOCK = threading.Lock()
+           ...
+           if _MIN_INTERVAL > 0:
+               with _LOCK:
+                   _dt = time.time() - _ULTIMA[0]
+                   if _dt < _MIN_INTERVAL:
+                       time.sleep(_MIN_INTERVAL - _dt)
+                   _ULTIMA[0] = time.time()
+
+       Default 0 = comportamento identico a oggi ovunque (nessuna
+       regressione su bot, scouting, analisi_manager, che importano questo
+       stesso modulo). Si accende SOLO nel workflow formazione_giornata:
+       SORARE_MIN_INTERVAL: "0.30" nei job pool e discovery -> tetto duro
+       3,3 req/s per processo.
+    b) odds_per_giornata: worker=6 -> worker=2. Con (a) attivo diventa
+       ridondante, ma senza (a) e' la mitigazione da una riga.
+
+P8. IL POOL NON DEVE FRUSTARE 216 PARTITE PER SENTIRSI DIRE 216 VOLTE "NO".
+    (-190 query circa, solo quando le odds non ci sono)
+    In odds_per_giornata, dopo aver preso gli id: interrogare le prime 24
+    partite; se tornano ZERO giocatori con odds, fermarsi e ritornare {}.
+    ATTENZIONE, e' l'unico punto del piano che poggia su un'assunzione mia
+    NON verificata: sto assumendo che le odds escano per la giornata piu' o
+    meno insieme, non partita per partita. Non l'ho misurato. Se invece
+    escono a scaglioni (24-48h dal kickoff, come dice il commento a riga
+    ~1652), su una fixture di 5 giorni le prime 24 partite potrebbero essere
+    quelle lontane e il probe direbbe "no" sbagliando.
+    Percio': implementarla SOLO sotto il gate MIN_ODDS <= 0 (dove nessun
+    filtro dipende dalle odds e il costo massimo dell'errore e' un
+    ODDS_STORICO meno completo per quella run), e verificarla su una GW in
+    cui le odds ci sono davvero prima di estenderla a soglia attiva.
+    Se non ti va di assumere: salta P8, non serve per stasera.
+
+P9. CONTARE LE RICHIESTE E STAMPARLE A FINE JOB.   (costo zero, e' la
+    regola dell'interruttore)
+    Un contatore globale in graphql_query (+1 per post, +1 per 429) e una
+    riga finale "[rate] N richieste, M risposte 429, T secondi". Finche' non
+    c'e', il tetto dell'account resta un numero raccontato: ne parlo al §4.
+
+ORDINE: P5 e P6 stasera (P5 e' quello che risolve). P7 subito dopo, e'
+l'unico che regge a regime quando i campionati aprono tutti. P9 quando
+capita. P8 solo se hai voglia di verificare l'assunzione.
+
+
+4. LA RISPOSTA ALLA DOMANDA DI FONDO (4 job vs tetto d'account)
+----------------------------------------------------------------
+Con un tetto CUMULATIVO d'account, il parallelismo non fa guadagnare tempo:
+il totale delle richieste diviso il credito al minuto e' lo stesso con 1 job
+o con 4. Quello che il parallelismo cambia e' solo la FORMA d'onda: 4 job
+insieme trasformano "lento" in "429 + 185 secondi di penalita'", che e'
+strettamente peggio. Il minuto risparmiato non esiste; la penalita' si'.
+
+Quindi la regola di progetto, valida anche a regime: non si guadagna
+parallelizzando, si guadagna FACENDO MENO RICHIESTE. In quest'ordine:
+  1. non chiedere due volte quello che si e' gia' chiesto (P5: 864 -> 0);
+  2. non chiedere quello che non serve (P8, e P1 gia' in produzione);
+  3. distribuire nel tempo quello che resta (P6, P7).
+I 4 job discovery vanno benissimo COSI' COME SONO una volta tolte le
+raffiche: paginano le carte del loro ruolo (~30 pagine a ruolo, con
+time.sleep(0.25) gia' presente) e chiedono la L10 solo ai sopravvissuti.
+Non serve tornare a un job unico, e non serve un ritardo fra pool e
+discovery oltre allo stagger di P6.
+
+CHE COSA SO E CHE COSA NON SO SUL TETTO VERO.
+So (misurato stasera): ~280 richieste in 31s passano senza un 429; una
+seconda raffica di 216 in 6s, 48s dopo, prende 429 immediato con
+Retry-After 185s. Altri Retry-After visti nel repo: 152s, 289s.
+NON so: il valore del tetto. Il "60-70 al minuto" del brief precedente non
+l'ho mai verificato e i dati di stasera non lo confermano — 216 in 6 secondi
+non sarebbero passate. I dati sono COMPATIBILI con un credito di qualche
+centinaio di richieste che si ricarica in qualche minuto, ma compatibile non
+vuol dire dimostrato e non ci taro sopra nessun parametro. E' esattamente
+per questo che serve P9: dopo una run strumentata il numero si legge invece
+di raccontarselo.
+
+
+5. DUE COSE VISTE DI PASSAGGIO, FUORI TEMA MA DA NON PERDERE
+--------------------------------------------------------------
+a) Il pool ha letto 2.806 nodi bench su tre leaderboard e ha ricavato
+   "TOTALE slug distinti con grade: 0", con currentUser='crowss' (sessione
+   viva). Quindi non e' un problema di autenticazione: projection.grade e'
+   nullo per tutti a GW5, presumibilmente perche' le proiezioni non sono
+   ancora uscite. Sono ~57 richieste a vuoto per run. Non toccare niente
+   adesso: prima riverificare su una GW vicina al kickoff, e' l'unico modo
+   di distinguere "non ancora pubblicato" da "rotto".
+b) Il tuo test di stasera non poteva riuscire comunque: a GW5 non ci sono
+   ne' odds ne' grade. Qualunque cosa esca dalla discovery sara' un pool
+   permissivo (soglia 0, odds None per tutti) senza correttivo G. Va bene
+   per provare che la Champions da 7 si genera, non per giudicare la
+   formazione che ne esce.
+
+
+6. COSA NON HO FATTO
+---------------------
+- Non ho toccato una riga di codice (vincolo del brief §3).
+- Non ho rilanciato nessuna run (vincolo del brief §5).
+- Non ho verificato l'assunzione di P8 (dichiarata dentro P8).
+- Non ho letto i log dei job mid/fwd: gk e def bastavano a stabilire il
+  meccanismo, e ogni log costa. Se vuoi la conferma sugli altri due:
+  gh api repos/andreasalvatore93-oss/Sorare-tracker-2/actions/jobs/94074782983/logs
+  gh api repos/andreasalvatore93-oss/Sorare-tracker-2/actions/jobs/94074782989/logs
+
+
+FILE DI RIFERIMENTO
+--------------------
+discovery_fixture.py:1017-1058   _odds_giornata_condivise (P5, il bug)
+discovery_fixture.py:973-1014    odds_per_giornata, worker=6 (P7b, P8)
+fetch_grade_gw.py:64-69          dict 'dati' scritto nell'artifact (P5)
+formazione_turchia/discovery/turchia_gk_discovery.py:72-135
+                                 graphql_query (P7a, P9)
+.github/workflows/formazione_giornata.yml:151-199   step Discovery (P6)
+Run ispezionata: 31584309722, job 94074443882 (pool), 94074783025 (def),
+94074783004 (gk).
