@@ -1,0 +1,93 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-12T19:36:54.293060Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) leo-walta: 54 pt attesi (36-72)
+   SQUADRA: swansea-city-swansea | AVVERSARIO: stoke-city-stoke-on-trent
+======================================================================
+
+######################################################################
+# GIOCATORE: leo-walta
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: leo-walta (squadra: swansea-city-swansea)
+Generato: 2026-08-12T19:36:54.285060Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 24
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-09 | ? vs ? | wc-qualification-europe | score=56.4 | peso=0.801
+  2025-10-12 | ? vs ? | wc-qualification-europe | score=38.8 | peso=0.824
+  2025-11-14 | ? vs ? | wc-qualification-europe | score=59.2 | peso=0.847
+  2025-11-17 | ? vs ? | friendlies | score=89.5 | peso=0.871
+  2026-03-27 | ? vs ? | friendlies | score=74.9 | peso=0.895
+  2026-03-30 | ? vs ? | friendlies | score=67.0 | peso=0.920
+  2026-04-21 | QPR vs SWA | football-league-championship | score=59.7 | peso=0.946
+  2026-05-31 | ? vs ? | friendlies | score=28.0 | peso=0.973
+  2026-06-05 | ? vs ? | friendlies | score=46.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 57.51
+  di cui Punteggio decisivo (level_score) medio: 43.31 | Punteggio complessivo (granulari) medio: 14.20 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 41.93 (delta -1.39)
+  Efficacia offensiva condizionata: delta venue -0.16, delta avversario -0.16 | Passaggio condizionato: delta venue +0.40, delta avversario +0.40 | Gol subiti condizionato: delta venue +0.29, delta avversario +0.29 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 17.60
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.8 - 74.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.06 (differenza: +6.54)
+Media score in casa: 57.51 | Media score fuori casa: 59.70
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 15.0
+Ranking prossimo avversario: 17
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.004
+Fattore gol subiti (goals_conceded, con cap): 1.002
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T14:00
+Casa: Stoke City FC | Trasferta: Swansea City AFC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.4 (range 35.6 - 71.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 59.01
+Punteggio REALE ottenuto in quella partita: 46.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      64.7    59.7     -5.0    17.2        SI
+   7        7      64.0    28.0    -36.0    16.0        NO
+   8        8      59.0    46.9    -12.1    20.1        SI
+
+MAE (errore assoluto medio): 17.70
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

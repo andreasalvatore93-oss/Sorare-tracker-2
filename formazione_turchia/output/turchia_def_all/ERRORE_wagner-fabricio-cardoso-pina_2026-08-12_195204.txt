@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "C:\actions-runner-10\_work\Sorare-tracker-2\Sorare-tracker-2\formazione_turchia\predict\test_def.py", line 2937, in main
+    result = build_prediction(slug)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\actions-runner-10\_work\Sorare-tracker-2\Sorare-tracker-2\formazione_turchia\predict\test_def.py", line 2355, in build_prediction
+    log(f"[FASE 4/4] Partita target: {(next_game.get('date') or '')[:16]} - "
+  File "C:\actions-runner-10\_work\Sorare-tracker-2\Sorare-tracker-2\formazione_turchia\predict\test_def.py", line 244, in log
+    print(f"[{ts}] [test_def] {msg}")
+  File "C:\Program Files\Python311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u0131' in position 90: character maps to <undefined>
