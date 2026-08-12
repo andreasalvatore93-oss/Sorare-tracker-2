@@ -455,9 +455,78 @@ Il test locale e' stato promosso a file di repo e si rilancia da solo:
   python formazione_mls/predict/test_cache_gamelog_locale.py
 6 scenari, zero rete, tutti passati.
 
-7.8 RISULTATI FINALI
----------------------
-(compilato appena la run C finisce)
+7.8 LE QUATTRO RUN, UNA TABELLA
+---------------------------------
+Stessa giornata, stessi parametri (gw5, odds=0, champions=4), stessa forma:
+
+              query   429   attesa    predict   RUN
+  baseline*    6857    45    6193s      723s    18,4 min
+  run A        6857    31    6525s      649s    17,0 min   (fix 1 attivo,
+                                                            marcatori scritti
+                                                            ma persi)
+  run B        4775    29    4401s      558s    15,9 min   (+ fix 2 e 3: le
+                                                            cache arrivano su
+                                                            main)
+  run C        2499    20    4728s      399s    12,8 min   (+ le cache si
+                                                            usano davvero)
+  run D        1504    27    4644s      412s    13,3 min   (+ fix 4 e pacing)
+  * run 31585784239 / run 182, prima di tutto.
+
+QUERY: -78%. RUN: da 18,4 a 12,8 minuti. Il fix 3 (cache) e il fix 2 (batch)
+sono quelli che hanno pagato di piu'.
+
+7.9 DUE IPOTESI MIE, ENTRAMBE FALSIFICATE DAI DATI
+----------------------------------------------------
+Le scrivo perche' servono a chi riprende piu' dei successi.
+
+IPOTESI 1: "il tempo della fase predict e' limitato dalla portata, ~9,4
+query/secondo, quindi meno query = meno tempo, proporzionalmente."
+FALSA nella parte che conta. Le query sono scese del 78% e il tempo di parete
+solo del 43%. Il motivo si vede nella colonna 'attesa': e' rimasta piatta
+intorno ai 4.600 secondi mentre tutto il resto crollava.
+
+IPOTESI 2: "i 429 nascono dalla raffica: 20 runner a 0,2s di pausa puntano a
+100 query/secondo verso un account che ne regge ~9, quindi rallentando la
+partenza spariscono."
+FALSA, e l'ho misurata apposta: run D con SORARE_PACING_MIN=1,0s (cinque
+volte piu' lenta in partenza) ha preso 27 risposte 429 contro le 20 della run
+C a 0,2s, con un terzo delle query. Il pacing e' stato tolto dal workflow;
+il parametro resta configurabile ma inerte.
+
+QUELLO CHE I DATI DICONO DAVVERO: l'attesa da 429 segue il NUMERO DI SHARD,
+non il lavoro ne' la velocita'. Circa una risposta 429 per shard, con
+Retry-After da 194-247 secondi, indipendente da quante query faccia quello
+shard. Con 45 bin sono ~103 secondi di attesa per bin: cinque volte i ~22
+secondi di checkout+setup che erano l'unica voce considerata finora nel
+commento di pipeline_artifacts.py.
+Da qui la mossa successiva: N_BIN da 45 a 20 (uno per slot di concorrenza), e
+via lo stagger dei job discovery, messo poche ore prima sulla stessa ipotesi
+ora falsificata (costava fino a 75s di wall per niente).
+
+NON SO PERCHE' sia per-shard. Le spiegazioni compatibili coi dati sono
+diverse (un limite per sessione/connessione nuova, un bucket d'account sempre
+vuoto con 20 runner attivi, altro) e non ho modo di distinguerle senza
+sondare l'API in un modo che costerebbe piu' di quanto vale. Quello che conta
+per la pipeline e' la regola pratica: OGNI SHARD IN PIU' COSTA ~2 MINUTI DI
+ATTESA, quindi gli shard vanno tenuti pochi.
+
+7.10 DOVE STA IL TEMPO ADESSO (run D, 796s, percorso critico)
+---------------------------------------------------------------
+  pool             0s -> 80s    (80s)
+  discovery       82s -> 226s   (144s, di cui fino a 75 di stagger)
+  discovery_merge 236s -> 272s  (36s)
+  predict         272s -> 695s  (423s)
+  consiglio       695s -> 726s  (31s)
+  formazione      729s -> 796s  (67s)   [salva_output in parallelo, 44s]
+
+Anche azzerando il predict si resterebbe a ~6,3 minuti: le fasi fisse pesano
+~370 secondi, e sono quasi tutte checkout+setup+pip ripetuti (~20s per job).
+Per l'obiettivo "7-8 minuti" chiesto dall'utente servono quindi entrambe le
+cose: predict verso i 150s e qualche decina di secondi tolti alle fasi fisse.
+
+7.11 RISULTATI DELLE RUN SUCCESSIVE
+-------------------------------------
+(compilato via via)
 
 
 7.9 STATO DEL REPO A FINE SESSIONE (per chi riprende)
