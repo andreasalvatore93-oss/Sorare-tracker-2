@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-12T17:00:54.299977Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) federico-matias-zaracho: 48 pt attesi (35-70)
+   SQUADRA: racing-club-avellaneda-provincia-de-buenos-aires | AVVERSARIO: banfield-lomas-de-zamora-provincia-de-buenos-aires
+======================================================================
+
+######################################################################
+# GIOCATORE: federico-matias-zaracho
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: federico-matias-zaracho (squadra: racing-club-avellaneda-provincia-de-buenos-aires)
+Generato: 2026-08-12T17:00:54.299395Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 15
+Escluse (minutaggio < 60', subentri): 15
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-12 | RAC vs SLO | superliga-argentina-de-futbol | score=31.5 | peso=0.824
+  2026-03-04 | TUC vs RAC | superliga-argentina-de-futbol | score=37.5 | peso=0.847
+  2026-04-25 | RAC vs BAC | superliga-argentina-de-futbol | score=77.3 | peso=0.871
+  2026-05-03 | RAC vs HUR | superliga-argentina-de-futbol | score=35.1 | peso=0.895
+  2026-05-10 | EST vs RAC | superliga-argentina-de-futbol | score=38.8 | peso=0.920
+  2026-05-13 | ROS vs RAC | superliga-argentina-de-futbol | score=70.4 | peso=0.946
+  2026-07-24 | RAC vs GLP | superliga-argentina-de-futbol | score=47.8 | peso=0.973
+  2026-08-01 | RAC vs TIG | superliga-argentina-de-futbol | score=44.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 48.10
+  di cui Punteggio decisivo (level_score) medio: 41.24 | Punteggio complessivo (granulari) medio: 6.86 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 40.51 (delta -0.74)
+  Efficacia offensiva condizionata: delta venue -0.14, delta avversario -0.20 | Passaggio condizionato: delta venue +0.64, delta avversario -1.28 | Gol subiti condizionato: delta venue -0.19, delta avversario +0.24 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.63
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.1 - 70.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.85 (differenza: +3.78)
+Media score in casa: 47.28 | Media score fuori casa: 48.90
+Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.1
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.004
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
+Fattore gol subiti (goals_conceded, con cap): 0.998
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 21.05% (fonte: tasso di presenza storico (8/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T23:30
+Casa: Racing Club de Avellaneda | Trasferta: CA Banfield
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.8 (range 34.8 - 70.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.64
+Punteggio REALE ottenuto in quella partita: 44.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -3.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      40.2    47.8     +7.6    20.1        SI
+   7        7      44.5    44.7     +0.2    18.4        SI
+
+MAE (errore assoluto medio): 3.90
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

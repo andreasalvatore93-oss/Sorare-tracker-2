@@ -1,0 +1,111 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T17:05:01.946211Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) stefan-savic-1991-01-08: 56 pt attesi (34-78)
+   ORDINAMENTO: 57.57
+   SQUADRA: trabzonspor-trabzon | AVVERSARIO: kasimpasa-istanbul
+======================================================================
+
+######################################################################
+# GIOCATORE: stefan-savic-1991-01-08
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: stefan-savic-1991-01-08 (squadra: trabzonspor-trabzon)
+Generato: 2026-08-12T17:05:01.945044Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: spor-toto-super-lig (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-18 | KAS vs TS | spor-toto-super-lig | score=59.2 | peso=0.691
+  2025-08-24 | TS vs ANT | spor-toto-super-lig | score=94.0 | peso=0.707
+  2025-08-31 | TS vs SAM | spor-toto-super-lig | score=44.0 | peso=0.724
+  2025-09-14 | FB vs TS | spor-toto-super-lig | score=60.5 | peso=0.741
+  2025-09-20 | TS vs GAZ | spor-toto-super-lig | score=50.3 | peso=0.758
+  2025-09-27 | FAT vs TS | spor-toto-super-lig | score=28.1 | peso=0.776
+  2025-10-03 | TS vs KAY | spor-toto-super-lig | score=100.0 | peso=0.794
+  2025-10-18 | RIZ vs TS | spor-toto-super-lig | score=53.1 | peso=0.812
+  2025-10-25 | TS vs EYÜ | spor-toto-super-lig | score=59.0 | peso=0.831
+  2026-02-22 | GAZ vs TS | spor-toto-super-lig | score=49.3 | peso=0.851
+  2026-02-27 | TS vs FAT | spor-toto-super-lig | score=36.6 | peso=0.871
+  2026-03-09 | KAY vs TS | spor-toto-super-lig | score=64.8 | peso=0.891
+  2026-03-14 | TS vs RIZ | spor-toto-super-lig | score=80.3 | peso=0.912
+  2026-03-18 | EYÜ vs TS | spor-toto-super-lig | score=58.9 | peso=0.933
+  2026-04-04 | TS vs GS | spor-toto-super-lig | score=34.2 | peso=0.955
+  2026-04-11 | ALA vs TS | spor-toto-super-lig | score=56.1 | peso=0.977
+  2026-04-19 | TS vs IBFK | spor-toto-super-lig | score=60.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 57.84
+  di cui Punteggio decisivo (level_score) medio: 39.32 | Punteggio complessivo (granulari) medio: 18.52 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.55, delta avversario -0.16 | Passaggio condizionato: delta venue +0.61, delta avversario +2.68 | Clean sheet/disimpegni condizionato: delta venue -0.92, delta avversario -0.24 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 18.25
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.6 - 80.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.41 (differenza: +3.84)
+Media score in casa: 62.04 | Media score fuori casa: 53.75
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.5
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.212 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.001
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.996
+Fattore trend (media ultime 5: 57.7 vs media 5 PRECEDENTI: 52.6): 1.000
+P(gioca): 51.52% (fonte: tasso di presenza storico (17/33))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T16:00
+Casa: Kasımpaşa Spor Kulübü | Trasferta: Trabzonspor Kulübü
+Competizione: spor-toto-super-lig
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.6 (range 34.4 - 78.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 57.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 57.68
+Punteggio REALE ottenuto in quella partita: 60.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +2.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 11 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      67.4   100.0    +32.6    22.1        NO
+   7        7      52.1    53.1     +1.1    26.9        SI
+   8        8      69.9    59.0    -10.9    25.3        SI
+   9        9      59.3    49.3    -10.0    23.7        SI
+  10       10      73.8    36.6    -37.2    22.7        NO
+  11       11      64.4    64.8     +0.4    22.8        SI
+  12       12      49.0    80.3    +31.3    21.9        NO
+  13       13      63.7    58.9     -4.7    22.0        SI
+  14       14      36.3    34.2     -2.2    21.1        SI
+  15       15      55.2    56.1     +0.9    21.6        SI
+  16       16      44.7    60.0    +15.3    20.8        SI
+
+MAE (errore assoluto medio): 13.32
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 72.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
