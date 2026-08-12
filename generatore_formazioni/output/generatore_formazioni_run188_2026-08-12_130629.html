@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Generatore Formazioni — run #188</title>
+<style>
+  :root {
+    --bg: #0a0d12; --surface: #131a23; --surface-2: #1c2530; --stripe: #232d3a;
+    --text: #edf1f6; --muted: #8a93a6; --muted-2: #5f6879; --gold: #f4c542;
+    --border: rgba(255,255,255,0.08);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f3f4f7; --surface: #ffffff; --surface-2: #eef0f4; --stripe: #e3e6ec;
+      --text: #1a2029; --muted: #5b6474; --muted-2: #8a93a6; --border: rgba(20,25,35,0.08);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    padding: 40px 32px 64px; max-width: 1180px; margin: 0 auto;
+  }
+  h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 6px; }
+  .subhead { color: var(--muted); font-size: 0.85rem; margin: 0 0 32px; }
+  .lineup-row { display: flex; gap: 20px; align-items: flex-start; margin-bottom: 40px; }
+  .lineup-row .lineup-block { flex: 1 1 auto; min-width: 0; margin-bottom: 0; }
+  .alt-panel {
+    flex: 0 0 200px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; align-self: stretch;
+  }
+  .alt-panel-title {
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); margin-bottom: 10px; line-height: 1.4;
+  }
+  .alt-list { display: flex; flex-direction: column; gap: 10px; }
+  .alt-chip { display: flex; align-items: center; gap: 8px; cursor: grab; border-radius: 8px; padding: 2px; }
+  .alt-chip[draggable="true"]:active { cursor: grabbing; }
+  .pcard[draggable="true"] { cursor: grab; }
+  .pcard[draggable="true"]:active { cursor: grabbing; }
+  .pcard.drop-target, .alt-chip.drop-target {
+    outline: 2px dashed var(--gold); outline-offset: 2px;
+  }
+  .alt-circle {
+    flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; background: var(--surface-2);
+    border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+    font-size: 0.62rem; font-weight: 700; color: var(--muted);
+  }
+  .alt-name { font-size: 0.72rem; font-weight: 600; line-height: 1.2; }
+  .alt-score { font-size: 0.64rem; color: var(--muted); }
+  .lineup-block { margin-bottom: 40px; }
+  .lineup-meta { margin-bottom: 12px; }
+  .lineup-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .lineup-title span { color: var(--text); }
+  .card-strip { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+  .pcard {
+    position: relative; flex: 0 0 104px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .pcard-stripe { height: 4px; width: 100%; }
+  .pcard-body { padding: 8px 6px 8px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+  .pcard-role {
+    position: absolute; top: 6px; left: 6px; font-size: 0.52rem; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--role-color);
+    background: color-mix(in srgb, var(--role-color) 16%, transparent);
+    padding: 1px 5px; border-radius: 4px;
+  }
+  .pcard-captain {
+    position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--gold); color: #241c00; font-size: 0.58rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface);
+    /* 08/08: il capitano sta SEMPRE sopra la spunta verde di "copiata", che
+       occupava lo stesso identico angolo (top/right 5px) e lo nascondeva --
+       dopo aver copiato le 5 carte non si sapeva piu' chi fosse il capitano. */
+    z-index: 2;
+  }
+  .pcard-avatar {
+    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.72rem; color: var(--role-color);
+    background: color-mix(in srgb, var(--role-color) 18%, var(--surface-2));
+    border: 2px solid color-mix(in srgb, var(--role-color) 55%, transparent); margin-top: 8px;
+  }
+  .pcard-name { font-size: 0.62rem; font-weight: 650; line-height: 1.2; min-height: 1.6em; display: flex; align-items: center; }
+  .pcard-score { font-size: 1.15rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--role-color); }
+  .pcard-range { font-size: 0.55rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pcard-l10 { font-size: 0.5rem; color: var(--muted-2); font-variant-numeric: tabular-nums; }
+  .pcard-odds { font-size: 0.85rem; font-weight: 800; color: #3a9de0; font-variant-numeric: tabular-nums; }
+  .pcard-match { font-size: 0.62rem; color: var(--text); opacity: 0.85; line-height: 1.3; text-align: center; }
+  .pcard-ambiguo {
+    font-size: 0.55rem; font-weight: 700; color: #f0a83b;
+    background: rgba(240,168,59,0.16); border-radius: 4px; padding: 1px 5px;
+    text-align: center; cursor: help;
+  }
+  .pcard-tags { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; min-height: 14px; }
+  .tag { font-size: 0.5rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding: 1px 4px; border-radius: 3px; }
+  .tag-classic { background: rgba(240,168,59,0.16); color: #f0a83b; }
+  .tag-copies { background: var(--stripe); color: var(--muted); }
+  .tag-xpbonus { background: rgba(76,175,80,0.16); color: #4caf50; }
+  /* QOL 07/08 (richiesta utente: schierare ~300 giocatori a giornata facendo
+     avanti e indietro con Sorare, senza perdere il segno e senza sbagliare
+     formazione). Tre stati VISIBILI a colpo d'occhio:
+       - CLASSIC: contorno dorato. Sono quelle che pesano diversamente e vanno
+         distinte al volo dalle In Season, soprattutto quando si hanno 2 copie.
+       - carta GIA' COPIATA: si spegne, cosi' si sa dove si era arrivati.
+       - formazione GIA' SCHIERATA: si spegne tutta e si accascia in alto.
+     Lo stato vive in localStorage, per giornata: un refresh non lo perde. */
+  /* CLASSIC vs IN SEASON (rimarcato 08/08, richiesta esplicita utente: la
+     scritta "classic" da sola "e' poco intuitiva"). Tre segnali insieme,
+     leggibili senza rileggere il testo: contorno dorato DOPPIO (2px invece
+     di 1), striscia dorata in cima al posto del colore ruolo (il ruolo si
+     legge comunque nel badge in alto a sinistra), e il tag pieno d'oro con
+     un rombo davanti invece che scritta scolorita su fondo grigio. */
+  .pcard.is-classic { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold) inset, 0 1px 2px rgba(0,0,0,0.2); }
+  .pcard.is-classic .pcard-stripe { background: var(--gold) !important; height: 5px; }
+  .tag-classic { background: var(--gold); color: #241c00; font-weight: 800; }
+  .tag-classic::before { content: '\25C6'; margin-right: 3px; }
+  .tag-inseason { background: rgba(94,201,255,0.16); color: #5ec9ff; }
+  /* CARTA GIA' COPIATA (rivisto 08/08 su richiesta utente). Prima si spegneva
+     a opacity 0.38: illeggibile, e "non mi piace, diventano bui". Ora resta
+     LEGGIBILE (0.72) e il segnale di "fatto" e' il contorno verde piu' la
+     spunta, non il buio. Serve a sapere dove si era arrivati, non a
+     cancellare la carta: i numeri si devono poter ancora rileggere. */
+  .pcard.copiata { opacity: 0.72; }
+  .pcard.copiata .pcard-avatar { border-style: dashed; }
+  .pcard-fatto {
+    position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 50%;
+    background: #4caf50; color: #06210a; font-size: 0.62rem; font-weight: 800;
+    display: none; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--surface);
+  }
+  .pcard.copiata .pcard-fatto { display: flex; }
+  /* Contorno verde: si vede a colpo d'occhio anche senza spegnere la carta.
+     outline (non box-shadow) per non cancellare il bordo dorato delle
+     Classic, che usa gia' box-shadow inset. */
+  .pcard.copiata { outline: 2px solid #4caf50; outline-offset: -2px; }
+  /* Se la carta e' capitano, la spunta si sposta a fianco invece di finirgli
+     sotto. Con browser senza :has() resta sovrapposta, ma il capitano ha
+     z-index 2 e resta comunque visibile: nessun peggioramento. */
+  .pcard:has(.pcard-captain) .pcard-fatto { right: 25px; }
+  .lineup-block.schierata { opacity: 0.42; }
+  .lineup-block.schierata .lineup-title::after { content: ' — SCHIERATA'; color: #4caf50; font-weight: 800; }
+  .btn-schierata {
+    margin-left: 10px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; padding: 3px 8px; border-radius: 5px; cursor: pointer;
+    background: var(--surface-2); color: var(--muted); border: 1px solid var(--border);
+  }
+  .btn-schierata:hover { color: var(--text); border-color: var(--gold); }
+  .lineup-block.schierata .btn-schierata { background: rgba(76,175,80,0.18); color: #4caf50; border-color: #4caf50; }
+  .lineup-total {
+    margin-top: 12px; display: inline-flex; align-items: center; gap: 14px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; flex-wrap: wrap;
+    max-width: 100%;
+  }
+  .lineup-total .figure { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .lineup-total .figure.with-captain { color: var(--gold); }
+  .lineup-total .label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); display: block; margin-bottom: 2px; }
+  .lineup-total .divider { width: 1px; height: 30px; background: var(--border); }
+  .lineup-total .captain-note { font-size: 0.74rem; color: var(--muted); }
+  .lineup-total .captain-note b { color: var(--gold); font-weight: 700; }
+  .error-block { font-size: 0.82rem; color: var(--muted); padding: 12px 0; }
+  footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.7rem; color: var(--muted-2); line-height: 1.6; }
+</style>
+</head>
+<body>
+<h1>Generatore Formazioni — run #188</h1>
+<p class="subhead">Generato 12/08/2026 13:06Z — totale=0 (In Season MLS=0, In Season K League=0, Arena All Stars (cap 260)=0, Arena All Stars (cap 220)=0, Arena All Stars (uncapped)=0, Arena All Stars (Beginner)=0, All Stars Under 23=0, All Stars=0, Champions=0)<br>Candidati non schierati in nessuna formazione: 9 (GK: 3, DEF: 0, MID: 6, FWD: 0)</p>
+<div data-sezione="arene_allstars"><div style="border:2px solid #7bd88f;border-radius:10px;padding:10px 12px 4px 12px;margin:0 0 18px 0"><div style="font-size:.85rem;color:#7bd88f;margin-bottom:8px"><b>SCHIERA -- guadagno atteso +18 essenze su 100 di ingresso</b></div><div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">Arena All Stars (Beginner) <span>#1</span></div></div><div class="card-strip"><div class="pcard is-classic" draggable="true" style="--role-color:#8b7cf6" data-slug="joel-drommel" data-role="GK" data-score="48.7" data-xp-frac="0.0" data-name="Joël Drommel" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;JD&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Joël Drommel&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;48.7&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;41.9–56.4 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 47&lt;/div&gt;&lt;div class=&quot;pcard-odds&quot;&gt;Odds: 80%&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Twente Enschede vs Dac Dunajska Streda&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">JD</div><div class="pcard-name">Joël Drommel</div><div class="pcard-score">48.7</div><div class="pcard-range">41.9–56.4 pt</div><div class="pcard-l10">L10: 47</div><div class="pcard-odds">Odds: 80%</div><div class="pcard-match">Twente Enschede vs Dac Dunajska Streda</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="wataru-harada" data-role="DEF" data-score="50.9" data-xp-frac="0.0" data-name="Wataru Harada" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;WH&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Wataru Harada&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;50.9&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;37.2–71.3 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 48&lt;/div&gt;&lt;div class=&quot;pcard-odds&quot;&gt;Odds: 80%&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Kashiwa Reysol Kashiwa vs Tokyo Verdy Tokyo&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">WH</div><div class="pcard-name">Wataru Harada</div><div class="pcard-score">50.9</div><div class="pcard-range">37.2–71.3 pt</div><div class="pcard-l10">L10: 48</div><div class="pcard-odds">Odds: 80%</div><div class="pcard-match">Kashiwa Reysol Kashiwa vs Tokyo Verdy Tokyo</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="sebastien-antoine-luc-salles-lamonge" data-role="MID" data-score="54.78114034750213" data-xp-frac="0.0" data-name="Sébastien Salles-Lamonge" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;SA&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Sébastien Salles-Lamonge&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;54.8&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;39.7–61.9 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 57&lt;/div&gt;&lt;div class=&quot;pcard-odds&quot;&gt;Odds: 80%&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Atletico San Luis vs Orlando City Lake&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID</span><span class="pcard-captain">C</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">SA</div><div class="pcard-name">Sébastien Salles-Lamonge</div><div class="pcard-score">54.8</div><div class="pcard-range">39.7–61.9 pt</div><div class="pcard-l10">L10: 57</div><div class="pcard-odds">Odds: 80%</div><div class="pcard-match">Atletico San Luis vs Orlando City Lake</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#ef5b5b" data-slug="julian-carranza" data-role="FWD" data-score="46.19620743900289" data-xp-frac="0.0" data-name="Julián Carranza" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;JC&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Julián Carranza&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;46.2&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;36.0–68.4 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 52&lt;/div&gt;&lt;div class=&quot;pcard-odds&quot;&gt;Odds: 80%&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Necaxa Aguascalientes vs New York City&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">JC</div><div class="pcard-name">Julián Carranza</div><div class="pcard-score">46.2</div><div class="pcard-range">36.0–68.4 pt</div><div class="pcard-l10">L10: 52</div><div class="pcard-odds">Odds: 80%</div><div class="pcard-match">Necaxa Aguascalientes vs New York City</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="gonzalo-ruben-piovi" data-role="DEF" data-score="52.15560672669662" data-xp-frac="0.0" data-name="Gonzalo Piovi" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;GR&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Gonzalo Piovi&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;52.2&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;38.9–71.3 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 53&lt;/div&gt;&lt;div class=&quot;pcard-odds&quot;&gt;Odds: 80%&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Cruz Azul Ciudad vs Chicago Fire Bridgeview&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">EXTRA · DEF</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">GR</div><div class="pcard-name">Gonzalo Piovi</div><div class="pcard-score">52.2</div><div class="pcard-range">38.9–71.3 pt</div><div class="pcard-l10">L10: 53</div><div class="pcard-odds">Odds: 80%</div><div class="pcard-match">Cruz Azul Ciudad vs Chicago Fire Bridgeview</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div></div><div class="lineup-total" data-captain-pct="0.2"><div><span class="label">Totale</span><span class="figure">252.7 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">263.7 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Sébastien Salles-Lamonge</b> <span class="cap-bonus">(+11 pt, +20%)</span></div><div class="captain-note">L10: 257.0 / 260.0 (entro budget)</div></div></div></div></div>
+<div data-sezione="arene_allstars"><div style="font-size:.78rem;color:#3a7bd5;background:rgba(58,123,213,.12);border:1px solid #3a7bd5;border-radius:6px;padding:3px 9px;display:inline-block;margin-bottom:6px">POOL SUPPLETIVO -- starter-odds 0.60-0.70, non 0.80+</div><div style="border:2px solid #7bd88f;border-radius:10px;padding:10px 12px 4px 12px;margin:0 0 18px 0"><div style="font-size:.85rem;color:#7bd88f;margin-bottom:8px"><b>SCHIERA -- guadagno atteso +100 essenze su 100 di ingresso</b></div><div class="lineup-block"><div class="lineup-meta"><div class="lineup-title">Arena All Stars (Beginner) <span>#1</span></div></div><div class="card-strip"><div class="pcard" draggable="true" style="--role-color:#8b7cf6" data-slug="freese-matthew" data-role="GK" data-score="50.1" data-xp-frac="0.0" data-name="Matt Freese" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;FM&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Matt Freese&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;50.1&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;45.5–56.1 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 46&lt;/div&gt;&lt;div class=&quot;pcard-odds&quot;&gt;Odds: 60%&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;New York City vs Necaxa Aguascalientes&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-inseason&quot;&gt;In Season&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#8b7cf6"></div><span class="pcard-role">GK</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">FM</div><div class="pcard-name">Matt Freese</div><div class="pcard-score">50.1</div><div class="pcard-range">45.5–56.1 pt</div><div class="pcard-l10">L10: 46</div><div class="pcard-odds">Odds: 60%</div><div class="pcard-match">New York City vs Necaxa Aguascalientes</div><div class="pcard-tags"><span class="tag tag-inseason">In Season</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="marcos-johan-lopez-lanfranco" data-role="DEF" data-score="62.2" data-xp-frac="0.0" data-name="Marcos López" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;MJ&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Marcos López&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;62.2&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;43.8–77.9 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 62&lt;/div&gt;&lt;div class=&quot;pcard-odds&quot;&gt;Odds: 70%&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Kobenhavn Kobenhavn vs Debrecen Debrecen&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">DEF</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">MJ</div><div class="pcard-name">Marcos López</div><div class="pcard-score">62.2</div><div class="pcard-range">43.8–77.9 pt</div><div class="pcard-l10">L10: 62</div><div class="pcard-odds">Odds: 70%</div><div class="pcard-match">Kobenhavn Kobenhavn vs Debrecen Debrecen</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#2fbf8f" data-slug="philip-billing" data-role="MID" data-score="65.60000000000001" data-xp-frac="0.0" data-name="Philip Billing" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;PB&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Philip Billing&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;65.6&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;42.7–74.5 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 61&lt;/div&gt;&lt;div class=&quot;pcard-odds&quot;&gt;Odds: 70%&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Midtjylland Herning vs Bohemians Dublin&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#2fbf8f"></div><span class="pcard-role">MID</span><span class="pcard-captain">C</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">PB</div><div class="pcard-name">Philip Billing</div><div class="pcard-score">65.6</div><div class="pcard-range">42.7–74.5 pt</div><div class="pcard-l10">L10: 61</div><div class="pcard-odds">Odds: 70%</div><div class="pcard-match">Midtjylland Herning vs Bohemians Dublin</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#ef5b5b" data-slug="pierre-landry-kabore" data-role="FWD" data-score="47.1" data-xp-frac="0.0" data-name="Pierre Kabore" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;PL&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Pierre Kabore&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;47.1&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;35.2–63.6 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 36&lt;/div&gt;&lt;div class=&quot;pcard-odds&quot;&gt;Odds: 60%&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;Hearts Edinburgh vs Benfica Lisboa&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#ef5b5b"></div><span class="pcard-role">FWD</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">PL</div><div class="pcard-name">Pierre Kabore</div><div class="pcard-score">47.1</div><div class="pcard-range">35.2–63.6 pt</div><div class="pcard-l10">L10: 36</div><div class="pcard-odds">Odds: 60%</div><div class="pcard-match">Hearts Edinburgh vs Benfica Lisboa</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div><div class="pcard is-classic" draggable="true" style="--role-color:#3aa1e8" data-slug="cristian-alexis-borja-gonzalez" data-role="DEF" data-score="58.83317981991014" data-xp-frac="0.0" data-name="Cristián Borja" data-body="&lt;span class=&quot;pcard-fatto&quot;&gt;OK&lt;/span&gt;&lt;div class=&quot;pcard-avatar&quot;&gt;CA&lt;/div&gt;&lt;div class=&quot;pcard-name&quot;&gt;Cristián Borja&lt;/div&gt;&lt;div class=&quot;pcard-score&quot;&gt;58.8&lt;/div&gt;&lt;div class=&quot;pcard-range&quot;&gt;37.2–72.9 pt&lt;/div&gt;&lt;div class=&quot;pcard-l10&quot;&gt;L10: 54&lt;/div&gt;&lt;div class=&quot;pcard-odds&quot;&gt;Odds: 70%&lt;/div&gt;&lt;div class=&quot;pcard-match&quot;&gt;America Ciudad De vs Austin Austin Texas&lt;/div&gt;&lt;div class=&quot;pcard-tags&quot;&gt;&lt;span class=&quot;tag tag-classic&quot;&gt;Classic&lt;/span&gt;&lt;/div&gt;"><div class="pcard-stripe" style="background:#3aa1e8"></div><span class="pcard-role">EXTRA · DEF</span><div class="pcard-body"><span class="pcard-fatto">OK</span><div class="pcard-avatar">CA</div><div class="pcard-name">Cristián Borja</div><div class="pcard-score">58.8</div><div class="pcard-range">37.2–72.9 pt</div><div class="pcard-l10">L10: 54</div><div class="pcard-odds">Odds: 70%</div><div class="pcard-match">America Ciudad De vs Austin Austin Texas</div><div class="pcard-tags"><span class="tag tag-classic">Classic</span></div></div></div></div><div class="lineup-total" data-captain-pct="0.2"><div><span class="label">Totale</span><span class="figure">283.8 pt</span></div><div class="divider"></div><div><span class="label">Con capitano</span><span class="figure with-captain">296.8 pt</span></div><div class="captain-note">Capitano <b class="cap-name">Philip Billing</b> <span class="cap-bonus">(+13 pt, +20%)</span></div><div class="captain-note">L10: 259.0 / 260.0 (entro budget)</div></div></div></div></div>
+<div class="lineup-block verdetto-arene"><style>.verdetto-arene table{border-collapse:collapse;width:100%;font-size:.85rem}.verdetto-arene td{padding:3px 8px;border-bottom:1px solid #2a2a2a}.verdetto-arene tr.ok td{color:#7bd88f}.verdetto-arene tr.no td{color:#8a8a8a}</style><h2>Conviene pagare l'ingresso? — 2 su 2 arene</h2><p>Soglie misurate su 673 arene reali: sotto quella riga l'ingresso costa piu' di quanto renda, e le carte valgono di piu' in una competizione senza costo (All Stars da 7, Under 23).</p><table><tr><td><b>arena</b></td><td style="text-align:right"><b>atteso</b></td><td style="text-align:right"><b>pareggio</b></td><td style="text-align:right"><b>margine</b></td><td><b>verdetto</b></td></tr><tr class="ok"><td>Arena All Stars (Beginner)</td><td style="text-align:right">297</td><td style="text-align:right">256.5</td><td style="text-align:right">+40.5</td><td><b>SCHIERA</b></td></tr><tr class="ok"><td>Arena All Stars (Beginner)</td><td style="text-align:right">264</td><td style="text-align:right">256.5</td><td style="text-align:right">+7.2</td><td><b>SCHIERA</b></td></tr></table></div>
+<footer>Fusione 53 campionati. Max 1 carta CLASSIC solo per In Season. Filtro qualita' L5/L10/L40 disattivato (28/07): ridondante con lo starter-odds.</footer>
+<script>
+// Drag&drop (28/07, richiesta esplicita utente): scambia un giocatore fra
+// una pcard schierata e un'alternativa (o un'altra pcard), stesso ruolo.
+// Puro swap di HTML/attributi gia' pronti lato server (data-body) -- NESSUN
+// ricalcolo di formula, NESSUNA persistenza (un refresh della pagina
+// riporta tutto allo stato generato). Limite noto: le note L10/cap/anti-stack
+// sotto ogni formazione restano quelle calcolate al momento della run, non
+// si aggiornano con lo scambio (solo totale e bonus capitano lo fanno).
+(function () {
+  var dragEl = null;
+
+  function isDraggable(el) {
+    return el && (el.classList.contains('pcard') || el.classList.contains('alt-chip'))
+      && el.getAttribute('draggable') === 'true';
+  }
+
+  document.addEventListener('dragstart', function (e) {
+    var el = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!el) return;
+    dragEl = el;
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', 'x'); } catch (err) {}
+  });
+
+  document.addEventListener('dragover', function (e) {
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!dragEl || !target || target === dragEl || target.dataset.role !== dragEl.dataset.role) return;
+    e.preventDefault();
+  });
+
+  document.addEventListener('dragenter', function (e) {
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (dragEl && target && target !== dragEl && target.dataset.role === dragEl.dataset.role) {
+      target.classList.add('drop-target');
+    }
+  });
+
+  document.addEventListener('dragleave', function (e) {
+    var target = e.target.closest('.pcard, .alt-chip');
+    if (target) target.classList.remove('drop-target');
+  });
+
+  document.addEventListener('dragend', function () {
+    document.querySelectorAll('.drop-target').forEach(function (el) { el.classList.remove('drop-target'); });
+    dragEl = null;
+  });
+
+  document.addEventListener('drop', function (e) {
+    var target = e.target.closest('.pcard[draggable="true"], .alt-chip[draggable="true"]');
+    if (!dragEl || !target || target === dragEl || target.dataset.role !== dragEl.dataset.role) return;
+    e.preventDefault();
+    target.classList.remove('drop-target');
+    swapPlayers(dragEl, target);
+    dragEl = null;
+  });
+
+  function initials(name) {
+    return (name || '').split(' ').filter(Boolean).slice(0, 2)
+      .map(function (w) { return w[0].toUpperCase(); }).join('') || '??';
+  }
+
+  function refresh(el) {
+    if (el.classList.contains('pcard')) {
+      var body = el.querySelector('.pcard-body');
+      if (body) body.innerHTML = el.dataset.body;
+    } else {
+      var circle = el.querySelector('.alt-circle');
+      var name = el.querySelector('.alt-name');
+      var score = el.querySelector('.alt-score');
+      if (circle) circle.textContent = initials(el.dataset.name);
+      if (name) name.textContent = el.dataset.name;
+      if (score) score.textContent = (parseFloat(el.dataset.score) || 0).toFixed(1) + ' pt · ' + el.dataset.role;
+    }
+  }
+
+  function swapPlayers(a, b) {
+    ['slug', 'score', 'name', 'body', 'xpFrac'].forEach(function (k) {
+      var tmp = a.dataset[k];
+      a.dataset[k] = b.dataset[k];
+      b.dataset[k] = tmp;
+    });
+    refresh(a);
+    refresh(b);
+    [a, b].forEach(function (el) {
+      var block = el.closest('.lineup-block');
+      if (block) recomputeTotal(block);
+    });
+  }
+
+  function recomputeTotal(block) {
+    var total = 0;
+    block.querySelectorAll('.pcard').forEach(function (c) { total += parseFloat(c.dataset.score) || 0; });
+    var totalEl = block.querySelector('.lineup-total');
+    if (!totalEl) return;
+    var figure = totalEl.querySelector('.figure:not(.with-captain)');
+    if (figure) figure.textContent = total.toFixed(1) + ' pt';
+    var capBadge = block.querySelector('.pcard-captain');
+    var capPct = parseFloat(totalEl.dataset.captainPct || '0.5');
+    var bonus = 0, capName = '';
+    if (capBadge) {
+      var capCard = capBadge.closest('.pcard');
+      // FIX 28/07 sera: data-score include GIA' il bonus xp/collezione/
+      // stagione (se applicabile) -- calcolare il +50% capitano su quel
+      // valore gonfiato lo applica in cascata invece che addizionato
+      // (stesso bug fixato lato Python in render_lineup_html). Si riporta
+      // al valore raw dividendo per (1+xpFrac) prima di applicare capPct.
+      var capScore = parseFloat(capCard.dataset.score) || 0;
+      var xpFrac = parseFloat(capCard.dataset.xpFrac) || 0;
+      var capRaw = xpFrac ? capScore / (1 + xpFrac) : capScore;
+      bonus = Math.round(capRaw * capPct);
+      capName = capCard.dataset.name || '';
+    }
+    var withCap = totalEl.querySelector('.figure.with-captain');
+    if (withCap) withCap.textContent = (total + bonus).toFixed(1) + ' pt';
+    var capNameEl = totalEl.querySelector('.cap-name');
+    if (capNameEl && capName) capNameEl.textContent = capName;
+    var capBonusEl = totalEl.querySelector('.cap-bonus');
+    if (capBonusEl) capBonusEl.textContent = '(+' + bonus + ' pt, +' + Math.round(capPct * 100) + '%)';
+  }
+})();
+</script>
+<script>
+(function () {
+  // Click sul nome del giocatore = nome negli appunti, da incollare nella
+  // ricerca di Sorare (01/08, richiesta utente: i nomi coreani sono difficili
+  // da riscrivere a mano).
+  function copia(testo, el) {
+    var vecchio = el.textContent;
+    var ok = function () {
+      el.textContent = 'copiato!';
+      setTimeout(function () { el.textContent = vecchio; }, 800);
+    };
+    var fallback = function () {
+      var riuscito = false;
+      var ta = document.createElement('textarea');
+      ta.value = testo; document.body.appendChild(ta); ta.select();
+      try { riuscito = document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      if (riuscito) {
+        ok();
+      } else {
+        el.style.color = 'red';
+        el.textContent = 'copia non riuscita';
+        setTimeout(function () { el.textContent = vecchio; el.style.color = ''; }, 1200);
+      }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(testo).then(ok, fallback);
+    } else {
+      fallback();
+    }
+  }
+  document.addEventListener('click', function (ev) {
+    // Si copia cliccando il CERCHIO con le iniziali oppure il nome (07/08,
+    // richiesta utente): il cerchio e' molto piu' grande e piu' facile da
+    // centrare quando si compongono decine di formazioni. Restano validi
+    // entrambi, cosi' chi e' abituato al nome non perde niente.
+    if (!ev.target || !ev.target.closest) return;
+    var punto = ev.target.closest('.pcard-avatar, .pcard-name');
+    if (!punto) return;
+    ev.preventDefault(); ev.stopPropagation();
+    var card = punto.closest('[data-name]') || punto.closest('[data-slug]')
+               || punto.closest('.pcard');
+    // Il messaggio ('copiato!'/'copia non riuscita') va SEMPRE sul nome, mai
+    // sul cerchio: li' dentro ci stanno due lettere e non si leggerebbe.
+    var el = (card && card.querySelector('.pcard-name')) || punto;
+    var testo = (card && (card.dataset.name || card.dataset.slug)) || el.textContent;
+    copia(testo.trim(), el);
+    segnaCopiata(card);   // avanzamento: da qui in poi si sa dove si era arrivati
+  }, true);
+  /* AVANZAMENTO (07/08). Il problema non e' copiare un nome, e' NON PERDERE
+     IL SEGNO: ~300 giocatori a giornata, avanti e indietro con Sorare, con il
+     rischio di rimettere un difensore nella formazione di un altro portiere.
+     Due memorie, per GIORNATA, in localStorage (un refresh non le perde):
+       - carta copiata -> si spegne e prende la spunta verde
+       - formazione schierata -> si spegne tutta, col tasto FATTA
+     Niente di tutto questo tocca i punteggi: e' solo stato di avanzamento. */
+  var CHIAVE = 'sorare-avanzamento::' + (document.title || 'gw');
+  function statoLeggi() {
+    try { return JSON.parse(localStorage.getItem(CHIAVE) || '{}'); }
+    catch (e) { return {}; }
+  }
+  function statoScrivi(s) {
+    try { localStorage.setItem(CHIAVE, JSON.stringify(s)); } catch (e) {}
+  }
+  function idCarta(card) {
+    var blocco = card.closest('.lineup-block');
+    var titolo = blocco ? (blocco.querySelector('.lineup-title') || {}).textContent : '';
+    return (titolo || '') + '|' + (card.dataset.slug || '') + '|' + (card.dataset.role || '');
+  }
+  function idBlocco(blocco) {
+    var t = blocco.querySelector('.lineup-title');
+    return 'BLOCCO|' + ((t && t.textContent) || '');
+  }
+  function applicaStato() {
+    var s = statoLeggi();
+    document.querySelectorAll('.pcard').forEach(function (c) {
+      c.classList.toggle('copiata', !!s[idCarta(c)]);
+    });
+    document.querySelectorAll('.lineup-block').forEach(function (b) {
+      b.classList.toggle('schierata', !!s[idBlocco(b)]);
+    });
+  }
+  function segnaCopiata(card) {
+    if (!card) return;
+    var s = statoLeggi();
+    s[idCarta(card)] = 1;
+    statoScrivi(s);
+    card.classList.add('copiata');
+  }
+  // Un tasto FATTA per formazione, piu' il ripristino
+  document.querySelectorAll('.lineup-block').forEach(function (b) {
+    var t = b.querySelector('.lineup-title');
+    if (!t) return;
+    var btn = document.createElement('span');
+    btn.className = 'btn-schierata';
+    btn.textContent = 'fatta';
+    btn.title = 'Segna questa formazione come gia\' schierata su Sorare';
+    btn.addEventListener('click', function (ev) {
+      ev.preventDefault(); ev.stopPropagation();
+      var s = statoLeggi();
+      var k = idBlocco(b);
+      if (s[k]) { delete s[k]; } else { s[k] = 1; }
+      statoScrivi(s);
+      applicaStato();
+    });
+    t.parentNode.appendChild(btn);
+  });
+  applicaStato();
+  var st = document.createElement('style');
+  st.textContent = '.pcard-name{cursor:copy} .pcard-name:hover{text-decoration:underline dotted}'
+                 + '.pcard-avatar{cursor:copy}'
+                 + '.pcard-avatar:hover{outline:2px solid currentColor;outline-offset:2px}';
+  document.head.appendChild(st);
+})();
+</script>
+
+<style>
+  .schierata-flag {
+    display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+    user-select: none; margin-left: 14px; vertical-align: middle;
+    font-size: 0.92rem; font-weight: 700; letter-spacing: 0.02em;
+    color: var(--text); opacity: 0.8;
+    transition: opacity 0.15s ease;
+  }
+  .schierata-flag:hover { opacity: 1; }
+  .schierata-box {
+    width: 22px; height: 22px; border-radius: 6px; flex: 0 0 auto;
+    border: 2px solid var(--gold); background: transparent;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1rem; line-height: 1; color: transparent; font-weight: 800;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .schierata-flag[data-on="1"] { opacity: 1; }
+  .schierata-flag[data-on="1"] .schierata-box {
+    background: #2fbf6a; border-color: #2fbf6a; color: #06240f;
+    box-shadow: 0 0 0 4px rgba(47, 191, 106, 0.28);
+  }
+  .lineup-block[data-schierata="1"] { outline: 2px solid #2fbf6a; outline-offset: 3px; }
+  /* COLLASSO (08/08, richiesta esplicita utente: "falla proprio sparire, cosi'
+     non la vedo piu' e non mi confondo"). Segnata come schierata, la
+     formazione si richiude e resta solo il titolo con un tasto per
+     riaprirla. Lo stato "riaperta" NON e' persistito di proposito: alla
+     riapertura del file le schierate tornano chiuse, che e' lo scopo. */
+  .lineup-block[data-schierata="1"] { padding-bottom: 4px; }
+  .btn-riapri {
+    display: none; margin-left: 12px; cursor: pointer; user-select: none;
+    font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em;
+    padding: 3px 10px; border-radius: 999px; vertical-align: middle;
+    border: 1px solid #2fbf6a; color: #2fbf6a; background: rgba(47,191,106,0.12);
+  }
+  .btn-riapri:hover { background: rgba(47,191,106,0.24); }
+  .lineup-block[data-schierata="1"] .btn-riapri { display: inline-block; }
+</style>
+<script>
+(function () {
+  var CHIAVE = 'sorare_schierate::' + (location.pathname.split('/').pop() || 'report');
+  var stato = {};
+  try { stato = JSON.parse(localStorage.getItem(CHIAVE) || '{}'); } catch (e) { stato = {}; }
+
+  function salva() {
+    try { localStorage.setItem(CHIAVE, JSON.stringify(stato)); } catch (e) {}
+  }
+
+  document.querySelectorAll('.lineup-block').forEach(function (block, i) {
+    var titolo = block.querySelector('.lineup-title');
+    if (!titolo) return;
+    var id = (titolo.textContent || '').trim().replace(/\s+/g, ' ') || ('formazione-' + i);
+
+    var flag = document.createElement('span');
+    flag.className = 'schierata-flag';
+    flag.title = 'Segna questa formazione come gia schierata su Sorare';
+    var box = document.createElement('span');
+    box.className = 'schierata-box';
+    box.textContent = '✓';
+    var testo = document.createElement('span');
+    testo.textContent = 'Formazione gia schierata';
+    flag.appendChild(box);
+    flag.appendChild(testo);
+
+    // Tasto per riaprire una formazione richiusa. Vive DENTRO il titolo,
+    // l'unica parte che resta visibile quando il blocco e' collassato.
+    var riapri = document.createElement('span');
+    riapri.className = 'btn-riapri';
+    var aperta = false;   // non persistito: si riparte sempre da chiusa
+
+    // Il contenuto da nascondere sono tutti i figli diretti del blocco TRANNE
+    // quello che contiene il titolo. Si ricava risalendo dal titolo invece di
+    // elencare classi a mano: se un domani il template cambia struttura,
+    // questo continua a funzionare.
+    var ramoTitolo = titolo;
+    while (ramoTitolo && ramoTitolo.parentNode !== block) { ramoTitolo = ramoTitolo.parentNode; }
+
+    function applica() {
+      var on = stato[id] ? '1' : '0';
+      flag.setAttribute('data-on', on);
+      block.setAttribute('data-schierata', on);
+      var chiudi = !!stato[id] && !aperta;
+      Array.prototype.forEach.call(block.children, function (ch) {
+        if (ch !== ramoTitolo) { ch.style.display = chiudi ? 'none' : ''; }
+      });
+      riapri.textContent = aperta ? 'richiudi' : 'clicca per riaprire';
+    }
+    flag.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      stato[id] = !stato[id];
+      if (!stato[id]) { delete stato[id]; }
+      aperta = false;   // rimarcandola da schierare si riparte da chiusa
+      salva();
+      applica();
+    });
+    riapri.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      ev.preventDefault();
+      aperta = !aperta;
+      applica();
+    });
+    applica();
+    titolo.appendChild(flag);
+    titolo.appendChild(riapri);
+  });
+})();
+</script>
+
+<style>
+  .bf-topbar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    margin: 0 0 20px 0; padding-top: 6px;
+  }
+  .bf-tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+  .bf-tabs::-webkit-scrollbar { display: none; }
+  .bf-tab {
+    appearance: none; border: none; background: none; color: var(--muted);
+    font-size: 0.84rem; font-weight: 600; padding: 10px 16px 12px; cursor: pointer;
+    border-bottom: 2px solid transparent; white-space: nowrap; font-family: inherit;
+    transition: color 0.15s ease;
+  }
+  .bf-tab:hover { color: var(--text); }
+  .bf-tab[aria-current="true"] { color: var(--text); border-bottom-color: var(--gold); }
+  .bf-tab .bf-count { color: var(--muted-2); font-weight: 700; margin-left: 5px; }
+</style>
+<script>
+(function () {
+  var SEZIONI = [["in_season", "In Season"], ["arene_dedicate", "Arene dedicate"], ["arene_allstars", "Arene All Stars"], ["allstars", "All Stars"], ["under23", "Under 23"], ["opzionali", "Opzionali"]];
+  var blocchi = Array.prototype.slice.call(document.querySelectorAll('[data-sezione]'));
+  if (!blocchi.length) return;
+
+  var gruppi = {};
+  blocchi.forEach(function (b) {
+    var s = b.getAttribute('data-sezione');
+    (gruppi[s] = gruppi[s] || []).push(b);
+  });
+
+  var bar = document.createElement('div');
+  bar.className = 'bf-topbar';
+  var nav = document.createElement('nav');
+  nav.className = 'bf-tabs';
+  bar.appendChild(nav);
+
+  // Il separatore delle OPZIONALI e' un blocco a se' (non ha data-sezione):
+  // va mostrato solo quando quelle formazioni sono visibili.
+  var divisore = null;
+  document.querySelectorAll('div').forEach(function (d) {
+    if (!divisore && d.textContent.indexOf('Formazioni OPZIONALI (extra') === 0) { divisore = d; }
+  });
+
+  function mostra(vista, btn) {
+    Array.prototype.slice.call(nav.children).forEach(function (b) { b.removeAttribute('aria-current'); });
+    if (btn) btn.setAttribute('aria-current', 'true');
+    blocchi.forEach(function (b) {
+      var s = b.getAttribute('data-sezione');
+      b.style.display = (vista === 'tutto' || vista === s) ? '' : 'none';
+    });
+    if (divisore) {
+      divisore.style.display = (vista === 'tutto' || vista === 'opzionali') ? '' : 'none';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function tab(id, label, n) {
+    var b = document.createElement('button');
+    b.className = 'bf-tab';
+    b.type = 'button';
+    b.textContent = label;
+    if (n) {
+      var sp = document.createElement('span');
+      sp.className = 'bf-count';
+      sp.textContent = n;
+      b.appendChild(sp);
+    }
+    b.addEventListener('click', function () { mostra(id, b); });
+    nav.appendChild(b);
+    return b;
+  }
+
+  var primo = tab('tutto', 'Tutte', blocchi.length);
+  SEZIONI.forEach(function (s) {
+    if ((gruppi[s[0]] || []).length) { tab(s[0], s[1], gruppi[s[0]].length); }
+  });
+
+  var ancora = document.querySelector('p.subhead') || document.querySelector('h1');
+  if (ancora && ancora.parentNode) {
+    ancora.parentNode.insertBefore(bar, ancora.nextSibling);
+  } else {
+    document.body.insertBefore(bar, document.body.firstChild);
+  }
+  mostra('tutto', primo);
+})();
+</script>
+</body>
+</html>
