@@ -1,0 +1,171 @@
+BRIEF PER OPUS (stregone supremo) -- 12/08/2026 sera, Roma
+Chi lo manda: l'utente stesso (navetta manuale), preparato dall'orchestratore.
+IMPORTANTE: rispondi SOLO scrivendo nel file di risposta nel repo (vedi §6).
+Il canale cross-sessione (mcp send_message) stasera non ha funzionato --
+NON provare a rispondere all'orchestratore per quella via, l'utente fa da
+navetta come per i due brief precedenti di stasera.
+Nessuna modifica al codice richiesta: e' un brief di ANALISI e PIANO, non un
+fix da un'ora. Se serve una prova, falla con dati/log gia' disponibili
+(query live SOLO se strettamente necessario e a basso costo).
+
+
+0. COSA LEGGERE PRIMA
+----------------------
+- CLAUDE.md (REGOLA SUPREMA risparmio token; divieto di stime a spanne --
+  qui piu' che mai, e' facile inventare percentuali plausibili).
+- docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8duodecies-bis (contesto:
+  429 chiuso stanotte, poi D1/D2 chiusi, D3 -- quello di cui parla QUESTO
+  brief -- deliberatamente NON generalizzato, vedi §1 sotto).
+- docs/handoff/RISPOSTA_OPUS_GW5_CHAMPIONS_RETEST_2026-08-12.txt (la tua
+  risposta di un'ora fa, §3, dove proponevi la restrizione per lega --
+  questo brief la mette in discussione con dati nuovi, leggi il §1 prima
+  di riproporla).
+- pipeline_artifacts.py righe 104-181 (il modello di costo del job predict,
+  GIA' tarato con misure reali -- non re-inventarlo, e' materiale per
+  orientarti, non per essere rimesso in discussione senza motivo).
+- generatore_formazioni/build_formazione_globale.py righe 333-345
+  (POOL_LEAGUE_BY_TYPE) e 1570-1650 (genera_arene_efficienti).
+
+
+1. IL CONTESTO CHE CAMBIA LA DOMANDA -- LEGGI PRIMA DI TUTTO
+----------------------------------------------------------------
+Nella tua risposta di un'ora fa (RISPOSTA_OPUS_GW5_CHAMPIONS_RETEST §3.6)
+avevi proposto, come "Passo 4", di generalizzare la restrizione-per-lega
+(oggi attiva SOLO per "champions e basta", vedi commit 7ceb359c7c -- non
+ancora pushato ne' rilanciato mentre scrivo questo) ad altre combinazioni.
+
+L'utente ha chiarito lo scenario reale a cui gli serve arrivare: **non**
+"champions e basta", ma **30+ arene efficienti + tutte le leghe In Season +
+All Stars Under23 + Champions, TUTTE INSIEME, nella stessa run**, fra pochi
+giorni quando le quote vere saranno pubblicate.
+
+Guardando POOL_LEAGUE_BY_TYPE (build_formazione_globale.py:333-338):
+
+  'ARENA_ALLSTARS_260/220/UNCAPPED/BEGINNER': 'mixed',   <- arene efficienti
+  'ALLSTARS': 'mixed', 'ALLSTARS_U23': 'mixed_u23',      <- tutte "mixed"
+  'CHAMPIONS': 'mixed_champions'                          <- SOLA eccezione
+
+"mixed"/"mixed_u23" pescano da TUTTE le leghe con pipeline (nessuna
+restrizione), per costruzione: sono le arene/competizioni che non hanno un
+vincolo di campionato su Sorare. Solo Champions ha un pool ristretto (5
+leghe). Quindi, nello scenario reale descritto dall'utente (arene efficienti
++ u23 richieste insieme a Champions), l'UNIONE delle leghe rilevanti e'
+quasi certamente "tutte le leghe con pipeline" comunque -- la restrizione
+per Champions non toglierebbe praticamente nulla, perche' le arene
+efficienti e l'Under23 hanno gia' bisogno del pool intero.
+
+IPOTESI DELL'ORCHESTRATORE (da verificare, non affermarla senza controllo):
+per lo scenario reale dell'utente, la restrizione-per-lega (D3 come
+originariamente inquadrato) e' un vicolo cieco -- non genera nessun
+risparmio quando arene efficienti/U23 sono richieste insieme a Champions,
+che e' esattamente il caso che gli interessa. Se questa ipotesi regge,
+NON vale la pena generalizzarla: la domanda giusta e' un'altra (§2).
+
+CONTROLLA TU PRIMA DI PROCEDERE: leggi genera_arene_efficienti (righe
+1570-1650+) e conferma che 'mixed' significa davvero "tutte le leghe di
+LEAGUES senza eccezioni" e non ha gia' un modo (magari nascosto in
+ARENA_LEAGUES o altrove) di restringersi. Se la mia lettura e' sbagliata,
+dillo chiaramente e correggi la premessa prima di rispondere al resto.
+
+
+2. LA DOMANDA VERA: IL PROBLEMA E' STRUTTURALE O E' SOLO IL PRESEASON?
+--------------------------------------------------------------------------
+Ho misurato (gh run list + gh api .../jobs/<id>/logs, run REALI, non
+GW5/preseason) 6 run recenti del workflow con lo starter-odds filter VERO
+attivo (non MIN_STARTER_ODDS=0 come stasera):
+
+  run 31580914901  09:00:08 -> 09:06:07Z   5m59s   totale richiesto: 0
+  run 31577091621  08:09:42 -> 08:15:25Z   5m43s   totale richiesto: 0
+  run 31526738294  19:13:12 -> 19:20:22Z   7m10s   totale richiesto: 0
+  run 31524710859  18:49:21 -> 18:56:37Z   7m16s   totale richiesto: 4  (All Stars=4, pool 'mixed')
+  run 31522054620  18:18:44 -> 18:25:06Z   6m22s   totale richiesto: 0
+  run 31494998746  13:12:32 -> 13:18:31Z   5m59s   totale richiesto: 8  (U23=4 + AllStars=4, pool 'mixed'+'mixed_u23')
+
+(fonte esatta: "Formazioni richieste: totale=N -> ..." nel log del job
+'formazione' di ciascuna run, preso con gh api .../jobs/<id>/logs)
+
+Contro la run di stasera (31585784239, la PRIMA prima del fix P5/P6):
+18m16s totale, con MIN_STARTER_ODDS=0 (nessun filtro, tutti gli eleggibili
+per la fixture passano) e 1151 giocatori scoperti in 28 campionati.
+
+Quindi, CON un filtro odds vero attivo, anche chiedendo tipi 'mixed' (le
+due run da 4 e 8 formazioni sopra), il totale e' rimasto sotto i 7m20s --
+quasi 3 volte piu' veloce dei 18-20 minuti di stasera. Questo e' un dato
+misurato, non una proiezione.
+
+LA DOMANDA CHE MI HA POSTO L'UTENTE, E CHE NON SO RISPONDERE DA SOLO: le
+due run sopra chiedevano 4 e 8 formazioni. Lui ne vuole 30+ arene + tutte
+le In Season + U23 + Champions insieme -- un NUMERO di formazioni molto
+piu' alto nello stesso tipo 'mixed'. Il numero di formazioni RICHIESTE non
+cambia quanti giocatori vengono scoperti/predetti di per se' (discovery
+esamina sempre tutte le leghe per un tipo 'mixed', a prescindere da quante
+te ne servono) -- MA puo' farlo indirettamente tramite il POOL SUPPLETIVO
+(EXTEND_ODDS_060_070, build_formazione_globale.py righe ~2337-2380): se la
+richiesta e' molto piu' grande del pool a odds>=0.80, il codice pesca ANCHE
+la banda 0.60-0.70, che e' un pool piu' grande (piu' giocatori "quasi
+probabili" oltre ai certi).
+
+DOMANDA 1: quanto e' piu' grande, in pratica, il pool 0.60-0.70 rispetto a
+quello 0.80+? Ha senso chiederselo prima di sapere se 30+ arene + In Season
++ U23 + Champions "sforano" nella banda suppletiva o restano nel pool gia'
+misurato dalle run sopra. Se hai un modo economico di stimarlo dai dati
+gia' in repo (es. contando quanti owned-card-slug storici cadono in quella
+banda su una giornata gia' passata con odds vere, senza query di rete),
+fallo. Se serve una query live, valuta il costo prima di lanciarla e
+chiedi il via -- non lanciarla di tua iniziativa.
+
+DOMANDA 2: le due run misurate sopra (4 e 8 formazioni 'mixed') sono troppo
+piccole per dire con certezza che 30+ arene restino sotto la stessa soglia
+di tempo. Il pool DISCOVERY/PREDICT scoperto non dipende dal numero di
+formazioni richieste (dipende da quanti giocatori superano lo starter-odds
+filter, punto), quindi la mia ipotesi e' che il tempo di discovery+predict
+NON debba crescere in modo significativo passando da 8 a 30+ formazioni
+richieste, A MENO che scatti il pool suppletivo (Domanda 1). Verifica
+questa ipotesi leggendo il codice: la fase discovery/predict dipende dal
+NUMERO di formazioni richieste in QUALCHE punto, o solo dal tipo (mixed
+vs ristretto) e dalla soglia odds? Se trovi un punto in cui il conteggio
+richiesto influenza QUANTO discovery/predict lavorano (oltre al pool
+suppletivo), citalo con riga esatta.
+
+DOMANDA 3, se le prime due confermano che il problema di stasera era
+SOLO il preseason (odds=0, nessun filtro) e non la scala della richiesta:
+cosa vale la pena fare ADESSO, se non serve nessun fix strutturale? La mia
+ipotesi (da verificare, non darla per buona): forse NON serve un fix
+strutturale affatto, e il problema si risolve da solo quando le quote vere
+usciranno fra pochi giorni. In tal caso dillo chiaramente, e proponi solo
+un presidio a basso costo per non farsi sorprendere di nuovo dal caso
+preseason (es. un avviso quando MIN_STARTER_ODDS<=0 e il totale scoperto
+supera una soglia, cosi' si sa PRIMA di lanciare che quella run sara'
+lenta per il motivo noto, non per un bug nuovo).
+
+Se invece le domande 1-2 rivelano che il pool suppletivo o qualche altro
+meccanismo FA crescere il carico con richieste piu' grandi anche a odds
+vere, allora si', serve un piano (non un fix al volo): elenca le opzioni
+con i loro costi/rischi (es. alzare SLOT_CONCORRENTI se il tetto di 20 e'
+per-account e non per-workflow -- verificalo, non darlo per scontato;
+sminuzzare diversamente il predict; ridurre il pool suppletivo con un cap
+piu' stretto; pipeline in streaming invece che a stadi). Non implementare
+niente: proponi, l'utente decide.
+
+
+3. COSA NON FARE
+------------------
+- Non toccare produzione.
+- Non generalizzare la restrizione-per-lega di D3 finche' il §1 non e'
+  confermato o smentito con la lettura del codice -- rischi di costruire
+  un'ottimizzazione che non serve a niente nello scenario vero.
+- Non lanciare run GitHub di tua iniziativa: se una misura richiede una
+  run, proponila e aspetta il via.
+- Non stimare percentuali di risparmio a spanne (vale doppio qui: e'
+  facilissimo dire "forse il 30% piu' veloce" senza averlo mai misurato).
+
+
+4. DOVE SCRIVERE L'ESITO
+--------------------------
+File NUOVO (non e' un fix di dettaglio come i precedenti, e' un'analisi a
+se' stante): docs/handoff/RISPOSTA_OPUS_VELOCITA_STRUTTURALE_2026-08-12.txt
+Verdetto da bar in 10 righe in cima, poi il dettaglio. Aggiorna anche
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8duodecies-bis con 2-3 righe di
+rimando a questo file (non duplicare il contenuto li').
+NON usare mcp send_message (rotto stasera) -- solo il file, l'utente lo
+legge e lo passa avanti lui.
