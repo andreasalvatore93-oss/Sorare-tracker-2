@@ -48,6 +48,16 @@ def _report_di_questa_run():
             p = f.read().strip()
     except OSError:
         return None
+    if os.path.isabs(p):
+        # Difesa (12/08/2026): un sentinella con path ASSOLUTO produrrebbe un
+        # URL rotto (.../<sha>//home/runner/...). Lo si riporta alla radice
+        # del repo, che nel job e' la directory di lavoro.
+        try:
+            p = os.path.relpath(p, os.getcwd())
+        except ValueError:
+            return None
+        if p.startswith('..'):
+            return None
     return p if p and os.path.exists(p) else None
 
 

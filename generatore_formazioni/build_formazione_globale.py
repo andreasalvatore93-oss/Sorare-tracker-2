@@ -2838,8 +2838,25 @@ def main():
     # HTML che il checkout ripristina tutti insieme -- una lotteria, notifica
     # partita con un report di undici giorni prima). File di lavoro, non
     # committato -- vedi .gitignore.
-    with open('_ultimo_report.txt', 'w', encoding='utf-8') as f:
-        f.write(html_path)
+    # Il path va scritto RELATIVO ALLA RADICE DEL REPO, mai assoluto: il
+    # notificatore ci costruisce sopra un URL raw.githack. Bug reale del
+    # 12/08/2026 sera, visto dall'utente: OUTPUT_DIR e' assoluto (nasce da
+    # os.path.abspath(__file__)), quindi il link e' uscito come
+    # .../<sha>//home/runner/work/Sorare-tracker-2/... -> 404. Prima non si
+    # notava perche' il notificatore si costruiva il path per conto suo, con
+    # un OUTPUT_DIR relativo tutto suo.
+    _radice_repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    try:
+        _rel_report = os.path.relpath(html_path, _radice_repo)
+    except ValueError:      # unita' diverse su Windows: meglio niente che un URL rotto
+        _rel_report = ''
+    if _rel_report and not _rel_report.startswith('..'):
+        with open('_ultimo_report.txt', 'w', encoding='utf-8') as f:
+            f.write(_rel_report.replace(os.sep, '/'))
+    else:
+        print("ATTENZIONE: non riesco a scrivere _ultimo_report.txt con un path "
+              f"relativo alla radice del repo ({html_path!r}): la notifica "
+              f"Telegram verra' saltata invece di mandare un link rotto.")
 
 
 if __name__ == '__main__':
