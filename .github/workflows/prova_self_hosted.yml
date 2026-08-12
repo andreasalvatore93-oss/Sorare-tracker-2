@@ -21,7 +21,16 @@ on:
 
 defaults:
   run:
-    shell: bash
+    # PERCORSO ESPLICITO, non "bash" (12/08/2026, primo tentativo fallito con
+    # "bash: command not found"). Il servizio del runner gira con il PATH di
+    # sistema, dove Git Bash NON c'e': e' nel PATH dell'utente, non in quello
+    # del servizio. Indicarlo per esteso evita di dover toccare il PATH di
+    # sistema, che e' una modifica globale alla macchina per un problema che
+    # riguarda solo noi.
+    # Il "-e {0}" e' la forma che GitHub si aspetta: -e = esci al primo
+    # comando fallito (come fa la shell dei runner Linux), {0} = il file di
+    # script che il runner genera per lo step.
+    shell: 'C:\Program Files\Git\bin\bash.exe -e {0}'
 
 jobs:
   prova:
