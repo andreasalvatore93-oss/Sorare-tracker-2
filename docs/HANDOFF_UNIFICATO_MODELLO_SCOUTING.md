@@ -1856,8 +1856,29 @@ della richiesta (30+ arene)? **Nessuna delle due.**
 6. `pipeline_artifacts.py N_BIN 45→20` + via lo stagger della discovery — i 429
    seguono il **numero di shard**, non il volume di query.
 
-Risultato misurato: **query per run da 6857 a 1504 (−78%)**, run da 18,4 a
-12,8 minuti. Obiettivo dell'utente: 7-8 minuti, lavoro ancora in corso.
+**IL RISULTATO CHE CONTA — lo scenario vero è già a 6 minuti.** Dopo aver
+inseguito a lungo il caso preseason, ho misurato una giornata VERA (run
+`31599223469`: gameweek 4, soglia starter-odds 0,80, 2 arene):
+
+| | preseason (gw5, soglia 0) | **giornata vera (gw4, soglia 0,80)** |
+|---|---|---|
+| run intera | 12,8-13,3 min | **6,3 min** |
+| giocatori | 1153 | **122** |
+| query | 1504 | **264** |
+| risposte 429 | 27 | **0** |
+| secondi persi nei 429 | 4644 | **0** |
+
+Zero 429, non uno. Il problema dei 13-18 minuti **non era la pipeline, era il
+preseason**: a `MIN_STARTER_ODDS=0` non esiste nessun filtro, entrano tutti i
+posseduti delle squadre in campo, e con quel volume l'account va a sbattere
+contro il proprio tetto. Con la soglia attiva ne sopravvivono 122 e il limite
+non si sfiora nemmeno. **L'obiettivo dei 7-8 minuti è raggiunto dove conta.**
+
+Settimo fix, trovato proprio guardando quella run: il predict faceva girare
+**45 job per 122 giocatori** (uno o due a job, ~22s fissi di checkout+setup
+ciascuno). Il numero di bin era limitato solo da quante coppie lega/ruolo ci
+fossero; ora è limitato anche dal carico stimato. Con carico grande non cambia
+nulla.
 
 **Due lezioni metodologiche da non perdere** (sono nel file, §7.9):
 - l'ipotesi "meno query = meno tempo, proporzionalmente" è **falsa**: le query
