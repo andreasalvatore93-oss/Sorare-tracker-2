@@ -98,6 +98,20 @@ ODDS_L10_SLEEP = float(os.environ.get('ODDS_L10_SLEEP', '0.7'))
 # paginare si prendono solo i "50 piu' popolari" per ruolo per leaderboard
 # -> copertura crollata al 32.5% invece del 93% reale. Va SEMPRE paginato
 # fino a hasNextPage=False.
+# CARTE PER PAGINA (12/08/2026, il vero regalo dell'APIKEY). I 164 script di
+# discovery per lega hanno PAGE_SIZE = 20, un numero tarato sul tetto di
+# COMPLESSITA' 500 dell'accesso anonimo: con 50 carte per pagina la query
+# sforava. Con la chiave il tetto e' 30.000 e quel motivo non c'e' piu'; 50 e'
+# anche il massimo che il server concede per richiesta (gia' in produzione in
+# bots/bot_definitivo.py, bots/cerbero, auctions/, "confermato in
+# diagnostica"). Su un ruolo da ~600 carte si passa da 30 richieste a 12.
+# ATTENZIONE, non e' lo stesso tetto della paginazione qui sopra: quello dei
+# 50 nodi di myFilteredBench e' un cap del SERVER che nessuna chiave alza.
+# Senza chiave si resta a 20: meglio lento che con gli errori di complessita'.
+def _carte_per_pagina():
+    return 50 if getattr(base, 'APIKEY', '') else base.PAGE_SIZE
+
+
 GRADE_NUM = {'A': 6, 'B': 5, 'C': 4, 'D': 3, 'E': 2, 'F': 1}
 FETCH_GRADE = os.environ.get('FETCH_GRADE', '1') == '1'
 SORARE_CSRF = os.environ.get('SORARE_CSRF', '')
@@ -565,7 +579,16 @@ def l10_carte_da_bench(fixture_slug, max_pagine=80):
     # con la lista vuota tornano def/mid/fwd ma ZERO portieri (293/240/210/0),
     # cioe' un buco intero e silenzioso -- esattamente il tipo di dato parziale
     # indistinguibile da uno completo gia' pagato col grade.
-    for _pos in ('Goalkeeper', 'Defender', 'Midfielder', 'Forward'):
+    #
+    # SOLO LE POSIZIONI DI QUESTO JOB (12/08/2026). Prima erano sempre tutte e
+    # quattro, anche nei job che ne trattano una sola: nel job `def` della run
+    # 31641286494 il log diceva "Goalkeeper: 0 carte in 5 pagine, Midfielder: 0
+    # in 7, Forward: 0 in 7" -- 19 richieste su 28 buttate, e per quattro job
+    # fanno ~76 richieste a run per dati che nessuno guarda (il chiamante cerca
+    # la coppia (slug, ruolo) e i ruoli altrui non li processa nemmeno).
+    # ROLE_BY_POSITION e' gia' filtrato da DISCOVERY_ROLES piu' sotto, quindi
+    # senza quella env il comportamento resta identico a prima.
+    for _pos in ROLE_BY_POSITION:
         out.update(_l10_carte_una_posizione(lb, _pos, max_pagine))
     log(f"[cardL10] L10 di CARTA raccolte: {len(out)} coppie (slug,ruolo).")
     return out
@@ -1378,7 +1401,8 @@ def main():
             # (mai piu' un troncamento silenzioso).
             for _retry in range(3):
                 d = base.graphql_query(CARDS_QUERY, {
-                    "userSlug": base.USER_SLUG, "page": page, "pageSize": base.PAGE_SIZE,
+                    "userSlug": base.USER_SLUG, "page": page,
+                    "pageSize": _carte_per_pagina(),
                     "advancedFilters": advanced,
                     "refinements": [{"field": "position", "operator": "EQUAL",
                                      "values": [{"stringValue": position}]}],
