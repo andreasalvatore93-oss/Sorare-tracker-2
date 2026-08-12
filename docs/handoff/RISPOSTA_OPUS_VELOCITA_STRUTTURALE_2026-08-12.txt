@@ -488,10 +488,35 @@ intorno ai 4.600 secondi mentre tutto il resto crollava.
 IPOTESI 2: "i 429 nascono dalla raffica: 20 runner a 0,2s di pausa puntano a
 100 query/secondo verso un account che ne regge ~9, quindi rallentando la
 partenza spariscono."
-FALSA, e l'ho misurata apposta: run D con SORARE_PACING_MIN=1,0s (cinque
-volte piu' lenta in partenza) ha preso 27 risposte 429 contro le 20 della run
-C a 0,2s, con un terzo delle query. Il pacing e' stato tolto dal workflow;
-il parametro resta configurabile ma inerte.
+NON FALSIFICATA — L'ESPERIMENTO ERA ROTTO. Correzione scritta un'ora dopo
+averla data per chiusa, e vale la pena leggerla perche' e' esattamente la
+trappola contro cui mette in guardia CLAUDE.md ("prima di misurare l'effetto
+di un componente, dimostro che l'interruttore funziona").
+La run D girava con SORARE_PACING_MIN=1,0s e non e' cambiato niente. Sembrava
+la prova. Poi ho guardato il codice del freno: il file condiviso conteneva
+solo l'INTERVALLO, mentre il momento dell'ultima query stava in una variabile
+di PROCESSO — e nella fase predict ogni giocatore e' un processo nuovo (il
+workflow lancia lo script una volta per slug). Quindi la prima query di ogni
+processo non aspettava mai, e con ~1,3 query per giocatore il freno non
+entrava praticamente mai in funzione. Non avevo misurato il pacing: avevo
+misurato un interruttore staccato.
+Corretto (il file ora contiene "intervallo ultimo_timestamp" e il freno
+attraversa i processi, verificato in locale con processi separati veri:
+a 3,0s le attese sono 0,00 / 2,58 / 2,55 secondi, prima erano tutte zero).
+DETTO QUESTO, il pacing resta comunque una strada che non conviene, ma per
+un motivo ARITMETICO, non perche' sia stato provato: l'avvio di un processo
+python di questi script costa gia' ~1,3 secondi, quindi un intervallo sotto
+quella soglia non frena nulla per costruzione, e uno sopra costa quanto i 429
+che eviterebbe (1500 query x 3s / 20 slot = 225 secondi di attesa
+deliberata, contro i ~230 secondi di attesa da 429 di oggi). Nel workflow non
+si imposta niente, il default resta 0,2s.
+
+CONSEGUENZA SULLA MOSSA PRESA: la riduzione dei bin (sotto) e' stata decisa
+quando l'ipotesi 2 sembrava falsificata. Regge lo stesso, perche' poggia su
+un dato indipendente dal pacing -- l'attesa da 429 e' rimasta piatta mentre
+le query crollavano del 78% -- ma va detto che i due fatti non sono
+alternativi: puo' benissimo essere che i 429 dipendano dalla concorrenza fra
+runner, e in quel caso ridurre gli shard e' la stessa medicina.
 
 QUELLO CHE I DATI DICONO DAVVERO: l'attesa da 429 segue il NUMERO DI SHARD,
 non il lavoro ne' la velocita'. Circa una risposta 429 per shard, con
