@@ -1,0 +1,135 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T21:49:10.650609Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) baris-atik: 59 pt attesi (41-76)
+   ORDINAMENTO: 61.56
+   SQUADRA: magdeburg-magdeburg | AVVERSARIO: osnabruck-osnabruck
+======================================================================
+
+######################################################################
+# GIOCATORE: baris-atik
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: baris-atik (squadra: magdeburg-magdeburg)
+Generato: 2026-08-12T21:49:10.649814Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 31
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: 2-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-12 | DSC vs FCM | 2-bundesliga | score=40.5 | peso=0.035
+  2025-09-20 | FCM vs S04 | 2-bundesliga | score=40.0 | peso=0.039
+  2025-09-27 | KSC vs FCM | 2-bundesliga | score=21.0 | peso=0.044
+  2025-10-05 | FCM vs ELV | 2-bundesliga | score=56.5 | peso=0.050
+  2025-10-19 | SVD vs FCM | 2-bundesliga | score=65.4 | peso=0.056
+  2025-10-26 | FCM vs PRM | 2-bundesliga | score=72.4 | peso=0.062
+  2025-11-02 | BOC vs FCM | 2-bundesliga | score=53.9 | peso=0.070
+  2025-11-22 | F95 vs FCM | 2-bundesliga | score=59.7 | peso=0.079
+  2025-11-29 | FCM vs FCN | 2-bundesliga | score=76.4 | peso=0.088
+  2025-12-07 | BSC vs FCM | 2-bundesliga | score=83.5 | peso=0.099
+  2025-12-13 | FCM vs KIE | 2-bundesliga | score=80.6 | peso=0.111
+  2025-12-20 | FCK vs FCM | 2-bundesliga | score=88.2 | peso=0.125
+  2026-01-16 | EBS vs FCM | 2-bundesliga | score=100.0 | peso=0.140
+  2026-01-24 | FCM vs SGD | 2-bundesliga | score=83.3 | peso=0.157
+  2026-01-30 | FCM vs H96 | 2-bundesliga | score=80.1 | peso=0.177
+  2026-02-06 | SGF vs FCM | 2-bundesliga | score=87.4 | peso=0.198
+  2026-02-15 | FCM vs DSC | 2-bundesliga | score=69.3 | peso=0.223
+  2026-02-21 | S04 vs FCM | 2-bundesliga | score=53.6 | peso=0.250
+  2026-03-01 | FCM vs KSC | 2-bundesliga | score=76.9 | peso=0.281
+  2026-03-06 | ELV vs FCM | 2-bundesliga | score=45.2 | peso=0.315
+  2026-03-13 | FCM vs SVD | 2-bundesliga | score=57.0 | peso=0.354
+  2026-03-22 | PRM vs FCM | 2-bundesliga | score=38.6 | peso=0.397
+  2026-04-04 | FCM vs BOC | 2-bundesliga | score=96.0 | peso=0.445
+  2026-04-12 | SCP vs FCM | 2-bundesliga | score=51.0 | peso=0.500
+  2026-04-18 | FCM vs F95 | 2-bundesliga | score=75.2 | peso=0.561
+  2026-04-26 | FCN vs FCM | 2-bundesliga | score=45.7 | peso=0.630
+  2026-05-03 | FCM vs BSC | 2-bundesliga | score=45.3 | peso=0.707
+  2026-05-09 | KIE vs FCM | 2-bundesliga | score=74.2 | peso=0.794
+  2026-05-17 | FCM vs FCK | 2-bundesliga | score=42.8 | peso=0.891
+  2026-08-08 | FCM vs EBS | 2-bundesliga | score=72.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 62.88
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 59.83 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 47.80 | Punteggio complessivo (granulari) medio: 15.07 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 7.86 (delta -0.34) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.67
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 45.2 - 80.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.96 (differenza: +0.71)
+Media score in casa: 68.31 | Media score fuori casa: 60.53
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.0
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 0.991
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore trend (media ultime 5: 56.2 vs media 5 PRECEDENTI: 63.6): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T11:00
+Casa: VfL Osnabrück | Trasferta: 1. FC Magdeburg
+Competizione: 2-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 58.8 (range 41.1 - 76.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 61.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 61.62
+Punteggio REALE ottenuto in quella partita: 72.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +11.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      53.5    53.9     +0.4    20.4        SI
+   7        7      68.1    59.7     -8.4    18.3        SI
+   8        8      51.1    76.4    +25.3    16.9        NO
+   9        9      53.1    83.5    +30.4    18.2        NO
+  10       10      67.8    80.6    +12.8    20.0        SI
+  11       11      57.3    88.2    +30.9    20.0        NO
+  12       12      82.3   100.0    +17.7    20.8        SI
+  13       13      75.9    83.3     +7.4    23.1        SI
+  14       14      59.5    80.1    +20.6    21.9        SI
+  15       15      92.4    87.4     -5.0    20.6        SI
+  16       16      85.1    69.3    -15.8    19.8        SI
+  17       17      52.4    53.6     +1.2    18.7        SI
+  18       18      74.6    76.9     +2.3    19.4        SI
+  19       19      54.6    45.2     -9.4    18.2        SI
+  20       20      60.5    57.0     -3.5    20.1        SI
+  21       21      89.7    38.6    -51.1    19.4        NO
+  22       22      64.7    96.0    +31.3    21.3        NO
+  23       23      53.4    51.0     -2.4    23.1        SI
+  24       24      85.6    75.2    -10.4    22.7        SI
+  25       25      63.9    45.7    -18.2    21.6        SI
+  26       26      60.7    45.3    -15.4    21.8        SI
+  27       27      68.2    74.2     +6.0    21.7        SI
+  28       28      68.6    42.8    -25.8    20.9        NO
+  29       29      44.3    72.8    +28.5    21.1        NO
+
+MAE (errore assoluto medio): 15.84
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

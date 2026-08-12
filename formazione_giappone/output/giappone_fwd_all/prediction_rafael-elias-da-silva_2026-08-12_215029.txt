@@ -1,0 +1,113 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T21:50:29.071506Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) rafael-elias-da-silva: 55 pt attesi (33-72)
+   ORDINAMENTO: 59.38
+   SQUADRA: kyoto-sanga-kyoto-kyoto | AVVERSARIO: kawasaki-frontale-kawasaki
+======================================================================
+
+######################################################################
+# GIOCATORE: rafael-elias-da-silva
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: rafael-elias-da-silva (squadra: kyoto-sanga-kyoto-kyoto)
+Generato: 2026-08-12T21:50:29.070625Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: j1-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | SAN vs VER | j1-league | score=83.5 | peso=0.125
+  2025-08-24 | TOK vs SAN | j1-league | score=100.0 | peso=0.140
+  2025-08-30 | SAN vs FAG | j1-league | score=74.0 | peso=0.157
+  2025-09-12 | SFR vs SAN | j1-league | score=62.1 | peso=0.177
+  2025-09-23 | SAN vs MAC | j1-league | score=40.4 | peso=0.198
+  2025-11-30 | YFC vs SAN | j1-league | score=69.3 | peso=0.223
+  2025-12-06 | SAN vs VIS | j1-league | score=70.7 | peso=0.250
+  2026-02-06 | SAN vs VIS | j1-100-year-vision-league | score=71.6 | peso=0.281
+  2026-02-14 | SSP vs SAN | j1-100-year-vision-league | score=70.0 | peso=0.315
+  2026-02-22 | SAN vs AVI | j1-100-year-vision-league | score=70.8 | peso=0.354
+  2026-02-27 | SFR vs SAN | j1-100-year-vision-league | score=72.5 | peso=0.397
+  2026-03-08 | FAG vs SAN | j1-100-year-vision-league | score=30.7 | peso=0.445
+  2026-05-06 | AVI vs SAN | j1-100-year-vision-league | score=74.3 | peso=0.500
+  2026-05-13 | VIS vs SAN | j1-100-year-vision-league | score=28.7 | peso=0.561
+  2026-05-17 | SAN vs SFR | j1-100-year-vision-league | score=43.3 | peso=0.630
+  2026-05-23 | SAN vs VVN | j1-100-year-vision-league | score=79.5 | peso=0.707
+  2026-05-30 | SAN vs REY | j1-100-year-vision-league | score=99.3 | peso=0.794
+  2026-06-06 | REY vs SAN | j1-100-year-vision-league | score=41.0 | peso=0.891
+  2026-08-09 | VVN vs SAN | j1-league | score=62.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 62.93
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=19): 58.87 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 53.53 | Punteggio complessivo (granulari) medio: 9.39 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.09 (delta -0.59) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 20.98
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.0 - 79.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.08 (differenza: +1.90)
+Media score in casa: 70.34 | Media score fuori casa: 61.12
+Fattore casa/trasferta applicato: 0.997 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.8
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 0.901 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 0.992
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.992
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore trend (media ultime 5: 65.1 vs media 5 PRECEDENTI: 55.4): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T10:00
+Casa: Kawasaki Frontale | Trasferta: Kyoto Sanga FC
+Competizione: j1-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.4 (range 33.5 - 72.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 59.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 62.97
+Punteggio REALE ottenuto in quella partita: 62.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -0.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      56.7    70.7    +14.0    20.9        SI
+   7        7      58.7    71.6    +12.9    18.7        SI
+   8        8      74.3    70.0     -4.3    17.0        SI
+   9        9      82.0    70.8    -11.2    15.5        SI
+  10       10      65.3    72.5     +7.2    14.2        SI
+  11       11      70.9    30.7    -40.2    13.1        NO
+  12       12      73.5    74.3     +0.8    20.1        SI
+  13       13      54.1    28.7    -25.4    19.1        NO
+  14       14      58.6    43.3    -15.3    23.0        SI
+  15       15      66.8    79.5    +12.7    22.5        SI
+  16       16      67.5    99.3    +31.8    22.5        NO
+  17       17      62.7    41.0    -21.7    25.6        SI
+  18       18      63.9    62.6     -1.3    25.8        SI
+
+MAE (errore assoluto medio): 15.30
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 76.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
