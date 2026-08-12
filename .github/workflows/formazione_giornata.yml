@@ -94,6 +94,17 @@ env:
   PYTHONIOENCODING: utf-8
   PYTHONUTF8: '1'
 
+  # DIMENSIONAMENTO DEGLI SHARD (12/08/2026). Valori per i RUNNER DI CASA:
+  # 10 macchine invece delle 20 di GitHub, e ~135s di avvio per job invece di
+  # ~22 (di cui 68 di solo `git reset --hard` su 73.000 file). Con 45 bin
+  # sarebbero quattro giri e mezzo, cioe' ~100 minuti-macchina di sola
+  # preparazione. Il ragionamento completo sta in pipeline_artifacts.py.
+  # PER TORNARE SU GITHUB: cancellare queste tre righe (i default nel modulo
+  # sono gia' quelli giusti: 20 / 45 / 45).
+  PIPELINE_SLOT: '10'
+  PIPELINE_TARGET: '150'
+  PIPELINE_N_BIN: '12'
+
 jobs:
   # GRADE (07/08/2026): UNA sola fetch per run, condivisa agli shard come
   # artifact. Prima ognuno dei 20 shard la rifaceva per conto suo: 3

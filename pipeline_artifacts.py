@@ -178,99 +178,38 @@ COSTO_IGNOTO = (15.0, 5.0)
 # Peso massimo (secondi stimati) di un singolo shard: si ricava dal carico
 # totale diviso gli slot di concorrenza, con un minimo per non sminuzzare
 # all'infinito pagando N volte il costo di setup.
-SLOT_CONCORRENTI = 20
-TARGET_MIN_S = 45.0
-
-# Numero di bin emessi (alzato da 45 a 65 il 30/07, vedi
-# MAX_GIOCATORI_PER_SHARD). Volutamente MOLTO maggiore di SLOT_CONCORRENTI e
-# ordinati dal piu' pesante al piu' leggero: Actions ne avvia 20 e mette gli
-# altri in coda, avviandoli man mano che uno slot si libera. E' bilanciamento
-# dinamico gratuito, e con costi per giocatore instabili (vedi sopra) e' il
-# solo presidio che funziona davvero: piu' bin ci sono, meno pesa sbagliare
-# una stima, perche' il lavoro si redistribuisce a runtime invece di essere
-# congelato in un'assegnazione statica. Il prezzo sono ~22s fissi di
-# checkout+setup per bin in piu' (45 bin = ~990 job-secondi = ~50s di wall a
-# 20 slot), che si ripagano al primo shard mal stimato evitato.
-# ABBASSATO da 45 a 20 il 12/08/2026, dopo aver misurato quanto costa DAVVERO
-# un bin in piu'. Il commento sopra contava solo i ~22s di checkout+setup. La
-# voce vera e' un'altra: nella fase predict ogni shard prende in media ~1
-# risposta 429 da Sorare, con Retry-After da 194-247 secondi, e quel costo
-# NON dipende da quante query fa lo shard. Misurato su quattro run della
-# stessa giornata mentre le query scendevano da 6857 a 1504 (-78%):
-#   run A  6857 query -> 31 x 429, 6525s di attesa
-#   run B  4775 query -> 29 x 429, 4401s
-#   run C  2499 query -> 20 x 429, 4728s
-#   run D  1504 query -> 27 x 429, 4644s
-# L'attesa da 429 e' rimasta piatta mentre le query crollavano: segue il
-# NUMERO DI SHARD, non il lavoro. A 45 bin fa ~103s di attesa per bin, cioe'
-# cinque volte il costo di setup che il commento sopra considerava.
-# Con 20 bin (uno per slot di concorrenza) si perde il bilanciamento dinamico
-# a runtime, ma si tolgono 25 shard e con loro ~2.500 job-secondi di attese.
-# Se una stima sbagliata dovesse far tornare il problema del singolo shard
-# lento, si rialza -- ma va rimisurato, non ripristinato per abitudine.
-# RIPORTATO A 45 il 12/08/2026, un'ora dopo averlo abbassato a 20: la misura
-# ha detto il contrario di quello che mi aspettavo. Con 20 bin (run
-# 31597760654) le risposte 429 sono state 36 e l'attesa 7904s, contro 27 e
-# 4644s con 45 bin e le STESSE 1500 query. La fase predict e' passata da 412s
-# a 556s e la run da 13,3 a 14,9 minuti: peggio.
-# Quindi "ogni shard paga circa un 429" era una lettura sbagliata di quattro
-# run: con meno shard ogni shard elabora piu' giocatori e di 429 se ne prende
-# di piu' (1,8 a shard contro 0,6). Il costo NON e' per shard.
-# ATTENZIONE per chi rimisura: le run di quel pomeriggio sono state lanciate
-# una dietro l'altra e NON sono indipendenti -- i 429 crescono di run in run
-# (20, 27, 36), come se il budget dell'account si consumasse. Prima di
-# concludere qualcosa da un confronto fra due run, lasciare passare del tempo
-# o alternare l'ordine delle varianti.
-# 20, cioe' uno per slot di concorrenza (12/08/2026, terza e ultima parola su
-# questo numero). Ci avevo provato una prima volta ed era andata PEGGIO: con 20
-# bin la run 31597760654 prendeva 36 risposte 429 contro le 27 con 45 bin,
-# perche' ogni shard elaborava piu' giocatori e di blocchi se ne prendeva di
-# piu'.
-# Quel motivo adesso non c'e' piu': con le tre chiavi i 429 sono ZERO (run
-# 31618793265). Sparito il costo dei blocchi resta solo quello dell'avvio --
-# ~22 secondi fissi di checkout+setup+pip per job -- e li' meno job e' solo
-# guadagno: 45 bin fanno ~990 job-secondi di puro avvio, 20 ne fanno ~440.
-# Il tetto vero non e' comunque questo: sono i 20 job in parallelo del piano
-# GitHub e i 40 query-in-volo di Sorare. Oltre quei numeri non si va.
-# 45. Provato DUE volte a scendere a 20, peggio in entrambe:
-#   run 31597760654 (senza chiave) 36 blocchi contro 27, predict 556s vs 412s
-#   run 31620111635 (con 3 chiavi) 14 blocchi e 3406s persi, predict 348s vs 318s
-# Il motivo e' sempre lo stesso: con meno shard ogni shard porta piu' lavoro,
-# quindi un blocco ne congela una fetta piu' grande. Nella run 31620111635 i
-# 14 blocchi sono costati PIU' dei 19 di una run con 45 bin.
-# L'idea di partenza resta valida (45 bin sono ~990 job-secondi di solo avvio
-# contro ~440), ma vale ~30 secondi e si incassa solo se i blocchi restano a
-# zero. Da riprovare SOLO insieme al freno acceso, che e' la combinazione mai
-# testata -- non da sola.
-# 20 CON IL FRENO ACCESO (12/08/2026, la combinazione mai provata).
-# Scendere a 20 era gia' stato bocciato due volte, ma sempre in run che
-# prendevano blocchi -- e con meno shard ogni blocco congela una fetta piu'
-# grande di lavoro:
-#   run 31597760654 (senza chiave, no freno) 36 blocchi, predict 556s
-#   run 31620111635 (3 chiavi, no freno)     14 blocchi, predict 348s
-# Con il freno acceso i blocchi sono ZERO (run 31618793265, predict 318s con
-# 45 bin), quindi il motivo che affondava i 20 bin non c'e' piu' e resta solo
-# il guadagno sugli avvii: 45 bin sono ~990 job-secondi di solo
-# checkout+setup, 20 ne sono ~440.
-# Se i blocchi tornano, questo numero e' il primo indiziato: si rimette 45.
-# 45, E QUESTA E' LA TERZA E ULTIMA VOLTA CHE SI PROVA A SCENDERE.
-# Tre run, tre bocciature, in tre condizioni diverse:
-#   run 31597760654  senza chiave, no freno  -> 36 blocchi, predict 556s
-#   run 31620111635  3 chiavi, no freno      -> 14 blocchi, predict 348s
-#   run 31621327205  3 chiavi, FRENO ACCESO  -> 16 blocchi, predict 432s
-# L'ultima era la combinazione che sulla carta doveva funzionare: freno
-# acceso, quindi zero blocchi come nella run 31618793265, piu' il risparmio
-# sugli avvii. Invece i blocchi sono tornati -- 16 -- e la fase predict e'
-# passata da 318s a 432s.
-# La spiegazione che regge a tutte e tre: il freno distanzia le richieste
-# DENTRO uno shard, ma con 20 shard invece di 45 ognuno lavora piu' a lungo,
-# quindi in ogni istante ci sono piu' shard attivi insieme sulla stessa
-# finestra di budget. Meno shard non vuol dire meno traffico: vuol dire lo
-# stesso traffico piu' concentrato. E ogni blocco, con shard piu' grossi,
-# congela una fetta piu' grande di lavoro.
-# I ~550 job-secondi di avvii che si risparmierebbero non ripagano mai i
-# blocchi che si comprano. Non riprovarci senza una ragione NUOVA.
-N_BIN = 45
+# QUANTI SLOT E QUANTO GRANDE UNO SHARD (12/08/2026, riscritto per i due
+# ambienti). Tutti e tre si leggono dall'ambiente: il default e' GitHub, il
+# workflow li sovrascrive quando gira sui runner di casa. Non toccarli qui.
+#
+#   PIPELINE_SLOT     job che girano DAVVERO insieme.  GitHub 20, casa 10.
+#   PIPELINE_TARGET   secondi di lavoro per shard. E' la leva che decide
+#                     quanti bin escono: bin_utili = carico_totale / questo.
+#   PIPELINE_N_BIN    tetto sul numero di bin.
+#
+# I due ambienti NON hanno lo stesso ottimo, perche' non hanno lo stesso
+# costo di avvio per job:
+#
+#   GitHub  ~22s di avvio, 20 slot  -> conviene SMINUZZARE (45 bin). Provato
+#           tre volte a scendere a 20 e bocciato tre volte: con shard piu'
+#           grossi ognuno lavora piu' a lungo, quindi in ogni istante ce ne
+#           sono di piu' attivi sulla stessa finestra di budget Sorare, e i
+#           blocchi 429 tornano (36 / 14 / 16 blocchi nelle tre prove, contro
+#           i 27 con 45 bin). Meno shard non e' meno traffico: e' lo stesso
+#           traffico piu' concentrato. Non riprovarci senza una ragione nuova.
+#   CASA    ~135s di avvio (di cui 68 di solo `git reset --hard`: il repo ha
+#           73.000 file e su Windows rimetterli in ordine costa), 10 slot ->
+#           conviene ACCORPARE. A 45 bin sono quattro giri e mezzo e i 135
+#           secondi si pagano quattro volte e mezzo: ~100 minuti-macchina di
+#           pura preparazione, cioe' 10 minuti di run (misurato sulla run
+#           31635979308: job di predict da 159s con 24s di lavoro vero).
+#           La ragione nuova che rende diverso questo caso: a casa gli slot
+#           sono 10 comunque, quindi accorpare NON alza il numero di shard
+#           attivi insieme -- toglie solo avvii ripetuti. Il motivo che aveva
+#           bocciato l'accorpamento su GitHub qui non si applica.
+SLOT_CONCORRENTI = int(os.environ.get('PIPELINE_SLOT') or 20)
+TARGET_MIN_S = float(os.environ.get('PIPELINE_TARGET') or 45.0)
+N_BIN = int(os.environ.get('PIPELINE_N_BIN') or 45)
 
 
 # ---------------------------------------------------------------- stage ----
