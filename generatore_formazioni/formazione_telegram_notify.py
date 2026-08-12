@@ -11,7 +11,6 @@ TELEGRAM_CHAT_ID da env, link via raw.githack.com (CDN che serve
 raw.githubusercontent.com con Content-Type text/html, cosi' il browser
 lo RENDE invece di scaricarlo -- funziona solo su repo pubblici, questo lo e').
 """
-import glob
 import os
 import subprocess
 
@@ -34,19 +33,22 @@ def _ref():
         pass
     return os.environ.get('GIT_REF', 'main').strip() or 'main'
 
-OUTPUT_DIR = 'generatore_formazioni/output'
-
-
-def _latest_html():
-    """Il file PIU' RECENTE per data di modifica -- NON un sort alfabetico del
-    nome file (bug reale 28/07: 'run9' viene lessicograficamente DOPO 'run21'
-    perche' '9' > '2' come carattere, quindi sorted() prendeva un run vecchio
-    invece dell'ultimo generato -- scoperto dall'utente, notifica arrivata con
-    un report di ore prima)."""
-    candidates = glob.glob(os.path.join(OUTPUT_DIR, 'generatore_formazioni_run*.html'))
-    if not candidates:
+def _report_di_questa_run():
+    """Il file che build_formazione_globale.py dichiara di aver scritto IN
+    QUESTA RUN (_ultimo_report.txt). NON piu' un criterio per mtime (bug
+    reale 12/08/2026: nel job 'formazione' i candidati non sono i file di
+    questa run, sono i 132 HTML che actions/checkout ha appena ripristinato
+    tutti insieme, con la stessa data -- 'il piu' recente per mtime' su file
+    scritti nello stesso istante e' una lotteria: la notifica ha linkato
+    run97 del 01/08 mentre su main c'era gia' run178 del 12/08). Se il file
+    manca, il generatore non ha prodotto nulla in questa run: NON si
+    notifica, invece di indovinare guardando il filesystem."""
+    try:
+        with open('_ultimo_report.txt', encoding='utf-8') as f:
+            p = f.read().strip()
+    except OSError:
         return None
-    return max(candidates, key=os.path.getmtime)
+    return p if p and os.path.exists(p) else None
 
 
 def _viewer_url(path):
@@ -59,12 +61,14 @@ def main():
         print("[formazione_telegram_notify] TELEGRAM_TOKEN/TELEGRAM_CHAT_ID mancanti, salto la notifica.")
         return
 
-    path = _latest_html()
+    path = _report_di_questa_run()
     if not path:
-        print("[formazione_telegram_notify] nessun HTML trovato in questa run, salto la notifica.")
+        print("[formazione_telegram_notify] nessun report generato in questa run, salto la notifica.")
         return
 
-    message = f"⚽ <b>Formazione giornata -- run completata</b>\n<a href=\"{_viewer_url(path)}\">Apri il report</a>"
+    run_number = os.environ.get('GITHUB_RUN_NUMBER', '').strip()
+    titolo = f"run completata (#{run_number})" if run_number else "run completata"
+    message = f"⚽ <b>Formazione giornata -- {titolo}</b>\n<a href=\"{_viewer_url(path)}\">Apri il report</a>"
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': message, 'parse_mode': 'HTML', 'disable_web_page_preview': True}
     try:

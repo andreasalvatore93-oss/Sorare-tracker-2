@@ -2299,6 +2299,15 @@ def main():
                           # questo blocco non gira affatto (ARENE_EFFICIENTI e
                           # ESSENZE_ARENA entrambi assenti), letto dal
                           # suppletivo piu' sotto.
+    _budget_essenze = None  # nessuna arena richiesta: nessun budget da
+                             # spendere. Deve esistere anche quando il blocco
+                             # sotto non gira, perche' il pool suppletivo
+                             # (EXTEND_ODDS_060_070, riga ~2367) lo legge
+                             # SEMPRE, non solo dentro l'if degli shortfall
+                             # (bug reale 12/08/2026: UnboundLocalError su
+                             # ogni run con EXTEND_ODDS_060_070 acceso -- il
+                             # default del workflow -- e arene=0/essenze=0,
+                             # es. "solo champions" o "solo allstars").
     if _n_eff > 0 or _essenze_arena > 0:
         _tipi = [t for t in PRIORITY_ORDER if _is_arena_type(t)]
         _budget_essenze = _essenze_arena if _essenze_arena > 0 else None
@@ -2824,6 +2833,13 @@ def main():
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(html_text)
     print(f"\nReport visivo salvato in: {html_path}")
+    # Dichiara al notificatore Telegram QUALE file ha scritto QUESTA run
+    # (12/08/2026, bug reale: _latest_html() sceglieva per mtime fra i 132
+    # HTML che il checkout ripristina tutti insieme -- una lotteria, notifica
+    # partita con un report di undici giorni prima). File di lavoro, non
+    # committato -- vedi .gitignore.
+    with open('_ultimo_report.txt', 'w', encoding='utf-8') as f:
+        f.write(html_path)
 
 
 if __name__ == '__main__':
