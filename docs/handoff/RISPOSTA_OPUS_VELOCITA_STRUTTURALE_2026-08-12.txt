@@ -303,7 +303,77 @@ ENTRAMBI. Previsione aggiornata:
 L'attribuzione dei due fix resta possibile: nei log si contano separatamente
 le AllPlayerGameScores e le PlayerGameScoreDetail/DetailBatch.
 
-7.2 RISULTATI
+7.2 RUN A (31591410268): COME PREVISTO, E HA SCOPERTO IL TERZO PROBLEMA
+------------------------------------------------------------------------
+                       previsto        misurato
+  query totali          ~6800           6857
+  fase predict wall    700-750s          649s
+  run intera                            17,0 min
+  risposte 429                             31   (6525s di attesa = 64%)
+  "Cache insufficiente"                   526   (su 1153 giocatori)
+  "Storia gia' completa"                    0   (giusto: i marcatori li
+                                                 scrive lei per la prima
+                                                 volta)
+La previsione ha tenuto. Ma il controllo successivo — "i marcatori sono
+arrivati su main?" — ha dato ZERO file. Da li' e' venuto fuori il terzo
+problema, il piu' grosso di tutti (§7.3).
+
+7.3 IL TERZO PROBLEMA: LE CACHE NON TORNAVANO MAI SU MAIN
+-----------------------------------------------------------
+actions/upload-artifact@v4 esclude di default tutto cio' che comincia per
+'.'. Le due cache condivise vivono in cartelle NASCOSTE:
+
+  formazione_<lega>/output/<lega>_<ruolo>_all/.game_log_cache
+  formazione_<lega>/output/<lega>_<ruolo>_all/.cache
+
+Prova, dal log dello shard predict 36 della run A:
+
+  [stage] 62 file in _artifact_stage
+  include-hidden-files: false
+  With the provided path, there will be 29 files uploaded
+
+I 33 mancanti erano tutti file di cache. Quindi da quando la pipeline e'
+passata agli artifact, TUTTO il lavoro di cache della fase predict veniva
+buttato a fine run: ogni run ri-scaricava da Sorare partite gia' scaricate
+il giorno prima.
+
+Due conferme indipendenti:
+  - i marcatori <slug>_gamelog.meta.json del primo fix: presenti nello
+    'stage' dei singoli shard, ZERO su main dopo una run intera e riuscita;
+  - `git log -- "*/.game_log_cache/*"` : l'ultimo commit che tocca una cache
+    game-log e' del 10/08 ed e' di un ALTRO workflow (pipeline manager /
+    smart-money, che pusha direttamente). La pipeline formazione non ne ha
+    mai committata una.
+
+E' anche la spiegazione di un numero che non tornava: 526 giocatori su 1153
+ancora con "cache insufficiente" dopo giorni di run quotidiane. Non e' che
+non giocassero abbastanza partite — e' che quello che si scaricava su di
+loro non veniva mai salvato.
+
+Corretto (commit 736ddbb0c4) con `include-hidden-files: true` sui 4 upload
+di formazione_giornata.yml, piu' altri due workflow con lo stesso difetto:
+best_five.yml e cache_backtest_arene.yml — quest'ultimo carica come artifact
+`dati_globali/backtest_arene_cache`, una cartella che contiene SOLO .cache e
+.game_log_cache: stava caricando un artifact vuoto.
+
+7.4 PREVISIONE PER LE DUE RUN SUCCESSIVE (scritta prima di guardarle)
+----------------------------------------------------------------------
+I tre fix entrano in scena in tre momenti diversi, quindi il guadagno si
+vede a scaglioni. Previsione:
+
+  run B (31593062806) — ha il batch dettaglio e la persistenza delle cache,
+    ma i marcatori del game log non esistono ancora (quelli di A sono
+    andati persi):
+      query dettaglio  3065 -> ~510
+      query totali     6857 -> ~4300  (-37%)
+      fase predict      649s -> ~420s
+  run C (dopo che B ha finalmente committato cache e marcatori):
+      query game log   3766 -> ~1150
+      query totali          -> ~1660  (-76% dalla baseline)
+      fase predict          -> ~180s
+      run intera       17-18 min -> ~9 min
+
+7.5 RISULTATI
 --------------
 (compilato appena le run finiscono)
 
