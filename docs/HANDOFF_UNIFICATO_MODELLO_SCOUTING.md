@@ -1072,479 +1072,116 @@ famiglia "Limited" mista 7/5 carte, bonus XP nel backtest), risolte l'08/08.
 
 ---
 
-## 8bis-bis. Gruppo del grade esteso alla giornata — APERTO, priorità 2 (11/08/2026 sera)
-
-L'idea del caso Lloris (sotto in §10bis, ora superata) è stata esplorata
-per intero l'11/08 sera. **Trovato un difetto vero, più grande di quanto
-il caso Lloris facesse pensare**: il gruppo di confronto (lega,ruolo,
-giornata) usato per lo z-score del grade ha spesso un solo giocatore — sui
-consigli veri su disco, 51% dei gruppi ha 1 solo membro, 69% ne ha al
-massimo 2. Per i gruppi <2, `_apply_grade_group()`
-(build_formazione_globale.py righe 505-548, return anticipato 514-520)
-**non applica il correttivo per niente** — non un ritocco rumoroso, un
-pezzo di modello spento a intermittenza su metà delle righe.
-
-**A livello di CARTA (9.440-10.255 righe, valido, IC esclude zero,
-100% positivo)**: sostituendo il gruppo minuscolo con due tabelle
-storiche (media/sd del voto per lega-ruolo, E media/sd dell'atteso
-calibrato, entrambe già quasi pronte — `generatore_formazioni/dati/
-grade_scala_storica.json` esiste, la seconda va costruita) la
-correlazione fra l'aggiustamento e l'errore vero di previsione quasi
-triplica (0,030 → 0,100). Confermato indipendentemente da Opus.
-
-**A livello di ESSENZE/formazioni (Binario 1/2): NON ANCORA PROVATO.**
-Un primo numero enorme (+14.387 essenze) si è rivelato quasi tutto un
-artefatto (l'aggiustamento non aveva media zero — spingeva il punteggio
-in alto per quasi tutte le carte, non solo per le migliori). La versione
-onesta (ricentrata a media zero, solo ordinamento) dà +4.260 essenze,
-IC non esclude lo zero — stesso limite di potenza già visto per il
-portiere su Binario 1.
-
-**Cosa manca prima di poter implementare in produzione** (chiesto
-esplicitamente dall'utente, risposta: non ancora pronto come lo era
-GK_ATT_AVV):
-1. tabella storica della variabilità (sd_atteso) costruita sui dati DI
-   PRODUZIONE — **fonte decisa il 12/08/2026 (Opus esecutore), vedi il
-   riquadro sotto: i `consiglio_*.txt` già su disco. La motivazione
-   originaria di questo punto ("l'archivio backtest è sbilanciato: chi
-   possiede una carta di solito l'ha scelta bene") è SBAGLIATA e va
-   ritirata** — resta valido il punto di igiene (tabella costruita sullo
-   stesso campione che si misura);
-2. il correttivo deve avere ESPLICITAMENTE media zero (non l'aveva nel
-   test che ha dato il numero illusorio);
-3. una volta implementato, riverificare la catena fino allo scouting
-   (come fatto per GK_ATT_AVV).
-
-### Fonte per sd_atteso: i consigli di produzione (12/08/2026, Opus esecutore)
-
-**Decisione: i `consiglio_*.txt` in `formazione_<lega>/output/<lega>_<ruolo>_all/`.**
-Non la cache game-log, non `player_card_counts.json`.
-
-*Perché è la fonte giusta*: in produzione le righe su cui `_apply_grade_group`
-calcola la sd sono LETTERALMENTE quei file —
-`build_formazione_globale.py:1109-1132` fa `bff.parse_consiglio(bff.latest_consiglio(dir))`
-+ `calibra_riga(row, role)`, e chiama `_apply_grade_group(rows)` alla 1152.
-Una tabella costruita sui consigli PASSATI è quindi la stessa grandezza,
-sulla stessa popolazione, con le stesse due funzioni. Zero query, zero
-ricalcolo del modello. Misurato il 12/08 su disco: 8.419 file consiglio,
-41.584 righe, **2.333 righe distinte (lega,ruolo,slug,kickoff)**; 90 celle
-(lega,ruolo), 4 sopra n=100 (le altre cadono sul livello ruolo, come già
-fa la gerarchia). Punti GREZZI per ruolo (pre-`calibra_riga`, che è lineare
-per ruolo: sd_cal = |a_ruolo| × sd_grezza): DEF n=814 sd 6,74 · FWD n=540
-sd 9,87 · GK n=280 sd 8,53 · MID n=699 sd 7,13.
-
-*Trappola obbligatoria*: **deduplicare per (lega,ruolo,slug,kickoff)**. La
-stessa giornata viene riconsigliata decine di volte al giorno (41.584 righe
-→ 2.333 distinte, fattore ~18): un builder ingenuo su tutti i file peserebbe
-18 volte le fixture ri-girate di più. Il cutoff walk-forward si fa col
-timestamp nel nome file / KICKOFF di riga, come `p18.costruisci_scala(cutoff)`.
-
-*Perché NON la cache game-log*: (a) popolazione sbagliata — contiene ogni
-giocatore mai tracciato, indipendentemente dal possesso, mentre la produzione
-non ordina mai quell'insieme; (b) l'atteso non è una proprietà del giocatore
-ma della coppia giocatore-partita (avversario, casa/trasferta, finestra): la
-cache ha i game-log passati, non la lista candidati di una fixture, quindi
-andrebbe ricalcolato `score_atteso` + `calibra()` su ogni riga storica — la
-strada più costosa del repo, contro la Regola Suprema. `player_card_counts.json`
-è escluso per un motivo diverso: viene sovrascritto ad ogni run, oggi
-contiene 134 entry TOTALI su 152 file (solo l'ultimo stato, nessuna storia).
-
-*Premessa da ritirare (bias di possesso)*: la produzione parte dalle carte
-POSSEDUTE — `discovery_fixture.py` interroga `myFilteredBench` (il bench del
-manager) e filtra per starter-odds. Il pool dell'archivio backtest (29 manager)
-ha quindi la STESSA natura di popolazione del pool di produzione: il "bias di
-possesso" c'è in entrambi, non è una divergenza. Correggere verso un universo
-più largo introdurrebbe un disallineamento, non lo toglierebbe. Ciò che
-davvero differisce è il mix leghe/ruoli e l'igiene in-sample (nessun leakage:
-nella tabella non entra nessun esito realizzato).
-
-*Avvertenza che vale più della scelta della fonte*: il LIVELLO di sd_atteso è
-una scala di comodo, assorbita da `fattore_storico`. La quantità tarata
-empiricamente è il PRODOTTO `fattore_storico × sd_atteso` (lo 0,75 è stato
-misurato contro la tabella da archivio backtest). Cambiando fonte, **0,75 va
-ritarato**, altrimenti il correttivo cambia di taglia in silenzio. Della
-tabella conta la FORMA relativa fra celle, non il valore assoluto.
-
-*Problema separato, non confonderlo col punto 1*: l'altra tabella,
-`grade_scala_storica.json` (media/sd del VOTO), è costruita da
-`dati_globali/manager_*.json` — che CLAUDE.md punto 4 classifica come STORIA,
-non base di misura — più l'approssimazione "ruolo maggioritario" (D7). I
-consigli non possono sostituirla (non contengono il grade storico). Va decisa
-a parte. E attenzione: passare in produzione a `storica_completa` significa
-accendere anche `GRADE_SCALE=storica` (oggi default `gruppo`), cioè due
-cambiamenti insieme, non uno.
-
-Funzioni riusabili già pronte in `analisi_manager/p12_backtest_
-formazione_grade.py`: `applica_gruppi_grade()` (5 modalità),
-`costruisci_tabella_sd_atteso()`. Dettaglio integrale: `docs/handoff/
-HANDOFF_SESSIONE_2026-08-11_GK_GRADE_SOGLIE.txt` §4,
-`docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt` §15-18.
-
-### Aggiornamento 12/08/2026 — tabella sd_atteso di produzione costruita, ritarato il fattore, numero essenze migliorato
-
-Fonte decisa da Opus (§ sopra), riga costruita e verificata dall'orchestratore:
-`analisi_manager/p47_sd_atteso_produzione.py` legge tutti gli 8.419
-`consiglio_*.txt`, dedup per (lega,codice,slug,kickoff) -> 2.333 righe
-distinte, salvate in `analisi_manager/dati/sd_atteso_produzione_righe.json`.
-Conteggi verificati identici a quelli di Opus (per ruolo grezzo: GK 280,
-DEF 814, MID 699, FWD 540; 90 celle lega-ruolo, 4 sopra n=100).
-
-**Card level** (`p48_grade_carta_sd_produzione.py`, replica del braccio 4 di
-p46 con la nuova tabella, n=9.440): la pendenza OLS residuo~aggiustamento
-con la tabella PRODUZIONE è **0,462** (non 0,75 — sd_atteso di produzione
-ha scala più larga, 5,87 contro 3,39 dell'archivio, come previsto da Opus:
-"il livello è assorbito da fattore_storico"). Corr(aggiustamento,residuo)
-con la fonte nuova: **+0,1141** IC95%[+0,0938;+0,1338] — leggermente
-meglio della vecchia (+0,0999). Replica del braccio 4 vecchio con questo
-script: +0,0999/pendenza 0,7527 — coincide con Opus, pipeline verificata.
-
-**Essenze level** (`p49_grade_essenze_sd_produzione.py`, n=360 GW-manager,
-bootstrap cluster manager-fixture, B=5.000): baseline lega_ruolo G=+124.021
-(identico a Opus §18.1, replica esatta). Con tabella PRODUZIONE + fattore
-ritarato 0,462:
-  - NON ricentrata: G=+139.219, delta=+15.198 IC95%[+5.512;+25.233] 99,8% positivo
-  - **RICENTRATA (media zero)**: G=+131.781, **delta=+7.761
-    IC95%[-716;+16.516] 96,0% positivo** — più grande e più vicino alla
-    significatività della vecchia versione onesta (+4.260, IC[-3.837;
-    +12.398], 84,6%). L'IC sfiora lo zero solo di poco (-716).
-
-Dump di controllo (alfo88, football-10-14-apr-2026): correttivo coerente,
-i voti A vengono spinti in alto in modo sensato (Valverde 57,1→61,6 cal,
-poi realizzato 81,5). Media aggiustamento pre-ricentraggio in quella GW:
-+1,01 (stessa direzione della "spinta cieca" già diagnosticata da Opus).
-
-**NON ancora deciso**: se questo +7.761/96% basta per proporre l'accensione
-dietro flag, o se serve ancora un test dedicato/fuori campione prima. Non
-toccata la produzione, non applicato il return anticipato di
-`_apply_grade_group` (righe 514-520, ancora presente). File dati:
-`analisi_manager/dati/grade_carta_sd_produzione_2026-08-12.json`,
-`analisi_manager/dati/grade_essenze_sd_produzione_2026-08-12.json`.
-
-### Revisione critica Opus, 12/08/2026 — il +7.761 NON è un miglioramento dimostrato
-
-**Il difetto principale era il confronto fra run diverse.** Il +4.260 della
-fonte vecchia veniva da un'altra esecuzione: confrontare due IC prodotti da
-run diverse non decide niente (CLAUDE.md, "Cosa deve riprodursi: il delta,
-non il valore assoluto"). Rifatto nello STESSO run, stesso pool, stesso
-bootstrap — `analisi_manager/p50_confronto_fonti_essenze.py` (n=360
-GW-manager, B=5.000, cluster manager-fixture):
-
-    baseline lega_ruolo                          G = +124.021   (replica esatta)
-    archivio 0,75 ricentrata   vs baseline   delta = +5.067  IC95%[-2.748;+13.209]  90,3%
-    produzione 0,462 ricentrata vs baseline  delta = +7.761  IC95%[-716;+16.516]    96,0%  (replica esatta)
-    >>> produzione - archivio (APPAIATO)     delta = +2.694  IC95%[-3.298;+8.799]   81,6%
-
-Quindi: il salto vero è +7.761 contro **+5.067**, non contro +4.260, e la
-differenza fra le due fonti **non esclude lo zero**. Da spiegare a parte:
-perché la stessa configurazione nominale (archivio, 0,75, ricentrata) dia
-+5.067 qui e +4.260 nella run dell'11/08 — 800 essenze di scarto a parità di
-etichetta.
-
-**Anche a livello di carta il vantaggio della fonte nuova non è provato.**
-Delta appaiato corr(produzione) − corr(archivio) = **+0,0143
-IC95%[-0,0022;+0,0308], 95,6% positivo** (B=3.000, stessi cluster, calcolato
-sulle 9.440 righe già in `grade_carta_sd_produzione_2026-08-12.json`).
-Controllo di replica superato: corr archivio +0,0999 = il +0,100 di round 2.
-
-**Concentrazione**: dei +7.761 essenze, il **56% viene da 5 GW-manager su
-360** (top: maltazars/24-28 apr +1.239). 228 GW su 360 hanno delta ≠ 0: 128
-positive, 100 negative, mediana 0.
-
-**Due buchi strutturali, indipendenti dal numero:**
-
-1. `costruisci_tabella_sd_atteso()` **non ha soglia di n** (a differenza di
-   `p18.costruisci_scala`, che usa 100/500). Con la tabella di produzione,
-   **213 righe del backtest (2,3%) cadono su celle con n=1 → sd=0 → grade
-   completamente spento**, cioè esattamente il difetto che questo filone
-   esiste per togliere, solo spostato dal gruppo-giornata alla cella della
-   tabella; altre 920 (9,7%) su celle n=2-9. Righe azzerate solo dalla
-   tabella produzione: 235, contro 5 solo dall'archivio. Fix mirato: quando
-   la cella ha n<2, fallback al livello ruolo.
-2. **Soglie alte NO** — provate (100/500 come p18) sul sottoinsieme dove lo
-   z è ricostruibile (6.398 righe): peggiorano, corr 0,1103 → 0,0836, delta
-   appaiato IC95%[-0,0430;-0,0093], 99,9% negativo. La granularità fine
-   della cella porta informazione vera: si tocca solo il caso n<2.
-3. **Il ricentraggio globale non basta**: sottrarre una costante unica
-   azzera la media complessiva ma lascia una spinta sistematica **per
-   ruolo** — GK −0,926 pt, FWD +0,425, DEF +0,243, MID +0,013. Sulla sd
-   della tabella di produzione (GK 2,25 calibrata) quel −0,93 è il **41% di
-   una deviazione standard dell'intera distribuzione GK**: sposta i portieri
-   in blocco verso il basso, quindi cambia composizione delle formazioni e
-   numero di arene giocate — non è più "solo ordinamento". Ricentrare almeno
-   per ruolo, o meglio togliere la causa (media voto del pool 4,029 contro
-   3,037 della tabella grade).
-
-**Punti confermati** (domande a/c dell'orchestratore): il fattore ristimato
-in-sample è lo stesso limite di §17.7, non uno nuovo; ma il calo 0,75 → 0,462
-**non è solo scala** — sd(aggiustamento) passa da 2,423 a 4,510 (×1,861), il
-puro riscalamento darebbe 0,403, misurato 0,462 (+15%), e le due correzioni
-correlano 0,799, non sono lo stesso segnale. La **spinta cieca è identica**
-fra le due fonti (archivio 1,6673×0,75 = +1,2505 pt; produzione 2,7048×0,462
-= +1,2496 pt): l'IC migliore non viene da una spinta più piccola, viene dalla
-forma per cella — e per il 56% da cinque giornate.
-
-**Verdetto**: la fonte resta quella giusta, il guadagno non è dimostrato.
-Prima di qualunque fuori campione: (i) fix celle n<2; (ii) ricentraggio per
-ruolo; (iii) spiegare lo scarto +4.260/+5.067.
-
-### Fix (i)+(ii) applicati, 12/08/2026 sera — la SORGENTE non decide più, i fix sì
-
-`analisi_manager/p51_grade_essenze_fix.py`: celle (lega,codice) con n<2
-tolte dalla tabella (fallback naturale a livello ruolo, nessuna soglia
-alta — quelle peggiorano, punto 2 sopra); ricentraggio calcolato PER
-RUOLO (GK/DEF/MID/FWD separati), non con una costante unica. Stesso pool,
-stesso bootstrap (n=360, B=5.000, cluster manager-fixture) di p50.
-
-    G baseline                                   = +124.021  (replica esatta)
-    archivio 0,75 (fix i+ii)   vs baseline   delta = +7.577  IC95%[-12;+15.283]     97,5%
-    produzione 0,462 (fix i+ii) vs baseline  delta = +6.109  IC95%[-2.146;+14.693]  92,2%
-    >>> produzione - archivio (APPAIATO)     delta = -1.468  IC95%[-7.235;+4.285]   31,1%
-
-Celle n<2 tolte: 5 (archivio) / 8 (produzione). Ricentraggio per ruolo,
-punto di controllo: archivio DEF+1,42 FWD+0,94 GK+0,50 MID+1,51; produzione
-DEF+1,46 FWD+1,55 GK+0,30 MID+1,21 (nessuno resta grosso come il -0,93 GK
-del ricentraggio globale).
-
-**Lettura, DA VERIFICARE prima di crederci** (pattern di oggi: ogni numero
-buono finora è stato smontato al giro successivo): con i due fix ENTRAMBE
-le fonti si avvicinano alla significatività (97,5% e 92,2%), ma il
-confronto diretto fonte-vecchia/fonte-nuova è vicino a zero e leggermente
-A FAVORE dell'archivio (-1.468, 31,1% positivo per la produzione). Sembra
-che i fix (i)+(ii) fossero il vero guadagno, non il cambio di fonte — cosa
-che, se confermata, semplificherebbe molto la strada in produzione (niente
-tabella nuova da mantenere, bastano i due fix sopra la fonte già esistente).
-Punto (iii) (scarto +4.260/+5.067) non risolto a parte: nessuno script nel
-repo produce +4.260 in modo riproducibile (solo citato nell'handoff
-dell'11/08), quindi il numero di riferimento andando avanti è quello
-riproducibile di p50/p51, non quello vecchio.
-
-File: `analisi_manager/dati/grade_essenze_fix_2026-08-12.json`.
-
-### Controllo placebo (Opus, 12/08/2026 notte) — IL SEGNALE È VERO, la taglia no
-
-`analisi_manager/p52_placebo_grade_essenze.py`: stessa macchina di p51
-(pool, tabella, fattore, fix i+ii), ma il grade viene rimescolato a caso
-dentro la stessa GW-manager (20 permutazioni) — rompe SOLO il legame
-voto↔giocatore, lascia identica scala/dispersione/ricentraggio.
-
-    VERO (grade reale)         +7.577
-    20 placebo (grade finto):  TUTTI negativi, mediana -10.860,
-                               migliore -5.080, peggiore -16.881
-    0/20 placebo arrivano al valore vero -> p<=0,048
-
-**Un voto finto della stessa taglia COSTA ~10.900 essenze; solo il voto
-vero guadagna.** Non è un artefatto della macchina (scala, ricentraggio,
-dispersione più larga): è informazione vera — prima volta dimostrato a
-livello essenze, non solo di correlazione a livello carta. Quello che il
-placebo NON dimostra: la taglia esatta (IC ampio, 51% del +7.577 viene da
-5 GW-manager su 360).
-
-Ma il braccio "archivio" non è spedibile: `p51:118` costruisce la tabella
-sd_atteso dalle righe del POOL DI TEST stesso — in produzione quella
-scala non esiste (non hai la sd dei pool dei 29 manager della giornata che
-stai decidendo). La fonte spedibile resta quella dei consigli (+6.109,
-92,2%), statisticamente indistinguibile dall'archivio (appaiato -1.468,
-include zero): si scegli la produzione perché è l'unica che esiste fuori
-dal backtest, non perché vince.
-
-### "Il +1,02 del voto" — causa vera trovata, NON è colpa della fonte (Opus)
-
-Tentativo (a) dell'orchestratore: ricostruire la tabella VOTO sulla
-popolazione dei consigli (`p53_grade_scala_produzione.py`, invece di
-`dati_globali/manager_*.json`) — chiudeva solo +0,1/+0,25 per ruolo, non
-il +1,02 misurato. Diagnosi di Opus, MISURATA non ipotizzata:
-
-    pool di backtest (slug+data specifici)             voto 4,029
-    STESSI slug, TUTTE le altre date nell'indice grade  voto 2,993  (-1,04)
-    slug diversi da quelli nel pool                     voto 2,292  (mix conta poco, +0,29)
-
-A parità di GIOCATORE, le date che finiscono nel pool di backtest hanno un
-voto più alto di 1,04 rispetto alle altre date dello stesso giocatore —
-**non è "chi possiede" (account/29 manager), è il filtro DNP**:
-`p24_binario2_ga.costruisci_pool_carte:114` scarta le carte a punteggio 0
-(non ha giocato) e `prepara_pool_rows_grezze` richiede un `reale` non
-nullo — il pool tiene, per ogni giocatore, SOLO le giornate in cui ha
-giocato, cioè quelle in cui non era F. p53 aveva ragione: la popolazione
-giusta per la tabella di produzione sono i consigli, non l'archivio.
-**Conseguenza pratica**: le costanti di ricentraggio per ruolo misurate
-sul backtest (+1,42 DEF ... +1,51 MID) correggono un ARTEFATTO DEL
-BACKTEST (selezione sulle date), non trasferibile in produzione dove la
-spinta vale solo ~0,2-0,3 punti di punteggio — NON vanno spedite.
-
-### Ricetta finale, (b)+(c), 12/08/2026 notte — esclude lo zero per la prima volta
-
-`p54_grade_carta_refit_v2.py` (ritara il fattore su voto+sd di produzione,
-fix i, NIENTE ricentraggio per ruolo qui — solo per misurare la spinta
-cieca residua): pendenza OLS = **0,482** (corr +0,1151, IC[+0,0941;
-+0,1348], 100%). Spinta cieca sul CAMPIONE BACKTEST resta grande (+2,34,
-per ruolo GK+0,83 DEF+2,91 MID+2,17 FWD+3,06) — attesa, perché qualunque
-numero letto DAL backtest eredita il suo stesso artefatto di selezione.
-
-`p55_grade_essenze_finale.py`: il braccio UNICO pre-registrato (voto+sd da
-produzione, fattore 0,482, ricentraggio GLOBALE — una costante sola, non
-per ruolo, seguendo l'indicazione di Opus di non spedire le costanti
-per-ruolo tarate sull'artefatto):
-
-    G baseline = +124.021
-    G finale   = +134.123
-    delta = +10.102  IC95%=[+1.494;+18.995]  positivo 98,8%  n=360
-
-**Esclude lo zero per la prima volta.** Caveat testuale di Opus, da NON
-perdere: "il backtest giudica il voto su un pool da cui è già stata tolta
-l'informazione più forte del voto (chi non gioca). Qualunque cifra di
-guadagno esca da lì è distorta — in che verso non lo so, non l'ho
-misurato." Quindi: il segnale è vero (placebo, p<=0,048), il +10.102 è la
-prima cifra che non include lo zero con la ricetta deployabile, ma
-NESSUNA cifra di oggi è garantita libera dalla distorsione DNP del
-backtest. Prossimo passo naturale (non ancora fatto): pre-registrare un
-controllo fuori campione sulle prossime GW reali, come per GK_ATT_AVV.
-
-File: `analisi_manager/dati/grade_essenze_finale_2026-08-12.json`,
-`analisi_manager/dati/grade_scala_produzione_2026-08-12.json`.
-
-#### Controllo Opus sulla ricetta finale — passa tutti e tre i test (12/08/2026 notte)
-
-`analisi_manager/p56_placebo_ricetta_finale.py`. Il placebo di p52 girava
-sulla ricetta VECCHIA: rifatto sulla ricetta finale esatta, più due
-controlli di meccanismo che potevano smontarla.
-
-    VERO (ricetta finale)   delta +10.102 (98,8%)   arene giocate 1.071 (-34 vs baseline 1.105)
-    20 placebo              mediana -10.656, min -16.131, max -4.077
-    placebo >= del vero     0 / 20        ->  p <= 0,048
-    placebo a >=95%         0 / 20
-    arene: baseline 1.105, vero 1.071, placebo in media 1.095
-
-1. **Placebo: passa.** Con il voto rimescolato dentro la GW-manager, la
-   stessa ricetta PERDE ~10.700 essenze. Il guadagno viene
-   dall'informazione del voto, non dalla macchina.
-2. **Ipotesi "guadagna perché gioca meno arene": smentita.** La ricetta
-   gioca 34 arene in meno (-3,1%), ma i placebo ne giocano 10 in meno e
-   perdono lo stesso: togliere arene a caso non paga, toglierle con il
-   voto sì. (Da sapere comunque, è un cambio di comportamento reale: in
-   produzione si entrerebbe in ~3% di arene in meno.)
-3. **Ipotesi "è il ribasso sistematico sui portieri": smentita.** Il
-   ricentraggio globale lascia GK -0,673 pt (DEF +0,268, FWD +0,326,
-   MID -0,092). Rifatta la stessa ricetta col ricentraggio PER RUOLO
-   (che azzera il residuo per costruzione): **+9.888 IC95%[+1.324;
-   +18.575] 98,8%**, praticamente identico. Il risultato non dipende
-   dalla granularità del ricentraggio.
-
-**Limiti che restano** (nessuno è un difetto della ricetta, tutti vanno
-nella pre-registrazione): fattore 0,482 stimato sullo stesso campione;
-~12 varianti provate oggi sullo stesso campione, quindi il 98,8% è
-condizionato alla ricerca; il 45-46% del guadagno viene da 5 GW-manager su
-360 (126 positive, 103 negative, mediana 0) — è il motivo per cui l'IC è
-largo, non un errore; e il caveat DNP (il backtest giudica il voto su un
-pool da cui è già stata tolta l'informazione più forte del voto).
-
-**Verdetto Opus: pronta per il passo fuori campione pre-registrato, NON
-per la produzione diretta.** Condizioni da mettere nella
-pre-registrazione, prima di guardare i nuovi dati: (a) le due tabelle
-(voto e sd) vanno ricostruite con un **cutoff temporale** — `p47` ce l'ha
-già come parametro, `p53` no — altrimenti il "fuori campione" non è fuori
-campione; (b) si congelano fattore 0,482 e regola di ricentraggio; (c) si
-dichiara PRIMA la metrica, la n minima e la regola di decisione; (d) si
-dichiara PRIMA che l'effetto atteso è **molto più piccolo** di +10.102
-(quel numero è in-sample e scelto fra ~12 varianti): non si può mettere
-l'asticella a "riprodurre +10.000".
-
-### Controllo placebo, 12/08/2026 sera (Opus) — il segnale c'è; il braccio scelto però non è spedibile
-
-Primo numero della giornata che REGGE a un controllo, ma non è quello che
-sembrava. `analisi_manager/p52_placebo_grade_essenze.py`: stessa identica
-macchina (stesso pool, stessa tabella, stesso fattore, fix i+ii, stesso
-bootstrap), si rompe SOLO il legame voto-giocatore rimescolando il grade
-fra le righe della stessa GW-manager. 20 permutazioni:
-
-    VERO (archivio 0,75, fix i+ii)   delta = +7.577   (replica esatta di p51)
-    20 placebo                       mediana -10.860, min -16.881, max -5.080
-    placebo con delta >= del vero    0 / 20      ->  p <= 0,048 (test di permutazione)
-    placebo che arrivano a >=95%     0 / 20
-
-Lettura corretta: il guadagno **non** è un artefatto della macchina (scala,
-ricentraggio, aumento di dispersione). Un voto finto della stessa taglia e
-distribuzione **costa** ~10.900 essenze; solo il voto vero guadagna. Quindi
-il grade porta informazione vera anche a livello essenze — è la prima volta
-che si dimostra, il livello carta lo diceva già.
-
-Attenzione a cosa NON dimostra: la taglia del guadagno resta incerta
-(IC bootstrap [-12;+15.283], e il 51% dei +7.577 viene da 5 GW-manager su
-360, 119 positive contro 103 negative, mediana 0). E non giustifica la
-scelta della variante: sullo stesso campione oggi ne sono state provate ~10.
-
-**Il braccio "archivio" NON è spedibile in produzione.** In
-`p51_grade_essenze_fix.py:118` la tabella archivio è costruita sulle righe
-del pool di test stesso (`[r for pre in pre_ok for r in pre['pool_rows']]`):
-è una scala tarata sul campione che si misura, e in produzione non esiste
-(non si può avere la sd dei pool dei 29 manager della giornata che si sta
-decidendo). Quindi la conclusione "bastano i due fix sopra la fonte già
-esistente" va corretta: la fonte spedibile è quella di produzione
-(consigli, +6.109, 92,2%), che è **statisticamente indistinguibile**
-dall'archivio (appaiato -1.468, IC include zero). Si sceglie la produzione
-non perché vinca, ma perché l'altra non esiste fuori dal backtest.
-
-**Sulla granularità del ricentraggio** (domanda dell'orchestratore): per
-ruolo è il minimo giusto, più fine NO — per (lega,ruolo) si stimerebbero
-~100 costanti sullo stesso campione e si cancellerebbe l'informazione vera
-fra leghe. Ma il ricentraggio resta un cerotto: la causa è misurata ed è
-una **discrepanza di popolazione nella tabella del voto**. Sul pool di
-backtest il voto medio ricostruito è 4,12 contro 3,10 della tabella
-(`grade_scala_storica.json`), scarto +1,02 presente in TUTTI i ruoli
-(DEF +1,12, MID +1,07, GK +0,98, FWD +0,89): la tabella è costruita su
-tutte le carte mai viste, il pool che si punteggia è post-DNP e post-filtro
-starter-odds, cioè solo probabili titolari, che hanno voti migliori. Se la
-tabella del voto viene costruita sulla stessa popolazione che si punteggia,
-la spinta cieca sparisce per costruzione e non serve stimare nessuna
-costante sul campione di misura.
-
-**Restano aperti**: fattori 0,75/0,462 mai ritarati dopo i fix (vengono
-dalla configurazione pre-fix); costanti di ricentraggio stimate in-sample;
-molteplicità delle varianti provate.
-
-### Il +1,02 del voto: p53 ha ragione, il resto NON va chiuso (Opus, 12/08/2026 notte)
-
-`p53_grade_scala_produzione.py` chiude solo +0,15 del gap e **è il
-comportamento giusto**: quello è il gap vero e spedibile. Il resto è un
-artefatto del backtest, misurato:
-
-    righe del pool di backtest (slug+data specifici)      voto medio 4,029
-    STESSI slug, TUTTE le loro date nell'indice grade     voto medio 2,993   <-- -1,04
-    slug diversi da quelli del pool                       voto medio 2,292
-    indice grade intero                                   voto medio 2,706
-    popolazione dei consigli (produzione, p53)            voto medio 3,185
-
-Cioè: **a parità di giocatore**, le date che finiscono nel pool di backtest
-hanno un voto più alto di 1,04 rispetto alle altre date dello stesso
-giocatore. Il mix di giocatori conta poco (+0,29). La causa è nel codice del
-backtest: `p24_binario2_ga.costruisci_pool_carte:114` scarta ogni carta con
-`punteggio == 0` (non ha giocato), e `prepara_pool_rows_grezze` richiede un
-`reale` non nullo — cioè il pool tiene, per ogni giocatore, **solo le
-giornate in cui ha giocato**, che sono esattamente quelle in cui non era F.
-È la stessa "contaminazione dal filtro DNP" già segnalata altrove.
-
-Correzione a quanto avevo scritto sopra: la causa NON è il filtro
-starter-odds, ed è più grande di quanto suggerisca il contatore
-`escluse_dnp` (671 carte): l'esclusione agisce per (carta, giornata) su
-tutto l'archivio.
-
-**Conseguenze operative:**
-- La popolazione giusta per la tabella del voto è quella dei consigli
-  (p53), non il pool di backtest: quest'ultimo è filtrato sull'ESITO, e
-  costruirci sopra la tabella sarebbe circolare. Il +0,87 residuo non si
-  chiude — non esiste in produzione.
-- **Le costanti di ricentraggio per ruolo misurate sul backtest (+1,42
-  DEF … +1,51 MID) non vanno spedite**: correggono una spinta che in
-  produzione vale ~0,15 di voto (≈0,2-0,3 pt), non 1,4 pt. Spedirle
-  significherebbe abbassare l'atteso di oltre un punto per carta senza
-  motivo. Nel backtest il ricentraggio serve (corregge l'artefatto); in
-  produzione va ricalcolato sulla popolazione dei consigli, dove è piccolo.
-- Ne segue che **una parte del +7.577 è la correzione di un artefatto del
-  backtest** e non si trasferisce in produzione. Il placebo resta valido su
-  ciò che dimostra (il voto porta segnale, p≤0,048); la taglia continua a
-  ridursi ogni volta che la si guarda da vicino.
-- Limite di misura da tenere presente: il backtest valuta il grade su un
-  pool da cui è già stata tolta l'informazione più forte del grade
-  (chi non gioca). Qualunque numero di taglia esce da lì è distorto.
+## 8bis-bis. Gruppo del grade esteso alla giornata — priorità 2, marathon 12/08/2026, PRONTO MA SPENTO
+
+VERDETTO DA BAR: il voto A-F porta informazione vera anche a livello
+essenze (dimostrato col placebo, non solo per correlazione a livello
+carta) — ma la TAGLIA del guadagno resta incerta, e il numero migliore
+visto oggi (+10.102) è il migliore di ~12 varianti provate sullo stesso
+campione, quindi sovrastimato. Costruito un interruttore in produzione
+(`GRADE_GROUP_STORICA_ENABLED`, **SPENTO di default**) e una
+pre-registrazione congelata per il test fuori campione su GW5/6/7 (chiude
+25/08/2026). **Non accendere prima di quel test.**
+
+### Come si è arrivati qui (compresso — l'11/08 sera il gruppo nativo
+lega/ruolo/giornata usato per lo z-score del grade risultò spento per il
+51%+ delle righe di produzione, gruppo <2 membri). Round di misura del
+12/08, in ordine, ciascuno ha trovato e chiuso un buco nel precedente:
+1. Prima tabella sd_atteso costruita sull'archivio backtest (29 manager,
+   biased): essenze +14.387, poi scomposto in ~45% "spinta cieca" (media
+   non zero) + resto rumore — non provato.
+2. Opus ha deciso la fonte giusta: `consiglio_*.txt` (la stessa
+   popolazione che la produzione punteggia davvero), non l'archivio, non
+   la cache game-log. Costruita (`p47_sd_atteso_produzione.py`, 2.333
+   righe distinte da 8.419 file, dedup lega/codice/slug/kickoff).
+3. Confronto fra RUN DIVERSE (regola violata: "il delta, non il valore
+   assoluto") aveva illuso un miglioramento della fonte nuova — rifatto
+   appaiato nello stesso run: nessun vantaggio provato della fonte sulla
+   sorgente (`p50`).
+4. Trovati e corretti due difetti veri: celle della tabella con n<2
+   (sd=0, grade spento — lo stesso difetto che il filone vuole
+   eliminare, spostato) e ricentraggio "a media zero" fatto con UNA sola
+   costante globale invece che per ruolo (lasciava i portieri spinti in
+   blocco -0,93pt, il 41% di una loro deviazione standard).
+5. **Diagnosi finale della "spinta cieca" residua** (Opus, misurata non
+   ipotizzata): il pool di backtest, essendo filtrato sulle sole carte
+   che HANNO giocato (DNP escluso), ha per costruzione un voto medio +1,04
+   più alto delle altre date dello stesso giocatore — un artefatto del
+   BACKTEST, non della fonte. Le costanti di ricentraggio misurate sul
+   backtest (per ruolo, +1,4pt) non sono trasferibili in produzione (dove
+   la spinta vale solo ~0,2-0,3pt): non vanno spedite.
+
+### La ricetta finale (12/08/2026 notte) e il controllo di Opus
+Voto e sd_atteso dalla popolazione dei consigli, fattore_storico **0,482**
+(ritarato sulla fonte nuova), ricentraggio PER RUOLO. Risultato (n=360
+GW-manager, bootstrap cluster manager-fixture): **delta +10.102
+IC95%[+1.494;+18.995] 98,8% positivo — primo numero che esclude lo zero.**
+
+Opus ha attaccato la ricetta su tre fronti, tutti respinti:
+1. **Placebo** (voto rimescolato dentro la GW-manager, 20 permutazioni):
+   vero +10.102, placebo TUTTI negativi (mediana -10.656), 0/20 arrivano
+   al vero → p≤0,048. Il guadagno è informazione vera, non un artefatto
+   della macchina.
+2. **"Vince solo entrando in meno arene"** (-34 arene, -3,1%): smentito,
+   i placebo ne giocano 10 in meno e perdono lo stesso.
+3. **"È solo il ribasso sui portieri"**: smentito, col ricentraggio per
+   ruolo invece che globale il risultato è quasi identico (+9.888).
+
+**Verdetto testuale di Opus, da riportare così com'è**: "PRONTA PER IL
+FUORI CAMPIONE PRE-REGISTRATO, NON PER LA PRODUZIONE DIRETTA." Limiti
+onesti che restano: fattore 0,482 stimato in-sample; ~12 varianti provate
+sullo stesso campione (98,8% è condizionato alla ricerca); 45-46% del
+guadagno viene da 5 GW-manager su 360 (mediana del delta = 0); il caveat
+DNP si risolve SOLO sui dati nuovi (pool pre-partita vero, non filtrato
+sull'esito).
+
+### PRE-REGISTRAZIONE congelata il 12/08/2026 — NON toccare finché GW7 non chiude
+- **Tabelle con cutoff vero**: `KICKOFF_CUTOFF=2026-08-14` (escludono
+  righe con kickoff dentro/dopo la finestra di test). File congelati:
+  `analisi_manager/dati/sd_atteso_produzione_righe_cutoff_2026-08-14.json`,
+  `analisi_manager/dati/grade_scala_produzione_cutoff_2026-08-14.json`.
+- **Fattore congelato**: 0,482. Ricentraggio: per ruolo, calcolato FRESCO
+  sul campione del test (non le costanti vecchie, tarate sull'artefatto).
+- **Metrica/decisione**: G_finale − G_baseline (lega_ruolo), Binario 2,
+  bootstrap cluster manager-fixture. Segno negativo → non implementare
+  senza rivedere. Segno positivo → si somma al placebo, non basta da
+  solo (n troppo piccolo su 3 GW).
+- **Attesa onesta**: molto più piccola di +10.102/360 per GW-manager —
+  quel numero era il migliore di ~12 tentativi sullo stesso campione.
+- **Fixture** (stesse di GK_ATT_AVV): GW5 `football-14-18-aug-2026`, GW6
+  `football-18-21-aug-2026`, GW7 `football-21-25-aug-2026` (chiude
+  25/08/2026).
+- **Come lanciarlo**: dopo aver riestratto le 3 fixture in
+  `archivio_ufficiale/`, `python analisi_manager/
+  p57_grade_fuoricampo_preregistrato.py` (già pronto, testato oggi con 0
+  fixture disponibili — esce correttamente senza calcolare nulla). Non
+  rigenerare le tabelle congelate su dati nuovi.
+
+### Interruttore in produzione — SPENTO di default (12/08/2026 sera)
+`GRADE_GROUP_STORICA_ENABLED` (env var, default `'0'`) in
+`build_formazione_globale.py`: quando acceso, `_apply_grade_group`
+sostituisce il gruppo nativo con le due tabelle di produzione (fattore
+0,482) e un ricentraggio per ruolo calcolato fresco su tutte le leghe di
+ogni run (`_recentra_grade_per_ruolo`, chiamata da
+`load_league_role_data()` dopo il doppio ciclo lega/ruolo — il
+ricentraggio per ruolo serve vedere tutte le leghe insieme, impossibile
+dentro `_apply_grade_group` che vede una lega+ruolo alla volta).
+Verificato A/A: flag spento = bit-identico al comportamento di sempre;
+flag acceso testato su dati sintetici (boost/penalità coerenti col
+voto). Refresh tabelle: `generatore_formazioni/dati/
+aggiorna_grade_scala_produzione.py` (zero query di rete, gira sempre nel
+workflow anche a flag spento, così non sono stantie quando si accende).
+Anche nel workflow `formazione_giornata.yml`, input `grade_group_storica`
+(default `'0'`, descrizione esplicita "NON ACCENDERE prima del
+25/08/2026" con il motivo). **Decisione dell'utente (12/08/2026)**: non
+accendere ora nonostante il parere parziale di Opus, aspettare l'esito
+del test fuori campione — ma l'interruttore va comunque scritto e
+documentato ORA per non doverselo ricordare a mente tra sessioni/account.
+
+File di riferimento: `analisi_manager/p47..p57` (intera catena di script
+di misura del 12/08), `generatore_formazioni/dati/
+aggiorna_grade_scala_produzione.py`, `docs/handoff/
+RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt` §15-18 (round precedente, Opus).
 
 ---
 
