@@ -556,6 +556,54 @@ def save_game_log_cache(cache, cache_file):
         json.dump(cache, f, ensure_ascii=False, indent=2)
 
 
+# STORIA COMPLETA -- metadati a fianco della cache (12/08/2026, spreco REALE
+# misurato sulla run 31585784239, fase predict).
+#
+# Il criterio per decidere se ri-scaricare il game log era "ho meno di
+# WINDOW_SIZE (30) partite FINAL in cache?". Per un giocatore che di partite
+# in tutta la sua carriera Sorare ne ha 21 (giovane, campionato appena
+# aperto, lega piccola) quella condizione NON e' MAI soddisfatta: ogni run
+# ri-paginava le sue 60 partite richieste in 6 query, per sempre, pur avendo
+# gia' in cache tutto quello che Sorare possiede.
+# Misurato su quella run: 523 giocatori su 1151 (45%) cadevano qui, e la
+# fase predict ha fatto 6831 query totali con 45 risposte 429 -- 6193
+# secondi di sola attesa Retry-After, il 60% del tempo della fase.
+#
+# Qui si segna, in un file a fianco alla cache, che per quel giocatore la
+# paginazione e' arrivata alla FINE della storia (hasNextPage falso, non un
+# errore a meta'). Alla run dopo basta una pagina sola per intercettare le
+# partite nuove, invece di sei.
+#
+# File SEPARATO di proposito (<slug>_gamelog.meta.json, non una chiave dentro
+# il JSON della cache): la cache game-log e' condivisa e ci leggono dentro il
+# generatore, lo scouting e analisi_manager iterando su cache.values() come se
+# fossero tutte partite -- una chiave di metadati la' dentro diventerebbe una
+# partita fantasma. Il suffisso non finisce per '_gamelog.json', quindi i
+# conteggi dei file in cache non cambiano.
+def _game_log_meta_path(cache_file):
+    return cache_file[:-len('.json')] + '.meta.json'
+
+
+def load_game_log_meta(cache_file):
+    p = _game_log_meta_path(cache_file)
+    if os.path.exists(p):
+        try:
+            with open(p, 'r', encoding='utf-8') as f:
+                d = json.load(f)
+            return d if isinstance(d, dict) else {}
+        except (json.JSONDecodeError, OSError):
+            return {}
+    return {}
+
+
+def save_game_log_meta(cache_file, meta):
+    try:
+        with open(_game_log_meta_path(cache_file), 'w', encoding='utf-8') as f:
+            json.dump(meta, f, ensure_ascii=False, sort_keys=True)
+    except OSError:
+        pass
+
+
 # Paginazione del game log (29/07 notte, bug REALE trovato sui dump .debug/
 # committati). La query allPlayerGameScores ha una complessita' di ~28 per
 # partita richiesta piu' ~130 di base, contro un tetto di complessita' 500 per
@@ -571,6 +619,8 @@ def save_game_log_cache(cache, cache_file):
 # Qui la stessa finestra viene chiesta in pagine abbastanza piccole da stare
 # sotto il tetto. I dati raccolti sono gli stessi (stesse partite, stesso
 # ordine dall'API), solo divisi in piu' round-trip.
+FINE_STORIA_RAGGIUNTA = False  # vedi fetch_game_scores/load_game_log_meta
+
 PAGINA_GAME_LOG = 10  # 130 + 28*10 = ~410, con margine sotto il tetto
                       # di 500 (il pageInfo aggiunto costa qualcosa a
                       # sua volta: una pagina rifiutata costa molto piu'
@@ -593,7 +643,15 @@ def fetch_game_scores(slug, fetch_count):
     Se la prima pagina fallisce (es. l'API non accettasse after/pageInfo) si
     ripiega sulla chiamata singola di prima: il caso peggiore possibile e'
     esattamente il comportamento di oggi, non uno peggiore."""
+    global FINE_STORIA_RAGGIUNTA
+    # Azzerato PRIMA di qualunque uscita: se lo si azzerasse solo sul ramo
+    # paginato, un giocatore risolto con una pagina sola erediterebbe il flag
+    # del giocatore precedente dello stesso shard e verrebbe marcato "storia
+    # completa" a torto (trovato con un test locale, non in produzione).
+    FINE_STORIA_RAGGIUNTA = False
     if fetch_count <= PAGINA_GAME_LOG:
+        # Pagina singola: nessun pageInfo, quindi non si puo' concludere
+        # niente sulla fine della storia -- il flag resta False.
         return graphql_query(ALL_GAME_SCORES_QUERY,
                              {"slug": slug, "first": fetch_count},
                              operation_name="AllPlayerGameScores")
@@ -621,6 +679,11 @@ def fetch_game_scores(slug, fetch_count):
         info = conn.get('pageInfo') or {}
         after = info.get('endCursor')
         if not nuovi or not info.get('hasNextPage') or not after:
+            # Fine PULITA della storia: Sorare dice che non c'e' altro. Solo
+            # da qui si puo' concludere "ho tutto" -- le altre uscite del
+            # loop (errore a meta', tetto di 12 pagine, quota richiesta
+            # raggiunta) NON lo dimostrano e lasciano il flag a False.
+            FINE_STORIA_RAGGIUNTA = True
             break
     if base is None:
         return None
@@ -635,6 +698,7 @@ def fetch_game_log_incremental(slug, target_window_size):
     evitare di riscaricare partite storiche gia' note e concluse (FINAL).
     Vedi test_def.py per la documentazione completa della strategia."""
     cache, cache_file = load_game_log_cache(slug)
+    meta = load_game_log_meta(cache_file)
     n_cached_final = sum(1 for v in cache.values() if v.get('scoreStatus') == 'FINAL')
 
     log(f"[FASE 1/4] Cache game log per {slug}: {len(cache)} partite in cache "
@@ -648,6 +712,21 @@ def fetch_game_log_incremental(slug, target_window_size):
         fetch_count = max(target_window_size * 2, 30)
         log(f"[FASE 1/4] Cache insufficiente ({n_cached_final} < {target_window_size}), "
             f"fetch ampio: richiesta ultime {fetch_count} partite (fallback non-incrementale).")
+
+    # STORIA COMPLETA (vedi il commento su load_game_log_meta): se in una run
+    # precedente la paginazione era arrivata alla fine della storia di questo
+    # giocatore, e da allora la cache non e' stata svuotata, non ha senso
+    # richiedere di nuovo 60 partite in 6 pagine -- Sorare non ne ha altre.
+    # Una pagina sola basta a intercettare le partite nuove (al massimo
+    # PAGINA_GAME_LOG in una settimana, cioe' molte piu' di quante se ne
+    # giochino). Se quella pagina rivelasse piu' storia del previsto, il
+    # flag viene tolto qui sotto e la run successiva torna al fetch ampio.
+    if fetch_count > PAGINA_GAME_LOG and meta.get('storia_completa') \
+            and len(cache) >= (meta.get('partite_note') or 0) > 0:
+        fetch_count = PAGINA_GAME_LOG
+        log(f"[FASE 1/4] Storia gia' completa in cache ({len(cache)} partite, "
+            f"meno di {target_window_size} perche' il giocatore non ne ha di piu'): "
+            f"una sola pagina di controllo invece di {max(target_window_size * 2, 30)}.")
 
     data = fetch_game_scores(slug, fetch_count)
 
@@ -686,6 +765,19 @@ def fetch_game_log_incremental(slug, target_window_size):
             updated_count += 1
 
     save_game_log_cache(cache, cache_file)
+    # Aggiorna il marcatore di storia completa (vedi load_game_log_meta).
+    if FINE_STORIA_RAGGIUNTA:
+        if not meta.get('storia_completa') or meta.get('partite_note') != len(cache):
+            meta['storia_completa'] = True
+            meta['partite_note'] = len(cache)
+            save_game_log_meta(cache_file, meta)
+    elif meta.get('storia_completa') and len(cache) > (meta.get('partite_note') or 0):
+        # La pagina di controllo ha portato partite nuove e la storia
+        # potrebbe non essere piu' quella nota: si ricontrolla per intero
+        # alla prossima run invece di fidarsi del marcatore.
+        meta.pop('storia_completa', None)
+        meta.pop('partite_note', None)
+        save_game_log_meta(cache_file, meta)
     log(f"[FASE 1/4] Cache aggiornata: {updated_count} partite nuove/aggiornate, "
         f"{len(cache)} totali in cache ora.")
 
