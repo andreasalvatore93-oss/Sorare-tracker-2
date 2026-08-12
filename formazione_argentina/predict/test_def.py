@@ -275,36 +275,65 @@ MIN_QUERY_INTERVAL_SECONDS = float(os.environ.get('SORARE_PACING_MIN', '0.2'))
 MAX_QUERY_INTERVAL_SECONDS = max(0.8, MIN_QUERY_INTERVAL_SECONDS * 4)
 _PACING_FILE = os.path.join(
     os.environ.get('RUNNER_TEMP') or tempfile.gettempdir(), 'sorare_pacing.txt')
-_last_query_ts = [0.0]
+
+
+# STATO DEL PACING CONDIVISO FRA I PROCESSI (12/08/2026, difetto REALE).
+# Il file conteneva solo l'intervallo; il MOMENTO dell'ultima query stava in
+# una variabile di processo. Ma nella fase predict OGNI GIOCATORE E' UN
+# PROCESSO NUOVO (il workflow lancia `python test_*.py` una volta per slug),
+# quindi quella variabile ripartiva da zero e la PRIMA query di ogni processo
+# non aspettava mai. Con ~1,3 query per giocatore -- dopo i fix sulle cache --
+# il freno non entrava praticamente mai in funzione: alzare l'intervallo da
+# 0,2s a 1,0s non ha cambiato niente (run 31596309760), e la conclusione
+# sbagliata che se ne stava per trarre era "i 429 non dipendono dalla
+# velocita'". Non era stata provata: il freno era staccato.
+# Ora nel file stanno DUE numeri, "intervallo ultimo_timestamp", e il momento
+# dell'ultima query attraversa i processi. Nessuna corsa fra processi: dentro
+# uno shard i giocatori sono elaborati in sequenza dal ciclo bash, un processo
+# alla volta.
+def _pacing_stato():
+    try:
+        with open(_PACING_FILE, encoding='utf-8') as f:
+            parti = f.read().split()
+        intervallo = float(parti[0])
+        ultimo = float(parti[1]) if len(parti) > 1 else 0.0
+    except (OSError, ValueError, IndexError):
+        return MIN_QUERY_INTERVAL_SECONDS, 0.0
+    return (min(MAX_QUERY_INTERVAL_SECONDS,
+                max(MIN_QUERY_INTERVAL_SECONDS, intervallo)), ultimo)
+
+
+def _scrivi_pacing(intervallo, ultimo):
+    try:
+        with open(_PACING_FILE, 'w', encoding='utf-8') as f:
+            f.write(f'{intervallo} {ultimo}')
+    except OSError:
+        pass
 
 
 def _pacing_corrente():
-    try:
-        with open(_PACING_FILE, encoding='utf-8') as f:
-            return min(MAX_QUERY_INTERVAL_SECONDS,
-                       max(MIN_QUERY_INTERVAL_SECONDS, float(f.read().strip())))
-    except (OSError, ValueError):
-        return MIN_QUERY_INTERVAL_SECONDS
+    return _pacing_stato()[0]
 
 
 def _rallenta_pacing():
     """Alza la pausa (e la rende visibile ai processi successivi dello stesso
     runner). Chiamata solo quando Sorare risponde 429."""
-    nuovo = min(MAX_QUERY_INTERVAL_SECONDS, _pacing_corrente() * 2)
-    try:
-        with open(_PACING_FILE, 'w', encoding='utf-8') as f:
-            f.write(f'{nuovo}')
-    except OSError:
-        pass
+    intervallo, ultimo = _pacing_stato()
+    nuovo = min(MAX_QUERY_INTERVAL_SECONDS, intervallo * 2)
+    _scrivi_pacing(nuovo, ultimo)
     return nuovo
 
 
 def _throttle_query():
-    intervallo = _pacing_corrente()
-    elapsed = time.time() - _last_query_ts[0]
-    if elapsed < intervallo:
-        time.sleep(intervallo - elapsed)
-    _last_query_ts[0] = time.time()
+    intervallo, ultimo = _pacing_stato()
+    ora = time.time()
+    if ultimo:
+        manca = intervallo - (ora - ultimo)
+        # 'manca > intervallo' vuol dire orologio andato indietro o file di
+        # un'altra run: si ignora invece di dormire un tempo assurdo.
+        if 0 < manca <= intervallo:
+            time.sleep(manca)
+    _scrivi_pacing(intervallo, time.time())
 
 
 def graphql_query(query, variables=None, operation_name=None):
