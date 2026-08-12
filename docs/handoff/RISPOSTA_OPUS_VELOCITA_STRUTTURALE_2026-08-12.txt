@@ -404,9 +404,60 @@ tocca anche gli strumenti locali che leggono la stessa cache (generatore,
 scouting, analisi_manager) e non va fatto di corsa in fondo a una sessione.
 Da decidere insieme dopo due o tre run a regime.
 
-7.6 RISULTATI
---------------
-(compilato appena le run finiscono)
+7.6 RUN B (31593062806): il batch funziona, le cache tornano su main
+----------------------------------------------------------------------
+                          run A      run B     previsto per B
+  query totali            6857       4775        ~4300
+  fase predict wall        649s       558s        ~420s
+  run intera              17,0 min   15,9 min
+  risposte 429               31         29
+  attesa da 429            6525s      4401s     (58% della fase)
+  giocatori                1153       1156
+
+Il fix del dettaglio ha fatto quello che doveva (-30% di query totali, contro
+il -37% previsto). E soprattutto: **le cache sono arrivate su main**. Il
+commit di output della run B contiene 1262 file di game-log cache aggiornati
+e 148 marcatori .meta.json (3240 file in tutto). Prima erano zero.
+
+Prova che il batch gira davvero, dal log dello shard 05:
+  70 partite di dettaglio prese in 24 richieste invece di 70
+  (17 lotti: 14 da 1 partita, uno da 12, uno da 14, uno da 30)
+Molti lotti da 1 perche' a molti giocatori mancava una sola partita nuova:
+il guadagno del batch e' grande sui giocatori mai visti, piccolo su quelli
+gia' in cache. E' anche il motivo per cui il -30% e' arrivato sotto la
+previsione.
+
+7.7 IL QUARTO FIX: I PANCHINARI (commit ffd75f5415)
+-----------------------------------------------------
+Controllo dopo la run B: 528 giocatori facevano ancora il fetch ampio, ma
+solo 148 avevano ricevuto il marcatore. Gli altri 380 sono un caso che il
+primo marcatore non copriva: hanno PIU' di 60 partite in carriera — quindi
+la paginazione non arriva mai alla fine e 'hasNextPage' resta vero — ma meno
+di 30 in stato FINAL, perche' stanno spesso in panchina. Per loro il fetch
+ampio si ripeteva a ogni run riportando esattamente le stesse partite.
+
+Nuovo marcatore 'ampio_inutile': se un fetch ampio non porta NESSUNA PARTITA
+MAI VISTA, rifarlo non serve. Due trappole chiuse dal test locale prima del
+commit:
+  - il criterio NON puo' essere "updated_count == 0": quel contatore conta i
+    nodi che non erano gia' FINAL, e le 48 partite da DID_NOT_PLAY di un
+    panchinaro risultano "aggiornate" a ogni run pur essendo identiche. Si
+    guardano gli ID MAI VISTI.
+  - serve un flag PAGINAZIONE_INTERROTTA a se': senza, due run tagliate a
+    meta' nello stesso punto da un 429 darebbero "zero partite nuove" e
+    marcherebbero come nota una storia di cui abbiamo solo la prima meta'.
+    Troncamento silenzioso e permanente, la cosa peggiore che potesse
+    uscire da questo fix.
+Costo: per questi giocatori servono DUE run per assestarsi, non una (alla
+prima le 60 partite sono tutte nuove per costruzione).
+
+Il test locale e' stato promosso a file di repo e si rilancia da solo:
+  python formazione_mls/predict/test_cache_gamelog_locale.py
+6 scenari, zero rete, tutti passati.
+
+7.8 RISULTATI FINALI
+---------------------
+(compilato appena la run C finisce)
 
 
 8. COSA NON HO FATTO / COSA NON SO
