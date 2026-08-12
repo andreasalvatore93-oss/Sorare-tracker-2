@@ -619,6 +619,21 @@ jobs:
       # Modello di costo per il bilanciamento dei gruppi predict della run
       # successiva (nessun effetto sullo scoring, vedi pipeline_artifacts.py).
       - run: python pipeline_artifacts.py aggrega_costi || true
+      # POTATURA (12/08/2026). Ogni run scrive file col timestamp nel nome e
+      # non ne cancella mai nessuno: due run nello stesso giorno lasciano due
+      # copie di ogni predizione e di ogni consiglio. Il repo era arrivato a
+      # 75.449 file, di cui 23.666 predizioni doppie e 11.422 consigli quasi
+      # tutti doppi -- e OGNI job della pipeline deve materializzarli tutti
+      # prima di iniziare a lavorare.
+      # Qui si tiene l'ultimo file di ogni giorno e si buttano le copie
+      # precedenti: e' esattamente quello che i lettori usano gia'
+      # (build_consiglio e best_five prendono sorted(glob)[-1], il generatore
+      # prende latest_consiglio). Gira PRIMA del git add, cosi' le
+      # cancellazioni entrano nello stesso commit degli output nuovi.
+      # Nota: le predizioni appena scritte da questa run sono le piu' recenti
+      # del giorno, quindi restano; spariscono quelle delle run precedenti
+      # della stessa giornata, che nessuno legge piu'.
+      - run: python pulisci_predizioni_doppie.py --esegui || true
       - run: |
           git config user.name "generatore-formazioni-bot"
           git config user.email "generatore-formazioni-bot@users.noreply.github.com"
