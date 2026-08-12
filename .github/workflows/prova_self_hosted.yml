@@ -30,7 +30,11 @@ defaults:
     # Il "-e {0}" e' la forma che GitHub si aspetta: -e = esci al primo
     # comando fallito (come fa la shell dei runner Linux), {0} = il file di
     # script che il runner genera per lo step.
-    shell: 'C:\Program Files\Git\bin\bash.exe -e {0}'
+    # Barre NORMALI, non rovesciate (12/08/2026, secondo tentativo): con
+    # 'C:\Program Files\...' il runner risponde "Second path fragment must not
+    # be a drive or UNC name" -- prova a combinare il percorso invece di
+    # eseguirlo. Con le barre in avanti e' la forma degli esempi GitHub.
+    shell: 'C:/Program Files/Git/bin/bash.exe -e {0}'
 
 jobs:
   prova:
