@@ -1,0 +1,156 @@
+BRIEF PER SONNET — portiere: la previsione GREZZA (pre-calibrazione) ha
+segnale o è già zero a monte?
+Scritto 12/08/2026 (Roma). Chat pulita, nessuna memoria di sessioni precedenti.
+
+============================================================================
+0. COSA LEGGERE PRIMA (in ordine)
+============================================================================
+1. CLAUDE.md (repo root) — regole generali, in particolare "divieto di
+   allucinazioni" e "backtest: nessuno è affidabile finché non ispezionato".
+2. docs/handoff/HANDOFF_ORCHESTRATORE_NUOVO_2026-08-12.txt §1 — il contesto
+   completo di questo buco (letto e verificato contro il codice
+   dall'orchestratore prima di scrivere questo brief).
+3. Codice, con i numeri di riga esatti (verificati oggi, non a memoria):
+   - generatore_formazioni/build_formazione_globale.py righe 403-408:
+     CALIB_PER_RUOLO — GK a=35.78 b=0.264 (pendenza 1/3 degli altri ruoli:
+     DEF b=0.831, MID b=0.740, FWD b=0.789).
+   - backtest_arene_previsioni.py, funzione score_atteso() riga 793-820:
+     ritorna {'atteso': ..., 'l10':..., 'squadra':..., ...} — 'atteso' è
+     GIÀ la previsione GREZZA pre-calibrazione (calcola() a riga 609 la
+     produce, gira SOLO sulla cache game-log locale, zero chiamate di
+     rete/query Sorare).
+   - analisi_manager/p24_binario2_ga.py, funzione prepara_pool_rows()
+     righe 137-177: per ogni carta del pool chiama
+     `res = P.score_atteso(cache, c['slug'], ruolo, fine_giornata,
+     cutoff_giornata=primo_kickoff)` (riga 146), poi
+     `cal = S21.bfg.calibra(res['atteso'], cod)` (riga 154). Il dizionario
+     `rows` che costruisce (riga 156-160) include 'atteso_raw': res['atteso']
+     — MA questo campo NON sopravvive nell'aggregato finale
+     (verificato oggi: archivio_ufficiale/aggregato/binario2_pool_rows.json
+     ha SOLO '_cal', non 'atteso_raw' — vedi punto 3 sotto). Va quindi
+     rigenerato, non è già scritto da nessuna parte.
+   - ATTENZIONE percorsi (verificato oggi, l'handoff originale ne sbagliava
+     uno): backtest_arene_previsioni.py e backtest_arene_cache.py stanno
+     ALLA RADICE del repo (import backtest_arene_previsioni as P), NON in
+     analisi_manager/. p24_binario2_ga.py invece è dentro analisi_manager/.
+
+============================================================================
+1. LA DOMANDA (una sola)
+============================================================================
+La previsione GREZZA (pre-calibrazione, 'atteso_raw'/res['atteso']) dei
+portieri correla col loro punteggio realizzato, oppure il segnale è già
+zero PRIMA di calibra()?
+
+Non è un giudizio su come migliorare nulla: è solo la misura che decide
+dove guardare dopo (feature della pipeline predittiva GK, vs. retta di
+calibrazione).
+
+============================================================================
+2. IPOTESI PRIMA DEI NUMERI (dell'orchestratore, non tua)
+============================================================================
+Ipotesi: la correlazione GREZZA sarà anch'essa vicina a zero (stesso
+ordine di -0.0018 o comunque chiaramente più bassa di DEF/MID/FWD), perché
+la pendenza b=0.264 in CALIB_PER_RUOLO sembra la reazione di una
+calibrazione lineare a un input che già non ordina — non il contrario
+(una calibrazione non può DISTRUGGERE una correlazione lineare esistente,
+al più la scala). Se il dato smentisce questa ipotesi (correlazione grezza
+chiaramente positiva, es. >0.10, che poi sparisce dopo calibra()), è un
+risultato valido e va scritto così: vorrebbe dire che il bug è nella retta
+di calibrazione GK, non nelle feature — riscrivi l'ipotesi come sbagliata,
+non aggiustare i numeri per farla tornare.
+
+============================================================================
+3. IL CAMPIONE — con i numeri di controllo
+============================================================================
+Base: archivio_ufficiale/aggregato/binario2_pool_rows.json — lista di
+10.035 righe carta (JSON è una lista diretta, non {'pool': [...]}).
+Filtro: righe con codice == 'GK'.
+
+Prima di procedere, verifica e riporta questi conteggi (se non tornano,
+fermati e dillo, non proseguire):
+  - n totale righe nel file: deve essere 10.035
+  - n righe con codice == 'GK': l'handoff parla di "1.932 portieri reali"
+    come campione della misura calibrata — verifica se il filtro GK su
+    questo file dà lo stesso ordine di grandezza (potrebbe non coincidere
+    esattamente, l'aggregato potrebbe avere de-duplicazioni diverse: se
+    il numero è molto diverso, es. 10x o 1/10, fermati e segnalalo prima
+    di continuare, non assumere che vada bene).
+  - conferma che il file NON ha il campo 'atteso_raw' in nessuna riga
+    (grep veloce basta) — se invece ce l'ha già, USA QUELLO, non
+    rigenerare nulla (risparmio, vedi CLAUDE.md regola suprema).
+
+============================================================================
+4. IL METODO
+============================================================================
+Non riscrivere la pipeline. Riusa quella di produzione:
+
+Per ogni riga GK nell'aggregato, hai già: manager, fixture, slug, 'reale'
+(punteggio vero). Ti manca 'atteso_raw'. Per ottenerlo SENZA rigenerare
+tutto il binario 2 da zero (costoso), il modo più economico è:
+
+a) Rilanciare la stessa pipeline di p24_binario2_ga.py (le funzioni
+   elenca_fixture(), carica_formazioni(), costruisci_pool_carte(),
+   trova_primo_kickoff(), prepara_pool_rows()) MA aggiungendo
+   temporaneamente 'atteso_raw': res['atteso'] all'output di
+   prepara_pool_rows (già presente nel dict `rows.append({...})` a riga
+   156-160 — verifica se manca solo nell'aggregazione finale o già qui;
+   se manca anche qui, aggiungilo tu con una riga, NON modificare altro).
+b) Filtra solo ruolo GK per non sprecare tempo/CPU sugli altri ruoli (ma
+   la funzione va comunque chiamata su tutto il pool per via dei gruppi
+   z-score — leggi bene prima di tagliare, non rompere zscore_gruppo).
+c) Zero query di rete: score_atteso legge solo dalla cache game-log
+   locale (cache = CACHE.CacheLocale()), quindi questo è un run locale
+   puro, nessun limite API in gioco.
+d) NON scrivere sopra archivio_ufficiale/aggregato/binario2_pool_rows.json
+   — scrivi l'output in un file nuovo (es.
+   analisi_manager/dati/gk_atteso_raw_2026-08-12.json) o tienilo in memoria
+   e riporta solo i numeri di sintesi in chat.
+
+Poi calcola correlazione (Pearson va bene, stesso metro già usato per gli
+altri ruoli nell'handoff) fra 'atteso_raw' e 'reale' sulle sole righe GK.
+
+============================================================================
+5. CONTROLLI OBBLIGATORI PRIMA DEI NUMERI DI SINTESI
+============================================================================
+- Dump leggibile di ALMENO 10 portieri: nome, atteso_raw, atteso
+  calibrato (_cal, già nel file aggregato), reale. Consegnalo INSIEME ai
+  numeri, non su richiesta.
+- Confronta 3-4 valori di _cal ricalcolati da te (calibra(atteso_raw, 'GK'))
+  con il _cal già presente nel file aggregato per le stesse righe: devono
+  coincidere esattamente (stesso identico numero arrotondato). Se non
+  coincidono, hai sbagliato manager/fixture/ordine e il resto è da buttare
+  — fermati e dillo.
+- Se scopri altri campi mancanti o difetti nel percorso, ANNOTALI in fondo
+  al tuo report e prosegui: non "sistemarli" per conto tuo.
+
+============================================================================
+6. COSA CONSEGNARE
+============================================================================
+- n portieri usati nella correlazione grezza
+- correlazione(atteso_raw, reale) per i GK, con IC95 se hai tempo/bootstrap
+  a livello di CARTA (non serve il bootstrap per manager qui, è una misura
+  di segnale non un backtest di guadagno)
+- lo stesso numero ricontrollato: correlazione(_cal, reale) sugli stessi GK
+  presi dall'aggregato — deve tornare vicino a -0.0018 (dell'handoff); se è
+  molto diverso, la causa va capita prima di fidarsi del resto
+- il dump di almeno 10 casi (punto 5)
+- eventuali difetti annotati
+
+============================================================================
+7. COSA NON FARE
+============================================================================
+- Non toccare CALIB_PER_RUOLO['GK'] né altre costanti di produzione.
+- Non modificare/sovrascrivere archivio_ufficiale/aggregato/binario2_pool_rows.json.
+- Non lanciare query di rete/API Sorare.
+- Non committare nulla (questa è solo una misura). Se proprio vuoi salvare
+  un file di output intermedio, mettilo in analisi_manager/dati/ ma NON
+  fare git add/commit: lo decide l'utente dopo aver visto i numeri.
+
+============================================================================
+8. DOVE RIFERIRE
+============================================================================
+Riporta l'esito IN CHAT (l'utente farà da navetta verso l'orchestratore),
+massimo i numeri del punto 6 più il dump. Non serve scrivere un handoff:
+se l'utente lo chiede esplicitamente, va aggiunto in coda a
+docs/handoff/HANDOFF_ORCHESTRATORE_NUOVO_2026-08-12.txt, mai in un file
+nuovo.
