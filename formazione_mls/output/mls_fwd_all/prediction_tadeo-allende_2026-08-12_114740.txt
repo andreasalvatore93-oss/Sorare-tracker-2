@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T11:47:40.782736Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) tadeo-allende: 52 pt attesi (32-83)
+   ORDINAMENTO: 52.75
+   SQUADRA: inter-miami | AVVERSARIO: leon-leon-de-los-aldamas
+======================================================================
+
+######################################################################
+# GIOCATORE: tadeo-allende
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: tadeo-allende (squadra: inter-miami)
+Generato: 2026-08-12T11:47:40.779524Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 46
+Escluse (DID_NOT_PLAY): 15
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-21 | MIA vs TIG | leagues-cup-mls | score=36.1 | peso=0.088
+  2025-08-23 | DC vs MIA | mlspa | score=32.3 | peso=0.099
+  2025-09-01 | SEA vs MIA | leagues-cup-mls | score=37.8 | peso=0.111
+  2025-09-13 | CLT vs MIA | mlspa | score=30.1 | peso=0.125
+  2025-09-16 | MIA vs SEA | mlspa | score=42.4 | peso=0.140
+  2025-09-20 | MIA vs DC | mlspa | score=68.8 | peso=0.157
+  2025-09-27 | TOR vs MIA | mlspa | score=62.8 | peso=0.177
+  2025-10-04 | MIA vs NE | mlspa | score=81.6 | peso=0.198
+  2025-10-11 | MIA vs ATL | mlspa | score=56.1 | peso=0.223
+  2025-10-18 | NSH vs MIA | mlspa | score=13.4 | peso=0.250
+  2025-10-25 | MIA vs NSH | mlspa | score=62.1 | peso=0.281
+  2025-11-01 | NSH vs MIA | mlspa | score=35.0 | peso=0.315
+  2025-11-09 | MIA vs NSH | mlspa | score=93.6 | peso=0.354
+  2025-11-23 | CIN vs MIA | mlspa | score=80.8 | peso=0.397
+  2025-11-29 | MIA vs NYC | mlspa | score=94.2 | peso=0.445
+  2025-12-06 | MIA vs VAN | mlspa | score=60.0 | peso=0.500
+  2026-03-02 | ORL vs MIA | mlspa | score=48.3 | peso=0.561
+  2026-03-11 | NSH vs MIA | concacaf-champions-league | score=43.7 | peso=0.630
+  2026-03-18 | MIA vs NSH | concacaf-champions-league | score=41.4 | peso=0.707
+  2026-03-22 | NYC vs MIA | mlspa | score=31.8 | peso=0.794
+  2026-04-04 | MIA vs ATX | mlspa | score=51.4 | peso=0.891
+  2026-04-23 | RSL vs MIA | mlspa | score=30.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 50.31
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=22): 51.70 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 44.43 | Punteggio complessivo (granulari) medio: 5.87 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.13 (delta +0.07) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 20.57
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.1 - 80.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.45 (differenza: +3.12)
+Media score in casa: 62.52 | Media score fuori casa: 40.55
+Fattore casa/trasferta applicato: 1.008 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.3
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.009
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.008
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore trend (media ultime 5: 39.7 vs media 5 PRECEDENTI: 75.4): 1.000
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-12T23:30
+Casa: Inter Miami CF | Trasferta: Club León
+Competizione: leagues-cup-mls
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.1 (range 31.9 - 82.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 52.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.04
+Punteggio REALE ottenuto in quella partita: 30.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -23.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.6    62.8    +16.2    16.3        SI
+   7        7      36.5    81.6    +45.1    17.1        NO
+   8        8      65.4    56.1     -9.3    21.8        SI
+   9        9      37.2    13.4    -23.8    19.9        NO
+  10       10      35.5    62.1    +26.6    24.9        NO
+  11       11      36.8    35.0     -1.8    23.7        SI
+  12       12      37.8    93.6    +55.8    22.7        NO
+  13       13      52.7    80.8    +28.1    28.0        NO
+  14       14      54.9    94.2    +39.3    28.1        NO
+  15       15      51.2    60.0     +8.8    29.8        SI
+  16       16      68.4    48.3    -20.1    27.8        SI
+  17       17      47.8    43.7     -4.1    26.5        SI
+  18       18      48.3    41.4     -6.9    25.6        SI
+  19       19      53.3    31.8    -21.5    24.8        SI
+  20       20      69.2    51.4    -17.8    25.0        SI
+  21       21      47.5    30.0    -17.5    23.5        SI
+
+MAE (errore assoluto medio): 21.42
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
