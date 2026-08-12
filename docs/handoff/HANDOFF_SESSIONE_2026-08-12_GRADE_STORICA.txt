@@ -1,0 +1,191 @@
+HANDOFF DI FINE SESSIONE PER IL NUOVO ORCHESTRATORE
+Sessione 12/08/2026 (Roma), orchestratore Sonnet Alto. Sessione marathon,
+UN SOLO FILONE (gruppo grade esteso alla giornata, priorità 2), ~12 giri
+di misura, tanti falsi positivi smontati uno dopo l'altro. Leggi tutto:
+il verdetto da bar da solo non basta a capire cosa NON fare domani.
+
+================================================================================
+VERDETTO DA BAR (12 righe)
+================================================================================
+Oggi: dimostrato che il voto A-F (grade) del giocatore porta informazione
+VERA anche a livello di essenze (non solo di correlazione a livello
+carta) — provato con un test placebo che smonta l'alternativa "è un
+artefatto della macchina". Costruita una ricetta completa (due tabelle
+storiche + fattore + ricentraggio), verificata da Opus con tre attacchi
+diversi, tutti respinti. MA la taglia del guadagno resta incerta (il
++10.102 di oggi è il migliore di ~12 varianti provate sullo stesso
+campione) e Opus ha detto testualmente "pronta per il fuori campione
+pre-registrato, NON per la produzione diretta". Costruito un
+interruttore in produzione (GRADE_GROUP_STORICA_ENABLED), SPENTO di
+default, con una pre-registrazione già scritta e congelata per il test
+vero sulle GW5/6/7 (chiude 25/08/2026). L'utente ha deciso di NON
+accenderlo ora nonostante il parere parziale, ma di scrivere comunque
+l'interruttore (anche nel workflow, visibile) per non doverselo
+ricordare a mente tra le sue 3 sessioni/account.
+
+================================================================================
+1. STATO DEL REPO
+================================================================================
+Branch: main. Tutto committato in locale (9 commit oggi su questo
+filone + 1 sulla regola "stregone supremo" in CLAUDE.md). Ancora da
+pushare al momento di scrivere questo file — l'utente ha chiesto di
+pushare a fine sessione, farlo insieme all'invio di questo handoff.
+
+Commit di oggi (ordine cronologico, `git log --oneline` per i dettagli):
+  1. Fonte sd_atteso dai consigli (decisione Opus, verificata)
+  2. p47/p48/p49: tabella+fattore+test essenze con fonte nuova (+7.761)
+  3. p50: confronto appaiato — smonta l'illusione (era +5.067, non +4.260)
+  4. p51: fix celle n<2 + ricentraggio per ruolo (+7.577/+6.109)
+  5. p52: placebo — il segnale è vero (p<=0,048)
+  6. p53: tabella voto su popolazione consigli (chiude solo +0,15 del gap)
+  7. p54/p55: ricetta finale ritarata (fattore 0,482) — +10.102, esclude zero
+  8. p56 (Opus): tre attacchi, tutti respinti — "pronta per fuori campione"
+  9. p57 + interruttore in produzione + workflow + pre-registrazione
+  10. Pulizia §8bis-bis (era arrivata a 550 righe, compressa)
+  11. Regola CLAUDE.md "stregone supremo" (soprannome di Opus in chat)
+
+File NON miei, committati oggi per non perderli (thread GK-grezzo,
+un'altra sessione li aveva lasciati untracked): analisi_manager/
+_tmp_gk_*.py, gk_atteso_raw_2026-08-12.json, BRIEF_SONNET_GK_GREZZO.
+Ho anche RISOLTO quel filoncino oggi (di striscio): corr(atteso_raw,
+reale)=-0,0037 — confermato che il portiere non lo prevede il modello
+PRE-calibrazione, coerente col verdetto "chiuso, tetto strutturale".
+
+File NON committato di proposito: analisi_manager/dati/
+_cache_index_gamelog.json (20MB, si ricostruisce da solo, mai committare).
+
+================================================================================
+2. PERCHÉ ESISTEVA QUESTO LAVORO
+================================================================================
+Sessione aperta dall'handoff dell'11/08 (HANDOFF_SESSIONE_2026-08-11_
+GK_GRADE_SOGLIE.txt): tre filoni chiusi/aperti, priorità 2 = gruppo
+grade (voto A-F che dovrebbe correggere l'atteso, oggi spento per il
+51%+ delle righe di produzione per un return anticipato su gruppi
+piccoli). L'11/08 sera si era arrivati a un +14.387 essenze sospetto
+("troppo buono per essere buono", l'utente aveva ragione a dubitarne) poi
+sceso a +4.260 non significativo dopo la scomposizione. Oggi si riparte
+da lì con l'obiettivo esplicito: costruire la tabella sd_atteso su dati
+di produzione (non l'archivio biased) e vedere se il segnale regge.
+
+================================================================================
+3. COSA HO IMPARATO SUL METODO (piu' importante dei numeri)
+================================================================================
+- **Confrontare due IC di run diverse non decide niente** (CLAUDE.md
+  "il delta, non il valore assoluto"): il primo miglioramento apparente
+  della fonte nuova (+7.761 vs +4.260 "vecchio") era un confronto fra
+  run diverse. Rifatto appaiato nello stesso run: la fonte non vinceva
+  affatto (+2.694, IC include zero). Da allora, OGNI confronto fra
+  varianti oggi è stato fatto appaiato, stesso pool, stesso bootstrap.
+- **Un placebo (rimescolare l'informazione, tenere identica la macchina)
+  è il test più forte contro "è un artefatto della scala/ricentraggio"**.
+  Ha risolto in un colpo un dubbio che altrimenti avrebbe richiesto
+  altri 5 giri di aggiustamenti.
+- **Il fattore di scala e le costanti di ricentraggio stimati sullo
+  stesso campione su cui si misura il guadagno sono un limite che non
+  si chiude con altri test sullo stesso campione** — si chiude solo con
+  dati nuovi. Per questo la pre-registrazione, non un altro giro di p5X.
+- **Un artefatto del BACKTEST (non della fonte) può creare un "buco"
+  che sembra dover essere chiuso dalla fonte dei dati**: il +1,02 di
+  scarto sul voto veniva dal filtro DNP del backtest (tiene solo le
+  giornate in cui un giocatore ha giocato), non da quale tabella si usa.
+  Prima di rincorrere una fonte "migliore", capire SE il buco è nella
+  fonte o nel modo in cui si misura.
+
+================================================================================
+4. NUMERI INTEGRALI DEL GIORNO (essenze, n=360 GW-manager salvo dove detto)
+================================================================================
+  Card level (n=9.440): corr archivio +0,0999 (replica esatta round 2),
+    corr produzione +0,1141 IC[+0,0938;+0,1338]. Pendenza OLS (fattore
+    corretto): archivio 0,753, produzione 0,462, poi con tabella voto
+    nuova 0,482 (ricetta finale).
+  Essenze, fix (i)+(ii) applicati: archivio 0,75 +7.577 IC[-12;+15.283]
+    97,5%; produzione 0,462 +6.109 IC[-2.146;+14.693] 92,2%; appaiato
+    produzione-archivio -1.468 IC[-7.235;+4.285] 31,1% (include zero).
+  Placebo su questa ricetta: vero +7.577, 20 placebo TUTTI negativi
+    (mediana -10.860), p<=0,048.
+  Ricetta finale (voto+sd produzione, fattore 0,482, ricentraggio per
+    ruolo, ricalcolato dopo la scoperta del filtro DNP): +10.102
+    IC95%[+1.494;+18.995] 98,8% positivo. Placebo su QUESTA ricetta:
+    ancora TUTTI negativi (mediana -10.656), p<=0,048.
+  Concentrazione (nota sempre valida): 45-56% del guadagno viene da
+    5 GW-manager su 360 in ogni misura di oggi — IC largo per questo,
+    non per errore.
+
+================================================================================
+5. COSA C'È DA SAPERE PRIMA DI DECIDERE
+================================================================================
+- Il +10.102 è IN-SAMPLE (stesso campione su cui è stato scelto il
+  fattore e la ricetta fra ~12 varianti). Non aspettarsi che si riproduca
+  su dati nuovi: l'attesa onesta è molto più piccola.
+- Il backtest di oggi è strutturalmente più "ottimista" sul voto di
+  quanto sarà la produzione vera (filtro DNP, vedi §3) — la produzione
+  usa un pool pre-partita, quindi questo specifico problema si risolve
+  da solo sui dati nuovi, ma vuol dire che NESSUN numero misurato oggi
+  è garantito rappresentativo.
+- L'interruttore è pronto e testato (A/A su dati sintetici: flag spento
+  = identico a sempre; flag acceso = applica boost/penalità coerenti),
+  ma il locale non ha dati di discovery freschi per un test end-to-end
+  vero (tutte le leghe davano "NESSUN FILE TROVATO" anche a flag SPENTO
+  — pre-esistente, non causato da oggi, verificato). Il primo run reale
+  con GRADE_GROUP_STORICA_ENABLED=1 sarà su GitHub Actions quando
+  qualcuno lo accenderà.
+- Ho scritto la formula del verdetto di Opus testualmente più volte
+  ("pronta per il fuori campione pre-registrato, NON per la produzione
+  diretta") perché l'utente prende il suo "ok" secco come via libera
+  automatica alla produzione — questo NON è un ok secco, è parziale.
+  Non arrotondarlo a "ok" quando lo si riporta.
+
+================================================================================
+6. DECISIONE APERTA / PROSSIMI PASSI, IN ORDINE
+================================================================================
+1. **Aspettare che GW7 chiuda (25/08/2026)**. Nel frattempo nessuna
+   azione — non rilanciare i punteggi di oggi, la ricetta è congelata.
+2. Riestrarre GW5 (football-14-18-aug-2026), GW6 (football-18-21-aug-2026),
+   GW7 (football-21-25-aug-2026) in archivio_ufficiale/ (comando standard).
+3. Lanciare `python analisi_manager/p57_grade_fuoricampo_preregistrato.py`.
+   Legge le due tabelle CONGELATE (cutoff 2026-08-14), fattore 0,482
+   fisso, ricentraggio per ruolo fresco. Dà il segno + la taglia.
+4. Decidere con l'utente (eventualmente un altro giro con lo stregone
+   supremo — CLAUDE.md, soprannome ufficiale in chat) se accendere
+   GRADE_GROUP_STORICA_ENABLED in produzione, combinando quel risultato
+   col placebo già solido di oggi.
+5. Se si accende: verificare la catena (soglie arena, scouting) come
+   fatto per GK_ATT_AVV — non ancora fatto oggi perché il flag è spento.
+6. Nota minore: la Liga (Spagna) ha la pipeline ma zero consigli storici
+   ancora — per quella lega la correzione cadrebbe sul fallback di
+   ruolo (non rotto, solo meno preciso). Non blocca nulla.
+7. Ri-misura GK_ATT_AVV pre-registrata (promemoria di sessioni precedenti,
+   ancora valido, stessa data 25/08/2026 — HANDOFF_UNIFICATO §5.6).
+
+================================================================================
+7. FILE DI RIFERIMENTO
+================================================================================
+Riassunto sempre aggiornato (§8bis-bis, appena compresso):
+  docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md
+
+Script di oggi, in ordine di uso (analisi_manager/):
+  p47_sd_atteso_produzione.py (tabella sd_atteso, supporta KICKOFF_CUTOFF)
+  p48_grade_carta_sd_produzione.py (card level, confronto fonti)
+  p49_grade_essenze_sd_produzione.py (essenze, prima versione)
+  p50_confronto_fonti_essenze.py (confronto appaiato, di Opus)
+  p51_grade_essenze_fix.py (fix i+ii)
+  p52_placebo_grade_essenze.py (placebo, di Opus)
+  p53_grade_scala_produzione.py (tabella voto, supporta KICKOFF_CUTOFF)
+  p54_grade_carta_refit_v2.py (refit fattore 0,482)
+  p55_grade_essenze_finale.py (ricetta finale, +10.102)
+  p56_placebo_ricetta_finale.py (di Opus, tre attacchi)
+  p57_grade_fuoricampo_preregistrato.py (DA LANCIARE dopo il 25/08)
+
+Codice di produzione toccato oggi:
+  generatore_formazioni/build_formazione_globale.py (interruttore
+    GRADE_GROUP_STORICA_ENABLED, spento di default, righe ~505-620 e
+    ~1236-1265 circa — cercare la stringa nel file, non fidarsi dei
+    numeri di riga che si spostano)
+  generatore_formazioni/dati/aggiorna_grade_scala_produzione.py (nuovo,
+    refresh delle due tabelle, zero query di rete)
+  .github/workflows/formazione_giornata.yml (input grade_group_storica,
+    default '0', descrizione con la data 25/08/2026)
+
+Sessione Opus esecutore (sempre disponibile, ha tutto il contesto):
+  session_id = local_6163a912-ba26-4e4d-8bc5-31835abfcbcc (titolo "Opus
+  esecutore" — in chat va chiamato "lo stregone supremo", CLAUDE.md).
