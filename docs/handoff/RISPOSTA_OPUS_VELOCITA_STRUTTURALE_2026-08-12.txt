@@ -231,6 +231,44 @@ Modificato in formazione_mls/predict (canonico) e propagato con
 propaga_modello.py: 53 leghe x 4 ruoli = 212 file, `--check` pulito.
 
 
+6bis. IL SECONDO FIX: DETTAGLIO A 6 PARTITE PER QUERY (commit 1c2af4d3fa)
+==========================================================================
+Tolto lo spreco del game log, la voce dominante diventava il dettaglio
+granulare: 3065 query, il 57% del totale, chieste UNA PARTITA PER VOLTA.
+
+Ho sondato l'API vera (query pubblica, nessun cookie, 6 richieste in tutto)
+per vedere se so5.playerGameScore accetta gli alias e fino a quante partite:
+
+  batch da  1, 2, 4, 6 partite  ->  OK, tutte tornate col detailedScore
+  batch da  8 partite           ->  "complexity of 505, exceeds max 500"
+  batch da 10 partite           ->  "complexity of 631"
+
+63,1 di complessita' a partita, zero base: il massimo teorico e' 7. Ne
+chiediamo 6 (379) per lasciare margine — stessa logica del commento su
+PAGINA_GAME_LOG, una richiesta rifiutata costa piu' di una richiesta in piu'.
+Nota: e' un caso diverso dall'alias-su-piu'-slug che Sorare RIFIUTA su
+anyPlayer(slug:) (documentato in discovery_fixture.py): qui l'argomento e'
+un ID e funziona.
+
+Come e' fatto: un pre-carico riempie la cache PRIMA del ciclo di sempre, che
+resta identico e trova tutto gia' in cache. Se il batch fallisce non si
+scrive niente e le partite si chiedono una per una — il caso peggiore e'
+esattamente il comportamento di prima. Le partite non-FINAL non entrano mai
+nel batch: cambiano ancora e vanno sempre richieste fresche.
+
+TEST CONTRO L'API VERA, 5 scenari, tutti passati:
+  1) il batch riempie la cache (9 partite su 9)
+  2) i dati sono IDENTICI campo per campo a quelli della chiamata singola
+  3) 9 partite = 2 richieste (6+3) invece di 9
+  4) le non-FINAL restano fuori
+  5) un batch che fallisce lascia la cache intatta e non solleva eccezioni
+
+Se un giorno arrivasse l'APIKEY (richiesta il 02/08, mai arrivata) il tetto
+passerebbe a 30000, cioe' 475 partite per richiesta: e' BATCH_DETTAGLIO il
+punto dove si alzerebbe, ed e' la ragione tecnica piu' concreta per
+insistere a chiederla.
+
+
 7. VERIFICA SUL CAMPO
 ======================
 
@@ -252,6 +290,18 @@ essere ≈ query / 9,4.
 Se la run B non si muove, il modello "limitato dalla portata" e' sbagliato e
 va buttato: lo scrivo qui perche' sia un test vero e non una conferma
 costruita dopo.
+
+AGGIORNAMENTO DELLA PREVISIONE (scritto mentre la run A era ancora in corso,
+prima di qualunque risultato): ho trovato e messo in produzione anche il
+secondo fix (§6bis, dettaglio in batch da 6). La run B avra' quindi
+ENTRAMBI. Previsione aggiornata:
+    query game log    3766 -> ~1150   (fix 1)
+    query dettaglio   3065 -> ~510    (fix 2)
+    TOTALE            6831 -> ~1660   (-76%)
+    fase predict       723s -> ~180s
+    run intera        18,4 min -> ~9 min
+L'attribuzione dei due fix resta possibile: nei log si contano separatamente
+le AllPlayerGameScores e le PlayerGameScoreDetail/DetailBatch.
 
 7.2 RISULTATI
 --------------
