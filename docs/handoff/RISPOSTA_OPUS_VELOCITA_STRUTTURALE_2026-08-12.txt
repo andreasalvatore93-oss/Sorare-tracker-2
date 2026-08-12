@@ -590,7 +590,57 @@ non discutibili, perche' non dipendono dal capriccio del rate limit:
 E valgono TUTTI anche nello scenario con le quote attive, dove i giocatori
 sono ~250 invece di 1150.
 
-7.13 RISULTATI DELLE RUN SUCCESSIVE
+7.13 RUN F — LA MISURA CHE CONTA: LO SCENARIO VERO E' GIA' A 6 MINUTI
+-----------------------------------------------------------------------
+A un certo punto ho smesso di rincorrere il preseason e ho misurato la cosa
+che all'utente serve davvero: una giornata VERA, con le quote pubblicate.
+Run 31599223469, gameweek 4 (11-14 agosto, quella aperta), soglia
+starter-odds 0,80, 2 arene.
+
+  RUN INTERA                    378s = 6,3 MINUTI
+    pool             58s
+    discovery        65s
+    discovery_merge  19s
+    predict         126s
+    consiglio        24s
+    formazione       74s
+    salva_output     30s (in parallelo)
+
+  giocatori elaborati        122      (contro 1153 in preseason)
+  query GraphQL              264      (contro 1504)
+  risposte 429                 0      (contro 27)
+  secondi persi in 429         0      (contro 4644)
+
+ZERO 429. Non uno. E' il quadro completo: il problema dei 13-15 minuti non
+era la pipeline, era il preseason. A MIN_STARTER_ODDS=0 non esiste NESSUN
+filtro, quindi entrano tutti i posseduti delle squadre in campo -- 1153
+giocatori -- e con quel volume l'account Sorare va a sbattere contro il
+proprio tetto. Con la soglia attiva ne sopravvivono 122 (nella discovery si
+legge bene: "Defender: 15/107 sopra soglia") e non si sfiora nemmeno il
+limite.
+
+Numeri di contorno della stessa run, utili a capire quanto e' diversa una
+giornata vera: 61 partite invece di 216, 3451 giocatori con quote di cui 720
+sopra 0,80, 272 giocatori con il voto A-F (in preseason erano ZERO).
+
+CONCLUSIONE PER L'UTENTE: l'obiettivo dei 7-8 minuti e' gia' raggiunto dove
+conta, ed e' 6,3. Le run da 13 minuti restano solo per i test in preseason,
+e sono lente per una ragione nota e non patologica.
+
+7.14 UN'ULTIMA COSA TROVATA PROPRIO NELLA RUN F
+-------------------------------------------------
+Nella run F il predict ha fatto girare 45 job... per 122 giocatori. Cioe'
+uno o due giocatori a job, con ~22 secondi fissi di checkout+setup ciascuno:
+circa 990 job-secondi di solo avvio per ~700 secondi di lavoro vero.
+Il numero di bin era limitato solo da QUANTE COPPIE lega/ruolo ci fossero, e
+su una giornata vera le coppie restano tante ma minuscole.
+Corretto: ora il numero di bin e' limitato anche dal carico stimato diviso
+TARGET_MIN_S. Verificato in locale sul _bin_packing vero --
+  45 coppie x  2 giocatori (carico   360s) ->  8 bin  (prima 45)
+  45 coppie x 60 giocatori (carico 10800s) -> 45 bin  (invariato)
+-- e con carico grande non cambia niente rispetto a prima.
+
+7.15 RISULTATI DELLE RUN SUCCESSIVE
 -------------------------------------
 (compilato via via)
 
