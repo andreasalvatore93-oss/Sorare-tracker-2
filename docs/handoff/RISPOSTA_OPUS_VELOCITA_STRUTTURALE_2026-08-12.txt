@@ -460,6 +460,49 @@ Il test locale e' stato promosso a file di repo e si rilancia da solo:
 (compilato appena la run C finisce)
 
 
+7.9 STATO DEL REPO A FINE SESSIONE (per chi riprende)
+------------------------------------------------------
+Tutto su main, tutto pushato. In ordine:
+
+  cdd0019647  fix 1  game log: basta ri-paginare la storia gia' completa
+  1c2af4d3fa  fix 2  dettaglio granulare a 6 partite per query
+  736ddbb0c4  fix 3  include-hidden-files: le cache tornano su main
+  ffd75f5415  fix 4  panchinari (marcatore 'ampio_inutile')
+  190882a649 / 21ed09b4e8 / 54d0a18d1b / a4b64c851a   questo documento
+
+Come si rilancia il test locale dei fix 1 e 4 (zero rete, 3 secondi):
+  python formazione_mls/predict/test_cache_gamelog_locale.py
+
+Come si rimisura una run:
+  gli script usati stanno nello scratchpad di sessione, ma il conto si rifa'
+  in due comandi: `gh api .../actions/runs/<id>/jobs` per i tempi di fase, e
+  per ogni job predict `gh api .../actions/jobs/<id>/logs` contando le righe
+  '[GraphQL] ->', '[GraphQL 429]' e 'Cache insufficiente'.
+
+Come si lancia la run di verifica:
+  gh workflow run formazione_giornata.yml -f gameweek=5 -f starter_odds_min=0 -f champions=4
+
+DECISIONE APERTA, non presa da me: se a regime la crescita del repo dovuta
+alle cache dovesse pesare (§7.5), spostare .game_log_cache e .cache da git a
+actions/cache. Tocca anche gli strumenti locali che leggono la stessa cache,
+quindi va deciso insieme, non di corsa.
+
+SECONDA DECISIONE APERTA: dopo tutti e quattro i fix la fase predict resta
+comunque limitata dal tetto di Sorare, e i 429 costano 194-247 secondi
+l'uno. Se dopo due o tre run a regime l'attesa da 429 resta la voce
+dominante, la mossa successiva NON e' parallelizzare di piu' (i 20 slot sono
+gia' saturi e sono un tetto d'account) ma partire con un pacing piu' lento:
+i predict hanno gia' un pacing adattivo per-runner che parte da 0,2s e
+raddoppia dopo ogni 429 (MIN/MAX_QUERY_INTERVAL_SECONDS). Con 20 runner
+quello vuol dire fino a 100 query/secondo verso un account che ne regge ~9:
+il primo 429 e' garantito, e costa 4 minuti. Seminare il file di pacing a un
+valore piu' alto all'avvio del job (una riga nel workflow:
+`echo 1.5 > "$RUNNER_TEMP/sorare_pacing.txt"`) costerebbe pochi secondi a
+shard per evitarne 240. Non l'ho fatto adesso perche' va misurato DOPO che
+il numero di query si e' assestato, altrimenti si tara su un carico che non
+esiste piu'.
+
+
 8. COSA NON HO FATTO / COSA NON SO
 ====================================
 - Non ho toccato il generatore ne' la logica di selezione: il fix e' tutto
