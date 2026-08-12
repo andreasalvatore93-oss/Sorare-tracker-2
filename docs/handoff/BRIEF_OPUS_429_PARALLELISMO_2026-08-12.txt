@@ -1,0 +1,111 @@
+BRIEF PER LO STREGONE SUPREMO (Opus esecutore) — 12/08/2026 sera, seguito
+Mittente: orchestratore Sonnet Alto. Consegna manuale (l'utente ti passa
+questo file lui stesso, non via messaggistica cross-sessione).
+
+0. COSA LEGGERE PRIMA (in ordine)
+----------------------------------
+- CLAUDE.md (regole, in particolare "risparmio token" e "backtest/run:
+  nessuno affidabile finche' l'utente non ispeziona").
+- docs/handoff/BRIEF_OPUS_429_FALLBACK_ODDS_2026-08-12.txt (il TUO brief
+  precedente di stasera) e RISPOSTA_OPUS_429_FALLBACK_ODDS_2026-08-12.txt
+  (la tua risposta: gia' IMPLEMENTATA, commit caa5b9599b, pushato).
+  Riassunto di cosa ho gia' fatto (P1+P4 del tuo piano):
+    P1: a MIN_STARTER_ODDS<=0 il recupero individuale delle odds (sia il
+        fallback mirato sui buchi del blocco sia il vecchio ramo senza
+        tetto quando il blocco e' vuoto) si SALTA del tutto -- nessuna
+        query in piu', data resta 'inizio' (finestra gia' garantita da
+        'elenco'), odds resta None (permissivo a soglia 0).
+    P4: turchia_gk_discovery.graphql_query espone LAST_HIT_429 (flag
+        modulo); i loop di recupero individuale si fermano al primo 429
+        invece di macinarne altri.
+    P2/P3 (tetto proporzionale, conto account) NON implementati.
+- discovery_fixture.py righe 1531-1650 circa (il blocco appena corretto).
+- .github/workflows/formazione_giornata.yml: il job 'pool' (righe ~85-125)
+  e la matrice 'discovery' a 4 gruppi paralleli (righe ~129-140), in
+  particolare la dipendenza needs: fra pool e discovery.
+
+1. LA DOMANDA
+--------------
+Ho ritestato stasera (run 31584309722, GW5, MIN_STARTER_ODDS=0,
+champions=4, tutto il resto 0) DOPO aver pushato P1+P4. Risultato: 429 su
+tutti e 4 i job discovery ANCORA, ma stavolta il 429 scatta PRIMA di
+arrivare al punto che ho corretto -- sulla primissima query GraphQL che il
+job fa, prima ancora del primo log "[discovery_fixture]" (cioe' prima
+della fase "N giocatori di squadre che giocano -> interrogo le odds", che
+e' dove viveva il codice che ho appena sistemato).
+
+Quindi P1/P4 erano necessari ma non sufficienti: il problema che descrivi
+al punto 1 del tuo brief precedente ("il vero limite e' cumulativo
+account-wide, ~60-70/min, e 4 job paralleli non sanno l'uno dell'altro")
+si manifesta anche SENZA passare dal mio codice, semplicemente perche' i 4
+job discovery partono quasi in contemporanea (vedi orari sotto) e ognuno
+fa la sua prima query (quasi certamente GetUserId o la prima pagina di
+CARDS_QUERY) nella stessa finestra stretta.
+
+La domanda: qual e' il modo migliore per far convivere 4 job paralleli con
+un tetto account-wide di 60-70 richieste/minuto, quando ora perfino le
+query "necessarie" (non il fallback) collidono all'avvio? Il tuo P3
+("tetto in conto account, non job") parlava del fallback -- qui serve
+probabilmente qualcosa di piu' a monte: stagger dell'avvio dei 4 job,
+un ritardo fra la fine di 'pool' e l'inizio di 'discovery', o altro che tu
+veda meglio leggendo il codice.
+
+2. NUMERI, LETTI NEL LOG DELLA RUN 31584309722 (non stimati)
+---------------------------------------------------------------
+- job 'pool': cleanup (fine job) alle 09:46:08.
+- job 'discovery gk': provisioning runner parte alle 09:46:13 (5s dopo).
+- primo log dello script in 'discovery gk': 09:46:55.7492342Z
+  "[turchia_gk_discovery] [429] tentativo 1/5, attesa 185.0s" -- QUESTA E'
+  LA PRIMISSIMA RIGA DI LOG DELLO SCRIPT, prima di qualunque
+  "[discovery_fixture] ...". Quindi il 429 e' sulla prima query GraphQL in
+  assoluto del job (get_user_uuid o prima pagina CARDS_QUERY), non sul mio
+  fallback.
+- Gli altri 3 job (mid/fwd/def) mostrano lo stesso pattern (429 quasi
+  subito). L'utente ha cancellato la run manualmente dopo ~2 minuti, non
+  ho visto se sarebbe uscita dopo l'attesa Retry-After.
+- Il job 'pool' fa fetch bulk di odds+grade "una volta per tutta la run"
+  (nome del job): non ho contato quante query, ma finisce a ridosso
+  dell'avvio dei 4 discovery, quindi la sua coda di richieste puo' ancora
+  occupare la finestra dei 60-70/min quando i 4 discovery iniziano.
+
+3. VINCOLI
+-----------
+- NON toccare il codice tu stesso senza spiegare il perche' -- stessa
+  regola del brief precedente.
+- Il fix deve reggere anche A REGIME (piu' campionati che aprono la
+  stagione = piu' carte da controllare per job = piu' query anche nel
+  percorso "necessario", non solo nel fallback).
+- Il caso originale (Cvetkovic/Yilmaz, buco puntuale nel blocco odds a
+  MIN_STARTER_ODDS=0.80) non deve regredire: quello resta fuori da questo
+  problema (gira a soglia attiva, dentro il gate P1 gia' in produzione).
+
+4. NOTA IMPORTANTE SULLA CONSEGNA
+-----------------------------------
+Questo brief NON ti arriva per messaggistica cross-sessione stavolta:
+l'utente te lo passa lui direttamente, perche' non e' sicuro che tu legga
+i messaggi diretti stasera (e potrebbe non avere piu' tempo per seguire il
+giro completo su questo account). Scrivi la risposta in un file nuovo
+(RISPOSTA_OPUS_429_PARALLELISMO_2026-08-12.txt, stesso schema del
+precedente) invece di affidarti al canale diretto -- e' il metodo che ha
+gia' funzionato stasera.
+
+5. STATO DEL FILONE (per chi riprende, se non sono piu' io)
+---------------------------------------------------------------
+Il problema e' aperto in docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md
+(sezione Champions/GW5), con una nota che dice "in attesa della risposta
+di Opus su questo file". Non rilanciare il test GW5 finche' non c'e' un
+piano per questo secondo livello del problema 429 -- rilanciare ora
+riprodurrebbe lo stesso blocco.
+
+FILE DI RIFERIMENTO
+--------------------
+discovery_fixture.py: 1531-1650 (blocco gia' corretto oggi), inizio
+  esecuzione del modulo (dove parte la prima query -- probabilmente
+  get_user_uuid, cercalo)
+formazione_turchia/discovery/turchia_gk_discovery.py: 61-121 (graphql_query,
+  retry/backoff, LAST_HIT_429 appena aggiunto)
+.github/workflows/formazione_giornata.yml: job 'pool' e matrice 'discovery'
+  (needs, strategy.matrix, come partono i 4 job)
+Log grezzo consultabile con: gh api repos/andreasalvatore93-oss/
+  Sorare-tracker-2/actions/jobs/94074783004/logs (job 'discovery gk' della
+  run 31584309722)

@@ -11,18 +11,19 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 11/08/2026 (Roma, CEST)** — filone
-PORTIERE: GK_ATT_AVV **ACCESO IN PRODUZIONE l'11/08/2026** (formula
-"secca", media storica tutta la carriera, refresh automatico ad ogni run).
-Decisione dell'utente dopo verdetto Opus su Binario 1 e Binario 2
-sull'archivio completo (2975 formazioni/360 GW-manager, non solo la
-fixture nuova). `GK_ATT_AVV_ENABLED` default ora **'1' acceso** in
-`build_formazione_globale.py` e nell'input del workflow. Allineato anche
-`scouting_gw.py` (prima non applicava il correttivo: portiere avrebbe
-avuto un atteso diverso fra generatore e scouting). **Ri-misura
-pre-registrata dopo 3 fixture giocate col flag acceso — data e condizione
-fissate in §5.6, non un promemoria "a voce": l'utente lavora su 3 account
-diversi, va letto qui.** Dettaglio: §5.6.
+Ultimo aggiornamento: **sessione 12/08/2026 sera (Roma, CEST)** — giornata
+di test end-to-end su GitHub Actions (GW4/GW5) che ha fatto emergere e
+chiuso 4 bug reali di produzione + aggiunto una feature nuova + un tipo
+formazione nuovo. Dettaglio completo: §8duodecies. **APERTO: problema 429
+sul test GW5 Champions, in attesa di Opus — §8duodecies-bis, NON rilanciare
+il test finché non è chiuso.**
+
+Sessione 11/08/2026: filone PORTIERE, GK_ATT_AVV **ACCESO IN PRODUZIONE**
+(formula "secca", media storica tutta la carriera, refresh automatico ad
+ogni run) dopo verdetto Opus su Binario 1+2 sull'archivio completo (2975
+formazioni/360 GW-manager). `GK_ATT_AVV_ENABLED` default **'1'** in
+generatore e scouting. **Ri-misura pre-registrata dopo 3 fixture giocate
+col flag acceso — data/condizione in §5.6.**
 
 ## REGOLA NUOVA — I BACKTEST SONO IL MODELLO CONTRO SE STESSO (09/08/2026, decisa dall'utente)
 
@@ -1589,6 +1590,173 @@ di *fingerprint*, non sta delirando — serve davvero, ma **esiste già** in
 
 ---
 
+## 8duodecies. Marathon test end-to-end GW4/GW5 (12/08/2026 sera) — 4 bug di produzione chiusi, 1 feature nuova, 1 tipo formazione nuovo
+
+Sessione nata per testare in reale la nuova feature ESSENZE_ARENA: il test
+stesso ha fatto emergere bug preesistenti mai visti prima perché mai
+provati end-to-end su GitHub. Ordine cronologico dei fix, tutti verificati
+in locale/con query live PRIMA del commit, nessuno per intuito.
+
+**1. Badge "fixture ambigua" — ora anche nel generatore, non solo scouting.**
+Il marker `AMBIGUO_FIXTURE` (caso Freese, 10/08) prima era letto solo da
+`scouting_gw.py` direttamente dai `prediction_*.txt`. Verificato con lo
+stregone supremo che le 25 copie per-lega di `build_formazione_finale.py`
+sono codice morto (`build_formazione_globale.py`/`best_five.py` caricano
+SEMPRE E SOLO quella di `formazione_mls`): un solo file HTML da editare,
+non 26. Propagato invece il parsing del marker nei `build_consiglio_
+<ruolo>.py` (questi SÌ duplicati per davvero, uno per lega) con
+`propaga_consiglio.py` (nuovo, stesso schema di `propaga_modello.py`) — 212
+file, 53 leghe. Badge visibile ora in generatore (pcard + pannello "Top
+esclusi") e scouting (tabella minimale, già c'era + tabella "candidati").
+
+**2. FIX CRITICO — path Windows hardcoded rompeva OGNI run "Formazione
+giornata" su GitHub da ieri sera.** `analisi_manager/p12_backtest_
+formazione_grade.py:28` fissava `ROOT = r'C:\Users\Andrea\...'` (scritto
+06/08 per uso locale). Da ieri sera importato da `generatore_formazioni/
+dati/aggiorna_grade_scala_produzione.py`, wired nel workflow: `os.chdir(
+ROOT)` a livello modulo crashava su ogni runner Linux, PRIMA che il vero
+generatore girasse. Effetto silenzioso: lo step di generazione veniva
+skippato (nessun `continue-on-error`), ma i due step dopo (commit +
+notifica Telegram) hanno `if: always()` e giravano comunque, ripubblicando
+l'ULTIMO HTML già presente — sembrava una run riuscita, non generava
+niente di nuovo (scoperto perché il Telegram ha mandato un link a una
+run del 28/07). Fix: `ROOT = os.path.dirname(SP)` (portabile). Verificato:
+nessun'altra run era mai stata colpita, il bug è nato ieri sera e il mio
+test end-to-end di oggi è stato il primo a incontrarlo davvero.
+
+**3. Bug finestra giornata (stessa classe del caso McAllister) —
+`role_data_ext` bypassava il filtro finestra.** Caso reale: run175
+(11/08) ha schierato Kevin Mac Allister in un'Arena Beginner del pool
+suppletivo con kickoff 15/08, fuori dalla finestra GW4 esplicita
+(11-14/08) — tutte le altre formazioni della run erano corrette. Causa:
+`role_data_ext` (letto SOLO dal pool suppletivo EXTEND_ODDS_060_070) veniva
+catturato PRIMA che `filter_by_window()`/`EXCLUDE_SLUGS` girassero più
+sotto — quei due filtri toccavano solo `role_data` (rinominato dopo).
+Fix: i due filtri si applicano ora PRIMA che `role_data_ext` si separi da
+`role_data` (riordino, nessuna nuova logica). Verificato con `_within_
+window()` isolato: un kickoff fuori finestra viene ora escluso anche dal
+ramo suppletivo.
+
+**4. Nuova feature — ESSENZE_ARENA (budget in essenze per le arene
+efficienti).** Richiesta esplicita utente: oggi `genera_arene_efficienti`
+si fermava solo al NUMERO di arene richiesto, non al costo. Nuovo
+parametro `budget_essenze` (default `None`, comportamento invariato): ad
+ogni passo i tipi che sforerebbero il budget residuo vengono esclusi dal
+confronto SOLO in quel passo (un tipo più economico può ancora entrare
+dopo) — il criterio di efficienza resta lo stesso, il budget è solo un
+tetto aggiuntivo. Nuova env `ESSENZE_ARENA`/input workflow `essenze_arena`
+(default vuoto = nessun limite). Se impostata insieme ad `arene`, valgono
+INSIEME (si ferma al primo che scatta).
+
+**5. Bug trovato TESTANDO la feature 4 — pool suppletivo mai innescato in
+modalità budget pura.** Il trigger del suppletivo guardava solo uno
+SHORTFALL DI NUMERO (arene richieste - generate), sempre 0 senza `arene`
+esplicita. Misurato su GW4: 24 DEF disponibili nella finestra, solo 2 con
+odds ≥0.80 — gli altri 22 (banda 0.60-0.70) restavano irraggiungibili
+anche con 900 essenze di budget libere (run reale: 1 sola arena generata
+su 1000 di budget). Fix: tracciata la spesa della tornata primaria
+(`_speso_arene_eff`), il suppletivo scatta ora anche a budget residuo >0.
+**Verificato in produzione**: stesso mazzo/budget, da 1 a 9 arene generate
+(budget 1000) e 12 arene (budget 2000, 1200/2000 spese, mai sforato).
+
+**6. Bug discovery — odds di partite di coppa perse per sempre.** Le odds
+di giornata si scaricano UNA volta in blocco a inizio run
+(`_odds_giornata_condivise`/`pool_gw.json`, ottimizzazione voluta per non
+fare query singole). Chi pubblica odds DOPO quello snapshot (partite di
+coppa con kickoff lo stesso giorno, tipico) restava escluso in silenzio —
+il fallback per-giocatore esisteva già ma scattava SOLO se l'intero blocco
+era vuoto, mai per un buco puntuale. Casi reali: Nenad Cvetković (Rapid
+Wien, Conference League), Ridvan Yılmaz (Beşiktaş, Europa League) — club
+correttamente riconosciuto "in campo" (`squadre_in_campo` viene dalla
+fixture Sorare completa, tutte le competizioni), ma odds mancanti nello
+snapshot. Fix: per chi manca SOLO nel blocco, query di recupero
+individuale mirata (mai per tutto l'elenco), tetto `ODDS_FALLBACK_MAX_PER_
+RUOLO` (default 40). **Verificato con l'utente su 55 giocatori reali**
+(screenshot odds 60-79% presi dal vivo sul sito Sorare, ruoli GK/DEF/MID/
+FWD): 54/55 confermati presenti in una query fresca delle odds di
+giornata con lo stesso valore mostrato a schermo, 1 escluso legittimamente
+(dati storici insufficienti, non un bug).
+
+**7. Nuovo tipo formazione — CHAMPIONS da 7 (competizione Sorare nuova,
+apre alla GW5).** Regole identiche ad All Stars da 7 (stessa shape, nessun
+limite classic — dichiarazione utente), pool ristretto ai 5 top campionati
+(regolamento Sorare, screenshot utente: Premier League/Bundesliga/LaLiga/
+Ligue 1/Serie A). **Investigazione sul campo giusto** (sessione con
+l'utente che ha fornito query/screenshot dal vivo): il campo Sorare vero è
+`Player.eligibleSo5Competitions` (slug `seasonal-champions`), ma l'API lo
+RIFIUTA sia dentro una lista (`searchCards`) sia in batch con alias
+multipli sullo stesso campo radice (`anyPlayer` duplicato) — costerebbe
+una query per candidato, senza modo di comprimerla. L'utente ha poi
+verificato le regole vere: è semplicemente "chi gioca nei 5 top
+campionati", dato già noto per ogni candidato (`row['league']`) — **zero
+query in più**. Implementato come clone 1:1 di ALLSTARS_U23 in ogni punto
+(shape/priorità/pool/cap), priorità SEMPRE ultima (dopo All Stars, sia
+tornata principale sia suppletivo — richiesta esplicita), cap 4
+(confermato dall'utente = All Stars/Under23). Testato: A/A senza
+CHAMPIONS richiesta (nessuna regressione); GW4 con CHAMPIONS=1 → zero
+candidati (atteso, i top campionati non sono ancora iniziati a metà
+agosto); test sintetico che conferma un candidato senza odds pubblicate
+NON viene escluso dal pool primario (caso reale atteso per GW5, es.
+LaLiga). **Test end-to-end reale su GW5 (odds=0, champions=4): NON ANCORA
+RIUSCITO, bloccato dal problema 429 — vedi §8duodecies-bis.** Verifica coi
+portieri LaLiga come gruppo di controllo (8 nomi forniti dall'utente dal
+vivo, 1 escluso apposta per storico insufficiente) ancora da fare.
+
+Nota a parte sul campo `eligibleSo5Competitions`: confermato DAVVERO
+esistente e corretto (query live il 12/08 sera, anche con sessione
+autenticata) — ma il rifiuto API è un limite REALE dello schema, non un
+bug di query mal scritta: sia il batch con alias multipli su `anyPlayer`
+sia l'inclusione dentro la lista `hits` di `searchCards` tornano un errore
+esplicito di Sorare. Resta quindi solo per verifiche puntuali (1 giocatore
+per query), mai per il bulk — la regola-lega implementata è la via giusta.
+
+File toccati: `generatore_formazioni/build_formazione_globale.py`,
+`discovery_fixture.py`, `analisi_manager/p12_backtest_formazione_grade.py`,
+`formazione_mls/build_formazione_finale.py`, `scouting_gw.py`,
+`propaga_consiglio.py` (nuovo) + 212 file `build_consiglio_<ruolo>.py`
+propagati, `.github/workflows/formazione_giornata.yml`.
+
+---
+
+## 8duodecies-bis. Problema 429 sul test GW5 — APERTO, in attesa di Opus
+
+**Stato: NON RISOLTO. Non rilanciare il test GW5 Champions finché questa
+sezione non è chiusa** — riprodurrebbe lo stesso blocco.
+
+Cronologia: primo tentativo GW5 (odds=0, champions=4) — 429 su tutti e 4 i
+job discovery, mai uscito dalla fase discovery in 5+ minuti, run cancellata
+dall'utente. Diagnosi chiesta ad Opus (lo stregone supremo) via brief
+(`docs/handoff/BRIEF_OPUS_429_FALLBACK_ODDS_2026-08-12.txt`), risposta
+completa in `RISPOSTA_OPUS_429_FALLBACK_ODDS_2026-08-12.txt`: causa =
+tetto Sorare cumulativo ~60-70 richieste/minuto (misurato 28/07), 4 job
+paralleli non coordinati, più un bug preesistente (dal 07/08) per cui a
+blocco-odds vuoto (stagione non iniziata) il fallback andava SENZA tetto su
+tutto l'elenco. Piano P1-P5 proposto; **P1+P4 implementati e pushati**
+(commit `caa5b9599b`): a `MIN_STARTER_ODDS<=0` il recupero individuale si
+salta del tutto (sia il fallback mirato sia il vecchio ramo senza tetto);
+i loop di recupero si fermano al primo 429 invece di macinarne altri.
+Default `0.80` invariato (entrambi i gate sono no-op in produzione normale).
+
+**Secondo tentativo (run 31584309722, dopo il fix): 429 di nuovo su tutti
+e 4 i job — ma stavolta PRIMA del punto corretto.** Log: job `pool`
+finisce alle 09:46:08, i 4 job `discovery` partono ~5s dopo, il primo 429
+nel job `gk` arriva alle 09:46:55 sulla PRIMISSIMA query dello script
+(prima di qualunque log `[discovery_fixture]`, quindi prima ancora della
+fase che P1/P4 correggono). Conclusione: P1/P4 erano necessari ma non
+bastano — il collo di bottiglia è più a monte, la coda di query del job
+`pool` che si somma alle prime query simultanee dei 4 job `discovery`
+sfora comunque il tetto account-wide. Run cancellata di nuovo dall'utente.
+
+**Nuovo brief scritto per Opus**
+(`docs/handoff/BRIEF_OPUS_429_PARALLELISMO_2026-08-12.txt`), consegna
+MANUALE stavolta (l'utente lo passa lui, non via messaggio cross-sessione
+— rischio che la sessione corrente non abbia più tempo per seguire il giro
+completo). Risposta attesa in
+`RISPOSTA_OPUS_429_PARALLELISMO_2026-08-12.txt` (stesso schema del
+precedente), da leggere PRIMA di rilanciare qualunque test GW5.
+
+---
+
 ## 8quinquies. Altri fili aperti del 06-07/08 (riepilogo secco)
 
 - **`crowss` = l'utente stesso, verificato NON contaminare nulla** (D1):
@@ -1838,16 +2006,10 @@ sezione era rimasta ferma al 09-10/08):**
   `test_gk.py` ha lavoro esteso (Stadio A/B/D, `extract_level_score`,
   `expected_level_from_rates`) già fatto su questo fronte.
 
-**Aperto 10/08 notte: badge "fixture ambigua" solo in scouting, non nel
-generatore** (scelta dell'utente, non dimenticanza). Il fix
-(`_prossima_partita_vera`) è propagato a tutti i 212 predict, ma
-l'avviso visivo nelle card del generatore richiederebbe toccare
-`build_consiglio_<ruolo>.py` (duplicato per lega) →
-`best_five.py._parse_consiglio_calibrato` →
-`build_formazione_finale.py.parse_consiglio` (duplicato in 26 leghe) →
-template HTML — ~130 file in più. Il marker `AMBIGUO_FIXTURE: si` è già
-scritto nel file di predizione (§9): se si vuole il badge anche lì, la
-strada è già mappata, va solo eseguita.
+**FATTO il 12/08/2026 sera — badge "fixture ambigua" ora anche nel
+generatore.** Vedi §8duodecies per il dettaglio: 1 solo file HTML da
+editare (le 25 copie per-lega erano codice morto), non 130 — scoperta che
+ha dimezzato il costo stimato qui il 10/08.
 
 **ESPLORATO PER INTERO l'11/08/2026 sera — vedi §8bis-bis.** Il caso
 Lloris era solo la punta: il gruppo minuscolo tocca metà delle righe di
