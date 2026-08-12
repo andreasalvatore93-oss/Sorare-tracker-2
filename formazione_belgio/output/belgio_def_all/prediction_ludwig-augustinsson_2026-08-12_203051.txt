@@ -1,0 +1,121 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T20:30:51.565046Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) ludwig-augustinsson: 48 pt attesi (36-61)
+   ORDINAMENTO: 47.22
+   SQUADRA: anderlecht-bruxelles-brussel | AVVERSARIO: waasland-beveren-beveren-waas
+   AMBIGUO_FIXTURE: si
+======================================================================
+
+######################################################################
+# GIOCATORE: ludwig-augustinsson
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ludwig-augustinsson (squadra: anderlecht-bruxelles-brussel)
+Generato: 2026-08-12T20:30:51.543539Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | DEN vs AND | jupiler-pro-league | score=58.7 | peso=0.630
+  2025-08-31 | USG vs AND | jupiler-pro-league | score=43.0 | peso=0.645
+  2025-09-14 | AND vs GNK | jupiler-pro-league | score=33.9 | peso=0.660
+  2025-09-20 | AND vs ANT | jupiler-pro-league | score=62.4 | peso=0.675
+  2025-10-05 | AND vs STA | jupiler-pro-league | score=56.4 | peso=0.691
+  2025-11-01 | AND vs KVM | jupiler-pro-league | score=47.7 | peso=0.707
+  2025-11-09 | AND vs CLU | jupiler-pro-league | score=59.4 | peso=0.724
+  2025-11-23 | LAL vs AND | jupiler-pro-league | score=69.3 | peso=0.741
+  2025-11-30 | AND vs USG | jupiler-pro-league | score=71.9 | peso=0.758
+  2026-02-22 | ZWA vs AND | jupiler-pro-league | score=37.8 | peso=0.776
+  2026-02-28 | AND vs OHL | jupiler-pro-league | score=40.1 | peso=0.794
+  2026-03-08 | CLU vs AND | jupiler-pro-league | score=23.0 | peso=0.812
+  2026-03-15 | KVM vs AND | jupiler-pro-league | score=63.9 | peso=0.831
+  2026-03-22 | AND vs CER | jupiler-pro-league | score=43.3 | peso=0.851
+  2026-04-06 | CLU vs AND | jupiler-pro-league | score=60.0 | peso=0.871
+  2026-04-12 | AND vs GNT | jupiler-pro-league | score=45.2 | peso=0.891
+  2026-04-18 | KVM vs AND | jupiler-pro-league | score=60.0 | peso=0.912
+  2026-04-23 | STV vs AND | jupiler-pro-league | score=19.9 | peso=0.933
+  2026-05-03 | AND vs CLU | jupiler-pro-league | score=38.1 | peso=0.955
+  2026-05-10 | GNT vs AND | jupiler-pro-league | score=44.7 | peso=0.977
+  2026-05-17 | AND vs KVM | jupiler-pro-league | score=60.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 49.12
+  di cui Punteggio decisivo (level_score) medio: 38.77 | Punteggio complessivo (granulari) medio: 10.35 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.19, delta avversario +0.00 | Passaggio condizionato: delta venue -1.16, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue -0.59, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 14.16
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.8 - 62.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.99 (differenza: +2.17)
+Media score in casa: 50.80 | Media score fuori casa: 48.05
+Fattore casa/trasferta applicato: 1.004 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.0
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.997
+Fattore trend (media ultime 5: 44.7 vs media 5 PRECEDENTI: 47.3): 1.000
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T11:30
+Casa: Waasland-Beveren | Trasferta: RSC Anderlecht
+Competizione: jupiler-pro-league
+ATTENZIONE FIXTURE AMBIGUA: due partite future avevano GIA' le starter odds pubblicate insieme -- scelta quella piu' tardiva (caso limite mai visto prima del 10/08/2026, verificare a mano).
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.6 (range 36.2 - 60.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 47.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.42
+Punteggio REALE ottenuto in quella partita: 60.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +11.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      39.9    59.4    +19.6    10.8        NO
+   7        7      67.7    69.3     +1.7    10.6        SI
+   8        8      42.2    71.9    +29.7    11.8        NO
+   9        9      45.9    37.8     -8.1    12.8        SI
+  10       10      65.4    40.1    -25.3    13.7        NO
+  11       11      42.9    23.0    -19.9    13.8        NO
+  12       12      49.7    63.9    +14.2    16.2        SI
+  13       13      44.0    43.3     -0.6    16.1        SI
+  14       14      42.4    60.0    +17.6    15.6        NO
+  15       15      48.6    45.2     -3.4    15.2        SI
+  16       16      52.1    60.0     +7.9    14.8        SI
+  17       17      47.1    19.9    -27.3    14.5        NO
+  18       18      42.4    38.1     -4.3    16.5        SI
+  19       19      46.7    44.7     -1.9    16.2        SI
+  20       20      50.3    60.3    +10.0    15.7        SI
+
+MAE (errore assoluto medio): 12.77
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
