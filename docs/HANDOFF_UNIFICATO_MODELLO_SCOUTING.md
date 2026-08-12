@@ -1894,6 +1894,80 @@ ciascuno). Il numero di bin era limitato solo da quante coppie lega/ruolo ci
 fossero; ora è limitato anche dal carico stimato. Con carico grande non cambia
 nulla.
 
+### Sera del 12/08: arrivano le APIKEY e cambia il quadro
+
+Alle 17:14 Sorare ha dato all'utente **tre chiavi API**. Tutto quello scritto
+sopra era stato misurato senza. I limiti veri, dalla documentazione ufficiale
+(`github.com/sorare/api`) e verificati in laboratorio:
+
+| accesso | richieste/min | complessità |
+|---|---|---|
+| anonimo | 20 | 500 |
+| sessione col cookie | 60 | 30.000 |
+| **con APIKEY** | **200 a chiave** (600 il tetto del programma) | 30.000 |
+
+più un tetto separato di **40 query contemporaneamente in volo** che nessuna
+chiave alza. **Il "60 al minuto" del cookie era il muro contro cui abbiamo
+sbattuto tutto il giorno.** Prova secca, stessa query e stessa dose, cambiando
+solo gli header: 600 richieste col **solo cookie** → 461 bloccate (si ferma
+alla 139ª); le stesse con **cookie + chiave** → zero. La chiave scavalca il
+tetto della sessione, quindi non serve togliere il cookie da nessuna parte.
+
+**Dove mancava** (ottavo fix): la chiave era stata messa nei predict ma
+`discovery_fixture.py` — cioè i job `pool` e `discovery` — faceva
+`getattr(base, 'APIKEY', '')` su un modulo che non la definiva. Copertura
+apparente, effetto zero. Tappato sui 164 script di discovery, più altri 17 fra
+bot, scanner e diagnostica, **sette dei quali ricevevano già il secret dal
+workflow e lo buttavano via**.
+
+**Nono fix**: con complessità 30.000 le pagine si allargano. `PAGINA_GAME_LOG`
+50 e `BATCH_DETTAGLIO` 30 quando la chiave c'è (10 e 6 quando non c'è).
+
+**Decimo fix**: le tre chiavi hanno tetti **indipendenti**, quindi si sommano.
+Nel job `predict` ogni shard ne prende una diversa con `IDX % 3`: è così che
+si arriva ai 600/min veri.
+
+### Le run della sera, e le tre cose che NON hanno funzionato
+
+Tutte in preseason (gw5, soglia 0, ~1160 giocatori), il caso peggiore:
+
+| run | configurazione | query | 429 | persi | predict | totale |
+|---|---|---|---|---|---|---|
+| I | 1 chiave, freno 2s | 1496 | 20 | 1174s | 400s | 11,7 min |
+| H | 1 chiave, no freno | 1497 | 19 | 2352s | 265s | 8,8 min |
+| **L** | **3 chiavi, freno 2s, 45 job** | 1492 | **0** | **0s** | 318s | **10,4 min** |
+| M | 3 chiavi, no freno, 20 job | 1492 | 14 | 3406s | 348s | 11,0 min |
+| N | 3 chiavi, freno 2s, 20 job | 1492 | 16 | 2747s | 432s | 12,7 min |
+
+**Configurazione buona = L**, ed è quella in produzione.
+
+Tre idee mie bocciate dai numeri, tutte per lo stesso motivo di fondo:
+- **freno tarato su 600/min con una chiave sola** (che ne vale 200): un
+  parametro giusto su un budget sbagliato è un parametro sbagliato;
+- **freno spento con tre chiavi**: costava ~150s di attesa voluta per evitarne
+  ~118 di blocchi… ma il Retry-After medio era 243s, non 120, e i blocchi sono
+  costati il doppio;
+- **N_BIN 20, provato tre volte in tre condizioni diverse.** Il freno distanzia
+  le richieste *dentro* uno shard, ma con meno shard ognuno lavora più a lungo,
+  quindi in ogni istante ce ne sono di più attivi sulla stessa finestra di
+  budget. **Meno job non è meno traffico: è lo stesso traffico più
+  concentrato.** E ogni blocco, con shard più grossi, congela una fetta più
+  grande di lavoro.
+
+### Quello che non si può toccare
+
+20 job in parallelo (piano GitHub Free; Pro ne darebbe 40) e 40 query in volo
+lato Sorare. I due numeri sono vicini: **oltre ~40 il parallelismo non ha più
+senso**, non è lì che si guadagna.
+
+Regola generale emersa oggi, utile ovunque: *finché i job stanno dentro gli
+slot disponibili dividere conviene sempre* (la discovery a 4 job ha wall 65s
+contro i ~176s che costerebbe unificata); *quando li superano, ogni job in più
+si somma davvero*. Per questo si taglia il predict e si lascia stare la
+discovery. Sulla coda (`consiglio` + `formazione`) ho misurato e **non c'è
+niente da prendere**: il lavoro vero è 5 secondi, il resto è overhead di
+GitHub che si paga per job comunque lo si giri.
+
 **Due lezioni metodologiche da non perdere** (sono nel file, §7.9):
 - l'ipotesi "meno query = meno tempo, proporzionalmente" è **falsa**: le query
   sono scese del 78% e il tempo solo del 43%, perché l'attesa da 429 è rimasta
