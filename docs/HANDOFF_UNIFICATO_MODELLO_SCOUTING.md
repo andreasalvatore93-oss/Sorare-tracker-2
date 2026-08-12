@@ -1832,315 +1832,269 @@ Ordine consigliato: D1 → D2 → D3 ristretto al solo caso "champions e basta"
 
 ---
 
-## 8duodecies-quater. VELOCITÀ DELLA PIPELINE — sessione 12/08/2026 pomeriggio
+## 8duodecies-quater. VELOCITÀ — pomeriggio del 12/08 (compresso, vedi §quinquies)
 
-**Dettaglio completo, con tutte le misure:
-`docs/handoff/RISPOSTA_OPUS_VELOCITA_STRUTTURALE_2026-08-12.txt`.** Qui solo
-il minimo per orientarsi.
+**I fix e i tempi finali stanno in §8duodecies-quinquies**, che è la fotografia
+buona. Il dettaglio integrale con tutte le misure:
+`docs/handoff/RISPOSTA_OPUS_VELOCITA_STRUTTURALE_2026-08-12.txt`.
+Qui resta solo quello che serve a NON rifare gli stessi tentativi.
 
-Domanda di partenza: la run da 18 minuti è colpa del preseason o della scala
-della richiesta (30+ arene)? **Nessuna delle due.**
+**La domanda di partenza e la sua risposta.** La run da 18 minuti non era colpa
+del preseason né della scala della richiesta: lo scenario reale completo (54
+formazioni) gira in **3,1 secondi** in locale, e il numero di formazioni non
+tocca né discovery né predict. Il tempo stava tutto nel predict, e il 60-65%
+era attesa dopo le risposte 429 di Sorare.
 
-- Il **generatore non c'entra**: lo scenario reale completo dell'utente (30
-  arene efficienti + 6 MLS + 6 K League + 4 U23 + 4 All Stars + 4 Champions
-  = 54 formazioni) gira in **3,1 secondi** in locale. Il numero di formazioni
-  richieste non tocca né discovery né predict, nemmeno via pool suppletivo.
-- Il tempo stava tutto nella **fase predict**, e il 60-65% di quella fase era
-  **attesa dopo le risposte 429 di Sorare** (Retry-After da 194-247s l'una).
+**Le run di confronto** (preseason gw5, soglia 0, ~1160 giocatori, il caso
+peggiore):
 
-**Sei fix, tutti in produzione e misurati** (le run: 31591410268, 31593062806,
-31594791690, 31596309760, 31597760654):
+| run | configurazione | query | 429 | persi | totale |
+|---|---|---|---|---|---|
+| I | 1 chiave, freno 2s | 1496 | 20 | 1174s | 11,7 min |
+| H | 1 chiave, no freno | 1497 | 19 | 2352s | 8,8 min |
+| **L** | **3 chiavi, freno 2s, 45 job** | 1492 | **0** | **0s** | **10,4 min** |
+| M | 3 chiavi, no freno, 20 job | 1492 | 14 | 3406s | 11,0 min |
+| N | 3 chiavi, freno 2s, 20 job | 1492 | 16 | 2747s | 12,7 min |
 
-1. `cdd0019647` — il game log dei giocatori con meno di 30 partite FINAL si
-   ri-scaricava **per intero a ogni run, per sempre** (523 su 1151). Ora si
-   annota che la storia è completa e basta una pagina di controllo.
-2. `1c2af4d3fa` — il dettaglio granulare si chiedeva **una partita per query**:
-   ora 6 alla volta (tetto di complessità sondato sull'API: 63,1 a partita,
-   massimo teorico 7).
-3. `736ddbb0c4` — **il più grosso**: `actions/upload-artifact` scarta di
-   default i file nascosti, e le due cache condivise vivono in
-   `.game_log_cache` e `.cache`. Da quando la pipeline usa gli artifact,
-   **tutto il lavoro di cache del predict veniva buttato a fine run**. Corretto
-   anche in `best_five.yml` e `cache_backtest_arene.yml` (quest'ultimo
-   caricava un artifact completamente vuoto).
-4. `ffd75f5415` — stessa cosa del punto 1 per i panchinari (storia lunga, poche
-   partite giocate): marcatore `ampio_inutile`.
-5. `358eb97aff` — il link Telegram usciva 404 (path assoluto nel sentinella):
-   regressione del fix D2, corretta su entrambi i lati.
-6. `pipeline_artifacts.py N_BIN 45→20` + via lo stagger della discovery — i 429
-   seguono il **numero di shard**, non il volume di query.
+**TRE IDEE BOCCIATE DAI NUMERI — non riprovarle senza una ragione nuova:**
+- **freno tarato su 600/min con una chiave sola** (che ne vale 200): un
+  parametro giusto su un budget sbagliato è un parametro sbagliato;
+- **freno spento con tre chiavi**: il Retry-After medio è 243s, non 120, e i
+  blocchi costano il doppio di quello che il freno risparmia;
+- **N_BIN 20 invece di 45, provato tre volte in tre condizioni diverse.** Il
+  freno distanzia le richieste *dentro* uno shard, ma con meno shard ognuno
+  lavora più a lungo, quindi in ogni istante ce ne sono di più attivi sulla
+  stessa finestra di budget. **Meno job non è meno traffico: è lo stesso
+  traffico più concentrato.**
 
-**IL RISULTATO CHE CONTA — lo scenario vero è già a 6 minuti.** Dopo aver
-inseguito a lungo il caso preseason, ho misurato una giornata VERA (run
-`31599223469`: gameweek 4, soglia starter-odds 0,80, 2 arene):
+**QUELLO CHE NON SI PUÒ TOCCARE.** 20 job in parallelo (piano GitHub Free; Pro
+ne darebbe 40) e 40 query in volo lato Sorare. I due numeri sono vicini: oltre
+~40 il parallelismo non ha più senso. Regola generale: *finché i job stanno
+dentro gli slot disponibili dividere conviene sempre* (discovery a 4 job: 65s
+contro i ~176s che costerebbe unificata); *quando li superano, ogni job in più
+si somma davvero*.
 
-| | preseason (gw5, soglia 0) | **giornata vera (gw4, soglia 0,80)** |
+**DUE LEZIONI METODOLOGICHE, le più importanti della giornata:**
+- l'ipotesi "meno query = meno tempo, proporzionalmente" è **falsa**: le query
+  sono scese del 78% e il tempo solo del 43%, perché l'attesa da 429 era
+  piatta;
+- l'esperimento che sembrava falsificare "i 429 nascono dalla raffica" era
+  **rotto**: il freno non attraversava i processi (ogni giocatore è un processo
+  nuovo), quindi non misuravo il pacing ma un interruttore staccato. È
+  esattamente la trappola descritta in CLAUDE.md — **prima di misurare
+  l'effetto di un componente, dimostrare che l'interruttore funziona.**
+
+---
+
+## 8duodecies-quinquies. GIORNATA DEL 12/08/2026 — velocità, APIKEY, repo dimezzato
+
+**Sezione da leggere per prima se si riprende da qui.** Riassume una sessione
+lunghissima. Il dettaglio delle misure sta in
+`docs/handoff/RISPOSTA_OPUS_VELOCITA_STRUTTURALE_2026-08-12.txt`.
+
+### 0. In due parole
+
+La pipeline **girava in 18-40 minuti, adesso ne fa 8**, su GitHub come sempre.
+Tre cose l'hanno sistemata: le cache che finalmente tornano a casa invece di
+essere buttate a fine run, le tre chiavi API che tolgono i blocchi di Sorare,
+e la scoperta che il job più lento (`formazione`) passava sei minuti a leggere
+file per non trovarci niente. In mezzo c'è stata una parentesi sui runner di
+casa che **non ha funzionato e si è chiusa**: il generatore è tornato su
+GitHub. Il pool di giocatori è stato verificato uno per uno contro Sorare:
+**455 su 455, zero persi**.
+
+### 1. Dove siamo, con i numeri (run 31647598044, scenario realistico)
+
+| fase | mattina | sera |
 |---|---|---|
-| run intera | 12,8-13,3 min | **6,3 min** |
-| giocatori | 1153 | **122** |
-| query | 1504 | **264** |
-| risposte 429 | 27 | **0** |
-| secondi persi nei 429 | 4644 | **0** |
+| pool (odds + grade) | 4m23 | 1m15 |
+| discovery (4 job) | 5m49 | 1m29 |
+| discovery_merge | 4m09 | 0m31 |
+| predict (45 job) | 22m15 | 2m42 |
+| consiglio | non partiva | 0m39 |
+| formazione | 7m41 | 1m01 |
+| **totale** | **~40 min** | **7m57** |
 
-Zero 429, non uno. Il problema dei 13-18 minuti **non era la pipeline, era il
-preseason**: a `MIN_STARTER_ODDS=0` non esiste nessun filtro, entrano tutti i
-posseduti delle squadre in campo, e con quel volume l'account va a sbattere
-contro il proprio tetto. Con la soglia attiva ne sopravvivono 122 e il limite
-non si sfiora nemmeno. **L'obiettivo dei 7-8 minuti è raggiunto dove conta.**
+Parametri di quella run (quelli veri di una giornata): gw5, soglia 0,80,
+In Season MLS 6 e K League 6, All Stars 4, Under 23 4, Champions 4, arene a
+budget 6.000 essenze senza numero fisso. Esito: 40 formazioni (24 di
+competizione + 20 arene, budget speso fino all'ultima essenza). Non riempite
+solo MLS #6 e Champions #2-4, con il motivo scritto in chiaro dal bot (slot
+senza candidati, copie esaurite) — corretto, non un difetto.
 
-Settimo fix, trovato proprio guardando quella run: il predict faceva girare
-**45 job per 122 giocatori** (uno o due a job, ~22s fissi di checkout+setup
-ciascuno). Il numero di bin era limitato solo da quante coppie lega/ruolo ci
-fossero; ora è limitato anche dal carico stimato. Con carico grande non cambia
-nulla.
+### 2. LE TRE APIKEY
 
-### Sera del 12/08: arrivano le APIKEY e cambia il quadro
-
-Alle 17:14 Sorare ha dato all'utente **tre chiavi API**. Tutto quello scritto
-sopra era stato misurato senza. I limiti veri, dalla documentazione ufficiale
-(`github.com/sorare/api`) e verificati in laboratorio:
+Secret GitHub: **`SORARE_APIKEY`**, **`SORARE_APIKEY_2`**, **`SORARE_APIKEY_3`**.
+⚠️ **La prima NON si chiama `_1`.**
 
 | accesso | richieste/min | complessità |
 |---|---|---|
 | anonimo | 20 | 500 |
-| sessione col cookie | 60 | 30.000 |
-| **con APIKEY** | **200 a chiave** (600 il tetto del programma) | 30.000 |
+| sessione col solo cookie | 60 | 30.000 |
+| con APIKEY | 200 a chiave (600 il tetto del programma) | 30.000 |
 
-più un tetto separato di **40 query contemporaneamente in volo** che nessuna
-chiave alza. **Il "60 al minuto" del cookie era il muro contro cui abbiamo
-sbattuto tutto il giorno.** Prova secca, stessa query e stessa dose, cambiando
-solo gli header: 600 richieste col **solo cookie** → 461 bloccate (si ferma
-alla 139ª); le stesse con **cookie + chiave** → zero. La chiave scavalca il
-tetto della sessione, quindi non serve togliere il cookie da nessuna parte.
-
-**Dove mancava** (ottavo fix): la chiave era stata messa nei predict ma
-`discovery_fixture.py` — cioè i job `pool` e `discovery` — faceva
-`getattr(base, 'APIKEY', '')` su un modulo che non la definiva. Copertura
-apparente, effetto zero. Tappato sui 164 script di discovery, più altri 17 fra
-bot, scanner e diagnostica, **sette dei quali ricevevano già il secret dal
-workflow e lo buttavano via**.
-
-**Nono fix**: con complessità 30.000 le pagine si allargano. `PAGINA_GAME_LOG`
-50 e `BATCH_DETTAGLIO` 30 quando la chiave c'è (10 e 6 quando non c'è).
-
-**Decimo fix**: le tre chiavi hanno tetti **indipendenti**, quindi si sommano.
-Nel job `predict` ogni shard ne prende una diversa con `IDX % 3`: è così che
-si arriva ai 600/min veri.
-
-### Le run della sera, e le tre cose che NON hanno funzionato
-
-Tutte in preseason (gw5, soglia 0, ~1160 giocatori), il caso peggiore:
-
-| run | configurazione | query | 429 | persi | predict | totale |
-|---|---|---|---|---|---|---|
-| I | 1 chiave, freno 2s | 1496 | 20 | 1174s | 400s | 11,7 min |
-| H | 1 chiave, no freno | 1497 | 19 | 2352s | 265s | 8,8 min |
-| **L** | **3 chiavi, freno 2s, 45 job** | 1492 | **0** | **0s** | 318s | **10,4 min** |
-| M | 3 chiavi, no freno, 20 job | 1492 | 14 | 3406s | 348s | 11,0 min |
-| N | 3 chiavi, freno 2s, 20 job | 1492 | 16 | 2747s | 432s | 12,7 min |
-
-**Configurazione buona = L**, ed è quella in produzione.
-
-Tre idee mie bocciate dai numeri, tutte per lo stesso motivo di fondo:
-- **freno tarato su 600/min con una chiave sola** (che ne vale 200): un
-  parametro giusto su un budget sbagliato è un parametro sbagliato;
-- **freno spento con tre chiavi**: costava ~150s di attesa voluta per evitarne
-  ~118 di blocchi… ma il Retry-After medio era 243s, non 120, e i blocchi sono
-  costati il doppio;
-- **N_BIN 20, provato tre volte in tre condizioni diverse.** Il freno distanzia
-  le richieste *dentro* uno shard, ma con meno shard ognuno lavora più a lungo,
-  quindi in ogni istante ce ne sono di più attivi sulla stessa finestra di
-  budget. **Meno job non è meno traffico: è lo stesso traffico più
-  concentrato.** E ogni blocco, con shard più grossi, congela una fetta più
-  grande di lavoro.
-
-### Quello che non si può toccare
-
-20 job in parallelo (piano GitHub Free; Pro ne darebbe 40) e 40 query in volo
-lato Sorare. I due numeri sono vicini: **oltre ~40 il parallelismo non ha più
-senso**, non è lì che si guadagna.
-
-Regola generale emersa oggi, utile ovunque: *finché i job stanno dentro gli
-slot disponibili dividere conviene sempre* (la discovery a 4 job ha wall 65s
-contro i ~176s che costerebbe unificata); *quando li superano, ogni job in più
-si somma davvero*. Per questo si taglia il predict e si lascia stare la
-discovery. Sulla coda (`consiglio` + `formazione`) ho misurato e **non c'è
-niente da prendere**: il lavoro vero è 5 secondi, il resto è overhead di
-GitHub che si paga per job comunque lo si giri.
-
-**Due lezioni metodologiche da non perdere** (sono nel file, §7.9):
-- l'ipotesi "meno query = meno tempo, proporzionalmente" è **falsa**: le query
-  sono scese del 78% e il tempo solo del 43%, perché l'attesa da 429 è rimasta
-  piatta;
-- l'esperimento che sembrava falsificare "i 429 nascono dalla raffica" era
-  **rotto**: il freno delle query non attraversava i processi (ogni giocatore
-  è un processo nuovo), quindi non stavo misurando il pacing ma un
-  interruttore staccato. Corretto in un commit dedicato. È esattamente la
-  trappola descritta in CLAUDE.md.
-
-**Effetto collaterale da tenere d'occhio**: ora le cache tornano davvero su
-main, quindi il repo cresce (~135 MB grezzi la prima run, poi solo le
-differenze vere). Se a regime pesa, l'alternativa è `actions/cache` — decisione
-aperta, tocca anche gli strumenti locali che leggono la stessa cache.
-
----
-
-## 8duodecies-quinquies. GIORNATA DEL 12/08/2026 — velocità, APIKEY, runner di casa
-
-**Sezione da leggere per prima se si riprende da qui.** Riassume una sessione
-lunghissima. Il dettaglio con tutte le misure sta in
-`docs/handoff/RISPOSTA_OPUS_VELOCITA_STRUTTURALE_2026-08-12.txt`.
-
-### 1. Dove siamo arrivati (numeri, non impressioni)
-
-| | prima | adesso |
-|---|---|---|
-| pipeline, giornata vera | 6,0-6,3 min | **~7 min, zero 429** |
-| pipeline, preseason (soglia 0) | 18,4 min | **10,4 min, zero 429** |
-| query Sorare per run | 6.857 | **1.492** |
-| secondi persi nei 429 | 6.193 | **0** |
-
-### 2. LE TRE APIKEY — come sono messe
-
-Secret GitHub: **`SORARE_APIKEY`**, **`SORARE_APIKEY_2`**, **`SORARE_APIKEY_3`**.
-⚠️ **La prima NON si chiama `_1`.** Se ne possono generare altre dal pannello
-Developer di Sorare, ma non servono: 3 × 200 = 600/min, che è il tetto del
-programma.
-
-Limiti veri (documentazione ufficiale `github.com/sorare/api`, verificati in
-laboratorio):
-
-| accesso | richieste/min | complessità GraphQL |
-|---|---|---|
-| anonimo | 20 | 500 |
-| **sessione col solo cookie** | **60** | 30.000 |
-| con APIKEY | 200 a chiave | 30.000 |
-
-più un tetto separato di **40 query contemporaneamente in volo**, che nessuna
+Più un tetto separato di **40 query contemporaneamente in volo**, che nessuna
 chiave alza.
 
 **I due fatti che costano ore se non si sanno:**
 1. **La chiave scavalca il tetto del cookie.** Misurato: 600 richieste col solo
-   cookie → 461 bloccate (si ferma alla 139ª); le stesse con cookie+chiave →
-   zero. **Non serve togliere il cookie da nessuna parte.**
-2. **I tetti delle chiavi sono indipendenti e si sommano.** Nel job `predict`
-   ogni shard ne prende una diversa con `IDX % 3` (nel workflow, lo shell la
-   assegna a `SORARE_APIKEY`: il Python non sa niente della rotazione).
+   cookie → 461 bloccate; le stesse con cookie+chiave → zero.
+2. **I tetti delle chiavi si sommano.** Nel job `predict` ogni shard ne prende
+   una diversa con `IDX % 3`.
 
-**Dov'è cablata**: 399 file — predict di tutte le leghe, i 164 script di
-discovery, bot, scanner, diagnostica. Più `bot_profit` con la rotazione a tre.
-**Dove NON c'è, di proposito**: `scanners/track.py` e `bots/autobuy_sorare.py`
-(in disuso, scelta dell'utente) e `scanners/crafted_card_scanner.py` (nomina
-l'endpoint solo nei commenti, non ci parla).
+**Dov'è cablata**: 399 file. **Dove NON c'è, di proposito**: `scanners/track.py`,
+`bots/autobuy_sorare.py` (in disuso).
 
-**Il guadagno grosso non è il rate, è la complessità 30.000**: permette pagine
-molto più grandi e quindi meno richieste. Fatto per il predict
-(`PAGINA_GAME_LOG` 50, `BATCH_DETTAGLIO` 30 quando la chiave c'è).
-**ANCORA DA FARE**: **216 file del repo paginano a `first: 5`**, valore tarato
-sul vecchio tetto di 500, dove ora ci starebbero 50. Filone meccanico, tutto
-da incassare.
+**ATTENZIONE, errore da non ripetere**: la complessità 30.000 ce l'ha **anche
+il solo cookie**. Il 12/08 avevo messo un paracadute ("pagine grandi solo se
+c'è la chiave") che era prudenza sprecata, e l'ho tolto dopo averlo misurato.
+Prima di condizionare qualcosa alla chiave, chiedersi se il cookie basta già.
 
-### 3. I dieci fix di oggi, in ordine
+### 3. Cosa è stato sistemato oggi
 
-| # | commit | cosa |
+| commit | cosa |
+|---|---|
+| `cdd0019647` | il game log dei giocatori con meno di 30 partite si ri-scaricava **per intero a ogni run, per sempre** (523 su 1151) |
+| `736ddbb0c4` | **il più grosso**: `upload-artifact` scarta i file nascosti, quindi **tutto il lavoro di cache veniva buttato a fine run** |
+| `ffd75f5415` | stesso problema per i panchinari (storia lunga, poche presenze) |
+| `b3b49fddd9` | la chiave non arrivava a discovery e pool (`getattr` su un modulo che non la definiva) |
+| `b03eebf69b` | tre chiavi a rotazione nel predict + freno tarato sul budget vero |
+| `05a7db87b8` | UTF-8 e fine riga (vedi §5) |
+| `a42d4ec8b6` | il job `formazione` da 7m41 a 1m10 (vedi sotto) |
+| `577651ac9d` | carte a 50 per pagina invece di 20: stesse carte, metà richieste |
+| `289c691285` | la discovery non pagina più le posizioni degli altri ruoli |
+| `d97e40f63b` `8bdc4adefc` | potatura del repo, poi automatica (vedi §6) |
+
+**Il job `formazione` (7m41 → 1m01)** era il collo di bottiglia finale, e
+dentro c'erano due sprechi:
+- `aggiorna_grade_scala_produzione.py`: **2m53 per leggere 11.280 file** e
+  produrre due tabelle che `build_formazione_globale` carica solo dentro
+  `if GRADE_GROUP_STORICA_ENABLED:` — flag spento di default. Ora gira solo a
+  flag acceso, e in quel caso gira comunque prima del generatore: non si perde
+  freschezza.
+- `aggiorna_gk_attacco_avversario.py` (questo serve): passava **due volte sugli
+  stessi 6.432 file, 337 MB**, per trovare zero partite nuove. Ora una sola, e
+  salta i file non cambiati riconoscendoli dalla **dimensione**. In locale: 55s
+  il primo giro, **1,0s** il secondo, file prodotto identico byte per byte.
+  LIMITE MISURATO: la dimensione non attraversa i sistemi operativi (git
+  converte i fine riga: lo stesso file pesa 62.430 byte su Windows e 60.272 su
+  Linux). Si ripara da solo — la run ricostruisce l'indice e lo committa.
+
+### 4. LA PARENTESI DEI RUNNER DI CASA — chiusa, e perché
+
+Il generatore è stato spostato su 10 runner self-hosted sul PC di casa e poi
+**riportato su `ubuntu-latest`**. Il motivo, misurato:
+
+- le "dieci macchine" sono **un PC solo**: un disco, 10 core, 16 GB di RAM;
+- il repo va materializzato a ogni job, e su Windows `git reset --hard` su
+  73.000 file costava **68 secondi** contro i 2 di Linux;
+- dieci copie da 337 MB della stessa cache non stanno in RAM, quindi ogni job
+  legge sempre da disco freddo (misurato: 94s a freddo contro 4,5s a caldo —
+  **non era l'antivirus**, l'esclusione di Defender non ha cambiato niente);
+- il conto migliore ottenibile a casa era **~10 minuti contro i 6-8 di GitHub**.
+
+**Restano due runner registrati** (`pc-andrea`, `pc-andrea-2`) per
+**`bot_definitivo`**, che è il caso opposto: un job solo, lungo, dove conta la
+latenza verso Sorare (**82 ms da casa contro 168 da GitHub**) e non c'è nessun
+repo da materializzare quaranta volte. `registra_runner.ps1` e
+`rimuovi_runner.ps1` prendono un intervallo (`.\rimuovi_runner.ps1 3 10`).
+
+**Se un domani si riprova**, serve sapere: Git Bash nel PATH di **sistema**
+(non utente: il servizio non lo vede), **niente `actions/setup-python`** (prova
+a scrivere nel registro e il servizio non ha il permesso), `python` e non
+`python3`, e **mai pre-clonare a mano** gli spazi di lavoro (li crea l'utente,
+il servizio non li può leggere, la run si pianta).
+
+### 5. I DUE DIFETTI CHE SI VEDONO SOLO SU WINDOWS (chiusi, ma da ricordare)
+
+Trovati durante quella parentesi, e sono il tipo di guasto peggiore: **run
+verde, dati persi in silenzio**.
+
+- **UTF-8.** Su Windows python stampa in cp1252, che non contiene le lettere
+  turche. Il semplice `log()` alzava eccezione e il giocatore finiva fuori
+  dalla formazione: **24 turchi su 37 esclusi** nella run 31631928081, con la
+  run verde. Vale anche per ceco, polacco, greco, giapponese, coreano, russo.
+- **Fine riga.** `print()` su Windows chiude con `\r\n` e bash non considera
+  `\r` un separatore: `read` restituiva `ruolo='gk\r'`, il `case` non lo
+  riconosceva e `set -u` ammazzava il job `consiglio` alla prima riga.
+
+Entrambi corretti a livello di workflow (`PYTHONIOENCODING`/`PYTHONUTF8`) e di
+modulo, e le protezioni restano anche ora che si gira su Linux.
+
+**Rete di sicurezza aggiunta**: zero file di matrice ora fanno **fallire** il
+job invece di lasciar finire la run verde e senza formazioni (era successo:
+run 31638826805, quattro minuti e nessun output).
+
+### 6. IL REPO DIMEZZATO, E LA POTATURA AUTOMATICA
+
+Ogni run scriveva file col timestamp nel nome e non ne cancellava mai nessuno.
+Due run nello stesso giorno = due copie di ogni predizione e di ogni consiglio.
+
+| | prima | dopo |
 |---|---|---|
-| 1 | `cdd0019647` | il game log dei giocatori con meno di 30 partite si ri-scaricava **per intero a ogni run, per sempre** (523 su 1151) |
-| 2 | `1c2af4d3fa` | dettaglio granulare: da 1 partita per query a 6 (poi 30 con la chiave) |
-| 3 | `736ddbb0c4` | **il più grosso**: `upload-artifact` scarta i file nascosti, quindi **tutto il lavoro di cache del predict veniva buttato a fine run**. Corretto anche in `best_five.yml` e `cache_backtest_arene.yml` (quest'ultimo caricava un artifact vuoto) |
-| 4 | `ffd75f5415` | stesso problema del #1 per i panchinari (storia lunga, poche partite giocate) |
-| 5 | `358eb97aff` | link Telegram 404: il sentinella conteneva un path assoluto |
-| 6 | — | il freno delle query era **staccato**: non attraversava i processi |
-| 7 | — | il numero di job predict segue il lavoro vero, non le coppie lega/ruolo |
-| 8 | `b3b49fddd9` | **la chiave non arrivava a discovery e pool**: `getattr(base,'APIKEY','')` su un modulo che non la definiva |
-| 9 | `e20bd4ffb9` | chiave ai 17 script rimasti (7 ricevevano già il secret e lo buttavano) |
-| 10 | `b03eebf69b` | tre chiavi a rotazione nel predict + freno tarato sul budget vero |
+| file tracciati | 75.449 | **35.899** |
+| peso | 1.905 MB | 1.680 MB |
 
-### 4. COSA NON RIPROVARE (idee mie, bocciate dai numeri)
+Tolti **40.151 file doppi** (23.666 + 16.485 in due giri). Perché si può:
+`build_consiglio` e `best_five` prendono `sorted(glob)[-1]`, il generatore
+prende `latest_consiglio`, e lo script del voto storico deduplica già per
+(lega, codice, slug, kickoff). L'analisi storica dell'errore **non** usa questi
+file: legge `prediction_log.json`, che non si tocca. Resta comunque l'ultimo
+file di ogni giorno.
 
-- **`N_BIN` da 45 a 20**: provato **tre volte**, in tre condizioni diverse,
-  sempre peggio. Il freno distanzia le richieste *dentro* uno shard, ma con
-  meno shard ognuno lavora più a lungo, quindi in ogni istante ce ne sono di
-  più attivi sulla stessa finestra di budget. **Meno job non è meno traffico:
-  è lo stesso traffico più concentrato.**
-- **Spegnere il freno** con tre chiavi: i blocchi tornano e costano il doppio
-  di quello che il freno costava (Retry-After medio 243s, non 120).
-- **Unire `consiglio` e `formazione`**: misurato, si prendono 5 secondi. Il
-  lavoro vero è 5 secondi, il resto è overhead di GitHub per job.
-- **Il freno tarato su 600/min avendo una chiave sola** (che ne vale 200):
-  un parametro giusto su un budget sbagliato è un parametro sbagliato.
+**Ora gira da sola**: `pulisci_predizioni_doppie.py --esegui` è uno step di
+`salva_output`, subito prima del `git add`. Senza, il repo si rigonfia: una
+giornata normale aggiunge un migliaio di file, il 12/08 ne ha aggiunti
+sedicimila.
 
-**Regola generale emersa**: *finché i job stanno dentro gli slot disponibili
-dividere conviene sempre* (discovery a 4 job: 65s di wall contro i ~176s che
-costerebbe unificata); *quando li superano, ogni job in più si somma davvero*.
+### 7. CONTROLLO DI MERITO — il pool verificato contro Sorare
 
-### 5. RUNNER SELF-HOSTED — stato al 12/08 sera
+Fatto uno per uno sulle carte esportate dall'utente (soglia 0,60+), la prima
+giornata con la Turchia e altri campionati nuovi in calendario:
 
-**Dieci runner registrati e online** sul PC di casa (`pc-andrea`,
-`pc-andrea-2..10`), etichetta **`casa`**, installati come servizi Windows che
-ripartono da soli. Cartelle `C:\actions-runner` e `C:\actions-runner-2..10`.
+| ruolo | carte | giocatori | bot | mancanti | copie |
+|---|---|---|---|---|---|
+| portieri | 83 | 67 | 67 | **0** | 83 = 83 |
+| difensori | 179 | 152 | 152 | **0** | 179 = 179 |
+| centrocampisti | 141 | 127 | 128 | **0** | 141 = 141 |
+| attaccanti | 120 | 106 | 108 | **0** | 120 = 120 |
 
-**Perché**: latenza misurata **82 ms da casa contro 168 ms da GitHub** (mediana
-su richieste vere; picchi 189 contro 382). Serve soprattutto a
-**`bot_definitivo`** per lo sniping, dove ogni millisecondo è una gara contro
-altri bot.
+**Nessun giocatore perso, e il conteggio delle copie è esatto carta per carta.**
+I 3 "in più" sono giocatori per cui Sorare non pubblica le odds (il bot ripiega
+sulle presenze storiche: Ratão 21 su 22) o carte senza campionato assegnato,
+quindi invisibili nella vista filtrata dell'utente. Script riutilizzabili nello
+scratchpad della sessione (`confronta2.py`, `confronta_carte.py`): reggono i due
+formati di incollato e uniscono i doppioni prima di confrontare.
 
-**Configurazione della macchina fatta oggi** (tutta da amministratore, tutta
-permanente):
-1. `C:\Program Files\Git\bin` aggiunto al **PATH di sistema** — il servizio
-   gira col PATH di sistema e lì bash non c'era. **Solo `bin`, non `usr\bin`**:
-   quella seconda cartella sostituirebbe comandi Windows come `find` e `sort`.
-2. `Set-ExecutionPolicy RemoteSigned -Scope LocalMachine` — gli script
-   PowerShell erano bloccati.
-3. **Python 3.11.9 installato PER TUTTI GLI UTENTI** in `C:\Program
-   Files\Python311`, con `requests` e `curl_cffi`. Quello del Microsoft Store
-   non va: sta in `AppData` dell'utente e il servizio non lo può leggere.
+**Trappola del confronto**: la sigla del ruolo può coincidere col codice di una
+squadra (`POR` = portiere ma anche Porto), e nasceva un portiere fantasma di
+nome "RIO". Il nome è ripetuto due volte prima del ruolo: pretendere quella
+ripetizione.
 
-**Trappole già pagate, da non ripetere:**
-- `actions/setup-python` **non funziona** sul self-hosted: prova a installare
-  Python scrivendo nel registro e il servizio (SERVIZIO DI RETE) non ha quel
-  permesso. Va tolto e si usa il Python di sistema.
-- Il file `.path` nella cartella del runner **non viene letto** su Windows.
-- **`python3` non esiste su Windows**, solo `python` (era in `discovery_merge`).
-- **NON pre-clonare a mano gli spazi di lavoro dei runner**: se li crea
-  l'utente, il servizio non può leggerli, git fallisce con *"Permission
-  denied"* e la run si pianta cancellando la cartella. Va lasciato fare al
-  runner: il primo job che gli capita clona (~1 GB), i successivi aggiornano.
+### 8. Cosa resta aperto
 
-**Il workflow `formazione_giornata.yml` è ATTUALMENTE puntato sui runner di
-casa** (`runs-on: [self-hosted, casa]`, `defaults.run.shell: bash`, niente
-setup-python). Per tornare a GitHub basta rimettere `runs-on: ubuntu-latest`
-e le `actions/setup-python`.
+- **Checkout sparso sul predict.** Il repo alleggerito ha già dato la sua
+  parte; il grosso che avanza sono le due cache (1,16 GB, 61% del repo), e
+  l'unico modo di non scaricarle è dare a ogni job la vista delle sole leghe
+  del suo gruppo. Guadagno stimato 30-40 secondi di run, ma il modo in cui
+  fallirebbe è quello brutto: `apply` scrive fuori dal cono e `stage` guarda
+  `git status`, quindi si rischiano artifact incompleti **con la run verde**.
+  Da fare solo con un test che verifichi gli artifact, non fidandosi del colore.
+- **Il file-sveglia ha una tolleranza di un secondo troppo generosa**: quando
+  `apply` e `marker` girano attaccati, i file applicati rientrano e l'artifact
+  dei consigli si porta dentro predizioni che aveva solo ricevuto. Non perde
+  dati, spreca banda.
+- **Lo storico delle odds pre-deadline non viene mai salvato.**
+  `dati_globali/odds_titolarita_storico.json` non è tracciato da git e nessuno
+  step lo committa: ogni run lo scrive e lo butta. Conta solo per i backtest
+  (il valore dentro il game log viene riscritto a 0/100 dopo le formazioni
+  ufficiali, quindi non è ricostruibile), non per schierare. Priorità bassa,
+  decisa con l'utente.
+- **216 file paginano ancora a `first: 5`**, tarati sul vecchio tetto 500.
+- **`bot_profit`** prende ancora 429 per i suoi 10 thread simultanei: si
+  sistema abbassando i thread, non allentando i freni. Gira una volta a
+  settimana, non è prioritario.
 
-### 6. DECISIONE ANCORA APERTA: il generatore in casa conviene?
-
-**Probabilmente no, e va misurato.** Il ragionamento, da rifare con i numeri
-della prima run pulita:
-- il collo di bottiglia del generatore è il **tetto di Sorare**, non la
-  macchina: 1.492 richieste ÷ 600 al minuto = **2,5 minuti di pavimento**, con
-  qualunque parallelismo;
-- GitHub dà **20 macchine gratis**, in casa ce ne sono **10**;
-- il guadagno vero sarebbe solo sui ~22 secondi di avvio per job (~900
-  job-secondi sui 45 del predict), più niente code per un runner libero (il
-  12/08 un job discovery ha aspettato 72 secondi).
-
-**Per `bot_definitivo` invece il conto si ribalta**: un job solo, lungo, dove
-la latenza è tutto. Lì il self-hosted va messo — non è ancora stato fatto.
-
-### 7. Altri fili aperti
-
-- **`bot_profit`**: prende ancora 429 (3 blocchi su 849 carte) nonostante le
-  tre chiavi. Il carico sostenuto NON è il problema (misurato: 300
-  richieste/minuto per due minuti da una macchina sola, zero blocchi): sono i
-  **10 thread** che sparano insieme. Si sistema abbassando i thread, non
-  allentando i freni. L'utente lo lancia una volta a settimana: non è
-  prioritario.
-- **Le cache ora tornano su main** e il repo cresce (297 → 317 MB in una
-  giornata). Se a regime pesa, l'alternativa è `actions/cache`, ma tocca anche
-  gli strumenti locali che leggono la stessa cache: da decidere insieme.
-- **`prova_self_hosted.yml`** è un workflow usa-e-getta: si può cancellare
-  quando il self-hosted è stabile.
-
----
 
 ## 8duodecies-ter. Cronologia del 429 GW5 (storico, chiuso)
 
