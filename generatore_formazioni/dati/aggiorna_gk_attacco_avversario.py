@@ -48,6 +48,21 @@ CORRENTE_GLOB = 'analisi_manager/dati/gol_squadre_archivio_2025-26_*.json'
 STORICO_GLOB = 'analisi_manager/dati/gol_squadre_archivio_2023_25_*.json'
 OUT = os.path.join('generatore_formazioni', 'dati', 'gk_attacco_avversario.json')
 MIN_STORICO = 4
+POOL_ARCHIVIO = 'archivio_ufficiale/aggregato/binario2_pool_rows.json'
+
+# CHI HO GIA' LETTO, E QUANTO ERA GROSSO (12/08/2026). Piccolo (~400 KB) e
+# COMMITTATO apposta: e' quello che evita di rileggere 337 MB di cache ad ogni
+# run. Per ogni file di game-log tiene la sua dimensione in byte e la squadra
+# del giocatore che ne e' uscita. Al giro dopo si guarda solo la dimensione
+# (una stat, microsecondi): se e' identica il file non e' cambiato, quindi non
+# puo' contenere partite che non abbiamo gia' visto, e non lo si apre.
+#
+# Perche' la DIMENSIONE e non la data di modifica: ogni runner ha una copia
+# sua del repo e il checkout riscrive le date, quindi l'mtime direbbe "tutto
+# nuovo" su ogni macchina. La dimensione invece dipende dal contenuto: un
+# game-log che guadagna una partita cresce sempre.
+VISTI = os.path.join('generatore_formazioni', 'dati', '_gamelog_visti.json')
+VISTI_VERSIONE = 1
 
 
 def _ultimo_file(pattern):
@@ -55,11 +70,94 @@ def _ultimo_file(pattern):
     return trovati[-1] if trovati else None
 
 
+def _carica_visti():
+    try:
+        d = json.load(open(VISTI, encoding='utf-8'))
+        if d.get('versione') == VISTI_VERSIONE:
+            return d.get('file') or {}
+    except (OSError, ValueError):
+        pass
+    return {}
+
+
+def _scansiona_cache(ultima_data):
+    """Una sola passeggiata sulla cache dei game-log, saltando i file che non
+    sono cambiati dall'ultima volta.
+
+    Ritorna (partite_candidate, squadra_per_slug).
+
+    Prima di oggi qui si passava DUE volte sugli stessi 6.432 file (337 MB):
+    una per ricostruire l'indice da 20 MB di p36 (che serviva solo a sapere in
+    che squadra gioca ognuno) e una per cercare le partite nuove. Tre minuti
+    per trovare, testualmente, zero partite nuove.
+    """
+    visti = _carica_visti()
+    nuovi_visti = {}
+    candidate = {}
+    squadra_per_slug = {}
+    n_letti = n_saltati = 0
+
+    for root, _dirs, files in os.walk('.'):
+        if not root.endswith('.game_log_cache'):
+            continue
+        for fn in files:
+            if not fn.endswith('_gamelog.json'):
+                continue
+            path = os.path.join(root, fn).replace(os.sep, '/').lstrip('./')
+            slug = fn[:-len('_gamelog.json')]
+            try:
+                dim = os.path.getsize(path)
+            except OSError:
+                continue
+            prec = visti.get(path)
+            if prec and prec[0] == dim:
+                # Identico all'ultimo giro: le sue partite le abbiamo gia'
+                # aggiunte allora, e la squadra la sappiamo gia'.
+                n_saltati += 1
+                nuovi_visti[path] = prec
+                if prec[1] and (slug not in squadra_per_slug
+                                or prec[2] > squadra_per_slug[slug][1]):
+                    squadra_per_slug[slug] = (prec[1], prec[2])
+                continue
+            try:
+                d = json.load(open(path, encoding='utf-8'))
+            except Exception:
+                continue
+            n_letti += 1
+            conta = collections.Counter()
+            for v in (d or {}).values():
+                g = (v or {}).get('anyGame') or {}
+                gid = g.get('id')
+                data = (g.get('date') or '')[:10]
+                casa = (g.get('homeTeam') or {}).get('slug')
+                fuori = (g.get('awayTeam') or {}).get('slug')
+                if casa:
+                    conta[casa] += 1
+                if fuori:
+                    conta[fuori] += 1
+                if (not gid or not data or data <= ultima_data
+                        or g.get('statusTyped') != 'played'):
+                    continue
+                candidate[gid] = {'date': data, 'home': casa, 'away': fuori}
+            squadra = max(conta, key=conta.get) if conta else None
+            n_part = sum(conta.values())
+            nuovi_visti[path] = [dim, squadra, n_part]
+            if squadra and (slug not in squadra_per_slug
+                            or n_part > squadra_per_slug[slug][1]):
+                squadra_per_slug[slug] = (squadra, n_part)
+
+    print(f'cache game-log: {n_letti} file letti, {n_saltati} saltati '
+          f'(identici al giro scorso)')
+    os.makedirs(os.path.dirname(VISTI), exist_ok=True)
+    json.dump({'versione': VISTI_VERSIONE, 'file': nuovi_visti},
+              open(VISTI, 'w', encoding='utf-8'))
+    return candidate, {s: v[0] for s, v in squadra_per_slug.items()}
+
+
 def _aggiorna_incrementale():
     """Estende il file della stagione corrente con le partite nuove
     (successive all'ultima data gia' coperta), stesse squadre di sempre.
     Ritorna il path del file (aggiornato o creato)."""
-    from analisi_manager.p42_estrai_gol_tutte_squadre_archivio import squadre_archivio
     from analisi_manager.p40_estrai_gol_squadre_crowss import estrai_gol
 
     f_corrente = _ultimo_file(CORRENTE_GLOB)
@@ -67,32 +165,22 @@ def _aggiorna_incrementale():
     ultima_data = max((r['date'] for r in esistenti.values()), default='2025-08-01')
     print(f"file corrente: {f_corrente or '(nessuno, primo run)'}  ultima data coperta: {ultima_data}")
 
-    _giocatori, squadre = squadre_archivio()
-    nuove = {}
-    for root, _dirs, files in os.walk('.'):
-        if not root.endswith('.game_log_cache'):
-            continue
-        for fn in files:
-            if not fn.endswith('_gamelog.json'):
-                continue
-            try:
-                d = json.load(open(os.path.join(root, fn), encoding='utf-8'))
-            except Exception:
-                continue
-            for v in (d or {}).values():
-                g = (v or {}).get('anyGame') or {}
-                gid = g.get('id')
-                data = (g.get('date') or '')[:10]
-                if not gid or not data or data <= ultima_data or gid in esistenti:
-                    continue
-                if g.get('statusTyped') != 'played':
-                    continue
-                casa = (g.get('homeTeam') or {}).get('slug')
-                fuori = (g.get('awayTeam') or {}).get('slug')
-                if casa not in squadre and fuori not in squadre:
-                    continue
-                nuove[gid] = {'date': data, 'home': casa, 'away': fuori}
+    # UNA passeggiata sola (12/08/2026). Prima erano due sugli stessi 6.432
+    # file: squadre_archivio() ne faceva una per ricostruire l'indice da 20 MB
+    # di p36, e il ciclo qui sotto un'altra per le partite nuove. Adesso la
+    # scansione restituisce entrambe le cose e salta i file non cambiati.
+    candidate, squadra_per_slug = _scansiona_cache(ultima_data)
 
+    # Le squadre di riferimento sono quelle dei giocatori dell'archivio, come
+    # faceva squadre_archivio(): stesso insieme, ricavato dalla stessa cache.
+    giocatori = {r['slug'] for r in json.load(open(POOL_ARCHIVIO, encoding='utf-8'))}
+    squadre = {squadra_per_slug[p] for p in giocatori if squadra_per_slug.get(p)}
+
+    nuove = {gid: meta for gid, meta in candidate.items()
+             if gid not in esistenti
+             and (meta['home'] in squadre or meta['away'] in squadre)}
+
+    print(f"squadre di riferimento: {len(squadre)} (da {len(giocatori)} giocatori d'archivio)")
     print(f"partite nuove trovate in cache (dopo {ultima_data}): {len(nuove)}")
     if nuove:
         t0 = time.time()

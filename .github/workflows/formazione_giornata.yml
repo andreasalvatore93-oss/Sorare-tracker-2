@@ -72,38 +72,29 @@ on:
 permissions:
   contents: write
 
-# SHELL (12/08/2026, passaggio ai runner di casa). I runner sono Windows e
-# il default sarebbe PowerShell, ma tutti i nostri step sono scritti in
-# bash (while read <&3, case, pipe). Git Bash e' raggiungibile perche'
-# C:\Program Files\Git\bin e' stato aggiunto al PATH di SISTEMA: quello
-# dell'utente non basta, il servizio del runner non lo vede.
+# SHELL (12/08/2026). Su ubuntu bash e' gia' il default: questa riga e' un
+# residuo utile della parentesi sui runner di casa (Windows, dove il default
+# sarebbe PowerShell mentre tutti i nostri step sono bash: while read <&3,
+# case, pipe). Costa niente e rende il workflow portabile se un domani si
+# riprova. Per quella strada servono anche: Git Bash nel PATH di SISTEMA
+# (non quello utente: il servizio del runner non lo vede), niente
+# setup-python, e `python` al posto di `python3`.
 defaults:
   run:
     shell: bash
 
-# UTF-8 OVUNQUE (12/08/2026). Su Windows python stampa in cp1252, che NON
-# contiene le lettere turche (s cediglia, g con la brevis...), quelle ceche,
-# polacche, greche, giapponesi, coreane, russe. Quando il nome di una squadra
-# ne contiene una, il semplice log() ALZA UNA ECCEZIONE e il giocatore viene
-# buttato fuori dalla formazione con "ERRORE (vedi traceback)".
-# Non e' teoria: nella run 31631928081, la prima con la Turchia in calendario,
-# 24 giocatori turchi su 37 sono stati esclusi cosi -- e la run era VERDE,
-# perche' ogni predict fallito viene solo annotato. Su ubuntu il problema non
-# si vedeva: li' l'uscita standard e' gia' UTF-8.
+# UTF-8 OVUNQUE (12/08/2026). Su ubuntu e' gia' cosi' e queste due righe non
+# cambiano niente; servono se si torna su runner Windows, dove python stampa
+# in cp1252, un alfabeto che NON contiene le lettere turche (s cediglia, g
+# con la brevis...), ne' quelle ceche, polacche, greche, giapponesi, coreane,
+# russe. Li' il semplice log() ALZA UNA ECCEZIONE appena il nome di una
+# squadra ne contiene una, e il giocatore finisce fuori dalla formazione con
+# "ERRORE (vedi traceback)". Successo davvero: run 31631928081, la prima con
+# la Turchia in calendario, 24 giocatori turchi su 37 esclusi cosi' -- con la
+# run VERDE, perche' ogni predict fallito viene solo annotato.
 env:
   PYTHONIOENCODING: utf-8
   PYTHONUTF8: '1'
-
-  # DIMENSIONAMENTO DEGLI SHARD (12/08/2026). Valori per i RUNNER DI CASA:
-  # 10 macchine invece delle 20 di GitHub, e ~135s di avvio per job invece di
-  # ~22 (di cui 68 di solo `git reset --hard` su 73.000 file). Con 45 bin
-  # sarebbero quattro giri e mezzo, cioe' ~100 minuti-macchina di sola
-  # preparazione. Il ragionamento completo sta in pipeline_artifacts.py.
-  # PER TORNARE SU GITHUB: cancellare queste tre righe (i default nel modulo
-  # sono gia' quelli giusti: 20 / 45 / 45).
-  PIPELINE_SLOT: '10'
-  PIPELINE_TARGET: '150'
-  PIPELINE_N_BIN: '12'
 
 jobs:
   # GRADE (07/08/2026): UNA sola fetch per run, condivisa agli shard come
@@ -117,18 +108,15 @@ jobs:
   # gia' corretta: nessun runner self-hosted serve.
   pool:
     name: pool (odds + grade, una volta per tutta la run)
-    runs-on: [self-hosted, casa]
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
-      # NIENTE setup-python sui runner di casa: l'action prova a
-      # INSTALLARE python scrivendo nel registro di sistema e il servizio,
-      # che gira come SERVIZIO DI RETE, non ha quel permesso. Si usa il
-      # python della macchina (3.11.9, installato per TUTTI gli utenti in
-      # C:/Program Files/Python311 apposta perche' il servizio lo veda).
-      # I pacchetti sono gia' installati li': il "pip install" degli step
-      # trova tutto a posto e non deve scrivere niente.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
       - run: pip install requests curl_cffi
       - name: Raccolta grade
         env:
@@ -163,7 +151,7 @@ jobs:
   discovery:
     name: discovery ${{ matrix.gruppo.nome }}
     needs: pool
-    runs-on: [self-hosted, casa]
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -193,13 +181,10 @@ jobs:
       # se non si svuotano `apply` rimette dentro artifact di un'altra
       # run e `upload-artifact` carica file che non sono di questo job.
       - run: rm -rf _artifacts _artifact_stage
-      # NIENTE setup-python sui runner di casa: l'action prova a
-      # INSTALLARE python scrivendo nel registro di sistema e il servizio,
-      # che gira come SERVIZIO DI RETE, non ha quel permesso. Si usa il
-      # python della macchina (3.11.9, installato per TUTTI gli utenti in
-      # C:/Program Files/Python311 apposta perche' il servizio lo veda).
-      # I pacchetti sono gia' installati li': il "pip install" degli step
-      # trova tutto a posto e non deve scrivere niente.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
       - run: pip install requests curl_cffi
       # Il grade arriva dal job 'grade' di questa stessa run: qui nessuno shard
       # rifa' la fetch (era la causa dei 429, vedi commento sul job 'grade').
@@ -292,7 +277,7 @@ jobs:
   discovery_merge:
     needs: [discovery]
     if: always()
-    runs-on: [self-hosted, casa]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
       matrice: ${{ steps.merge.outputs.matrice }}
@@ -338,7 +323,7 @@ jobs:
     needs: discovery_merge
     if: needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
     name: predict ${{ matrix.gruppo.nome }}
-    runs-on: [self-hosted, casa]
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -375,13 +360,10 @@ jobs:
       # se non si svuotano `apply` rimette dentro artifact di un'altra
       # run e `upload-artifact` carica file che non sono di questo job.
       - run: rm -rf _artifacts _artifact_stage
-      # NIENTE setup-python sui runner di casa: l'action prova a
-      # INSTALLARE python scrivendo nel registro di sistema e il servizio,
-      # che gira come SERVIZIO DI RETE, non ha quel permesso. Si usa il
-      # python della macchina (3.11.9, installato per TUTTI gli utenti in
-      # C:/Program Files/Python311 apposta perche' il servizio lo veda).
-      # I pacchetti sono gia' installati li': il "pip install" degli step
-      # trova tutto a posto e non deve scrivere niente.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
       - run: pip install requests curl_cffi
       # name: (non pattern:) di proposito -- se l'artifact della discovery
       # manca, il job DEVE fallire invece di proseguire sui player_slugs.json
@@ -514,7 +496,7 @@ jobs:
   consiglio:
     needs: [discovery_merge, predict]
     if: needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
-    runs-on: [self-hosted, casa]
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -535,13 +517,10 @@ jobs:
       # se non si svuotano `apply` rimette dentro artifact di un'altra
       # run e `upload-artifact` carica file che non sono di questo job.
       - run: rm -rf _artifacts _artifact_stage
-      # NIENTE setup-python sui runner di casa: l'action prova a
-      # INSTALLARE python scrivendo nel registro di sistema e il servizio,
-      # che gira come SERVIZIO DI RETE, non ha quel permesso. Si usa il
-      # python della macchina (3.11.9, installato per TUTTI gli utenti in
-      # C:/Program Files/Python311 apposta perche' il servizio lo veda).
-      # I pacchetti sono gia' installati li': il "pip install" degli step
-      # trova tutto a posto e non deve scrivere niente.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
       - uses: actions/download-artifact@v4
         with:
           name: discovery-merged
@@ -615,20 +594,15 @@ jobs:
   salva_output:
     needs: [discovery_merge, predict, consiglio]
     if: always() && needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
-    runs-on: [self-hosted, casa]
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
-      # NIENTE setup-python sui runner di casa: l'action prova a
-      # INSTALLARE python scrivendo nel registro di sistema e il servizio,
-      # che gira come SERVIZIO DI RETE, non ha quel permesso. Si usa il
-      # python della macchina (3.11.9, installato per TUTTI gli utenti in
-      # C:/Program Files/Python311 apposta perche' il servizio lo veda).
-      # I pacchetti sono gia' installati li': il "pip install" degli step
-      # trova tutto a posto e non deve scrivere niente.
-      # pattern: (non name:) perche' questo job gira anche quando una fase a
-      # monte e' fallita e il suo artifact puo' mancare del tutto.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
       - uses: actions/download-artifact@v4
         with:
           path: _artifacts
@@ -675,18 +649,15 @@ jobs:
     # ha prodotto almeno una combinazione lega/ruolo, altrimenti salta tutto
     # (formazione E notifica) invece di proseguire silenziosamente sul vecchio.
     if: needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
-    runs-on: [self-hosted, casa]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
-      # NIENTE setup-python sui runner di casa: l'action prova a
-      # INSTALLARE python scrivendo nel registro di sistema e il servizio,
-      # che gira come SERVIZIO DI RETE, non ha quel permesso. Si usa il
-      # python della macchina (3.11.9, installato per TUTTI gli utenti in
-      # C:/Program Files/Python311 apposta perche' il servizio lo veda).
-      # I pacchetti sono gia' installati li': il "pip install" degli step
-      # trova tutto a posto e non deve scrivere niente.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
       - run: pip install requests curl_cffi
       # Stessa ragione di 'predict': se gli artifact mancano il job deve
       # fallire, non generare una formazione sui consigli della giornata
@@ -724,10 +695,21 @@ jobs:
       - run: python generatore_formazioni/dati/aggiorna_gk_attacco_avversario.py
       # GRADE_GROUP_STORICA (12/08/2026, SPENTO di default -- vedi input
       # grade_group_storica sopra): refresh delle due tabelle (voto +
-      # sd_atteso) dai consiglio_*.txt di QUESTA run. Gira SEMPRE (anche a
-      # flag spento) cosi' le tabelle non sono stantie per quando si decide
-      # di accendere, zero query di rete.
-      - run: python generatore_formazioni/dati/aggiorna_grade_scala_produzione.py
+      # sd_atteso) dai consiglio_*.txt di QUESTA run, zero query di rete.
+      #
+      # GIRA SOLO A FLAG ACCESO (12/08/2026, seconda parola). Prima girava
+      # sempre, "cosi' le tabelle non sono stantie per quando si decide di
+      # accendere": ragionevole quando costava poco, insostenibile adesso.
+      # Misurato sulla run 31641286494: 2 minuti e 53 secondi, per leggere
+      # 11.280 file consiglio_*.txt accumulati e produrre due tabelle che
+      # build_formazione_globale.py carica solo dentro
+      # `if GRADE_GROUP_STORICA_ENABLED:` -- cioe' che con il flag spento
+      # nessuno apre. Erano il 15% della run buttato.
+      # Non si perde niente: accendendo il flag questo step torna a girare, e
+      # gira PRIMA del generatore nello stesso job, quindi le tabelle sono
+      # fresche esattamente quando servono.
+      - if: github.event.inputs.grade_group_storica == '1'
+        run: python generatore_formazioni/dati/aggiorna_grade_scala_produzione.py
       - id: genera
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
@@ -769,6 +751,11 @@ jobs:
           # nuovo questi add sono no-op (git diff --cached vuoto).
           git add analisi_manager/dati/gol_squadre_archivio_2025-26_*.json \
                   generatore_formazioni/dati/gk_attacco_avversario.json || true
+          # E l'indice "chi ho gia' letto" (12/08/2026, ~900 KB): senza di
+          # lui ogni run ricostruisce da zero leggendo 337 MB di cache. Con
+          # lui la scansione passa da 55 secondi a 1. Va committato per forza:
+          # il checkout e' shallow e non porta niente che non sia su main.
+          git add generatore_formazioni/dati/_gamelog_visti.json || true
           # I file applicati dagli artifact li committa salva_output: qui
           # restano come modifiche non committate e bloccherebbero il
           # 'git merge' del retry-loop sotto (bug reale run 30496069817:
