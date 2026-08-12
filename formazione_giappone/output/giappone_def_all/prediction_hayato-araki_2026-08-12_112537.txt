@@ -1,0 +1,137 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T11:25:37.897495Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) hayato-araki: 52 pt attesi (34-71)
+   ORDINAMENTO: 54.46
+   SQUADRA: sanfrecce-hiroshima-hiroshima | AVVERSARIO: urawa-reds-saitama
+======================================================================
+
+######################################################################
+# GIOCATORE: hayato-araki
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: hayato-araki (squadra: sanfrecce-hiroshima-hiroshima)
+Generato: 2026-08-12T11:25:37.896271Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 44
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: j1-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | VER vs SFR | j1-league | score=71.5 | peso=0.512
+  2025-08-31 | CER vs SFR | j1-league | score=60.0 | peso=0.524
+  2025-09-09 | ? vs ? | friendlies | score=30.7 | peso=0.536
+  2025-09-16 | MCT vs SFR | afc-champions-league | score=66.6 | peso=0.548
+  2025-09-23 | REY vs SFR | j1-league | score=59.9 | peso=0.561
+  2025-09-30 | SFR vs SHE | afc-champions-league | score=81.7 | peso=0.574
+  2025-10-04 | SFR vs MAC | j1-league | score=53.0 | peso=0.588
+  2025-10-17 | SFR vs TOK | j1-league | score=61.4 | peso=0.602
+  2025-10-21 | ULS vs SFR | afc-champions-league | score=58.3 | peso=0.616
+  2025-11-04 | SFR vs GAN | afc-champions-league | score=71.4 | peso=0.630
+  2025-11-09 | SFR vs RED | j1-league | score=61.8 | peso=0.645
+  2025-11-25 | QIA vs SFR | afc-champions-league | score=29.4 | peso=0.660
+  2025-11-30 | FRO vs SFR | j1-league | score=86.6 | peso=0.675
+  2025-12-06 | SFR vs BEL | j1-league | score=61.0 | peso=0.691
+  2025-12-10 | SFR vs SHE | afc-champions-league | score=77.5 | peso=0.707
+  2026-02-22 | CER vs SFR | j1-100-year-vision-league | score=68.7 | peso=0.724
+  2026-02-27 | SFR vs SAN | j1-100-year-vision-league | score=74.9 | peso=0.741
+  2026-03-04 | DAR vs SFR | afc-champions-league | score=46.1 | peso=0.758
+  2026-03-11 | SFR vs DAR | afc-champions-league | score=89.3 | peso=0.776
+  2026-03-14 | SFR vs GAM | j1-100-year-vision-league | score=66.3 | peso=0.794
+  2026-03-18 | GRA vs SFR | j1-100-year-vision-league | score=50.4 | peso=0.812
+  2026-03-22 | SSP vs SFR | j1-100-year-vision-league | score=10.3 | peso=0.831
+  2026-03-27 | VIS vs SFR | j1-100-year-vision-league | score=41.1 | peso=0.851
+  2026-04-05 | SFR vs AVI | j1-100-year-vision-league | score=100.0 | peso=0.871
+  2026-04-11 | SFR vs SSP | j1-100-year-vision-league | score=42.0 | peso=0.891
+  2026-04-18 | SFR vs VVN | j1-100-year-vision-league | score=65.7 | peso=0.912
+  2026-04-25 | SFR vs CER | j1-100-year-vision-league | score=64.2 | peso=0.933
+  2026-04-29 | AVI vs SFR | j1-100-year-vision-league | score=17.5 | peso=0.955
+  2026-05-02 | FAG vs SFR | j1-100-year-vision-league | score=69.0 | peso=0.977
+  2026-08-08 | SFR vs JEF | j1-league | score=58.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 59.32
+  di cui Punteggio decisivo (level_score) medio: 38.31 | Punteggio complessivo (granulari) medio: 21.00 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -1.16, delta avversario -0.07 | Passaggio condizionato: delta venue -0.49, delta avversario -0.35 | Clean sheet/disimpegni condizionato: delta venue -1.28, delta avversario +0.67 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 20.59
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.1 - 77.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.01 (differenza: +3.58)
+Media score in casa: 68.58 | Media score fuori casa: 52.53
+Fattore casa/trasferta applicato: 0.991 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.6
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 0.733 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.994
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 0.991
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.993
+Fattore trend (media ultime 5: 54.9 vs media 5 PRECEDENTI: 49.1): 1.000
+P(gioca): 68.18% (fonte: tasso di presenza storico (30/44))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T10:00
+Casa: Urawa Red Diamonds | Trasferta: Sanfrecce Hiroshima
+Competizione: j1-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.4 (range 34.1 - 70.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 54.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 59.36
+Punteggio REALE ottenuto in quella partita: 58.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -0.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      54.6    53.0     -1.6    17.4        SI
+   7        7      52.5    61.4     +8.9    16.4        SI
+   8        8      58.2    58.3     +0.1    15.2        SI
+   9        9      56.3    71.4    +15.1    14.3        NO
+  10       10      64.6    61.8     -2.8    14.0        SI
+  11       11      53.4    29.4    -24.1    13.3        NO
+  12       12      57.5    86.6    +29.1    16.3        NO
+  13       13      92.1    61.0    -31.1    17.9        NO
+  14       14      76.9    77.5     +0.5    17.1        SI
+  15       15      53.3    68.7    +15.4    17.2        SI
+  16       16      67.6    74.9     +7.3    16.6        SI
+  17       17      64.1    46.1    -18.0    16.4        NO
+  18       18      63.0    89.3    +26.3    16.5        NO
+  19       19      62.4    66.3     +3.9    17.6        SI
+  20       20      57.4    50.4     -7.0    17.0        SI
+  21       21      65.5    10.3    -55.2    16.9        NO
+  22       22      49.3    41.1     -8.2    21.3        SI
+  23       23      70.3   100.0    +29.7    21.3        NO
+  24       24      66.1    42.0    -24.1    23.0        NO
+  25       25      69.1    65.7     -3.3    22.9        SI
+  26       26      53.9    64.2    +10.3    22.4        SI
+  27       27      67.8    17.5    -50.3    21.8        NO
+  28       28      57.0    69.0    +12.0    23.6        SI
+  29       29      88.8    58.5    -30.3    23.2        NO
+
+MAE (errore assoluto medio): 17.27
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 54.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

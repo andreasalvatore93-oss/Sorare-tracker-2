@@ -1,0 +1,77 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-12T11:25:47.956690Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) gonzalo-nicolas-martinez: 53 pt attesi (29-91)
+   SQUADRA: tigre-victoria-provincia-de-buenos-aires | AVVERSARIO: torque-montevideo
+======================================================================
+
+######################################################################
+# GIOCATORE: gonzalo-nicolas-martinez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: gonzalo-nicolas-martinez (squadra: tigre-victoria-provincia-de-buenos-aires)
+Generato: 2026-08-12T11:25:47.955666Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 45
+Escluse (DID_NOT_PLAY): 24
+Escluse (minutaggio < 60', subentri): 16
+Competizione partita target: conmebol-sudamericana (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-02 | TIG vs IND | superliga-argentina-de-futbol | score=65.8 | peso=0.895
+  2026-04-12 | TUC vs TIG | superliga-argentina-de-futbol | score=53.2 | peso=0.920
+  2026-07-21 | NAC vs TIG | conmebol-sudamericana | score=50.7 | peso=0.946
+  2026-07-28 | TIG vs NAC | conmebol-sudamericana | score=37.0 | peso=0.973
+  2026-08-01 | RAC vs TIG | superliga-argentina-de-futbol | score=99.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 61.49
+  di cui Punteggio decisivo (level_score) medio: 38.28 | Punteggio complessivo (granulari) medio: 23.21 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 34.37 (delta -3.91)
+  Efficacia offensiva condizionata: delta venue +0.39, delta avversario +0.00 | Passaggio condizionato: delta venue -0.22, delta avversario +0.00 | Gol subiti condizionato: delta venue -0.41, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 21.57
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.0 - 99.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 6.57 (differenza: +15.00)
+Media score in casa: 51.40 | Media score fuori casa: 67.73
+Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.3
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.001
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 0.00% (fonte: starterOddsBasisPoints (0))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-12T22:00
+Casa: CA Tigre | Trasferta: CA Torque
+Competizione: conmebol-sudamericana
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.4 (range 28.9 - 91.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.37
+Punteggio REALE ottenuto in quella partita: 99.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +47.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
