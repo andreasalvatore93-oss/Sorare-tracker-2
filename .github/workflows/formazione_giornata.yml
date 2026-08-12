@@ -72,6 +72,15 @@ on:
 permissions:
   contents: write
 
+# SHELL (12/08/2026, passaggio ai runner di casa). I runner sono Windows e
+# il default sarebbe PowerShell, ma tutti i nostri step sono scritti in
+# bash (while read <&3, case, pipe). Git Bash e' raggiungibile perche'
+# C:\Program Files\Git\bin e' stato aggiunto al PATH di SISTEMA: quello
+# dell'utente non basta, il servizio del runner non lo vede.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   # GRADE (07/08/2026): UNA sola fetch per run, condivisa agli shard come
   # artifact. Prima ognuno dei 20 shard la rifaceva per conto suo: 3
@@ -84,19 +93,18 @@ jobs:
   # gia' corretta: nessun runner self-hosted serve.
   pool:
     name: pool (odds + grade, una volta per tutta la run)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, casa]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          # cache pip come tutti gli altri job (12/08/2026): questo era
-          # rimasto senza e rifaceva il download dei pacchetti a ogni run,
-          # ~10s di wall sul percorso critico, che e' il job che apre la run.
-          cache: "pip"
-          cache-dependency-path: requirements-formazione.txt
+      # NIENTE setup-python sui runner di casa: l'action prova a
+      # INSTALLARE python scrivendo nel registro di sistema e il servizio,
+      # che gira come SERVIZIO DI RETE, non ha quel permesso. Si usa il
+      # python della macchina (3.11.9, installato per TUTTI gli utenti in
+      # C:/Program Files/Python311 apposta perche' il servizio lo veda).
+      # I pacchetti sono gia' installati li': il "pip install" degli step
+      # trova tutto a posto e non deve scrivere niente.
       - run: pip install requests curl_cffi
       - name: Raccolta grade
         env:
@@ -131,7 +139,7 @@ jobs:
   discovery:
     name: discovery ${{ matrix.gruppo.nome }}
     needs: pool
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, casa]
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -145,11 +153,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-          cache-dependency-path: requirements-formazione.txt
+      # NIENTE setup-python sui runner di casa: l'action prova a
+      # INSTALLARE python scrivendo nel registro di sistema e il servizio,
+      # che gira come SERVIZIO DI RETE, non ha quel permesso. Si usa il
+      # python della macchina (3.11.9, installato per TUTTI gli utenti in
+      # C:/Program Files/Python311 apposta perche' il servizio lo veda).
+      # I pacchetti sono gia' installati li': il "pip install" degli step
+      # trova tutto a posto e non deve scrivere niente.
       - run: pip install requests curl_cffi
       # Il grade arriva dal job 'grade' di questa stessa run: qui nessuno shard
       # rifa' la fetch (era la causa dei 429, vedi commento sul job 'grade').
@@ -239,7 +249,7 @@ jobs:
   discovery_merge:
     needs: [discovery]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, casa]
     timeout-minutes: 10
     outputs:
       matrice: ${{ steps.merge.outputs.matrice }}
@@ -285,7 +295,7 @@ jobs:
     needs: discovery_merge
     if: needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
     name: predict ${{ matrix.gruppo.nome }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, casa]
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -306,11 +316,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-          cache-dependency-path: requirements-formazione.txt
+      # NIENTE setup-python sui runner di casa: l'action prova a
+      # INSTALLARE python scrivendo nel registro di sistema e il servizio,
+      # che gira come SERVIZIO DI RETE, non ha quel permesso. Si usa il
+      # python della macchina (3.11.9, installato per TUTTI gli utenti in
+      # C:/Program Files/Python311 apposta perche' il servizio lo veda).
+      # I pacchetti sono gia' installati li': il "pip install" degli step
+      # trova tutto a posto e non deve scrivere niente.
       - run: pip install requests curl_cffi
       # name: (non pattern:) di proposito -- se l'artifact della discovery
       # manca, il job DEVE fallire invece di proseguire sui player_slugs.json
@@ -438,16 +450,18 @@ jobs:
   consiglio:
     needs: [discovery_merge, predict]
     if: needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, casa]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-          cache-dependency-path: requirements-formazione.txt
+      # NIENTE setup-python sui runner di casa: l'action prova a
+      # INSTALLARE python scrivendo nel registro di sistema e il servizio,
+      # che gira come SERVIZIO DI RETE, non ha quel permesso. Si usa il
+      # python della macchina (3.11.9, installato per TUTTI gli utenti in
+      # C:/Program Files/Python311 apposta perche' il servizio lo veda).
+      # I pacchetti sono gia' installati li': il "pip install" degli step
+      # trova tutto a posto e non deve scrivere niente.
       - uses: actions/download-artifact@v4
         with:
           name: discovery-merged
@@ -510,16 +524,18 @@ jobs:
   salva_output:
     needs: [discovery_merge, predict, consiglio]
     if: always() && needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, casa]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-          cache-dependency-path: requirements-formazione.txt
+      # NIENTE setup-python sui runner di casa: l'action prova a
+      # INSTALLARE python scrivendo nel registro di sistema e il servizio,
+      # che gira come SERVIZIO DI RETE, non ha quel permesso. Si usa il
+      # python della macchina (3.11.9, installato per TUTTI gli utenti in
+      # C:/Program Files/Python311 apposta perche' il servizio lo veda).
+      # I pacchetti sono gia' installati li': il "pip install" degli step
+      # trova tutto a posto e non deve scrivere niente.
       # pattern: (non name:) perche' questo job gira anche quando una fase a
       # monte e' fallita e il suo artifact puo' mancare del tutto.
       - uses: actions/download-artifact@v4
@@ -568,16 +584,18 @@ jobs:
     # ha prodotto almeno una combinazione lega/ruolo, altrimenti salta tutto
     # (formazione E notifica) invece di proseguire silenziosamente sul vecchio.
     if: needs.discovery_merge.outputs.matrice != '' && needs.discovery_merge.outputs.matrice != '[]'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, casa]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-          cache-dependency-path: requirements-formazione.txt
+      # NIENTE setup-python sui runner di casa: l'action prova a
+      # INSTALLARE python scrivendo nel registro di sistema e il servizio,
+      # che gira come SERVIZIO DI RETE, non ha quel permesso. Si usa il
+      # python della macchina (3.11.9, installato per TUTTI gli utenti in
+      # C:/Program Files/Python311 apposta perche' il servizio lo veda).
+      # I pacchetti sono gia' installati li': il "pip install" degli step
+      # trova tutto a posto e non deve scrivere niente.
       - run: pip install requests curl_cffi
       # Stessa ragione di 'predict': se gli artifact mancano il job deve
       # fallire, non generare una formazione sui consigli della giornata
