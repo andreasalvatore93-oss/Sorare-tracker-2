@@ -241,7 +241,24 @@ TARGET_MIN_S = 45.0
 # il guadagno sugli avvii: 45 bin sono ~990 job-secondi di solo
 # checkout+setup, 20 ne sono ~440.
 # Se i blocchi tornano, questo numero e' il primo indiziato: si rimette 45.
-N_BIN = 20
+# 45, E QUESTA E' LA TERZA E ULTIMA VOLTA CHE SI PROVA A SCENDERE.
+# Tre run, tre bocciature, in tre condizioni diverse:
+#   run 31597760654  senza chiave, no freno  -> 36 blocchi, predict 556s
+#   run 31620111635  3 chiavi, no freno      -> 14 blocchi, predict 348s
+#   run 31621327205  3 chiavi, FRENO ACCESO  -> 16 blocchi, predict 432s
+# L'ultima era la combinazione che sulla carta doveva funzionare: freno
+# acceso, quindi zero blocchi come nella run 31618793265, piu' il risparmio
+# sugli avvii. Invece i blocchi sono tornati -- 16 -- e la fase predict e'
+# passata da 318s a 432s.
+# La spiegazione che regge a tutte e tre: il freno distanzia le richieste
+# DENTRO uno shard, ma con 20 shard invece di 45 ognuno lavora piu' a lungo,
+# quindi in ogni istante ci sono piu' shard attivi insieme sulla stessa
+# finestra di budget. Meno shard non vuol dire meno traffico: vuol dire lo
+# stesso traffico piu' concentrato. E ogni blocco, con shard piu' grossi,
+# congela una fetta piu' grande di lavoro.
+# I ~550 job-secondi di avvii che si risparmierebbero non ripagano mai i
+# blocchi che si comprano. Non riprovarci senza una ragione NUOVA.
+N_BIN = 45
 
 
 # ---------------------------------------------------------------- stage ----
