@@ -94,6 +94,12 @@ on:
         description: "'si' = soglie basate sul prezzo (26/07). 'no' = torna alle 3 soglie statiche fisse (makeoffer_margin_percent/makeoffer_max_margin_percent/autobuy_margin_percent) -- utile per test diagnostici mirati (es. forzare molti AutoBuy per analisi timing)."
         required: false
         default: "si"
+      runner:
+        description: "Dove girare: 'casa' = PC dell'utente (latenza verso Sorare dimezzata, 82ms contro 168 -- serve che il PC sia ACCESO, altrimenti il job resta in coda). 'github' = runner GitHub, sempre disponibile ma piu' lento a reagire."
+        required: false
+        default: "casa"
+        type: choice
+        options: ["casa", "github"]
       aggressive_mode:
         description: "'si' = MODALITA' AGGRESSIVA: filtro starter odds prossima partita >=80% (hardcoded), thin market e cooldown disattivati, soglie di margine -10% (piu' sensibile). Manager/giocatore/campionato blacklist ecc. restano SEMPRE attivi. SICUREZZA: se attiva insieme a QUALUNQUE input di soglia/sconto modificato dal default (makeoffer_margin_percent/makeoffer_max_margin_percent/autobuy_margin_percent/offer_discount_percent/price_based_thresholds_enabled), forza automaticamente la modalita' SOLO DIAGNOSTICA (combinazione non validata) -- lasciare tutti quegli input al default per farla funzionare con acquisti/offerte reali. 'no' = disattivata, comportamento normale."
         required: false
@@ -103,20 +109,62 @@ permissions:
 concurrency:
   group: sorare-bot-supremo
   cancel-in-progress: false
+
+# Su Windows la shell di default dei job sarebbe PowerShell: i nostri step sono
+# scritti in bash (test [ -z ], awk, export). Forzarla vale per entrambi i
+# runner -- su ubuntu bash e' gia' il default, quindi non cambia niente.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   bot-supremo:
-    runs-on: ubuntu-latest
+    # 13/08/2026: il bot definitivo puo' girare sul PC di casa, dove la latenza
+    # verso Sorare e' meta' di quella di un runner GitHub (mediana 82 ms contro
+    # 168, picchi 189 contro 382, misurato il 12/08). Su una gara di sniping,
+    # dove si vince o si perde per millisecondi, conta davvero.
+    # E' il caso in cui il self-hosted VINCE: un job solo, lungo, che fa tante
+    # richieste in fila. Il generatore di formazioni e' il caso opposto (tanti
+    # job che devono ricostruirsi il mondo ognuno) e infatti resta su GitHub.
+    # L'input 'runner' permette di tornare su GitHub quando il PC e' spento:
+    # un job destinato a 'casa' con la macchina spenta resta in coda e basta.
+    runs-on: ${{ (github.event.inputs.runner || 'casa') == 'github' && 'ubuntu-latest' || fromJSON('["self-hosted","casa"]') }}
     timeout-minutes: 340
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
+
+      # NIENTE setup-python / setup-node sul self-hosted (trappola gia' pagata
+      # il 12/08): le due action provano a INSTALLARE scrivendo nel registro di
+      # sistema, e il servizio del runner gira come SERVIZIO DI RETE, che quel
+      # permesso non ce l'ha ("Error happened during Python installation").
+      # Sul PC di casa si usano gli interpreti della macchina, installati una
+      # volta sola PER TUTTI GLI UTENTI (C:\Program Files\Python311 e
+      # C:\Program Files\nodejs) proprio perche' il servizio li veda: le
+      # versioni utente/Microsoft Store stanno in AppData e quell'account non
+      # le puo' nemmeno leggere.
       - uses: actions/setup-python@v5
+        if: runner.environment == 'github-hosted'
         with:
           python-version: "3.11"
       - uses: actions/setup-node@v4
+        if: runner.environment == 'github-hosted'
         with:
           node-version: "20"
+
+      # Meglio fermarsi qui con un messaggio chiaro che tre ore dopo, alla
+      # prima firma, con un "node: command not found" dentro un log da 5 ore.
+      - name: Gli interpreti ci sono (python e node)
+        run: |
+          set -u
+          echo "runner: ${{ runner.environment }} ($(uname -s 2>/dev/null || echo Windows))"
+          python --version
+          node --version || {
+            echo "::error::Node non e' raggiungibile da questo runner. Sul PC di casa va installato PER TUTTI GLI UTENTI (winget install OpenJS.NodeJS.LTS --scope machine, da amministratore): il servizio del runner non vede le installazioni per il solo utente. Serve per la firma delle transazioni (bots/sorare-sign/decrypt_and_sign.js)."
+            exit 1
+          }
+
       - name: Install sorare-sign dependencies
         run: |
           cd bots/sorare-sign
