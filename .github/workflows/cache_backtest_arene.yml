@@ -75,6 +75,12 @@ jobs:
         with:
           name: backtest-arene-cache
           path: dati_globali/backtest_arene_cache
+          # actions/upload-artifact@v4 esclude di default tutto cio' che
+          # comincia per '.', e le cache condivise vivono in cartelle
+          # nascoste (.game_log_cache, .cache): senza questa riga
+          # l'artifact le perde in silenzio. Vedi il commento esteso in
+          # formazione_giornata.yml (misurato il 12/08/2026).
+          include-hidden-files: true
           if-no-files-found: warn
 
       - name: Rilancia il backtest col campione allargato

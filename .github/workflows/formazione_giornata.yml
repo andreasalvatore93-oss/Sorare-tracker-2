@@ -208,6 +208,18 @@ jobs:
         with:
           name: disc-${{ strategy.job-index }}
           path: _artifact_stage
+          # SENZA QUESTA RIGA LE CACHE NON TORNANO MAI SU MAIN (12/08/2026,
+          # spreco REALE misurato). actions/upload-artifact@v4 esclude di
+          # default tutto cio' che comincia per '.', e le due cache condivise
+          # vivono in cartelle nascoste: <lega>_<ruolo>_all/.game_log_cache
+          # (game log) e /.cache (dettaglio granulare). Misurato sulla run
+          # 31591410268, shard predict 36: 'stage' ne aveva preparati 62,
+          # 'With the provided path, there will be 29 files uploaded' -- i 33
+          # mancanti erano tutti file di cache. Conseguenza: ogni run
+          # ri-scaricava da Sorare partite gia' scaricate nella run
+          # precedente, per sempre, e nessuno poteva accorgersene perche' i
+          # file c'erano (vecchi) e il job finiva verde.
+          include-hidden-files: true
           retention-days: 1
 
   discovery_merge:
@@ -241,6 +253,18 @@ jobs:
         with:
           name: discovery-merged
           path: _artifact_stage
+          # SENZA QUESTA RIGA LE CACHE NON TORNANO MAI SU MAIN (12/08/2026,
+          # spreco REALE misurato). actions/upload-artifact@v4 esclude di
+          # default tutto cio' che comincia per '.', e le due cache condivise
+          # vivono in cartelle nascoste: <lega>_<ruolo>_all/.game_log_cache
+          # (game log) e /.cache (dettaglio granulare). Misurato sulla run
+          # 31591410268, shard predict 36: 'stage' ne aveva preparati 62,
+          # 'With the provided path, there will be 29 files uploaded' -- i 33
+          # mancanti erano tutti file di cache. Conseguenza: ogni run
+          # ri-scaricava da Sorare partite gia' scaricate nella run
+          # precedente, per sempre, e nessuno poteva accorgersene perche' i
+          # file c'erano (vecchi) e il job finiva verde.
+          include-hidden-files: true
           retention-days: 1
 
   predict:
@@ -330,6 +354,18 @@ jobs:
         with:
           name: pred-${{ strategy.job-index }}
           path: _artifact_stage
+          # SENZA QUESTA RIGA LE CACHE NON TORNANO MAI SU MAIN (12/08/2026,
+          # spreco REALE misurato). actions/upload-artifact@v4 esclude di
+          # default tutto cio' che comincia per '.', e le due cache condivise
+          # vivono in cartelle nascoste: <lega>_<ruolo>_all/.game_log_cache
+          # (game log) e /.cache (dettaglio granulare). Misurato sulla run
+          # 31591410268, shard predict 36: 'stage' ne aveva preparati 62,
+          # 'With the provided path, there will be 29 files uploaded' -- i 33
+          # mancanti erano tutti file di cache. Conseguenza: ogni run
+          # ri-scaricava da Sorare partite gia' scaricate nella run
+          # precedente, per sempre, e nessuno poteva accorgersene perche' i
+          # file c'erano (vecchi) e il job finiva verde.
+          include-hidden-files: true
           retention-days: 1
 
   # Aggregazione consiglio: legge TUTTI i file prediction_<slug>_*.txt di una
@@ -393,6 +429,18 @@ jobs:
         with:
           name: cons-0
           path: _artifact_stage
+          # SENZA QUESTA RIGA LE CACHE NON TORNANO MAI SU MAIN (12/08/2026,
+          # spreco REALE misurato). actions/upload-artifact@v4 esclude di
+          # default tutto cio' che comincia per '.', e le due cache condivise
+          # vivono in cartelle nascoste: <lega>_<ruolo>_all/.game_log_cache
+          # (game log) e /.cache (dettaglio granulare). Misurato sulla run
+          # 31591410268, shard predict 36: 'stage' ne aveva preparati 62,
+          # 'With the provided path, there will be 29 files uploaded' -- i 33
+          # mancanti erano tutti file di cache. Conseguenza: ogni run
+          # ri-scaricava da Sorare partite gia' scaricate nella run
+          # precedente, per sempre, e nessuno poteva accorgersene perche' i
+          # file c'erano (vecchi) e il job finiva verde.
+          include-hidden-files: true
           retention-days: 1
 
   # Commit unico di tutti gli output della run (discovery + predict +
