@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T16:28:49.255799Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) yool-heo: 46 pt attesi (41-49)
+   ORDINAMENTO: 40.54
+   SQUADRA: ulsan-ulsan | AVVERSARIO: gangwon-gangneung
+======================================================================
+
+######################################################################
+# GIOCATORE: yool-heo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: yool-heo (squadra: ulsan-ulsan)
+Generato: 2026-08-12T16:28:49.254477Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 17
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-13 | POH vs ULS | k-league-1 | score=62.4 | peso=0.561
+  2025-09-21 | ULS vs ANY | k-league-1 | score=36.9 | peso=0.630
+  2025-09-27 | DAE vs ULS | k-league-1 | score=34.0 | peso=0.707
+  2025-10-05 | SAN vs ULS | k-league-1 | score=44.4 | peso=0.794
+  2025-11-09 | ULS vs SCI | k-league-1 | score=38.6 | peso=0.891
+  2025-11-22 | GWA vs ULS | k-league-1 | score=38.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 41.44
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=6): 50.23 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 38.06 | Punteggio complessivo (granulari) medio: 3.38 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 1.71 (delta -0.23) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 8.42
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.9 - 44.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 2.82 (differenza: +5.60)
+Media score in casa: 37.75 | Media score fuori casa: 44.70
+Fattore casa/trasferta applicato: 0.998 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.7
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.832 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 17.14% (fonte: tasso di presenza storico (6/35))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T10:30
+Casa: Ulsan Hyundai Horang-i | Trasferta: Gangwon FC
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.0 (range 41.5 - 49.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 40.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 42.41
+Punteggio REALE ottenuto in quella partita: 38.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -4.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
