@@ -270,9 +270,9 @@ jobs:
           pattern: disc-*
       - id: merge
         run: |
-          python3 pipeline_artifacts.py apply _artifacts
-          python3 pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
-          python3 pipeline_artifacts.py matrice >> "$GITHUB_OUTPUT"
+          python pipeline_artifacts.py apply _artifacts
+          python pipeline_artifacts.py stage _artifact_stage '^formazione_[^/]+/output/[^/]+_discovery/'
+          python pipeline_artifacts.py matrice >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         with:
           name: discovery-merged
