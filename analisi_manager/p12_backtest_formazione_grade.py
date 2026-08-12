@@ -25,7 +25,10 @@ if __name__ == '__main__':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 SP = os.path.dirname(os.path.abspath(__file__))
-ROOT = r'C:\Users\Andrea\Documents\GitHub\Sorare-tracker-2'
+ROOT = os.path.dirname(SP)  # cartella padre di analisi_manager/ -- portabile,
+                            # non piu' hardcoded a un solo utente/OS (rotto
+                            # su GitHub Actions/Linux: era una stringa
+                            # Windows fissa, os.chdir falliva sempre li').
 os.chdir(ROOT)
 sys.path.insert(0, ROOT)
 sys.path.insert(0, SP)
