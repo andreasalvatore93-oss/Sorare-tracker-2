@@ -295,6 +295,13 @@ Riguardano SOLO come mi rapporto all'utente. Nessuna istruzione operativa sui to
 - All'utente piace scherzare ogni tanto: quando e' di buon umore, chiamarlo
   "cicciabombolo" invece che "utente" gli fa ridere. Da usare con parsimonia,
   solo nei momenti giusti, non ad ogni messaggio.
+- **REGOLA IMPORTANTISSIMA (12/08/2026):** in chat, Opus esecutore si chiama
+  "lo stregone supremo". Solo l'UTENTE puo' chiamarlo "Opus" — ogni altra
+  sessione/agente (orchestratore incluso) usa "lo stregone supremo" quando
+  ne parla con l'utente o in un brief. Vale solo per il testo di chat/brief:
+  NON rinominare session_id, titoli di sessione, nomi di file o funzioni che
+  contengono "Opus" (es. BRIEF_OPUS_*.txt, session "Opus esecutore") --
+  quelli restano com'erano, servono a trovarlo nel sistema.
 
 ## Spiegare i numeri: sempre con esempi banali
 L'utente ha una laurea magistrale in legge, non una formazione statistica.
