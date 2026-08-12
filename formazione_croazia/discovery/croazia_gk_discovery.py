@@ -43,6 +43,12 @@ PAGE_SIZE = 20
 TARGET_LEAGUE_SLUG = '1-hnl'
 
 COOKIES = os.environ.get('SORARE_COOKIE', '')
+# APIKEY (12/08/2026): alza il tetto di complessita' GraphQL da 500 a 30000
+# e il limite di richieste dell'account. Si affianca al cookie, non lo
+# sostituisce. Verificato sull'API vera: senza chiave una query da 8
+# partite di dettaglio veniva rifiutata ("complexity of 505, which
+# exceeds max complexity of 500"), con la chiave ne passano 200.
+APIKEY = os.environ.get('SORARE_APIKEY', '')
 
 if _HAS_CURL_CFFI:
     _http_session = curl_requests.Session(impersonate="chrome")
@@ -59,6 +65,8 @@ def graphql_query(query, variables=None, operation_name=None):
     headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
     if COOKIES:
         headers['Cookie'] = COOKIES
+    if APIKEY:
+        headers['APIKEY'] = APIKEY
     payload = {'query': query, 'variables': variables or {}}
     if operation_name:
         payload['operationName'] = operation_name

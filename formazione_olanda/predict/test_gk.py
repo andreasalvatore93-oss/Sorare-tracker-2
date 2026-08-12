@@ -697,9 +697,13 @@ def save_cache(cache, cache_file):
 # commento su PAGINA_GAME_LOG: una richiesta rifiutata costa molto piu' di
 # una richiesta in piu'.
 #
-# Con l'APIKEY (mai arrivata, vedi il backlog) il tetto sarebbe 30000, cioe'
-# 475 partite per richiesta: se un giorno arriva, e' qui che si alza.
-BATCH_DETTAGLIO = 6
+# CON L'APIKEY (arrivata il 12/08/2026, e verificata: 200 partite in una sola
+# richiesta contro le 6 di prima) il tetto non morde piu'. Qui pero' non serve
+# alzarlo tanto: il batch riguarda le partite della FINESTRA di UN giocatore,
+# che sono ~8. Con 30 stanno tutte in una richiesta sola invece di due, ed e'
+# tutto quello che c'e' da guadagnare. Senza chiave si resta a 6 (misurato:
+# 8 partite -> "complexity of 505, which exceeds max complexity of 500").
+BATCH_DETTAGLIO = 30 if APIKEY else 6
 
 _BLOCCO_DETTAGLIO = """
     d%(i)d: playerGameScore(id: $id%(i)d) {
@@ -907,10 +911,13 @@ PAGINAZIONE_INTERROTTA = False  # paginazione finita male (errore, o tetto
                                 # potrebbe essere meta' storia, quindi non
                                 # si puo' concludere niente sulla cache
 
-PAGINA_GAME_LOG = 10  # 130 + 28*10 = ~410, con margine sotto il tetto
-                      # di 500 (il pageInfo aggiunto costa qualcosa a
-                      # sua volta: una pagina rifiutata costa molto piu'
-                      # di una pagina in piu')
+# CON L'APIKEY (arrivata il 12/08/2026) il tetto di complessita' passa da 500
+# a 30000 e non e' piu' il vincolo: a quel punto il limite e' quello di Sorare
+# sulla dimensione della connessione, misurato sull'API vera -- chiedendo
+# first=60 o first=100 ne tornano comunque 50. Quindi 50 con la chiave, 10
+# senza (il valore storico, sotto il tetto di 500: 130 + 28*10 = ~410).
+# Effetto: il "fetch ampio" da 60 partite passa da 6 query a 2.
+PAGINA_GAME_LOG = 50 if APIKEY else 10
 
 ALL_GAME_SCORES_QUERY_PAGINATO = ALL_GAME_SCORES_QUERY.replace(
     'query AllPlayerGameScores($slug: String!, $first: Int!) {',
