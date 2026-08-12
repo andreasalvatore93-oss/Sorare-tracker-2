@@ -1,0 +1,298 @@
+HANDOFF PER IL PROSSIMO ORCHESTRATORE
+Scritto a fine sessione del 12/08/2026 (notte, ora di Roma).
+
+
+=============================================================================
+IN LINGUA DA BAR, PRIMA DI TUTTO IL RESTO
+=============================================================================
+
+1. Il generatore di formazioni girava in 18-40 minuti. Adesso ne fa 8. Gira su
+   GitHub, come sempre.
+2. Da dove RIPARTIRE, e' l'utente che lo chiede: mettere BOT DEFINITIVO sui
+   runner del suo PC di casa, per la latenza nello sniping. Ne restano due
+   registrati apposta. Vedi sezione 2, e' la prima cosa da fare.
+3. C'e' una run in volo (31649024584) che prova il "checkout sparso". Va
+   controllata: la cosa che puo' rompersi non fa diventare rossa la run, quindi
+   il colore non basta. Sezione 3.
+4. Ci sono TRE chiavi API di Sorare. Il generatore le usa tutte e tre, lo
+   scouting ne usa una sola, bot definitivo ne usa una sola. Sezione 4.
+5. Il repo aveva 75.449 file, meta' dei quali copie inutili. Adesso ne ha
+   35.899 e si pota da solo a fine run.
+6. La parentesi dei runner di casa per il GENERATORE e' chiusa e non va
+   riaperta: e' stata misurata e perde contro GitHub. Il motivo in sezione 5.
+7. Il pool di giocatori e' stato verificato uno per uno contro le carte vere
+   dell'utente: 455 su 455, zero persi, copie esatte. Questo controllo si sa
+   rifare in due minuti, gli script ci sono.
+
+
+=============================================================================
+1. STATO DEL REPO
+=============================================================================
+
+Branch: main. Tutto committato e pushato.
+Ultimo commit di lavoro: 2d238e1d84 (checkout sparso sul predict).
+
+In produzione, tutto su ubuntu-latest:
+  .github/workflows/formazione_giornata.yml   la pipeline
+  pipeline_artifacts.py                       passaggio dati fra i job
+  discovery_fixture.py                        scoperta giocatori
+  pulisci_predizioni_doppie.py                potatura (gira da sola)
+
+Il riassunto unificato (docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md) ha la
+sezione 8duodecies-quinquies riscritta con tutta la giornata: LEGGERE QUELLA
+per il dettaglio, qui c'e' solo cio' che serve per ripartire.
+
+
+=============================================================================
+2. DA DOVE RIPARTIRE -- richiesta esplicita dell'utente
+=============================================================================
+
+**BOT DEFINITIVO SUI RUNNER DI CASA, per la latenza nello sniping.**
+
+Perche' ha senso proprio li' e non altrove: bot definitivo e' UN job solo,
+lungo, che fa tante richieste in fila, e vince o perde per millisecondi contro
+altri bot. La latenza verso Sorare misurata il 12/08:
+
+    da un runner GitHub : mediana 168 ms, picchi 382
+    dal PC di casa      : mediana  82 ms, picchi 189
+
+Meta' del tempo di andata e ritorno. Su una gara di sniping conta davvero, ed
+e' il motivo per cui i runner erano stati montati.
+
+COSA C'E' GIA' PRONTO:
+  - due runner registrati e attivi come servizi Windows: pc-andrea e
+    pc-andrea-2, etichetta "casa", ripartono da soli all'accensione;
+  - registra_runner.ps1 / rimuovi_runner.ps1 prendono un intervallo
+    (es. .\registra_runner.ps1 3 4), da lanciare come amministratore;
+  - il PC ha Python 3.11.9 installato PER TUTTI GLI UTENTI e Git Bash nel PATH
+    di SISTEMA: senza quelle due cose il servizio non li vede.
+
+COSA SERVE FARE: nel workflow di bot definitivo mettere
+    runs-on: [self-hosted, casa]
+e togliere actions/setup-python (sul self-hosted fallisce: prova a scrivere
+nel registro e il servizio non ha il permesso). Usare `python`, non `python3`.
+
+TRAPPOLE GIA' PAGATE, da non ripetere:
+  - MAI pre-clonare a mano gli spazi di lavoro dei runner. Se le cartelle le
+    crea l'utente, il servizio (SERVIZIO DI RETE) non le puo' leggere, git
+    fallisce con "Permission denied" e la run si pianta cancellando tutto.
+    Lasciar fare al runner: il primo job clona, i successivi aggiornano.
+  - il file .path nella cartella del runner NON viene letto su Windows.
+  - il PC e' uno solo: 10 core, 16 GB. Due runner vanno bene per un job
+    singolo; non serve altro.
+
+ATTENZIONE, il PC dell'utente e' acceso solo quando lui lo usa. Se bot
+definitivo deve girare a orari fissi va deciso come comportarsi quando la
+macchina e' spenta (il job resta in coda). Da chiedere all'utente.
+
+
+=============================================================================
+3. LA RUN IN VOLO DA CONTROLLARE (31649024584)
+=============================================================================
+
+E' il collaudo del CHECKOUT SPARSO sui job di predict: ogni job si materializza
+solo le cartelle delle SUE leghe invece di tutto il repo.
+
+PARAMETRI (identici alla run di paragone 31647598044, che e' andata bene):
+  gw5, soglia 0,80, in_season mls:6,kleague:6, essenze_arena 6000,
+  allstars 4, allstars_u23 4, champions 4.
+
+LA RUN DI PARAGONE HA DATO: 7m57 totali, 40 formazioni generate (24 di
+competizione + 20 arene), pool discovery 472 giocatori.
+
+COSA CONTROLLARE, IN QUEST'ORDINE:
+
+a) GLI ARTIFACT SONO COMPLETI? E' il rischio vero, e NON fa diventare rossa la
+   run. Con la vista parziale git marca come "fuori dal cono" tutto il resto:
+   se `stage` (che guarda `git status`) non vedesse i file prodotti dal job,
+   l'artifact uscirebbe monco e la run finirebbe verde lo stesso.
+   COME: confrontare i file committati da questa run con quelli della
+   31647598044. Devono esserci le stesse predizioni e gli stessi consigli.
+
+b) LE FORMAZIONI SONO LE STESSE 40? L'utente vuole proprio questo confronto.
+   Nel log del job `formazione`: "Formazioni generate: 40/24".
+
+c) QUANTO SI E' GUADAGNATO. Ho aggiunto uno step che stampa
+   "file su disco -> N" all'inizio di ogni predict: se il cono funziona il
+   numero e' molto sotto i 35.899 del repo intero. Confrontare anche la durata
+   della fase predict (paragone: 2m42).
+
+d) LA POTATURA AUTOMATICA. Questa e' la prima run che la esegue da sola
+   (step in salva_output). Nel commit della run devono comparire delle
+   CANCELLAZIONI, non solo aggiunte.
+
+SE (a) FALLISCE: togliere il checkout sparso, cioe' revert del commit
+2d238e1d84. Vale 30-40 secondi di run, non vale un artifact monco.
+
+
+=============================================================================
+4. LE TRE CHIAVI API -- come sono usate e dove c'e' ancora da prendere
+=============================================================================
+
+Secret GitHub: SORARE_APIKEY, SORARE_APIKEY_2, SORARE_APIKEY_3.
+ATTENZIONE: la prima NON si chiama _1.
+
+I limiti VERI (documentazione ufficiale, verificati in laboratorio il 12/08):
+
+    accesso              richieste/min    complessita' GraphQL
+    anonimo                    20                500
+    sessione col cookie        60             30.000
+    con APIKEY            200 a chiave        30.000
+
+piu' un tetto separato di 40 QUERY CONTEMPORANEAMENTE IN VOLO, che nessuna
+chiave alza. Il tetto del programma e' 600/min in tutto.
+
+DUE COSE CHE COSTANO ORE SE NON SI SANNO:
+  1. la chiave SCAVALCA il tetto del cookie (600 richieste col solo cookie:
+     461 bloccate; le stesse con cookie+chiave: zero). Non serve togliere il
+     cookie da nessuna parte, si sommano;
+  2. i tetti delle tre chiavi sono INDIPENDENTI e si sommano: e' cosi' che si
+     arriva a 600/min veri.
+  3. la COMPLESSITA' 30.000 ce l'ha gia' il solo cookie. Errore che ho fatto
+     io il 12/08 e poi corretto: avevo condizionato le pagine grandi alla
+     presenza della chiave, ma non serviva. Prima di legare qualcosa alla
+     chiave, chiedersi se il cookie basta gia'.
+
+DOVE SONO USATE OGGI:
+
+  GENERATORE (formazione_giornata.yml)  -> TUTTE E TRE, a rotazione: ogni
+      shard di predict ne prende una diversa con IDX % 3. E' l'unico posto che
+      arriva ai 600/min. Nulla da fare qui.
+
+  BOT DEFINITIVO (bots/bot_definitivo.py) -> UNA SOLA (SORARE_APIKEY, riga
+      ~2879). Pagina gia' a 50. MARGINE: se lo sniping fa tante richieste in
+      parallelo, dargli la rotazione a tre come nel predict (il modello e'
+      bots/bot_profit.py, che ha gia' _APIKEYS + _prossima_apikey() con lock e
+      itertools.cycle). Da valutare DOPO averlo messo sul runner di casa: se
+      la latenza dimezzata basta, non serve toccare altro.
+
+  SCOUTING (scouting_gw.py) -> LA CHIAVE CE L'HA, ma indiretta e una sola:
+      importa graphql_query da formazione_mls/discovery/mls_def_discovery_global.py,
+      che mette l'header APIKEY. Quindi gia' oggi ha complessita' 30.000 e
+      200 richieste/minuto.
+      MARGINE VERO, mai toccato (l'utente lo sa e lo vuole guardare):
+        - usa UNA chiave sola: con la rotazione a tre triplicherebbe il tetto;
+        - PARTITE_DA_CHIEDERE = 8 (riga 674) e' tarato sul vecchio limite di
+          complessita': con 30.000 si puo' alzare parecchio e fare molte meno
+          richieste. PAGINA_ROSTER e' gia' 50, quello va bene.
+        - gira con concurrent.futures: attenzione al tetto delle 40 query in
+          volo, che nessuna chiave alza.
+      Entrambe le cose vanno MISURATE prima di metterle in produzione: c'e'
+      uno script di riferimento gia' scritto, docs/handoff/prova_pagesize.py,
+      che confronta due dimensioni di pagina e verifica che restituiscano gli
+      STESSI dati. Il rischio da escludere e' sempre lo stesso: che il server
+      accetti la pagina grande, ne dia meno, e dichiari il totale come se le
+      avesse date tutte -- li' si perdono dati IN SILENZIO.
+
+  RESTANO 280 FILE che paginano a `first: 5`, valore tarato sul vecchio tetto
+  di complessita' 500. E' lavoro meccanico e tutto da incassare, ma va fatto
+  con la stessa verifica di sopra, file per file, non a tappeto.
+
+
+=============================================================================
+5. LA PARENTESI DEI RUNNER DI CASA PER IL GENERATORE -- chiusa, non riaprire
+=============================================================================
+
+Il 12/08 il generatore e' stato spostato su 10 runner self-hosted e poi
+RIPORTATO su GitHub. Non e' stata una scelta di gusto, e' stata misurata:
+
+  - le "dieci macchine" sono UN PC SOLO: un disco, 10 core, 16 GB di RAM;
+  - ogni job deve materializzare il repo, e su Windows `git reset --hard` su
+    73.000 file costava 68 secondi contro i 2 di Linux;
+  - dieci copie da 337 MB della stessa cache non stanno in RAM, quindi ogni
+    job legge sempre da disco freddo (94s a freddo contro 4,5s a caldo). NON
+    era l'antivirus: l'esclusione di Defender non ha cambiato niente, e il
+    test l'abbiamo fatto;
+  - il meglio ottenibile a casa era ~10 minuti contro i 6-8 di GitHub.
+
+La regola generale che ne esce: il PC di casa vince quando il job e' UNO e
+conta la latenza; perde quando i job sono tanti e ognuno deve ricostruirsi il
+mondo. Il generatore e' il secondo caso, bot definitivo il primo.
+
+
+=============================================================================
+6. COSA E' STATO SISTEMATO OGGI (elenco secco, dettaglio nel riassunto)
+=============================================================================
+
+  cdd0019647  il game log dei giocatori con <30 partite si ri-scaricava per
+              intero a ogni run, per sempre (523 su 1151)
+  736ddbb0c4  upload-artifact scartava i file nascosti: TUTTO il lavoro di
+              cache veniva buttato a fine run
+  b3b49fddd9  la chiave non arrivava a discovery e pool
+  b03eebf69b  tre chiavi a rotazione nel predict
+  05a7db87b8  UTF-8 e fine riga (24 turchi esclusi con la run verde)
+  a42d4ec8b6  job formazione da 7m41 a 1m01
+  577651ac9d  carte a 50 per pagina: stesse carte, meta' richieste (misurato)
+  289c691285  la discovery non pagina piu' le posizioni degli altri ruoli
+  d97e40f63b  potatura del repo: -23.666 file
+  8bdc4adefc  potatura automatica a fine run, e anche sui consigli
+  d8f0a6345e  i file ricevuti da un artifact ora si marchiano
+  2d238e1d84  checkout sparso sul predict (IN COLLAUDO, vedi sezione 3)
+
+
+=============================================================================
+7. APERTI, in ordine di valore
+=============================================================================
+
+a) BOT DEFINITIVO SUL RUNNER DI CASA -- sezione 2. E' la prima cosa.
+
+b) SCOUTING: rotazione a tre chiavi + PARTITE_DA_CHIEDERE piu' grande.
+   Sezione 4. Mai toccato, l'utente lo vuole guardare.
+
+c) 280 file a `first: 5`. Meccanico, da fare con verifica.
+
+d) BOT PROFIT prende ancora 429 per i suoi 10 thread simultanei: si sistema
+   abbassando i thread, non allentando i freni. Gira una volta a settimana,
+   bassa priorita'.
+
+e) CHIUSO PER DECISIONE DELL'UTENTE (12/08): lo storico delle odds
+   pre-deadline non si salva e non e' un problema. Parole sue: e' un dato che
+   fa parte dell'errore umano ed e' fuorviante -- uno dato a 0,90 puo' non
+   giocare e uno a 0,20 parte titolare, il rischio c'e' sempre e ci convivono
+   tutti i manager. NON riaprire.
+
+
+=============================================================================
+8. COME SI RIFA' IL CONTROLLO DI MERITO (serve spesso, e l'utente lo chiede)
+=============================================================================
+
+Verifica che il bot veda TUTTI i giocatori schierabili. Fatto il 12/08 sulla
+prima giornata con la Turchia in calendario: 455 su 455, zero persi, copie
+esatte carta per carta.
+
+Come: l'utente esporta da Sorare l'elenco delle carte per ruolo (soglia 0,60+,
+cosi' entra anche il pool suppletivo) e lo incolla in un file di testo. Poi:
+
+    python confronta2.py <gk|def|mid|fwd> <file> 60        # chi manca
+    python confronta_carte.py <gk|def|mid|fwd> <file> 60   # quante copie
+
+Gli script stanno nello scratchpad della sessione del 12/08; se non ci sono
+piu' si riscrivono in dieci minuti, ma DUE TRAPPOLE vanno sapute:
+
+  - l'utente incolla in DUE formati diversi ("<Nome> - limited" oppure il nome
+    ripetuto due volte prima della sigla del ruolo). Vanno gestiti entrambi.
+  - la sigla del ruolo puo' coincidere col codice di una SQUADRA: POR e'
+    "portiere" ma anche il Porto, e nasceva un portiere fantasma di nome
+    "RIO" (dal blocco Rio Ave - Porto). Il nome e' sempre ripetuto due volte
+    prima del ruolo: pretendere quella ripetizione.
+  - i nomi vanno normalizzati togliendo gli accenti E le lettere che NFKD non
+    scompone (la i turca senza punto, s cediglia, g con brevis, o sbarrata):
+    senza quella tabella "Cakir" e "Cakir" diventano due giocatori diversi.
+  - si confrontano i GIOCATORI, non le carte: 73 carte a 0,80 erano 58
+    portieri distinti.
+
+
+=============================================================================
+9. FILE DI RIFERIMENTO
+=============================================================================
+
+  docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md   sezione 8duodecies-quinquies
+                                               (la fotografia buona di oggi)
+  docs/handoff/RISPOSTA_OPUS_VELOCITA_STRUTTURALE_2026-08-12.txt
+                                               tutte le misure di velocita'
+  docs/handoff/prova_pagesize.py               come si verifica una pagina
+                                               piu' grande senza perdere dati
+  CLAUDE.md                                    sezione Sorare API: i tre
+                                               secret e i limiti veri
+  registra_runner.ps1 / rimuovi_runner.ps1     i runner di casa
+  pulisci_predizioni_doppie.py                 la potatura
