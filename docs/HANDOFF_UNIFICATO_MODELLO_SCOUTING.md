@@ -20,6 +20,20 @@ dopo — §8duodecies-bis: crash `_budget_essenze` (blocca ogni run senza
 arene), notifica Telegram bugiarda su run fallita, 92% del predict sprecato
 quando si chiede solo Champions.**
 
+Sessione 12/08/2026 notte: **APIKEY Sorare arrivata e attivata.** Header
+HTTP `APIKEY` (separato dal cookie, si aggiunge e non sostituisce) su tutte
+le query GraphQL — alza il tetto sull'account da 60 a 200-600 query/min e la
+complessita' da 500 a 30000, verificato con una query reale (200 OK). Fonte
+unica `formazione_mls/predict/*.py`, propagato a tutte le 53 leghe con
+`propaga_modello.py`; aggiunto anche a `ricostruisci_manager.py` (quindi
+`graphql_batch.py`/`estrai_archivio_manager.py`), `best_five.py`,
+`scanners/bot_profit.py` (quindi `scouting_gw.py`/`discovery_fixture.py`
+che lo riusano), e come secret `SORARE_APIKEY` in 34 workflow GitHub.
+Committato e pushato (main). **NON coperto:** gli script per-lega in
+`formazione_<lega>/discovery/` (pattern duplicato come i predict ma senza
+propagazione automatica) — filone lasciato a parte, da affidare a Opus.
+Nessuna run reale ancora lanciata per misurare l'effetto su tempi/429.
+
 Sessione 11/08/2026: filone PORTIERE, GK_ATT_AVV **ACCESO IN PRODUZIONE**
 (formula "secca", media storica tutta la carriera, refresh automatico ad
 ogni run) dopo verdetto Opus su Binario 1+2 sull'archivio completo (2975
