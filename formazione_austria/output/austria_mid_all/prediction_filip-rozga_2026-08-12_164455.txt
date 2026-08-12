@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-12T16:44:55.534588Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) filip-rozga: 46 pt attesi (37-59)
+   SQUADRA: sturm-graz-graz | AVVERSARIO: rheindorf-altach-altach
+======================================================================
+
+######################################################################
+# GIOCATORE: filip-rozga
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: filip-rozga (squadra: sturm-graz-graz)
+Generato: 2026-08-12T16:44:55.532827Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 32
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: austrian-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-03 | STU vs WSG | austrian-bundesliga | score=27.5 | peso=0.871
+  2025-12-07 | STU vs GAK | austrian-bundesliga | score=75.0 | peso=0.895
+  2026-02-08 | STU vs SVR | austrian-bundesliga | score=44.9 | peso=0.920
+  2026-03-08 | STU vs ALT | austrian-bundesliga | score=38.6 | peso=0.946
+  2026-03-15 | FAK vs STU | austrian-bundesliga | score=60.3 | peso=0.973
+  2026-04-05 | SCR vs STU | austrian-bundesliga | score=42.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 48.24
+  di cui Punteggio decisivo (level_score) medio: 43.33 | Punteggio complessivo (granulari) medio: 4.91 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 42.37 (delta -0.96)
+  Efficacia offensiva condizionata: delta venue -0.42, delta avversario +0.36 | Passaggio condizionato: delta venue +0.20, delta avversario +0.59 | Gol subiti condizionato: delta venue +0.00, delta avversario +0.36 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.14
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.6 - 60.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.23 (differenza: +6.91)
+Media score in casa: 46.50 | Media score fuori casa: 51.55
+Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.7
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.006 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 18.75% (fonte: tasso di presenza storico (6/32))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T17:30
+Casa: SK Puntigamer Sturm Graz | Trasferta: CASHPOINT SCR Altach
+Competizione: austrian-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.5 (range 36.8 - 58.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.42
+Punteggio REALE ottenuto in quella partita: 42.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

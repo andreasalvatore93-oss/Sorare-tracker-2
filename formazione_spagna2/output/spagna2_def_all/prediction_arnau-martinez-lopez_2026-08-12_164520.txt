@@ -1,0 +1,137 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T16:45:20.457972Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) arnau-martinez-lopez: 57 pt attesi (41-71)
+   ORDINAMENTO: 57.73
+   SQUADRA: girona-girona | AVVERSARIO: leganes-leganes
+======================================================================
+
+######################################################################
+# GIOCATORE: arnau-martinez-lopez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: arnau-martinez-lopez (squadra: girona-girona)
+Generato: 2026-08-12T16:45:20.457359Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 36
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: segunda-division-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-30 | GIR vs SEV | laliga-es | score=28.3 | peso=0.512
+  2025-09-14 | CEL vs GIR | laliga-es | score=54.5 | peso=0.524
+  2025-10-04 | GIR vs VCF | laliga-es | score=63.7 | peso=0.536
+  2025-10-18 | FCB vs GIR | laliga-es | score=67.8 | peso=0.548
+  2025-10-25 | GIR vs OVI | laliga-es | score=36.0 | peso=0.561
+  2025-10-31 | GET vs GIR | laliga-es | score=67.1 | peso=0.574
+  2025-11-08 | GIR vs ALA | laliga-es | score=50.9 | peso=0.588
+  2025-11-23 | BET vs GIR | laliga-es | score=58.4 | peso=0.602
+  2025-11-30 | GIR vs RMA | laliga-es | score=85.1 | peso=0.616
+  2025-12-12 | RSO vs GIR | laliga-es | score=70.7 | peso=0.630
+  2025-12-21 | GIR vs ATM | laliga-es | score=29.3 | peso=0.645
+  2026-01-04 | MLL vs GIR | laliga-es | score=48.5 | peso=0.660
+  2026-01-10 | GIR vs OSA | laliga-es | score=52.2 | peso=0.675
+  2026-01-16 | ESP vs GIR | laliga-es | score=40.5 | peso=0.691
+  2026-01-31 | OVI vs GIR | laliga-es | score=65.5 | peso=0.707
+  2026-02-08 | SEV vs GIR | laliga-es | score=66.4 | peso=0.724
+  2026-02-16 | GIR vs FCB | laliga-es | score=40.4 | peso=0.741
+  2026-02-23 | ALA vs GIR | laliga-es | score=45.2 | peso=0.758
+  2026-03-01 | GIR vs CEL | laliga-es | score=36.5 | peso=0.776
+  2026-03-07 | LEV vs GIR | laliga-es | score=63.3 | peso=0.794
+  2026-03-14 | GIR vs ATH | laliga-es | score=86.4 | peso=0.812
+  2026-03-21 | OSA vs GIR | laliga-es | score=48.1 | peso=0.831
+  2026-04-06 | GIR vs VIL | laliga-es | score=80.9 | peso=0.851
+  2026-04-10 | RMA vs GIR | laliga-es | score=64.4 | peso=0.871
+  2026-04-21 | GIR vs BET | laliga-es | score=35.4 | peso=0.891
+  2026-04-25 | VCF vs GIR | laliga-es | score=47.9 | peso=0.912
+  2026-05-01 | GIR vs MLL | laliga-es | score=58.8 | peso=0.933
+  2026-05-11 | RAY vs GIR | laliga-es | score=56.9 | peso=0.955
+  2026-05-14 | GIR vs RSO | laliga-es | score=80.8 | peso=0.977
+  2026-05-17 | ATM vs GIR | laliga-es | score=65.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 57.08
+  di cui Punteggio decisivo (level_score) medio: 39.28 | Punteggio complessivo (granulari) medio: 17.80 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.57, delta avversario +0.53 | Passaggio condizionato: delta venue +1.65, delta avversario -0.63 | Clean sheet/disimpegni condizionato: delta venue -0.33, delta avversario +1.36 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.69
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.4 - 70.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.39 (differenza: +1.29)
+Media score in casa: 54.62 | Media score fuori casa: 58.13
+Fattore casa/trasferta applicato: 1.002 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.8
+Ranking prossimo avversario: 16
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 0.993
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.007
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.994
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.999
+Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.998
+Fattore trend (media ultime 5: 62.1 vs media 5 PRECEDENTI: 62.6): 1.000
+P(gioca): 83.33% (fonte: tasso di presenza storico (30/36))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T17:00
+Casa: Girona FC | Trasferta: CD Leganés
+Competizione: segunda-division-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 57.4 (range 40.6 - 71.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 57.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.70
+Punteggio REALE ottenuto in quella partita: 65.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +8.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      61.0    50.9    -10.1    16.9        SI
+   7        7      44.3    58.4    +14.1    15.6        SI
+   8        8      39.3    85.1    +45.8    14.7        NO
+   9        9      60.7    70.7    +10.1    17.8        SI
+  10       10      48.9    29.3    -19.6    17.4        NO
+  11       11      75.8    48.5    -27.3    19.2        NO
+  12       12      69.3    52.2    -17.1    18.5        SI
+  13       13      58.1    40.5    -17.5    17.6        SI
+  14       14      73.2    65.5     -7.7    17.5        SI
+  15       15      60.1    66.4     +6.3    17.1        SI
+  16       16      36.5    40.4     +3.9    16.8        SI
+  17       17      63.0    45.2    -17.8    16.8        NO
+  18       18      45.0    36.5     -8.6    16.4        SI
+  19       19      64.8    63.3     -1.5    16.5        SI
+  20       20      55.1    86.4    +31.3    16.3        NO
+  21       21      69.0    48.1    -20.9    17.9        NO
+  22       22      39.6    80.9    +41.3    17.5        NO
+  23       23      40.4    64.4    +23.9    18.2        NO
+  24       24      46.5    35.4    -11.0    17.9        SI
+  25       25      54.7    47.9     -6.8    18.2        SI
+  26       26      70.0    58.8    -11.2    17.8        SI
+  27       27      51.8    56.9     +5.0    17.4        SI
+  28       28      54.9    80.8    +25.9    16.9        NO
+  29       29      45.3    65.0    +19.8    17.6        NO
+
+MAE (errore assoluto medio): 16.85
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 58.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-12T16:48:47.925418Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) ilkay-gundogan: 56 pt attesi (42-77)
+   SQUADRA: galatasaray-istanbul | AVVERSARIO: yeni-corumspor-corum
+======================================================================
+
+######################################################################
+# GIOCATORE: ilkay-gundogan
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ilkay-gundogan (squadra: galatasaray-istanbul)
+Generato: 2026-08-12T16:48:47.924024Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: spor-toto-super-lig (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-13 | EYÜ vs GS | spor-toto-super-lig | score=46.4 | peso=0.697
+  2025-09-22 | GS vs KON | spor-toto-super-lig | score=43.0 | peso=0.717
+  2025-10-04 | GS vs BJK | spor-toto-super-lig | score=74.0 | peso=0.737
+  2025-10-18 | IBFK vs GS | spor-toto-super-lig | score=81.0 | peso=0.758
+  2025-12-01 | FB vs GS | spor-toto-super-lig | score=46.7 | peso=0.779
+  2025-12-05 | GS vs SAM | spor-toto-super-lig | score=48.0 | peso=0.801
+  2025-12-13 | ANT vs GS | spor-toto-super-lig | score=79.1 | peso=0.824
+  2025-12-21 | GS vs KAS | spor-toto-super-lig | score=60.9 | peso=0.847
+  2026-01-17 | GS vs GAZ | spor-toto-super-lig | score=61.2 | peso=0.871
+  2026-01-24 | FAT vs GS | spor-toto-super-lig | score=99.5 | peso=0.895
+  2026-02-13 | GS vs EYÜ | spor-toto-super-lig | score=52.5 | peso=0.920
+  2026-04-08 | GÖZ vs GS | spor-toto-super-lig | score=35.4 | peso=0.946
+  2026-04-12 | GS vs KOC | spor-toto-super-lig | score=54.5 | peso=0.973
+  2026-05-17 | KAS vs GS | spor-toto-super-lig | score=44.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 58.81
+  di cui Punteggio decisivo (level_score) medio: 40.84 | Punteggio complessivo (granulari) medio: 17.97 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 39.27 (delta -1.57)
+  Efficacia offensiva condizionata: delta venue -0.18, delta avversario +0.00 | Passaggio condizionato: delta venue +0.25, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.01, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 17.64
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 44.0 - 79.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.85 (differenza: +4.79)
+Media score in casa: 56.30 | Media score fuori casa: 61.73
+Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.4
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.999
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore trend (media ultime 5: 56.6 vs media 5 PRECEDENTI: 59.4): 1.000
+P(gioca): 46.67% (fonte: tasso di presenza storico (14/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T18:30
+Casa: Galatasaray Spor Kulübü | Trasferta: Yeni Çorumspor Spor Kulübü
+Competizione: spor-toto-super-lig
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 56.4 (range 41.6 - 76.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 60.18
+Punteggio REALE ottenuto in quella partita: 44.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -16.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      74.3    79.1     +4.8    16.5        SI
+   7        7      69.1    60.9     -8.2    17.7        SI
+   8        8      66.1    61.2     -4.9    16.4        SI
+   9        9      79.2    99.5    +20.3    15.4        NO
+  10       10      74.8    52.5    -22.3    19.9        NO
+  11       11      54.3    35.4    -18.9    19.3        SI
+  12       12      59.9    54.5     -5.4    20.5        SI
+  13       13      66.6    44.0    -22.6    19.6        NO
+
+MAE (errore assoluto medio): 13.42
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
