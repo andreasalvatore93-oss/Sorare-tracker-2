@@ -1,0 +1,121 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T22:40:03.412242Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) victor-chust-garcia: 47 pt attesi (30-71)
+   ORDINAMENTO: 46.63
+   SQUADRA: elche-elche | AVVERSARIO: deportivo-la-coruna-a-coruna
+======================================================================
+
+######################################################################
+# GIOCATORE: victor-chust-garcia
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: victor-chust-garcia (squadra: elche-elche)
+Generato: 2026-08-12T22:40:03.411333Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-29 | ELC vs LEV | laliga-es | score=64.9 | peso=0.616
+  2025-09-12 | SEV vs ELC | laliga-es | score=37.3 | peso=0.630
+  2025-09-25 | OSA vs ELC | laliga-es | score=89.1 | peso=0.645
+  2025-10-05 | ALA vs ELC | laliga-es | score=35.0 | peso=0.660
+  2025-10-19 | ELC vs ATH | laliga-es | score=79.6 | peso=0.675
+  2025-11-07 | ELC vs RSO | laliga-es | score=67.3 | peso=0.691
+  2025-11-23 | ELC vs RMA | laliga-es | score=30.2 | peso=0.707
+  2025-12-07 | ELC vs GIR | laliga-es | score=50.7 | peso=0.724
+  2025-12-13 | MLL vs ELC | laliga-es | score=37.8 | peso=0.741
+  2026-01-03 | ELC vs VIL | laliga-es | score=53.3 | peso=0.758
+  2026-01-10 | VCF vs ELC | laliga-es | score=36.8 | peso=0.776
+  2026-01-19 | ELC vs SEV | laliga-es | score=44.6 | peso=0.794
+  2026-01-31 | ELC vs FCB | laliga-es | score=62.9 | peso=0.812
+  2026-02-07 | RSO vs ELC | laliga-es | score=29.9 | peso=0.831
+  2026-02-13 | ELC vs OSA | laliga-es | score=76.3 | peso=0.851
+  2026-02-20 | ATH vs ELC | laliga-es | score=49.4 | peso=0.871
+  2026-03-08 | VIL vs ELC | laliga-es | score=57.3 | peso=0.891
+  2026-03-14 | RMA vs ELC | laliga-es | score=15.9 | peso=0.912
+  2026-03-21 | ELC vs MLL | laliga-es | score=57.1 | peso=0.933
+  2026-05-09 | ELC vs ALA | laliga-es | score=61.9 | peso=0.955
+  2026-05-17 | ELC vs GET | laliga-es | score=76.6 | peso=0.977
+  2026-05-23 | GIR vs ELC | laliga-es | score=34.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 51.92
+  di cui Punteggio decisivo (level_score) medio: 38.64 | Punteggio complessivo (granulari) medio: 13.28 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -1.47, delta avversario +0.73 | Passaggio condizionato: delta venue -0.13, delta avversario -0.99 | Clean sheet/disimpegni condizionato: delta venue -1.67, delta avversario +0.61 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 18.45
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.6 - 76.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.58 (differenza: +2.87)
+Media score in casa: 60.46 | Media score fuori casa: 42.31
+Fattore casa/trasferta applicato: 0.997 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.3
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.597 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.994
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.999
+Fattore gol subiti (goals_conceded, con cap): 0.992
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.990
+Fattore trend (media ultime 5: 49.5 vs media 5 PRECEDENTI: 55.2): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-17T19:00
+Casa: Real Club Deportivo de La Coruña | Trasferta: Elche CF
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.9 (range 29.7 - 71.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 46.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.98
+Punteggio REALE ottenuto in quella partita: 34.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -18.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      37.8    30.2     -7.5    22.0        SI
+   7        7      72.1    50.7    -21.3    23.9        SI
+   8        8      65.9    37.8    -28.1    22.4        NO
+   9        9      35.2    53.3    +18.1    22.1        SI
+  10       10      47.3    36.8    -10.5    20.8        SI
+  11       11      54.9    44.6    -10.3    20.5        SI
+  12       12      32.3    62.9    +30.6    19.7        NO
+  13       13      49.4    29.9    -19.5    19.1        NO
+  14       14      62.2    76.3    +14.1    19.6        SI
+  15       15      52.0    49.4     -2.6    20.3        SI
+  16       16      35.9    57.3    +21.4    19.5        NO
+  17       17      35.4    15.9    -19.5    18.9        NO
+  18       18      65.1    57.1     -8.0    20.9        SI
+  19       19      57.9    61.9     +4.0    20.3        SI
+  20       20      45.7    76.6    +31.0    19.9        NO
+  21       21      65.2    34.6    -30.5    20.3        NO
+
+MAE (errore assoluto medio): 17.33
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 56.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

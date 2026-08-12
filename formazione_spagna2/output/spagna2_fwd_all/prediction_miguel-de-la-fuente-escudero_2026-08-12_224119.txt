@@ -1,0 +1,135 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T22:41:19.371923Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) miguel-de-la-fuente-escudero: 49 pt attesi (35-70)
+   ORDINAMENTO: 47.80
+   SQUADRA: almeria-almeria | AVVERSARIO: eldense-elda
+======================================================================
+
+######################################################################
+# GIOCATORE: miguel-de-la-fuente-escudero
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: miguel-de-la-fuente-escudero (squadra: almeria-almeria)
+Generato: 2026-08-12T22:41:19.371475Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 46
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: segunda-division-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | HUE vs LEG | segunda-division-es | score=68.2 | peso=0.035
+  2025-08-22 | LEG vs CAD | segunda-division-es | score=44.7 | peso=0.039
+  2025-09-01 | LEG vs DEP | segunda-division-es | score=88.0 | peso=0.044
+  2025-09-07 | CUL vs LEG | segunda-division-es | score=30.2 | peso=0.050
+  2025-09-20 | LEG vs LPA | segunda-division-es | score=41.5 | peso=0.056
+  2025-09-29 | LEG vs CAS | segunda-division-es | score=34.9 | peso=0.062
+  2025-10-11 | MIR vs LEG | segunda-division-es | score=45.5 | peso=0.070
+  2026-01-25 | EIB vs UDA | segunda-division-es | score=42.8 | peso=0.079
+  2026-02-01 | UDA vs ADC | segunda-division-es | score=35.5 | peso=0.088
+  2026-02-08 | CAD vs UDA | segunda-division-es | score=69.7 | peso=0.099
+  2026-02-13 | UDA vs FCA | segunda-division-es | score=77.6 | peso=0.111
+  2026-02-21 | UDA vs COR | segunda-division-es | score=80.4 | peso=0.125
+  2026-02-27 | ALB vs UDA | segunda-division-es | score=37.9 | peso=0.140
+  2026-03-09 | UDA vs CUL | segunda-division-es | score=37.1 | peso=0.157
+  2026-03-14 | ZAR vs UDA | segunda-division-es | score=47.4 | peso=0.177
+  2026-03-20 | HUE vs UDA | segunda-division-es | score=63.6 | peso=0.198
+  2026-03-29 | UDA vs RS2 | segunda-division-es | score=69.8 | peso=0.223
+  2026-04-05 | UDA vs LEG | segunda-division-es | score=32.1 | peso=0.250
+  2026-04-12 | RAC vs UDA | segunda-division-es | score=42.9 | peso=0.281
+  2026-04-19 | UDA vs MCF | segunda-division-es | score=76.9 | peso=0.315
+  2026-04-26 | GCF vs UDA | segunda-division-es | score=63.7 | peso=0.354
+  2026-05-04 | UDA vs MIR | segunda-division-es | score=40.5 | peso=0.397
+  2026-05-09 | BCF vs UDA | segunda-division-es | score=33.5 | peso=0.445
+  2026-05-16 | UDA vs LPA | segunda-division-es | score=39.5 | peso=0.500
+  2026-05-24 | RSG vs UDA | segunda-division-es | score=60.0 | peso=0.561
+  2026-05-31 | UDA vs VLL | segunda-division-es | score=39.5 | peso=0.630
+  2026-06-06 | CAS vs UDA | segunda-division-es | score=32.9 | peso=0.707
+  2026-06-09 | UDA vs CAS | segunda-division-es | score=68.5 | peso=0.794
+  2026-06-14 | MCF vs UDA | segunda-division-es | score=43.5 | peso=0.891
+  2026-06-20 | UDA vs MCF | segunda-division-es | score=37.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 48.07
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 49.96 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 43.32 | Punteggio complessivo (granulari) medio: 4.75 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 2.45 (delta +0.06) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.70
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.5 - 68.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.45 (differenza: +0.26)
+Media score in casa: 52.89 | Media score fuori casa: 48.90
+Fattore casa/trasferta applicato: 1.002 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.4
+Ranking prossimo avversario: 19
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 44.3 vs media 5 PRECEDENTI: 47.4): 1.000
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-17T19:30
+Casa: UD Almería | Trasferta: CD Eldense
+Competizione: segunda-division-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.2 (range 34.6 - 69.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 47.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.44
+Punteggio REALE ottenuto in quella partita: 37.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.0    45.5     -3.5    22.9        SI
+   7        7      48.3    42.8     -5.5    20.6        SI
+   8        8      52.2    35.5    -16.7    18.8        SI
+   9        9      58.5    69.7    +11.2    17.9        SI
+  10       10      50.0    77.6    +27.6    19.4        NO
+  11       11      46.9    80.4    +33.5    21.3        NO
+  12       12      57.9    37.9    -20.0    22.5        SI
+  13       13      72.1    37.1    -35.0    22.3        NO
+  14       14      68.1    47.4    -20.7    21.9        SI
+  15       15      61.8    63.6     +1.8    20.4        SI
+  16       16      53.3    69.8    +16.5    19.6        SI
+  17       17      57.4    32.1    -25.3    19.4        NO
+  18       18      27.1    42.9    +15.8    20.2        SI
+  19       19      33.6    76.9    +43.3    19.2        NO
+  20       20      55.9    63.7     +7.8    20.4        SI
+  21       21      66.6    40.5    -26.1    19.5        NO
+  22       22      41.4    33.5     -7.9    19.1        SI
+  23       23      37.0    39.5     +2.5    19.5        SI
+  24       24      45.0    60.0    +15.0    18.8        SI
+  25       25      58.9    39.5    -19.4    18.1        NO
+  26       26      38.0    32.9     -5.1    17.5        SI
+  27       27      37.2    68.5    +31.3    17.6        NO
+  28       28      35.9    43.5     +7.6    18.2        SI
+  29       29      36.3    37.3     +1.0    17.3        SI
+
+MAE (errore assoluto medio): 16.68
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
