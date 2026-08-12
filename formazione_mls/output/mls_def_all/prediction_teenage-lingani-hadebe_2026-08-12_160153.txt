@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T16:01:53.987339Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) teenage-lingani-hadebe: 53 pt attesi (33-69)
+   ORDINAMENTO: 73.28
+   SQUADRA: cincinnati-cincinnati-ohio | AVVERSARIO: orlando-city-lake-mary-florida
+======================================================================
+
+######################################################################
+# GIOCATORE: teenage-lingani-hadebe
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: teenage-lingani-hadebe (squadra: cincinnati-cincinnati-ohio)
+Generato: 2026-08-12T16:01:53.982720Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-04 | RBNY vs CIN | mlspa | score=92.1 | peso=0.871
+  2025-10-27 | CIN vs CLB | mlspa | score=68.9 | peso=0.891
+  2025-11-02 | CLB vs CIN | mlspa | score=74.2 | peso=0.912
+  2025-11-08 | CIN vs CLB | mlspa | score=86.4 | peso=0.933
+  2025-11-23 | CIN vs MIA | mlspa | score=39.5 | peso=0.955
+  2026-02-21 | CIN vs ATL | mlspa | score=83.5 | peso=0.977
+  2026-02-28 | MIN vs CIN | mlspa | score=50.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 70.35
+  di cui Punteggio decisivo (level_score) medio: 49.12 | Punteggio complessivo (granulari) medio: 21.24 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.35, delta avversario -1.13 | Passaggio condizionato: delta venue +0.13, delta avversario -0.15 | Clean sheet/disimpegni condizionato: delta venue -0.34, delta avversario -1.14 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 18.03
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 50.8 - 86.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.91 (differenza: +5.13)
+Media score in casa: 69.60 | Media score fuori casa: 72.35
+Fattore casa/trasferta applicato: 1.001 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.7
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.554 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.001
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.999
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 23.33% (fonte: tasso di presenza storico (7/30))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T23:30
+Casa: Orlando City SC | Trasferta: FC Cincinnati
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.7 (range 33.2 - 68.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 73.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 73.89
+Punteggio REALE ottenuto in quella partita: 50.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -23.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      75.1    50.8    -24.3    19.1        NO
+
+MAE (errore assoluto medio): 24.33
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 0.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
