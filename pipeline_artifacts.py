@@ -283,10 +283,13 @@ def _git_changed(path_re):
 def cmd_stage(argv):
     stage_dir = argv[0]
     path_re = argv[1] if len(argv) > 1 else DEFAULT_PATH_RE
-    # Si riparte SEMPRE da vuoto: con `clean: false` (runner di casa) la
-    # cartella di appoggio del job precedente e' ancora li', e senza questa
-    # riga il suo contenuto finirebbe dentro il nostro artifact.
-    shutil.rmtree(stage_dir, ignore_errors=True)
+    # NON svuotare qui la cartella di appoggio (provato, run 31638826805, e
+    # ha rotto tutto): il job discovery ci scrive dentro `_matrici/` PRIMA di
+    # chiamare stage, e cancellandola la matrice spariva, il predict restava
+    # senza niente da fare e la run finiva verde in 4 minuti senza formazione.
+    # A svuotarla ci pensa lo step `rm -rf _artifacts _artifact_stage` del
+    # workflow, che gira subito dopo il checkout e quindi prima che chiunque
+    # ci scriva.
     os.makedirs(stage_dir, exist_ok=True)
     files = _git_changed(path_re)
     for path in files:
@@ -402,6 +405,17 @@ def _matrice_dai_job():
     if parts:
         print(f'[matrice] {len(parts)} matrici lette da {MATRICI_DIR}/',
               file=sys.stderr)
+    else:
+        # NIENTE MATRICI = GUASTO, non "nessun giocatore eleggibile" (12/08/2026).
+        # Ogni shard di discovery ne produce sempre un file, anche vuoto. Se non
+        # ce n'e' nemmeno uno, gli artifact non sono arrivati o qualcuno ha
+        # cancellato la cartella -- ed e' successo davvero (run 31638826805: una
+        # pulizia di troppo dentro `stage`). Il guaio e' che a valle il predict ha
+        # un `if` che lo salta a matrice vuota, quindi la run finiva VERDE in 4
+        # minuti senza generare nessuna formazione. Meglio rumorosa che verde e
+        # inutile.
+        print(f'[matrice] NESSUN file in {MATRICI_DIR}/: gli shard di discovery '
+              f'non hanno consegnato la matrice.', file=sys.stderr)
     for i in range(200):
         raw = os.environ.get(f'MATRICE_{i}')
         if raw is None:
@@ -590,6 +604,11 @@ def _etichetta(combos):
 def cmd_matrice(argv):
     n_gruppi = int(argv[0]) if argv else N_BIN
     dai_job = _matrice_dai_job()
+    # Zero file di matrice = guasto, e va fatto fallire il job (vedi il
+    # commento in _matrice_dai_job). Gli output sono gia' stati scritti piu'
+    # sotto, quindi i job a valle si comportano come sempre: cambia solo che
+    # la run diventa ROSSA invece di finire verde senza formazione.
+    guasto = not glob.glob(os.path.join(MATRICI_DIR, '*.json')) and not dai_job
     counts = _conta_slug()
     costi = _carica_costi()
 
@@ -634,6 +653,11 @@ def cmd_matrice(argv):
         print(f'  gruppo {i + 1:02d}: {b["peso"]:6.1f}s  '
               f'{len(b["combos"])} shard  {_etichetta(b["combos"])}',
               file=sys.stderr)
+    if guasto:
+        print("[matrice] FALLISCO APPOSTA: senza matrice non c'e' niente da "
+              "predire, e la run finirebbe verde senza nessuna formazione.",
+              file=sys.stderr)
+        return 1
     return 0
 
 
