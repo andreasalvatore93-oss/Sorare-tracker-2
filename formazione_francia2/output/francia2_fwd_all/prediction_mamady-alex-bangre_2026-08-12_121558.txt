@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T12:15:58.495005Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) mamady-alex-bangre: 46 pt attesi (43-51)
+   ORDINAMENTO: 42.26
+   SQUADRA: grenoble-foot-38-grenoble | AVVERSARIO: metz-metz
+======================================================================
+
+######################################################################
+# GIOCATORE: mamady-alex-bangre
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mamady-alex-bangre (squadra: grenoble-foot-38-grenoble)
+Generato: 2026-08-12T12:15:58.494447Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: ligue-2-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-22 | CLE vs GRE | ligue-2-fr | score=47.6 | peso=0.445
+  2025-09-26 | GRE vs SCB | ligue-2-fr | score=39.1 | peso=0.500
+  2025-10-17 | GRE vs PAU | ligue-2-fr | score=41.8 | peso=0.561
+  2025-10-28 | GRE vs EAG | ligue-2-fr | score=42.2 | peso=0.630
+  2025-12-13 | GRE vs MON | ligue-2-fr | score=39.9 | peso=0.707
+  2026-01-17 | GRE vs RED | ligue-2-fr | score=43.6 | peso=0.794
+  2026-02-20 | NAN vs GRE | ligue-2-fr | score=47.5 | peso=0.891
+  2026-02-27 | GRE vs BOU | ligue-2-fr | score=41.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 43.02
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=8): 50.01 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 8.02 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.03 (delta -0.27) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 2.84
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.9 - 47.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 2.45 (differenza: +0.39)
+Media score in casa: 41.42 | Media score fuori casa: 47.55
+Fattore casa/trasferta applicato: 0.988 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.4
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.995
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 23.53% (fonte: tasso di presenza storico (8/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T18:45
+Casa: Grenoble Foot 38 | Trasferta: FC Metz
+Competizione: ligue-2-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.1 (range 43.0 - 50.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 42.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.27
+Punteggio REALE ottenuto in quella partita: 41.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -1.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      47.8    47.5     -0.3     2.9        SI
+   7        7      49.0    41.9     -7.1     3.5        NO
+
+MAE (errore assoluto medio): 3.71
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
