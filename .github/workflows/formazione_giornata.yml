@@ -168,6 +168,10 @@ jobs:
         run: |
           set -u
           set -o pipefail
+          # Stagger: 4 job discovery partono quasi insieme e si sommano sul
+          # tetto cumulativo dell'account (RISPOSTA_OPUS_429_PARALLELISMO_
+          # 2026-08-12.txt, P6). Non risparmia query, toglie la simultaneita'.
+          sleep $(( IDX * 25 ))
           # La matrice lega/ruolo di ogni shard viene raccolta da stdout e
           # scritta in _artifact_stage/_matrici/: NON puo' piu' passare dagli
           # output di job (un job che esegue piu' shard scriverebbe piu' volte

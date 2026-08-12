@@ -61,7 +61,7 @@ def main():
               f"Modificabili non in-season: {det['modificabili_libere']} "
               f"(le loro carte restano disponibili).")
 
-    dati = {'fixture': fixture_slug, 'odds': odds,
+    dati = {'fixture': fixture_slug, 'odds': odds, 'odds_fetched': True,
             'copertura': copertura, 'grade_map': grade_map}
     if carte_bloccate is not None:
         dati['carte_bloccate'] = carte_bloccate

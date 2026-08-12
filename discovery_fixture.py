@@ -1033,6 +1033,7 @@ def _odds_giornata_condivise(fixture_slug):
     if fixture_slug in _odds_giornata_cache:
         return _odds_giornata_cache[fixture_slug]
     odds = {}
+    _autorevole = False
     p = 'pool_gw.json'
     if os.path.exists(p):
         try:
@@ -1040,15 +1041,20 @@ def _odds_giornata_condivise(fixture_slug):
                 d = json.load(f)
             if d.get('fixture') == fixture_slug:
                 odds = d.get('odds') or {}
+                _autorevole = bool(d.get('odds_fetched'))
                 if odds:
                     log(f"[odds] da artifact {p}: {len(odds)} giocatori con odds "
                         f"(nessuna query: fetch fatta una volta sola in questa run).")
+                elif _autorevole:
+                    log(f"[odds] artifact {p}: il pool ha gia' interrogato le "
+                        f"partite di questa giornata e le odds NON sono ancora "
+                        f"pubblicate. NON rifaccio la fetch.")
             else:
                 log(f"[odds] {p} e' della giornata {d.get('fixture')!r}, non "
                     f"{fixture_slug!r}: lo IGNORO.")
         except Exception as e:
             log(f"[odds] {p} illeggibile ({e}).")
-    if not odds:
+    if not odds and not _autorevole:
         try:
             odds = odds_per_giornata(fixture_slug) or {}
         except Exception as e:
