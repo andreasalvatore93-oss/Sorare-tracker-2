@@ -374,8 +374,24 @@ def log(msg):
 # l'adattamento non servirebbe a niente). Se Sorare protesta la pipeline
 # rallenta da sola fino al valore prudente di prima, invece di accumulare
 # errori: il caso peggiore e' il comportamento precedente, non uno peggiore.
-MIN_QUERY_INTERVAL_SECONDS = 0.2  # pausa di PARTENZA tra chiamate consecutive
-MAX_QUERY_INTERVAL_SECONDS = 0.8  # tetto, raggiunto dopo alcuni 429
+# PACING DI PARTENZA CONFIGURABILE (12/08/2026). Il valore storico 0,2s e'
+# giusto per UN processo, ma la fase predict gira su 20 runner in parallelo e
+# il limite di Sorare e' d'ACCOUNT: 20 runner a 0,2s vogliono dire fino a 100
+# query al secondo verso un account che, misurato, ne regge circa 9. Il primo
+# 429 e' quindi garantito, e costa 194-247 secondi di Retry-After -- molto piu'
+# di quanto si risparmi correndo.
+# Misura che ha portato qui (run 31594791690, dopo i fix sulle query): la fase
+# predict fa 2499 query, ne prende 20 col 429 e butta 4728 secondi ad
+# aspettare, cioe' il 65% del tempo della fase. Il tasso di 429 per query e'
+# rimasto lo stesso di quando le query erano 6857: non e' il volume a farli
+# scattare, e' la raffica.
+# Default INVARIATO (0,2s): fuori dal workflow -- bot, scouting, run locali --
+# non cambia niente. Nel workflow si alza con SORARE_PACING_MIN.
+MIN_QUERY_INTERVAL_SECONDS = float(os.environ.get('SORARE_PACING_MIN', '0.2'))
+# Il tetto resta 4 volte la partenza, cosi' l'adattamento dopo un 429 ha
+# ancora spazio per rallentare (0,2 -> 0,8 col default; 1,0 -> 4,0 nel
+# workflow).
+MAX_QUERY_INTERVAL_SECONDS = max(0.8, MIN_QUERY_INTERVAL_SECONDS * 4)
 _PACING_FILE = os.path.join(
     os.environ.get('RUNNER_TEMP') or tempfile.gettempdir(), 'sorare_pacing.txt')
 _last_query_ts = [0.0]

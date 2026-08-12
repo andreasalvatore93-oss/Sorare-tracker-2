@@ -316,6 +316,17 @@ jobs:
           SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           ESCLUDI_LOCKATE: ${{ github.event.inputs.escludi_lockate }}
           GRUPPO: ${{ matrix.gruppo.g }}
+          # PACING DI PARTENZA (12/08/2026). Il limite di Sorare e'
+          # d'ACCOUNT, non di runner: 20 job predict in parallelo con la pausa
+          # storica di 0,2s puntano a 100 query/secondo verso un account che
+          # ne regge circa 9. Il primo 429 e' garantito e costa 194-247s.
+          # Misurato sulla run 31594791690: 2499 query, 20 risposte 429, 4728
+          # secondi buttati ad aspettare = 65% della fase. Il tasso di 429 per
+          # query non era sceso nemmeno dopo aver tagliato le query del 64%:
+          # non e' il volume a farli scattare, e' la raffica.
+          # 1,0s x 20 runner = al massimo 20 query/secondo. Costa ~55 secondi
+          # a shard (55 query in media) per evitarne 240.
+          SORARE_PACING_MIN: "1.0"
           PYTHONUNBUFFERED: "1"
         run: |
           set -u
