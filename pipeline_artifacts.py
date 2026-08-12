@@ -209,7 +209,18 @@ TARGET_MIN_S = 45.0
 # (20, 27, 36), come se il budget dell'account si consumasse. Prima di
 # concludere qualcosa da un confronto fra due run, lasciare passare del tempo
 # o alternare l'ordine delle varianti.
-N_BIN = 45
+# 20, cioe' uno per slot di concorrenza (12/08/2026, terza e ultima parola su
+# questo numero). Ci avevo provato una prima volta ed era andata PEGGIO: con 20
+# bin la run 31597760654 prendeva 36 risposte 429 contro le 27 con 45 bin,
+# perche' ogni shard elaborava piu' giocatori e di blocchi se ne prendeva di
+# piu'.
+# Quel motivo adesso non c'e' piu': con le tre chiavi i 429 sono ZERO (run
+# 31618793265). Sparito il costo dei blocchi resta solo quello dell'avvio --
+# ~22 secondi fissi di checkout+setup+pip per job -- e li' meno job e' solo
+# guadagno: 45 bin fanno ~990 job-secondi di puro avvio, 20 ne fanno ~440.
+# Il tetto vero non e' comunque questo: sono i 20 job in parallelo del piano
+# GitHub e i 40 query-in-volo di Sorare. Oltre quei numeri non si va.
+N_BIN = 20
 
 
 # ---------------------------------------------------------------- stage ----

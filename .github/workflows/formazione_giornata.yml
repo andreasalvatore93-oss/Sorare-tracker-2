@@ -342,23 +342,20 @@ jobs:
           SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           ESCLUDI_LOCKATE: ${{ github.event.inputs.escludi_lockate }}
           GRUPPO: ${{ matrix.gruppo.g }}
-          # PACING. Storia in due tempi, che vale la pena non ripetere.
-          # Tarato prima su 600/min avendo UNA chiave sola: sbagliato, perche'
-          # una chiave vale 200/min e i 600 sono il massimo del programma. Con
-          # quel freno la run 31617233911 e' PEGGIORATA (predict da 265s a
-          # 400s): aspettava piu' di quanto risparmiasse, perche' il budget
-          # vero era un terzo di quello assunto.
-          # Adesso le chiavi sono tre e i 600/min ci sono davvero, quindi il
-          # conto torna: 10 richieste al secondo, 20 job in parallelo, 2
-          # secondi di distanza fra le richieste di uno stesso shard. Stesso
-          # valore di prima, ma su un budget che esiste.
-          # NB: il primo tentativo, stamattina, non aveva funzionato perche' il
-          # freno non attraversava i processi (ogni giocatore e' un processo
-          # nuovo e ripartiva da zero) -- difetto corretto nello stesso giorno.
-          # Il conto: aggiunge ~0,7s a richiesta sopra l'avvio del processo,
-          # cioe' ~50s di wall sulla fase, e toglie blocchi da ~120s l'uno
-          # (run 31615179175: 19 blocchi, 2352 secondi buttati).
-          SORARE_PACING_MIN: "2.0"
+          # PACING SPENTO (12/08/2026, terzo e ultimo tempo di questa storia).
+          # Cronologia, perche' non la si rifaccia da capo:
+          #   run 31615179175  1 chiave, nessun freno -> 19 blocchi, 2352s persi
+          #   run 31617233911  1 chiave, freno 2,0s   -> 20 blocchi, 1174s persi
+          #                                              ma predict 265s -> 400s
+          #   run 31618793265  3 chiavi, freno 2,0s   ->  0 blocchi,    0s persi
+          #                                              predict 318s
+          # Col freno acceso si aspettano ~150 secondi di attesa VOLUTA (1492
+          # richieste x 2s / 20 job), mentre i 19 blocchi della run senza freno
+          # ne costavano ~118: si pagava piu' del danno che si evitava. Il freno
+          # serviva quando il budget era 200/min con una chiave sola; con tre
+          # chiavi (600/min) il ritmo naturale ci sta dentro da solo.
+          # Se i 429 dovessero tornare si riaccende rimettendo qui
+          # SORARE_PACING_MIN: il meccanismo resta, e' solo spento.
           PYTHONUNBUFFERED: "1"
         run: |
           set -u
