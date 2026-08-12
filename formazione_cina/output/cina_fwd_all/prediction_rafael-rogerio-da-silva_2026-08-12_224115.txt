@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T22:41:15.429351Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) rafael-rogerio-da-silva: 53 pt attesi (36-73)
+   ORDINAMENTO: 52.32
+   SQUADRA: shanghai-shenhua-shanghai | AVVERSARIO: henan-jianye-zhengzhou
+======================================================================
+
+######################################################################
+# GIOCATORE: rafael-rogerio-da-silva
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: rafael-rogerio-da-silva (squadra: shanghai-shenhua-shanghai)
+Generato: 2026-08-12T22:41:15.428619Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: chinese-super-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-07 | SHE vs DXC | chinese-super-league | score=97.4 | peso=0.099
+  2026-03-14 | ZGR vs SHE | chinese-super-league | score=36.9 | peso=0.111
+  2026-03-21 | GUO vs SHE | chinese-super-league | score=49.7 | peso=0.125
+  2026-04-05 | TED vs SHE | chinese-super-league | score=85.1 | peso=0.140
+  2026-04-11 | SHE vs SHE | chinese-super-league | score=70.3 | peso=0.157
+  2026-04-18 | SHE vs SHU | chinese-super-league | score=76.6 | peso=0.177
+  2026-04-22 | SHE vs QDJ | chinese-super-league | score=21.7 | peso=0.198
+  2026-04-26 | HEN vs SHE | chinese-super-league | score=41.4 | peso=0.223
+  2026-05-01 | SHE vs QIA | chinese-super-league | score=61.3 | peso=0.250
+  2026-05-05 | SLT vs SHE | chinese-super-league | score=78.7 | peso=0.281
+  2026-05-09 | SHE vs CHT | chinese-super-league | score=24.7 | peso=0.315
+  2026-05-16 | YUY vs SHE | chinese-super-league | score=37.3 | peso=0.354
+  2026-05-20 | SHE vs WTT | chinese-super-league | score=60.0 | peso=0.397
+  2026-05-24 | SHE vs None | chinese-super-league | score=67.5 | peso=0.445
+  2026-05-30 | QYI vs SHE | chinese-super-league | score=42.0 | peso=0.500
+  2026-06-28 | DXC vs SHE | chinese-super-league | score=79.9 | peso=0.561
+  2026-07-05 | SHE vs ZGR | chinese-super-league | score=67.9 | peso=0.630
+  2026-07-18 | SHE vs TED | chinese-super-league | score=47.4 | peso=0.707
+  2026-07-25 | SHE vs SHE | chinese-super-league | score=42.9 | peso=0.794
+  2026-08-02 | SHU vs SHE | chinese-super-league | score=36.7 | peso=0.891
+  2026-08-08 | QDJ vs SHE | chinese-super-league | score=33.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 50.85
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=21): 52.06 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 44.06 | Punteggio complessivo (granulari) medio: 6.80 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 5.55 (delta +0.85) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.89
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.7 - 70.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.86 (differenza: +1.03)
+Media score in casa: 59.48 | Media score fuori casa: 51.30
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.9
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.003 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.008
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore trend (media ultime 5: 45.7 vs media 5 PRECEDENTI: 57.3): 1.000
+P(gioca): 95.45% (fonte: tasso di presenza storico (21/22))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T12:00
+Casa: Shanghai Shenhua FC | Trasferta: Henan Jianye FC
+Competizione: chinese-super-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.4 (range 36.2 - 72.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 52.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.18
+Punteggio REALE ottenuto in quella partita: 33.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -19.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      87.1    21.7    -65.4    21.7        NO
+   7        7      62.6    41.4    -21.2    29.3        SI
+   8        8      38.9    61.3    +22.4    27.8        SI
+   9        9      51.2    78.7    +27.5    25.5        NO
+  10       10      48.9    24.7    -24.2    25.0        SI
+  11       11      49.3    37.3    -12.0    27.4        SI
+  12       12      65.8    60.0     -5.8    26.4        SI
+  13       13      56.7    67.5    +10.8    24.7        SI
+  14       14      42.8    42.0     -0.8    23.5        SI
+  15       15      45.9    79.9    +34.0    22.6        NO
+  16       16      59.6    67.9     +8.3    23.3        SI
+  17       17      71.0    47.4    -23.6    22.2        NO
+  18       18      64.2    42.9    -21.3    21.2        NO
+  19       19      56.1    36.7    -19.4    20.6        SI
+  20       20      66.3    33.7    -32.6    20.5        NO
+
+MAE (errore assoluto medio): 21.96
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

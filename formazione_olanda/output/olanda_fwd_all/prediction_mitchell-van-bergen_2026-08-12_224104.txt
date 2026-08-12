@@ -1,0 +1,123 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T22:41:04.383162Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) mitchell-van-bergen: 54 pt attesi (39-69)
+   ORDINAMENTO: 55.46
+   SQUADRA: sparta-rotterdam-rotterdam | AVVERSARIO: telstar-velsen-zuid
+======================================================================
+
+######################################################################
+# GIOCATORE: mitchell-van-bergen
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mitchell-van-bergen (squadra: sparta-rotterdam-rotterdam)
+Generato: 2026-08-12T22:41:04.381799Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: eredivisie (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | GAE vs SPA | eredivisie | score=42.4 | peso=0.070
+  2025-08-31 | SPA vs FEY | eredivisie | score=30.9 | peso=0.079
+  2025-09-14 | EXC vs SPA | eredivisie | score=48.8 | peso=0.088
+  2025-09-19 | SPA vs TWE | eredivisie | score=43.6 | peso=0.099
+  2025-09-27 | HER vs SPA | eredivisie | score=40.9 | peso=0.111
+  2025-10-04 | SPA vs AJA | eredivisie | score=78.1 | peso=0.125
+  2025-10-19 | GRO vs SPA | eredivisie | score=37.5 | peso=0.140
+  2025-10-25 | SPA vs TEL | eredivisie | score=52.6 | peso=0.157
+  2025-11-02 | SPA vs AZ | eredivisie | score=43.0 | peso=0.177
+  2025-11-08 | ZWO vs SPA | eredivisie | score=48.0 | peso=0.198
+  2025-11-22 | SPA vs FOR | eredivisie | score=79.9 | peso=0.223
+  2025-12-21 | VOL vs SPA | eredivisie | score=56.0 | peso=0.250
+  2026-01-11 | SPA vs HER | eredivisie | score=50.2 | peso=0.281
+  2026-01-18 | FEY vs SPA | eredivisie | score=61.4 | peso=0.315
+  2026-01-25 | UTR vs SPA | eredivisie | score=63.6 | peso=0.354
+  2026-01-31 | SPA vs GRO | eredivisie | score=39.1 | peso=0.397
+  2026-02-07 | FOR vs SPA | eredivisie | score=57.6 | peso=0.445
+  2026-02-22 | AZ vs SPA | eredivisie | score=41.7 | peso=0.500
+  2026-02-28 | HEE vs SPA | eredivisie | score=71.8 | peso=0.561
+  2026-03-08 | SPA vs ZWO | eredivisie | score=36.8 | peso=0.630
+  2026-03-21 | SPA vs VOL | eredivisie | score=49.6 | peso=0.707
+  2026-04-05 | NAC vs SPA | eredivisie | score=41.5 | peso=0.794
+  2026-04-22 | TEL vs SPA | eredivisie | score=84.1 | peso=0.891
+  2026-05-03 | SPA vs GAE | eredivisie | score=69.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 56.39
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=24): 55.37 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 45.09 | Punteggio complessivo (granulari) medio: 11.30 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.80 (delta -0.53) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 15.61
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.5 - 71.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.02 (differenza: +2.59)
+Media score in casa: 52.11 | Media score fuori casa: 53.48
+Fattore casa/trasferta applicato: 1.002 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.9
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.072 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 1.007
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.006
+Fattore trend (media ultime 5: 56.3 vs media 5 PRECEDENTI: 54.8): 1.000
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T18:00
+Casa: SC Telstar | Trasferta: Sparta Rotterdam
+Competizione: eredivisie
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.0 (range 39.1 - 69.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 55.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.68
+Punteggio REALE ottenuto in quella partita: 69.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +14.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 18 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.3    37.5    -11.8    18.3        SI
+   7        7      55.5    52.6     -2.9    17.3        SI
+   8        8      44.1    43.0     -1.1    15.8        SI
+   9        9      56.1    48.0     -8.1    14.6        SI
+  10       10      49.5    79.9    +30.4    13.4        NO
+  11       11      62.4    56.0     -6.4    18.2        SI
+  12       12      67.1    50.2    -16.9    16.9        NO
+  13       13      35.7    61.4    +25.7    15.7        NO
+  14       14      45.0    63.6    +18.6    15.0        NO
+  15       15      53.3    39.1    -14.2    14.5        SI
+  16       16      54.3    57.6     +3.3    14.9        SI
+  17       17      47.6    41.7     -5.9    14.0        SI
+  18       18      48.4    71.8    +23.4    13.9        NO
+  19       19      64.3    36.8    -27.5    15.0        NO
+  20       20      62.9    49.6    -13.3    15.5        SI
+  21       21      63.8    41.5    -22.3    14.6        NO
+  22       22      56.4    84.1    +27.7    14.3        NO
+  23       23      56.7    69.4    +12.7    18.2        SI
+
+MAE (errore assoluto medio): 15.13
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 55.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
