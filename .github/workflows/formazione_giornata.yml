@@ -324,19 +324,34 @@ jobs:
       - name: Predict
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
-          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
+          # TRE CHIAVI, UNA PER SHARD (12/08/2026). Ogni APIKEY Sorare vale
+          # 200 richieste/minuto e i tetti sono INDIPENDENTI: tre chiavi fanno
+          # i 600/min che la documentazione indica come massimo del programma
+          # (github.com/sorare/api). Lo shard sceglie la sua in base al numero
+          # di job, cosi' il traffico si divide in tre secchielli separati
+          # invece di svuotarne uno solo.
+          # Il codice Python non cambia: continua a leggere SORARE_APIKEY, e'
+          # lo shell dello step che gliela assegna.
+          SORARE_APIKEY_A: ${{ secrets.SORARE_APIKEY }}
+          SORARE_APIKEY_B: ${{ secrets.SORARE_APIKEY_2 }}
+          SORARE_APIKEY_C: ${{ secrets.SORARE_APIKEY_3 }}
+          IDX_CHIAVE: ${{ strategy.job-index }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
           SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
           SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           ESCLUDI_LOCKATE: ${{ github.event.inputs.escludi_lockate }}
           GRUPPO: ${{ matrix.gruppo.g }}
-          # PACING (12/08/2026 sera, rifatto con i numeri veri della
-          # documentazione Sorare: https://github.com/sorare/api).
-          # Budget con APIKEY = 600 richieste/minuto per l'account, cioe' 10 al
-          # secondo. Il predict gira su 20 job in parallelo (tetto di
-          # concorrenza di GitHub), quindi ognuno deve distanziare le proprie
-          # richieste di 20/10 = 2 secondi per non sfondare insieme agli altri.
+          # PACING. Storia in due tempi, che vale la pena non ripetere.
+          # Tarato prima su 600/min avendo UNA chiave sola: sbagliato, perche'
+          # una chiave vale 200/min e i 600 sono il massimo del programma. Con
+          # quel freno la run 31617233911 e' PEGGIORATA (predict da 265s a
+          # 400s): aspettava piu' di quanto risparmiasse, perche' il budget
+          # vero era un terzo di quello assunto.
+          # Adesso le chiavi sono tre e i 600/min ci sono davvero, quindi il
+          # conto torna: 10 richieste al secondo, 20 job in parallelo, 2
+          # secondi di distanza fra le richieste di uno stesso shard. Stesso
+          # valore di prima, ma su un budget che esiste.
           # NB: il primo tentativo, stamattina, non aveva funzionato perche' il
           # freno non attraversava i processi (ogni giocatore e' un processo
           # nuovo e ripartiva da zero) -- difetto corretto nello stesso giorno.
@@ -347,6 +362,15 @@ jobs:
           PYTHONUNBUFFERED: "1"
         run: |
           set -u
+          # Assegna a questo shard una delle tre chiavi (vedi commento sopra).
+          # Se le chiavi 2 e 3 non fossero nei secret si ricade sulla prima:
+          # la pipeline continua a funzionare esattamente come prima.
+          case $(( IDX_CHIAVE % 3 )) in
+            0) export SORARE_APIKEY="$SORARE_APIKEY_A" ;;
+            1) export SORARE_APIKEY="${SORARE_APIKEY_B:-$SORARE_APIKEY_A}" ;;
+            2) export SORARE_APIKEY="${SORARE_APIKEY_C:-$SORARE_APIKEY_A}" ;;
+          esac
+          echo "shard $IDX_CHIAVE -> chiave $(( IDX_CHIAVE % 3 + 1 )) di 3 (valore non stampato)"
           python pipeline_artifacts.py combos "$GRUPPO" > combos.tsv
           echo "Combinazioni di questo gruppo:"; cat combos.tsv
           while IFS=$'\t' read -r LEGA RUOLO SHARD <&3; do
