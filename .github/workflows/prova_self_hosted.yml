@@ -1,0 +1,104 @@
+name: Prova runner self-hosted
+
+# Workflow USA E GETTA (12/08/2026): serve solo a verificare che il runner
+# sul PC di casa regga quello che la pipeline gli chiederebbe davvero, PRIMA
+# di spostarci sopra qualcosa di serio. Non scrive niente, non committa
+# niente, non tocca dati.
+#
+# Le tre cose che possono rompersi passando da ubuntu-latest a un runner
+# Windows, in ordine di probabilita':
+#   1. la shell: i nostri step sono scritti in bash (case, while read <&3,
+#      pipe) e su Windows il default sarebbe PowerShell -> qui si forza bash;
+#   2. python: sul runner deve esserci ed essere raggiungibile;
+#   3. i percorsi: barre rovesciate, spazi, cartelle di lavoro persistenti.
+#
+# In piu' misura la cosa per cui il self-hosted ci interessa davvero: la
+# LATENZA verso Sorare. Da un runner GitHub la mediana e' 168 ms, dal PC di
+# casa 81 ms -- e' il vantaggio che serve allo sniping.
+
+on:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  prova:
+    runs-on: [self-hosted, casa]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+
+      - name: 1. la shell e' bash e i costrutti nostri funzionano
+        run: |
+          set -u
+          echo "shell: $SHELL"
+          echo "sistema: $(uname -s 2>/dev/null || echo Windows)"
+          # stesso schema del job predict: legge righe da un descrittore
+          printf 'mls\tgk\t0:3\nkleague\tdef\t\n' > /tmp/prova_combos.tsv
+          while IFS=$'\t' read -r LEGA RUOLO SHARD <&3; do
+            [ -n "$LEGA" ] || continue
+            case "$RUOLO" in
+              gk)  PY=test_gk.py ;;
+              def) PY=test_def.py ;;
+              *)   PY=ignoto ;;
+            esac
+            echo "  riga letta: lega=$LEGA ruolo=$RUOLO shard='${SHARD:-nessuno}' -> $PY"
+          done 3< /tmp/prova_combos.tsv
+          # e la rotazione delle chiavi del predict
+          for IDX in 0 1 2 3; do
+            case $(( IDX % 3 )) in
+              0) N=1 ;; 1) N=2 ;; 2) N=3 ;;
+            esac
+            echo "  shard $IDX -> chiave $N"
+          done
+
+      - name: 2. python c'e' e legge i file del repo
+        run: |
+          set -u
+          python --version || python3 --version
+          python -c "import json,glob,os; print('  file di discovery visti:', len(glob.glob('formazione_*/output/*_discovery/player_slugs.json')))"
+
+      - name: 3. latenza verso Sorare da questa macchina
+        env:
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
+        run: |
+          set -u
+          pip install curl_cffi --quiet || pip install requests --quiet
+          python - <<'PYEOF'
+          import os, time, statistics
+          try:
+              from curl_cffi import requests as R
+              S = R.Session(impersonate='chrome')
+          except ImportError:
+              import requests as R
+              S = R.Session()
+          Q = 'query Sonda { so5 { so5Fixture(slug: "football-11-14-aug-2026") { slug } } }'
+          H = {'Content-Type': 'application/json'}
+          if os.environ.get('SORARE_APIKEY'):
+              H['APIKEY'] = os.environ['SORARE_APIKEY']
+          S.post('https://api.sorare.com/graphql', json={'query': Q}, headers=H, timeout=20)
+          t = []
+          for _ in range(15):
+              a = time.time()
+              S.post('https://api.sorare.com/graphql', json={'query': Q}, headers=H, timeout=20)
+              t.append((time.time() - a) * 1000)
+              time.sleep(0.2)
+          t.sort()
+          print('  LATENZA da questo runner: min %.0f ms | mediana %.0f ms | max %.0f ms'
+                % (t[0], statistics.median(t), t[-1]))
+          print('  (da un runner GitHub, misurato: mediana 168 ms, max 382 ms)')
+          PYEOF
+
+      - name: 4. la cartella di lavoro resta fra una run e l'altra?
+        run: |
+          set -u
+          F=../_prova_persistenza.txt
+          if [ -f "$F" ]; then
+            echo "  la cartella era gia' qui: $(cat "$F")"
+          else
+            echo "  prima esecuzione su questo runner"
+          fi
+          date -u +"ultima run: %Y-%m-%d %H:%M:%SZ" > "$F"
