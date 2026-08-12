@@ -1,0 +1,113 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-12T12:29:57.343471Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) kang-hee-lee: 42 pt attesi (37-55)
+   SQUADRA: austria-wien-wien | AVVERSARIO: beitar-jerusalem-jerusalem
+======================================================================
+
+######################################################################
+# GIOCATORE: kang-hee-lee
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: kang-hee-lee (squadra: austria-wien-wien)
+Generato: 2026-08-12T12:29:57.341595Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 36
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-14 | FAK vs BAN | uefa-europa-conference-league | score=35.0 | peso=0.607
+  2025-11-08 | FAK vs GAK | austrian-bundesliga | score=40.9 | peso=0.624
+  2025-11-22 | BWL vs FAK | austrian-bundesliga | score=42.8 | peso=0.642
+  2025-11-29 | FAK vs WSG | austrian-bundesliga | score=39.1 | peso=0.660
+  2025-12-07 | WAC vs FAK | austrian-bundesliga | score=16.5 | peso=0.678
+  2025-12-14 | FAK vs STU | austrian-bundesliga | score=34.7 | peso=0.697
+  2026-02-06 | RBS vs FAK | austrian-bundesliga | score=35.6 | peso=0.717
+  2026-02-15 | FAK vs SCR | austrian-bundesliga | score=51.9 | peso=0.737
+  2026-02-21 | ALT vs FAK | austrian-bundesliga | score=34.0 | peso=0.758
+  2026-03-01 | FAK vs ASK | austrian-bundesliga | score=37.1 | peso=0.779
+  2026-03-08 | SVR vs FAK | austrian-bundesliga | score=31.7 | peso=0.801
+  2026-03-15 | FAK vs STU | austrian-bundesliga | score=23.6 | peso=0.824
+  2026-03-22 | HTB vs FAK | austrian-bundesliga | score=52.5 | peso=0.847
+  2026-04-05 | ASK vs FAK | austrian-bundesliga | score=34.9 | peso=0.871
+  2026-04-22 | RBS vs FAK | austrian-bundesliga | score=60.7 | peso=0.895
+  2026-04-26 | STU vs FAK | austrian-bundesliga | score=49.5 | peso=0.920
+  2026-07-30 | FAK vs LIE | uefa-europa-conference-league | score=37.8 | peso=0.946
+  2026-08-02 | WAC vs FAK | austrian-bundesliga | score=41.3 | peso=0.973
+  2026-08-09 | FAK vs ASK | austrian-bundesliga | score=35.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 39.05
+  di cui Punteggio decisivo (level_score) medio: 34.09 | Punteggio complessivo (granulari) medio: 4.96 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 34.68 (delta +0.58)
+  Efficacia offensiva condizionata: delta venue +0.10, delta avversario +0.00 | Passaggio condizionato: delta venue -0.19, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.32, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 9.94
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.0 - 51.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 7.29 (differenza: +2.64)
+Media score in casa: 37.29 | Media score fuori casa: 39.95
+Fattore casa/trasferta applicato: 1.006 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.2
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.995
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.994
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.995
+Fattore gol subiti (goals_conceded, con cap): 1.003
+Fattore trend (media ultime 5: 44.6 vs media 5 PRECEDENTI: 36.1): 1.000
+P(gioca): 10.00% (fonte: starterOddsBasisPoints (1000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-13T18:30
+Casa: FK Austria Wien | Trasferta: Beitar Jerusalem FC
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 41.7 (range 36.6 - 54.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 39.31
+Punteggio REALE ottenuto in quella partita: 35.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -3.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      30.5    35.6     +5.1     9.7        SI
+   7        7      29.1    51.9    +22.8     8.9        NO
+   8        8      36.6    34.0     -2.6    10.5        SI
+   9        9      30.6    37.1     +6.5     9.9        SI
+  10       10      40.7    31.7     -9.0     9.3        SI
+  11       11      35.6    23.6    -12.0     9.0        NO
+  12       12      41.0    52.5    +11.5     9.5        NO
+  13       13      30.0    34.9     +4.9    10.6        SI
+  14       14      34.2    60.7    +26.5    10.1        NO
+  15       15      37.7    49.5    +11.8    12.1        SI
+  16       16      39.0    37.8     -1.2    12.1        SI
+  17       17      35.8    41.3     +5.5    11.7        SI
+  18       18      32.9    35.5     +2.6    11.3        SI
+
+MAE (errore assoluto medio): 9.40
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 69.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
