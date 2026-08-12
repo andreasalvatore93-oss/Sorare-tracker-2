@@ -505,6 +505,97 @@ def save_cache(cache, cache_file):
         json.dump(cache, f, ensure_ascii=False, indent=2)
 
 
+# DETTAGLIO IN BATCH (12/08/2026, misurato sulla run 31585784239: il
+# dettaglio granulare era il 57% delle query della fase predict -- 127 query
+# su 222 in uno shard tipico -- e si chiedeva UNA PARTITA PER VOLTA).
+#
+# so5.playerGameScore accetta gli alias, quindi piu' partite stanno nella
+# stessa richiesta. Il tetto e' la complessita': SONDATO sull'API vera
+# (query pubblica, nessun cookie) il 12/08/2026 --
+#   8 partite  -> "complexity of 505, which exceeds max complexity of 500"
+#  10 partite  -> "complexity of 631"
+# cioe' 63,1 di complessita' a partita, zero base: il massimo teorico e' 7.
+# Qui se ne chiedono 6 (379) per lasciare margine, con la stessa logica del
+# commento su PAGINA_GAME_LOG: una richiesta rifiutata costa molto piu' di
+# una richiesta in piu'.
+#
+# Con l'APIKEY (mai arrivata, vedi il backlog) il tetto sarebbe 30000, cioe'
+# 475 partite per richiesta: se un giorno arriva, e' qui che si alza.
+BATCH_DETTAGLIO = 6
+
+_BLOCCO_DETTAGLIO = """
+    d%(i)d: playerGameScore(id: $id%(i)d) {
+      id
+      score
+      scoreStatus
+      position
+      anyGame {
+        date
+        statusTyped
+        homeTeam {
+          ... on Club {
+            slug name code domesticLeagueRanking domesticLeagueRankingRatioRange
+          }
+        }
+        awayTeam {
+          ... on Club {
+            slug name code domesticLeagueRanking domesticLeagueRankingRatioRange
+          }
+        }
+        competition { slug }
+      }
+      detailedScore { category stat statValue totalScore }
+    }"""
+
+
+def _query_dettaglio_batch(n):
+    firma = ', '.join(f'$id{i}: ID!' for i in range(n))
+    corpo = ''.join(_BLOCCO_DETTAGLIO % {'i': i} for i in range(n))
+    return f'query PlayerGameScoreDetailBatch({firma}) {{\n  so5 {{{corpo}\n  }}\n}}'
+
+
+def precarica_dettagli_batch(nodi, cache):
+    """Riempie la cache dei dettagli per le partite FINAL che non ci sono
+    ancora, 6 alla volta. Non ritorna niente: chi chiama continua a passare
+    da fetch_game_detail, che a quel punto trova tutto in cache.
+
+    Progettata perche' il caso peggiore sia ESATTAMENTE il comportamento di
+    prima: se la richiesta in batch fallisce (errore, 429 con retry esauriti,
+    campo rifiutato) non si scrive niente in cache e le partite vengono
+    chieste una per una dal ciclo di sempre. Nessuna partita non-FINAL entra
+    qui: quelle cambiano ancora e vanno sempre richieste fresche."""
+    mancanti = []
+    for node in nodi:
+        if node.get('scoreStatus') != 'FINAL':
+            continue
+        sid = node['id'].replace('So5Score:', '')
+        if sid not in cache:
+            mancanti.append(sid)
+    if not mancanti:
+        return
+    presi = 0
+    for i in range(0, len(mancanti), BATCH_DETTAGLIO):
+        lotto = mancanti[i:i + BATCH_DETTAGLIO]
+        variabili = {f'id{j}': sid for j, sid in enumerate(lotto)}
+        data = graphql_query(_query_dettaglio_batch(len(lotto)), variabili,
+                             operation_name="PlayerGameScoreDetailBatch")
+        if not data or data.get('errors'):
+            log(f"  [FASE 3/4] batch dettaglio da {len(lotto)} rifiutato "
+                f"({str((data or {}).get('errors'))[:160]}): le partite di "
+                f"questo lotto verranno chieste una per una.")
+            continue
+        nodi_ris = ((data.get('data') or {}).get('so5') or {})
+        for j, sid in enumerate(lotto):
+            ris = nodi_ris.get(f'd{j}')
+            if ris and ris.get('id'):
+                cache[sid] = ris
+                presi += 1
+    if presi:
+        log(f"  [FASE 3/4] dettaglio in batch: {presi} partite in "
+            f"{(len(mancanti) + BATCH_DETTAGLIO - 1) // BATCH_DETTAGLIO} "
+            f"richieste invece di {len(mancanti)}.")
+
+
 def fetch_game_detail(score_id, cache, is_final):
     """Recupera il dettaglio granulare (detailedScore) di UNA partita.
     Usa la cache su disco per le partite gia' FINAL (non cambiano piu');
@@ -1791,6 +1882,11 @@ def build_prediction(player_slug):
         details = [None] * len(usable)
     else:
         log(f"[FASE 3/4] Recupero dettaglio granulare per {len(usable)} partite (con cache)...")
+        # Pre-carico in BATCH le FINAL che mancano (vedi
+        # precarica_dettagli_batch): il ciclo sotto resta identico e le
+        # trova gia' in cache. Se il batch fallisce, il ciclo le chiede una
+        # per una esattamente come prima.
+        precarica_dettagli_batch(usable, cache)
         details = []
         detail_failures = 0
         for node in usable:
