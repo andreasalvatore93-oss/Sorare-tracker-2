@@ -14,9 +14,11 @@ come riferimento corrente):
 Ultimo aggiornamento: **sessione 12/08/2026 sera (Roma, CEST)** — giornata
 di test end-to-end su GitHub Actions (GW4/GW5) che ha fatto emergere e
 chiuso 4 bug reali di produzione + aggiunto una feature nuova + un tipo
-formazione nuovo. Dettaglio completo: §8duodecies. **APERTO: problema 429
-sul test GW5 Champions, in attesa di Opus — §8duodecies-bis, NON rilanciare
-il test finché non è chiuso.**
+formazione nuovo. Dettaglio completo: §8duodecies. **429 GW5 CHIUSO**
+(fix P5+P6 verificato su run vera). **APERTI 3 problemi nuovi emersi subito
+dopo — §8duodecies-bis: crash `_budget_essenze` (blocca ogni run senza
+arene), notifica Telegram bugiarda su run fallita, 92% del predict sprecato
+quando si chiede solo Champions.**
 
 Sessione 11/08/2026: filone PORTIERE, GK_ATT_AVV **ACCESO IN PRODUZIONE**
 (formula "secca", media storica tutta la carriera, refresh automatico ad
@@ -1718,10 +1720,105 @@ propagati, `.github/workflows/formazione_giornata.yml`.
 
 ---
 
-## 8duodecies-bis. Problema 429 sul test GW5 — APERTO, in attesa di Opus
+## 8duodecies-bis. Test GW5 Champions — 429 CHIUSO, 3 problemi nuovi APERTI
 
-**Stato: NON RISOLTO. Non rilanciare il test GW5 Champions finché questa
-sezione non è chiusa** — riprodurrebbe lo stesso blocco.
+**Stato al 12/08 sera: il 429 è risolto e verificato su run vera. Restano 3
+problemi nuovi, di cui uno BLOCCANTE (D1): non rilanciare il test GW5 finché
+D1 non è corretto, la run rifallisce allo stesso punto.**
+
+### Il 429 — CHIUSO (fix P5+P6, run 31585784239 pulita)
+
+Causa vera, trovata da Opus leggendo i log grezzi (non era quella ipotizzata
+nel brief): **non erano i 4 job che collidevano all'avvio**. Il job
+`discovery def` alle 09:46:55 ha rifatto le 216 query odds della giornata
+con 6 thread in 6 secondi, perché `_odds_giornata_condivise`
+(`discovery_fixture.py`, `if not odds:`) scambiava "artifact con odds vuote"
+per "artifact inutile" e rifaceva la fetch che il job `pool` aveva già fatto
+per tutta la run. Con 4 job = **864 query identiche e tutte a vuoto** (la GW5
+non ha odds pubblicate). Gli altri 3 job hanno preso il 429 di rimbalzo,
+nello stesso decimo di secondo. L'intera ragione d'essere del job `pool`
+("una fetch per run") si spegneva da sola proprio quando le odds non ci sono,
+cioè a inizio stagione e su ogni GW lontana dal kickoff.
+
+**Fix implementato (commit `0bd2c5bca6`)**: P5 = il pool scrive
+`odds_fetched: True` in `pool_gw.json` e la discovery si fida dell'artifact
+anche quando dice "zero odds"; P6 = stagger `sleep $((IDX*25))` sui 4 job
+discovery. **Verificato**: run 31585784239, pool + 4 discovery tutti SUCCESS,
+zero 429, fase discovery ~4 minuti.
+
+Nota sul tetto Sorare: il "~60-70 richieste/minuto" ripetuto nei documenti
+precedenti **non regge** — nella stessa run 216 query in 6 secondi sono
+passate senza un solo 429. I dati sono compatibili con un credito di qualche
+centinaio di richieste che si ricarica in minuti (Retry-After osservati: 152,
+185, 289 s), ma **non è stato misurato**: non tarare parametri su quel
+numero. Restano proposte e non implementate: P7 (tetto req/s di processo +
+`odds_per_giornata` worker 6→2), P8 (probe sulle prime N partite), P9
+(contatore richieste per job, per misurare il tetto vero invece di
+raccontarselo). Dettaglio completo:
+`docs/handoff/RISPOSTA_OPUS_429_PARALLELISMO_2026-08-12.txt`.
+
+### I 3 problemi nuovi (run 31585784239, brief + risposta Opus)
+
+Brief: `docs/handoff/BRIEF_OPUS_GW5_CHAMPIONS_RETEST_2026-08-12.txt`.
+Risposta completa con le patch:
+`docs/handoff/RISPOSTA_OPUS_GW5_CHAMPIONS_RETEST_2026-08-12.txt`.
+
+**D1 — BLOCCANTE. `UnboundLocalError: _budget_essenze`** in
+`build_formazione_globale.py`. Assegnata solo a riga 2304 dentro
+`if _n_eff > 0 or _essenze_arena > 0:`, letta a riga 2367 dentro
+`if EXTEND_ODDS_060_070:`. **La condizione di crash è più larga di come era
+stata diagnosticata**: la riga 2367 sta PRIMA dell'if sugli shortfall, quindi
+gli shortfall non c'entrano e la Champions #4 non generata è una coincidenza.
+Crasha **ogni run** con `EXTEND_ODDS_060_070` acceso (default del workflow è
+`1`) e `arene=0` e `essenze_arena=0` — anche una run con solo `allstars=2`.
+Non è un caso di nicchia della competizione nuova: la riga è nata **oggi**,
+commit `5894626839` (fix ESSENZE_ARENA). Fix: `_budget_essenze = None` prima
+di riga 2302. Un setaccio AST passato su `build_formazione_globale.py`,
+`discovery_fixture.py` e `pipeline_artifacts.py` dice che è **l'unico caso
+vero** (18 altri candidati, tutti falsi positivi: global, try/except con
+return, if/else che assegnano in entrambi i rami).
+
+**D2 — notifica Telegram bugiarda.** Lo step ha `if: always()` e nessun
+controllo sull'esito. Ma sotto c'è un bug più grosso: `_latest_html()` sceglie
+per data di modifica fra **132 HTML** che `actions/checkout` ha appena
+ripristinato da main tutti nello stesso istante — è una lotteria, non "il più
+recente". Prova: su main il report più nuovo è run178 (12/08), la notifica ha
+linkato **run97 (01/08)**. Nelle run riuscite funziona solo per effetto
+collaterale (il file nuovo nasce dopo il checkout). Fix in due livelli: (a) il
+generatore scrive il path in `_ultimo_report.txt` e il notificatore legge
+quello, saltando la notifica se manca; (b) `id:` sullo step di generazione +
+`if: always() && steps.genera.outcome == 'success'`. Regola generale che ne
+esce: **una notifica non deduce mai il suo contenuto dal filesystem, lo riceve
+da chi l'ha prodotto.**
+
+**D3 — 92% del predict sprecato.** Misurato sull'output committato della run
+(`6c87bbb097`) col modello di costo del repo (`pipeline_costi.json`):
+**1151 giocatori in 28 campionati = 3219 secondi-compute**, contro **53
+giocatori (270 s-compute)** nelle 5 leghe Champions — cioè il **91,6%** del
+lavoro non serviva. Dettaglio che conta anche fuori dall'ottimizzazione:
+**tutti e 53 sono in Spagna** (Premier/Bundesliga/Serie A/Ligue 1 non hanno
+partite nella finestra 14-18 ago), quindi oggi la Champions da 7 pesca da un
+solo campionato. `discovery_fixture.py` **non legge** CHAMPIONS/ALLSTARS/
+IN_SEASON (verificato su tutte le sue `os.environ.get`), mentre il workflow gli
+passa `ARENE_EFFICIENTI`/`ESSENZE_ARENA` che nessuno legge: env morte.
+La logica di unione delle leghe rilevanti **esiste già** in
+`build_formazione_globale.py:2100-2108` (va estratta in un modulo condiviso, e
+corretta: `champions_qty` oggi forza *tutte* le leghe invece di
+`CHAMPIONS_LEAGUES`).
+**Trappola da non ignorare**: la discovery *svuota* i file delle leghe che
+esamina — è il fix del 07/08 (caso Gallese). Restringendo a 5 leghe, le altre
+27 restano su main coi file di ieri. La restrizione va committata **insieme**
+alla scrittura dei file vuoti per le leghe escluse, altrimenti è una
+regressione. Costi accettati da decidere: le odds storiche delle leghe escluse
+per quella GW **non si recuperano più**; la cache game-log invece è solo
+rinviata.
+
+Ordine consigliato: D1 → D2 → D3 ristretto al solo caso "champions e basta"
+(+ file vuoti) con misura su run vera → generalizzazione.
+
+---
+
+## 8duodecies-ter. Cronologia del 429 GW5 (storico, chiuso)
 
 Cronologia: primo tentativo GW5 (odds=0, champions=4) — 429 su tutti e 4 i
 job discovery, mai uscito dalla fase discovery in 5+ minuti, run cancellata
@@ -1740,20 +1837,17 @@ Default `0.80` invariato (entrambi i gate sono no-op in produzione normale).
 **Secondo tentativo (run 31584309722, dopo il fix): 429 di nuovo su tutti
 e 4 i job — ma stavolta PRIMA del punto corretto.** Log: job `pool`
 finisce alle 09:46:08, i 4 job `discovery` partono ~5s dopo, il primo 429
-nel job `gk` arriva alle 09:46:55 sulla PRIMISSIMA query dello script
-(prima di qualunque log `[discovery_fixture]`, quindi prima ancora della
-fase che P1/P4 correggono). Conclusione: P1/P4 erano necessari ma non
-bastano — il collo di bottiglia è più a monte, la coda di query del job
-`pool` che si somma alle prime query simultanee dei 4 job `discovery`
-sfora comunque il tetto account-wide. Run cancellata di nuovo dall'utente.
+nel job `gk` arriva alle 09:46:55 sulla PRIMISSIMA query dello script.
+Conclusione tratta allora: "il collo di bottiglia è la coda di query del job
+`pool` che si somma alle prime query simultanee dei 4 job `discovery`".
+Run cancellata di nuovo dall'utente.
 
-**Nuovo brief scritto per Opus**
-(`docs/handoff/BRIEF_OPUS_429_PARALLELISMO_2026-08-12.txt`), consegna
-MANUALE stavolta (l'utente lo passa lui, non via messaggio cross-sessione
-— rischio che la sessione corrente non abbia più tempo per seguire il giro
-completo). Risposta attesa in
-`RISPOSTA_OPUS_429_PARALLELISMO_2026-08-12.txt` (stesso schema del
-precedente), da leggere PRIMA di rilanciare qualunque test GW5.
+**Quella conclusione era SBAGLIATA** — corretta da Opus leggendo i log
+grezzi: il job `pool` finisce senza un solo 429, e le 4 prime query dei job
+discovery non possono sfondare un limite che 70 secondi prima ne aveva
+accettate 216 in 6 secondi. Il colpevole era il job `discovery def` che
+rifaceva la stessa raffica di 216 query. Vedi la sezione sopra
+(`RISPOSTA_OPUS_429_PARALLELISMO_2026-08-12.txt`) per il meccanismo vero.
 
 ---
 

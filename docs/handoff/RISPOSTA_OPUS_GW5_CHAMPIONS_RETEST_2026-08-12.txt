@@ -1,0 +1,452 @@
+RISPOSTA DELLO STREGONE SUPREMO (Opus esecutore) — 12/08/2026 sera, Roma
+Al brief: docs/handoff/BRIEF_OPUS_GW5_CHAMPIONS_RETEST_2026-08-12.txt
+Nessuna riga di produzione toccata. Misure fatte in locale, zero query di rete.
+
+
+VERDETTO DA BAR — 10 righe per domanda
+=======================================
+
+D1 (crash). Confermato, ma la tua diagnosi e' PIU' STRETTA della realta'.
+Non serve nessuno shortfall: la riga che esplode (2367) sta PRIMA dell'if
+sugli shortfall (2369). Il crash scatta in OGNI run con EXTEND_ODDS_060_070
+acceso (default del workflow) e arene=0 e essenze_arena=0 — Champions o non
+Champions. Se domani chiedi solo allstars=2 e zero arene, crasha uguale. E
+non e' "mai capitato prima perche' combinazione nuova": quella riga l'hai
+scritta TU OGGI (commit 5894626839, il fix ESSENZE_ARENA di stamattina). Ha
+un giorno di vita. Il fix e' quello che dici: `_budget_essenze = None` prima
+della riga 2302. Non c'e' nessun motivo nascosto per cui non sia gia' cosi'.
+Ho passato tutto il file a un setaccio automatico: e' l'UNICO punto vero, gli
+altri 8 candidati sono falsi positivi (elenco al §1.3).
+
+D2 (Telegram). Confermato, e sotto c'e' un secondo bug piu' grosso che il
+brief non vede. Non e' solo che la notifica parte su run fallita: e' che
+_latest_html() NON PUO' sapere qual e' il report di questa run. Sceglie per
+data di modifica fra 132 file che actions/checkout ha appena scritto tutti
+insieme — una lotteria. Prova: su main il report piu' recente e' run178
+(12/08), la notifica ha linkato run97 (01/08). Non ha preso "il piu'
+recente", ha preso a caso. Nelle run riuscite funziona per fortuna, perche'
+il file nuovo nasce dopo il checkout. Il fix giusto non e' solo la guardia
+`if: success()`: e' che chi SCRIVE l'HTML dica al notificatore quale file ha
+scritto. Le due cose insieme, non una sola (§2.3).
+
+D3 (18 minuti). Fattibile, e il guadagno l'ho misurato invece di stimarlo:
+1151 giocatori scoperti in 28 campionati, di cui 53 nelle 5 leghe Champions
+— e tutti e 53 in Spagna (Premier/Serie A/Bundesliga/Ligue 1 non hanno
+partite nella finestra 14-18 ago). Col modello di costo gia' in repo
+(pipeline_costi.json, tempi MISURATI): 3219 secondi-compute di predict
+contro 270. Il 91,6% del lavoro di predict di quella run non serviva a
+niente. MA c'e' una trappola che il brief non nomina e che da sola puo'
+rimettervi dentro un bug gia' pagato due volte: la discovery SVUOTA i file
+delle leghe che esamina, ed e' cosi' che si evita di leggere i consigli di
+ieri. Se esamini solo 5 leghe, le altre 27 restano su main con i file di
+ieri. Si risolve (§3.4), ma va fatto nello stesso commit, non dopo.
+
+
+1. DOMANDA 1 — UnboundLocalError su _budget_essenze
+====================================================
+
+1.1 DIAGNOSI CONFERMATA, CON UNA CORREZIONE IMPORTANTE
+-------------------------------------------------------
+Il meccanismo che descrivi e' esatto: `_budget_essenze` e' assegnata SOLO
+alla riga 2304, dentro `if _n_eff > 0 or _essenze_arena > 0:` (riga 2302).
+In questa run entrambi erano 0, quindi il nome non esiste mai come locale, e
+il controllo `if _budget_essenze is not None` alla riga 2368 non salva
+niente: per leggerlo, Python deve prima risolverlo, e non puo'.
+
+DOVE LA TUA DIAGNOSI SBAGLIA (e conta, perche' cambia l'urgenza).
+Tu scrivi che la condizione di crash e' "EXTEND_ODDS_060_070 acceso E almeno
+un tipo in shortfall (qui Champions #4 non generata)". Falso: guarda
+l'indentazione.
+
+  2348    if EXTEND_ODDS_060_070:
+  2349        _richiesti_arene = ...
+  ...
+  2357        _shortfall_champions = ...
+  2367        _budget_residuo = (max(0, _budget_essenze - _speso_arene_eff)   <-- QUI
+  2368                           if _budget_essenze is not None else 0)
+  2369        if _shortfall_arene or _shortfall_allstars or ... :             <-- l'if e' DOPO
+
+La riga 2367 e' figlia diretta di `if EXTEND_ODDS_060_070:`, non dell'if
+sugli shortfall. Quindi:
+
+  CONDIZIONE VERA DI CRASH = EXTEND_ODDS_060_070 acceso
+                             E ARENE_EFFICIENTI = 0
+                             E ESSENZE_ARENA = 0
+
+Basta questo. Gli shortfall non c'entrano, e la Champions #4 non generata e'
+una coincidenza. Conseguenza pratica: NON e' un caso di nicchia legato alla
+competizione nuova. Una run "allstars=2, arene=0" crasha allo stesso modo, e
+cosi' una "in_season=mls:6, arene=0". Chiunque lanci la pipeline senza arene
+si prende il crash finche' non correggi.
+
+Nota sul default, perche' il brief lo da' per scontato: nel CODICE
+EXTEND_ODDS_060_070 default e' '0' (riga 2174, spento), ma l'input del
+WORKFLOW ha default '1' (formazione_giornata.yml, riga ~61). Quindi da
+GitHub e' sempre acceso salvo che l'utente lo spenga a mano: la condizione
+di crash e' la normalita', non l'eccezione.
+
+1.2 PERCHE' NON ERA MAI SUCCESSO (non e' quello che pensi)
+------------------------------------------------------------
+La tua ipotesi e' "finora ogni run con EXTEND acceso aveva anche delle
+arene". Non serve: la riga 2367 non esisteva. Verificato con
+`git log -L2296,2310`:
+
+  commit 5894626839, 12/08/2026 — "Due bug reali trovati testando
+  ESSENZE_ARENA su GW4: suppletivo mai innescato in modalita' budget +
+  odds di coppa perse per sempre"
+
+E' il fix di stamattina sul budget residuo. Il bug ha meno di un giorno.
+Questo e' anche il motivo per cui vale la pena scriverlo nel commento: il
+pattern "aggiungo una lettura di una variabile che finora viveva solo dentro
+il suo if" e' esattamente come si introduce un UnboundLocalError.
+
+1.3 IL FIX, E LA RISPOSTA A "E' L'UNICO PUNTO?"
+-------------------------------------------------
+FIX (una riga, nessun effetto collaterale):
+
+  2297    _essenze_arena = int(os.environ.get('ESSENZE_ARENA', '0') or 0)
+  2298    _speso_arene_eff = 0   # (commento gia' presente)
+  +       _budget_essenze = None  # nessuna arena richiesta: nessun budget da
+  +                               # spendere. Deve esistere anche quando il
+  +                               # blocco sotto non gira, perche' il pool
+  +                               # suppletivo (riga ~2367) lo legge SEMPRE.
+  2302    if _n_eff > 0 or _essenze_arena > 0:
+
+Non c'e' nessun motivo per distinguere "mai valutato" da "valutato e nessun
+budget": l'unica lettura fuori dal blocco (2367-2368) tratta gia' None come
+"budget zero", che e' semanticamente giusto quando nessuna arena e' stata
+richiesta. Dentro il blocco la variabile viene comunque riassegnata alla
+2304, quindi il comportamento con arene richieste non cambia di un bit.
+
+_speso_arene_eff: coerente, gia' inizializzato fuori dall'if alla 2298 con
+il commento che spiega perche'. Il tuo predecessore ha fatto la cosa giusta
+per una delle due variabili e se n'e' dimenticata per l'altra, nello stesso
+commit.
+
+"CE NE SONO ALTRI SIMILI?" — l'ho misurato, non tirato a indovinare. Ho
+scritto un setaccio AST che cerca il pattern esatto (nome assegnato SOLO
+dentro il corpo di un if/for/while/try, e letto fuori dal sottoalbero di
+quel costrutto) e l'ho passato su build_formazione_globale.py,
+discovery_fixture.py e pipeline_artifacts.py. Nove candidati in
+build_formazione_globale.py, uno solo vero:
+
+  VERO   2368  _budget_essenze   (main)                      <-- il bug
+  falso   652  gm, gsd           (_apply_grade_group)  if/else, assegnate in
+                                                       entrambi i rami
+  falso  1107  fx                (_risolvi_finestra_esplicita) try/except
+                                                       che fa return
+  falso  1152  _FINESTRA_ESPLICITA (_within_window)     e' una global
+  falso  1191  dt                (_within_window)       try/except con return
+  falso  1395  r                 (_sort_ordinamento)    variabile di
+                                                       comprehension
+  falso  2734  idx               (main)                 parametro di una
+                                                       funzione annidata
+  falso  2755  leghe_rilevanti   (main)                 if/else, entrambi i
+                                                       rami assegnano
+
+Su discovery_fixture.py (4 candidati) e pipeline_artifacts.py (6 candidati):
+tutti falsi positivi, stessi due schemi (global, oppure try/except dove il
+ramo except fa return o riassegna). Nessun altro caso vero.
+
+Lo script e' un setaccio grossolano, non un type checker, e l'ho tenuto
+fuori dal repo (girava dallo scratchpad). Se lo vuoi in repo per rilanciarlo
+dopo ogni modifica al generatore, dimmelo e te lo committo in
+`generatore_formazioni/` — sono 60 righe, zero dipendenze, gira in 1 secondo.
+
+
+2. DOMANDA 2 — notifica Telegram su run fallita
+================================================
+
+2.1 LA TUA DIAGNOSI E' CONFERMATA
+-----------------------------------
+Lo step "Notifica Telegram con link al report HTML" ha `if: always()`
+(formazione_giornata.yml, riga ~571) e nessun controllo sull'esito dello
+step che genera l'HTML. Il job risulta failure, la notifica parte lo stesso.
+Il testo del messaggio dice "run completata" incondizionatamente
+(formazione_telegram_notify.py riga 67). Tutto come da brief.
+
+2.2 SOTTO C'E' UN SECONDO BUG, PIU' GRAVE
+-------------------------------------------
+_latest_html() (riga 40-49) prende `max(candidates, key=os.path.getmtime)`.
+Nel job "formazione" quei candidati NON sono i file di questa run: sono i
+file che `actions/checkout` ha appena ripristinato da main, tutti con la
+data di modifica del checkout, a millisecondi l'uno dall'altro. Quanti sono:
+
+  132 file 'generatore_formazioni_run*.html' tracciati su main
+  (git ls-files | wc -l)
+
+Il criterio "il piu' recente per mtime" su 132 file scritti nello stesso
+istante non seleziona niente: vince chi il filesystem ha toccato per ultimo.
+La prova che non e' una teoria:
+
+  report piu' recente REALMENTE presente su main: run178, 12/08
+  report linkato dalla notifica:                  run97,  01/08
+
+Se il criterio avesse almeno preso "il piu' nuovo che c'e'", avresti avuto
+run178. Hai avuto run97, un file di undici giorni fa. E' una lotteria, ed e'
+esattamente il "formazioni a caso" che ha visto l'utente.
+
+Perche' nelle run RIUSCITE funziona lo stesso: perche' li'
+build_formazione_globale.py scrive il file nuovo DOPO il checkout, quindi
+quel file e' l'unico con mtime piu' recente e vince sempre. Funziona per
+un effetto collaterale, non perche' il criterio sia giusto. Appena il
+generatore non scrive (crash, o in futuro un'uscita anticipata legittima),
+il criterio torna a essere una monetina.
+
+2.3 IL FIX: DUE LIVELLI, E RISPOSTA ALLA TUA DOMANDA SULLA GUARDIA
+--------------------------------------------------------------------
+Mi chiedi se preferisci `if: steps.<id>.outcome == 'success'` oppure un
+controllo che l'HTML sia stato committato in QUESTA run. Rispondo: nessuno
+dei due da solo. Il principio da scrivere una volta e non ripetere mai piu':
+
+  UNA NOTIFICA NON DEVE MAI DEDURRE IL SUO CONTENUTO DAL FILESYSTEM.
+  Deve riceverlo da chi l'ha prodotto.
+
+(a) IL LIVELLO CHE RISOLVE — il generatore dichiara cosa ha scritto.
+    In build_formazione_globale.py, subito dopo la riga 2826
+    (`print(f"\nReport visivo salvato in: {html_path}")`):
+
+        with open('_ultimo_report.txt', 'w', encoding='utf-8') as f:
+            f.write(html_path)
+
+    (file di lavoro della run, NON committato — aggiungerlo a .gitignore.)
+    In formazione_telegram_notify.py, _latest_html() diventa:
+
+        def _report_di_questa_run():
+            """Il file che build_formazione_globale.py dichiara di aver
+            scritto IN QUESTA RUN. Niente mtime: nel job il checkout
+            ripristina 132 HTML vecchi tutti con la stessa data, e il 'piu'
+            recente' e' una lotteria (12/08/2026: notifica partita con
+            run97 del 01/08 mentre su main c'era run178). Se il file manca,
+            il generatore non ha prodotto nulla: NON si notifica."""
+            try:
+                with open('_ultimo_report.txt', encoding='utf-8') as f:
+                    p = f.read().strip()
+            except OSError:
+                return None
+            return p if p and os.path.exists(p) else None
+
+    e in main(), se torna None: log "nessun report generato in questa run,
+    salto la notifica" e return (il codice per questo c'e' gia', riga 63-65,
+    cambia solo la funzione che lo alimenta).
+    Questo copre ANCHE il caso che ti preoccupa (run parzialmente riuscite):
+    se il generatore e' arrivato a scrivere l'HTML, la notifica parte e
+    punta al file giusto, comunque sia andato il resto del job.
+
+(b) IL LIVELLO A COSTO ZERO — la guardia nel workflow. Dare un `id:` allo
+    step che lancia build_formazione_globale.py e condizionare il notify:
+
+        - id: genera
+          env: ...
+          run: python generatore_formazioni/build_formazione_globale.py
+        ...
+        - name: Notifica Telegram con link al report HTML
+          if: always() && steps.genera.outcome == 'success'
+
+    Da fare comunque: costa una riga e ferma la notifica un passo prima,
+    senza dipendere da niente dentro Python.
+
+(c) MENTRE CI SEI: il testo del messaggio. "run completata" e' scritto a
+    mano nella stringa (riga 67). Va bene se (a) e (b) sono in piedi, ma
+    valuta di aggiungere il numero di run (GITHUB_RUN_NUMBER e' gia' in env
+    nel job) cosi' l'utente vede subito se il link e' della run che ha
+    appena lanciato. E' la cosa che gli avrebbe fatto capire il problema in
+    tre secondi invece che aprendo il report.
+
+SULLA "GUARDIA UNICA PIU' A MONTE" (la tua ultima domanda del §3): non
+esiste e non conviene cercarla. La guardia di job che citi
+(needs.discovery_merge.outputs.matrice, riga ~462) risponde a una domanda
+diversa — "la discovery ha prodotto qualcosa?" — e resta giusta dov'e'. Il
+fatto "il generatore ha prodotto un report?" nasce DENTRO quello step e non
+esiste da nessun'altra parte: l'unico modo di saperlo a monte sarebbe
+indovinarlo, che e' il bug di adesso. La regola generale non e' "una
+guardia sola piu' in alto", e' quella del riquadro sopra: chi produce
+dichiara, chi consuma verifica. Applicata una volta qui, vale per ogni
+futura notifica (Telegram scouting, bot, ecc.).
+
+
+3. DOMANDA 3 — 18 minuti per una richiesta che tocca 5 campionati
+==================================================================
+
+3.1 IL NUMERO, MISURATO (non stimato — vincolo del tuo §5)
+------------------------------------------------------------
+Ho contato i giocatori scoperti dalla run 31585784239 leggendo l'output che
+ha committato lei stessa (commit 6c87bbb097, 88 file player_slugs.json), e
+ho applicato il modello di costo MISURATO gia' in repo (pipeline_costi.json,
+tempi per primo giocatore / giocatore successivo per ogni coppia
+lega/ruolo):
+
+  TUTTE le leghe:        1151 giocatori in 28 campionati -> 3219 s-compute
+  solo leghe Champions:    53 giocatori in  1 campionato ->  270 s-compute
+  differenza:            1098 giocatori                  -> 2949 s-compute
+                                                            = 91,6% in meno
+
+(13 coppie lega/ruolo con 17 giocatori in tutto non hanno un costo misurato
+in pipeline_costi.json e sono escluse dal conto: sono leghe minuscole,
+cambiano il totale di poco e comunque in favore del risparmio.)
+
+DETTAGLIO CHE VALE PIU' DEL TOTALE: dei 53 giocatori nelle 5 leghe
+Champions, TUTTI E 53 SONO IN SPAGNA.
+
+  spagna:       gk 9, def 20, mid 9, fwd 15   = 53
+  inghilterra:  0 0 0 0        germania: 0 0 0 0
+  francia:      0 0 0 0        italia:   0 0 0 0
+
+Non e' un errore: nella finestra 14-18 agosto Premier, Bundesliga, Serie A e
+Ligue 1 non hanno partite (stagioni non ancora aperte). Quindi oggi la
+Champions da 7 pesca da UN campionato solo. Vale la pena saperlo anche a
+prescindere dall'ottimizzazione: la qualita' delle 4 formazioni Champions di
+questa run e' vincolata a 53 carte spagnole, non a "i 5 top campionati".
+
+Le prime tre leghe per volume (mls 263, kleague 155, belgio 114) da sole
+sono 532 giocatori: dieci volte il pool che serviva davvero.
+
+ATTENZIONE, quello che NON ho misurato: il tempo di parete. La fase predict
+e' durata 12,5 minuti con 45 shard e max-parallel 20, e ogni shard paga ~19s
+fissi di checkout+setup+pip (numero gia' scritto nel commento del workflow,
+riga ~256). Con 53 giocatori in una lega sola gli shard diventano pochissimi
+e i 3219 s-compute crollano a 270, ma il pavimento dell'overhead resta.
+Guadagno grande, quantita' esatta da misurare sulla prima run vera: non ti
+do un "da 18 a 3 minuti" perche' non l'ho visto.
+
+3.2 (a) DISCOVERY_FIXTURE.PY LEGGE GIA' QUEGLI INPUT? NO
+----------------------------------------------------------
+Elencate tutte le sue letture d'ambiente (grep di ogni os.environ.get nel
+file): DISCOVERY_LEAGUE_SHARD, DISCOVERY_ROLES, ESCLUDI_LOCKATE,
+FETCH_GRADE, FIXTURE_SLUG, GAMEWEEK, GITHUB_OUTPUT, HEAVY_LEAGUE_SHARD,
+MIN_STARTER_ODDS, ODDS_FALLBACK_MAX_PER_RUOLO, SORARE_CSRF,
+SORARE_DEVICE_FINGERPRINT, SORARE_VERSION.
+
+Nessuna traccia di CHAMPIONS, ALLSTARS, ALLSTARS_U23, IN_SEASON,
+ARENE_EFFICIENTI, ESSENZE_ARENA. Quindi si', e' il cambio piu' grosso:
+bisogna passare gli input anche al job discovery.
+
+Curiosita' utile: il workflow GIA' passa ARENE_EFFICIENTI ed ESSENZE_ARENA
+allo step Discovery (righe 161-162), ma discovery_fixture.py non li legge.
+Sono due variabili d'ambiente morte da chissa' quando. Quando aggiungi le
+altre, togli o usa queste due, altrimenti resta l'illusione che la discovery
+sappia gia' qualcosa che non sa.
+
+3.3 (b) LA REGOLA DELL'UNIONE ESISTE GIA', NON RISCRIVERLA
+------------------------------------------------------------
+build_formazione_globale.py righe 2100-2108 calcola gia' `leghe_rilevanti`
+con quasi la logica che ti serve:
+
+  if allstars_qty or allstars_u23_qty or champions_qty or arena_allstars_*:
+      leghe_rilevanti = set(LEAGUES)          # tipi "mixed" -> tutte
+  else:
+      leghe_rilevanti = ({lg for lg, n in in_season_req.items() if n} |
+                         {lg for lg, n in arena_dedicata_req.items() if n})
+      leghe_rilevanti &= set(LEAGUES)
+
+E' unione, non intersezione: la proprieta' che chiedi al punto (b) e' gia'
+quella giusta. Due avvertenze prima di riusarla:
+
+  - HA UN DIFETTO PROPRIO SUL CASO CHE TI INTERESSA: `champions_qty` finisce
+    nel ramo "tutte le leghe", mentre Champions e' ristretta a
+    CHAMPIONS_LEAGUES (riga 349). Oggi e' innocuo perche' leghe_rilevanti
+    serve solo al pannello "top esclusi", ma se riusi la funzione cosi'
+    com'e' per la discovery, l'ottimizzazione non scattera' MAI nel caso
+    champions-e-basta. Va corretto in `| CHAMPIONS_LEAGUES` nel ramo giusto.
+  - VA ESTRATTA IN UN POSTO SOLO, importabile sia dal generatore sia da
+    discovery_fixture.py. Se la copi, fra un mese le due copie diranno cose
+    diverse e nessuno se ne accorgera' finche' non spariscono dei giocatori.
+    Una funzione `leghe_rilevanti_per_richiesta(env) -> set[str]` in un
+    modulo condiviso, chiamata da entrambi.
+
+3.4 LA TRAPPOLA CHE IL BRIEF NON NOMINA (leggi questa prima di decidere)
+-------------------------------------------------------------------------
+La discovery non si limita a scoprire: SVUOTA i file di output di ogni
+coppia lega/ruolo che ha esaminato. E' il fix del 07/08 (caso
+pedro-david-gallese-quiroz, costato due arene) e sta scritto nel codice a
+chiare lettere (discovery_fixture.py, `esaminati_lega_ruolo`, righe
+~1405-1412 e ~1640-1647): "quello che conta e' 'questo job ha guardato
+questa lega/ruolo', non 'qualcuno e' sopravvissuto'. Se si registrasse dopo,
+una lega i cui giocatori vengono tutti scartati resterebbe con i file di
+ieri — che e' il bug stesso."
+
+Se restringi la discovery a 5 leghe, le altre 27 NON vengono esaminate,
+quindi NON vengono svuotate, quindi restano su main con i player_slugs e i
+consigli di ieri. Non e' un problema per la run ristretta (il generatore
+guarda solo le 5), ma diventa una mina per la successiva: chiunque legga
+quei file — un'altra run, uno strumento di scouting, un'analisi — trova dati
+vecchi senza nessun errore visibile. E' esattamente la classe di bug che
+avete gia' pagato due volte (07/08 Gallese, 28/07 job formazione con
+if:always() sui consigli vecchi).
+
+MITIGAZIONE, obbligatoria e a costo zero (nessuna query): quando la scoperta
+e' ristretta, scrivere comunque i file VUOTI delle leghe escluse, cioe'
+trattarle come "esaminate e senza superstiti". E' una scrittura locale,
+non costa niente, e mantiene l'invariante "quello che sta nei file di output
+riguarda SEMPRE la giornata corrente". Se questa parte non entra nello
+stesso commit dell'ottimizzazione, l'ottimizzazione e' una regressione.
+
+3.5 LE ALTRE DUE COSE CHE SI PERDONO (decide l'utente, non io)
+----------------------------------------------------------------
+(i) ODDS_STORICO. salva_odds_storico (discovery_fixture.py ~1637) salva le
+    odds vive pre-deadline di TUTTI i giocatori di 'elenco', prima di
+    qualunque filtro, ed e' descritto nel codice come "il valore vivo
+    pre-deadline, l'unico non contaminato". Restringere a 5 leghe vuol dire
+    non raccogliere le odds delle altre 27 PER SEMPRE per quella giornata:
+    non si recuperano dopo. Se quel dataset serve a un filone futuro, questa
+    e' una perdita irreversibile in cambio di minuti di CI. E' una scelta
+    dell'utente, non tecnica.
+(ii) CACHE GAME-LOG CONDIVISA. Meno predict = meno giocatori nuovi in cache
+    (formazione_<lega>/output/<lega>_<ruolo>_all/.game_log_cache). Qui la
+    perdita e' solo RINVIATA: il giorno che quei giocatori servono, la
+    prima run li paga. Nessun danno permanente.
+
+3.6 COSA IMPLEMENTEREI IO, E IN CHE ORDINE
+--------------------------------------------
+La tua opzione (c) — versione piccola prima — e' quella giusta, per un
+motivo che non e' la prudenza generica: il caso "solo champions" e' l'unico
+in cui la restrizione e' DIMOSTRABILMENTE corretta senza ragionare (un solo
+tipo richiesto, un solo insieme di leghe, nessuna unione da sbagliare).
+
+  Passo 1  Fix D1 (una riga) — senza questo qualunque test rifallisce.
+  Passo 2  Fix D2 (a)+(b) — cosi' il prossimo fallimento non ti manda una
+           notifica bugiarda mentre stai debuggando.
+  Passo 3  Restrizione SOLO per il caso "CHAMPIONS>0 e tutto il resto a 0",
+           insieme allo svuotamento dei file esclusi (§3.4). Misurare la
+           run vera: shard predict, minuti totali.
+  Passo 4  Solo dopo, se il passo 3 regge su due run, generalizzare con la
+           funzione condivisa (§3.3).
+
+Passi 1 e 2 sono indipendenti fra loro e dal 3: si possono committare
+stasera. Il 3 no — vuole una run di verifica e l'utente sveglio per
+guardarla.
+
+
+4. COSA NON HO FATTO / NON SO
+==============================
+- Nessuna modifica alla produzione (vincolo del tuo §5). Le patch qui sopra
+  sono da applicare a mano, non le ho committate.
+- Nessuna run rilanciata.
+- NON ho misurato il tempo di parete della run ristretta (§3.1): ho misurato
+  i secondi-compute col modello di costo del repo, che e' un'altra cosa.
+- NON ho verificato PERCHE' inghilterra/germania/francia/italia abbiano zero
+  giocatori: l'ho DEDOTTO dal calendario (stagioni non aperte al 14-18 ago).
+  E' una deduzione mia, non un dato letto da Sorare. Se conta per una
+  decisione, si controlla in 1 query sulle partite della fixture.
+- Il setaccio AST del §1.3 e' un'euristica: dice dove guardare, non
+  garantisce che non esista un decimo caso con una forma diversa.
+
+
+FILE DI RIFERIMENTO
+====================
+generatore_formazioni/build_formazione_globale.py:2297-2304, 2348, 2367-2369
+                                       il bug D1 e il suo fix
+generatore_formazioni/build_formazione_globale.py:349, 2100-2108
+                                       CHAMPIONS_LEAGUES e leghe_rilevanti
+generatore_formazioni/build_formazione_globale.py:2801-2826
+                                       nome e scrittura dell'HTML (D2a)
+generatore_formazioni/formazione_telegram_notify.py:40-49, 57-67   D2
+.github/workflows/formazione_giornata.yml:151-167 (env discovery, D3a),
+                                       ~514-541 (step genera, D2b),
+                                       ~570-577 (step Telegram, D2b)
+discovery_fixture.py:1405-1412, 1637, 1640-1647   svuotamento file e odds
+                                       storico (D3.4, D3.5)
+pipeline_costi.json                    modello di costo usato per la misura
+commit 5894626839                      dove nasce il bug D1 (oggi)
+commit 6c87bbb097                      output della run 31585784239, base
+                                       del conteggio giocatori
