@@ -853,6 +853,10 @@ def save_game_log_meta(cache_file, meta):
 # sotto il tetto. I dati raccolti sono gli stessi (stesse partite, stesso
 # ordine dall'API), solo divisi in piu' round-trip.
 FINE_STORIA_RAGGIUNTA = False  # vedi fetch_game_scores/load_game_log_meta
+PAGINAZIONE_INTERROTTA = False  # paginazione finita male (errore, o tetto
+                                # di pagine): quello che abbiamo in mano
+                                # potrebbe essere meta' storia, quindi non
+                                # si puo' concludere niente sulla cache
 
 PAGINA_GAME_LOG = 10  # 130 + 28*10 = ~410, con margine sotto il tetto
                       # di 500 (il pageInfo aggiunto costa qualcosa a
@@ -876,12 +880,13 @@ def fetch_game_scores(slug, fetch_count):
     Se la prima pagina fallisce (es. l'API non accettasse after/pageInfo) si
     ripiega sulla chiamata singola di prima: il caso peggiore possibile e'
     esattamente il comportamento di oggi, non uno peggiore."""
-    global FINE_STORIA_RAGGIUNTA
-    # Azzerato PRIMA di qualunque uscita: se lo si azzerasse solo sul ramo
+    global FINE_STORIA_RAGGIUNTA, PAGINAZIONE_INTERROTTA
+    # Azzerati PRIMA di qualunque uscita: se lo si azzerasse solo sul ramo
     # paginato, un giocatore risolto con una pagina sola erediterebbe il flag
     # del giocatore precedente dello stesso shard e verrebbe marcato "storia
     # completa" a torto (trovato con un test locale, non in produzione).
     FINE_STORIA_RAGGIUNTA = False
+    PAGINAZIONE_INTERROTTA = False
     if fetch_count <= PAGINA_GAME_LOG:
         # Pagina singola: nessun pageInfo, quindi non si puo' concludere
         # niente sulla fine della storia -- il flag resta False.
@@ -903,6 +908,10 @@ def fetch_game_scores(slug, fetch_count):
                 return graphql_query(ALL_GAME_SCORES_QUERY,
                                      {"slug": slug, "first": fetch_count},
                                      operation_name="AllPlayerGameScores")
+            # Interrotta a meta' (429 con retry esauriti, errore GraphQL): di
+            # questo giocatore abbiamo forse meta' storia. Nessuna conclusione
+            # sulla cache puo' essere tratta da un giro andato cosi'.
+            PAGINAZIONE_INTERROTTA = True
             break
         if base is None:
             base = data
@@ -976,10 +985,11 @@ def fetch_game_log_incremental(slug, target_window_size):
     # PAGINA_GAME_LOG in una settimana, cioe' molte piu' di quante se ne
     # giochino). Se quella pagina rivelasse piu' storia del previsto, il
     # flag viene tolto qui sotto e la run successiva torna al fetch ampio.
-    if fetch_count > PAGINA_GAME_LOG and meta.get('storia_completa') \
+    if fetch_count > PAGINA_GAME_LOG \
+            and (meta.get('storia_completa') or meta.get('ampio_inutile')) \
             and len(cache) >= (meta.get('partite_note') or 0) > 0:
         fetch_count = PAGINA_GAME_LOG
-        log(f"[FASE 1/4] Storia gia' completa in cache ({len(cache)} partite, "
+        log(f"[FASE 1/4] Storia gia' nota in cache ({len(cache)} partite, "
             f"meno di {target_window_size} perche' il giocatore non ne ha di piu'): "
             f"una sola pagina di controllo invece di {max(target_window_size * 2, 30)}.")
 
@@ -1014,11 +1024,14 @@ def fetch_game_log_incremental(slug, target_window_size):
     # (harmless: i dati FINAL non cambiano, quindi il nuovo valore e' identico),
     # ma questo evita la complessita' di dover fare un controllo caso per caso.
     updated_count = 0
+    partite_mai_viste = 0   # id assenti dalla cache: vedi 'ampio_inutile' sotto
     for node in fetched_past:
         node_id = node.get('id')
         if not node_id:
             continue
         was_final_before = cache.get(node_id, {}).get('scoreStatus') == 'FINAL'
+        if node_id not in cache:
+            partite_mai_viste += 1
         cache[node_id] = node
         if not was_final_before:
             updated_count += 1
@@ -1030,11 +1043,44 @@ def fetch_game_log_incremental(slug, target_window_size):
             meta['storia_completa'] = True
             meta['partite_note'] = len(cache)
             save_game_log_meta(cache_file, meta)
-    elif meta.get('storia_completa') and len(cache) > (meta.get('partite_note') or 0):
+    elif fetch_count > PAGINA_GAME_LOG and partite_mai_viste == 0 \
+            and not PAGINAZIONE_INTERROTTA:
+        # AMPIO INUTILE (12/08/2026, secondo giro). Caso NON coperto dal
+        # marcatore sopra: il giocatore ha PIU' partite di quante se ne
+        # chiedono (60) ma meno di WINDOW_SIZE in stato FINAL -- tipico di chi
+        # resta spesso in panchina. La paginazione non arriva mai alla fine
+        # della storia (hasNextPage resta vero), quindi 'storia_completa' non
+        # scatta e il fetch ampio si ripete a ogni run riportando esattamente
+        # le stesse partite. Misurato sulla run 31593062806: 528 giocatori col
+        # fetch ampio, solo 148 marcati storia completa -- gli altri 380 sono
+        # questo caso.
+        # Qui si registra il fatto nudo: l'ultimo fetch ampio non ha portato
+        # NESSUNA PARTITA MAI VISTA, quindi rifarlo non serve. La risposta era
+        # valida (le risposte fallite escono prima), quindi zero id nuovi vuol
+        # dire davvero zero novita'.
+        # Si guardano gli ID MAI VISTI, non updated_count: quello conta i nodi
+        # che non erano gia' FINAL, e per un panchinaro le sue 48 partite da
+        # DID_NOT_PLAY risultano "aggiornate" a ogni run pur essendo identiche
+        # (trovato con il test locale, prima del commit).
+        # I cambi di stato recenti (REVIEWING -> FINAL) non si perdono: la
+        # pagina di controllo copre le 10 partite piu' recenti, che sono
+        # esattamente quelle che possono ancora cambiare.
+        # E si controlla PAGINAZIONE_INTERROTTA: senza, due run tagliate a
+        # meta' nello stesso punto (429) darebbero "zero partite nuove" e
+        # marcherebbero come completa una storia di cui abbiamo solo la prima
+        # meta' -- troncamento silenzioso e permanente. Trovato col test
+        # locale, scenario 3.
+        if not meta.get('ampio_inutile') or meta.get('partite_note') != len(cache):
+            meta['ampio_inutile'] = True
+            meta['partite_note'] = len(cache)
+            save_game_log_meta(cache_file, meta)
+    elif (meta.get('storia_completa') or meta.get('ampio_inutile')) \
+            and len(cache) > (meta.get('partite_note') or 0):
         # La pagina di controllo ha portato partite nuove e la storia
         # potrebbe non essere piu' quella nota: si ricontrolla per intero
         # alla prossima run invece di fidarsi del marcatore.
         meta.pop('storia_completa', None)
+        meta.pop('ampio_inutile', None)
         meta.pop('partite_note', None)
         save_game_log_meta(cache_file, meta)
     log(f"[FASE 1/4] Cache aggiornata: {updated_count} partite nuove/aggiornate, "
