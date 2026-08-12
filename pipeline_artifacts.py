@@ -330,6 +330,22 @@ def _merge_json(dst, src):
     return True
 
 
+# Data che si mette ai file RICEVUTI da un artifact (12/08/2026). Serve a
+# distinguerli senza equivoci da quelli che il job produce davvero: lo `stage`
+# carica solo cio' che e' stato toccato dopo il file-sveglia, e i ricevuti
+# devono restare fuori.
+#
+# Prima ci si affidava al cronometro -- copy2 conserva la data della sorgente,
+# che per un artifact appena scaricato e' "adesso" -- e cadeva dentro la
+# tolleranza di un secondo del marker, perche' `apply` e `marker` girano
+# attaccati. Risultato: l'artifact dei consigli si portava dentro tutte le
+# predizioni che aveva solo ricevuto (visibile nei log come "presente in cons-0
+# e pred-0, tengo il primo"). Non si perdevano dati, si sprecava banda.
+# Stringere la tolleranza sarebbe stato peggio: un file scritto davvero nello
+# stesso istante del marker andrebbe perso, e quello si' che e' un danno.
+RICEVUTO_TS = 946684800.0        # 2000-01-01, inequivocabilmente "prima"
+
+
 def cmd_apply(argv):
     root = argv[0]
     if not os.path.isdir(root):
@@ -371,6 +387,10 @@ def cmd_apply(argv):
                     continue
                 os.makedirs(os.path.dirname(rel) or '.', exist_ok=True)
                 shutil.copy2(src, rel)
+                # Marchiato come RICEVUTO: cosi' lo stage non lo riprende (vedi
+                # RICEVUTO_TS). I file uniti da _merge_json invece restano con
+                # la data di adesso, perche' quelli il job li ha scritti lui.
+                os.utime(rel, (RICEVUTO_TS, RICEVUTO_TS))
                 written[rel] = os.path.basename(art)
                 n_copy += 1
     print(f'[apply] {len(art_dirs)} artifact -> {n_copy} file copiati, '
