@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T10:54:19.491216Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) gerard-fernandez-castellano: 52 pt attesi (36-71)
+   ORDINAMENTO: 55.45
+   SQUADRA: sevilla-sevilla-1890 | AVVERSARIO: rayo-vallecano-madrid
+======================================================================
+
+######################################################################
+# GIOCATORE: gerard-fernandez-castellano
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: gerard-fernandez-castellano (squadra: sevilla-sevilla-1890)
+Generato: 2026-08-12T10:54:19.490520Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 18
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-01 | ATM vs SEV | laliga-es | score=44.8 | peso=0.445
+  2025-11-08 | SEV vs OSA | laliga-es | score=56.6 | peso=0.500
+  2025-11-24 | ESP vs SEV | laliga-es | score=49.1 | peso=0.561
+  2025-11-30 | SEV vs BET | laliga-es | score=75.3 | peso=0.630
+  2025-12-07 | VCF vs SEV | laliga-es | score=41.6 | peso=0.707
+  2026-01-24 | SEV vs ATH | laliga-es | score=76.7 | peso=0.794
+  2026-02-02 | MLL vs SEV | laliga-es | score=65.2 | peso=0.891
+  2026-05-23 | CEL vs SEV | laliga-es | score=40.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 56.42
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=8): 54.67 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 42.62 | Punteggio complessivo (granulari) medio: 13.81 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 6.01 (delta +0.88) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.27
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.3 - 75.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.01 (differenza: +2.25)
+Media score in casa: 69.53 | Media score fuori casa: 48.20
+Fattore casa/trasferta applicato: 1.002 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.2
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 0.798 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.007
+Fattore duelli (casa/trasferta, da dati reali): 1.008
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.004
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 21.05% (fonte: tasso di presenza storico (8/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T19:30
+Casa: Sevilla FC | Trasferta: Rayo Vallecano
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.8 (range 35.6 - 70.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 55.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 59.98
+Punteggio REALE ottenuto in quella partita: 40.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -19.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      74.2    65.2     -9.0    16.8        SI
+   7        7      49.0    40.3     -8.7    15.4        SI
+
+MAE (errore assoluto medio): 8.82
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
