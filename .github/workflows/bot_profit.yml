@@ -99,6 +99,11 @@ jobs:
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
+          # Chiavi 2 e 3: i tetti Sorare sono per chiave e si sommano
+          # (200/min l'una). Chi le ruota le usa, chi non le ruota le
+          # ignora e resta al comportamento di prima.
+          SORARE_APIKEY_2: ${{ secrets.SORARE_APIKEY_2 }}
+          SORARE_APIKEY_3: ${{ secrets.SORARE_APIKEY_3 }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
           SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
