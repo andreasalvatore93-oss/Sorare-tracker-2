@@ -1,0 +1,131 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T10:15:52.586467Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) ho-jae-lee: 52 pt attesi (34-72)
+   ORDINAMENTO: 51.07
+   SQUADRA: darmstadt-98-darmstadt | AVVERSARIO: dynamo-dresden-dresden
+======================================================================
+
+######################################################################
+# GIOCATORE: ho-jae-lee
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ho-jae-lee (squadra: darmstadt-98-darmstadt)
+Generato: 2026-08-12T10:15:52.585671Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: 2-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-15 | ANY vs POH | k-league-1 | score=60.0 | peso=0.044
+  2025-09-13 | POH vs ULS | k-league-1 | score=72.4 | peso=0.050
+  2025-09-21 | POH vs JEJ | k-league-1 | score=67.2 | peso=0.056
+  2025-09-27 | SAN vs POH | k-league-1 | score=25.6 | peso=0.062
+  2025-10-05 | POH vs DJO | k-league-1 | score=71.4 | peso=0.070
+  2025-10-18 | SEO vs POH | k-league-1 | score=74.1 | peso=0.079
+  2025-11-01 | SAN vs POH | k-league-1 | score=45.9 | peso=0.088
+  2025-11-09 | POH vs SEO | k-league-1 | score=35.7 | peso=0.099
+  2025-11-22 | POH vs JMO | k-league-1 | score=47.5 | peso=0.111
+  2025-11-30 | GAN vs POH | k-league-1 | score=36.8 | peso=0.125
+  2026-02-28 | SAN vs POH | k-league-1 | score=40.9 | peso=0.140
+  2026-03-15 | POH vs INC | k-league-1 | score=73.2 | peso=0.157
+  2026-03-18 | POH vs SEO | k-league-1 | score=31.8 | peso=0.177
+  2026-03-22 | POH vs BUC | k-league-1 | score=39.8 | peso=0.198
+  2026-03-28 | POH vs GAN | k-league-1 | score=63.0 | peso=0.223
+  2026-04-04 | POH vs DJO | k-league-1 | score=72.0 | peso=0.250
+  2026-04-11 | POH vs JEJ | k-league-1 | score=49.6 | peso=0.281
+  2026-04-19 | POH vs ANY | k-league-1 | score=42.6 | peso=0.315
+  2026-04-22 | POH vs GWA | k-league-1 | score=70.7 | peso=0.354
+  2026-04-26 | JMO vs POH | k-league-1 | score=100.0 | peso=0.397
+  2026-05-02 | ULS vs POH | k-league-1 | score=41.3 | peso=0.445
+  2026-05-09 | DJO vs POH | k-league-1 | score=33.9 | peso=0.500
+  2026-05-12 | INC vs POH | k-league-1 | score=73.7 | peso=0.561
+  2026-05-17 | BUC vs POH | k-league-1 | score=47.7 | peso=0.630
+  2026-07-04 | ANY vs POH | k-league-1 | score=70.4 | peso=0.707
+  2026-07-11 | GWA vs POH | k-league-1 | score=25.3 | peso=0.794
+  2026-07-18 | JEJ vs POH | k-league-1 | score=39.7 | peso=0.891
+  2026-07-22 | SEO vs POH | k-league-1 | score=45.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 51.35
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=28): 52.18 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 43.82 | Punteggio complessivo (granulari) medio: 7.53 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.88 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 18.64
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.9 - 72.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.41 (differenza: +4.23)
+Media score in casa: 51.35 | Media score fuori casa: 51.35
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): N/D
+Ranking prossimo avversario: 17
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 45.7 vs media 5 PRECEDENTI: 63.9): 1.000
+P(gioca): 82.35% (fonte: tasso di presenza storico (28/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T11:30
+Casa: SG Dynamo Dresden | Trasferta: SV Darmstadt 1898
+Competizione: 2-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.7 (range 34.3 - 72.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 51.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.11
+Punteggio REALE ottenuto in quella partita: 45.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 22 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      62.2    45.9    -16.3    19.9        SI
+   7        7      59.0    35.7    -23.3    19.3        NO
+   8        8      54.7    47.5     -7.2    20.3        SI
+   9        9      53.5    36.8    -16.7    18.7        SI
+  10       10      50.9    40.9    -10.0    18.6        SI
+  11       11      49.3    73.2    +23.9    17.6        NO
+  12       12      52.8    31.8    -21.0    18.9        NO
+  13       13      49.9    39.8    -10.1    19.4        SI
+  14       14      48.5    63.0    +14.5    18.5        SI
+  15       15      50.4    72.0    +21.6    18.1        NO
+  16       16      53.2    49.6     -3.6    18.9        SI
+  17       17      52.8    42.6    -10.2    17.7        SI
+  18       18      51.5    70.7    +19.2    17.0        NO
+  19       19      53.8   100.0    +46.2    17.5        NO
+  20       20      59.4    41.3    -18.1    23.8        SI
+  21       21      57.3    33.9    -23.4    23.4        SI
+  22       22      54.5    73.7    +19.2    23.6        SI
+  23       23      56.8    47.7     -9.1    23.3        SI
+  24       24      55.7    70.4    +14.7    22.1        SI
+  25       25      57.4    25.3    -32.1    21.5        NO
+  26       26      53.7    39.7    -14.0    23.4        SI
+  27       27      52.1    45.4     -6.7    22.6        SI
+
+MAE (errore assoluto medio): 17.31
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 68.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

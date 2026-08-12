@@ -1,0 +1,110 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-12T10:10:16.118463Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) martin-delavalee: 46 pt attesi (24-73)
+   SQUADRA: sporting-charleroi-charleroi | AVVERSARIO: lommel-lommel
+======================================================================
+
+######################################################################
+# GIOCATORE: martin-delavalee
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: martin-delavalee (squadra: sporting-charleroi-charleroi)
+Generato: 2026-08-12T10:10:16.117485Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 20
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | CHA vs ANT | jupiler-pro-league | score=25.9 | peso=0.140
+  2025-08-30 | CHA vs DEN | jupiler-pro-league | score=38.2 | peso=0.157
+  2025-09-14 | CER vs CHA | jupiler-pro-league | score=20.6 | peso=0.177
+  2025-09-17 | GNK vs CHA | jupiler-pro-league | score=69.7 | peso=0.198
+  2025-09-20 | CHA vs ZWA | jupiler-pro-league | score=41.7 | peso=0.223
+  2025-09-28 | CHA vs KVM | jupiler-pro-league | score=32.6 | peso=0.250
+  2025-10-03 | GNT vs CHA | jupiler-pro-league | score=28.0 | peso=0.281
+  2025-10-18 | USG vs CHA | jupiler-pro-league | score=20.7 | peso=0.315
+  2025-10-24 | CHA vs AND | jupiler-pro-league | score=65.7 | peso=0.354
+  2025-10-31 | STA vs CHA | jupiler-pro-league | score=8.4 | peso=0.397
+  2025-12-19 | CHA vs GNK | jupiler-pro-league | score=20.4 | peso=0.445
+  2025-12-26 | AND vs CHA | jupiler-pro-league | score=39.7 | peso=0.500
+  2026-01-18 | CHA vs STA | jupiler-pro-league | score=71.7 | peso=0.561
+  2026-01-25 | ANT vs CHA | jupiler-pro-league | score=73.0 | peso=0.630
+  2026-01-31 | STV vs CHA | jupiler-pro-league | score=67.0 | peso=0.707
+  2026-02-07 | CHA vs CER | jupiler-pro-league | score=32.7 | peso=0.794
+  2026-02-14 | CHA vs GNT | jupiler-pro-league | score=39.3 | peso=0.891
+  2026-02-22 | WES vs CHA | jupiler-pro-league | score=31.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 42.51
+  di cui Punteggio decisivo (level_score) medio: 40.19 | Punteggio complessivo (granulari) medio: 2.32 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 40.28 (delta +0.09 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +1.18, delta avversario +1.27 | Possesso condizionato per venue: delta -0.72 | Goalkeeping condizionato per venue: delta -0.99 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 19.55
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 20.7 - 69.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.97 (differenza: +2.58)
+Media score in casa: 40.91 | Media score fuori casa: 39.89
+Fattore casa/trasferta applicato: 1.003 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.8
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.000 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.992
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.992
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.994
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.001
+Tasso storico clean sheet (porta inviolata nei primi 60'): 27.8% (bonus atteso incorporato nella media pesata: ~6.9pt)
+Fattore trend (media ultime 5: 46.3 vs media 5 PRECEDENTI: 42.4): 1.000
+P(gioca): 47.37% (fonte: tasso di presenza storico (18/38))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T17:15
+Casa: Lommel SK | Trasferta: Royal Charleroi S.C.
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.9 (range 24.1 - 73.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.02
+Punteggio REALE ottenuto in quella partita: 31.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      33.4    28.0     -5.4    18.1        SI
+   7        7      27.0    20.7     -6.3    16.9        SI
+   8        8      29.3    65.7    +36.4    16.9        NO
+   9        9      36.8     8.4    -28.4    20.6        NO
+  10       10      46.0    20.4    -25.6    22.9        NO
+  11       11      24.6    39.7    +15.1    21.9        SI
+  12       12      36.8    71.7    +34.9    20.5        NO
+  13       13      29.9    73.0    +43.1    24.4        NO
+  14       14      44.1    67.0    +22.9    26.4        SI
+  15       15      46.3    32.7    -13.6    26.3        SI
+  16       16      37.8    39.3     +1.5    25.1        SI
+  17       17      58.7    31.9    -26.8    23.5        NO
+
+MAE (errore assoluto medio): 21.68
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

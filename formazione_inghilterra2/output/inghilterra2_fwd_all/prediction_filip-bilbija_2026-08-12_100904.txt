@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-12T10:09:04.887060Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) filip-bilbija: 55 pt attesi (36-69)
+   ORDINAMENTO: 57.32
+   SQUADRA: derby-county-derby | AVVERSARIO: charlton-athletic-london-greater-london
+======================================================================
+
+######################################################################
+# GIOCATORE: filip-bilbija
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: filip-bilbija (squadra: derby-county-derby)
+Generato: 2026-08-12T10:09:04.886522Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | SCP vs F95 | 2-bundesliga | score=46.9 | peso=0.111
+  2025-08-29 | FCN vs SCP | 2-bundesliga | score=38.7 | peso=0.125
+  2025-09-12 | SCP vs BOC | 2-bundesliga | score=41.2 | peso=0.140
+  2025-09-20 | BSC vs SCP | 2-bundesliga | score=93.7 | peso=0.157
+  2025-09-27 | SCP vs FCK | 2-bundesliga | score=61.0 | peso=0.177
+  2025-10-03 | EBS vs SCP | 2-bundesliga | score=62.4 | peso=0.198
+  2025-10-18 | SCP vs DSC | 2-bundesliga | score=91.9 | peso=0.223
+  2025-10-25 | SGD vs SCP | 2-bundesliga | score=65.4 | peso=0.250
+  2025-11-02 | SCP vs SGF | 2-bundesliga | score=67.2 | peso=0.281
+  2025-11-22 | SCP vs H96 | 2-bundesliga | score=43.1 | peso=0.315
+  2025-11-28 | S04 vs SCP | 2-bundesliga | score=36.3 | peso=0.354
+  2026-03-14 | DSC vs SCP | 2-bundesliga | score=34.2 | peso=0.397
+  2026-04-12 | SCP vs FCM | 2-bundesliga | score=99.7 | peso=0.445
+  2026-04-18 | H96 vs SCP | 2-bundesliga | score=34.4 | peso=0.500
+  2026-04-26 | SCP vs S04 | 2-bundesliga | score=44.9 | peso=0.561
+  2026-05-03 | ELV vs SCP | 2-bundesliga | score=51.3 | peso=0.630
+  2026-05-08 | SCP vs KSC | 2-bundesliga | score=67.8 | peso=0.707
+  2026-05-17 | SVD vs SCP | 2-bundesliga | score=60.0 | peso=0.794
+  2026-05-21 | WOB vs SCP | play-offs-1-2-de | score=42.4 | peso=0.891
+  2026-05-25 | SCP vs WOB | play-offs-1-2-de | score=71.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 57.31
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=20): 55.78 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 49.89 | Punteggio complessivo (granulari) medio: 7.42 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.77 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 18.08
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.7 - 71.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.03 (differenza: +3.05)
+Media score in casa: 57.31 | Media score fuori casa: 57.31
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): N/D
+Ranking prossimo avversario: 19
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 58.6 vs media 5 PRECEDENTI: 49.9): 1.000
+P(gioca): 58.82% (fonte: tasso di presenza storico (20/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T14:00
+Casa: Charlton Athletic FC | Trasferta: Derby County FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.8 (range 36.1 - 68.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 57.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.38
+Punteggio REALE ottenuto in quella partita: 71.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +15.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      59.1    91.9    +32.8    21.1        NO
+   7        7      65.6    65.4     -0.2    24.1        SI
+   8        8      65.5    67.2     +1.7    21.8        SI
+   9        9      65.8    43.1    -22.7    19.9        NO
+  10       10      62.2    36.3    -25.9    20.6        NO
+  11       11      58.3    34.2    -24.1    21.8        NO
+  12       12      54.8    99.7    +44.9    22.4        NO
+  13       13      61.1    34.4    -26.7    27.4        SI
+  14       14      57.4    44.9    -12.5    27.6        SI
+  15       15      55.8    51.3     -4.5    26.1        SI
+  16       16      55.2    67.8    +12.6    24.5        SI
+  17       17      56.8    60.0     +3.2    23.4        SI
+  18       18      57.2    42.4    -14.8    21.9        SI
+  19       19      55.4    71.3    +15.9    21.2        SI
+
+MAE (errore assoluto medio): 17.32
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 64.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
