@@ -176,7 +176,23 @@ jobs:
           - { nome: "fwd", cfg: "fwd,," }
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 1 }
+        # clean: false = niente `git clean` e niente `git reset --hard`
+        # (12/08/2026). Su questa macchina il reset costa 68 secondi per
+        # job: git controlla 73.000 file per ripristinare quelli che il
+        # job precedente ha modificato -- che sono i NOSTRI output, non
+        # sporcizia. Su GitHub non si notava (2 secondi, e ogni job aveva
+        # una macchina vergine).
+        # Il prezzo: la cartella di lavoro si porta dietro gli avanzi.
+        # Per questo lo `stage` di fine job carica solo i file toccati
+        # dopo `.pipeline_marker` (vedi pipeline_artifacts.py). Le due
+        # cose vanno sempre insieme: togliere il marker senza rimettere
+        # clean:true rimanderebbe su main output di run vecchie.
+        with: { ref: main, fetch-depth: 1, clean: false }
+      # Quello che `git clean` non fa piu' (12/08/2026): le due cartelle
+      # di appoggio restano da un job all'altro sulla stessa macchina, e
+      # se non si svuotano `apply` rimette dentro artifact di un'altra
+      # run e `upload-artifact` carica file che non sono di questo job.
+      - run: rm -rf _artifacts _artifact_stage
       # NIENTE setup-python sui runner di casa: l'action prova a
       # INSTALLARE python scrivendo nel registro di sistema e il servizio,
       # che gira come SERVIZIO DI RETE, non ha quel permesso. Si usa il
@@ -189,6 +205,9 @@ jobs:
       # rifa' la fetch (era la causa dei 429, vedi commento sul job 'grade').
       - uses: actions/download-artifact@v4
         with: { name: pool_gw }
+      # Ora zero del lavoro vero: da qui in poi cio' che viene
+      # scritto e' roba di QUESTO job, e solo quella va nell'artifact.
+      - run: python pipeline_artifacts.py marker
       - name: Discovery
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
@@ -339,7 +358,23 @@ jobs:
         gruppo: ${{ fromJson(needs.discovery_merge.outputs.gruppi_predict) }}
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 1 }
+        # clean: false = niente `git clean` e niente `git reset --hard`
+        # (12/08/2026). Su questa macchina il reset costa 68 secondi per
+        # job: git controlla 73.000 file per ripristinare quelli che il
+        # job precedente ha modificato -- che sono i NOSTRI output, non
+        # sporcizia. Su GitHub non si notava (2 secondi, e ogni job aveva
+        # una macchina vergine).
+        # Il prezzo: la cartella di lavoro si porta dietro gli avanzi.
+        # Per questo lo `stage` di fine job carica solo i file toccati
+        # dopo `.pipeline_marker` (vedi pipeline_artifacts.py). Le due
+        # cose vanno sempre insieme: togliere il marker senza rimettere
+        # clean:true rimanderebbe su main output di run vecchie.
+        with: { ref: main, fetch-depth: 1, clean: false }
+      # Quello che `git clean` non fa piu' (12/08/2026): le due cartelle
+      # di appoggio restano da un job all'altro sulla stessa macchina, e
+      # se non si svuotano `apply` rimette dentro artifact di un'altra
+      # run e `upload-artifact` carica file che non sono di questo job.
+      - run: rm -rf _artifacts _artifact_stage
       # NIENTE setup-python sui runner di casa: l'action prova a
       # INSTALLARE python scrivendo nel registro di sistema e il servizio,
       # che gira come SERVIZIO DI RETE, non ha quel permesso. Si usa il
@@ -357,6 +392,9 @@ jobs:
           name: discovery-merged
           path: _artifacts/discovery-merged
       - run: python pipeline_artifacts.py apply _artifacts
+      # Ora zero del lavoro vero: da qui in poi cio' che viene
+      # scritto e' roba di QUESTO job, e solo quella va nell'artifact.
+      - run: python pipeline_artifacts.py marker
       - name: Predict
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
@@ -480,7 +518,23 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 1 }
+        # clean: false = niente `git clean` e niente `git reset --hard`
+        # (12/08/2026). Su questa macchina il reset costa 68 secondi per
+        # job: git controlla 73.000 file per ripristinare quelli che il
+        # job precedente ha modificato -- che sono i NOSTRI output, non
+        # sporcizia. Su GitHub non si notava (2 secondi, e ogni job aveva
+        # una macchina vergine).
+        # Il prezzo: la cartella di lavoro si porta dietro gli avanzi.
+        # Per questo lo `stage` di fine job carica solo i file toccati
+        # dopo `.pipeline_marker` (vedi pipeline_artifacts.py). Le due
+        # cose vanno sempre insieme: togliere il marker senza rimettere
+        # clean:true rimanderebbe su main output di run vecchie.
+        with: { ref: main, fetch-depth: 1, clean: false }
+      # Quello che `git clean` non fa piu' (12/08/2026): le due cartelle
+      # di appoggio restano da un job all'altro sulla stessa macchina, e
+      # se non si svuotano `apply` rimette dentro artifact di un'altra
+      # run e `upload-artifact` carica file che non sono di questo job.
+      - run: rm -rf _artifacts _artifact_stage
       # NIENTE setup-python sui runner di casa: l'action prova a
       # INSTALLARE python scrivendo nel registro di sistema e il servizio,
       # che gira come SERVIZIO DI RETE, non ha quel permesso. Si usa il
@@ -497,6 +551,9 @@ jobs:
           path: _artifacts
           pattern: pred-*
       - run: python pipeline_artifacts.py apply _artifacts
+      # Ora zero del lavoro vero: da qui in poi cio' che viene
+      # scritto e' roba di QUESTO job, e solo quella va nell'artifact.
+      - run: python pipeline_artifacts.py marker
       - name: Costruisci consigli
         env:
           MATRICE_UNIQUE: ${{ needs.discovery_merge.outputs.matrice_unique }}

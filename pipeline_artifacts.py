@@ -82,6 +82,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 
 
 # FINE RIGA SEMPRE \n, ANCHE SU WINDOWS (12/08/2026, runner di casa).
@@ -214,14 +215,45 @@ N_BIN = int(os.environ.get('PIPELINE_N_BIN') or 45)
 
 # ---------------------------------------------------------------- stage ----
 
+# File-sveglia scritto all'inizio del lavoro vero di un job (sottocomando
+# `marker`). Serve SOLO dove il checkout gira con `clean: false`, cioe' sui
+# runner di casa: li' la cartella di lavoro si porta dietro gli output del job
+# precedente, e senza questo filtro ogni job li ricaricherebbe come propri --
+# compresi quelli di una run vecchia o annullata, che finirebbero su main.
+# Se il file non c'e' (o e' piu' vecchio dei file), il comportamento e' quello
+# di sempre: si prende tutto quello che git vede come cambiato.
+MARKER_FILE = '.pipeline_marker'
+
+
+def cmd_marker(_argv):
+    """Segna l'ora zero del lavoro vero di questo job."""
+    with open(MARKER_FILE, 'w', encoding='utf-8') as f:
+        f.write('%f\n' % time.time())
+    print('[marker] ora zero: %s' % time.strftime('%H:%M:%S'))
+    return 0
+
+
+def _soglia_marker():
+    """mtime del file-sveglia, o None se non c'e'."""
+    try:
+        return os.path.getmtime(MARKER_FILE)
+    except OSError:
+        return None
+
+
 def _git_changed(path_re):
-    """Path relativi dei file nuovi o modificati che matchano path_re."""
+    """Path relativi dei file nuovi o modificati che matchano path_re.
+
+    Con il file-sveglia presente, si fermano anche quelli che non sono stati
+    toccati da questo job (vedi MARKER_FILE)."""
     out = subprocess.run(
         ['git', 'status', '--porcelain', '-z', '--untracked-files=all'],
         capture_output=True, text=True, check=True,
     ).stdout
     rx = re.compile(path_re)
+    soglia = _soglia_marker()
     changed = []
+    scartati = 0
     for entry in out.split('\0'):
         if len(entry) < 4:
             continue
@@ -233,14 +265,28 @@ def _git_changed(path_re):
         if 'D' in code or 'R' in code:
             continue
         path = path.replace('\\', '/')
-        if rx.match(path) and os.path.isfile(path):
-            changed.append(path)
+        if not (rx.match(path) and os.path.isfile(path)):
+            continue
+        # Un secondo di tolleranza: su Windows l'orologio del filesystem e'
+        # granuloso e un file scritto nello stesso istante del marker non deve
+        # perdersi per un arrotondamento.
+        if soglia is not None and os.path.getmtime(path) < soglia - 1.0:
+            scartati += 1
+            continue
+        changed.append(path)
+    if scartati:
+        print('[stage] %d file gia\' presenti prima dell\'inizio del lavoro: '
+              'non sono di questo job, restano fuori' % scartati)
     return sorted(changed)
 
 
 def cmd_stage(argv):
     stage_dir = argv[0]
     path_re = argv[1] if len(argv) > 1 else DEFAULT_PATH_RE
+    # Si riparte SEMPRE da vuoto: con `clean: false` (runner di casa) la
+    # cartella di appoggio del job precedente e' ancora li', e senza questa
+    # riga il suo contenuto finirebbe dentro il nostro artifact.
+    shutil.rmtree(stage_dir, ignore_errors=True)
     os.makedirs(stage_dir, exist_ok=True)
     files = _git_changed(path_re)
     for path in files:
@@ -729,6 +775,7 @@ def cmd_aggrega_costi(_argv):
 
 
 COMANDI = {
+    'marker': cmd_marker,
     'stage': cmd_stage,
     'apply': cmd_apply,
     'matrice': cmd_matrice,
