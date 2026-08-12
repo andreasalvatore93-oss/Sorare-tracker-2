@@ -11,6 +11,8 @@ capire a quale livello si rompe:
 import json
 import os
 
+APIKEY = os.environ.get('SORARE_APIKEY', '')  # 12/08/2026: alza il tetto di complessita' e di richieste dell'account
+
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 COOKIES = os.environ.get('SORARE_COOKIE', '')
 
@@ -46,6 +48,8 @@ def prova(nome, query, variables=None, con_auth=True):
     }
     if con_auth:
         h['Cookie'] = COOKIES
+    if APIKEY:
+        h['APIKEY'] = APIKEY
         h['x-csrf-token'] = CSRF
     try:
         r = _S.post(GRAPHQL_URL, json={'query': query, 'variables': variables or {}},

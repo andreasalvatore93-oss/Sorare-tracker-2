@@ -20,6 +20,8 @@ import time
 import datetime
 import requests
 
+APIKEY = os.environ.get('SORARE_APIKEY', '')  # 12/08/2026: alza il tetto di complessita' e di richieste dell'account
+
 try:
     from curl_cffi import requests as curl_requests
     _HAS_CURL_CFFI = True
@@ -44,6 +46,8 @@ def graphql_query(query, variables=None, operation_name=None):
     headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
     if COOKIES:
         headers['Cookie'] = COOKIES
+    if APIKEY:
+        headers['APIKEY'] = APIKEY
     payload = {'query': query, 'variables': variables or {}}
     if operation_name:
         payload['operationName'] = operation_name

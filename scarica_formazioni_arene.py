@@ -22,6 +22,8 @@ import os
 import sys
 import time
 
+APIKEY = os.environ.get('SORARE_APIKEY', '')  # 12/08/2026: alza il tetto di complessita' e di richieste dell'account
+
 ARCHIVIO = 'dati_globali/arene_storico.json'
 OUT = 'dati_globali/arene_formazioni.json'
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
@@ -58,7 +60,8 @@ def graphql(query, variables):
         time.sleep(PAUSA)
         r = _S.post(GRAPHQL_URL, json={'query': query, 'variables': variables},
                     headers={'Content-Type': 'application/json',
-                             'User-Agent': 'Mozilla/5.0'}, timeout=60)
+                             'User-Agent': 'Mozilla/5.0',
+                             **({'APIKEY': APIKEY} if APIKEY else {})}, timeout=60)
         if r.status_code == 429:
             attesa = min(2 ** tentativo * 3, 60)
             print(f'    rate limit, aspetto {attesa}s')

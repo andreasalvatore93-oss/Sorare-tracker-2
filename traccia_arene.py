@@ -31,6 +31,8 @@ import statistics
 import sys
 import time
 
+APIKEY = os.environ.get('SORARE_APIKEY', '')  # 12/08/2026: alza il tetto di complessita' e di richieste dell'account
+
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 OUT = 'dati_globali/arene_storico.json'
 COOKIES = os.environ.get('SORARE_COOKIE', '')
@@ -193,6 +195,8 @@ def graphql(query, variables):
         headers['device_fingerprint'] = FINGERPRINT
     if COOKIES:
         headers['Cookie'] = COOKIES
+    if APIKEY:
+        headers['APIKEY'] = APIKEY
     if CSRF:
         headers['x-csrf-token'] = CSRF
     for tentativo in range(5):

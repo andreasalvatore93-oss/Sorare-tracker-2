@@ -20,6 +20,9 @@ import json
 import re
 import statistics
 import urllib.request
+import os
+
+APIKEY = os.environ.get('SORARE_APIKEY', '')  # 12/08/2026: alza il tetto di complessita' e di richieste dell'account
 
 ARCHIVIO = 'dati_globali/arene_storico.json'
 
@@ -44,7 +47,8 @@ def _graphql(query, variables=None):
     req = urllib.request.Request(
         GRAPHQL_URL,
         data=json.dumps({'query': query, 'variables': variables or {}}).encode(),
-        headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'})
+        headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0',
+                 **({'APIKEY': APIKEY} if APIKEY else {})})
     return json.loads(urllib.request.urlopen(req, timeout=60).read())
 
 

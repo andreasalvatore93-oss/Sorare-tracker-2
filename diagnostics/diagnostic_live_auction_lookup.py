@@ -4,6 +4,8 @@ import base64
 import datetime
 import requests
 
+APIKEY = os.environ.get('SORARE_APIKEY', '')  # 12/08/2026: alza il tetto di complessita' e di richieste dell'account
+
 COOKIES = os.environ.get('SORARE_COOKIE')
 CSRF_TOKEN = os.environ.get('SORARE_CSRF')
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
@@ -35,6 +37,7 @@ def graphql_query(query, variables=None):
     headers = {
         'Content-Type': 'application/json',
         'Cookie': COOKIES,
+        **({'APIKEY': APIKEY} if APIKEY else {}),
         'x-csrf-token': CSRF_TOKEN,
         'User-Agent': 'Mozilla/5.0',
     }

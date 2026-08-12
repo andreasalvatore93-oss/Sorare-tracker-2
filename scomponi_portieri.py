@@ -45,6 +45,8 @@ import backtest_arene_previsioni as P
 import test_gk as G
 from confronta_previsioni_giornata import finestra_giornata
 
+APIKEY = os.environ.get('SORARE_APIKEY', '')  # 12/08/2026: alza il tetto di complessita' e di richieste dell'account
+
 URL = 'https://api.sorare.com/graphql'
 PAUSA = float(os.environ.get('PAUSA', '1.2'))
 COOKIE = os.environ.get('SORARE_COOKIE', '')
@@ -66,6 +68,8 @@ def intestazioni():
     h = {'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
     if COOKIE:
         h['Cookie'] = COOKIE
+    if APIKEY:
+        h['APIKEY'] = APIKEY
         for pezzo in COOKIE.split(';'):
             pezzo = pezzo.strip()
             if pezzo.startswith('csrftoken='):

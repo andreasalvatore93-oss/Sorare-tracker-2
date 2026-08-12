@@ -1246,6 +1246,7 @@ def graphql_query(query, variables=None, max_retries=3, extra_headers=None, crit
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Cookie': COOKIES,
+        **({'APIKEY': APIKEY} if APIKEY else {}),
         'x-csrf-token': CSRF_TOKEN,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
                        '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
@@ -2874,6 +2875,8 @@ mutation CreateDirectOfferMutation($input: createDirectOfferInput!) {
 
 
 import uuid
+
+APIKEY = os.environ.get('SORARE_APIKEY', '')  # 12/08/2026: alza il tetto di complessita' e di richieste dell'account
 
 
 def generate_deal_id():
