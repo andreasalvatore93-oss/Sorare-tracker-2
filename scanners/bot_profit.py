@@ -74,6 +74,7 @@ import datetime
 import glob
 import json
 import os
+import itertools
 import subprocess
 import threading
 import time
@@ -99,6 +100,37 @@ else:
 COOKIES = os.environ.get('SORARE_COOKIE')
 # 12/08: alza il tetto di rate/complessita' sull'account, si aggiunge al cookie.
 APIKEY = os.environ.get('SORARE_APIKEY', '')
+
+# TRE CHIAVI A ROTAZIONE (12/08/2026 sera). Ogni APIKEY Sorare vale 200
+# richieste/minuto e i tetti sono INDIPENDENTI (documentazione:
+# github.com/sorare/api, verificato in laboratorio). Questo bot gira come UN
+# processo con 10 thread e a ritmo base 0,2s punta a ~300 richieste/minuto:
+# con una chiave sola sfonda comunque il tetto di 200. Ruotando le tre chiave
+# per richiesta il tetto sale a 600 e il ritmo attuale ci sta dentro senza
+# toccare nient'altro.
+#
+# Il motivo per cui questo file era pieno di freni si legge nei commenti piu'
+# sotto ("423 HTTP 429 su ~1300-1500 richieste", ritmo SAFE a 0,9s = 66
+# richieste/minuto): erano tarati contro il tetto della SESSIONE COL COOKIE,
+# che vale 60/minuto. Quel muro con la chiave non c'e' piu'.
+#
+# Se le chiavi 2 e 3 non sono impostate si usa solo la prima: comportamento
+# identico a prima, nessuna regressione.
+_APIKEYS = [k for k in (APIKEY,
+                        os.environ.get('SORARE_APIKEY_2', ''),
+                        os.environ.get('SORARE_APIKEY_3', '')) if k]
+_apikey_giro = itertools.cycle(_APIKEYS) if _APIKEYS else None
+_apikey_lock = threading.Lock()
+
+
+def _prossima_apikey():
+    """La chiave da usare per la prossima richiesta, a rotazione.
+    Il lock serve perche' i thread di snapshot chiamano in parallelo e
+    itertools.cycle non e' garantito thread-safe."""
+    if not _apikey_giro:
+        return ''
+    with _apikey_lock:
+        return next(_apikey_giro)
 
 
 def _extract_csrf_from_cookie(cookie_string):
@@ -744,7 +776,7 @@ def graphql_query(query, variables=None, max_retries=None):
         'Accept': 'application/json',
         'Cookie': COOKIES,
         'x-csrf-token': CSRF_TOKEN,
-        **({'APIKEY': APIKEY} if APIKEY else {}),
+        **({'APIKEY': _prossima_apikey()} if _APIKEYS else {}),
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
                        '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
         'Origin': 'https://sorare.com',
