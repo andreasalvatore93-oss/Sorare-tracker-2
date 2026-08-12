@@ -640,7 +640,87 @@ TARGET_MIN_S. Verificato in locale sul _bin_packing vero --
   45 coppie x 60 giocatori (carico 10800s) -> 45 bin  (invariato)
 -- e con carico grande non cambia niente rispetto a prima.
 
-7.15 RISULTATI DELLE RUN SUCCESSIVE
+7.15 IL RIBALTONE DELLE 17:00 — ARRIVA L'APIKEY
+-------------------------------------------------
+Tutto quello che sta scritto sopra e' stato misurato SENZA chiave API. Alle
+17:14 Sorare ne ha date tre all'utente, e il quadro e' cambiato del tutto.
+
+I NUMERI VERI, dalla documentazione ufficiale (github.com/sorare/api), non
+piu' dedotti da noi:
+
+  accesso                        richieste/min   complessita'
+  anonimo                              20             500
+  sessione autenticata (cookie)        60          30.000
+  APIKEY                              600          30.000
+  + un tetto separato di 40 QUERY CONTEMPORANEAMENTE IN VOLO,
+    che nessuna chiave alza.
+
+Il "60 al minuto" della sessione col cookie e' il muro contro cui abbiamo
+sbattuto tutto il giorno. Verificato in laboratorio, stessa query e stessa
+dose, cambiando solo gli header:
+
+  solo APIKEY          900 richieste in  8s ->   0 bloccate
+  cookie + APIKEY      600 richieste in  6s ->   0 bloccate
+  SOLO COOKIE          600 richieste in  5s -> 461 bloccate (si ferma alla 139a)
+
+La chiave SCAVALCA il tetto della sessione: non serve togliere il cookie da
+nessuna parte, basta avere la chiave. E ogni chiave vale 200/min con tetti
+INDIPENDENTI: tre chiavi fanno i 600 dichiarati come massimo del programma
+(3 x 200 = 600, il conto e' dell'utente ed e' quello giusto).
+
+DOVE MANCAVA. Sonnet l'aveva messa ovunque nei predict, ma discovery_fixture.py
+-- cioe' i job 'pool' e 'discovery' -- faceva getattr(base, 'APIKEY', '') su
+un modulo che non la definiva: copertura apparente, zero effetto. Tappato sui
+164 script di discovery, piu' altri 17 fra bot, scanner e diagnostica di cui
+sette ricevevano gia' il secret dal workflow e lo buttavano via.
+
+COSA HA SBLOCCATO, oltre al rate: con complessita' 30.000 le pagine si
+allargano. Misurato sull'API vera: il dettaglio granulare passa da 6 a 200
+partite per richiesta, e il game log da 6 query a 1 (Sorare taglia comunque
+la pagina a 50). PAGINA_GAME_LOG e BATCH_DETTAGLIO ora valgono 50 e 30 se la
+chiave c'e', 10 e 6 se non c'e'.
+
+7.16 LE RUN DELLA SERA, IN ORDINE
+-----------------------------------
+Tutte in preseason (gw5, soglia 0, ~1160 giocatori), cioe' il caso peggiore.
+
+  run   configurazione                 query   429   persi   predict   RUN
+  I(*)  1 chiave, freno 2,0s            1496    20   1174s     400s   11,7 min
+  H     1 chiave, nessun freno          1497    19   2352s     265s    8,8 min
+  L     3 chiavi, freno 2,0s            1492     0      0s     318s   10,4 min
+  M     3 chiavi, no freno, 20 job         -     -       -        -   (in corso)
+  (*) lanciata prima di H nel tempo, messa qui per leggibilita'.
+
+DUE LEZIONI, e sono la stessa lezione:
+  - il freno tarato su 600/min con UNA chiave (200/min vere) ha PEGGIORATO la
+    run: aspettava piu' di quanto risparmiasse. Un parametro giusto su un
+    budget sbagliato e' un parametro sbagliato.
+  - con tre chiavi il freno diventa inutile in un altro modo: costa ~150
+    secondi di attesa voluta per evitarne ~118 di blocchi. Spento.
+
+PAVIMENTO ARITMETICO della fase predict in preseason (1492 richieste):
+  1 chiave = 200/min -> 7,5 minuti   <- ci siamo schiantati contro tutto il giorno
+  3 chiavi = 600/min -> 2,5 minuti
+
+7.17 COSA RESTA, E COSA NON SI PUO' TOCCARE
+---------------------------------------------
+Non toccabile: 20 job in parallelo (piano GitHub Free; Pro ne darebbe 40) e
+40 query in volo lato Sorare. I due numeri sono vicini, quindi oltre ~40 il
+parallelismo non ha piu' senso e non vale la pena inseguirlo.
+
+Ancora aggredibile:
+  - l'AVVIO dei job, ~22 secondi fissi ciascuno. Da qui N_BIN 45 -> 20.
+    Regola generale emersa oggi: finche' i job stanno dentro gli slot
+    disponibili dividere conviene sempre (la discovery a 4 job ha wall 65s
+    contro i ~176s che costerebbe unificata); quando li superano, ogni job in
+    piu' si somma davvero.
+  - 'consiglio' (77s) e 'formazione' (57s) girano in fila e pagano due volte
+    avvio e download degli stessi artifact: unendoli si prendono ~35-40s.
+  - le pagine strozzate dal vecchio tetto di 500 in TUTTO IL RESTO del repo:
+    216 file paginano ancora a first=5 dove ora ci starebbero 50. Filone a
+    parte, meccanico, da fare quando serve.
+
+7.18 RISULTATI DELLE RUN SUCCESSIVE
 -------------------------------------
 (compilato via via)
 
