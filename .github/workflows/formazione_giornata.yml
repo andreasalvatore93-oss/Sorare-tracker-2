@@ -331,16 +331,19 @@ jobs:
           SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           ESCLUDI_LOCKATE: ${{ github.event.inputs.escludi_lockate }}
           GRUPPO: ${{ matrix.gruppo.g }}
-          # PACING: PROVATO E SCARTATO (12/08/2026, run 31596309760).
-          # Ipotesi: i 429 nascono dalla raffica (20 runner a 0,2s =
-          # fino a 100 query/s verso un account che ne regge ~9), quindi
-          # partire piu'piano dovrebbe evitarli. MISURATO CON
-          # SORARE_PACING_MIN=1.0: 27 risposte 429 e 4644s di attesa
-          # contro 20 e 4728s della run precedente a 0,2s, con un TERZO
-          # delle query. Nessun effetto: l'ipotesi e' falsa, i 429 non
-          # dipendono dalla velocita' con cui si chiede.
-          # Il parametro resta configurabile nel modello
-          # (SORARE_PACING_MIN, default 0,2s) ma qui non si imposta.
+          # PACING (12/08/2026 sera, rifatto con i numeri veri della
+          # documentazione Sorare: https://github.com/sorare/api).
+          # Budget con APIKEY = 600 richieste/minuto per l'account, cioe' 10 al
+          # secondo. Il predict gira su 20 job in parallelo (tetto di
+          # concorrenza di GitHub), quindi ognuno deve distanziare le proprie
+          # richieste di 20/10 = 2 secondi per non sfondare insieme agli altri.
+          # NB: il primo tentativo, stamattina, non aveva funzionato perche' il
+          # freno non attraversava i processi (ogni giocatore e' un processo
+          # nuovo e ripartiva da zero) -- difetto corretto nello stesso giorno.
+          # Il conto: aggiunge ~0,7s a richiesta sopra l'avvio del processo,
+          # cioe' ~50s di wall sulla fase, e toglie blocchi da ~120s l'uno
+          # (run 31615179175: 19 blocchi, 2352 secondi buttati).
+          SORARE_PACING_MIN: "2.0"
           PYTHONUNBUFFERED: "1"
         run: |
           set -u
