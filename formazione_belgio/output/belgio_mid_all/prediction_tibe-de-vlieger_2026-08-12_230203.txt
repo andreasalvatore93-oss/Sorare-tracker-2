@@ -1,0 +1,111 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-12T23:02:03.631504Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) tibe-de-vlieger: 58 pt attesi (41-82)
+   SQUADRA: gent-gent | AVVERSARIO: ifk-goteborg-goteborg
+======================================================================
+
+######################################################################
+# GIOCATORE: tibe-de-vlieger
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: tibe-de-vlieger (squadra: gent-gent)
+Generato: 2026-08-12T23:02:03.630145Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 41
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: uefa-europa-conference-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-06 | USG vs GNT | jupiler-pro-league | score=42.5 | peso=0.624
+  2025-12-14 | GNT vs ANT | jupiler-pro-league | score=48.8 | peso=0.642
+  2025-12-21 | CLU vs GNT | jupiler-pro-league | score=71.6 | peso=0.660
+  2025-12-27 | GNT vs WES | jupiler-pro-league | score=54.6 | peso=0.678
+  2026-03-08 | GNT vs KVM | jupiler-pro-league | score=82.8 | peso=0.697
+  2026-03-13 | GNT vs ZWA | jupiler-pro-league | score=46.9 | peso=0.717
+  2026-03-22 | DEN vs GNT | jupiler-pro-league | score=41.7 | peso=0.737
+  2026-04-12 | AND vs GNT | jupiler-pro-league | score=48.3 | peso=0.758
+  2026-04-19 | GNT vs STV | jupiler-pro-league | score=57.9 | peso=0.779
+  2026-04-22 | USG vs GNT | jupiler-pro-league | score=54.2 | peso=0.801
+  2026-04-26 | GNT vs CLU | jupiler-pro-league | score=55.3 | peso=0.824
+  2026-05-03 | KVM vs GNT | jupiler-pro-league | score=83.3 | peso=0.847
+  2026-05-10 | GNT vs AND | jupiler-pro-league | score=84.6 | peso=0.871
+  2026-05-16 | STV vs GNT | jupiler-pro-league | score=65.4 | peso=0.895
+  2026-05-21 | GNT vs USG | jupiler-pro-league | score=40.6 | peso=0.920
+  2026-05-31 | GNT vs GNK | jupiler-pro-league | score=75.2 | peso=0.946
+  2026-08-06 | IFK vs GNT | uefa-europa-conference-league | score=35.0 | peso=0.973
+  2026-08-09 | GNT vs KVM | jupiler-pro-league | score=63.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 58.72
+  di cui Punteggio decisivo (level_score) medio: 36.65 | Punteggio complessivo (granulari) medio: 22.08 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 37.50 (delta +0.86)
+  Efficacia offensiva condizionata: delta venue +0.09, delta avversario +0.00 | Passaggio condizionato: delta venue +1.25, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.27, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.47
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.7 - 82.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.58 (differenza: +1.89)
+Media score in casa: 61.03 | Media score fuori casa: 55.25
+Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.0
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.007
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 1.004
+Fattore trend (media ultime 5: 55.9 vs media 5 PRECEDENTI: 67.5): 1.000
+P(gioca): 43.90% (fonte: tasso di presenza storico (18/41))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-13T18:30
+Casa: KAA Gent | Trasferta: IFK Göteborg
+Competizione: uefa-europa-conference-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 58.2 (range 41.1 - 82.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.36
+Punteggio REALE ottenuto in quella partita: 63.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +5.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      82.0    41.7    -40.3    16.0        NO
+   7        7      52.0    48.3     -3.7    16.1        SI
+   8        8      50.6    57.9     +7.3    15.2        SI
+   9        9      46.6    54.2     +7.6    14.3        SI
+  10       10      48.5    55.3     +6.8    13.5        SI
+  11       11      57.3    83.3    +26.0    12.7        NO
+  12       12      56.9    84.6    +27.7    15.2        NO
+  13       13      56.6    65.4     +8.8    16.8        SI
+  14       14      53.9    40.6    -13.3    16.2        SI
+  15       15      64.9    75.2    +10.3    16.6        SI
+  16       16      59.6    35.0    -24.6    16.7        NO
+  17       17      83.0    63.6    -19.4    17.6        NO
+
+MAE (errore assoluto medio): 16.33
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 58.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
