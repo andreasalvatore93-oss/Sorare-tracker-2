@@ -235,6 +235,31 @@ def _serie(modulo, cache, slug, usable, squadra):
     return s
 
 
+_LEAGUE_DIR_CACHE = {}
+
+
+def _cartella_lega(competizione):
+    """competizione Sorare -> cartella del repo ('laliga-es' -> 'spagna').
+
+    Serve perche' i predict di produzione identificano la lega con la
+    CARTELLA (`league='spagna'` nella firma di formazione_spagna/predict/),
+    e le tabelle per-lega sono chiavate cosi'. La mappa si legge da
+    LEAGUE_DIR in discovery_fixture.py con una regex invece di importare quel
+    modulo: qui serve un dizionario, non le sue dipendenze."""
+    if not _LEAGUE_DIR_CACHE:
+        import re as _re
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            'discovery_fixture.py')
+        try:
+            with open(path, encoding='utf-8') as f:
+                blocco = _re.search(r'LEAGUE_DIR\s*=\s*\{(.*?)\n\}', f.read(), _re.S)
+            _LEAGUE_DIR_CACHE.update(
+                _re.findall(r"'([a-z0-9\-]+)'\s*:\s*'([a-z0-9_]+)'", blocco.group(1)))
+        except Exception:
+            _LEAGUE_DIR_CACHE['__vuota__'] = ''
+    return _LEAGUE_DIR_CACHE.get(competizione)
+
+
 def contesto(cache, slug, ruolo, fine_giornata, cutoff_giornata=None):
     """Tutti gli ingressi della previsione, senza ancora calcolarla.
 
@@ -282,7 +307,17 @@ def contesto(cache, slug, ruolo, fine_giornata, cutoff_giornata=None):
             # opponent_lambda_multiplier). Questo modulo importa solo i 4
             # file predict/ di MLS (_MODULO sopra), quindi la lega vera per
             # QUALUNQUE chiamata qui dentro e' sempre 'mls'.
-            'lega': 'mls'}
+            'lega': 'mls',
+            # LA LEGA VERA della partita-bersaglio (13/08/2026), separata da
+            # 'lega' apposta. 'lega' sopra resta 'mls' perche' su quella sono
+            # tarati i coefficienti di opponent_strength usati qui: cambiarla
+            # sposterebbe misure che non c'entrano niente con questo filone.
+            # Questa invece serve a tutto cio' che dipende dal CAMPIONATO in
+            # cui si gioca davvero (PRIOR_LEGA). Senza, ogni giocatore del
+            # mondo veniva calcolato come se fosse in MLS e qualunque misura
+            # per-lega sarebbe uscita piatta -- cioe' "non serve" -- per un
+            # difetto del banco, non per un fatto sul modello.
+            'lega_vera': _cartella_lega(competizione)}
 
 
 def _avversario(ctx):
@@ -690,6 +725,17 @@ def _calcola_base(ctx, half_life=None, trend_intensity=None, shrink_k=None,
         extra['shrink_k'] = shrink_k
 
     av = _avversario(ctx) if usa_avversario else None
+    # LA LEGA VA PASSATA SEMPRE (13/08/2026). Prima arrivava alle funzioni di
+    # produzione solo dentro `if av:`, cioe' solo con usa_avversario acceso:
+    # spento, ogni giocatore del mondo veniva calcolato con league='mls' (il
+    # default della firma). Finche' `league` serviva solo a opponent_strength
+    # -- gia' gated da next_opponent_team_slug -- non faceva danno, ma
+    # qualunque misura su un parametro che dipende dalla lega (PRIOR_LEGA)
+    # sarebbe stata falsata in silenzio: tutti MLS. Passarla e' innocuo a
+    # correzioni spente (senza next_opponent_team_slug nessuna funzione la
+    # legge) e necessario per misurare quelle nuove.
+    if ctx.get('lega_vera'):
+        extra.setdefault('league', ctx['lega_vera'])
     _sens = lambda ruolo_breve: (sensitivity_by_role.get(ruolo_breve) if sensitivity_by_role else None)
 
     if ruolo == 'Goalkeeper':
