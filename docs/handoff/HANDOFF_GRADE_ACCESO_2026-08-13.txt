@@ -233,3 +233,59 @@ docs/handoff/BRIEF_SONNET_ARCHIVIO_ESTESO_2026-08-13.txt  l'estrazione
 analisi_manager/p58..p62                     gli script di misura
 archivio_ufficiale/                          65 manager, 44 giornate
 analisi_manager/dati/storico_grade_crowss_completamento.json  195.991 righe
+
+
+=====================================================================
+CODA DELLA STESSA SESSIONE -- notte del 13-14/08/2026
+=====================================================================
+Dopo l'accensione il lavoro e' proseguito su una domanda sola: se il voto
+di Sorare ci batte nel dire "quanto vale questo giocatore", dove sbagliamo
+noi? Tre misure, due cure provate, entrambe bocciate.
+
+1. IL VOTO E' PER DUE TERZI "CHI", PER UN TERZO "QUANDO" (p67).
+   Placebo mai fatto prima: i voti rimescolati fra le giornate dello STESSO
+   giocatore invece che fra giocatori. Sopravvive il 65% del guadagno
+   (mediana di 8 permutazioni, nessuna arriva al vero). Quindi il voto non
+   e' una pagella statica -- un terzo e' per-partita -- ma i due terzi
+   restanti sono un difetto NOSTRO: la qualita' di un giocatore dovrebbe
+   stare nel suo storico.
+
+2. DOVE ci batte (p68): il doppio sui giocatori con poche partite recenti
+   (corr col residuo +0,181 sotto le 10 partite contro +0,067 sopra le 35)
+   e di piu' su FWD (+0,123) e GK (+0,113), che sono i due ruoli con
+   half_life 6, cioe' memoria corta. Due tagli diversi, stessa indicazione.
+
+3. PRIMA CURA -- shrinkage verso un livello di riferimento (p69): BOCCIATA.
+   Il MAE peggiora in modo monotono per ogni k, e peggiora anche nella
+   fascia 0-10 partite dove doveva aiutare. Motivo: il modello lo shrinkage
+   lo fa GIA', la calibrazione moltiplica per un coefficiente sotto 1 in
+   ogni ruolo (GK 0,264). Non riproporla senza tenere conto di
+   CALIB_PER_RUOLO.
+
+4. SECONDA CURA -- allungare la finestra storica (p70, p71, p72): BOCCIATA.
+   Il taglio e' in giorni ma l'informazione si accumula in partite: 365
+   giorni sono 40 partite per un titolare e 9 per una riserva. Sul mazzo
+   di crowss 265 giocatori su 719 hanno 1.677 partite gia' in cache che il
+   taglio nasconde. Eppure: sui tre indicatori solo il MAE supera il
+   proprio rumore, e IN ESSENZE il delta e' +2.594 con IC95
+   [-6.978;+12.852], cioe' +1,9 per unita'. MAX_HISTORY_DAYS resta 365.
+
+5. SCOPERTO DI SPONDA, e vale per il futuro: la paginazione di
+   allPlayerGameScores FUNZIONA (first: 50 + after: endCursor). Su Prevot
+   Sorare ha 149 partite dal 2018, 45 piene, contro le 11 in cache: la
+   nostra cache e' corta perche' scarichiamo una pagina sola, non perche' i
+   dati non ci siano. Approfondire i 104 giocatori davvero sottili del
+   mazzo costerebbe 312 query, mezzo minuto.
+
+6. E IL VOTO E' PER CARTA, NON PER GIOCATORE (in CLAUDE.md, D7). Trovato
+   dall'utente sulla sua schermata: Perisic, stessa giornata e stessa
+   partita, carta ATT con A e carta CC con B. Il nostro indice ne tiene uno
+   solo. Esposizione misurata: 4,7% delle carte-formazione dell'archivio,
+   3,8% del mazzo di crowss. Vale una lettera, un paio di punti, direzione
+   ignota. Limite della fonte, non bug nostro.
+
+RESTA APERTO, come idea e non come misura: la diagnosi del punto 2 non ha
+una cura nota. Le due ovvie sono state provate e bocciate. Se il voto batte
+il nostro storico sui giocatori poco osservati, usa un'informazione che noi
+non guardiamo affatto -- candidati mai testati: minutaggio atteso (non
+"gioca" ma "quanto"), livello del club, ruolo tattico (rigorista, punizioni).

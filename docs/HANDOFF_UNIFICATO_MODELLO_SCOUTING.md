@@ -1483,6 +1483,63 @@ non è una questione di quanto pesiamo lo storico. La domanda aperta, che è
 di idee e non di misure: *cosa sa Sorare di un giocatore poco osservato, che
 non sta nei suoi punteggi passati?*
 
+### LA SECONDA CURA — la finestra storica — PROVATA E BOCCIATA (14/08, p70-p72)
+
+Seconda spiegazione ovvia: che quei giocatori siano "poco osservati" **solo
+perché li tagliamo noi**. `MAX_HISTORY_DAYS = 365`
+(`backtest_arene_previsioni.py:38`, e uguale nei quattro predict), mentre la
+cache contiene storico ben più profondo. Il taglio è in GIORNI ma
+l'informazione si accumula in PARTITE: 365 giorni valgono ~40 partite per un
+titolare e **9** per una riserva — largo per chi non ne ha bisogno, stretto
+per chi sì. (Osservazione dell'utente, ed è quella giusta.)
+
+**Quanto stavamo buttando** (misurato sul mazzo di crowss, 719 giocatori):
+369 hanno la finestra NON piena (meno di `WINDOW_SIZE`=30 partite
+nell'ultimo anno). Di questi **265 hanno i dati GIÀ IN CACHE** — 1.677
+partite piene, +6,3 a giocatore, scartate solo per età (es. adam-stejskal 29
+nell'ultimo anno contro 94 in cache; manolis-saliakas 11 contro 61). Gli
+altri 104 hanno la cache davvero sottile.
+
+**Quanto ha Sorare davvero** (verificato su Prévot con la paginazione, che
+FUNZIONA — `allPlayerGameScores(first: 50, after: endCursor)`, 3 pagine):
+149 partite dal 2018, di cui **45 piene**, contro le **11** che abbiamo in
+cache. Quindi la nostra cache è corta perché scarichiamo una pagina sola,
+non perché Sorare non abbia i dati. Costo per approfondire i 104 sottili:
+312 query, mezzo minuto.
+
+**GLI ESITI, in ordine:**
+1. `p70` — la media oltre l'anno spiega il residuo? Sì ma pochissimo: corr
+   **+0,024** [+0,010; +0,038] complessiva, FWD +0,076, GK +0,008. E **non**
+   concentrata sui poco osservati, contro l'ipotesi.
+2. `p71` — finestra a 365 / 730 / 1095 giorni sui tre indicatori:
+
+| giorni | MAE | corr | lift |
+|---|---|---|---|
+| 365 | 14,4610 | 0,1855 | 6,582 |
+| 730 | 14,4500 | 0,1863 | 6,693 |
+| 1095 | 14,4492 | 0,1860 | 6,707 |
+
+   Tutti e tre migliorano, ma **solo il MAE supera il proprio rumore**
+   (−0,011 contro un tremolio documentato di 0,003): la correlazione guadagna
+   0,0008, che *è* il tremolio, e il lift 0,111 contro un rumore misurato di
+   ±1,6. Uno su tre.
+3. `p72` — **il metro che decide, le essenze**: 730 contro 365 giorni,
+   **+2.594** essenze, IC95 **[−6.978; +12.852]**, positivo nel 70,3%,
+   **+1,9 per unità manager-giornata**. Cambia le scelte in 615 unità su
+   1.338, quindi il test non è nullo: semplicemente **non decide**.
+
+**VERDETTO: `MAX_HISTORY_DAYS` resta 365.** Non perché allungare faccia
+danno, ma perché non fa niente di misurabile, e in dubbio la produzione non
+si tocca. Chi volesse riaprire, sappia che la modifica è **gratis** (i dati
+sono già su disco) e che quindi la domanda non è "quanto costa" ma "vale
++1,9 essenze a giornata".
+
+**IL PUNTO DA PORTARSI VIA.** Le due spiegazioni ovvie del buco sui poco
+osservati — *ci fidiamo troppo di poche partite* e *tagliamo troppo lo
+storico* — sono state provate ed **entrambe bocciate**, con numeri. La
+diagnosi resta in piedi e senza cura nota. Non riproporle: sono già costate
+una notte, e il valore di questa sezione è impedire di ripagarla.
+
 Handoff completo della sessione: `docs/handoff/HANDOFF_GRADE_ACCESO_2026-08-13.txt`.
 
 ### Storia: com'era prima del 13/08 (compresso)
