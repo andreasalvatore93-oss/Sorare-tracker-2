@@ -193,13 +193,23 @@ def prepara_pool_rows_grezze(pool, primo_kickoff, fine_giornata, idx_grade, lega
     return rows, scarti
 
 
+# MARGINE_QUOTA (13/08/2026): quanto deve rendere l'ultima arena per entrarci,
+# in frazione del costo d'ingresso. 0.0 = comportamento di sempre (si entra
+# fino al pareggio secco). 0.10 = la stessa regola del Binario 1
+# (p23_binario1_mga.py:201) e dell'etichetta di produzione, cioe' come gioca
+# davvero l'utente, che le arene marginali le salta. Si puo' cambiare da
+# codice (B2.MARGINE_QUOTA = 0.10) per girare una griglia di margini.
+MARGINE_QUOTA = float(os.environ.get('MARGINE_QUOTA', '0'))
+
+
 def gioca(pool_rows, leghe, chiave_obiettivo, massimo=15):
     role_data, pools, card_pool, _leghe = S21.costruisci({'pool': pool_rows}, lambda c: c[chiave_obiettivo])
     orig = S21.bfg.LEAGUES
     S21.bfg.LEAGUES = tuple(leghe)
     try:
         with contextlib.redirect_stdout(io.StringIO()):  # bfg stampa per ogni tentativo, silenziato
-            scelte = S21.bfg.genera_arene_efficienti(TIPI_ARENA, massimo, role_data, pools, card_pool)
+            scelte = S21.bfg.genera_arene_efficienti(TIPI_ARENA, massimo, role_data, pools, card_pool,
+                                                     margine_quota=MARGINE_QUOTA)
     finally:
         S21.bfg.LEAGUES = orig
 

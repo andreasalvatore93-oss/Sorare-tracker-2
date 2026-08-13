@@ -1718,7 +1718,8 @@ def _ripristina_pool(card_pool, stato):
 
 
 def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool, budget_essenze=None,
-                            cap_per_tipo=None, gia_fatte=None, etichetta='arena efficiente'):
+                            cap_per_tipo=None, gia_fatte=None, etichetta='arena efficiente',
+                            margine_quota=0.0):
     """Genera arene scegliendo DA SOLO tipo e numero, per essenze attese.
 
     Il generatore classico e' avido sui PUNTI: costruisce la formazione col
@@ -1761,7 +1762,23 @@ def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool, budget_e
     richieste. Passando di qui la tornata opzionale eredita il criterio vero:
     si sceglie il tipo che rende di piu' e ci si ferma quando nessuno rende
     piu' niente. Entrambi None = comportamento INVARIATO (tornata primaria).
-    'etichetta' cambia solo la riga di log, per distinguere le due tornate."""
+    'etichetta' cambia solo la riga di log, per distinguere le due tornate.
+
+    margine_quota (13/08/2026, MISURA -- non una scelta di produzione):
+    quanto deve rendere l'ultima arena per valere la pena di entrarci,
+    espresso come frazione del costo d'ingresso. 0.0 = DEFAULT, comportamento
+    INVARIATO bit per bit: ci si ferma al pareggio secco (resa <= 0), che e'
+    la regola di sempre. 0.10 = si entra solo se il guadagno atteso vale
+    almeno il 10% di quello che si rischia, cioe' la stessa regola che
+    QUOTA_MINIMA applica gia' all'ETICHETTA (_etichetta_arena: sotto quella
+    riga scrive "MARGINALE -- meglio All Stars da 7 o Under 23") e che il
+    Binario 1 del backtest applica gia' alla decisione entra/salta
+    (analisi_manager/p23_binario1_mga.py:201).
+    NASCE DA UNA DOMANDA DELL'UTENTE (13/08): il generatore propone arene
+    fino al pareggio, ma lui nella realta' salta le marginali -- per budget e
+    per prudenza. Serve a misurare se conviene davvero giocarle o se un
+    margine di sicurezza rende di piu'. Finche' resta 0.0 in produzione non
+    cambia niente: nessun effetto su soglie arena o scouting."""
     scelte = []
     speso = 0
     fatte = dict(gia_fatte or {})
@@ -1804,7 +1821,15 @@ def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool, budget_e
                 resa_confronto = resa
             if migliore is None or resa_confronto > migliore[0]:
                 migliore = (resa_confronto, tipo, atteso, resa, costo_tipo)
-        if migliore is None or migliore[0] <= 0:
+        # Stop: la migliore possibile non rende piu' abbastanza. Il confronto
+        # si fa sulla resa GREZZA in essenze (migliore[3]) contro il costo
+        # d'ingresso (migliore[4]), non su resa_confronto: con
+        # ARENA_CRITERIO='capitale' quest'ultima e' gia' divisa per il costo e
+        # un margine espresso in frazione del costo non avrebbe piu' senso.
+        # Con margine_quota=0.0 la condizione e' resa <= 0, identica a prima
+        # (COSTO_INGRESSO e' sempre positivo, quindi resa/costo <= 0 se e solo
+        # se resa <= 0 -- gia' verificato per ARENA_CRITERIO, stessa ragione).
+        if migliore is None or migliore[3] <= migliore[4] * margine_quota:
             break
         _resa_confronto, tipo, atteso, _resa, costo_tipo = migliore
         vera = generate_lineups_for_type(tipo, 1, role_data, pools, card_pool)
