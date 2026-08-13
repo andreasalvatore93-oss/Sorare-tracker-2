@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T06:43:08.653293Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) franculino-gluda-dju: 54 pt attesi (30-66)
+   ORDINAMENTO: 59.30
+   SQUADRA: midtjylland-herning | AVVERSARIO: lyngby-lyngby-kongens-lyngby
+   AMBIGUO_FIXTURE: si
+======================================================================
+
+######################################################################
+# GIOCATORE: franculino-gluda-dju
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: franculino-gluda-dju (squadra: midtjylland-herning)
+Generato: 2026-08-13T06:43:08.652467Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: superliga-dk (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | VB vs FCM | superliga-dk | score=64.0 | peso=0.315
+  2025-08-24 | FCM vs SIF | superliga-dk | score=73.5 | peso=0.354
+  2025-08-31 | BIF vs FCM | superliga-dk | score=67.0 | peso=0.397
+  2025-09-14 | FCN vs FCM | superliga-dk | score=38.3 | peso=0.445
+  2025-09-20 | FCM vs VFF | superliga-dk | score=44.8 | peso=0.500
+  2025-10-19 | FCM vs VB | superliga-dk | score=71.6 | peso=0.561
+  2025-11-03 | FCM vs AGF | superliga-dk | score=68.7 | peso=0.630
+  2025-11-09 | RFC vs FCM | superliga-dk | score=63.9 | peso=0.707
+  2025-11-23 | SJE vs FCM | superliga-dk | score=35.2 | peso=0.794
+  2025-11-30 | FCM vs FCN | superliga-dk | score=83.9 | peso=0.891
+  2026-08-02 | FCM vs ACH | superliga-dk | score=62.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 61.55
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=11): 57.04 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 55.61 | Punteggio complessivo (granulari) medio: 5.94 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.18 (delta -0.12) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 15.26
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.3 - 73.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.47 (differenza: +4.78)
+Media score in casa: 67.47 | Media score fuori casa: 53.68
+Fattore casa/trasferta applicato: 0.995 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.0
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 62.8 vs media 5 PRECEDENTI: 59.0): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T14:00
+Casa: Lyngby Boldklub | Trasferta: FC Midtjylland
+Competizione: superliga-dk
+ATTENZIONE FIXTURE AMBIGUA: due partite future avevano GIA' le starter odds pubblicate insieme -- scelta quella piu' tardiva (caso limite mai visto prima del 10/08/2026, verificare a mano).
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.6 (range 30.4 - 65.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 59.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 61.41
+Punteggio REALE ottenuto in quella partita: 62.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +0.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      56.2    68.7    +12.5    15.8        SI
+   7        7      63.9    63.9     -0.0    14.8        SI
+   8        8      68.2    35.2    -33.0    13.5        NO
+   9        9      49.9    83.9    +34.0    16.8        NO
+  10       10      71.9    62.3     -9.6    19.0        SI
+
+MAE (errore assoluto medio): 17.83
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
