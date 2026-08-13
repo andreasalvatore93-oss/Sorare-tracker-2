@@ -1,0 +1,113 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T11:07:15.745093Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) carlos-vicente-robles: 50 pt attesi (32-69)
+   ORDINAMENTO: 49.34
+   SQUADRA: birmingham-city-birmingham | AVVERSARIO: sheffield-united-sheffield
+======================================================================
+
+######################################################################
+# GIOCATORE: carlos-vicente-robles
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: carlos-vicente-robles (squadra: birmingham-city-birmingham)
+Generato: 2026-08-13T11:07:15.709733Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 19
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | ALA vs LEV | laliga-es | score=44.6 | peso=0.125
+  2025-08-22 | BET vs ALA | laliga-es | score=46.7 | peso=0.140
+  2025-08-30 | ALA vs ATM | laliga-es | score=70.2 | peso=0.157
+  2025-09-20 | ALA vs SEV | laliga-es | score=72.5 | peso=0.177
+  2025-09-27 | MLL vs ALA | laliga-es | score=58.2 | peso=0.198
+  2025-11-22 | ALA vs CEL | laliga-es | score=44.9 | peso=0.223
+  2026-01-10 | VIL vs ALA | laliga-es | score=63.6 | peso=0.250
+  2026-01-18 | ATM vs ALA | laliga-es | score=59.7 | peso=0.281
+  2026-01-25 | ALA vs BET | laliga-es | score=70.8 | peso=0.315
+  2026-02-07 | BIR vs LEI | football-league-championship | score=40.6 | peso=0.354
+  2026-02-21 | NOR vs BIR | football-league-championship | score=61.1 | peso=0.397
+  2026-02-25 | MIL vs BIR | football-league-championship | score=32.3 | peso=0.445
+  2026-03-07 | CHA vs BIR | football-league-championship | score=33.2 | peso=0.500
+  2026-04-06 | IPS vs BIR | football-league-championship | score=68.7 | peso=0.561
+  2026-04-12 | BIR vs WRE | football-league-championship | score=72.9 | peso=0.630
+  2026-04-18 | HUL vs BIR | football-league-championship | score=49.3 | peso=0.707
+  2026-04-22 | BIR vs PNE | football-league-championship | score=42.7 | peso=0.794
+  2026-04-25 | BIR vs BRC | football-league-championship | score=46.8 | peso=0.891
+  2026-05-02 | POR vs BIR | football-league-championship | score=27.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 49.64
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=19): 51.45 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 41.87 | Punteggio complessivo (granulari) medio: 7.77 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.04 (delta -0.56) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 15.03
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.3 - 68.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.34 (differenza: +2.70)
+Media score in casa: 50.75 | Media score fuori casa: 45.32
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.3
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.140 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 0.993
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore trend (media ultime 5: 47.8 vs media 5 PRECEDENTI: 47.2): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T16:30
+Casa: Sheffield United FC | Trasferta: Birmingham City FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.7 (range 32.4 - 68.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.77
+Punteggio REALE ottenuto in quella partita: 27.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -25.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      56.4    63.6     +7.2    13.3        SI
+   7        7      57.8    59.7     +1.9    12.4        SI
+   8        8      58.1    70.8    +12.7    11.2        NO
+   9        9      60.3    40.6    -19.7    11.6        NO
+  10       10      29.6    61.1    +31.5    13.5        NO
+  11       11      31.6    32.3     +0.7    12.5        SI
+  12       12      66.4    33.2    -33.2    15.5        NO
+  13       13      30.0    68.7    +38.7    16.6        NO
+  14       14      45.5    72.9    +27.4    16.9        NO
+  15       15      46.0    49.3     +3.3    17.5        SI
+  16       16      62.9    42.7    -20.2    16.5        NO
+  17       17      56.2    46.8     -9.4    16.2        SI
+  18       18      64.5    27.3    -37.2    15.3        NO
+
+MAE (errore assoluto medio): 18.71
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 38.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
