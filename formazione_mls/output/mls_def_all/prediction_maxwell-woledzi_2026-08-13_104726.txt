@@ -1,11 +1,11 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-11T19:17:09.155824Z
+Generato: 2026-08-13T10:47:26.532276Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) maxwell-woledzi: 56 pt attesi (47-66)
-   ORDINAMENTO: 60.80
-   SQUADRA: nashville-sc | AVVERSARIO: monterrey-monterrey
+1) maxwell-woledzi: 56 pt attesi (47-65)
+   ORDINAMENTO: 60.79
+   SQUADRA: nashville-sc | AVVERSARIO: inter-miami
 ======================================================================
 
 ######################################################################
@@ -14,14 +14,14 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: maxwell-woledzi (squadra: nashville-sc)
-Generato: 2026-08-11T19:17:09.151342Z
+Generato: 2026-08-13T10:47:26.513135Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
-Partite considerate: 35
-Escluse (DID_NOT_PLAY): 4
+Partite considerate: 36
+Escluse (DID_NOT_PLAY): 5
 Escluse (minutaggio < 60', subentri): 1
-Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
 Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2025-10-05 | FFK vs HAM | eliteserien | score=61.3 | peso=0.512
   2025-10-19 | GOD vs FFK | eliteserien | score=64.5 | peso=0.524
@@ -57,35 +57,35 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 30.0 partite): 59.94
   di cui Punteggio decisivo (level_score) medio: 37.62 | Punteggio complessivo (granulari) medio: 22.32 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Gol subiti condizionato: delta venue +0.11, delta avversario -0.68 | Passaggio condizionato: delta venue -0.79, delta avversario +0.33 | Clean sheet/disimpegni condizionato: delta venue +0.64, delta avversario -1.40 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+  Gol subiti condizionato: delta venue -0.27, delta avversario -0.68 | Passaggio condizionato: delta venue +0.54, delta avversario +0.33 | Clean sheet/disimpegni condizionato: delta venue -0.70, delta avversario -1.40 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
 Deviazione standard pesata: 11.03
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 50.6 - 69.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.79 (differenza: +2.24)
 Media score in casa: 59.57 | Media score fuori casa: 61.79
-Fattore casa/trasferta applicato: 1.002 (TRASFERTA nella prossima partita)
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 8.4
-Ranking prossimo avversario: 5
-Fattore forza avversario applicato: 1.349 (gol subiti reali dell'avversario, ultime 10)
-Fattore falli (casa/trasferta, da dati reali): 0.999
-Fattore duelli (casa/trasferta, da dati reali): 1.002
-Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.994
-Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
-Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
-Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
-Fattore gol subiti (goals_conceded, con cap): 1.001
-Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.003
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 1.554 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.004
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.996
+Fattore gol subiti (goals_conceded, con cap): 0.997
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.997
 Fattore trend (media ultime 5: 58.9 vs media 5 PRECEDENTI: 61.4): 1.000
-P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
 
 --- PROSSIMA PARTITA ---
-Data: 2026-08-13T00:00
-Casa: CF Monterrey | Trasferta: Nashville SC
-Competizione: leagues-cup-mls
+Data: 2026-08-16T00:30
+Casa: Nashville SC | Trasferta: Inter Miami CF
+Competizione: mlspa
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 56.2 (range 46.9 - 65.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 56.0 (range 46.7 - 65.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 60.8
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
