@@ -81,6 +81,10 @@ jobs:
     outputs:
       lavori: ${{ steps.lista.outputs.lavori }}
       quanti: ${{ steps.lista.outputs.quanti }}
+      # quanti = quelli che la matrice fara' davvero (max 256); richiesti =
+      # quanti ne servivano. Se differiscono, dei candidati restano senza
+      # Atteso: serve saperlo a valle, non solo nel log.
+      richiesti: ${{ steps.lista.outputs.richiesti }}
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
@@ -160,17 +164,35 @@ jobs:
         id: lista
         if: ${{ inputs.predict }}
         run: |
+          # NIENTE che non sia chiave=valore su stdout (13/08/2026): qui lo
+          # stdout FINISCE dentro $GITHUB_OUTPUT, che accetta solo quel
+          # formato. La riga '::warning::...' ci finiva dentro e faceva
+          # fallire il job con "Unable to process file command 'output'
+          # successfully / Invalid format" -- proprio nel caso che il
+          # commento qui sopra dice di voler gestire senza fallire (run
+          # 31675855737, 1543 predict richiesti: la prima volta che si e'
+          # superato il tetto). L'avviso va nel riepilogo della run e nel
+          # log, non nel file degli output.
           python - <<'PY' >> "$GITHUB_OUTPUT"
-          import json, os
+          import json, os, sys
           lavori = []
           f = 'dati_globali/scouting_lavori.txt'
           if os.path.exists(f):
               lavori = [r.strip() for r in open(f, encoding='utf-8') if r.strip()]
-          if len(lavori) > 256:
-              print(f'::warning::{len(lavori)} predict richiesti, la matrice ne accetta 256: tronco.')
+          richiesti = len(lavori)
+          if richiesti > 256:
+              avviso = (f'{richiesti} predict richiesti, la matrice GitHub ne accetta '
+                        f'256: ne restano fuori {richiesti - 256}, che nella tabella '
+                        f'dello scouting resteranno senza Atteso.')
+              print(f'AVVISO: {avviso}', file=sys.stderr)
+              riepilogo = os.environ.get('GITHUB_STEP_SUMMARY')
+              if riepilogo:
+                  with open(riepilogo, 'a', encoding='utf-8') as r:
+                      r.write(f'**Predict troncati** -- {avviso}\n')
               lavori = lavori[:256]
           print(f'lavori={json.dumps(lavori)}')
           print(f'quanti={len(lavori)}')
+          print(f'richiesti={richiesti}')
           PY
 
   predict:
