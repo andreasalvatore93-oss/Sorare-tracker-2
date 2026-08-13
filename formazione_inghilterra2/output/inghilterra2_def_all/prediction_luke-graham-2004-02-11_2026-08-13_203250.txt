@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-13T07:46:58.001239Z
+Generato: 2026-08-13T20:32:50.520011Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) luke-graham-2004-02-11: 53 pt attesi (32-73)
-   ORDINAMENTO: 53.62
+1) luke-graham-2004-02-11: 54 pt attesi (33-73)
+   ORDINAMENTO: 54.48
    SQUADRA: stoke-city-stoke-on-trent | AVVERSARIO: swansea-city-swansea
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: luke-graham-2004-02-11 (squadra: stoke-city-stoke-on-trent)
-Generato: 2026-08-13T07:46:58.000380Z
+Generato: 2026-08-13T20:32:50.519084Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -57,7 +57,7 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 30.0 partite): 51.95
   di cui Punteggio decisivo (level_score) medio: 37.50 | Punteggio complessivo (granulari) medio: 14.44 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Gol subiti condizionato: delta venue +0.45, delta avversario -0.23 | Passaggio condizionato: delta venue +0.24, delta avversario -0.42 | Clean sheet/disimpegni condizionato: delta venue +0.60, delta avversario +0.42 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+  Gol subiti condizionato: delta venue +0.45, delta avversario -0.05 | Passaggio condizionato: delta venue +0.24, delta avversario +0.92 | Clean sheet/disimpegni condizionato: delta venue +0.60, delta avversario -0.93 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
 Deviazione standard pesata: 17.21
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.8 - 71.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.21 (differenza: +1.01)
@@ -65,7 +65,7 @@ Media score in casa: 54.77 | Media score fuori casa: 46.66
 Fattore casa/trasferta applicato: 1.001 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 6.4
 Ranking prossimo avversario: 11
-Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore forza avversario applicato: 1.212 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 1.004
 Fattore duelli (casa/trasferta, da dati reali): 1.001
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
@@ -85,8 +85,8 @@ Competizione: football-league-championship
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 53.4 (range 32.3 - 72.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 53.6
+Score atteso: 54.2 (range 33.1 - 73.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 54.5
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 51.01
