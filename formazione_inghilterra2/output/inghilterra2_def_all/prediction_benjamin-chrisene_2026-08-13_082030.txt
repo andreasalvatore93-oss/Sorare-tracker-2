@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T08:20:30.516228Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) benjamin-chrisene: 48 pt attesi (25-75)
+   ORDINAMENTO: 46.43
+   SQUADRA: norwich-city-norwich-norfolk | AVVERSARIO: west-bromwich-albion-west-bromwich
+======================================================================
+
+######################################################################
+# GIOCATORE: benjamin-chrisene
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: benjamin-chrisene (squadra: norwich-city-norwich-norfolk)
+Generato: 2026-08-13T08:20:30.491932Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 45
+Escluse (DID_NOT_PLAY): 25
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-30 | BBR vs NOR | football-league-championship | score=63.1 | peso=0.724
+  2025-09-13 | COV vs NOR | football-league-championship | score=54.8 | peso=0.741
+  2025-12-13 | NOR vs SOT | football-league-championship | score=24.3 | peso=0.758
+  2025-12-20 | PNE vs NOR | football-league-championship | score=42.4 | peso=0.776
+  2025-12-26 | NOR vs CHA | football-league-championship | score=37.5 | peso=0.794
+  2026-01-01 | QPR vs NOR | football-league-championship | score=42.9 | peso=0.812
+  2026-01-17 | WRE vs NOR | football-league-championship | score=44.1 | peso=0.831
+  2026-01-20 | WBA vs NOR | football-league-championship | score=100.0 | peso=0.851
+  2026-01-26 | NOR vs COV | football-league-championship | score=24.6 | peso=0.871
+  2026-01-31 | MID vs NOR | football-league-championship | score=26.4 | peso=0.891
+  2026-02-07 | NOR vs BBR | football-league-championship | score=78.9 | peso=0.912
+  2026-02-10 | OXF vs NOR | football-league-championship | score=76.6 | peso=0.933
+  2026-02-21 | NOR vs BIR | football-league-championship | score=33.8 | peso=0.955
+  2026-02-28 | LEI vs NOR | football-league-championship | score=52.1 | peso=0.977
+  2026-03-14 | NOR vs PNE | football-league-championship | score=42.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 49.77
+  di cui Punteggio decisivo (level_score) medio: 38.48 | Punteggio complessivo (granulari) medio: 11.29 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.56, delta avversario +0.35 | Passaggio condizionato: delta venue +0.18, delta avversario -0.03 | Clean sheet/disimpegni condizionato: delta venue -0.82, delta avversario +1.28 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 21.25
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 26.4 - 76.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.64 (differenza: +4.61)
+Media score in casa: 40.33 | Media score fuori casa: 55.82
+Fattore casa/trasferta applicato: 0.995 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 13.1
+Ranking prossimo avversario: 21
+Fattore forza avversario applicato: 0.460 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.997
+Fattore trend (media ultime 5: 56.4 vs media 5 PRECEDENTI: 47.3): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T14:00
+Casa: Norwich City FC | Trasferta: West Bromwich Albion FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.1 (range 24.7 - 75.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 46.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.35
+Punteggio REALE ottenuto in quella partita: 42.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -7.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      36.8    44.1     +7.3    13.4        SI
+   7        7      59.5   100.0    +40.5    12.3        NO
+   8        8      30.1    24.6     -5.4    24.0        SI
+   9        9      38.9    26.4    -12.6    24.5        SI
+  10       10      58.6    78.9    +20.3    24.3        SI
+  11       11      68.1    76.6     +8.6    25.5        SI
+  12       12      46.4    33.8    -12.6    25.8        SI
+  13       13      70.3    52.1    -18.2    25.3        SI
+  14       14      50.8    42.9     -7.9    24.2        SI
+
+MAE (errore assoluto medio): 14.83
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 88.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
