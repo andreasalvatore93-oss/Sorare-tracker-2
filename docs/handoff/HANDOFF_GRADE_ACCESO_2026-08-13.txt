@@ -1,0 +1,235 @@
+HANDOFF -- IL VOTO A-F ACCESO IN PRODUZIONE, E L'ARCHIVIO TRIPLICATO
+Sessione 13/08/2026, sera-notte (Roma, CEST). Orchestratore: Opus.
+
+
+LEGGI PRIMA QUESTO, IN LINGUA DA BAR
+====================================
+C'era una modifica al modello pronta da giorni ma spenta, che aspettava il
+25 agosto per essere validata. L'utente ha chiesto perche' proprio il 25, e
+la risposta onesta era: per niente. Erano le tre giornate successive a
+quando qualcuno scrisse la pre-registrazione, e il riassunto stesso
+ammetteva che tre giornate non bastavano a decidere.
+
+Allora invece di aspettare in avanti siamo andati INDIETRO. Le giornate
+passate mai usate per tarare la ricetta valgono come prova esattamente
+quanto quelle future, e ci sono gia'. Abbiamo portato l'archivio da 29 a 65
+manager e da 25 a 44 giornate: da 3.247 a 13.860 formazioni.
+
+Su quel campione la modifica vince: +20.273 essenze, e vince anche giocando
+col margine che usa l'utente. Il livello non si sposta, quindi le soglie
+delle arene e i consigli d'acquisto restano validi. L'interruttore e' stato
+ACCESO stasera.
+
+Per strada sono uscite tre cose che valgono per se', a prescindere:
+  - il voto storico si recupera fino ad AGOSTO 2025, non ad aprile 2026: il
+    limite era nostro, non di Sorare;
+  - le arene "marginali" rendono meno di zero, misurato su 12.677 arene
+    vere: l'etichetta del generatore e' ben tarata e l'utente fa bene a
+    saltarle;
+  - piu' e' alto l'atteso di un'arena, piu' si va a premio, e sale in modo
+    monotono dal 19% al 60%. La prima della lista efficiente e' davvero la
+    migliore.
+
+
+1. STATO DEL REPO
+=================
+Branch main, tutto committato e pushato. Commit della sessione, in ordine:
+  0baeacb98c  riassunto unificato allineato al codice
+  8acd2bbf24  grade storico: la rotta profonda, e la GW55 in archivio
+  fe6907dbc7  brief per Sonnet (poi aggiornato 3 volte)
+  0a2193980a  Binario 2 a tre bracci (p58)
+  343dce7a58  fix Retry-After + salvataggio incrementale sul grade
+  3e4a4563c0  --da-archivio nello scarico cache
+  1571d1da64  dettagli in batch da 30
+  392b5bf042  Binario 1 a quattro bracci (p60)
+  fe2d786857  margine d'ingresso misurabile (p59)
+  aff314db25  CLAUDE.md: tolta la riga sull'ADHD + --sd-contemporanea
+  c25bb549ca  scouting allineato alla ricetta + p61 + p62
+  e42ee69db3  INTERRUTTORE ACCESO
+In produzione e' cambiato: GRADE_GROUP_STORICA_ENABLED da '0' a '1' (codice
+e workflow), lo scouting che ora prende lo stesso ramo, e il workflow che
+committa le due tabelle del voto.
+
+
+2. PERCHE' ESISTEVA QUESTO LAVORO
+=================================
+Il voto A-F entra nel modello come z-score dentro un gruppo (lega, ruolo,
+giornata). Quando il gruppo ha meno di 2 membri il voto si spegne da solo:
+succedeva sul 51%+ delle righe di produzione. La variante "G-fisso" prende
+dispersione e scala da due tabelle storiche invece che dal gruppetto, cosi'
+il voto vale sempre. Era pronta dal 12/08 ma spenta in attesa di un test
+fuori campione fissato al 25/08.
+
+
+3. COSA E' STATO COSTRUITO O TOCCATO
+====================================
+analisi_manager/completa_grade_storico.py   riempie l'indice grade con
+                                            allPlayerGameScores (50 partite,
+                                            fino ad ago 2025) invece della
+                                            rotta capata a 15. Ruota le 3
+                                            APIKEY, rispetta Retry-After,
+                                            salva ogni 200 giocatori.
+analisi_manager/p58_tre_bracci.py           A vs G-variabile vs G-fisso sullo
+                                            stesso pool. --sd-contemporanea,
+                                            --fixture.
+analisi_manager/p59_margine_ingresso.py     griglia del margine d'ingresso.
+analisi_manager/p60_binario1_quattro_bracci.py  M vs A vs G-var vs G-fisso.
+                                            --fixture, --manager.
+analisi_manager/p61_fasce_marginali.py      guadagno atteso contro esito vero.
+analisi_manager/p62_soglie_dopo_gfisso.py   il flag sposta le soglie?
+scarica_cache_backtest.py                   --da-archivio (i bersagli veri) +
+                                            dettagli in batch da 30.
+generatore_formazioni/build_formazione_globale.py  margine_quota in
+                                            genera_arene_efficienti (default
+                                            0.0, inerte) + flag acceso.
+scouting_gw.py                              ramo storico in
+                                            _atteso_combinato_per_gruppo.
+.github/workflows/formazione_giornata.yml   input a '1', git add delle tabelle.
+
+Come si rilancia il test principale (zero query, ~25 minuti):
+  python analisi_manager/p58_tre_bracci.py --sd-contemporanea
+  MARGINE_QUOTA=0.10 python analisi_manager/p58_tre_bracci.py --sd-contemporanea
+  python analisi_manager/p60_binario1_quattro_bracci.py
+
+
+4. OUTPUT NUMERICO INTEGRALE
+============================
+4.1 IL TEST CHE HA DECISO -- Binario 2, 1.338 unita', 65 manager
+   braccio                     netto essenze
+   A (nessun voto)                 +550.921
+   G-variabile (produzione)        +590.620
+   G-fisso                         +610.893   (righello contemporaneo)
+
+   confronto                  delta      IC95              cambia in
+   G-variabile - A          +39.699   [+19.063;+64.840]    815/1338
+   G-fisso     - A          +59.972   [+35.965;+88.324]    916/1338
+   G-fisso - G-variabile    +20.273   [ +5.329;+37.274]    929/1338
+
+   Con la tabella congelata del 12/08 il delta era +30.296
+   [+12.936;+49.704]: il righello costruito ad agosto GONFIA di circa un
+   terzo. Il numero buono e' quello contemporaneo.
+   Col margine d'ingresso al 10% (come gioca l'utente): +21.736
+   [+5.555;+40.137], 917/1338.
+   Due giri dello stesso test danno numeri identici cifra per cifra.
+
+4.2 BINARIO 1 (formazione fissa) -- 12.677 formazioni, 1.338 unita'
+   M (reale, entra sempre)  12.677 arene   +175.800
+   A (senza voto)            5.444 arene   +335.300
+   G-variabile               5.472 arene   +412.200
+   G-fisso                   5.537 arene   +425.650
+   G-variabile - A   +76.900  [+12.450;+168.350]
+   G-fisso - G-var   +13.450  [-11.950; +44.250]   <- INCLUDE LO ZERO
+   Stesso segno del Binario 2 ma non distinguibile dal rumore: qui l'unica
+   leva e' entrare/saltare, il voto cambia la decisione in 639 unita' contro
+   929. Non e' una smentita, e' meno potenza.
+
+4.3 SOLO CROWSS, periodo pre-G (32 giornate, 336 formazioni)
+   M (a mano)      336 arene   +6.350
+   A (senza voto)  234 arene   +3.000    <- il modello senza voto PERDE
+   G-variabile     226 arene   +8.100
+   G-fisso         219 arene   +8.600
+   ATTENZIONE: un solo manager = un solo cluster, il bootstrap esce degenere
+   e NON c'e' nessuna misura d'incertezza. Punto stimato, niente di piu'.
+
+4.4 LE SOGLIE NON SI MUOVONO (p62, 12.677 formazioni)
+   atteso medio per carta, identico al centesimo nei tre bracci:
+   GK 48,76 | DEF 50,73 | MID 51,14 | FWD 49,96
+   cambia solo la dispersione (MID: A 3,99 - G-var 5,54 - G-fisso 4,98)
+   atteso per FORMAZIONE: A 261,72 | G-var 261,82 | G-fisso 261,81
+   scostamento G-fisso vs G-variabile: -0,009 punti, su soglie da ~260
+   formazioni che cambiano lato: 892 entrano, 792 escono su 12.677
+   => PAREGGIO_ARENA e GUADAGNO_PER_PUNTO restano tarati.
+
+4.5 LE ARENE MARGINALI (p61, 12.677 arene realmente giocate)
+   fascia guadagno atteso     arene   netto medio      IC95      a premio
+   sotto pareggio (forte)     1.211        -93,9  [-109;-77]       19,2%
+   sotto pareggio (poco)      3.900        -23,6   [-36;-11]       26,5%
+   MARGINALE (0-10%)          2.094        -14,6    [-29;+0]       28,7%
+   schiera (10-25%)           2.688        +26,9   [+12;+43]       33,6%
+   schiera (25-50%)           2.075        +65,2   [+45;+86]       38,5%
+   schiera (50-100%)            661       +237,8  [+172;+306]      43,6%
+   schiera (oltre 100%)          48       +986,5 [+522;+1542]      60,4%
+   Due conclusioni: le marginali NON rendono (il confine fra negativo e
+   positivo cade esattamente su QUOTA_MINIMA=0,10, che risulta cosi'
+   confermata su 12.677 arene), e la percentuale a premio SALE in modo
+   monotono con l'atteso -- la prima della lista efficiente e' davvero la
+   migliore.
+
+4.6 IL MARGINE D'INGRESSO (p59, sulla sola GW55, n piccolo)
+   margine 0% 107 arene +13.592 | 5% +13.520 | 10% +13.747
+   15% +11.654 | 20% +10.714 | 30% +6.781 | 50% +1.293
+   Fino al 10% indifferente, oltre il 15% si perde. Coerente con 4.5.
+
+4.7 L'ARCHIVIO
+   manager 29 -> 65 | giornate 25 -> 44 | formazioni 3.247 -> 13.860
+   unita' manager-giornata utili: 1.340 | carte schierate: 69.300
+   copertura grade: 99,9% (20.743 carte-giornata su 20.755)
+   indice grade: 195.991 righe, 0 duplicati, 0 vuoti, 4.679 giocatori
+   cache game-log: mancanti da 2.219 a 49
+
+
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+======================================
+5.1 IL LIMITE DELLE 15 PARTITE ERA NOSTRO, NON DI SORARE.
+    playerGameScores(last:15) e' un tetto vero del server (chiedendo 50, 100
+    o 200 torna sempre 15, senza errore; `first` e `before` non esistono,
+    nessun cursore). MA allPlayerGameScores -- lo stesso campo che il predict
+    interroga gia' per la cache -- accetta projection{grade}, non ha quel
+    tetto, e arriva ad agosto 2025. Le due rotte danno lo stesso identico
+    voto (71 righe confrontate, 71 uguali). Anche anyGame(id) espone
+    playerGameScores per TUTTI i ~60 giocatori di una partita, senza
+    argomento `last`: una query per partita invece che per giocatore.
+    Il grade non esiste prima di ~agosto 2025 (giugno 2025 = 0%, settembre
+    2025 = 100%): quello si' e' un limite vero.
+5.2 IL VINCOLO CHE COMANDA IL BACKTEST NON E' IL GRADE, E' IL FORMATO ARENA.
+    I quattro tipi attuali compaiono nei nostri dati cosi': cap220 30/01/26,
+    cap260 03/02, Beginner 24/02, Uncapped 27/02. L'utente ha confermato che
+    dalla GW55 (20-24 feb) ci sono tutti. Prima c'erano gli stessi giochi con
+    nomi diversi, ma per non mescolare si parte da li'.
+5.3 QUELLO CHE RESTA SPORCO, e non e' aggirabile retroattivamente: il pool
+    del Binario 2 esclude le carte che hanno preso 0 (non hanno giocato),
+    cioe' e' definito guardando l'esito. Vale IDENTICO per tutti i bracci,
+    quindi sporca i valori assoluti piu' del confronto -- ma va detto.
+5.4 TENSIONE APERTA COL RIASSUNTO. §5.9 dice "entrare conviene anche a filo
+    di pareggio" (+82,8 e +19,6 essenze per formazione). Il punto 4.5 qui
+    sopra, su molte piu' osservazioni, dice che la fascia 0-10% rende -14,6.
+    Le due misure rispondono a domande leggermente diverse e vanno
+    riconciliate prima di scrivere un verdetto definitivo su QUOTA_MINIMA.
+5.5 IL BINARIO 1 NON CONFERMA con l'intervallo. Chi legge solo il numero
+    grosso del Binario 2 deve sapere che l'altro binario, sullo stesso
+    archivio, da' lo stesso segno ma include lo zero.
+5.6 DUE DIFETTI MIEI, trovati e corretti in corsa, che valgono come lezione:
+    completa_grade_storico aspettava 5 e 15 secondi dopo un 429 mentre Sorare
+    ne chiede 150-290, e si arrendeva chiamando "429 persistente" un'attesa
+    troppo corta; e salvava solo alla fine, quindi due run interrotti hanno
+    buttato via tutto. Ora rispetta Retry-After e salva ogni 200.
+    Terzo, di metodo: avevo detto a Sonnet di rilanciare con --max crescente
+    "tanto i gia' fatti costano zero" -- falso, il game log si rifa' sempre.
+    L'ha trovato lui confrontando due misure, e ha evitato 13 ore di lavoro
+    inutile.
+5.7 UNA RIGA DI CLAUDE.md NON ERA VERA: quella sull'ADHD dell'utente, che ha
+    smentito lui stesso. Tolta. Le preferenze di stile restano identiche.
+
+
+6. DECISIONE APERTA
+===================
+Nessuna sull'accensione: e' fatta, su richiesta esplicita dell'utente dopo
+la verifica della catena. Restano sul tavolo:
+  a) l'asse "squadra propria" del filone intralega, mai misurato (Ernst al
+     Feyenoord, Simsir al Trabzonspor);
+  b) rimisurare sull'archivio nuovo i verdetti chiusi su campioni piccoli --
+     capitano, soglie, half-life: adesso ci sono 4x le formazioni;
+  c) riconciliare §5.9 col punto 4.5 (QUOTA_MINIMA);
+  d) i 36 manager sono solo la prima ondata: l'utente puo' arrivare a 150+,
+     e ogni +29 manager stringe l'intervallo di circa un quinto;
+  e) la ri-misura pre-registrata di GK_ATT_AVV, che scade il 25/08 e ha lo
+     stesso problema di potenza appena smontato per questo filone.
+
+
+7. FILE DI RIFERIMENTO
+======================
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md   §8bis-bis (il filone)
+docs/handoff/BRIEF_SONNET_ARCHIVIO_ESTESO_2026-08-13.txt  l'estrazione
+analisi_manager/p58..p62                     gli script di misura
+archivio_ufficiale/                          65 manager, 44 giornate
+analisi_manager/dati/storico_grade_crowss_completamento.json  195.991 righe
