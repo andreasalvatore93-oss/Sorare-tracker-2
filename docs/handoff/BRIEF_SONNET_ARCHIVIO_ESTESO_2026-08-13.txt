@@ -181,6 +181,24 @@ Piu' l'elenco dei giocatori senza cache game-log (numero + primi 20 nomi).
 Niente stime a spanne: se un numero non l'hai misurato, scrivi che non
 l'hai misurato.
 
+6bis. UNA STATISTICA IN PIU', CHE COSTA POCO E SERVE MOLTO
+==========================================================
+Si calcola dai soli file dell'archivio, senza rete e senza previsioni.
+Per ogni coppia manager-giornata NON vuota, riporta:
+  - quante ARENE ha giocato quel manager quella giornata;
+  - quante CARTE DISTINTE compongono il pool, contate come le conta il
+    Binario 2 (`p24_binario2_ga.py:117-131`): unione delle carte di tutte
+    le sue arene, ESCLUSE quelle con punteggio 0 (non hanno giocato);
+  - quante carte sono state escluse per quel motivo.
+Poi consegna la distribuzione: quante coppie hanno 1 sola arena, 2, 3, 4+.
+PERCHE' SERVE: con una sola arena il pool coincide con gli slot e al
+modello resta solo la decisione entra/salta -- niente ricomposizione, cioe'
+quasi nessuna selezione da misurare. Con 2 o piu' arene il modello puo'
+davvero riorganizzare le carte, ed e' li' che il test ha senso. Questo
+numero ci dice SUBITO quante delle unita' nuove sono utili davvero, prima
+di spendere un backtest. Non trarre conclusioni: consegna la
+distribuzione.
+
 
 7. COSA NON FARE
 ================
@@ -194,6 +212,17 @@ l'hai misurato.
   esito e prosegui.
 - NON nascondere risultati nulli o negativi (manager senza arene, giornate
   vuote, copertura bassa: sono dati, si scrivono).
+- NON ALLARGARE LO SCOPE, per quanto sembri utile. In particolare:
+  * NIENTE classifiche complete delle arene (i punteggi degli altri 9
+    partecipanti). Oggi non ci sono in nessuna riga dell'archivio e il
+    netto in essenze si calcola con le soglie gia' calibrate
+    (PAREGGIO_ARENA / GUADAGNO_PER_PUNTO). Decisione esplicita dell'utente
+    del 13/08: le soglie bastano, e se un giorno servissero i punteggi
+    veri andrebbero rifatti per TUTTE le giornate, non solo per queste.
+  * NIENTE In Season, All Star, Under 23, Champions. Solo arene Limited.
+    Le altre competizioni sono lo step successivo, non questo.
+  Se durante il lavoro ti sembra che una di queste serva, SCRIVILO in
+  fondo all'esito e prosegui: non decidere da solo di prenderla.
 
 
 8. DOVE SCRIVERE L'ESITO
