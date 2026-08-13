@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-09T10:37:09.069060Z
+Generato: 2026-08-13T07:29:01.017321Z
 Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
-1) isa-sakamoto: 47 pt attesi (34-59)
-   ORDINAMENTO: 44.03
+1) isa-sakamoto: 47 pt attesi (34-60)
+   ORDINAMENTO: 44.43
    SQUADRA: westerlo-westerlo | AVVERSARIO: genk-genk
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: isa-sakamoto (squadra: westerlo-westerlo)
-Generato: 2026-08-09T10:37:09.033251Z
+Generato: 2026-08-13T07:29:01.016165Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -65,15 +65,15 @@ Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.24 (diff
 Media score in casa: 55.25 | Media score fuori casa: 36.93
 Fattore casa/trasferta applicato: 0.988 (TRASFERTA nella prossima partita)
 Ranking medio avversari affrontati (storico): 6.9
-Ranking prossimo avversario: 10
-Fattore forza avversario applicato: 0.764 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 0.832 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
 Fattore falli (casa/trasferta, da dati reali): 0.985
-Fattore duelli (casa/trasferta, da dati reali): 0.993
-Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.991
+Fattore duelli (casa/trasferta, da dati reali): 0.992
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.990
 Fattore passaggio (accurate_pass/final_third/att_assist): 0.990
 Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.994
 Fattore trend (media ultime 5: 47.1 vs media 5 PRECEDENTI: 46.6): 1.000
-P(gioca): 83.33% (fonte: tasso di presenza storico (30/36))
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
 
 --- PROSSIMA PARTITA ---
 Data: 2026-08-15T18:45
@@ -83,8 +83,8 @@ Competizione: jupiler-pro-league
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 46.5 (range 34.2 - 59.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 44.0
+Score atteso: 46.8 (range 34.5 - 59.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 44.4
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 45.60
@@ -123,11 +123,11 @@ P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo sto
   24       24      52.6    36.8    -15.8    17.5        SI
   25       25      40.2    50.9    +10.7    17.1        SI
   26       26      41.0    55.1    +14.1    16.1        SI
-  27       27      47.7    32.4    -15.3    15.4        SI
-  28       28      48.9    37.1    -11.8    15.6        SI
-  29       29      37.9    60.0    +22.1    15.1        NO
+  27       27      44.5    32.4    -12.1    15.4        SI
+  28       28      49.0    37.1    -11.9    15.6        SI
+  29       29      38.0    60.0    +22.0    15.1        NO
 
-MAE (errore assoluto medio): 13.25
+MAE (errore assoluto medio): 13.12
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 58.3%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
