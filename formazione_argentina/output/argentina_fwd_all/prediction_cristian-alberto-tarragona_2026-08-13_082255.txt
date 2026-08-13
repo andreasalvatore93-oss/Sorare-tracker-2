@@ -1,0 +1,135 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T08:22:55.053020Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) cristian-alberto-tarragona: 50 pt attesi (33-68)
+   ORDINAMENTO: 49.04
+   SQUADRA: union-santa-fe-ciudad-de-santa-fe-provincia-de-santa-fe | AVVERSARIO: san-lorenzo-capital-federal-ciudad-de-buenos-aires
+======================================================================
+
+######################################################################
+# GIOCATORE: cristian-alberto-tarragona
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: cristian-alberto-tarragona (squadra: union-santa-fe-ciudad-de-santa-fe-provincia-de-santa-fe)
+Generato: 2026-08-13T08:22:55.052210Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 32
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-14 | GLP vs UNI | superliga-argentina-de-futbol | score=81.7 | peso=0.035
+  2025-09-20 | UNI vs IND | superliga-argentina-de-futbol | score=62.8 | peso=0.039
+  2025-09-26 | BAN vs UNI | superliga-argentina-de-futbol | score=31.2 | peso=0.044
+  2025-10-04 | UNI vs ALD | superliga-argentina-de-futbol | score=34.0 | peso=0.050
+  2025-10-10 | CSE vs UNI | superliga-argentina-de-futbol | score=34.4 | peso=0.056
+  2025-10-21 | UNI vs DYJ | superliga-argentina-de-futbol | score=31.9 | peso=0.062
+  2025-11-17 | BEL vs UNI | superliga-argentina-de-futbol | score=40.9 | peso=0.070
+  2025-11-25 | UNI vs GLP | superliga-argentina-de-futbol | score=77.6 | peso=0.079
+  2026-01-22 | UNI vs PLA | superliga-argentina-de-futbol | score=45.2 | peso=0.088
+  2026-01-29 | LAN vs UNI | superliga-argentina-de-futbol | score=71.7 | peso=0.099
+  2026-02-03 | UNI vs GMD | superliga-argentina-de-futbol | score=34.3 | peso=0.111
+  2026-02-07 | CSE vs UNI | superliga-argentina-de-futbol | score=29.2 | peso=0.125
+  2026-02-14 | UNI vs SLO | superliga-argentina-de-futbol | score=49.9 | peso=0.140
+  2026-02-23 | UNI vs ALD | superliga-argentina-de-futbol | score=63.9 | peso=0.157
+  2026-02-26 | SAR vs UNI | superliga-argentina-de-futbol | score=78.9 | peso=0.177
+  2026-03-01 | INS vs UNI | superliga-argentina-de-futbol | score=60.0 | peso=0.198
+  2026-03-10 | IND vs UNI | superliga-argentina-de-futbol | score=72.6 | peso=0.223
+  2026-03-16 | UNI vs BOC | superliga-argentina-de-futbol | score=36.8 | peso=0.250
+  2026-03-21 | DYJ vs UNI | superliga-argentina-de-futbol | score=43.9 | peso=0.281
+  2026-04-03 | UNI vs RIE | superliga-argentina-de-futbol | score=73.2 | peso=0.315
+  2026-04-11 | EST vs UNI | superliga-argentina-de-futbol | score=33.8 | peso=0.354
+  2026-04-17 | UNI vs NOB | superliga-argentina-de-futbol | score=37.0 | peso=0.397
+  2026-04-27 | VEL vs UNI | superliga-argentina-de-futbol | score=40.7 | peso=0.445
+  2026-05-02 | UNI vs CAT | superliga-argentina-de-futbol | score=61.9 | peso=0.500
+  2026-05-10 | IND vs UNI | superliga-argentina-de-futbol | score=68.1 | peso=0.561
+  2026-05-12 | BEL vs UNI | superliga-argentina-de-futbol | score=32.6 | peso=0.630
+  2026-07-25 | PLA vs UNI | superliga-argentina-de-futbol | score=69.6 | peso=0.707
+  2026-08-01 | GMD vs UNI | superliga-argentina-de-futbol | score=40.6 | peso=0.794
+  2026-08-06 | UNI vs LAN | superliga-argentina-de-futbol | score=66.2 | peso=0.891
+  2026-08-11 | UNI vs CSE | superliga-argentina-de-futbol | score=41.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 51.84
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 52.47 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 46.25 | Punteggio complessivo (granulari) medio: 5.59 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.69 (delta -0.59) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 15.34
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.4 - 69.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.12 (differenza: +0.22)
+Media score in casa: 51.19 | Media score fuori casa: 51.87
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.9
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 0.901 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.993
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore trend (media ultime 5: 50.2 vs media 5 PRECEDENTI: 48.3): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T17:30
+Casa: CA San Lorenzo de Almagro | Trasferta: CA Unión de Santa Fe
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.4 (range 32.9 - 68.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.10
+Punteggio REALE ottenuto in quella partita: 41.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -11.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      43.0    40.9     -2.1    20.4        SI
+   7        7      43.5    77.6    +34.1    18.3        NO
+   8        8      52.0    45.2     -6.8    22.7        SI
+   9        9      44.2    71.7    +27.5    20.7        NO
+  10       10      40.8    34.3     -6.5    21.4        SI
+  11       11      57.1    29.2    -27.9    21.0        NO
+  12       12      46.4    49.9     +3.5    21.1        SI
+  13       13      53.5    63.9    +10.4    19.6        SI
+  14       14      57.0    78.9    +21.9    19.4        NO
+  15       15      50.5    60.0     +9.5    21.5        SI
+  16       16      40.2    72.6    +32.4    20.2        NO
+  17       17      65.6    36.8    -28.8    20.2        NO
+  18       18      55.6    43.9    -11.7    20.3        SI
+  19       19      62.4    73.2    +10.8    19.4        SI
+  20       20      38.9    33.8     -5.1    19.7        SI
+  21       21      53.9    37.0    -16.9    20.2        SI
+  22       22      36.4    40.7     +4.3    19.8        SI
+  23       23      56.4    61.9     +5.5    19.0        SI
+  24       24      42.2    68.1    +25.9    18.4        NO
+  25       25      53.5    32.6    -20.9    18.4        NO
+  26       26      61.5    69.6     +8.1    18.9        SI
+  27       27      41.9    40.6     -1.3    19.1        SI
+  28       28      44.3    66.2    +21.9    18.5        NO
+  29       29      60.7    41.9    -18.8    18.2        NO
+
+MAE (errore assoluto medio): 15.10
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 58.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
