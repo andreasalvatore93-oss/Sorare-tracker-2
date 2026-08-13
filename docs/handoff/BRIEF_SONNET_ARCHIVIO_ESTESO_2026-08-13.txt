@@ -53,12 +53,18 @@ Ricostruisci la griglia cosi', nell'ordine:
     cartella manager (per crowss guarda in ENTRAMBE le sottocartelle
     pre_2026-08-07/ e dal_2026-08-07/).
 
-NUMERI CHE DEVI RITROVARE (misurati oggi, 13/08 sera):
-   manager .......................... 29 (crowss incluso)
+NUMERI CHE DEVI RITROVARE (misurati il 13/08 sera):
+   manager gia' in archivio ......... 29 (crowss incluso)
+   manager NUOVI da aggiungere ...... 36 (elenco in fondo, sezione 10)
+   manager totali ................... 65
    giornate chiuse dalla GW55 ....... 44
-   griglia completa ................. 1276 coppie
-   coppie gia' fatte ................ 706  (677 + le 29 della GW55 di oggi)
-   DA ESTRARRE ...................... ~570
+   griglia completa ................. 65 x 44 = 2860 coppie
+   coppie gia' fatte ................ 706
+   DA ESTRARRE ...................... ~2150
+
+Il numero "706" e "29 manager" li devi ritrovare ESATTI prima di partire.
+Il 2150 e' una conseguenza aritmetica: se non torna, hai contato male le
+giornate chiuse o i manager.
 
 SE NON RITROVI ESATTAMENTE QUESTI NUMERI, FERMATI E DILLO, NON PROSEGUIRE.
 Uno scarto di 1-2 giornate e' possibile solo se nel frattempo una fixture
@@ -73,18 +79,39 @@ e SI SOMMANO (200 richieste/min ciascuna). Attenzione: la prima variabile
 NON si chiama _1.
    SORARE_COOKIE, SORARE_CSRF, SORARE_APIKEY, SORARE_APIKEY_2, SORARE_APIKEY_3
 
-PASSO A -- estrazione delle giornate mancanti.
+L'ORDINE DELLE FASI (deciso dall'utente il 13/08, rispettalo):
+
+   FASE 1 -- LE GIORNATE CHE MANCANO A TUTTI, su TUTTI E 65 I MANAGER.
+   Sono le 12 giornate fra la GW55 e l'inizio di aprile: dalla
+   `football-20-24-feb-2026` alla `football-31-mar-3-apr-2026` inclusa.
+   Li' l'archivio e' vuoto per chiunque -- anche i 29 "vecchi" partono da
+   `football-3-7-apr-2026`, che e' la prima con copertura 29/29. Unica
+   eccezione: la `football-20-24-feb-2026` e' gia' fatta PER I 29 (l'ho
+   estratta io oggi come prova), quindi li' servono solo i 36 nuovi.
+   FERMATI QUI e riporta, prima di passare alla fase 2.
+
+   FASE 2 -- DA APRILE IN POI. Le 32 giornate da `football-3-7-apr-2026`
+   alla `football-7-11-aug-2026`: per i 36 manager NUOVI servono tutte, per
+   i 29 vecchi servono solo i buchi (alcune giornate sono a 28/29 o 17/29,
+   due sono a 1/29). Calcola i buchi dalla griglia, non a memoria.
+
+PASSO A -- estrazione.
    python estrai_archivio_manager.py --manager <slug> <fixture> [<fixture> ...]
    A LOTTI PICCOLI CON CHECKPOINT (regola CLAUDE.md, non e' un consiglio):
    massimo 3-4 giornate per volta su tutti i manager, poi ti fermi, conti i
    file prodotti e le arene trovate, e SOLO POI parti col lotto dopo. Mai un
-   lancio unico da 570 con attesa cieca.
+   lancio unico da 2150 con attesa cieca.
+   ATTENZIONE sui manager nuovi: uno slug puo' non esistere piu', o non aver
+   mai giocato arene. "Zero arene" NON e' un errore, e' un dato -- ma
+   "INDICE INCOMPLETO" si'. Tienili separati nel conteggio.
    Dopo ogni lotto riporta: coppie fatte, di cui vuote, arene totali, errori.
    Un 429 NON e' un dato mancante: e' una richiesta da rifare. Se lo script
    dice "INDICE INCOMPLETO" quella giornata NON e' stata salvata e va
    rilanciata, non contata come vuota.
 
-PASSO B -- grade, sulle giornate NUOVE.
+PASSO B -- grade. SERVE PER TUTTI: manager vecchi e nuovi, giornate vecchie
+   e nuove. Senza il voto una riga non e' utilizzabile dal test, quindi
+   questo passo non e' rifinitura, e' parte del dato.
    python analisi_manager/completa_grade_storico.py --fixture <fixture> [--fixture ...] --thread 6
    Puo' prendere piu' --fixture in un colpo. Una query per giocatore copre
    50 partite (~un anno), quindi un solo passaggio serve piu' giornate
@@ -245,3 +272,53 @@ spenta in produzione (GRADE_GROUP_STORICA_ENABLED). La ricetta fu tarata su
 per sceglierla, ed e' l'unica ragione per cui il test vale qualcosa. Piu'
 unita' portiamo a casa, piu' il verdetto e' solido -- in un verso o
 nell'altro.
+
+
+10. I 36 MANAGER NUOVI (gia' ripuliti e deduplicati il 13/08)
+=============================================================
+Presi dalle classifiche di arene realmente giocate dall'utente nei mesi
+passati, quindi sono manager che le arene le giocano davvero. Gia'
+controllato: nessuno di questi e' fra i 29 in archivio, e 'crowss' e' stato
+tolto (compariva ovunque, e' l'utente stesso). Un doppione interno
+(outbackeras, due volte nella lista) e' stato rimosso.
+
+machado1422
+tobibins
+outbackeras
+ribarros
+c-e-l-l-o
+crackito94
+stevinhopelainvicta
+julck29
+sport_nft_card
+lukap-c6eb0887-dbd4-4d2a-9eef-884e43c92ba9
+tunne11
+nikito2444
+arnilemonade
+malone
+lorc-67
+scafc2
+barbacco
+u-piscaturi
+pitch11
+pandito
+istvan_babos2001
+stevekats
+s-collymore
+kiko-77
+drcastafolte-171cfbf4-8e38-4188-9eb7-113633f3a5d2
+pablo0078
+xoubapreta
+pb99
+planabcxyz
+malgalani-acf4029e-859f-4503-8e2e-a3c2e50a90d3
+chrifini
+llooll4412
+rez0r1954
+toposensacoda
+stevie_1dah
+r4ggio
+
+NOTA: ne arriveranno altri (l'obiettivo e' ~150 manager totali). L'utente li
+manda a ondate. L'estrazione e' INCREMENTALE: quando arrivano, si aggiungono
+senza rifare niente di quello che hai gia' fatto. Non aspettarli.
