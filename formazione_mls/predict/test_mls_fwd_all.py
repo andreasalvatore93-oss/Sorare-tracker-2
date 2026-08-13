@@ -150,6 +150,53 @@ TREND_INTENSITY = 0.0  # AZZERATO (03/08) dopo il fix delle finestre sovrapposte
 # resta 5.0 (differenza vs k=4 vista trascurabile, nessun cambio li').
 SHRINK_K_OUTLIER_FWD = 15.0  # AGGIORNATO (03/08): 5.0 -> 15.0. Rimisurato DOPO il fix delle partite senza dettaglio, ed e' proprio quel fix a spostare l'ottimo: prima il grezzo era gonfiato (il punteggio intero finiva nel granulare), quindi tirarlo verso il prior sembrava dannoso e la taratura sceglieva poco shrinkage. Col grezzo corretto conviene tirare di piu'. Misurato su 18.992 punti walk-forward, 885 attaccanti: MAE 14.092 -> 14.049 (-0.31%), correlazione previsto/realizzato 0.250 -> 0.257, selezione dei primi cinque 28.2% -> 28.4%. Tutte e tre le misure si muovono nello stesso verso, che e' la condizione per applicare. Storia del valore precedente sotto.  # AGGIORNATO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~1700 punti di test, MAE -0.49% -- la vecchia esclusione "peggiora fuori MLS" non e' risultata riproducibile col volume di dati attuale (vedi RIASSUNTO sez.29), stesso valore ora su TUTTE le leghe
 MEDIA_RUOLO_FWD_PRIOR = 53.74  # AGGIORNATO (29/07): media grezza pool 25 leghe (solo diagnostico, la produzione usa il prior dinamico da presence_rate)
+
+# --- PRIOR_LEGA (13/08/2026) -- SPENTO di default, in misura --------------
+# Lo shrinkage sopra tira la previsione verso un prior che oggi e' lo STESSO
+# per tutte e 53 le leghe. Misurato sulla cache game-log (105 celle
+# lega/ruolo, >=200 partite da titolare ciascuna): le leghe non sono uguali.
+# Attaccanti: Chinese Super League 58.1, Portogallo 56.5 ... Premier 50.1,
+# Championship 49.1. Nove punti fra la piu' generosa e la piu' avara, cioe'
+# piu' del doppio dell'effetto che lo shrinkage stesso sposta.
+# Conta perche' chi cambia campionato si porta dietro solo il ~20% del
+# vantaggio che aveva nella lega vecchia (584 cambi, verifica fuori campione
+# su 120 mai visti: prevedere "fara' la media della lega nuova" sbaglia 5.5
+# punti contro i 7.0 di "gli porto avanti la sua media"). Con l'ancora
+# globale, un fenomeno della Segunda che sale in Liga resta valutato come se
+# le due leghe fossero la stessa cosa.
+# Qui si sposta l'ancora, non la forza: al prior dinamico si somma lo SCARTO
+# fra il livello della lega in cui gioca e la media di tutte le leghe per
+# quel ruolo. A lega media lo scarto e' 0 e non cambia niente.
+# Tabella: dati_globali/livello_lega_ruolo.json
+# (dati_globali/costruisci_livello_lega_ruolo.py, zero query).
+PRIOR_LEGA_ENABLED = os.environ.get('PRIOR_LEGA_ENABLED', '0') == '1'
+_PRIOR_LEGA_PATH = os.environ.get(
+    'PRIOR_LEGA_DATA_PATH',
+    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__)))), 'dati_globali', 'livello_lega_ruolo.json'))
+_PRIOR_LEGA = {}
+if PRIOR_LEGA_ENABLED:
+    try:
+        with open(_PRIOR_LEGA_PATH, encoding='utf-8') as _f:
+            _PRIOR_LEGA = json.load(_f)
+    except Exception as _e:
+        print(f"ATTENZIONE: PRIOR_LEGA_ENABLED=1 ma {_PRIOR_LEGA_PATH} non "
+              f"leggibile ({_e}) -- prior di lega disattivato per questa run.")
+        PRIOR_LEGA_ENABLED = False
+
+
+def scarto_lega(ruolo, lega):
+    """Quanto quella lega e' piu' generosa (o avara) della media delle leghe,
+    per quel ruolo. 0.0 se il flag e' spento, se la lega non e' in tabella o
+    se la cella ha troppe poche partite: fallback esplicito, mai un numero
+    inventato -- e a 0.0 il prior resta identico a quello di sempre."""
+    if not PRIOR_LEGA_ENABLED or not lega:
+        return 0.0
+    cella = (_PRIOR_LEGA.get('per_lega_ruolo') or {}).get(f'{lega}|{ruolo}')
+    base = (_PRIOR_LEGA.get('per_ruolo') or {}).get(ruolo)
+    if not cella or not base:
+        return 0.0
+    return cella['media'] - base['media']
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
@@ -1611,6 +1658,11 @@ def compute_score_atteso_fwd(scores, is_home_flags,
     # decisione utente via popup): era 47.44 + 6.62 * presence_rate.
     if presence_rate is not None:
         media_ruolo_prior = max(0.0, 47.44 + 6.62 * presence_rate)
+    # PRIOR_LEGA (13/08/2026, spento di default -- vedi il commento sulla
+    # costante): sposta l'ancora dello shrinkage sul livello della lega in cui
+    # il giocatore gioca ADESSO. A flag spento scarto_lega() vale 0.0 e questa
+    # riga non cambia un decimale.
+    media_ruolo_prior = max(0.0, media_ruolo_prior + scarto_lega('FWD', league))
     grezzo_nuovo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     if offensive_values is not None and next_opponent_team_slug:
         _offensive_hist = weighted_mean(offensive_values, weights_det)
