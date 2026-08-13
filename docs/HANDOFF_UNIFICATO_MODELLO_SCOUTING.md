@@ -2617,14 +2617,23 @@ sbagliata. Corretti anche 3 difetti del banco di prova
 (`backtest_arene_previsioni.py`), fra cui la lega scritta a mano `'mls'` per
 tutti i giocatori del mondo.
 
-## 8quaterdecies. FILONE INTRALEGA (13/08/2026) — una pista pre-registrata, il resto chiuso
+## 8quaterdecies. FILONE INTRALEGA (13/08/2026) — CHIUSO TUTTO, niente in attesa
 
 **VERDETTO DA BAR.** L'utente voleva confrontare i due reparti che si
 affrontano (attacco di A contro difesa di B) *dentro* lo stesso campionato.
-L'idea "intralega" in sé è **caduta**; ma il dataset che serviva a provarla ha
-fatto uscire una cosa vera sul DIFENSORE, che ora è **pre-registrata e SPENTA**,
-da valutare il **25/08/2026** insieme a GK_ATT_AVV (§5.6) e al gruppo grade
-(§8bis-bis). Produzione oggi: **invariata**.
+L'idea "intralega" in sé è **caduta**; il dataset ha fatto uscire una pista
+sul DIFENSORE (gol FATTI dall'avversario) che sembrava viva, ed è stata
+**misurata e bocciata lo stesso giorno** in essenze — punto 3. Produzione:
+**invariata**, flag e `k` restano nel codice spenti come documentazione.
+
+**NIENTE DI QUESTA SEZIONE ASPETTA IL 25/08** (intestazione corretta il
+13/08 sera: diceva ancora "pre-registrata, da valutare il 25/08" mentre il
+punto 3 la dava già per chiusa, e quella contraddizione avrebbe fatto
+credere a chi legge che ci fosse lavoro in sospeso). Degli altri due filoni
+un tempo fissati a quella data: il gruppo grade è **acceso in produzione**
+(§8bis-bis), e GK_ATT_AVV si sta rimisurando sullo stesso archivio allargato
+invece di aspettare (§5.6, `analisi_manager/p63_gk_att_avv_fuoricampo.py`) —
+l'esito va scritto lì quando c'è.
 
 **1. L'ipotesi originaria è bocciata.** Normalizzare la forza dell'avversario
 dentro la sua lega invece che sul mondo: 4 celle su 4 la normalizzazione
@@ -2999,6 +3008,35 @@ faceva 10), tetto per tipo rispettato, parametri assenti = tornata
 primaria identica, e sceglie il tipo piu' redditizio invece di alternare.
 Script: `docs/handoff/test_fase_opzionale_arene.py`.
 
+**VOCE 12 — RISOLTA il 13/08/2026: come si estrae il grade storico, oggi.**
+La voce diceva "1 query per giocatore" e per questo sembrava cara. Era vero
+solo della rotta che usavamo, non di Sorare.
+
+- `playerGameScores(last: 15)` — quella di `completa_grade_mancante.py` — è
+  capata a **15 partite dal server**: chiedendo 50, 100 o 200 torna sempre
+  15, **senza errore**, e `first`/`before` non esistono (nessun cursore).
+  Andando indietro nel tempo quella finestra non arriva: su una giornata di
+  febbraio 2026 copriva 215 giocatori su 825 (**26%**).
+- `allPlayerGameScores(first: N)` — **lo stesso campo che il predict
+  interroga già** per riempire la cache game-log — accetta
+  `projection { grade }`, **non ha quel tetto** e arriva ad **agosto 2025**
+  (50 partite per giocatore, circa un anno). Verificato che dà lo stesso
+  identico voto dell'altra rotta: 71 righe confrontate, 71 uguali.
+- Terza strada, per riempire in fretta una giornata intera:
+  `anyGame(id) { playerGameScores { … projection { grade } } }` **non
+  accetta `last`** e restituisce **tutti i ~60 giocatori di quella partita**
+  in una query sola. Una query per PARTITA invece che per giocatore.
+
+Strumento pronto: **`analisi_manager/completa_grade_storico.py`**
+(`--fixture` ripetibile, `--fixture-tutte`, `--thread`, ruota le 3 APIKEY,
+rispetta `Retry-After`, salva ogni 200 giocatori). Misurato: **825 giocatori
+in 18 secondi**, copertura di quella giornata dal 26% al 100%; e 3.790
+giocatori in 16 minuti sull'intero archivio. `completa_grade_mancante.py`
+resta solo per compatibilità: per lavori nuovi usare quello storico.
+
+**Limite vero, quello sì di Sorare**: il grade **non esiste prima di
+~agosto 2025** (giugno 2025 = 0% delle righe, settembre 2025 = 100%).
+
 **C. Difetti noti, costo basso, nessuna ricerca.** `PYTHONHASHSEED=0`
 nell'ambiente di lancio (§9); default fasullo `GK_TEAM_CS_WEIGHT=0.5` in
 `backtest_arene_previsioni.py:257-260` (§5.7); 21 script con path Windows
@@ -3008,7 +3046,7 @@ hardcoded (voce 11); Russia coperta ma non popolata (§7). Sono tutti
 **D. Aperti che richiedono dati NUOVI (query/run).** Voce 9 (odds+4ruoli,
 serve campione profondo), voce 10 (buco premi Uncapped rank 1/3, forse
 già chiuso da v3 — **verificare prima di lavorarci**), voce 12
-(estrazione grade storico, 1 query/giocatore), voce 8 (decisione grade
+(estrazione grade storico: **NON è più 1 query/giocatore, vedi sotto**), voce 8 (decisione grade
 nello scouting, che è una scelta di significato più che una misura).
 
 **E. Il tetto vero.** §5.1 resta il vincolo di fondo: il punto è piatto e
