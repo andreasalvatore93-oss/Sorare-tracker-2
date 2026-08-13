@@ -58,26 +58,14 @@ on:
         description: "Carte MINIME dello stesso giocatore attualmente IN VENDITA (annunci vivi, non storico) perche' il caso proceda -- protezione mercato poco popolato. MLS/K-League confrontano solo la stagione giusta (season/classic separate), altri campionati mescolano in_season+classic come sempre"
         required: false
         default: "3"
-      min_listed_cards_diagnostic:
-        description: "'si' = logga anche quando il controllo 'carte in vendita minime' PASSA (utile per verificare che il controllo giri su ogni candidato durante il test). 'no' = logga solo gli scarti, come tutti gli altri controlli."
-        required: false
-        default: "no"
       recent_avg_price_max_deviation_percent:
         description: "Scarta se il prezzo da pagare/offrire supera di questa percentuale la MEDIA delle ultime (fino a 3) transazioni reali del giocatore -- protezione contro prezzi anomali rispetto allo storico recente"
         required: false
         default: "15"
-      recent_avg_price_diagnostic_log:
-        description: "'si' = logga il calcolo (prezzi usati, media, deviazione) per OGNI valutazione, non solo quando scarta -- utile per capire quanto spesso il controllo scarterebbe. RICORDARSI DI RIMETTERE 'no' dopo la sessione di verifica, altrimenti resta rumoroso nei log."
-        required: false
-        default: "si"
       blacklisted_league_slugs:
         description: "Slug CAMPIONATI da aggiungere alla blacklist unita (separati da virgola, es. premiership-gb-sct) -- carte di questi campionati vengono ignorate completamente, default 15gg rinnovabile"
         required: false
         default: ""
-      league_blacklist_verbose_log:
-        description: "'si' = log dettagliato per OGNI carta scartata per campionato blacklistato (utile per il primo test). 'no' = filtro silenzioso."
-        required: false
-        default: "no"
       autobuy_live_mode:
         description: "'si' = ACQUISTO REALE AUTOMATICO (ramo AutoBuy). 'no' = solo diagnostica."
         required: false
@@ -94,6 +82,10 @@ on:
         description: "'si' = soglie basate sul prezzo (26/07). 'no' = torna alle 3 soglie statiche fisse (makeoffer_margin_percent/makeoffer_max_margin_percent/autobuy_margin_percent) -- utile per test diagnostici mirati (es. forzare molti AutoBuy per analisi timing)."
         required: false
         default: "si"
+      event_worker_threads:
+        description: "Quanti annunci valutare IN PARALLELO (default 6). Ogni valutazione costa 2-3 query: con 6 si usava un terzo del budget di un minuto quando il tetto era 60 richieste/min, ma con l'APIKEY sono 200 e c'e' margine. Il tetto Sorare delle query CONTEMPORANEAMENTE in volo e' 40, che nessuna chiave alza: non superare 12 senza misurare."
+        required: false
+        default: "6"
       runner:
         description: "Dove girare: 'casa' = PC dell'utente (latenza verso Sorare dimezzata, 82ms contro 168 -- serve che il PC sia ACCESO, altrimenti il job resta in coda). 'github' = runner GitHub, sempre disponibile ma piu' lento a reagire."
         required: false
@@ -205,11 +197,19 @@ jobs:
           CHECK_CLASSIC: ${{ github.event.inputs.check_classic || 'si' }}
           MIN_RECENT_TRANSACTIONS: ${{ github.event.inputs.min_recent_transactions || '3' }}
           MIN_LISTED_CARDS_FOR_PURCHASE: ${{ github.event.inputs.min_listed_cards_for_purchase || '3' }}
-          MIN_LISTED_CARDS_DIAGNOSTIC: ${{ github.event.inputs.min_listed_cards_diagnostic || 'no' }}
+          # I tre log diagnostici erano input, ma il workflow_dispatch e' a tetto
+          # (25 input) e servivano posti per cose che si tarano davvero. Restano
+          # qui come variabili: si accendono cambiando 'no' in 'si' per una
+          # sessione di verifica e si rimettono a posto subito dopo.
+          # RECENT_AVG_PRICE_DIAGNOSTIC_LOG va scritto ESPLICITAMENTE: nel codice
+          # il suo default e' 'si', ed era rimasto acceso da una vecchia
+          # verifica, rumoroso nei log a ogni run.
+          MIN_LISTED_CARDS_DIAGNOSTIC: "no"
+          RECENT_AVG_PRICE_DIAGNOSTIC_LOG: "no"
+          LEAGUE_BLACKLIST_VERBOSE_LOG: "no"
           RECENT_AVG_PRICE_MAX_DEVIATION_PERCENT: ${{ github.event.inputs.recent_avg_price_max_deviation_percent || '15' }}
-          RECENT_AVG_PRICE_DIAGNOSTIC_LOG: ${{ github.event.inputs.recent_avg_price_diagnostic_log || 'si' }}
           BLACKLISTED_LEAGUE_SLUGS: ${{ github.event.inputs.blacklisted_league_slugs || '' }}
-          LEAGUE_BLACKLIST_VERBOSE_LOG: ${{ github.event.inputs.league_blacklist_verbose_log || 'no' }}
+          EVENT_WORKER_THREADS: ${{ github.event.inputs.event_worker_threads || '6' }}
           AUTOBUY_LIVE_MODE: ${{ github.event.inputs.autobuy_live_mode || 'si' }}
           MAKEOFFER_LIVE_MODE: ${{ github.event.inputs.makeoffer_live_mode || 'si' }}
           OFFER_DISCOUNT_PERCENT_INPUT: ${{ github.event.inputs.offer_discount_percent || '15' }}
