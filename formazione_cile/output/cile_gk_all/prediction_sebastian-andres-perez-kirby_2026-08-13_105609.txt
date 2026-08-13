@@ -1,0 +1,128 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-13T10:56:09.807422Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) sebastian-andres-perez-kirby: 52 pt attesi (36-67)
+   SQUADRA: palestino-santiago-de-chile | AVVERSARIO: huachipato-talcahuano
+======================================================================
+
+######################################################################
+# GIOCATORE: sebastian-andres-perez-kirby
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: sebastian-andres-perez-kirby (squadra: palestino-santiago-de-chile)
+Generato: 2026-08-13T10:56:09.806615Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: primera-division-cl (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | NUB vs PAL | primera-division-cl | score=46.0 | peso=0.050
+  2025-08-22 | PAL vs COL | primera-division-cl | score=67.5 | peso=0.056
+  2025-08-29 | LAC vs PAL | primera-division-cl | score=32.5 | peso=0.062
+  2025-09-07 | CBR vs PAL | primera-division-cl | score=46.8 | peso=0.070
+  2025-09-13 | PAL vs OHI | primera-division-cl | score=36.8 | peso=0.079
+  2025-10-13 | UCH vs PAL | primera-division-cl | score=50.1 | peso=0.088
+  2025-10-24 | PAL vs EVE | primera-division-cl | score=39.6 | peso=0.099
+  2025-11-03 | PAL vs LIM | primera-division-cl | score=38.5 | peso=0.111
+  2025-11-08 | PAL vs COQ | primera-division-cl | score=29.8 | peso=0.125
+  2026-02-01 | PAL vs NUB | primera-division-cl | score=36.0 | peso=0.140
+  2026-02-07 | COQ vs PAL | primera-division-cl | score=27.5 | peso=0.157
+  2026-02-13 | PAL vs UCH | primera-division-cl | score=65.0 | peso=0.177
+  2026-02-21 | HUA vs PAL | primera-division-cl | score=26.4 | peso=0.198
+  2026-02-28 | PAL vs OHI | primera-division-cl | score=32.3 | peso=0.223
+  2026-03-08 | PAL vs CBR | primera-division-cl | score=36.1 | peso=0.250
+  2026-03-15 | UCO vs PAL | primera-division-cl | score=30.4 | peso=0.281
+  2026-04-02 | UCA vs PAL | primera-division-cl | score=18.6 | peso=0.315
+  2026-04-12 | PAL vs LIM | primera-division-cl | score=60.7 | peso=0.354
+  2026-04-19 | COL vs PAL | primera-division-cl | score=74.6 | peso=0.397
+  2026-04-24 | PAL vs CON | primera-division-cl | score=24.8 | peso=0.445
+  2026-05-16 | PAL vs LAS | primera-division-cl | score=40.5 | peso=0.500
+  2026-05-24 | LAC vs PAL | primera-division-cl | score=39.8 | peso=0.561
+  2026-06-01 | PAL vs AUD | primera-division-cl | score=75.5 | peso=0.630
+  2026-06-13 | EVE vs PAL | primera-division-cl | score=53.6 | peso=0.707
+  2026-07-26 | NUB vs PAL | primera-division-cl | score=49.9 | peso=0.794
+  2026-08-01 | PAL vs COQ | primera-division-cl | score=34.2 | peso=0.891
+  2026-08-10 | UCH vs PAL | primera-division-cl | score=52.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 45.66
+  di cui Punteggio decisivo (level_score) medio: 38.13 | Punteggio complessivo (granulari) medio: 7.52 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 39.02 (delta +0.89 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +1.79, delta avversario +1.61 | Possesso condizionato per venue: delta +0.33 | Goalkeeping condizionato per venue: delta -4.12 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 15.37
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.4 - 60.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.72 (differenza: +2.65)
+Media score in casa: 44.09 | Media score fuori casa: 42.20
+Fattore casa/trasferta applicato: 0.991 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.1
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 1.199 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.003
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.987
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.007
+Tasso storico clean sheet (porta inviolata nei primi 60'): 18.5% (bonus atteso incorporato nella media pesata: ~4.6pt)
+Fattore trend (media ultime 5: 51.7 vs media 5 PRECEDENTI: 46.4): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-18T00:30
+Casa: CD Palestino | Trasferta: CD Huachipato
+Competizione: primera-division-cl
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.6 (range 36.3 - 66.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.79
+Punteggio REALE ottenuto in quella partita: 52.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +7.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 21 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      50.1    39.6    -10.5    12.2        SI
+   7        7      50.1    38.5    -11.6    11.3        NO
+   8        8      41.1    29.8    -11.3    10.6        NO
+   9        9      36.5    36.0     -0.5    11.4        SI
+  10       10      39.2    27.5    -11.7    10.7        NO
+  11       11      31.5    65.0    +33.5    11.2        NO
+  12       12      40.2    26.4    -13.8    14.9        SI
+  13       13      46.2    32.3    -13.9    15.2        SI
+  14       14      52.6    36.1    -16.5    14.5        NO
+  15       15      44.6    30.4    -14.2    13.5        NO
+  16       16      28.9    18.6    -10.3    13.0        SI
+  17       17      41.6    60.7    +19.1    14.2        NO
+  18       18      25.7    74.6    +48.9    16.4        NO
+  19       19      50.7    24.8    -25.9    20.6        NO
+  20       20      49.9    40.5     -9.4    20.4        SI
+  21       21      49.9    39.8    -10.1    19.2        SI
+  22       22      47.3    75.5    +28.2    18.0        NO
+  23       23      40.9    53.6    +12.7    21.3        SI
+  24       24      38.1    49.9    +11.8    20.3        SI
+  25       25      45.8    34.2    -11.6    19.2        SI
+  26       26      33.9    52.4    +18.5    18.5        SI
+
+MAE (errore assoluto medio): 16.38
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 52.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
