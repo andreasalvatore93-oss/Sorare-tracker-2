@@ -1859,7 +1859,7 @@ def _team_vs_opponent_html(team_slug, opponent_team_slug, opp_factor):
 
 def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool,
                       team_slug=None, opponent_team_slug=None, opp_factor=None, starter_odds=None,
-                      ambiguo=False):
+                      ambiguo=False, nuovo_campionato=False, nc_da=None):
     """Contenuto dinamico di una pcard (tutto tranne striscia colore/ruolo/
     badge capitano, che restano legati allo SLOT, non al giocatore) --
     fattorizzato (28/07) per essere riusato SIA per la carta reale SIA per
@@ -1883,6 +1883,20 @@ def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool,
                      'odds pubblicate insieme: l\'atteso potrebbe riferirsi alla '
                      'partita sbagliata (caso Freese, 10/08).">⚠ Fixture ambigua</div>'
                      if ambiguo else '')
+    # Badge "nuovo campionato" (13/08/2026, richiesta esplicita utente). SOLO
+    # cosmetico: il flag lo scrive _annota_nuovo_campionato nel generatore
+    # (lega dominante dello storico != lega in cui gioca ora) e non entra in
+    # nessun calcolo. Serve a riconoscere le carte su cui l'atteso e' meno
+    # affidabile -- misurato: 5,5 punti di sovrastima salendo di categoria, 7
+    # di sottostima scendendo. Si spegne da solo quando lo storico nella lega
+    # nuova diventa la maggioranza.
+    da = f" (storico: {nc_da})" if nc_da else ''
+    nuovo_camp_html = ('<div class="pcard-nuovacamp" title="Ha cambiato '
+                       'campionato: lo storico su cui e\' calcolato l\'atteso '
+                       'e\' quasi tutto in un\'altra lega' + html.escape(da) +
+                       ', quindi il punteggio atteso potrebbe essere '
+                       'differente.">🌍 Nuovo campionato</div>'
+                       if nuovo_campionato else '')
     return (
         f'<span class="pcard-fatto">OK</span>'
         f'<div class="pcard-avatar">{_slug_initials(slug)}</div>'
@@ -1893,6 +1907,7 @@ def _pcard_body_html(slug, atteso, low, high, l10, tags_html, card_pool,
         f'{odds_html}'
         f'{match_html}'
         f'{ambiguo_html}'
+        f'{nuovo_camp_html}'
         f'<div class="pcard-tags">{tags_html}</div>'
     )
 
@@ -1910,7 +1925,9 @@ def render_card_html(slot_label, row, ctype, card_pool, is_captain, apply_xp_bon
     body_html = _pcard_body_html(row['slug'], row['atteso'], row['low'], row['high'], l10, tags_html, card_pool,
                                   team_slug=row.get('team_slug'), opponent_team_slug=row.get('opponent_team_slug'),
                                   opp_factor=row.get('opp_factor'), starter_odds=row.get('starter_odds'),
-                                  ambiguo=row.get('ambiguo', False))
+                                  ambiguo=row.get('ambiguo', False),
+                                  nuovo_campionato=row.get('nuovo_campionato', False),
+                                  nc_da=row.get('_nc_da'))
     # data-body (28/07): l'HTML esatto della pcard-body per QUESTO giocatore,
     # gia' pronto -- il drag&drop lato client lo scambia con quello di
     # un'alternativa senza ricalcolare nulla in JS (vedi script nel template).
@@ -2088,6 +2105,11 @@ HTML_REPORT_TEMPLATE = """<!doctype html>
   .pcard-ambiguo {{
     font-size: 0.55rem; font-weight: 700; color: #f0a83b;
     background: rgba(240,168,59,0.16); border-radius: 4px; padding: 1px 5px;
+    text-align: center; cursor: help;
+  }}
+  .pcard-nuovacamp {{
+    font-size: 0.55rem; font-weight: 700; color: #7aa7ff;
+    background: rgba(122,167,255,0.16); border-radius: 4px; padding: 1px 5px;
     text-align: center; cursor: help;
   }}
   .pcard-tags {{ display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; min-height: 14px; }}

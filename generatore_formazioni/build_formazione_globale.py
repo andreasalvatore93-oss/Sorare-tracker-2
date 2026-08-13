@@ -830,6 +830,146 @@ PAREGGIO_ARENA = {
 # li' invece si allinea alla cap 260).
 PAREGGIO_ARENA.update({arena_type(lg): 262.9 for lg in ARENA_LEAGUES})
 
+
+# ---------------------------------------------------------------------------
+# BADGE "NUOVO CAMPIONATO" (13/08/2026, richiesta esplicita dell'utente)
+# ---------------------------------------------------------------------------
+# SOLO COSMETICO: annota row['nuovo_campionato'] e non tocca NIENTE altro --
+# non l'atteso, non la selezione, non l'ordinamento. Serve all'utente per
+# riconoscere a colpo d'occhio, nel report, le carte su cui la previsione e'
+# meno affidabile e sistemarsele a mano (rilanciando con EXCLUDE_SLUGS).
+#
+# PERCHE' ESISTE (misurato il 13/08, docs/handoff/HANDOFF_PRIOR_LEGA_2026-08-13
+# .txt): il modello tratta le 53 leghe come uguali. Chi cambia campionato si
+# porta dietro lo storico della lega vecchia e viene sovrastimato di 5,5 punti
+# salendo di categoria (n=104), sottostimato di 7 scendendo (n=31). La
+# correzione automatica e' stata provata in tre forme e bocciata su MAE+
+# correlazione+lift: resta il badge, che non decide niente ed e' esatto.
+#
+# COME SI RICONOSCE UN CAMBIO DI LEGA: si confronta la lega DOMINANTE dello
+# storico degli ultimi 365 giorni (la stessa finestra del modello) con la lega
+# in cui il giocatore sta per giocare -- che e' row['league'], cioe' la
+# cartella con cui la discovery lo ha instradato, derivata dal suo club
+# ATTUALE. E' il filtro indicato come "quello giusto" dall'handoff sopra
+# (§6.1-ter), dopo che il precedente ("quota di storico in un'altra
+# competizione >= 0,5") si era rivelato un rilevatore di COPPE: su 1.187
+# attaccanti ne prendeva 231 per correggerne 16. Qui le competizioni fuori da
+# LEAGUE_DIR (coppe nazionali, continentali) non si contano proprio.
+# Proprieta' comoda: man mano che il giocatore accumula partite nel campionato
+# nuovo lo storico diventa "suo" e il badge si spegne DA SOLO, senza soglie da
+# tarare ne' liste da aggiornare a mano.
+#
+# COSTO: zero query. Un file gia' in repo per candidato
+# (<lega>/<ruolo>_all/.game_log_cache/<slug>_gamelog.json, la cache condivisa),
+# aperto una volta sola per giocatore. Se il file manca, nessun badge.
+#
+# VERIFICA (13/08, sul report run209): 178 carte schierate, 14 flaggate --
+# esattamente i 14 nomi che l'utente aveva gia' validato a occhio, senza
+# nessuna lista scritta a mano. Paxten Aaronson esce da solo (gioca in MLS da
+# un anno) proprio grazie alla finestra di 365 giorni.
+NUOVO_CAMPIONATO_ENABLED = os.environ.get('NUOVO_CAMPIONATO', '1') == '1'
+NUOVO_CAMPIONATO_GIORNI = 365   # la stessa finestra dello storico del modello
+
+# giappone100 e giappone SONO LA STESSA LEGA (dichiarazione dell'utente: la J1
+# 100 Year Vision e' una competizione breve giocata dalle stesse squadre, con
+# una cartella propria nel repo). Senza questo alias OGNI giapponese risulta
+# "cambiato lega" a meta' 2026: 8 falsi positivi su 178 carte, misurati.
+NUOVO_CAMPIONATO_ALIAS = {'giappone100': 'giappone'}
+
+
+def _cartella_lega(nome):
+    return NUOVO_CAMPIONATO_ALIAS.get(nome, nome)
+
+
+def _league_dir_map():
+    """competition slug -> cartella del repo. Sta in discovery_fixture.py, che
+    e' l'unico posto dove viene mantenuta (aggiungere una lega vuol dire
+    aggiungerla li'): si importa da li' invece di copiarla, altrimenti le due
+    copie divergono al primo campionato nuovo.
+
+    Import PIGRO e dentro try: discovery_fixture tira dentro il client HTTP, e
+    un badge cosmetico non deve poter far fallire una run di produzione. Se
+    l'import non riesce, il badge resta spento e lo si dice nel log."""
+    global _LEAGUE_DIR_CACHE
+    try:
+        return _LEAGUE_DIR_CACHE
+    except NameError:
+        pass
+    try:
+        sys.path.insert(0, _REPO_ROOT)
+        from discovery_fixture import LEAGUE_DIR as _ld
+        _LEAGUE_DIR_CACHE = dict(_ld)
+    except Exception as e:
+        print(f"NOTA: badge 'nuovo campionato' spento, LEAGUE_DIR non importabile ({e})")
+        _LEAGUE_DIR_CACHE = {}
+    return _LEAGUE_DIR_CACHE
+
+
+def _lega_dominante_storico(path, oggi, giorni, league_dir):
+    """Cartella con piu' partite negli ultimi `giorni`, letta dal game log.
+    Ritorna (cartella, n_partite_li, n_partite_totali) oppure None se lo
+    storico utile e' vuoto (giocatore nuovo, o solo coppe)."""
+    try:
+        with open(path, encoding='utf-8') as fh:
+            log = json.load(fh)
+    except Exception:
+        return None
+    limite = oggi - datetime.timedelta(days=giorni)
+    conta = defaultdict(int)
+    for riga in log.values():
+        gioco = riga.get('anyGame') or {}
+        data = (gioco.get('date') or '')[:10]
+        if len(data) != 10:
+            continue
+        try:
+            quando = datetime.date(int(data[:4]), int(data[5:7]), int(data[8:10]))
+        except ValueError:
+            continue
+        if quando < limite or quando > oggi:
+            continue
+        comp = ((gioco.get('competition') or {}).get('slug')) or ''
+        cartella = league_dir.get(comp)
+        if cartella is None:
+            continue     # coppa/continentale: non dice nulla sulla lega
+        conta[_cartella_lega(cartella)] += 1
+    if not conta:
+        return None
+    dominante = max(conta.items(), key=lambda kv: kv[1])
+    return dominante[0], dominante[1], sum(conta.values())
+
+
+def _annota_nuovo_campionato(rows, league, role):
+    """Scrive row['nuovo_campionato'] (bool) e row['_nc_da'] (la lega da cui
+    viene, per il tooltip). Nessun altro campo toccato."""
+    if not NUOVO_CAMPIONATO_ENABLED or not rows:
+        return 0
+    league_dir = _league_dir_map()
+    if not league_dir:
+        return 0
+    cache_dir = os.path.join(_REPO_ROOT, CONSIGLIO_DIRS[league][role], '.game_log_cache')
+    if not os.path.isdir(cache_dir):
+        return 0
+    oggi = datetime.date.today()
+    lega_ora = _cartella_lega(league)
+    flaggati = 0
+    for row in rows:
+        slug = row.get('slug')
+        if not slug:
+            continue
+        esito = _lega_dominante_storico(
+            os.path.join(cache_dir, f'{slug}_gamelog.json'),
+            oggi, NUOVO_CAMPIONATO_GIORNI, league_dir)
+        if esito is None:
+            continue
+        dominante, n_dom, n_tot = esito
+        if dominante != lega_ora:
+            row['nuovo_campionato'] = True
+            row['_nc_da'] = dominante
+            row['_nc_partite'] = (n_dom, n_tot)
+            flaggati += 1
+    return flaggati
+
+
 def _stampa_verdetto_arene(all_results):
     """Per ogni arena generata: conviene pagare l'ingresso con questa formazione?
 
@@ -1212,6 +1352,7 @@ def load_league_role_data():
     role_data = {lg: {} for lg in LEAGUES}
     role_counts = {lg: {} for lg in LEAGUES}
     names = {}
+    _nc_tot = 0
     for league in LEAGUES:
         for role in ROLES:
             out_dir = CONSIGLIO_DIRS[league][role]
@@ -1261,12 +1402,21 @@ def load_league_role_data():
             _apply_grade_group(rows)
             if role == 'GK':
                 _apply_gk_att_avv(rows)
+            # Badge "nuovo campionato" (13/08/2026): SOLO cosmetico, annota e
+            # basta -- va in fondo apposta, dopo che la riga e' completa, per
+            # rendere evidente che non entra in nessun calcolo (a differenza
+            # del grade e del correttivo GK, dove l'ordine conta davvero).
+            _nc_tot += _annota_nuovo_campionato(rows, league, role)
             names.update(bff.load_player_names(DISCOVERY_DIRS[league][role]))
             print(f"[{league}/{role}] {path or 'NESSUN FILE TROVATO'} -> {len(rows)} giocatori")
             role_data[league][role] = rows
             role_counts[league][role] = counts
     if GRADE_GROUP_STORICA_ENABLED:
         _recentra_grade_per_ruolo(role_data)
+    if NUOVO_CAMPIONATO_ENABLED:
+        print(f"\nBadge 'nuovo campionato': {_nc_tot} candidati con lo storico "
+              f"in un'altra lega negli ultimi {NUOVO_CAMPIONATO_GIORNI} giorni "
+              f"(solo cosmetico, nessun effetto sulla selezione).")
     return role_data, role_counts, names
 
 
@@ -2726,6 +2876,16 @@ def main():
             'sbagliata (caso Freese, 10/08)." style="cursor:help">⚠ </span>'
             if row.get('ambiguo') else ''
         )
+        # Badge "nuovo campionato" (13/08/2026), stesso dato del badge in
+        # pcard -- vedi _annota_nuovo_campionato. Icona + tooltip: qui la
+        # tabella e' compatta e non c'e' spazio per il testo.
+        _nc_da = row.get('_nc_da')
+        nuovo_camp_marker = (
+            f'<span title="Nuovo campionato: lo storico di questo giocatore e\' '
+            f'quasi tutto in {_nc_da}, l\'atteso potrebbe essere sballato." '
+            f'style="cursor:help">🌍 </span>'
+            if row.get('nuovo_campionato') else ''
+        )
         # punteggio spostato SUBITO dopo il numero, a sinistra del nome
         # (29/07, bug segnalato dall'utente: prima era in fondo a destra
         # e la colonna nome veniva tagliata con ellissi). Nome ora senza
@@ -2734,7 +2894,7 @@ def main():
         return (
             f'<tr><td style="padding:2px 6px 2px 0;color:var(--muted)">{i+1}.</td>'
             f'<td style="padding:2px 8px 2px 0;font-weight:700;white-space:nowrap">{(row.get("atteso") or 0):.1f} pt</td>'
-            f'<td style="padding:2px 6px 2px 0;white-space:normal">{ambiguo_marker}{player_names.get(row["slug"], row["slug"])}</td>'
+            f'<td style="padding:2px 6px 2px 0;white-space:normal">{ambiguo_marker}{nuovo_camp_marker}{player_names.get(row["slug"], row["slug"])}</td>'
             f'<td style="padding:2px 6px 2px 0;color:var(--muted)">{r}</td>'
             f'<td style="padding:2px 0;color:var(--text);opacity:0.85;font-size:0.78rem;'
             f'max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" '

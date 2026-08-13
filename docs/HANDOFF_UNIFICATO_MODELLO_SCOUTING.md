@@ -2454,6 +2454,36 @@ media (3.795 giocatori rimasti nella loro lega non calano affatto). Costruita
 la tabella dei livelli e un interruttore, **spento**. Dettaglio integrale:
 `docs/handoff/HANDOFF_PRIOR_LEGA_2026-08-13.txt`.
 
+**FATTO IL 13/08/2026 SERA — BADGE COSMETICO "NUOVO CAMPIONATO", ACCESO.**
+Unica cosa che va in produzione da questo filone, per decisione dell'utente:
+nessuna correzione dell'atteso, solo un avviso nel report. La carta di chi ha
+lo storico in un'altra lega mostra `🌍 Nuovo campionato` (pcard + tabella "Top
+esclusi"); l'utente si sistema le formazioni a mano rilanciando con
+`EXCLUDE_SLUGS`. Regola di rilevamento: lega DOMINANTE dello storico degli
+ultimi 365 giorni (coppe e continentali non contate) diversa da `row['league']`
+— il filtro indicato come "quello giusto" in §6.1-ter dell'handoff, non la
+"quota di storico altrove" che selezionava le COPPE. Si spegne da solo quando
+lo storico nella lega nuova diventa maggioranza: nessuna lista da mantenere.
+Zero query, un file di cache game-log per candidato, **+1,6s** sul job.
+`NUOVO_CAMPIONATO` (default `'1'`, `=0` lo spegne); alias `giappone100`→
+`giappone` obbligatorio (senza, 8 falsi positivi su 178 carte).
+**Verifiche**: A/A a flag spento identico bit per bit; a flag ACCESO la
+selezione è **identica** (è cosmetico davvero); su run209 flagga
+**esattamente i 14 nomi** che l'utente aveva validato a occhio, senza nessuna
+lista scritta a mano (Aaronson esce da solo grazie alla finestra di un anno).
+File: `build_formazione_globale.py::_annota_nuovo_campionato`,
+`formazione_mls/build_formazione_finale.py::_pcard_body_html`.
+**Bocciata nello stesso giro, non riproporre: la "catena di sostituti".** Idea
+dell'utente: mostrare chi entrerebbe al posto del flaggato, a cascata.
+Tecnicamente gratis (`EXCLUDE_SLUGS` + secondo giro), ma misurato: togliendo
+il SOLO Vicente cambiano **10 formazioni su 12** (−35,5 pt totali) e nella sua
+stessa arena si muovono 4 carte su 5 — l'allocazione è un'ottimizzazione
+globale a mazzo fisso, non esiste un "secondo in classifica" da mostrare. In
+più il suo rimpiazzo era un altro flaggato. *(Trappola del confronto: nel
+DUMP_JSON le arene efficienti escono TUTTE con `idx=1` — accoppiarle per
+`(tipo, idx)` confronta sette arene diverse con la stessa e fa sembrare che
+cambi tutto. Accoppiarle per posizione dentro il tipo.)*
+
 **DECISIONE DELL'UTENTE (13/08 sera): non si tocca la produzione.** I casi
 veri sono **14 su 178 carte** e solo 3-4 pesano (Vicente −18, Berhalter −16,
 Martín −13). Per quei pochi si valuta un **fix mirato** di 2-3 giornate
