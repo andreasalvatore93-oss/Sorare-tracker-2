@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:12:07.930139Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) santiago-arias-naranjo: 46 pt attesi (27-74)
+   ORDINAMENTO: 45.32
+   SQUADRA: independiente-avellaneda-provincia-de-buenos-aires | AVVERSARIO: lanus-lanus-provincia-de-buenos-aires
+======================================================================
+
+######################################################################
+# GIOCATORE: santiago-arias-naranjo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: santiago-arias-naranjo (squadra: independiente-avellaneda-provincia-de-buenos-aires)
+Generato: 2026-08-13T07:12:07.929419Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 20
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-25 | GMD vs IND | superliga-argentina-de-futbol | score=35.6 | peso=0.794
+  2026-03-17 | INS vs IND | superliga-argentina-de-futbol | score=35.3 | peso=0.812
+  2026-03-21 | IND vs CAT | superliga-argentina-de-futbol | score=36.3 | peso=0.831
+  2026-04-04 | IND vs RAC | superliga-argentina-de-futbol | score=74.8 | peso=0.851
+  2026-04-11 | BOC vs IND | superliga-argentina-de-futbol | score=48.8 | peso=0.871
+  2026-04-18 | IND vs DYJ | superliga-argentina-de-futbol | score=27.8 | peso=0.891
+  2026-04-24 | RIE vs IND | superliga-argentina-de-futbol | score=46.1 | peso=0.912
+  2026-05-02 | SLO vs IND | superliga-argentina-de-futbol | score=84.2 | peso=0.933
+  2026-05-10 | ROS vs IND | superliga-argentina-de-futbol | score=26.6 | peso=0.955
+  2026-08-03 | VEL vs IND | superliga-argentina-de-futbol | score=37.7 | peso=0.977
+  2026-08-09 | IND vs PLA | superliga-argentina-de-futbol | score=58.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 46.74
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 11.74 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.50, delta avversario -0.35 | Passaggio condizionato: delta venue -0.52, delta avversario +0.13 | Clean sheet/disimpegni condizionato: delta venue -0.43, delta avversario -0.60 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 18.06
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 27.8 - 74.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.63 (differenza: +4.43)
+Media score in casa: 49.34 | Media score fuori casa: 44.91
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.4
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.528 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.001
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.997
+Fattore trend (media ultime 5: 50.5 vs media 5 PRECEDENTI: 44.6): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-17T20:00
+Casa: CA Lanús | Trasferta: CA Independiente
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.2 (range 27.2 - 74.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 45.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.41
+Punteggio REALE ottenuto in quella partita: 58.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +13.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      52.4    46.1     -6.2    17.1        SI
+   7        7      51.6    84.2    +32.6    15.8        NO
+   8        8      45.5    26.6    -18.8    21.2        SI
+   9        9      32.0    37.7     +5.6    21.5        SI
+  10       10      50.0    58.5     +8.4    20.5        SI
+
+MAE (errore assoluto medio): 14.35
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 80.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
