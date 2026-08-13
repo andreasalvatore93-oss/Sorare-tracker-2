@@ -1,0 +1,109 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:52:09.230389Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) mikkel-konradsen-ceide-2001-09-03: 56 pt attesi (42-72)
+   ORDINAMENTO: 54.98
+   SQUADRA: rosenborg-trondheim | AVVERSARIO: viking-stavanger
+======================================================================
+
+######################################################################
+# GIOCATORE: mikkel-konradsen-ceide-2001-09-03
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mikkel-konradsen-ceide-2001-09-03 (squadra: rosenborg-trondheim)
+Generato: 2026-08-13T07:52:09.229577Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 28
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: eliteserien (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-31 | VIK vs RBK | eliteserien | score=53.7 | peso=0.707
+  2025-09-14 | HAU vs RBK | eliteserien | score=55.3 | peso=0.724
+  2025-09-21 | RBK vs BOD | eliteserien | score=51.4 | peso=0.741
+  2025-10-18 | BRY vs RBK | eliteserien | score=30.5 | peso=0.758
+  2025-10-26 | RBK vs BRA | eliteserien | score=38.5 | peso=0.776
+  2025-10-29 | RBK vs SAN | eliteserien | score=50.9 | peso=0.794
+  2025-11-22 | TIL vs RBK | eliteserien | score=44.3 | peso=0.812
+  2025-11-30 | RBK vs GOD | eliteserien | score=67.6 | peso=0.831
+  2026-03-14 | MOL vs RBK | eliteserien | score=49.3 | peso=0.851
+  2026-03-22 | RBK vs VIF | eliteserien | score=37.8 | peso=0.871
+  2026-04-06 | TIL vs RBK | eliteserien | score=32.7 | peso=0.891
+  2026-07-12 | RBK vs KRI | eliteserien | score=81.3 | peso=0.912
+  2026-07-18 | STA vs RBK | eliteserien | score=55.7 | peso=0.933
+  2026-07-27 | RBK vs FFK | eliteserien | score=58.2 | peso=0.955
+  2026-08-02 | BRA vs RBK | eliteserien | score=49.2 | peso=0.977
+  2026-08-09 | LSK vs RBK | eliteserien | score=70.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 52.14
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 17.14 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.85, delta avversario +1.14 | Passaggio condizionato: delta venue +0.84, delta avversario -0.29 | Clean sheet/disimpegni condizionato: delta venue +0.77, delta avversario +1.53 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 13.43
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.8 - 67.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.46 (differenza: +2.97)
+Media score in casa: 55.11 | Media score fuori casa: 48.97
+Fattore casa/trasferta applicato: 1.008 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.6
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.733 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.006
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.004
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.995
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.993
+Fattore gol subiti (goals_conceded, con cap): 1.004
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.003
+Fattore trend (media ultime 5: 62.8 vs media 5 PRECEDENTI: 46.1): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T17:00
+Casa: Rosenborg BK | Trasferta: Viking FK
+Competizione: eliteserien
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 56.3 (range 41.9 - 71.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 55.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.70
+Punteggio REALE ottenuto in quella partita: 70.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +19.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      37.8    44.3     +6.6    10.0        SI
+   7        7      57.8    67.6     +9.8     9.2        NO
+   8        8      42.7    49.3     +6.6    11.8        SI
+   9        9      50.8    37.8    -13.0    11.0        NO
+  10       10      39.0    32.7     -6.3    11.1        SI
+  11       11      58.3    81.3    +23.0    11.7        NO
+  12       12      61.6    55.7     -5.9    15.8        SI
+  13       13      54.5    58.2     +3.7    15.2        SI
+  14       14      44.5    49.2     +4.7    14.8        SI
+  15       15      41.4    70.2    +28.7    14.2        NO
+
+MAE (errore assoluto medio): 10.84
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
