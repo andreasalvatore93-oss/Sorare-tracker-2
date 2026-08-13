@@ -121,6 +121,51 @@ PLAYER_SLUGS = load_player_slugs()
 WINDOW_SIZE = 30  # AMPLIATO (29/07) da 15 a 30 su richiesta esplicita dell'utente, dopo il caso Daniel De Sousa Brito -- mantenuto lo stesso half_life per ruolo, l'allargamento serve a dare piu' contesto storico alla media pesata
 HALF_LIFE_GAMES = 30.0  # AGGIORNATO (01/08): 20.0 -> 30.0. Rimisurato sul pool completo (831 difensori, 8 leghe con discovery_global): MAE 14.8000 contro 14.8024, e soprattutto REGGE FUORI CAMPIONE nel 98% delle meta' casuali (verifica_fuori_campione.py) -- non e' il vincitore scelto sugli stessi dati. Guadagno piccolo (-0.016%) ma reale; sulla selezione dei 5 e' neutro (283.0 vs 282.9 di totale medio). Storico del valore precedente sotto.
 # HALF_LIFE_GAMES = 20.0  # AGGIORNATO (29/07): retuning post-fix opponent_lambda_mult/Stadio D/goals_conceded cap, backtest walk-forward su TUTTE le 28 leghe (551 giocatori) -- ginocchio rendimento decrescente a 20 (MAE -0.55% circa vs 9.0), grid esteso fino a 150 senza vero minimo interno (monotono, convergenza asintotica verso nessun decadimento).
+# ---------------------------------------------------------------------------
+# GOL FATTI DALL'AVVERSARIO -- PRE-REGISTRATO, SPENTO (13/08/2026)
+# ---------------------------------------------------------------------------
+# NON ACCENDERE PRIMA DEL 25/08/2026. Decisione dell'utente: si valuta insieme
+# agli altri due test pre-registrati che chiudono quel giorno (GK_ATT_AVV e
+# GRADE_GROUP_STORICA, vedi docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md).
+#
+# COS'E'. Quanto segna di solito la squadra avversaria (gol FATTI, ultime 10,
+# normalizzati sulle costanti globali gia' validate), sommato allo score_atteso
+# del difensore. Nasce dal filone intralega del 13/08: la domanda dell'utente
+# era il confronto fra i due reparti che si affrontano, e questa e' l'unica
+# delle piste esplorate che abbia mosso qualcosa.
+#
+# PERCHE' NON E' UN DOPPIONE DI QUELLO CHE C'E' GIA'. La produzione condiziona
+# il difensore sui gol SUBITI dall'avversario (opponent_strength.SIGN_BY_ROLE
+# ['def']=+1 -> serie `conceded`). I gol FATTI sono una grandezza diversa, che
+# per questo ruolo oggi non entra da nessuna parte -- e infatti il guadagno
+# qui sotto e' misurato CON gli aggiustamenti di produzione gia' accesi.
+#
+# COSA DICONO I NUMERI (31.790 punti walk-forward, --con-avversario):
+#   MAE 14,964 -> 14,913 e correlazione 0,175 -> 0,190, entrambi MONOTONI col
+#   crescere di |k|. Il terzo metro, il lift di selezione, NON decide: la
+#   differenza appaiata su 285 giornate e' -0,10 con intervallo di confidenza
+#   [-1,70 ; +1,61], cioe' sedici volte piu' largo dell'effetto misurato.
+#   Non e' un voto contrario, e' un'astensione per mancanza di potenza
+#   (analisi_manager/p36_lift_rumore.py). La regola dei tre metri non e' ne'
+#   soddisfatta ne' violata: da qui la pre-registrazione invece della scelta.
+GOL_FATTI_AVV_ENABLED = os.environ.get('GOL_FATTI_AVV', '0') == '1'
+# k CONGELATO il 13/08/2026 (punti per deviazione standard). Si sceglie ORA e
+# non si ritocca sui dati nuovi, altrimenti la pre-registrazione non vale
+# niente. NON e' un valore di bordo scelto per comodita': la griglia e' stata
+# estesa apposta fino a -12 e il minimo e' INTERNO e simmetrico --
+#   k       -12     -10      -8      -6      -5      -4      -3      -2      -1       0
+#   MAE   15.120  15.029  14.965  14.927  14.917  14.913  14.917  14.927  14.942  14.964
+#   corr   0.169   0.176   0.183   0.189   0.190   0.190   0.189   0.186   0.182   0.175
+# La conca e' pulita e centrata su -4: MAE risale identico a -3 e a -5. Non e'
+# la forma del rumore.
+# ONESTA' SUL TERZO METRO: su TUTTA la griglia il lift non sale MAI. E' piatto
+# dentro il rumore fino a -4/-5 (-0,1/-0,4) e peggiora nettamente oltre (-2,1
+# a k=-8, -2,4 a k=-12). Quindi non si puo' dire "il lift migliorerebbe con
+# piu' potenza": si puo' dire solo che a k=-4 non distingue. Chi valutera' il
+# 25/08 deve saperlo, altrimenti legge questa voce come piu' promettente di
+# quanto sia.
+GOL_FATTI_AVV_K = -4.0
+
 RANGE_MULTIPLIER = 1.1  # AGGIORNATO (30/07, richiesta esplicita utente): centrato sulla copertura reale target ~68% (validate_range_multiplier_coverage.py, 917 giocatori/11004 punti test: 1.2 dava 72.8% di copertura, un po' largo; 1.1 da' 68.7%). Solo cosmetico -- non tocca score_atteso/selezione, cambia solo l'ampiezza del range mostrato.
 OPPONENT_SENSITIVITY = 29.0  # invariato
 # Gamba AVVERSARIO dello Stadio D: SPENTA (04/08). Era True fino al 04/08,
@@ -1776,7 +1821,40 @@ def compute_score_atteso_def(scores, is_home_flags, opponent_rankings,
         + _delta_venue_avversario(passing_values)
         + _delta_venue_avversario(clean_sheet_values)
     )
+
+    # GOL FATTI DALL'AVVERSARIO -- pre-registrato e SPENTO, vedi il blocco di
+    # commento su GOL_FATTI_AVV_ENABLED in cima al file. Va in FONDO apposta:
+    # si somma DOPO tutto il resto, quindi a flag spento questo ramo non esiste
+    # e la previsione e' identica bit per bit a prima.
+    if GOL_FATTI_AVV_ENABLED and next_opponent_team_slug and next_game_date:
+        _z = _gol_fatti_avversario_z(next_opponent_team_slug, next_game_date)
+        if _z is not None:
+            score_atteso += GOL_FATTI_AVV_K * _z
     return score_atteso
+
+
+def _gol_fatti_avversario_z(opponent_team_slug, cutoff_dt):
+    """Quanto segna di solito l'avversario, in deviazioni standard.
+
+    La serie NON e' ricostruita qui: e' la stessa che gia' usa la produzione
+    per gli altri condizionamenti (`opponent_strength`), letta con lo stesso
+    filtro walk-forward (`dt < cutoff_dt`) e normalizzata con le stesse
+    costanti globali gia' validate. Duplicarla avrebbe voluto dire due
+    definizioni della stessa cosa, destinate a divergere.
+
+    None = nessuna correzione (avversario senza storico sufficiente): e' il
+    caso del neopromosso indicato dall'utente, dove si lascia tutto com'e'."""
+    try:
+        import opponent_strength as ops
+    except ImportError:
+        return None
+    _conceded, scored = ops._build_series_for_league(None)
+    passate = [v for dt, v in scored.get(opponent_team_slug, []) if dt < cutoff_dt]
+    if len(passate) < ops.MIN_PARTITE_AVVERSARIO:
+        return None
+    ultime = passate[-ops.N_GAMES_DEFAULT:]
+    media = sum(ultime) / len(ultime)
+    return (media - ops.GLOBAL_MEAN_CONCEDED) / ops.GLOBAL_STD_CONCEDED
 
 
 def rigorous_backtest_prod_def(scores, is_home_flags, opponent_rankings,

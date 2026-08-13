@@ -2520,6 +2520,85 @@ sbagliata. Corretti anche 3 difetti del banco di prova
 (`backtest_arene_previsioni.py`), fra cui la lega scritta a mano `'mls'` per
 tutti i giocatori del mondo.
 
+## 8quaterdecies. FILONE INTRALEGA (13/08/2026) — una pista pre-registrata, il resto chiuso
+
+**VERDETTO DA BAR.** L'utente voleva confrontare i due reparti che si
+affrontano (attacco di A contro difesa di B) *dentro* lo stesso campionato.
+L'idea "intralega" in sé è **caduta**; ma il dataset che serviva a provarla ha
+fatto uscire una cosa vera sul DIFENSORE, che ora è **pre-registrata e SPENTA**,
+da valutare il **25/08/2026** insieme a GK_ATT_AVV (§5.6) e al gruppo grade
+(§8bis-bis). Produzione oggi: **invariata**.
+
+**1. L'ipotesi originaria è bocciata.** Normalizzare la forza dell'avversario
+dentro la sua lega invece che sul mondo: 4 celle su 4 la normalizzazione
+mondiale (quella che gira oggi) correla **di più** col voto vero (FWD −0,0493
+contro −0,0440; DEF −0,0406 contro −0,0373). La differenza fra campionati porta
+informazione vera: cancellarla butta segnale, non pulisce rumore.
+Script: `analisi_manager/p33_intralega_dataset.py` (dataset, 112.484 righe, 31
+leghe, zero query, 68s) e `p34_intralega_gate.py`.
+
+**2. Attaccante contro i difensori avversari: CHIUSO.** Grezzo il segnale c'era
+(−0,0728, e −0,0477 al netto dei gol). Dentro la formula, con gli aggiustamenti
+di produzione accesi, sparisce: su 23.173 punti MAE e correlazione si muovono
+di 3 millesimi e il lift oscilla senza direzione. Era roba che il modello già
+prendeva per altre vie. `p35_intralega_termometri.py`.
+
+**3. Difensore + GOL FATTI dall'avversario: PRE-REGISTRATO, SPENTO.**
+Non è un doppione: la produzione condiziona il DEF sui gol **subiti**
+dall'avversario (`SIGN_BY_ROLE['def']=+1`), i gol **fatti** per quel ruolo non
+entrano da nessuna parte — e infatti il guadagno è misurato **con** gli
+aggiustamenti di produzione già accesi. Su 31.790 punti walk-forward:
+
+| k | −12 | −10 | −8 | −6 | −5 | **−4** | −3 | −2 | −1 | 0 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| MAE | 15,120 | 15,029 | 14,965 | 14,927 | 14,917 | **14,913** | 14,917 | 14,927 | 14,942 | 14,964 |
+| corr | 0,169 | 0,176 | 0,183 | 0,189 | 0,190 | **0,190** | 0,189 | 0,186 | 0,182 | 0,175 |
+| lift% | 14,7 | 14,7 | 15,0 | 16,5 | 16,7 | 16,9 | 16,4 | 17,0 | 17,0 | 17,1 |
+
+Il minimo è **interno e simmetrico** su k=−4 (griglia estesa apposta fino a −12
+per non congelare un valore di bordo): non è la forma del rumore.
+
+**IL TERZO METRO, detto onestamente.** Il lift **non sale mai**, su tutta la
+griglia. È piatto dentro il proprio rumore fino a −4/−5 e peggiora chiaramente
+oltre (−2,1 a k=−8). Misurato quanto rumore ha, con un confronto **appaiato**
+giorno per giorno (dei tre pezzi del lift solo `scelto` dipende dalla
+previsione, quindi i due bracci condividono `caso` e `oracolo`):
+**delta −0,10 con IC95 [−1,70 ; +1,61] su 285 giornate**, cioè un'incertezza 16
+volte l'effetto — e in 196 giornate su 285 la scelta cambia davvero, quindi il
+test non è nullo per costruzione. `analisi_manager/p36_lift_rumore.py`.
+Quindi: **due metri dicono di sì, il terzo si astiene** a k=−4. Non scrivere
+che "il lift migliorerebbe con più potenza": la forma della curva dice il
+contrario, il lift al più resta fermo.
+
+**PRE-REGISTRAZIONE — cosa si decide il 25/08/2026 e come.**
+- **Congelato ORA, non si ritocca**: `GOL_FATTI_AVV_K = −4.0`, flag
+  `GOL_FATTI_AVV` (default `'0'`), solo in `formazione_mls/predict/test_def.py`,
+  **non propagato** (come si fece per PRIOR_LEGA, ed è giusto così).
+- **Misura da rifare**: identica a quella di oggi (`taratura_confronto_parametri.py
+  --ruoli def --gol-fatti-avv="-4" --con-avversario`, più `p36_lift_rumore.py`)
+  sulla cache **cresciuta**, che è ciò che aumenta le giornate utili.
+- **Regola di decisione**: si applica se MAE e correlazione restano migliori
+  **e** il delta di lift appaiato ha IC95 sopra lo zero. Si scarta se l'IC95 del
+  lift finisce sotto zero. Se l'IC contiene ancora zero: resta spento e si
+  riprova più avanti.
+- **Aspettativa onesta sulla potenza**: con sd del delta per giornata di 14,78,
+  per vedere +1,5 punti di lift servono **~380 giornate valide** e oggi ne
+  abbiamo **285**. Le 3 fixture nuove di GW5/6/7 da sole **non bastano** a
+  decidere questa voce (portano pochi punti DEF): a farla decidere è la crescita
+  della cache. Detto ora per non illudersi il 25/08.
+
+**Difetto del metro trovato e corretto strada facendo** (vale per chiunque lo
+usi): `taratura_confronto_parametri.py` girava con gli aggiustamenti avversario
+**spenti** — è lo stesso banco che aveva fatto accendere `FWD_OFFENSE_SENSITIVITY`
+a 3.0 per poi doverla riportare a 0.0. Aggiunto `--con-avversario` (default
+spento, così le misure vecchie restano confrontabili) **sia** nel ramo delle
+griglie **sia** in quello `--candidati`: nel secondo mancava, e un A/A sul flag
+nuovo risultava "identico" non perché il flag fosse inerte ma perché al modello
+non arrivava nemmeno l'avversario. Corretto e riverificato: a flag acceso i
+numeri si muovono.
+
+---
+
 ## 10bis. COSE DA FARE — riscritto il 09/08 notte, ripulito 11/08 (verificato contro il codice, non a memoria)
 
 **FATTO, non più aperto (verificato 11/08 leggendo codice/repo, questa

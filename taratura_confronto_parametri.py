@@ -299,7 +299,13 @@ def main():
               ('half_life/trend', 'MAE', 'corr', 'sd prev', 'sd real', 'bias', 'lift%'))
         risultati = []
         for hl, ti in cand:
-            r = valuta(sotto, hl, ti)
+            # usa_avversario anche qui (13/08/2026): senza, il ramo
+            # --candidati girava SEMPRE con gli aggiustamenti avversario
+            # spenti, quindi `av` era None e alle funzioni di produzione non
+            # arrivava nemmeno l'avversario. Un A/A su un flag che dipende
+            # dall'avversario risultava percio' "identico" -- non perche' il
+            # flag fosse inerte, ma perche' il banco non gli passava il dato.
+            r = valuta(sotto, hl, ti, usa_avversario=args.con_avversario)
             r['half_life'], r['trend_intensity'] = hl, ti
             r['produzione'] = (hl, ti) == prod
             risultati.append(r)
