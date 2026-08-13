@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-13T07:22:30.436911Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) donis-avdijaj: 49 pt attesi (33-67)
+   SQUADRA: wolfsberger-ac-wolfsberg | AVVERSARIO: austria-lustenau-lustenau
+======================================================================
+
+######################################################################
+# GIOCATORE: donis-avdijaj
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: donis-avdijaj (squadra: wolfsberger-ac-wolfsberg)
+Generato: 2026-08-13T07:22:30.435051Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: austrian-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-08 | WAC vs HTB | austrian-bundesliga | score=32.8 | peso=0.779
+  2025-11-22 | ALT vs WAC | austrian-bundesliga | score=39.0 | peso=0.801
+  2025-12-07 | WAC vs FAK | austrian-bundesliga | score=75.4 | peso=0.824
+  2025-12-14 | RBS vs WAC | austrian-bundesliga | score=66.2 | peso=0.847
+  2026-02-15 | BWL vs WAC | austrian-bundesliga | score=61.1 | peso=0.871
+  2026-03-21 | WAC vs ALT | austrian-bundesliga | score=45.7 | peso=0.895
+  2026-04-04 | WSG vs WAC | austrian-bundesliga | score=39.5 | peso=0.920
+  2026-04-18 | WAC vs BWL | austrian-bundesliga | score=38.0 | peso=0.946
+  2026-08-02 | WAC vs FAK | austrian-bundesliga | score=60.0 | peso=0.973
+  2026-08-09 | WAC vs RBS | austrian-bundesliga | score=31.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 48.66
+  di cui Punteggio decisivo (level_score) medio: 43.39 | Punteggio complessivo (granulari) medio: 5.27 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 42.40 (delta -0.99)
+  Efficacia offensiva condizionata: delta venue +0.55, delta avversario -0.80 | Passaggio condizionato: delta venue +0.48, delta avversario -0.05 | Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 14.56
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.8 - 66.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.81 (differenza: +2.75)
+Media score in casa: 47.18 | Media score fuori casa: 51.45
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.9
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.005
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.005
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore trend (media ultime 5: 42.8 vs media 5 PRECEDENTI: 55.4): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T15:00
+Casa: SC Austria Lustenau | Trasferta: RZ Pellets WAC
+Competizione: austrian-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.2 (range 33.3 - 66.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.88
+Punteggio REALE ottenuto in quella partita: 31.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -19.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      56.8    39.5    -17.3    16.6        NO
+   7        7      57.1    38.0    -19.1    16.2        NO
+   8        8      54.4    60.0     +5.6    15.9        SI
+   9        9      41.2    31.2    -10.0    15.4        SI
+
+MAE (errore assoluto medio): 13.00
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
