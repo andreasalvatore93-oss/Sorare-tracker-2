@@ -2639,6 +2639,52 @@ e il motivo è che **la curva dell'half-life è piatta** su DEF e MID. Non è ch
 la vecchia taratura fosse fortunata: è che in quella zona il parametro non
 morde. Non ripetere questa misura senza un motivo nuovo.
 
+### 8quindecies-bis. Rifatta COL GRADE ACCESO (stessa sessione, domanda dell'utente)
+
+**Il buco era vero**: nel banco di prova la parola "grade" non compare
+nemmeno una volta (`backtest_arene_previsioni.py` e
+`taratura_confronto_parametri.py`, zero occorrenze), mentre la produzione dal
+07/08 non schiera su `atteso` ma su `atteso + sd_gruppo × z_grade`. La misura
+qui sopra descriveva quindi un modello che non è più quello che gira.
+Rifatta: ogni riga punteggiata **due volte sullo stesso campione** (senza voto
+e col voto), gruppo `(lega, ruolo, giorno)`, formula identica a
+`_apply_grade_group`. Script: `analisi_manager/p37_halflife_con_grade.py`,
+output integrale in `analisi_manager/dati/halflife_con_grade_2026-08-13.txt`.
+
+**Quanto pesa il voto** (produzione, stesso campione, senza → con):
+DEF corr 0,167 → 0,233 e lift 17,0 → 24,2; MID 0,215 → 0,277 e 24,2 → 29,6;
+FWD 0,238 → 0,295 e 24,4 → 29,5. **Cambia tantissimo**: giudicare l'half-life
+senza il voto era davvero misurare un altro modello.
+
+**Ma l'ottimo non si sposta — e dove si sposta, si sposta VERSO la produzione:**
+- **MID**: senza voto l'ottimo sembrava 12-16; **col voto è esattamente 25**,
+  cioè il valore di produzione, e lo è su tutti e tre i metri insieme
+  (MAE 13,502 minima, lift 29,6 massimo). La taratura vecchia era meno cieca
+  di quanto temuto.
+- **DEF**: pianoro anche col voto (MAE 14,693-14,698 da 16 a 60). 30 va bene
+  quanto 60. Nessun motivo di toccare.
+- **FWD**: **unico caso con una tensione visibile.** Col voto il lift preferisce
+  12-16 (30,3-30,8) contro il 29,5 della produzione a 6, ma la MAE peggiora di
+  0,048 (14,498 → 14,546) — sopra il rumore, quindi la contraddizione è reale,
+  non tremolio. Metri che litigano ⇒ non si applica. È però l'unica voce di
+  questo filone che meriti un secondo sguardo se un giorno si vuole ottimizzare
+  la SELEZIONE invece della previsione.
+- **GK**: MAE peggiora col voto e la correlazione resta 0,05-0,06 (cioè zero);
+  il lift non è nemmeno calcolabile (troppo poche giornate con abbastanza
+  candidati nel sottoinsieme). Confermato inconcludente, coerente con §5.6.
+
+**Limite del campione, da citare sempre insieme a questi numeri**: si misura sui
+27.294 punti che hanno il voto storico (16-21% della cache), raccolti a suo
+tempo su giocatori presi dai file manager — **non è un campione casuale**.
+Dentro quel sottoinsieme i gruppi reggono (92% delle carte in gruppi usabili,
+mediana 3), quindi "l'ottimo si sposta?" è una domanda lecita; "di quanto su
+tutta la popolazione" no.
+
+**Conseguenza per chiunque tari un parametro d'ora in poi**: il metro ufficiale
+NON applica il grade. Per i parametri che toccano la SELEZIONE (lift) questo
+non è un dettaglio. Qui si è aggirato con `p37`, che resta il modo di farlo
+finché il grade non entra nel banco.
+
 Comando esatto (~20 minuti, zero query):
 `python taratura_confronto_parametri.py --ruoli gk,def,mid,fwd --candidati
 "3:0,4:0,6:0,9:0,12:0,16:0,20:0,25:0,30:0,40:0,60:0" --con-avversario`
