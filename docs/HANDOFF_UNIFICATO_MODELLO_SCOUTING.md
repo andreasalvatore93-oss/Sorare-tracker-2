@@ -2812,7 +2812,55 @@ sbagliata. Corretti anche 3 difetti del banco di prova
 (`backtest_arene_previsioni.py`), fra cui la lega scritta a mano `'mls'` per
 tutti i giocatori del mondo.
 
-## 8quaterdecies. FILONE INTRALEGA (13/08/2026) — CHIUSO TUTTO, niente in attesa
+## 8quaterdecies. FILONE INTRALEGA (13/08/2026) — CHIUSO PER INTERO, ultimo asse compreso
+
+**L'ASSE "SQUADRA PROPRIA" — misurato e chiuso il 13/08 notte.** Era
+l'ultimo pezzo rimasto in piedi di tutto il filone, quello che l'utente
+aveva intuito e che nessuno aveva mai toccato: non il livello della LEGA
+(§8terdecies) e non il confronto fra i reparti che si affrontano (punti 1-3
+qui sotto), ma **quanto è forte la squadra in cui il giocatore sta adesso** —
+i casi Ernst al Feyenoord e Simsir al Trabzonspor.
+
+Primo passo economico, prima di costruire qualunque correzione: la forza
+della propria squadra spiega qualcosa del RESIDUO (realizzato − atteso)?
+Misurato su **16.789 osservazioni carta-giornata deduplicate** su
+(slug, fixture) — la trappola §15: lo stesso giocatore compare una volta per
+ogni manager che lo schiera, e non deduplicare gonfia l'n. Forza della
+squadra dalle 1.212 serie di `intralega_serie.json`, walk-forward stretto
+(solo date precedenti al primo kickoff, finestra 365 giorni).
+Script: `analisi_manager/p66_forza_squadra_propria.py`.
+
+| misura | corr | IC95 |
+|---|---|---|
+| forza squadra assoluta | **0,0001** | [−0,0149; +0,0150] |
+| scarto dalla lega+ruolo | −0,0131 | [−0,0280; +0,0016] |
+
+Quintili di scarto (da squadra debole a forte), residuo medio: **+1,73 →
++2,33 → +2,58 → +1,51 → +1,60**. Nessuna pendenza, una gobba piatta.
+
+**Perché è ragionevole che sia zero**: lo **storico personale** del giocatore
+incorpora già il contesto in cui gioca. Il livello della LEGA no — un
+trasferimento fra campionati cambia il metro, ed è per quello che serviva
+§8terdecies — ma la squadra sì, perché è la stessa in cui ha accumulato i
+punteggi che il modello media.
+
+**Unica eccezione, e conferma una cosa già nota**: sul **portiere** la
+correlazione è **−0,058**, IC95 [−0,0989; −0,0172], che esclude lo zero. I
+portieri di squadre più forti della media della loro lega rendono *meno*
+dell'atteso. Coerente con §5.6, dove è già misurato che la squadra forte fa
+parare meno il proprio portiere (corr parate/clean-sheet −0,156). Non è una
+leva nuova: è lo stesso tetto strutturale del ruolo visto da un'altra
+angolazione, e §5.6 dice già che lì il modello è al meglio misurabile.
+
+**Limite dichiarato**: 25.570 osservazioni (il 60%) scartate perché la serie
+storica di quella squadra-reparto era troppo corta. Il verdetto vale sulle
+squadre con storia, non su tutte.
+
+**Con questo il filone intralega è chiuso per intero: nessuno dei suoi tre
+assi entra in produzione.**
+
+---
+
 
 **VERDETTO DA BAR.** L'utente voleva confrontare i due reparti che si
 affrontano (attacco di A contro difesa di B) *dentro* lo stesso campionato.
@@ -3062,13 +3110,11 @@ del grade e gruppi da 2 carte), risolte dalla scala storica accesa in
 produzione; **capitano**, richiuso con potenza vera su 12.677 formazioni
 (§5.3).
 
-1. **Asse "SQUADRA PROPRIA" — mai misurato.** È la parte del filone intralega
-   che l'utente aveva intuito e che non è stata toccata: non il livello della
-   LEGA (§8terdecies) e non il confronto fra reparti (§8quaterdecies, chiuso),
-   ma **quanto è forte la squadra NUOVA** in cui uno è appena arrivato. Casi
-   reali senza risposta: Ernst al Feyenoord (lega più facile, squadra forte),
-   Simsir al Trabzonspor (lega più dura, squadra forte). Il dataset per
-   provarlo esiste già (`p33_intralega_dataset.py`, zero query, 68s).
+1. ~~Asse "SQUADRA PROPRIA"~~ **MISURATO E CHIUSO il 13/08 notte**: la forza
+   della propria squadra non spiega il residuo (corr 0,0001 sull'assoluta,
+   −0,013 sullo scarto dalla lega, quintili piatti su 16.789 osservazioni
+   deduplicate). Il modello la cattura già tramite lo storico personale.
+   §8quaterdecies. Con questo **l'intero filone intralega è chiuso**.
 2. **Fix mirato per chi ha cambiato campionato** (il "cerotto" che l'utente
    ha chiesto): per i ~14 nomi individuati, nelle prime 2-3 giornate nella
    lega nuova, allineare la previsione alla media del ruolo di quella lega e
