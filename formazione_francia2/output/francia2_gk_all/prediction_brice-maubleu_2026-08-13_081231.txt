@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-13T08:12:31.624494Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) brice-maubleu: 47 pt attesi (29-56)
+   SQUADRA: pau-pau | AVVERSARIO: dijon-dijon
+======================================================================
+
+######################################################################
+# GIOCATORE: brice-maubleu
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: brice-maubleu (squadra: pau-pau)
+Generato: 2026-08-13T08:12:31.623779Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 29
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: ligue-2-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-14 | GRE vs STE | ligue-2-fr | score=73.4 | peso=0.630
+  2026-03-21 | STE vs ANN | ligue-2-fr | score=61.8 | peso=0.707
+  2026-04-04 | NAN vs STE | ligue-2-fr | score=34.8 | peso=0.794
+  2026-05-09 | STE vs AMI | ligue-2-fr | score=60.8 | peso=0.891
+  2026-08-08 | PAU vs ANN | ligue-2-fr | score=42.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 53.14
+  di cui Punteggio decisivo (level_score) medio: 48.85 | Punteggio complessivo (granulari) medio: 4.29 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 48.26 (delta -0.59 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -0.16, delta avversario -0.12 | Possesso condizionato per venue: delta +0.20 | Goalkeeping condizionato per venue: delta +0.25 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 13.70
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.8 - 61.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.37 (differenza: +4.33)
+Media score in casa: 61.30 | Media score fuori casa: 54.10
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.0
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 1.000 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.002
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.001
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.999
+Tasso storico clean sheet (porta inviolata nei primi 60'): 60.0% (bonus atteso incorporato nella media pesata: ~15.0pt)
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T18:45
+Casa: Dijon FCO | Trasferta: Pau FC
+Competizione: ligue-2-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.3 (range 29.0 - 56.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.83
+Punteggio REALE ottenuto in quella partita: 42.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
