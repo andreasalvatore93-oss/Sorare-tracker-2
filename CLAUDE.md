@@ -245,6 +245,28 @@ D7. IL RUOLO E' UNA PROPRIETA' DELLA CARTA, NON DEL GIOCATORE. Sorare puo'
         p13_backtest_gw_crowss.py: 34 formazioni prodotte, zero giocatori
         ripetuti.
 
+    ESTENSIONE 13/08/2026 -- ANCHE IL VOTO A-F E' PER CARTA, NON PER
+    GIOCATORE. Trovato dall'utente guardando la sua schermata Sorare: Ivan
+    Perisic compare due volte nella stessa giornata, stessa partita, stesse
+    odds -- carta ATT con voto **A**, carta CC con voto **B**. Il grade che
+    l'interfaccia mostra dipende dal RUOLO DELLA CARTA.
+    Il nostro indice invece e' indicizzato su (slug, data) e tiene UN voto
+    solo, quello legato alla posizione in cui il giocatore ha giocato: su una
+    carta di ruolo diverso applichiamo quindi il voto sbagliato.
+    Esposizione MISURATA sull'archivio: 3.240 carte-formazione su 69.300
+    (4,7%), 237 giocatori su 5.449; sul mazzo di crowss 27 giocatori su 719
+    (3,8%), di cui solo 2 con carte di due ruoli diversi (Perisic, Espinoza).
+    I piu' schierati: Brunetta (carta FWD, giocatore MID), Forsberg, Rossi,
+    Rafa Silva, Ros (carta MID, giocatore DEF).
+    Peso: una lettera di scarto, che con GRADE_GROUP_STORICA acceso vale
+    grosso modo un paio di punti di atteso. Piccolo, e non si sa in quale
+    direzione sbagli.
+    NON E' UN BUG NOSTRO DA CORREGGERE: `projection.grade` e
+    `nextClassicFixtureProjectedGrade` sono per GIOCATORE, l'interfaccia
+    calcola per CARTA. Servirebbe una query a livello di carta, ammesso che
+    esista. Scritto qui perche' e' il tipo di cosa che si riscopre da capo
+    ogni tre settimane.
+
 D5. LE GOLDEN ARENA sono identiche alle normali (stesse regole d'ingresso,
     stessa shape, stessi cap): cambia solo il moltiplicatore dei premi, e
     una golden puo' essere 220, 260, uncapped o beginner. Non sono un tipo
