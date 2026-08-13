@@ -1,0 +1,118 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-13T08:12:05.418413Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) raul-lizoain-cruz: 54 pt attesi (34-81)
+   SQUADRA: granada-granada | AVVERSARIO: real-oviedo-oviedo
+======================================================================
+
+######################################################################
+# GIOCATORE: raul-lizoain-cruz
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: raul-lizoain-cruz (squadra: granada-granada)
+Generato: 2026-08-13T08:12:05.392802Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 42
+Escluse (DID_NOT_PLAY): 20
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: segunda-division-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-15 | ZAR vs ALB | segunda-division-es | score=66.6 | peso=0.088
+  2025-09-21 | ALB vs VLL | segunda-division-es | score=88.2 | peso=0.099
+  2025-09-28 | RSG vs ALB | segunda-division-es | score=23.1 | peso=0.111
+  2025-10-06 | CUL vs ALB | segunda-division-es | score=60.9 | peso=0.125
+  2025-10-12 | ALB vs ADC | segunda-division-es | score=74.6 | peso=0.140
+  2025-10-19 | CAS vs ALB | segunda-division-es | score=86.3 | peso=0.157
+  2025-10-25 | ALB vs COR | segunda-division-es | score=46.2 | peso=0.177
+  2025-11-01 | ALB vs HUE | segunda-division-es | score=47.9 | peso=0.198
+  2025-11-08 | EIB vs ALB | segunda-division-es | score=15.5 | peso=0.223
+  2025-11-21 | LPA vs ALB | segunda-division-es | score=31.8 | peso=0.250
+  2026-02-22 | MCF vs ALB | segunda-division-es | score=56.4 | peso=0.281
+  2026-02-27 | ALB vs UDA | segunda-division-es | score=48.8 | peso=0.315
+  2026-03-07 | HUE vs ALB | segunda-division-es | score=82.7 | peso=0.354
+  2026-03-16 | ALB vs LPA | segunda-division-es | score=41.0 | peso=0.397
+  2026-03-21 | RAC vs ALB | segunda-division-es | score=83.4 | peso=0.445
+  2026-03-28 | ALB vs CAS | segunda-division-es | score=40.0 | peso=0.500
+  2026-03-31 | MIR vs ALB | segunda-division-es | score=53.2 | peso=0.561
+  2026-04-04 | ALB vs BCF | segunda-division-es | score=22.6 | peso=0.630
+  2026-04-11 | LEG vs ALB | segunda-division-es | score=30.2 | peso=0.707
+  2026-04-19 | ALB vs GCF | segunda-division-es | score=45.9 | peso=0.794
+  2026-04-24 | ALB vs EIB | segunda-division-es | score=34.9 | peso=0.891
+  2026-05-01 | FCA vs ALB | segunda-division-es | score=77.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 49.96
+  di cui Punteggio decisivo (level_score) medio: 41.34 | Punteggio complessivo (granulari) medio: 8.62 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 44.08 (delta +2.74 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +1.54, delta avversario +1.78 | Possesso condizionato per venue: delta -0.44 | Goalkeeping condizionato per venue: delta +1.83 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 20.60
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.2 - 77.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.76 (differenza: +0.84)
+Media score in casa: 49.01 | Media score fuori casa: 55.60
+Fattore casa/trasferta applicato: 1.064 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.1
+Ranking prossimo avversario: 20
+Fattore forza avversario applicato: 1.129 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.000
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.006
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.003
+Tasso storico clean sheet (porta inviolata nei primi 60'): 36.4% (bonus atteso incorporato nella media pesata: ~9.1pt)
+Fattore trend (media ultime 5: 44.8 vs media 5 PRECEDENTI: 58.7): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T17:00
+Casa: Real Oviedo | Trasferta: Granada CF
+Competizione: segunda-division-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.7 (range 34.0 - 80.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.32
+Punteggio REALE ottenuto in quella partita: 77.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +30.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      63.5    46.2    -17.3    24.6        SI
+   7        7      83.5    47.9    -35.6    24.1        NO
+   8        8      45.2    15.5    -29.7    22.9        NO
+   9        9      32.6    31.8     -0.8    28.5        SI
+  10       10      29.2    56.4    +27.2    27.7        SI
+  11       11      39.6    48.8     +9.2    25.6        SI
+  12       12      58.0    82.7    +24.7    23.7        NO
+  13       13      44.7    41.0     -3.7    25.5        SI
+  14       14      32.3    83.4    +51.1    24.3        NO
+  15       15      48.2    40.0     -8.2    25.6        SI
+  16       16      71.6    53.2    -18.4    24.7        SI
+  17       17      46.8    22.6    -24.2    23.1        NO
+  18       18      62.5    30.2    -32.3    24.8        NO
+  19       19      51.8    45.9     -5.9    24.5        SI
+  20       20      41.3    34.9     -6.4    23.0        SI
+  21       21      51.7    77.1    +25.4    22.1        NO
+
+MAE (errore assoluto medio): 20.00
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 56.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
