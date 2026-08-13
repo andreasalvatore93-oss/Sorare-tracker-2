@@ -679,6 +679,33 @@ misurare lo stesso campione con cui si e' decisa la formula). Atteso
 GW, si rispegne `GK_ATT_AVV_ENABLED` di default** (spento in
 `build_formazione_globale.py` e nell'input del workflow).
 
+**ESITO DELLA RI-MISURA — FATTA IL 13/08/2026, senza aspettare il 25.**
+La data non aveva giustificazione statistica (tre giornate scelte perché
+successive alla pre-registrazione, ~87 coppie: non avrebbero deciso nulla).
+Si è invece misurato sull'archivio allargato all'indietro, dove le giornate
+di febbraio-marzo e i 36 manager nuovi **non sono mai stati usati per
+scegliere la formula fra le 5 candidate**. Script:
+`analisi_manager/p63_gk_att_avv_fuoricampo.py` (acceso contro spento sulle
+stesse righe, braccio G, bootstrap sui manager).
+
+| campione | delta | IC95 | per unità | positivo |
+|---|---|---|---|---|
+| tutto l'archivio | +12.713 | [+152; +26.420] | +9,5 | 97,6% |
+| **solo giornate nuove** | +2.238 | [−4.353; +9.074] | +4,9 | 74,9% |
+| solo manager nuovi | +5.920 | [−3.791; +16.367] | +9,2 | 87,1% |
+| nuove **o** manager nuovi | +7.350 | [−2.785; +18.810] | +8,5 | 91,6% |
+
+**DECISIONE: resta ACCESO**, applicando alla lettera la regola scritta prima
+("se il segno esce NEGATIVO si rispegne"): non è negativo in nessuno dei
+quattro tagli. Ma va letto per quello che è — **positivo ovunque, mai
+dimostrato**: l'atteso dichiarato era ~+15 per unità, il fuori campione puro
+dà +4,9, e nessun intervallo fuori campione esclude lo zero. Per arrivarci
+servirebbe un effetto quasi doppio o ~230 manager invece di 65.
+L'interruttore è collegato (cambia le carte in 683 unità su 1.338;
+aggiustamento medio +0,02, range −6,73/+5,96, quindi centrato).
+Chi lo rispegnesse non starebbe contraddicendo i dati, e chi lo tiene acceso
+nemmeno: è una forzatura benevola su un effetto piccolo.
+
 Dettaglio integrale: `docs/handoff/RISPOSTA_OPUS_CORRELAZIONI_2026-08-13.txt`
 §9-14, `docs/handoff/BRIEF_OPUS_GK_SECCA_PRODUZIONE_2026-08-11.txt`. NON
 toccare `CALIB_PER_RUOLO`/`GK_TEAM_CS_WEIGHT` per questo filone: il
@@ -781,6 +808,47 @@ per squadra (non un bookmaker/algoritmo), sono un margine di comodità
 soggettivo, non una probabilità calibrata — non vale la pena costruirci
 sopra una regola più fine. Script: `analisi_manager/p29_soglia_quota_minima.py`,
 p35 (di Opus, `docs/handoff/RISPOSTA_OPUS_QUOTA_MINIMA_IL_PERCHE_2026-08-13.txt`).
+
+**AGGIUNTA 13/08/2026 SERA — la soglia 0,10 è CONFERMATA su 12.677 arene
+vere, ma con una tensione da riconciliare.** Misurate le arene realmente
+giocate nell'archivio, raggruppate per guadagno ATTESO (formula di
+produzione, voto acceso) e confrontate col netto REALIZZATO
+(`analisi_manager/p61_fasce_marginali.py`):
+
+| fascia di guadagno atteso | arene | netto medio reale | IC95 | a premio |
+|---|---|---|---|---|
+| sotto pareggio (forte) | 1.211 | −93,9 | [−109; −77] | 19,2% |
+| sotto pareggio (poco) | 3.900 | −23,6 | [−36; −11] | 26,5% |
+| **MARGINALE (0-10%)** | 2.094 | **−14,6** | [−29; 0] | 28,7% |
+| schiera (10-25%) | 2.688 | +26,9 | [+12; +43] | 33,6% |
+| schiera (25-50%) | 2.075 | +65,2 | [+45; +86] | 38,5% |
+| schiera (50-100%) | 661 | +237,8 | [+172; +306] | 43,6% |
+| schiera (oltre 100%) | 48 | +986,5 | [+522; +1.542] | 60,4% |
+
+Due letture, entrambe utili:
+1. **Il confine fra perdere e guadagnare cade ESATTAMENTE fra la fascia
+   0-10% e la 10-25%**, cioè su `QUOTA_MINIMA = 0,10`. Il parametro è
+   confermato empiricamente, non più solo per taratura.
+2. **La percentuale a premio sale in modo monotono** col guadagno atteso,
+   dal 19,2% al 60,4%: l'ordinamento del modello regge, e la prima arena
+   della lista efficiente è davvero la migliore. (Era un'intuizione
+   dell'utente da un vecchio test, ora verificata su tutto l'archivio.)
+
+**LA TENSIONE, da non nascondere**: qui sopra c'è scritto "entrare CONVIENE
+in entrambi i periodi (+82,8 e +19,6 essenze/formazione)", e la fascia 0-10%
+dà invece **−14,6**. Le due misure rispondono a domande diverse — quella
+vecchia guarda le formazioni *di confine* rispetto alla soglia di decisione,
+questa guarda tutte le arene per fascia di guadagno atteso — ma il verso è
+opposto e il campione nuovo è molto più grande. **Da riconciliare prima di
+toccare `QUOTA_MINIMA` in un senso o nell'altro.**
+
+Nota operativa collegata: `genera_arene_efficienti` in produzione entra fino
+al **pareggio secco** (`margine_quota=0.0`), mentre l'ETICHETTA usa il 10% e
+l'utente le marginali le salta a mano. Il parametro per allinearli esiste ora
+(`margine_quota`, default 0.0 = invariato), misurato su una sola giornata:
+fino al 10% indifferente, oltre il 15% si perde. Serve rimisurarlo
+sull'archivio intero (`analisi_manager/p59_margine_ingresso.py`) prima di
+cambiare il default.
 
 ### 5.10 Leakage grade Sorare — CHIUSO 13/08/2026, punto fisso in CLAUDE.md
 Il voto A-F NON viene riscritto sul risultato della partita (due test
@@ -1196,6 +1264,23 @@ più da gruppetti da due carte.
    giro; e il workflow ora **committa le due tabelle** che rigenera,
    altrimenti il generatore avrebbe avuto un righello fresco e lo scouting
    sarebbe rimasto su quello del 12/08.
+
+**CONFERMA SUL POOL VERO (run di scouting del 13/08 sera, GW5, riuso
+previsioni spento).** Confrontati i due report committati, prima e dopo
+l'accensione, sui 589 giocatori presenti in entrambi:
+- **Atteso**: cambia in 74 righe su 589, scarto medio 0,13 — è il rumore
+  delle previsioni rifatte, non il flag.
+- **A+G**: cambia in **589 righe su 589**. Spostamento medio −0,26, mediana
+  −0,04 (**centrato**, come deve essere), range da −9,61 a +5,07.
+- **Dispersione dell'effetto del voto: da 3,19 a 1,68, quasi dimezzata** —
+  esattamente ciò che p62 prevedeva sul backtest.
+Il caso che spiega tutto: `fabian-wilfinger`, atteso 53,0 identico prima e
+dopo, A+G da **66,33 a 56,72**. Prima il voto gli aggiungeva +13,3 punti su
+una previsione di 53 — un quarto del suo valore deciso da una lettera,
+perché il gruppetto nativo aveva due o tre carte e lo z-score esplodeva. Ora
++3,7. Gli altri cinque spostamenti maggiori sono tutti in giù di 8-9 punti,
+tutti con l'atteso invariato: non è il modello che cambia idea sui
+giocatori, è il voto che smette di gridare.
 
 Handoff completo della sessione: `docs/handoff/HANDOFF_GRADE_ACCESO_2026-08-13.txt`.
 
@@ -2975,8 +3060,8 @@ se ha la potenza per rispondere** — le ultime tre volte non l'aveva.
 Voci: 5, 6, 14. La voce 1 (G sopra il filtro odds) è stata
 **ridimensionata**: poggiava su una premessa falsa sul pool, vedi lì.
 
-**B. Misurabili subito, dati già in repo, nessuna query.** Voci 2
-(segregare il rischio DNP in una Beginner), 7 (correlazione grade ↔
+**B. Misurabili subito, dati già in repo, nessuna query.** Voce 7
+(correlazione grade ↔
 realizzato: limite superiore alla contaminazione), 3 (perché il
 generatore non ha un criterio nella fase opzionale).
 
@@ -3155,15 +3240,23 @@ filtrato diventa un oracolo. L'unica fonte lecita è la cattura live in
 `analisi_manager/dati/storico_grade_*`, di cui la copertura sul
 perimetro arene non è mai stata contata.
 
-**2. Segregare il rischio DNP** (idea dell'utente, 09/08). Oggi lui non
-schiera sotto l'80% di starting odds e si mangia tutta la fascia 60-80%.
-Alternativa: il bot continua a giocare 80+ nelle arene che contano, e le
-carte 70+ ad alto potenziale finiscono **tutte insieme in una sola
-Beginner** (100 essenze): un DNP rovina una formazione già dichiarata
-precaria invece di una buona. Non riduce i DNP, cambia dove cadono.
-Misurabile senza query: le starting odds sono salvate accanto al grade
-(`starter_odds_bp` in `analisi_manager/dati/storico_grade_*`); si innesta
-su `p20_g_odds_arene_backtest.py`, che già fa il regime allocazione.
+**2. Segregare il rischio DNP — CHIUSA il 13/08/2026, decisione
+dell'utente: risolta dal meccanismo suppletivo.** L'idea (09/08) era far
+finire le carte a titolarità incerta tutte insieme in una sola Beginner da
+100 essenze, così un DNP rovina una formazione già dichiarata precaria
+invece di una buona. Non serve più costruirla apposta: la **tornata
+suppletiva** fa già esattamente questo. Quando restano slot o budget, le
+formazioni in più si generano SOLO su `ARENA_ALLSTARS_BEGINNER`
+(`build_formazione_globale.py:2615-2628`), cioè il tipo più economico, e
+dal 13/08 passano anche loro dal criterio economico di
+`genera_arene_efficienti` invece del vecchio round-robin. Le carte deboli
+finiscono lì per costruzione, senza nessuna regola nuova da tarare.
+
+**Nota dell'utente, da tenere**: nelle giornate PIENE (es. GW5) il
+meccanismo suppletivo è praticamente inerte — il pool basta per le arene
+che contano e non avanza niente da segregare. Serve nelle giornate magre.
+Chi lo rimisurasse su una giornata piena troverebbe "nessun effetto" e
+concluderebbe male.
 
 **2bis. PORTIERE — `level_score` binario, DA RIVERIFICARE CON G**
 (deciso il 09/08). Il valore vero è 35 senza clean sheet e 60 con, mai
