@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:12:59.836725Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) jordy-josue-caicedo-medina: 49 pt attesi (31-72)
+   ORDINAMENTO: 46.38
+   SQUADRA: huracan-capital-federal-ciudad-de-buenos-aires | AVVERSARIO: sarmiento-junin-provincia-de-buenos-aires
+======================================================================
+
+######################################################################
+# GIOCATORE: jordy-josue-caicedo-medina
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jordy-josue-caicedo-medina (squadra: huracan-capital-federal-ciudad-de-buenos-aires)
+Generato: 2026-08-13T07:12:59.824587Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-22 | BAN vs HUR | superliga-argentina-de-futbol | score=63.4 | peso=0.099
+  2026-01-27 | HUR vs IND | superliga-argentina-de-futbol | score=60.0 | peso=0.111
+  2026-02-01 | TUC vs HUR | superliga-argentina-de-futbol | score=60.0 | peso=0.125
+  2026-02-08 | HUR vs SLO | superliga-argentina-de-futbol | score=60.0 | peso=0.140
+  2026-02-14 | HUR vs SAR | superliga-argentina-de-futbol | score=39.1 | peso=0.157
+  2026-02-21 | RIE vs HUR | superliga-argentina-de-futbol | score=33.3 | peso=0.177
+  2026-02-26 | ERC vs HUR | superliga-argentina-de-futbol | score=23.1 | peso=0.198
+  2026-03-03 | HUR vs BEL | superliga-argentina-de-futbol | score=20.4 | peso=0.223
+  2026-03-13 | HUR vs RIV | superliga-argentina-de-futbol | score=72.1 | peso=0.250
+  2026-03-16 | ALD vs HUR | superliga-argentina-de-futbol | score=37.7 | peso=0.281
+  2026-04-05 | GLP vs HUR | superliga-argentina-de-futbol | score=60.0 | peso=0.315
+  2026-04-12 | HUR vs ROS | superliga-argentina-de-futbol | score=60.0 | peso=0.354
+  2026-04-21 | TIG vs HUR | superliga-argentina-de-futbol | score=60.0 | peso=0.397
+  2026-04-28 | HUR vs ARG | superliga-argentina-de-futbol | score=39.5 | peso=0.445
+  2026-05-03 | RAC vs HUR | superliga-argentina-de-futbol | score=29.6 | peso=0.500
+  2026-05-09 | BOC vs HUR | superliga-argentina-de-futbol | score=34.1 | peso=0.561
+  2026-05-13 | ARG vs HUR | superliga-argentina-de-futbol | score=29.2 | peso=0.630
+  2026-07-25 | HUR vs BAN | superliga-argentina-de-futbol | score=70.6 | peso=0.707
+  2026-07-30 | IND vs HUR | superliga-argentina-de-futbol | score=34.7 | peso=0.794
+  2026-08-04 | HUR vs TUC | superliga-argentina-de-futbol | score=34.7 | peso=0.891
+  2026-08-09 | SLO vs HUR | superliga-argentina-de-futbol | score=73.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 47.24
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=21): 49.95 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 46.66 | Punteggio complessivo (granulari) medio: 0.57 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 1.73 (delta -0.79) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.65
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.6 - 70.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.33 (differenza: +2.32)
+Media score in casa: 50.71 | Media score fuori casa: 44.91
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.5
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.005
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.991
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore trend (media ultime 5: 48.6 vs media 5 PRECEDENTI: 44.6): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T18:00
+Casa: CA Sarmiento | Trasferta: CA Huracán
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.1 (range 31.5 - 72.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 46.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.63
+Punteggio REALE ottenuto in quella partita: 73.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +30.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      53.5    23.1    -30.4    14.2        NO
+   7        7      35.0    20.4    -14.6    17.9        SI
+   8        8      46.5    72.1    +25.6    19.5        NO
+   9        9      50.2    37.7    -12.5    22.4        SI
+  10       10      30.0    60.0    +30.0    20.8        NO
+  11       11      42.8    60.0    +17.2    20.2        SI
+  12       12      38.0    60.0    +22.0    19.4        NO
+  13       13      38.4    39.5     +1.1    18.5        SI
+  14       14      51.4    29.6    -21.8    17.7        NO
+  15       15      45.3    34.1    -11.2    18.2        SI
+  16       16      34.5    29.2     -5.3    17.6        SI
+  17       17      47.6    70.6    +23.0    17.5        NO
+  18       18      42.0    34.7     -7.3    19.5        SI
+  19       19      46.9    34.7    -12.2    18.8        SI
+  20       20      51.6    73.8    +22.2    18.0        NO
+
+MAE (errore assoluto medio): 17.10
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 53.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
