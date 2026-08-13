@@ -1,0 +1,99 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T10:52:58.710778Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) mathias-honsak: 50 pt attesi (36-67)
+   ORDINAMENTO: 49.40
+   SQUADRA: heidenheim-heidenheim-an-der-brenz | AVVERSARIO: hertha-bsc-berlin
+======================================================================
+
+######################################################################
+# GIOCATORE: mathias-honsak
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mathias-honsak (squadra: heidenheim-heidenheim-an-der-brenz)
+Generato: 2026-08-13T10:52:58.709942Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 16
+Competizione partita target: 2-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-30 | RBL vs FCH | bundesliga-de | score=46.6 | peso=0.281
+  2025-09-13 | FCH vs BVB | bundesliga-de | score=56.1 | peso=0.315
+  2025-11-01 | FCH vs SGE | bundesliga-de | score=51.3 | peso=0.354
+  2025-11-08 | B04 vs FCH | bundesliga-de | score=34.9 | peso=0.397
+  2025-11-22 | FCH vs BMG | bundesliga-de | score=24.2 | peso=0.445
+  2025-11-29 | FCU vs FCH | bundesliga-de | score=38.6 | peso=0.500
+  2025-12-06 | FCH vs SCF | bundesliga-de | score=36.0 | peso=0.561
+  2026-01-17 | WOB vs FCH | bundesliga-de | score=33.1 | peso=0.630
+  2026-01-24 | FCH vs RBL | bundesliga-de | score=56.3 | peso=0.707
+  2026-04-04 | BMG vs FCH | bundesliga-de | score=40.1 | peso=0.794
+  2026-04-11 | FCH vs FCU | bundesliga-de | score=70.5 | peso=0.891
+  2026-04-19 | SCF vs FCH | bundesliga-de | score=65.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 48.59
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=12): 51.45 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 43.17 | Punteggio complessivo (granulari) medio: 5.42 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 2.43 (delta -0.03) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.63
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.9 - 65.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.75 (differenza: +2.88)
+Media score in casa: 49.07 | Media score fuori casa: 43.17
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.8
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.003 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.995
+Fattore trend (media ultime 5: 53.1 vs media 5 PRECEDENTI: 37.0): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T11:00
+Casa: Hertha Berlin | Trasferta: 1. FC Heidenheim 1846
+Competizione: 2-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.5 (range 35.8 - 66.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.68
+Punteggio REALE ottenuto in quella partita: 65.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +20.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 6 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      40.5    36.0     -4.5    12.3        SI
+   7        7      46.3    33.1    -13.2    11.2        NO
+   8        8      32.5    56.3    +23.8    10.5        NO
+   9        9      48.0    40.1     -7.9    12.3        SI
+  10       10      46.5    70.5    +24.0    11.3        NO
+  11       11      43.8    65.7    +21.9    15.9        NO
+
+MAE (errore assoluto medio): 15.90
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 33.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

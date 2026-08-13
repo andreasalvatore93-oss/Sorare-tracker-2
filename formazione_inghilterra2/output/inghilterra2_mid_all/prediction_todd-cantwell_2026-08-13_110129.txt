@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-13T11:01:29.505432Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) todd-cantwell: 56 pt attesi (39-77)
+   SQUADRA: blackburn-rovers-blackburn-lancashire | AVVERSARIO: wolverhampton-wanderers-wolverhampton
+======================================================================
+
+######################################################################
+# GIOCATORE: todd-cantwell
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: todd-cantwell (squadra: blackburn-rovers-blackburn-lancashire)
+Generato: 2026-08-13T11:01:29.504584Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 45
+Escluse (DID_NOT_PLAY): 18
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | BBR vs BIR | football-league-championship | score=60.1 | peso=0.559
+  2025-08-23 | HUL vs BBR | football-league-championship | score=84.8 | peso=0.574
+  2025-08-30 | BBR vs NOR | football-league-championship | score=48.4 | peso=0.590
+  2025-09-13 | WAT vs BBR | football-league-championship | score=58.5 | peso=0.607
+  2025-09-20 | BBR vs IPS | football-league-championship | score=79.7 | peso=0.624
+  2025-09-27 | CHA vs BBR | football-league-championship | score=38.8 | peso=0.642
+  2025-09-30 | BBR vs SWA | football-league-championship | score=70.9 | peso=0.660
+  2025-10-04 | BBR vs STO | football-league-championship | score=85.7 | peso=0.678
+  2025-12-13 | POR vs BBR | football-league-championship | score=57.3 | peso=0.697
+  2025-12-20 | BBR vs MIL | football-league-championship | score=57.4 | peso=0.717
+  2025-12-26 | MID vs BBR | football-league-championship | score=75.9 | peso=0.737
+  2025-12-29 | SHW vs BBR | football-league-championship | score=47.4 | peso=0.758
+  2026-01-01 | BBR vs WRE | football-league-championship | score=32.8 | peso=0.779
+  2026-01-04 | BBR vs CHA | football-league-championship | score=66.0 | peso=0.801
+  2026-01-17 | IPS vs BBR | football-league-championship | score=45.5 | peso=0.824
+  2026-01-24 | BBR vs WAT | football-league-championship | score=80.0 | peso=0.847
+  2026-01-31 | BBR vs HUL | football-league-championship | score=45.4 | peso=0.871
+  2026-02-07 | NOR vs BBR | football-league-championship | score=41.0 | peso=0.895
+  2026-03-14 | MIL vs BBR | football-league-championship | score=43.0 | peso=0.920
+  2026-04-03 | BIR vs BBR | football-league-championship | score=73.4 | peso=0.946
+  2026-04-06 | BBR vs WBA | football-league-championship | score=41.2 | peso=0.973
+  2026-04-11 | STO vs BBR | football-league-championship | score=58.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 57.86
+  di cui Punteggio decisivo (level_score) medio: 43.52 | Punteggio complessivo (granulari) medio: 14.34 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 40.70 (delta -2.82)
+  Efficacia offensiva condizionata: delta venue -0.60, delta avversario +0.22 | Passaggio condizionato: delta venue +0.19, delta avversario -0.82 | Gol subiti condizionato: delta venue -0.02, delta avversario +0.06 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.74
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.2 - 79.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.32 (differenza: +1.43)
+Media score in casa: 60.69 | Media score fuori casa: 56.72
+Fattore casa/trasferta applicato: 0.995 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.4
+Ranking prossimo avversario: 20
+Fattore forza avversario applicato: 1.126 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.005
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore trend (media ultime 5: 51.6 vs media 5 PRECEDENTI: 54.2): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T19:00
+Casa: Wolverhampton Wanderers FC | Trasferta: Blackburn Rovers FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.6 (range 38.9 - 77.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 57.83
+Punteggio REALE ottenuto in quella partita: 58.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +0.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      62.8    70.9     +8.1    17.9        SI
+   7        7      77.2    85.7     +8.5    16.9        SI
+   8        8      81.1    57.3    -23.8    17.9        NO
+   9        9      44.9    57.4    +12.5    17.1        SI
+  10       10      50.4    75.9    +25.5    16.3        NO
+  11       11      95.7    47.4    -48.3    15.9        NO
+  12       12      53.5    32.8    -20.7    16.2        NO
+  13       13      76.6    66.0    -10.6    18.3        SI
+  14       14      40.7    45.5     +4.8    17.5        SI
+  15       15      69.7    80.0    +10.3    17.5        SI
+  16       16      49.9    45.4     -4.5    17.8        SI
+  17       17      55.9    41.0    -14.9    17.7        SI
+  18       18      42.5    43.0     +0.5    17.9        SI
+  19       19      56.4    73.4    +17.0    17.9        SI
+  20       20      80.3    41.2    -39.1    17.8        NO
+  21       21      69.6    58.3    -11.3    17.9        SI
+
+MAE (errore assoluto medio): 16.27
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 68.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

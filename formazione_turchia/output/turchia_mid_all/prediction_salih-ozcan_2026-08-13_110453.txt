@@ -1,0 +1,80 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-13T11:04:53.328392Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) salih-ozcan: 51 pt attesi (31-63)
+   SQUADRA: besiktas-istanbul | AVVERSARIO: eyupspor-istanbul
+   AMBIGUO_FIXTURE: si
+======================================================================
+
+######################################################################
+# GIOCATORE: salih-ozcan
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: salih-ozcan (squadra: besiktas-istanbul)
+Generato: 2026-08-13T11:04:53.327081Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 60
+Escluse (DID_NOT_PLAY): 37
+Escluse (minutaggio < 60', subentri): 17
+Competizione partita target: spor-toto-super-lig (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-18 | ? vs ? | wc-qualification-europe | score=66.7 | peso=0.871
+  2026-06-01 | ? vs ? | friendlies | score=43.6 | peso=0.895
+  2026-06-26 | ? vs ? | global-cup | score=59.2 | peso=0.920
+  2026-07-23 | BJK vs FCM | uefa-europa-league | score=67.1 | peso=0.946
+  2026-07-30 | FCM vs BJK | uefa-europa-league | score=34.4 | peso=0.973
+  2026-08-06 | HRK vs BJK | uefa-europa-league | score=60.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 55.05
+  di cui Punteggio decisivo (level_score) medio: 38.88 | Punteggio complessivo (granulari) medio: 16.16 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 38.24 (delta -0.65)
+  Efficacia offensiva condizionata: delta venue -0.45, delta avversario -0.42 | Passaggio condizionato: delta venue +1.63, delta avversario +1.02 | Gol subiti condizionato: delta venue +0.21, delta avversario +0.37 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 12.15
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.4 - 67.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.33 (differenza: +3.83)
+Media score in casa: 67.10 | Media score fuori casa: 47.20
+Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 3.0
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.006 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.005
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.002
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T18:30
+Casa: Beşiktaş Jimnastik Kulübü | Trasferta: Eyüp Spor Kulübü
+Competizione: spor-toto-super-lig
+ATTENZIONE FIXTURE AMBIGUA: due partite future avevano GIA' le starter odds pubblicate insieme -- scelta quella piu' tardiva (caso limite mai visto prima del 10/08/2026, verificare a mano).
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.3 (range 30.6 - 63.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.97
+Punteggio REALE ottenuto in quella partita: 60.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +6.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
