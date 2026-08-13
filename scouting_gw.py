@@ -1757,6 +1757,48 @@ def _atteso_combinato_per_gruppo(pool, attesi, gg):
                     and attesi.get(g['slug']) is not None):
                 gk_adj[g['slug']] = gg.gk_att_avv_aggiustamento(g.get('avversario'))
 
+    # --- GRADE_GROUP_STORICA_ENABLED (13/08/2026): lo stesso ramo che
+    # _apply_grade_group prende nel generatore (build_formazione_globale.py:602).
+    # PERCHE' SERVE: qui sotto il gruppo e' quello NATIVO (lega, ruolo) e con
+    # meno di 2 membri il voto si spegne da solo. Il generatore, a flag acceso,
+    # NON usa piu' quel gruppetto: prende dispersione e scala del voto da due
+    # tabelle storiche, cosi' il voto vale anche per i gruppi da una carta
+    # (il 51% delle righe di produzione). Se questo ramo non ci fosse,
+    # accendere il flag darebbe due A+G diversi per lo stesso giocatore fra
+    # generatore e scouting -- la stessa divergenza silenziosa gia' vista col
+    # correttivo portiere.
+    # Si riusano le funzioni del generatore (_scala_storica_per,
+    # _sd_atteso_storico_per, GRADE_FATTORE_STORICO), mai una copia locale.
+    if gg is not None and getattr(gg, 'GRADE_GROUP_STORICA_ENABLED', False):
+        fattore = getattr(gg, 'GRADE_FATTORE_STORICO', 0.482)
+        grezzo = {}
+        for (lega, ruolo), righe in gruppi.items():
+            scala = gg._scala_storica_per(lega, ruolo)
+            gm, gsd = (scala[0], scala[1]) if scala else (0.0, 0.0)
+            sd_info = gg._sd_atteso_storico_per(lega, ruolo)
+            sd_atteso = sd_info[0] if sd_info else 0.0
+            for r in righe:
+                gn = grade_num.get(r.get('grade'))
+                z = (gn - gm) / gsd if (gn is not None and gsd > 0) else 0.0
+                base = attesi[r['slug']] - gk_adj.get(r['slug'], 0.0)
+                grezzo[r['slug']] = (base + fattore * sd_atteso * z, base,
+                                     ruolo, gk_adj.get(r['slug'], 0.0))
+        # Ricentraggio PER RUOLO, secondo passo della ricetta: si toglie la
+        # spinta media del voto ruolo per ruolo, calcolata sulla popolazione
+        # di QUESTA run (come _recentra_grade_per_ruolo, che nel generatore
+        # gira dopo il doppio ciclo lega/ruolo perche' deve vedere tutte le
+        # leghe insieme). Senza questo passo il voto alzerebbe il livello
+        # invece di riordinarlo, e le soglie arena non sarebbero piu' tarate.
+        per_ruolo = defaultdict(list)
+        for slug, (comb, base, ruolo, _adj) in grezzo.items():
+            per_ruolo[ruolo].append(comb - base)
+        medie = {ruolo: (sum(v) / len(v) if v else 0.0)
+                 for ruolo, v in per_ruolo.items()}
+        combinato = {}
+        for slug, (comb, _base, ruolo, adj) in grezzo.items():
+            combinato[slug] = round(comb - medie.get(ruolo, 0.0), 2) + adj
+        return combinato
+
     combinato = {}
     for righe in gruppi.values():
         vals = [attesi[r['slug']] - gk_adj.get(r['slug'], 0.0) for r in righe]

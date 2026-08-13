@@ -141,11 +141,20 @@ def confronto(eti, a, b):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--fixture', action='append', default=[])
+    ap.add_argument('--manager', action='append', default=[],
+                    help='limita a uno o piu\' manager (ripetibile). Con '
+                         '--manager crowss si confronta l\'utente CON SE '
+                         'STESSO: stesso mazzo, stesse arene, stesse '
+                         'giornate, cambia solo chi decide se entrare. Per '
+                         'crowss vengono lette solo le fixture pre_2026-08-07, '
+                         'cioe' + " quando schierava a mano (B1.elenca_fixture).")
     args = ap.parse_args()
 
     fixtures = B1.elenca_fixture()
     if args.fixture:
         fixtures = [f for f in fixtures if f[1] in set(args.fixture)]
+    if args.manager:
+        fixtures = [f for f in fixtures if f[0] in set(args.manager)]
     if not fixtures:
         print('nessuna fixture trovata con questo filtro')
         return
