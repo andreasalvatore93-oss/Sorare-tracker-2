@@ -89,13 +89,28 @@ def lift_selezione(righe, quanti=5, prove=200, seme=3):
     return (statistics.mean(quote) * 100 if quote else None), len(quote)
 
 
-def valuta(punti, hl, ti, favorito_k=None, ranking_k=None, casa_k=None):
+def valuta(punti, hl, ti, favorito_k=None, ranking_k=None, casa_k=None,
+           reparto_avv_k=None, gol_fatti_avv_k=None, usa_avversario=False):
+    """`usa_avversario` (13/08/2026, filone intralega): accende gli
+    aggiustamenti avversario che girano in PRODUZIONE (opponent_lambda_mult,
+    Stadio D) mentre si tara una correzione nuova.
+
+    Default False = comportamento INVARIATO, tutte le misure precedenti
+    restano confrontabili. Ma per qualunque correzione che riguardi
+    l'AVVERSARIO va acceso, altrimenti si misura il pezzo nuovo fuori dalla
+    formula in cui dovrebbe vivere -- e' esattamente l'errore che aveva fatto
+    accendere FWD_OFFENSE_SENSITIVITY a 3.0 per poi doverla spegnere a 0.0
+    (opponent_strength.py:335-348: "il -0.38% di MAE che lo aveva
+    giustificato veniva da un banco che teneva SPENTI gli aggiustamenti
+    avversario")."""
     righe = []
     for ruolo, slug, data, ctx, reale in punti:
         try:
             p = prev.calcola(ctx, half_life=hl, trend_intensity=ti,
                              favorito_k=favorito_k, ranking_k=ranking_k,
-                             casa_k=casa_k)
+                             casa_k=casa_k, reparto_avv_k=reparto_avv_k,
+                             gol_fatti_avv_k=gol_fatti_avv_k,
+                             usa_avversario=usa_avversario)
         except Exception:
             continue
         righe.append((ruolo, slug, data, p, reale))
@@ -125,10 +140,21 @@ CORREZIONI = {
     # essere applicato cosi'. Vedi delta_casa in backtest_arene_previsioni.
     'casa': ('CASA/TRASFERTA residuo (k punti per quota di partite in casa)',
              'casa_k'),
+    # FILONE INTRALEGA (13/08/2026). Due termometri per la forza del reparto
+    # avversario, confrontati sullo stesso metro. Da tarare SEMPRE con
+    # --con-avversario, vedi la docstring di valuta().
+    # Segno atteso NEGATIVO in entrambi: piu' forte l'avversario, meno rende.
+    'reparto_avv': ('REPARTO AVVERSARIO in voti Sorare (k punti per deviazione '
+                    'standard) -- FWD contro i difensori, DEF contro gli attaccanti',
+                    'reparto_avv_k'),
+    'gol_fatti_avv': ('GOL FATTI dall\'avversario (k punti per deviazione '
+                      'standard) -- grandezza che oggi il DEF non guarda',
+                      'gol_fatti_avv_k'),
 }
 
 
-def griglia_favorito(breve, punti, prod, spec, quale='favorito', fissi=None):
+def griglia_favorito(breve, punti, prod, spec, quale='favorito', fissi=None,
+                     usa_avversario=False):
     """La correzione di contesto partita, giudicata sullo stesso metro.
 
     Tiene half_life/trend di produzione e muove solo k: cosi' l'unica cosa che
@@ -153,12 +179,15 @@ def griglia_favorito(breve, punti, prod, spec, quale='favorito', fissi=None):
     if fissi:
         print('sopra: ' + ', '.join('%s=%g' % kv for kv in sorted(fissi.items())))
     print('half_life=%s trend=%s tenuti a produzione' % (hl, ti))
+    print('aggiustamenti avversario di produzione: %s' %
+          ('ACCESI' if usa_avversario else 'spenti (default storico)'))
     print('=' * 96)
     print('%-16s %8s %8s %9s %8s %8s %7s' %
           ('k', 'MAE', 'corr', 'sd prev', 'sd real', 'bias', 'lift%'))
     risultati = []
     for k in ks:
-        r = valuta(punti, hl, ti, **dict(fissi, **{chiave: k}))
+        r = valuta(punti, hl, ti, usa_avversario=usa_avversario,
+                   **dict(fissi, **{chiave: k}))
         r['favorito_k'] = k
         r['correzione'] = quale
         if fissi:
@@ -200,6 +229,20 @@ def main():
     ap.add_argument('--con-ranking', default='', dest='con_ranking',
                     help='tiene acceso il ranking mentre la griglia --casa si muove, '
                          'per ruolo: es. fwd:0.3,mid:0.05,def:0.3,gk:0.5')
+    ap.add_argument('--reparto-avv', default='', dest='reparto_avv',
+                    help='griglia di k per la forza del reparto AVVERSARIO in '
+                         'voti Sorare (filone intralega). Segno atteso negativo, '
+                         'es. -3,-2,-1,1. Usare INSIEME a --con-avversario.')
+    ap.add_argument('--gol-fatti-avv', default='', dest='gol_fatti_avv',
+                    help='griglia di k per i gol FATTI dall avversario, es. '
+                         '-3,-2,-1,1. Usare INSIEME a --con-avversario.')
+    ap.add_argument('--con-avversario', action='store_true', dest='con_avversario',
+                    help='accende gli aggiustamenti avversario di PRODUZIONE '
+                         '(opponent_lambda_mult, Stadio D) durante la griglia. '
+                         'OBBLIGATORIO per tarare qualunque correzione che '
+                         'riguardi l avversario: senza, si misura il pezzo nuovo '
+                         'fuori dalla formula in cui deve vivere (e come si '
+                         'accese per sbaglio FWD_OFFENSE_SENSITIVITY).')
     ap.add_argument('--max', type=int, default=0)
     ap.add_argument('--json', default='dati_globali/taratura_confronto_parametri.json')
     args = ap.parse_args()
@@ -219,18 +262,29 @@ def main():
             continue
         modulo = sotto[0][3]['modulo']
         prod = (modulo.HALF_LIFE_GAMES, getattr(modulo, 'TREND_INTENSITY', 0.0))
-        if args.favorito or args.ranking or args.casa:
+        if args.favorito or args.ranking or args.casa or args.reparto_avv \
+                or args.gol_fatti_avv:
             esiti[b] = []
+            av = args.con_avversario
             if args.ranking:
-                esiti[b] += griglia_favorito(b, sotto, prod, args.ranking, 'ranking')
+                esiti[b] += griglia_favorito(b, sotto, prod, args.ranking, 'ranking',
+                                             usa_avversario=av)
             if args.favorito:
-                esiti[b] += griglia_favorito(b, sotto, prod, args.favorito, 'favorito')
+                esiti[b] += griglia_favorito(b, sotto, prod, args.favorito, 'favorito',
+                                             usa_avversario=av)
+            if args.reparto_avv:
+                esiti[b] += griglia_favorito(b, sotto, prod, args.reparto_avv,
+                                             'reparto_avv', usa_avversario=av)
+            if args.gol_fatti_avv:
+                esiti[b] += griglia_favorito(b, sotto, prod, args.gol_fatti_avv,
+                                             'gol_fatti_avv', usa_avversario=av)
             if args.casa:
                 fissi = {}
                 for pezzo in args.con_ranking.split(','):
                     if ':' in pezzo and pezzo.split(':')[0].strip() == b:
                         fissi['ranking_k'] = float(pezzo.split(':')[1])
-                esiti[b] += griglia_favorito(b, sotto, prod, args.casa, 'casa', fissi)
+                esiti[b] += griglia_favorito(b, sotto, prod, args.casa, 'casa', fissi,
+                                             usa_avversario=av)
             continue
         if args.candidati:
             cand = [tuple(float(x) for x in c.split(':')) for c in args.candidati.split(',')]

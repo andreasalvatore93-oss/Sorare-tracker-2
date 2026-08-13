@@ -29,6 +29,11 @@ import test_gk
 import test_def
 import test_mid
 import test_mls_fwd_all as test_fwd
+import intralega_segnale
+
+# Stesso alias del badge "nuovo campionato" e di p33: la J1 100 Year Vision e'
+# la stessa lega della J1 pur avendo una cartella propria nel repo.
+_ALIAS_LEGA = {'giappone100': 'giappone'}
 
 MAX_HISTORY_DAYS = 365
 MIN_SAME_COMPETITION = 20
@@ -682,10 +687,63 @@ def delta_p_draw(ctx):
     return ora - (sum(storici) / len(storici))
 
 
+def delta_reparto_avv(ctx):
+    """FILONE INTRALEGA (13/08/2026): quanto e' forte il reparto AVVERSARIO
+    che questo giocatore affronta, misurato in VOTI SORARE dei giocatori veri
+    di quel reparto invece che in gol (che e' quello che guarda oggi
+    opponent_lambda_multiplier).
+
+    Reparto guardato = quello opposto al ruolo: l'attaccante affronta i
+    difensori, il difensore affronta gli attaccanti. Ritorna lo z (positivo =
+    reparto avversario FORTE), quindi il k che ci si aspetta utile e'
+    NEGATIVO: piu' forte l'avversario, meno rende il giocatore. Nessun segno
+    nascosto qui dentro -- la griglia esplora entrambi i versi.
+
+    None (nessuna correzione) se manca lo storico: e' il caso indicato
+    dall'utente del neopromosso senza passato in quella lega."""
+    ruolo = ctx.get('ruolo')
+    reparto = {'Forward': 'def', 'Defender': 'fwd'}.get(ruolo)
+    if reparto is None:
+        return None
+    lega = ctx.get('lega_vera')
+    opp = ctx.get('opp_slug')
+    quando = ctx.get('cutoff')
+    if not lega or not opp or quando is None:
+        return None
+    return intralega_segnale.z_reparto(_ALIAS_LEGA.get(lega, lega), opp,
+                                       reparto, quando)
+
+
+def delta_gol_fatti_avv(ctx):
+    """FILONE INTRALEGA (13/08/2026): quanti gol FA di solito l'avversario.
+
+    Nasce da una misura, non da un'intuizione: sul difensore questo termometro
+    correla -0,083 col voto realizzato, contro -0,038 dei voti degli
+    attaccanti avversari -- ed e' una grandezza che oggi la produzione per il
+    DIFENSORE non guarda affatto (SIGN_BY_ROLE['def']=+1, cioe' condiziona il
+    difensore sui gol SUBITI dall'avversario, non su quelli fatti).
+
+    La serie NON e' ricostruita qui: e' la stessa che usa la produzione
+    (`opponent_strength._build_series_for_league`), letta col medesimo filtro
+    walk-forward. Normalizzata con le costanti globali gia' validate."""
+    opp, quando = ctx.get('opp_slug'), ctx.get('cutoff')
+    if not opp or quando is None:
+        return None
+    import opponent_strength as ops
+    _conceded, scored = ops._build_series_for_league(None)
+    passate = [v for dt, v in scored.get(opp, []) if dt < quando]
+    if len(passate) < ops.MIN_PARTITE_AVVERSARIO:
+        return None
+    ultime = passate[-ops.N_GAMES_DEFAULT:]
+    media = sum(ultime) / len(ultime)
+    return (media - ops.GLOBAL_MEAN_CONCEDED) / ops.GLOBAL_STD_CONCEDED
+
+
 def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None,
             usa_avversario=False, favorito_k=None, ranking_k=None, casa_k=None,
             favorito_odds_k=None, favorito_odds_mult_k=None,
-            p_draw_k=None, p_draw_mult_k=None,
+            p_draw_k=None, p_draw_mult_k=None, reparto_avv_k=None,
+            gol_fatti_avv_k=None,
             avversario_lambda=True, avversario_stadio_d=True, sensitivity_by_role=None):
     """La previsione di produzione dagli ingressi di `contesto`.
 
@@ -748,6 +806,18 @@ def calcola(ctx, half_life=None, trend_intensity=None, shrink_k=None,
         delta = delta_p_draw(ctx)
         if delta is not None:
             base = base * (1.0 + p_draw_mult_k * delta)
+    if isinstance(reparto_avv_k, dict):
+        reparto_avv_k = reparto_avv_k.get(ctx['ruolo'], 0.0)
+    if reparto_avv_k:
+        delta = delta_reparto_avv(ctx)
+        if delta is not None:
+            base = base + reparto_avv_k * delta
+    if isinstance(gol_fatti_avv_k, dict):
+        gol_fatti_avv_k = gol_fatti_avv_k.get(ctx['ruolo'], 0.0)
+    if gol_fatti_avv_k:
+        delta = delta_gol_fatti_avv(ctx)
+        if delta is not None:
+            base = base + gol_fatti_avv_k * delta
     return base
 
 

@@ -169,6 +169,9 @@ def main():
     ap.add_argument('--giorni', type=int, default=540,
                     help='quanto storico leggere (default 540)')
     ap.add_argument('--out', default=os.path.join(_HERE, 'dati', 'intralega_righe.json'))
+    ap.add_argument('--out-serie', default=os.path.join(_HERE, 'dati', 'intralega_serie.json'),
+                    help='le sole serie di reparto (piccole, versionate): le '
+                         'legge il segnale in intralega_segnale.py')
     args = ap.parse_args()
 
     righe, n_file = leggi_cache(args.giorni)
@@ -182,6 +185,17 @@ def main():
 
     serie = serie_reparto(righe)
     print(f"serie di reparto (lega,squadra,ruolo): {len(serie)}")
+
+    # Le SOLE serie, in un file piccolo e versionabile: e' l'unica cosa che
+    # serve al segnale in produzione/backtest (il dataset da 57 MB resta
+    # fuori da git e si rigenera con questo stesso script).
+    compatta = {f'{lg}|{sq}|{ruolo}': [[d, round(v, 3)] for d, v, _q in val]
+                for (lg, sq, ruolo), val in serie.items()}
+    with open(args.out_serie, 'w', encoding='utf-8') as fh:
+        json.dump({'costruito': datetime.date.today().isoformat(),
+                   'min_minuti': MIN_MINUTI_TITOLARE, 'serie': compatta},
+                  fh, ensure_ascii=False)
+    print(f"scritto: {args.out_serie}")
 
     # Aggancio delle due serie AS-OF a ogni riga. 'att_avv'/'dif_avv' sono la
     # forza del reparto AVVERSARIO prima della partita; 'att_mia'/'dif_mia'
