@@ -317,7 +317,48 @@ def contesto(cache, slug, ruolo, fine_giornata, cutoff_giornata=None):
             # mondo veniva calcolato come se fosse in MLS e qualunque misura
             # per-lega sarebbe uscita piatta -- cioe' "non serve" -- per un
             # difetto del banco, non per un fatto sul modello.
-            'lega_vera': _cartella_lega(competizione)}
+            'lega_vera': _cartella_lega(competizione),
+            # Quota dello storico giocata in una competizione DIVERSA da
+            # quella della partita bersaglio: e' il segnale "questo viene da
+            # un'altra lega", su cui PRIOR_LEGA decide se correggere. Si
+            # calcola sulla stessa finestra che il modello usa davvero
+            # (`usable`), non su tutto il game-log.
+            'quota_altra_lega': _quota_altra_competizione(usable, competizione),
+            # La lega DA CUI viene lo storico: la competizione piu' frequente
+            # nella finestra. Serve alla modalita' 'diretto' di PRIOR_LEGA,
+            # che deve sapere rispetto a quale livello il giocatore era
+            # sopra o sotto.
+            'lega_storico': _lega_dominante_storico(usable)}
+
+
+def _lega_dominante_storico(usable):
+    """La cartella della competizione piu' frequente nella finestra storica.
+    None se nessuna di quelle partite e' di un campionato noto: in quel caso
+    non si corregge (non si sa da dove viene)."""
+    if not usable:
+        return None
+    conta = {}
+    for n in usable:
+        slug = (n.get('anyGame', {}).get('competition') or {}).get('slug')
+        cart = _cartella_lega(slug) if slug else None
+        if cart:
+            conta[cart] = conta.get(cart, 0) + 1
+    if not conta:
+        return None
+    return max(conta.items(), key=lambda kv: kv[1])[0]
+
+
+def _quota_altra_competizione(usable, competizione):
+    """Quante delle partite della finestra storica sono state giocate in
+    un'altra competizione. None se non si puo' dire (nessuna partita, o
+    competizione bersaglio ignota): chi legge tratta None come 'non
+    correggere', mai come zero."""
+    if not usable or not competizione:
+        return None
+    altre = sum(1 for n in usable
+                if ((n.get('anyGame', {}).get('competition') or {}).get('slug')
+                    != competizione))
+    return altre / len(usable)
 
 
 def _avversario(ctx):
@@ -736,6 +777,13 @@ def _calcola_base(ctx, half_life=None, trend_intensity=None, shrink_k=None,
     # legge) e necessario per misurare quelle nuove.
     if ctx.get('lega_vera'):
         extra.setdefault('league', ctx['lega_vera'])
+    if ruolo == 'Forward':
+        # solo FWD: e' l'unico ruolo in cui i parametri esistono finche' il
+        # filone non e' deciso e propagato (propaga_modello.py)
+        if ctx.get('quota_altra_lega') is not None:
+            extra.setdefault('quota_altra_lega', ctx['quota_altra_lega'])
+        if ctx.get('lega_storico'):
+            extra.setdefault('lega_storico', ctx['lega_storico'])
     _sens = lambda ruolo_breve: (sensitivity_by_role.get(ruolo_breve) if sensitivity_by_role else None)
 
     if ruolo == 'Goalkeeper':

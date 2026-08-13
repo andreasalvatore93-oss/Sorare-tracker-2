@@ -11,13 +11,14 @@ ne guadagna 7, a parita' di minuti giocati. Il caso vivo e' Vicente (e Andres
 Martin): fenomeni in Segunda, ora in Liga col Racing promosso, e il modello
 li valuta 63,6 e 58,1 quando il dato dice ~51-53.
 
-Ho costruito la tabella del livello di ogni lega e l'ho agganciata all'ancora
-dello shrinkage, dietro interruttore SPENTO. Il risultato: sugli attaccanti
-migliora l'errore medio (MAE -0,115) ma PEGGIORA l'ordinamento (correlazione
--0,017, lift -1,3 punti). Per la regola del repo -- si applica solo se le tre
-misure si muovono insieme -- COSI' NON SI APPLICA. Resta da provare la
-versione stretta: correggere SOLO chi ha lo storico in un'altra lega, invece
-di tutti.
+Ho costruito la tabella del livello di ogni lega e ho provato TRE modi di
+usarla. Nessuno passa: la larga migliora l'errore e peggiora l'ordinamento,
+la stretta il contrario, la diretta peggiora tutto. Il motivo l'ho trovato
+alla fine: il filtro che doveva riconoscere "questo viene da un'altra lega"
+in realta' riconosce "questo gioca una coppa" -- su 1.187 attaccanti ne
+prendeva 231 e ne correggeva 16. Il fenomeno resta vero e grosso; e' il
+modo di agganciarlo che non funziona ancora. In produzione non e' cambiato
+niente: l'interruttore e' spento.
 
 
 1. STATO DEL REPO
@@ -194,6 +195,59 @@ Nota tecnica utile: la finestra storica si filtra sulla stessa competizione
 solo se ci sono almeno 20 partite (MIN_SAME_COMPETITION); sotto quella soglia
 il modello guarda tutte le competizioni -- cioe' proprio la lega vecchia. E'
 il meccanismo per cui il caso Vicente si produce.
+6.1-bis LA VERSIONE STRETTA E QUELLA DIRETTA -- MISURATE ENTRAMBE, ENTRAMBE
+BOCCIATE (13/08 sera). Aggiunte al codice due modalita', tutte e due dietro
+lo stesso interruttore spento:
+  'ancora'  (default) lo scarto di lega entra nel prior dello shrinkage;
+  'diretto'  previsione = livello(lega nuova) + K*(previsione - livello(lega
+             vecchia)), K=0,21, applicata sul risultato finito.
+Le due sono ALTERNATIVE (in 'diretto' scarto_lega() torna 0: altrimenti la
+stessa lega verrebbe contata due volte, mezzo punto di troppo).
+Risultati su FWD, n=22.766, riga di produzione, stesso campione:
+   versione                     MAE        corr        lift
+   stretta (ancora + soglia)   +0,0437     -0,0033     +0,4284
+   diretta (soglia 0,5)        +0,1467     -0,0158     -0,0763
+La prima migliora solo il lift, la seconda peggiora tutte e tre. NON SI
+APPLICA NESSUNA DELLE DUE.
+
+6.1-ter PERCHE', E IL DIFETTO DEL FILTRO (la cosa piu' utile di questo giro).
+Il cancello "quota di storico in un'altra competizione >= 0,5" NON seleziona
+chi ha cambiato lega: seleziona chi gioca una COPPA. Se la partita bersaglio
+e' di Coppa Italia, tutto lo storico di campionato risulta "altra
+competizione" e la quota schizza al 100%. Contato su 1.187 attaccanti: la
+soglia ne prende 231, ma solo 16 vengono corretti davvero -- gli altri 215
+hanno la partita bersaglio in una competizione fuori da LEAGUE_DIR, dove la
+lega e' ignota e la correzione (giustamente) non scatta.
+I 16 veri sono giusti uno per uno (Buksa Danimarca->Italia, Cowell
+Messico->MLS, Harrison Inghilterra->Italia, Carranza Championship->Messico).
+IL FILTRO GIUSTO E' PIU' SEMPLICE: basta confrontare la lega dominante dello
+storico con quella della partita. Se diverse, correggi. La quota non serve e
+fa danno. Ha anche una proprieta' comoda: man mano che il giocatore accumula
+partite nel campionato nuovo lo storico diventa "suo" e la correzione si
+spegne DA SOLA, senza soglie da tarare.
+
+6.1-quater DUE DATI DA SISTEMARE PRIMA DI RIPROVARE.
+(a) J1 GIAPPONE, DUE SLUG: 'j1-league' (4.669 partite, dal 2023-02-18 al
+    2026-08-09) e 'j1-100-year-vision-league' (2.900, dal 2026-02-06 al
+    2026-06-06) sono cartelle diverse (giappone / giappone100) e si
+    SOVRAPPONGONO nel tempo. Non e' un rinomino pulito: finche' non si
+    capisce cosa sono, ogni giapponese risulta "cambiato lega" a meta' 2026
+    (un caso e' finito nei 16 corretti: hiiro-komori giappone->giappone100).
+    Va chiarito con una query o guardando Sorare, non indovinato.
+(b) IL BANCO VALUTA ANCHE LE COPPE, la produzione no: le giornate Sorare
+    sono di campionato. Quindi il backtest sottostima quanto spesso la
+    correzione scatterebbe davvero, e ci mette dentro casi che in produzione
+    non esistono.
+
+6.1-quinquies E UN DUBBIO DI METODO, che vale per il prossimo giro: una
+correzione che tocca l'1-2% delle righe NON si puo' giudicare sulle metriche
+aggregate -- 22.000 punti di cui 300 corretti diluiscono qualunque effetto, e
+quello che si misura e' soprattutto rumore. Va giudicata sui casi che tocca,
+e li' oggi ci sono 16 osservazioni pulite: troppo poche per decidere. Prima
+di rifare il giro serve o allargare il campione dei cambi di lega, o
+accettare che questo filone si decide su una manciata di casi ispezionati a
+mano (che e' comunque piu' onesto di un numero aggregato che non dice nulla).
+
 6.2 LOOK-AHEAD DELLA TABELLA: non misurato. La tabella e' costruita su tutta
 la storia, anche successiva ai punti di test. Il precedente GK_ATT_AVV ha
 misurato lo stesso difetto e l'ha trovato trascurabile (0,096 punti contro sd

@@ -185,12 +185,49 @@ if PRIOR_LEGA_ENABLED:
         PRIOR_LEGA_ENABLED = False
 
 
-def scarto_lega(ruolo, lega):
+# SOLO A CHI VIENE DA UN'ALTRA LEGA (13/08/2026, seconda parola). La prima
+# versione spostava l'ancora per TUTTI: misurato su 21.971 punti, il MAE
+# migliorava (-0,115) ma correlazione e lift PEGGIORAVANO (-0,017, -1,3), e
+# la regola del repo chiede che le tre misure si muovano insieme. Il motivo
+# e' meccanico: dentro una lega lo scarto e' una costante uguale per tutti,
+# quindi non riordina nessuno -- puo' solo spostare i confronti FRA leghe, e
+# li' peggiorava.
+# Spezzando la misura per quota di storico giocata in un'ALTRA competizione,
+# il verso si ribalta proprio dove diceva l'ipotesi di partenza:
+#    0-20% altrove  n=18.690  MAE 13,479->13,456  corr 0,246->0,245  peggio
+#   20-50% altrove  n=16.267  MAE 14,126->13,976  corr 0,263->0,259  peggio
+#   50-80% altrove  n= 4.513  MAE 14,036->13,839  corr 0,200->0,213  MEGLIO
+#     80%+ altrove  n= 1.399  MAE 13,891->13,791  corr 0,159->0,173  MEGLIO
+# Sono il 3,4% dei punti, ma sono quelli su cui il modello e' piu' cieco
+# (correlazione 0,159 contro 0,246 di chi non si e' mosso). Da qui la soglia.
+PRIOR_LEGA_SOGLIA = float(os.environ.get('PRIOR_LEGA_SOGLIA', '0.5'))
+# Modalita' della correzione di lega: 'ancora' (dentro il prior dello
+# shrinkage) o 'diretto' (sul risultato finito). Sono ALTERNATIVE. Il perche'
+# e la misura che ha portato alla seconda stanno sopra riporta_su_lega().
+PRIOR_LEGA_MODO = os.environ.get('PRIOR_LEGA_MODO', 'ancora')
+PRIOR_LEGA_K = float(os.environ.get('PRIOR_LEGA_K', '0.21'))
+
+
+def scarto_lega(ruolo, lega, quota_altra_lega=None):
     """Quanto quella lega e' piu' generosa (o avara) della media delle leghe,
     per quel ruolo. 0.0 se il flag e' spento, se la lega non e' in tabella o
     se la cella ha troppe poche partite: fallback esplicito, mai un numero
-    inventato -- e a 0.0 il prior resta identico a quello di sempre."""
+    inventato -- e a 0.0 il prior resta identico a quello di sempre.
+
+    `quota_altra_lega` e' la quota dello storico giocata in una competizione
+    DIVERSA da quella della partita da prevedere. Sotto PRIOR_LEGA_SOGLIA la
+    correzione non si applica (vedi il commento sopra: li' peggiorava
+    l'ordinamento). None = ignoto: non si applica, perche' correggere alla
+    cieca e' il caso in cui si e' gia' misurato un peggioramento."""
     if not PRIOR_LEGA_ENABLED or not lega:
+        return 0.0
+    # le due modalita' sono ALTERNATIVE, non cumulative (13/08/2026): in
+    # 'diretto' la correzione la fa riporta_su_lega() sul risultato finito, e
+    # se anche l'ancora si spostasse la stessa lega verrebbe contata due
+    # volte (misurato: mezzo punto di troppo). Qui si sta zitti.
+    if PRIOR_LEGA_MODO == 'diretto':
+        return 0.0
+    if quota_altra_lega is None or quota_altra_lega < PRIOR_LEGA_SOGLIA:
         return 0.0
     cella = (_PRIOR_LEGA.get('per_lega_ruolo') or {}).get(f'{lega}|{ruolo}')
     base = (_PRIOR_LEGA.get('per_ruolo') or {}).get(ruolo)
@@ -1596,6 +1633,60 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
     return results
 
 
+
+# --- PRIOR_LEGA in modalita' DIRETTA (13/08/2026, terzo tempo) ------------
+# Perche' serve una seconda modalita'. La prima (modo 'ancora') infilava lo
+# scarto di lega dentro il prior dello shrinkage, che pesa 15/(n+15): su un
+# giocatore con 53 partite di storico -- il profilo esatto del "fenomeno
+# della Segunda" -- il peso e' 0,22 e dei -4,2 punti di scarto ne arrivavano
+# 0,9. Dieci volte troppo poco per il caso che la correzione doveva
+# risolvere, e abbastanza per sporcare i confronti fra leghe: misurato, MAE
+# e correlazione peggioravano.
+# La modalita' 'diretto' agisce sul risultato, non sull'ancora:
+#     previsione = livello(lega nuova) + K * (previsione - livello(lega vecchia))
+# cioe' "riportalo al livello del campionato dove va, e lasciagli la quota K
+# del vantaggio che aveva in quello da cui viene". K = 0,21 misurato fuori
+# campione su 120 cambi di lega mai visti (vedi handoff del 13/08): B e C
+# coincidevano, cioe' del vantaggio vecchio non si trasferisce quasi niente.
+# APPROSSIMAZIONE DICHIARATA: i livelli di lega sono misurati sui punteggi
+# REALIZZATI, mentre qui score_atteso e' sulla scala grezza (la calibrazione
+# arriva dopo, con pendenza 0,789). Le due scale coincidono al centro e
+# divergono agli estremi. Il banco di prova confronta gia' grezzo contro
+# realizzato, quindi la misura e' coerente con se stessa, ma se questa
+# modalita' andasse in produzione la correzione va rifatta DOPO la
+# calibrazione, non qui.
+
+
+def livello_lega(ruolo, lega):
+    """Il punteggio medio di quel ruolo in quella lega, in punti veri.
+    None se non lo sappiamo (lega ignota o cella sotto soglia)."""
+    if not lega:
+        return None
+    cella = (_PRIOR_LEGA.get('per_lega_ruolo') or {}).get(f'{lega}|{ruolo}')
+    base = (_PRIOR_LEGA.get('per_ruolo') or {}).get(ruolo)
+    if not cella or not base:
+        return None
+    return base['media_generale'] + cella['media']
+
+
+def riporta_su_lega(previsione, ruolo, lega_nuova, lega_storico, quota_altra_lega):
+    """La previsione riportata sul livello della lega in cui si gioca ADESSO.
+
+    Torna la previsione INVARIATA in tutti i casi in cui non siamo sicuri:
+    flag spento, modalita' diversa, quota sotto soglia, una delle due leghe
+    ignota, o le due leghe coincidono (allora non c'e' niente da correggere).
+    Nessun numero inventato, mai."""
+    if (not PRIOR_LEGA_ENABLED or PRIOR_LEGA_MODO != 'diretto'
+            or quota_altra_lega is None or quota_altra_lega < PRIOR_LEGA_SOGLIA
+            or not lega_nuova or not lega_storico or lega_nuova == lega_storico):
+        return previsione
+    liv_nuova = livello_lega(ruolo, lega_nuova)
+    liv_vecchia = livello_lega(ruolo, lega_storico)
+    if liv_nuova is None or liv_vecchia is None:
+        return previsione
+    return liv_nuova + PRIOR_LEGA_K * (previsione - liv_vecchia)
+
+
 def compute_score_atteso_fwd(scores, is_home_flags,
                              residual_values, granulari_values,
                              pos_decisive_values, neg_decisive_values,
@@ -1607,7 +1698,8 @@ def compute_score_atteso_fwd(scores, is_home_flags,
                              use_stadio_d=True,
                              presence_rate=None, opponent_lambda_mult=None,
                              next_opponent_team_slug=None, next_game_date=None, league='mls',
-                             offensive_values=None, detail_ok_flags=None):
+                             offensive_values=None, detail_ok_flags=None,
+                             quota_altra_lega=None, lega_storico=None):
     """FUNZIONE CONDIVISA (27/07, punto 26.D.4): calcola lo `score_atteso` FWD di
     PRODUZIONE, da usare SIA in build_prediction SIA nel backtest di calibrazione,
     cosi' le due non possono divergere. Gemella di compute_score_atteso_def in
@@ -1662,7 +1754,8 @@ def compute_score_atteso_fwd(scores, is_home_flags,
     # costante): sposta l'ancora dello shrinkage sul livello della lega in cui
     # il giocatore gioca ADESSO. A flag spento scarto_lega() vale 0.0 e questa
     # riga non cambia un decimale.
-    media_ruolo_prior = max(0.0, media_ruolo_prior + scarto_lega('FWD', league))
+    media_ruolo_prior = max(0.0, media_ruolo_prior
+                            + scarto_lega('FWD', league, quota_altra_lega))
     grezzo_nuovo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     if offensive_values is not None and next_opponent_team_slug:
         _offensive_hist = weighted_mean(offensive_values, weights_det)
@@ -1685,12 +1778,15 @@ def compute_score_atteso_fwd(scores, is_home_flags,
 
     # --- Stadio D (FWD): sola correzione "Passaggio" condizionata per venue ---
     if not use_stadio_d:
-        return score_atteso
+        return riporta_su_lega(score_atteso, 'FWD', league, lega_storico, quota_altra_lega)
     fallback_passaggio = weighted_mean(passing_values, weights_det)
     media_passaggio_condizionata_venue = media_condizionata(
         passing_values, weights_det, is_home_flags, target_is_home, fallback_passaggio)
     score_atteso += (media_passaggio_condizionata_venue - fallback_passaggio)
-    return score_atteso
+    # ULTIMA COSA prima di uscire (13/08/2026): la correzione di lega agisce
+    # sul risultato finito, non su un pezzo intermedio -- vedi il commento
+    # sulla modalita' 'diretto'. A flag spento e' l'identita'.
+    return riporta_su_lega(score_atteso, 'FWD', league, lega_storico, quota_altra_lega)
 
 
 def rigorous_backtest_prod_fwd(scores, is_home_flags,
