@@ -538,7 +538,21 @@ def _scala_storica_per(league, role):
 # 0,482 e ricentraggio PER RUOLO calcolato FRESCO su tutte le leghe di
 # QUESTA run (non una costante congelata) -- vedi _recentra_grade_per_ruolo
 # sotto, chiamata da load_league_role_data() dopo il doppio ciclo lega/ruolo.
-GRADE_GROUP_STORICA_ENABLED = os.environ.get('GRADE_GROUP_STORICA_ENABLED', '0') == '1'
+# ACCESO DI DEFAULT DAL 13/08/2026 (decisione dell'utente, dopo la validazione
+# fuori campione descritta in HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8bis-bis).
+# Non si e' aspettato il 25/08 perche' quella data non aveva nessuna
+# giustificazione statistica: erano semplicemente le tre giornate successive a
+# quando fu scritta la pre-registrazione. Si e' invece allargato l'archivio
+# ALL'INDIETRO -- 65 manager, 44 giornate, 13.860 formazioni, tutte mai usate
+# per tarare la ricetta -- e misurato li'. Su 1.338 unita' manager-giornata:
+# G-fisso batte la produzione di +20.273 essenze (IC95 [+5.329;+37.274]), e di
+# +21.736 col margine d'ingresso al 10%, cioe' giocando come gioca l'utente.
+# Riproducibile cifra per cifra su due giri. Il livello NON si sposta
+# (scostamento 0,009 punti per formazione su soglie da 260), quindi
+# PAREGGIO_ARENA/GUADAGNO_PER_PUNTO e lo scouting restano tarati -- verificato,
+# non assunto (analisi_manager/p62_soglie_dopo_gfisso.py).
+# Per spegnerlo: GRADE_GROUP_STORICA_ENABLED=0 nell'ambiente.
+GRADE_GROUP_STORICA_ENABLED = os.environ.get('GRADE_GROUP_STORICA_ENABLED', '1') == '1'
 GRADE_FATTORE_STORICO = float(os.environ.get('GRADE_FATTORE_STORICO', '0.482'))
 SD_ATTESO_PRODUZIONE_PATH = os.environ.get(
     'SD_ATTESO_PRODUZIONE_PATH',

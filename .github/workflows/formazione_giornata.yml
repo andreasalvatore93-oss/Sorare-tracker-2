@@ -65,9 +65,9 @@ on:
         required: false
         default: '1'
       grade_group_storica:
-        description: 'NON ACCENDERE prima del 25/08/2026 (test fuori campione pre-registrato non ancora fatto). Correttivo voto A-F con tabelle storiche di produzione (non il gruppetto lega/ruolo della singola giornata, spento per il 51%+ delle righe). Opus (12/08/2026): "pronta per il fuori campione pre-registrato, NON per la produzione diretta" -- placebo passato (p<=0,048, il voto ha segnale vero) ma la taglia (+10.102 essenze sul backtest) e la migliore di ~12 varianti sullo stesso campione, sovrastimata. Vedi HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8bis-bis e analisi_manager/p57_grade_fuoricampo_preregistrato.py (da lanciare dopo che GW7 chiude, PRIMA di decidere se accendere qui). Default SPENTO (0).'
+        description: 'ACCESO dal 13/08/2026. Voto A-F applicato con le tabelle storiche di produzione invece del gruppetto lega/ruolo della singola giornata, che restava spento per il 51%+ delle righe. Validato fuori campione su un archivio allargato ALL INDIETRO (65 manager, 44 giornate, 13.860 formazioni, 1.338 unita mai usate per tarare la ricetta): batte la produzione di +20.273 essenze, IC95 [+5.329;+37.274], e di +21.736 col margine d ingresso al 10%. Il livello non si sposta (0,009 punti per formazione su soglie da 260), quindi soglie arena e scouting restano tarati. Le due tabelle si rigenerano a ogni run dallo step qui sotto e vengono committate, cosi anche lo scouting misura con lo stesso metro. Metti 0 per spegnerlo.'
         required: false
-        default: '0'
+        default: '1'
 
 permissions:
   contents: write
@@ -815,6 +815,15 @@ jobs:
           # lui la scansione passa da 55 secondi a 1. Va committato per forza:
           # il checkout e' shallow e non porta niente che non sia su main.
           git add generatore_formazioni/dati/_gamelog_visti.json || true
+          # GRADE_GROUP_STORICA (13/08/2026): le due tabelle del voto vengono
+          # RIGENERATE a ogni run a flag acceso (step piu' sopra), ma finora
+          # non venivano committate. Il generatore usava quindi un righello
+          # fresco, e lo SCOUTING -- che le legge dal repo e non le rigenera
+          # mai -- sarebbe rimasto per sempre su quelle del 12/08, dando un
+          # A+G diverso sullo stesso giocatore. Committarle e' l'unico modo
+          # perche' i due strumenti misurino con lo stesso metro.
+          git add generatore_formazioni/dati/sd_atteso_produzione.json \
+                  generatore_formazioni/dati/grade_scala_produzione.json || true
           # I file applicati dagli artifact li committa salva_output: qui
           # restano come modifiche non committate e bloccherebbero il
           # 'git merge' del retry-loop sotto (bug reale run 30496069817:
