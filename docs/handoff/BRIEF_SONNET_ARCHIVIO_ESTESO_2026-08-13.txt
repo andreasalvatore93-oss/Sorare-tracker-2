@@ -1,0 +1,218 @@
+BRIEF PER SONNET ESECUTORE -- COMPLETARE L'ARCHIVIO UFFICIALE
+Scritto il 13/08/2026 sera (Roma, CEST) dall'orchestratore.
+Impegno consigliato: BASSO. Lavoro meccanico ma con controlli da leggere.
+
+
+0. COSA LEGGERE PRIMA (in quest'ordine, non saltare)
+====================================================
+1. CLAUDE.md (regole vincolanti: risparmio token, niente allucinazioni,
+   estrazioni a lotti piccoli con checkpoint, mai run GitHub senza il via).
+2. archivio_ufficiale/README.md -- lo schema dell'archivio, la whitelist
+   Limited, come si riconosce il tipo di arena.
+3. Codice che userai, coi numeri di riga:
+   - estrai_archivio_manager.py:32-34 (uso da riga di comando),
+     :72-85 (tipo_da_slug: la regola esatta dei 4 tipi + division),
+     :26-30 (dove scrive: crowss ha le sottocartelle pre/dal, gli altri no)
+   - ricostruisci_manager.py:70 e :172-173 (legge gia' SORARE_APIKEY e la
+     mette nell'header -- UNA sola chiave, vedi punto 5)
+   - analisi_manager/completa_grade_storico.py (scritto oggi, gia' provato:
+     riempie l'indice grade con la rotta profonda, ruota le 3 chiavi)
+
+
+1. LA DOMANDA, UNA SOLA
+=======================
+Portare archivio_ufficiale/ dalla copertura di oggi alla griglia completa
+delle 44 giornate CHIUSE dalla GW55 (20-24 feb 2026) a oggi, su tutti e 29
+i manager gia' presenti, con il grade al 100% e la cache game-log
+sufficiente a predire.
+
+NON e' un brief di misura: non devi decidere niente sul modello, non devi
+girare backtest. Costruisci il dato e riporti i conteggi.
+
+
+2. IPOTESI DELL'ORCHESTRATORE (scritta PRIMA, per onesta')
+==========================================================
+Mi aspetto: ~570 coppie manager-giornata da estrarre, ~45-60 minuti in
+sequenza (misurato oggi: 2m12s per 29 manager su una giornata, col solo
+cookie), di cui circa il 54% conterra' almeno un'arena. Il grade dovrebbe
+arrivare al ~100% (oggi sulla GW55 e' andato dal 26% al 100% in 18 secondi
+su 825 giocatori). La cache game-log dovrebbe partire dall'~81%.
+Se esce diverso -- piu' lento, meno copertura, molti manager senza arene --
+E' UN RISULTATO VALIDO e va scritto come l'hai trovato. Non aggiustare i
+numeri per farli somigliare a questi.
+
+
+3. IL CAMPIONE, CON I NUMERI DI CONTROLLO
+=========================================
+Ricostruisci la griglia cosi', nell'ordine:
+ a) elenco giornate: query Sorare
+    { so5 { so5Fixtures(first: 65) { nodes { slug aasmState endDate } } } }
+    tieni solo endDate >= 2026-02-20 E aasmState == 'closed'.
+ b) elenco manager: le cartelle archivio_ufficiale/manager_*
+ c) coppie gia' fatte: i file <fixture>_arene_limited.json dentro ogni
+    cartella manager (per crowss guarda in ENTRAMBE le sottocartelle
+    pre_2026-08-07/ e dal_2026-08-07/).
+
+NUMERI CHE DEVI RITROVARE (misurati oggi, 13/08 sera):
+   manager .......................... 29 (crowss incluso)
+   giornate chiuse dalla GW55 ....... 44
+   griglia completa ................. 1276 coppie
+   coppie gia' fatte ................ 706  (677 + le 29 della GW55 di oggi)
+   DA ESTRARRE ...................... ~570
+
+SE NON RITROVI ESATTAMENTE QUESTI NUMERI, FERMATI E DILLO, NON PROSEGUIRE.
+Uno scarto di 1-2 giornate e' possibile solo se nel frattempo una fixture
+e' passata da 'started' a 'closed': in quel caso scrivilo esplicitamente.
+
+
+4. IL METODO -- cosa lanciare, in quest'ordine
+==============================================
+Credenziali (il cookie e le 3 chiavi te le da' l'utente; chiedigliele, non
+inventarle). Tutte e tre le chiavi servono: i loro tetti sono INDIPENDENTI
+e SI SOMMANO (200 richieste/min ciascuna). Attenzione: la prima variabile
+NON si chiama _1.
+   SORARE_COOKIE, SORARE_CSRF, SORARE_APIKEY, SORARE_APIKEY_2, SORARE_APIKEY_3
+
+PASSO A -- estrazione delle giornate mancanti.
+   python estrai_archivio_manager.py --manager <slug> <fixture> [<fixture> ...]
+   A LOTTI PICCOLI CON CHECKPOINT (regola CLAUDE.md, non e' un consiglio):
+   massimo 3-4 giornate per volta su tutti i manager, poi ti fermi, conti i
+   file prodotti e le arene trovate, e SOLO POI parti col lotto dopo. Mai un
+   lancio unico da 570 con attesa cieca.
+   Dopo ogni lotto riporta: coppie fatte, di cui vuote, arene totali, errori.
+   Un 429 NON e' un dato mancante: e' una richiesta da rifare. Se lo script
+   dice "INDICE INCOMPLETO" quella giornata NON e' stata salvata e va
+   rilanciata, non contata come vuota.
+
+PASSO B -- grade, sulle giornate NUOVE.
+   python analisi_manager/completa_grade_storico.py --fixture <fixture> [--fixture ...] --thread 6
+   Puo' prendere piu' --fixture in un colpo. Una query per giocatore copre
+   50 partite (~un anno), quindi un solo passaggio serve piu' giornate
+   insieme: raggruppa, non fare un giro per giornata.
+
+PASSO C -- RIPASSATA sulle giornate GIA' in archivio (richiesta esplicita
+   dell'utente: potrebbero avere buchi, perche' furono riempite con la
+   vecchia rotta capata a 15 partite).
+   python analisi_manager/completa_grade_storico.py --fixture-tutte --thread 6
+   Prima e dopo, misura la copertura (vedi controllo C3 sotto) e riporta il
+   guadagno. Se il guadagno e' zero, scrivilo: e' un risultato utile.
+
+PASSO D -- I GIOCATORI CHE NON ABBIAMO IN CACHE (succedera' di sicuro)
+   MISURATO OGGI SULLA SOLA GW55: 158 giocatori su 825 (19%) non hanno il
+   game log. Sulle 17 giornate nuove ne troverai molti di piu'. Non e' un
+   imprevisto: e' una fase del lavoro, ed e' spiegata qui sotto.
+
+   PERCHE' CONTA (non e' cosmetico). Una carta senza game log non si puo'
+   predire, quindi esce dal pool di quel manager per quella giornata. Se il
+   pool si assottiglia troppo, il modello non ha piu' niente fra cui
+   scegliere e quella coppia manager-giornata diventa INUTILE per il test
+   (e' la regola "pool contro slot" di CLAUDE.md: se le carte disponibili
+   non sono piu' degli slot da riempire, non c'e' selezione da misurare).
+   Quindi i buchi di cache non si "accettano": si contano e si tappano.
+
+   D1. PRIMA CONTA, SENZA RETE. Lo strumento esiste gia', non scriverne uno:
+       python scarica_cache_backtest.py --elenco
+   dice cosa manca e si ferma, zero query. Scrive SOLO in
+   dati_globali/backtest_arene_cache/ e non tocca nessuna cache di
+   produzione (docstring del file, righe 1-20). backtest_arene_cache.py:27
+   legge quella cartella insieme a quelle di produzione, quindi i giocatori
+   scaricati li' valgono per tutti i consumer.
+   Conta i file con os.walk sulle cartelle formazione_*/ E su
+   dati_globali/backtest_arene_cache/ -- NON con glob('**'), che non scende
+   nelle cartelle nascoste (.game_log_cache). Trappola gia' documentata.
+
+   D2. POI CHIEDI IL VIA E SCARICA A LOTTI.
+       python scarica_cache_backtest.py --max 20     # prova
+       python scarica_cache_backtest.py --max 200    # lotto
+   Mai un lancio unico sull'intero elenco. Dopo ogni lotto: conta i file
+   prodotti contro i giocatori richiesti e riporta gli errori. Se il conto
+   non torna, fermati.
+   VERIFICA PRIMA se quello script usa le APIKEY: la sua docstring parla
+   solo di SORARE_COOKIE (60 query/min). Se non le usa, DILLO invece di
+   aggiungerle di nascosto -- e' un file condiviso col backtest.
+
+   D3. LEGHE SENZA PIPELINE: non ignorarle in silenzio. Se un giocatore
+   mancante appartiene a una lega che non ha pipeline (niente
+   formazione_<lega>/ + voce in LEAGUE_DIR), NON si cacha -- ma va
+   SEGNALATO: quante leghe, quanti giocatori, quali manager ne sono
+   toccati. E' una regola esplicita di CLAUDE.md, nata da una lega scoperta
+   troppo tardi. Usa analisi_manager/censimento_cache.py per vedere quali
+   leghe hanno pipeline ma cache quasi vuota ("coperta" non vuol dire
+   "popolata").
+
+   D4. COSA RIPORTARE alla fine: giocatori mancanti prima, scaricati,
+   rimasti fuori, e -- il numero che decide -- quante coppie
+   manager-giornata restano con un pool troppo piccolo per avere selezione.
+   Se non sai calcolare quest'ultimo, scrivi che non l'hai calcolato: lo
+   fara' l'orchestratore.
+
+
+5. CONTROLLI OBBLIGATORI, PRIMA DEI NUMERI DI SINTESI
+=====================================================
+C1. LE CHIAVI FUNZIONANO DAVVERO? ricostruisci_manager.py legge SOLO
+    SORARE_APIKEY (una): completa_grade_storico.py invece le ruota tutte e
+    tre. Prima del lotto grosso verifica che la chiave sia arrivata al
+    server: lancia una giornata con la chiave e una senza e confronta i
+    TEMPI. Se sono identici, la chiave non sta agendo e vale la pena
+    guardare perche' prima di lanciare 570 estrazioni.
+    Se decidi di aggiungere la rotazione a 3 anche in ricostruisci_manager,
+    fallo dietro modifica minima e DICHIARALO: quel file e' condiviso con
+    la produzione.
+C2. DUMP LEGGIBILE di un caso completo, da consegnare INSIEME ai numeri
+    (non su richiesta): un manager, una giornata, con tipo arena, costo,
+    rank, premio, e le 5 carte con slug/ruolo/punteggio/capitano. Serve a
+    far vedere all'utente dei nomi, non solo dei totali.
+C3. COPERTURA GRADE, misurata cosi': per ogni giornata, prendi gli slug
+    delle carte, e conta quanti hanno almeno una riga nell'indice
+    (analisi_manager/dati/storico_grade_crowss_completamento.json) con
+    game_date dentro la finestra della fixture +/- 2 giorni. Riporta la
+    percentuale PER GIORNATA, non solo il totale.
+C4. CONTA I FILE PRODOTTI contro le coppie attese. Una run che finisce
+    senza errori ma produce meno file del previsto e' una run fallita che
+    sembra riuscita (e' successo davvero, vedi CLAUDE.md).
+
+
+6. COSA CONSEGNARE
+==================
+Una tabella per giornata: manager estratti, di cui con almeno un'arena,
+arene totali, copertura grade %. Piu' i totali finali della griglia
+(coppie, unita' non vuote, arene, giocatori distinti). Piu' il dump di C2.
+Piu' l'elenco dei giocatori senza cache game-log (numero + primi 20 nomi).
+Niente stime a spanne: se un numero non l'hai misurato, scrivi che non
+l'hai misurato.
+
+
+7. COSA NON FARE
+================
+- NON toccare la produzione: nessun file in generatore_formazioni/,
+  formazione_*/predict/, nessun default cambiato.
+- NON girare backtest, NON lanciare p24/p57, NON provare a rispondere alla
+  domanda sul grade: e' il passo dopo, lo fa l'orchestratore.
+- NON lanciare run GitHub Actions.
+- NON riempire la cache game-log senza il via dell'utente.
+- NON "sistemare" difetti che trovi per strada: annotali in fondo al tuo
+  esito e prosegui.
+- NON nascondere risultati nulli o negativi (manager senza arene, giornate
+  vuote, copertura bassa: sono dati, si scrivono).
+
+
+8. DOVE SCRIVERE L'ESITO
+========================
+In coda a QUESTO file (docs/handoff/BRIEF_SONNET_ARCHIVIO_ESTESO_2026-08-13.txt),
+in una sezione "ESITO", non in un file nuovo. Committa SOLO i tuoi file
+(l'archivio, l'indice grade, questo brief). Se vedi modifiche di altri
+nella working tree, segnalale e non toccarle.
+
+All'utente riferisci in CINQUE RIGHE: quante coppie estratte, quante utili,
+copertura grade prima/dopo, giocatori senza cache, e il percorso di questo
+file. Il resto sta scritto qui.
+
+
+9. CONTESTO IN DUE RIGHE (perche' esiste questo lavoro)
+=======================================================
+Serve a testare fuori campione una variante del voto (grade) gia' pronta e
+spenta in produzione (GRADE_GROUP_STORICA_ENABLED). La ricetta fu tarata su
+367 unita' manager-giornata: queste giornate nuove non sono mai state usate
+per sceglierla, ed e' l'unica ragione per cui il test vale qualcosa. Piu'
+unita' portiamo a casa, piu' il verdetto e' solido -- in un verso o
+nell'altro.
