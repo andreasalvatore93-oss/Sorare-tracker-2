@@ -1,0 +1,106 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-13T08:27:17.574968Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) jorge-emanuel-broun: 46 pt attesi (35-64)
+   SQUADRA: univ-concepcion-concepcion | AVVERSARIO: la-serena-la-serena
+======================================================================
+
+######################################################################
+# GIOCATORE: jorge-emanuel-broun
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jorge-emanuel-broun (squadra: univ-concepcion-concepcion)
+Generato: 2026-08-13T08:27:17.574208Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 40
+Escluse (DID_NOT_PLAY): 23
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: primera-division-cl (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | ROS vs RIE | superliga-argentina-de-futbol | score=32.8 | peso=0.177
+  2025-08-23 | ROS vs NOB | superliga-argentina-de-futbol | score=63.2 | peso=0.198
+  2025-09-14 | ROS vs BOC | superliga-argentina-de-futbol | score=42.7 | peso=0.223
+  2025-09-21 | ROS vs CAT | superliga-argentina-de-futbol | score=38.4 | peso=0.250
+  2025-09-27 | GLP vs ROS | superliga-argentina-de-futbol | score=66.0 | peso=0.281
+  2025-10-06 | ROS vs RIV | superliga-argentina-de-futbol | score=36.3 | peso=0.315
+  2025-10-12 | VEL vs ROS | superliga-argentina-de-futbol | score=33.1 | peso=0.354
+  2025-11-01 | INS vs ROS | superliga-argentina-de-futbol | score=48.1 | peso=0.397
+  2025-11-08 | ROS vs SLO | superliga-argentina-de-futbol | score=69.5 | peso=0.445
+  2025-11-16 | IND vs ROS | superliga-argentina-de-futbol | score=41.3 | peso=0.500
+  2025-11-23 | ROS vs EST | superliga-argentina-de-futbol | score=37.4 | peso=0.561
+  2026-03-11 | ARG vs ROS | superliga-argentina-de-futbol | score=81.0 | peso=0.630
+  2026-04-05 | ROS vs TUC | superliga-argentina-de-futbol | score=45.9 | peso=0.707
+  2026-04-12 | HUR vs ROS | superliga-argentina-de-futbol | score=37.1 | peso=0.794
+  2026-05-03 | ROS vs TIG | superliga-argentina-de-futbol | score=44.6 | peso=0.891
+  2026-08-09 | CON vs UCO | primera-division-cl | score=45.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 47.71
+  di cui Punteggio decisivo (level_score) medio: 40.03 | Punteggio complessivo (granulari) medio: 7.68 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 40.03 (delta +0.00 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 | Possesso condizionato per venue: delta +0.24 | Goalkeeping condizionato per venue: delta -0.22 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 13.57
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.1 - 66.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.59 (differenza: +3.98)
+Media score in casa: 45.00 | Media score fuori casa: 47.71
+Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 14.0
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 0.840 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.005
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.999
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.000
+Tasso storico clean sheet (porta inviolata nei primi 60'): 25.0% (bonus atteso incorporato nella media pesata: ~6.2pt)
+Fattore trend (media ultime 5: 49.1 vs media 5 PRECEDENTI: 45.8): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T23:00
+Casa: CD Universidad de Concepción | Trasferta: CD La Serena
+Competizione: primera-division-cl
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.0 (range 35.4 - 64.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.12
+Punteggio REALE ottenuto in quella partita: 45.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -3.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.7    33.1    -13.6    15.1        SI
+   7        7      44.0    48.1     +4.1    14.9        SI
+   8        8      44.8    69.5    +24.7    13.6        NO
+   9        9      48.9    41.3     -7.6    16.3        SI
+  10       10      47.7    37.4    -10.3    15.3        SI
+  11       11      46.2    81.0    +34.8    14.7        NO
+  12       12      51.2    45.9     -5.3    19.6        SI
+  13       13      50.5    37.1    -13.4    18.3        SI
+  14       14      48.7    44.6     -4.1    17.8        SI
+  15       15      48.1    45.0     -3.1    16.7        SI
+
+MAE (errore assoluto medio): 12.11
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 80.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
