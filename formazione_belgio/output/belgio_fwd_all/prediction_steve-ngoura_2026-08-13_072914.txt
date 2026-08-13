@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:29:14.626947Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) steve-ngoura: 50 pt attesi (32-68)
+   ORDINAMENTO: 48.77
+   SQUADRA: cercle-brugge-brugge | AVVERSARIO: sint-truiden-sint-truiden-st-trond
+======================================================================
+
+######################################################################
+# GIOCATORE: steve-ngoura
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: steve-ngoura (squadra: cercle-brugge-brugge)
+Generato: 2026-08-13T07:29:14.625802Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | CER vs WES | jupiler-pro-league | score=65.9 | peso=0.099
+  2025-08-23 | STA vs CER | jupiler-pro-league | score=64.1 | peso=0.111
+  2025-08-29 | CER vs STV | jupiler-pro-league | score=70.8 | peso=0.125
+  2025-09-14 | CER vs CHA | jupiler-pro-league | score=62.6 | peso=0.140
+  2025-09-21 | KVM vs CER | jupiler-pro-league | score=34.2 | peso=0.157
+  2025-09-28 | CER vs GNT | jupiler-pro-league | score=70.3 | peso=0.177
+  2025-10-04 | ANT vs CER | jupiler-pro-league | score=67.9 | peso=0.198
+  2025-11-02 | LAL vs CER | jupiler-pro-league | score=27.9 | peso=0.223
+  2025-11-22 | USG vs CER | jupiler-pro-league | score=31.5 | peso=0.250
+  2025-11-29 | ZWA vs CER | jupiler-pro-league | score=38.9 | peso=0.281
+  2025-12-06 | CER vs STA | jupiler-pro-league | score=45.1 | peso=0.315
+  2025-12-13 | CER vs KVM | jupiler-pro-league | score=42.2 | peso=0.354
+  2025-12-21 | OHL vs CER | jupiler-pro-league | score=67.5 | peso=0.397
+  2025-12-26 | CER vs USG | jupiler-pro-league | score=36.2 | peso=0.445
+  2026-01-17 | WES vs CER | jupiler-pro-league | score=27.6 | peso=0.500
+  2026-01-25 | GNK vs CER | jupiler-pro-league | score=31.3 | peso=0.561
+  2026-02-15 | CER vs CLU | jupiler-pro-league | score=64.5 | peso=0.630
+  2026-04-11 | CER vs LAL | jupiler-pro-league | score=71.1 | peso=0.707
+  2026-04-19 | DEN vs CER | jupiler-pro-league | score=64.3 | peso=0.794
+  2026-04-24 | CER vs DEN | jupiler-pro-league | score=48.9 | peso=0.891
+  2026-08-08 | STA vs CER | jupiler-pro-league | score=39.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 49.75
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=21): 51.41 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 45.96 | Punteggio complessivo (granulari) medio: 3.80 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 1.87 (delta -0.29) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 15.23
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.5 - 67.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.83 (differenza: +1.40)
+Media score in casa: 57.76 | Media score fuori casa: 44.95
+Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.4
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 0.935 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.010
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.011
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 57.6 vs media 5 PRECEDENTI: 41.0): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T18:45
+Casa: Cercle Brugge KSV | Trasferta: Sint-Truidense VV
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.9 (range 31.6 - 67.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 48.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.19
+Punteggio REALE ottenuto in quella partita: 39.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      51.5    67.9    +16.4    15.3        NO
+   7        7      71.1    27.9    -43.2    14.1        NO
+   8        8      37.9    31.5     -6.4    19.8        SI
+   9        9      47.3    38.9     -8.4    20.9        SI
+  10       10      50.7    45.1     -5.6    19.9        SI
+  11       11      62.2    42.2    -20.0    18.4        NO
+  12       12      56.1    67.5    +11.4    17.3        SI
+  13       13      35.7    36.2     +0.5    17.8        SI
+  14       14      62.7    27.6    -35.1    17.5        NO
+  15       15      50.2    31.3    -18.9    18.3        NO
+  16       16      32.4    64.5    +32.1    18.0        NO
+  17       17      54.9    71.1    +16.2    18.5        SI
+  18       18      59.1    64.3     +5.2    19.7        SI
+  19       19      63.1    48.9    -14.2    19.2        SI
+  20       20      47.6    39.2     -8.4    18.0        SI
+
+MAE (errore assoluto medio): 16.13
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
