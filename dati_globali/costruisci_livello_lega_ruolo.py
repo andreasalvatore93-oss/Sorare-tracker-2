@@ -60,7 +60,24 @@ MIN_GIOCATORI = 30   # una media fatta da 8 persone non entra in produzione
 MIN_MINUTI = 60
 GIRI = 60            # i numeri si fermano molto prima, 60 e' abbondanza
 RUOLI = {'Goalkeeper': 'GK', 'Defender': 'DEF', 'Midfielder': 'MID', 'Forward': 'FWD'}
+
+# CARTELLE CHE SONO LO STESSO CAMPIONATO (13/08/2026, detto dall'utente).
+# 'giappone100' e' la J1 100 Year Vision: una competizione breve giocata
+# PRIMA della J1 che sta partendo ora, stesse identiche squadre. In
+# LEAGUE_DIR sono due cartelle diverse (servono alla pipeline), ma per il
+# livello di gioco sono una cosa sola: tenendole separate ogni giapponese
+# risultava "cambiato lega" a meta' 2026, e la correzione gli scattava
+# addosso per niente (caso reale trovato: hiiro-komori).
+# Chi legge la tabella NON deve saperlo: l'elenco finisce dentro il JSON
+# prodotto, sotto 'alias', e le voci sono gia' unite.
+LEGHE_EQUIVALENTI = {'giappone100': 'giappone'}
+
+
 DEST = os.path.join(REPO_ROOT, 'dati_globali', 'livello_lega_ruolo.json')
+
+
+def normalizza(cartella):
+    return LEGHE_EQUIVALENTI.get(cartella, cartella)
 
 
 def leghe_note():
@@ -119,7 +136,7 @@ def raccogli(leghe, fino_a=None):
                     continue
                 ruolo = RUOLI.get(v.get('positionTyped'))
                 if ruolo:
-                    celle[ruolo].append((slug, leghe[comp], v['score']))
+                    celle[ruolo].append((slug, normalizza(leghe[comp]), v['score']))
     return celle
 
 
@@ -173,6 +190,7 @@ def costruisci(fino_a=None):
     return {
         'per_lega_ruolo': per_lega_ruolo,
         'per_ruolo': per_ruolo,
+        'alias': LEGHE_EQUIVALENTI,
         'min_giocatori': MIN_GIOCATORI,
         'min_partite': MIN_PARTITE,
         'min_minuti': MIN_MINUTI,

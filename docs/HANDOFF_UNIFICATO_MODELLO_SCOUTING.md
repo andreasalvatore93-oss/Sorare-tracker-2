@@ -11,7 +11,16 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 12/08/2026 sera (Roma, CEST)** — giornata
+Ultimo aggiornamento: **sessione 13/08/2026 sera (Roma, CEST)** — giornata
+su scouting e livello dei campionati. Scouting: A+G dei portieri riallineato
+al generatore, carte della discovery a 50 per pagina con tre chiavi a
+rotazione, arene opzionali col criterio economico, e i 256 predict che passano
+il tetto GitHub non li sceglie piu' l'alfabeto. Modello: misurato che le leghe
+NON sono uguali (§8terdecies) — tabella pronta, interruttore SPENTO, decisione
+dell'utente di non toccare la produzione. Chi riparte legga
+`docs/handoff/PASSAGGIO_ORCHESTRATORE_2026-08-13_SERA.txt`.
+
+Aggiornamento precedente: **sessione 12/08/2026 sera (Roma, CEST)** — giornata
 di test end-to-end su GitHub Actions (GW4/GW5) che ha fatto emergere e
 chiuso 4 bug reali di produzione + aggiunto una feature nuova + un tipo
 formazione nuovo. Dettaglio completo: §8duodecies. **429 GW5 CHIUSO**
@@ -2435,6 +2444,51 @@ di nuovo questa voce.
 | `dati_globali/` | tutti gli archivi dati costruiti (§4) |
 
 ---
+
+## 8terdecies. IL LIVELLO DEI CAMPIONATI (13/08/2026) — misurato, NON in produzione
+
+**In due righe.** Il modello tratta tutte le 53 leghe come uguali (una sola
+calibrazione per ruolo). Non lo sono: chi sale di categoria perde **5,5 punti**
+a partita, chi scende ne guadagna 7, a parità di minuti — e non è ritorno alla
+media (3.795 giocatori rimasti nella loro lega non calano affatto). Costruita
+la tabella dei livelli e un interruttore, **spento**. Dettaglio integrale:
+`docs/handoff/HANDOFF_PRIOR_LEGA_2026-08-13.txt`.
+
+**DECISIONE DELL'UTENTE (13/08 sera): non si tocca la produzione.** I casi
+veri sono **14 su 178 carte** e solo 3-4 pesano (Vicente −18, Berhalter −16,
+Martín −13). Per quei pochi si valuta un **fix mirato** di 2-3 giornate
+(allinearli alla media del ruolo in quella lega, poi il modello fa il resto).
+Il filone strutturale che l'utente vuole aprire è un altro — **correlazioni
+intralega fra squadre avversarie** (attacco di A contro difesa di B nello
+stesso campionato): vedi
+`docs/handoff/PASSAGGIO_ORCHESTRATORE_2026-08-13_SERA.txt`, sezione B.
+
+**Il numero che ha cambiato le priorità** — la memoria del modello
+(`HALF_LIFE_GAMES`) è 6 partite per FWD/GK ma **25 per i MID e 30 per i DEF**.
+Quanto si corregge da solo chi ha cambiato lega:
+
+| partite nella lega nuova | FWD | MID |
+|---|---|---|
+| 2 | 21% | 5% |
+| 6 | 50% | 15% |
+| 10 | 69% | 24% |
+
+Gli attaccanti si raddrizzano da soli in un mese e mezzo; **centrocampisti e
+difensori restano sbagliati per mesi**. Il valore di una correzione di lega sta
+lì, non sugli attaccanti.
+
+**Cosa è pronto e cosa no.** Tabella `dati_globali/livello_lega_ruolo.json`
+(67 celle, stimata separando la bravura dei giocatori dall'effetto della lega —
+la media grezza è sbagliata e confonde le due cose), rigenerabile con
+`dati_globali/costruisci_livello_lega_ruolo.py` a zero query. Flag
+`PRIOR_LEGA_ENABLED` (default `'0'`) **solo in `test_mls_fwd_all.py`**, non
+propagato. Tre modi di usarla provati, tutti e tre bocciati sulle metriche
+aggregate; **conto in sospeso**: sui 704 punti che la correzione tocca davvero
+l'errore invece migliora (14,56 → 14,27), e le due misure non tornano — non
+usare nessuno dei due numeri per decidere finché non si capisce quale è
+sbagliata. Corretti anche 3 difetti del banco di prova
+(`backtest_arene_previsioni.py`), fra cui la lega scritta a mano `'mls'` per
+tutti i giocatori del mondo.
 
 ## 10bis. COSE DA FARE — riscritto il 09/08 notte, ripulito 11/08 (verificato contro il codice, non a memoria)
 

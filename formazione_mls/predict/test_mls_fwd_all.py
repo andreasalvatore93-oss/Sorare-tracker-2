@@ -208,7 +208,15 @@ PRIOR_LEGA_MODO = os.environ.get('PRIOR_LEGA_MODO', 'ancora')
 PRIOR_LEGA_K = float(os.environ.get('PRIOR_LEGA_K', '0.21'))
 
 
-def scarto_lega(ruolo, lega, quota_altra_lega=None):
+def _lega_normalizzata(lega):
+    """Cartelle che sono lo stesso campionato -> una sola (giappone100 ->
+    giappone, la J1 100 Year Vision e' la J1 con le stesse squadre). L'elenco
+    sta dentro la tabella, sotto 'alias', scritto da chi la costruisce: qui
+    non si duplica niente, si legge."""
+    return ((_PRIOR_LEGA.get('alias') or {}).get(lega, lega)) if lega else lega
+
+
+def scarto_lega(ruolo, lega, quota_altra_lega=None, lega_storico=None):
     """Quanto quella lega e' piu' generosa (o avara) della media delle leghe,
     per quel ruolo. 0.0 se il flag e' spento, se la lega non e' in tabella o
     se la cella ha troppe poche partite: fallback esplicito, mai un numero
@@ -227,9 +235,18 @@ def scarto_lega(ruolo, lega, quota_altra_lega=None):
     # volte (misurato: mezzo punto di troppo). Qui si sta zitti.
     if PRIOR_LEGA_MODO == 'diretto':
         return 0.0
-    if quota_altra_lega is None or quota_altra_lega < PRIOR_LEGA_SOGLIA:
+    # IL CANCELLO (13/08/2026, seconda versione). Prima era "quota di storico
+    # in un'altra competizione >= soglia": sbagliato, quella quota schizza al
+    # 100% quando la partita da prevedere e' di COPPA (li' tutto il
+    # campionato risulta 'altra competizione'). Su 1.187 attaccanti prendeva
+    # 231 casi e ne correggeva 16. Il confronto diretto fra la lega dello
+    # storico e quella della partita coglie invece solo i cambi veri -- e si
+    # spegne da solo appena il giocatore accumula partite nella lega nuova,
+    # perche' allora lo storico diventa suo. La quota resta come diagnostica.
+    if not lega_storico or _lega_normalizzata(lega_storico) == _lega_normalizzata(lega):
         return 0.0
-    cella = (_PRIOR_LEGA.get('per_lega_ruolo') or {}).get(f'{lega}|{ruolo}')
+    cella = (_PRIOR_LEGA.get('per_lega_ruolo') or {}).get(
+        f'{_lega_normalizzata(lega)}|{ruolo}')
     base = (_PRIOR_LEGA.get('per_ruolo') or {}).get(ruolo)
     if not cella or not base:
         return 0.0
@@ -1662,7 +1679,8 @@ def livello_lega(ruolo, lega):
     None se non lo sappiamo (lega ignota o cella sotto soglia)."""
     if not lega:
         return None
-    cella = (_PRIOR_LEGA.get('per_lega_ruolo') or {}).get(f'{lega}|{ruolo}')
+    cella = (_PRIOR_LEGA.get('per_lega_ruolo') or {}).get(
+        f'{_lega_normalizzata(lega)}|{ruolo}')
     base = (_PRIOR_LEGA.get('per_ruolo') or {}).get(ruolo)
     if not cella or not base:
         return None
@@ -1677,8 +1695,8 @@ def riporta_su_lega(previsione, ruolo, lega_nuova, lega_storico, quota_altra_leg
     ignota, o le due leghe coincidono (allora non c'e' niente da correggere).
     Nessun numero inventato, mai."""
     if (not PRIOR_LEGA_ENABLED or PRIOR_LEGA_MODO != 'diretto'
-            or quota_altra_lega is None or quota_altra_lega < PRIOR_LEGA_SOGLIA
-            or not lega_nuova or not lega_storico or lega_nuova == lega_storico):
+            or not lega_nuova or not lega_storico
+            or _lega_normalizzata(lega_nuova) == _lega_normalizzata(lega_storico)):
         return previsione
     liv_nuova = livello_lega(ruolo, lega_nuova)
     liv_vecchia = livello_lega(ruolo, lega_storico)
@@ -1755,7 +1773,8 @@ def compute_score_atteso_fwd(scores, is_home_flags,
     # il giocatore gioca ADESSO. A flag spento scarto_lega() vale 0.0 e questa
     # riga non cambia un decimale.
     media_ruolo_prior = max(0.0, media_ruolo_prior
-                            + scarto_lega('FWD', league, quota_altra_lega))
+                            + scarto_lega('FWD', league, quota_altra_lega,
+                                          lega_storico))
     grezzo_nuovo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     if offensive_values is not None and next_opponent_team_slug:
         _offensive_hist = weighted_mean(offensive_values, weights_det)

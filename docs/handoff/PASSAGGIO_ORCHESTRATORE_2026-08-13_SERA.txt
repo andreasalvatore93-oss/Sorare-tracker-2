@@ -1,0 +1,180 @@
+PASSAGGIO DI CONSEGNE -- NUOVO ORCHESTRATORE
+Scritto il 13/08/2026 sera (Roma, CEST). L'utente riparte da un altro
+account fra poco: questo file dice da dove.
+
+
+LEGGI PRIMA QUESTO, IN LINGUA DA BAR
+====================================
+Oggi si e' scoperto e misurato che il modello tratta tutti i campionati come
+se fossero uguali. Non lo sono: un giocatore che sale di categoria perde 5,5
+punti a partita, chi scende ne guadagna 7. E' vero, e' grosso, e' verificato
+fuori campione. MA i giocatori a cui la cosa si applica DAVVERO, in questo
+momento, sono quattordici su centosettantotto -- e tre o quattro contano sul
+serio. L'utente ha deciso: NON si tocca la produzione per una manciata di
+casi. Si fanno due cose, in quest'ordine di interesse per lui:
+  A) un fix MIRATO su quei pochi nomi, per due o tre giornate;
+  B) un filone NUOVO e piu' ambizioso: cercare correlazioni INTRALEGA fra
+     squadre avversarie (l'attacco di una contro la difesa dell'altra).
+Il B e' quello che gli interessa di piu'. Il A e' un cerotto.
+
+
+DOVE STA TUTTO
+==============
+docs/handoff/HANDOFF_PRIOR_LEGA_2026-08-13.txt   il filone di oggi, integrale
+dati_globali/livello_lega_ruolo.json             il livello di ogni lega/ruolo
+dati_globali/costruisci_livello_lega_ruolo.py    come si rigenera (zero query)
+formazione_mls/predict/test_mls_fwd_all.py       PRIOR_LEGA, SPENTO, solo FWD
+backtest_arene_previsioni.py                     3 fix al banco di prova
+Commit: 9115329ded, ba1313fe1f, 933945affd.
+
+
+COSA E' GIA' DECISO -- non rifarlo, non riaprirlo
+=================================================
+1. Il fenomeno esiste: -5,5 punti salendo di categoria, +7 scendendo, a
+   parita' di minuti. Controllo contro 3.795 giocatori rimasti nella stessa
+   lega: quelli non calano affatto. NON e' ritorno alla media.
+2. Fuori campione (120 cambi mai visti): "fara' la media del ruolo nella
+   lega nuova" sbaglia 5,5 punti contro i 7,0 di "gli porto avanti la sua
+   media". Del vantaggio che aveva nella lega vecchia si trasferisce ~il 20%.
+3. La tabella dei livelli si stima separando la bravura dei giocatori
+   dall'effetto della lega (NON con la media grezza: quella confonde "lega
+   generosa" con "in cache abbiamo i forti di quella lega" -- errore gia'
+   fatto e corretto). Minimo 200 partite E 30 giocatori per cella, 67 celle.
+   Attaccanti: Premier -9,5, Serie A -5,7, Bundesliga -5,6, Liga -4,2,
+   Segunda +0,2, MLS +1,9 (scarti dalla lega media).
+4. giappone100 e giappone SONO LA STESSA LEGA (detto dall'utente: la J1 100
+   Year Vision e' una competizione breve giocata prima, stesse squadre).
+   L'alias e' dentro la tabella, sotto 'alias'.
+5. I PORTIERI restano fuori: il loro voto dipende quasi solo dal clean sheet
+   e le celle affidabili sono pochissime.
+6. Tre modi di usare la tabella sono stati provati e BOCCIATI sulle metriche
+   aggregate (MAE+correlazione+lift insieme, regola CLAUDE.md). Sui 704
+   punti che la correzione tocca davvero l'errore invece MIGLIORA (14,56 ->
+   14,27). Le due misure non tornano: c'e' un conto in sospeso, vedi sotto.
+
+
+LA COSA PIU' IMPORTANTE CHE HA CAMBIATO LE PRIORITA'
+====================================================
+La memoria del modello (HALF_LIFE_GAMES) e' diversa per ruolo:
+   attaccanti e portieri 6 partite | centrocampisti 25 | difensori 30
+Quanto si corregge DA SOLO uno che ha cambiato lega:
+   partite nella lega nuova    attaccanti    centrocampisti
+        2                          21%             5%
+        6                          50%            15%
+       10                          69%            24%
+Quindi: gli ATTACCANTI si raddrizzano da soli in un mese e mezzo, i
+CENTROCAMPISTI e i DIFENSORI no -- restano sbagliati per mesi. Vicente
+(FWD, gli servono -18) dopo due giornate ne ha recuperati 4; Berhalter (MID,
+-16) ne ha recuperati 0,8 e dopo dieci giornate siamo a 4.
+Morale: il valore della correzione sta su MID e DEF, non su FWD.
+
+
+A) IL FIX MIRATO CHE L'UTENTE VUOLE
+===================================
+Idea sua, testuale: "per almeno 2/3 giornate, invece di cannare la
+previsione, allineiamoli semplicemente con lo shrinkage alla media del ruolo
+di quel campionato, e poi il modello fara' il resto".
+Cioe': per i pochi nomi individuati, per le prime 2-3 giornate nella lega
+nuova, la previsione diventa (circa) il livello del ruolo in quella lega,
+invece del numero gonfiato che esce oggi. Poi lo shrinkage/half-life fa il
+resto da solo.
+I NOMI DI QUESTA GIORNATA (14 su 178 carte del report run209, finestra di un
+anno -- gli altri 164 non sono toccati):
+   giocatore                  da        -> a             atteso  corretto
+   inigo-vicente-elorduy      spagna2   -> spagna   FWD    70      51,7
+   sebastian-berhalter        mls       -> inghilterra2 MID 66     49,8
+   andres-martin-garcia       spagna2   -> spagna   FWD    63      50,2
+   doguhan-aral-simsir        danimarca -> turchia  MID    61       --
+   sergi-altimira-clavell     spagna    -> portogallo MID  58      52,7
+   jakob-breum-martinsen      olanda    -> francia2 FWD    56      56,3
+   maximilian-arfsten         mls       -> inghilterra2 FWD 56     50,6
+   emin-bayram                belgio    -> turchia  DEF    56      55,0
+   lucas-halter               brasile   -> mls      DEF    54      54,9
+   joseph-amankwaah-opoku     belgio    -> inghilterra2 FWD 53     49,8
+   ugo-raghouber              spagna    -> inghilterra2 MID 52     47,9
+   adria-altimira-reynaldos   spagna2   -> spagna   DEF    52      47,0
+   tjark-ernst                germania2 -> olanda   GK     47       --
+   federico-ravaglia          italia    -> inghilterra2 GK 44       --
+L'utente ha controllato la lista a occhio e ha confermato: Aaronson NON deve
+esserci (gioca in MLS da un pezzo, e infatti con la finestra di un anno esce
+da solo), Arfsten e Simsir SI'. Buona validazione umana.
+I "--" sono casi in cui la correzione non si puo' calcolare: manca la cella
+danimarca|MID e mancano i portieri (olanda|GK, germania2|GK,
+inghilterra2|GK). SE un giorno si popola la cache di leghe non possedute,
+quelli sono i buchi che costano casi veri.
+ATTENZIONE prima di implementare: la finestra da guardare e' quella del
+MODELLO (365 giorni), non tutto lo storico in cache. Contando tutto lo
+storico i casi diventano 20 e ci finisce dentro gente che ha traslocato tre
+anni fa (errore gia' fatto oggi, corretto dall'utente che conosce i nomi).
+
+
+B) IL FILONE NUOVO -- CORRELAZIONI INTRALEGA (quello che gli interessa)
+======================================================================
+Richiesta testuale dell'utente, riportata il piu' fedelmente possibile:
+
+  "vuole esplorare un tipo di correzione piu' strutturale, che tocca anche
+  chi ha cambiato, ma non solo. Vedere se esiste una correlazione INTRALEGA,
+  ad esempio fra squadre del medesimo campionato: media attaccanti titolari
+  della squadra A nelle ultime 5/10 partite CONTRO media voto dei difensori
+  della squadra avversaria nelle ultime 5/10 partite, e vedere se ci sono
+  correlazioni di questo tipo. Focus non standard, bensi' INTRALEGA.
+  Esempio pratico: voto medio degli attaccanti del Real Madrid nelle ultime
+  5/10 giornate contro voto medio dei difensori della squadra che affronta,
+  nelle ultime 5/10. Un confronto intralega fra squadre avversarie, per
+  vedere se se ne ricava un pattern."
+
+  "Dove il confronto non si puo' fare, resta tutto com'e' (esempio: Racing
+  Santander neopromosso contro Villarreal -- il Racing non ha uno storico in
+  quella lega, quindi niente confronto e nessuna correzione)."
+
+Note dell'orchestratore uscente su questo punto, da verificare non da credere:
+- il dato c'e' gia' tutto in cache (game-log con competition, homeTeam,
+  awayTeam, ruolo per partita, minuti): si fa a ZERO query;
+- esiste gia' `opponent_strength.py` con funzioni per-lega e per-ruolo
+  (opponent_lambda_multiplier, fwd_offense_granular_delta,
+  gk_def_pen_area_granular_delta) e i predict le usano gia': PRIMA di
+  costruire qualcosa di nuovo, guardare cosa fa gia' quel modulo, per non
+  rifare una cosa che esiste (regola CLAUDE.md: git log sul tema);
+- la trappola annunciata: dentro una lega il livello e' costante per tutti,
+  quindi una correzione per-lega non riordina nessuno. Un confronto
+  ATTACCO-DIFESA fra due squadre della stessa lega invece SI', ed e'
+  esattamente il motivo per cui questa strada e' piu' promettente di quella
+  di oggi. Vale la pena farla.
+
+
+CONTI IN SOSPESO (onesti, non nascosti)
+=======================================
+1. DUE MISURE CHE NON TORNANO. Sull'aggregato (23.173 punti) la correzione
+   peggiora il MAE di +0,12; sui 704 punti che tocca davvero lo migliora
+   (14,56 -> 14,27). Con lo stesso campione e lo stesso n. Una delle due e'
+   sbagliata e non si sa quale: la verifica era in coda quando la sessione e'
+   finita. NON usare nessuno dei due numeri per decidere finche' non torna.
+2. LOOK-AHEAD della tabella dei livelli: non misurato. Lo script accetta gia'
+   un argomento `fino_a` per costruirla solo sul passato. Il precedente
+   GK_ATT_AVV aveva trovato l'effetto trascurabile, ma li' e' stato misurato.
+3. Il banco di prova valuta anche le COPPE, la produzione predice solo
+   giornate di campionato: il backtest ci mette dentro casi che in produzione
+   non esistono.
+4. PRIOR_LEGA e' implementato SOLO in formazione_mls/predict/
+   test_mls_fwd_all.py (FWD). Non propagato (propaga_modello.py non lanciato)
+   ed e' giusto cosi' finche' non si decide.
+
+
+COSE CHE HO SBAGLIATO OGGI, cosi' non le rifai
+==============================================
+- Ho costruito la tabella dei livelli con la media grezza per lega. Sbagliata:
+  confonde la generosita' della lega con la forza di chi ci gioca. L'ha vista
+  l'utente ("se abbiamo solo 3 attaccanti in Cina e sono tutti da 60+, il test
+  non risulta falsato?"). Rifatta separando bravura e lega.
+- Ho detto all'utente che per Berhalter il cambio MLS->Championship era
+  "laterale, nessuna correzione". Falso: veniva dalla tabella grezza. Con
+  quella pulita e' la seconda correzione piu' grossa della lista (-16).
+- Ho contato i casi su TUTTO lo storico invece che sulla finestra di un anno
+  del modello: ci finiva Aaronson, che non c'entra niente. Corretto
+  dall'utente a occhio.
+- Il primo cancello ("meta' dello storico in un'altra competizione") non
+  selezionava chi cambia lega ma chi gioca una COPPA. Sostituito col
+  confronto diretto fra le due leghe.
+Nessuna di queste e' stata trovata da una metrica: le ha trovate l'utente
+guardando nomi che conosce. Vale la pena mostrargli sempre i casi coi nomi,
+non solo i numeri aggregati.
