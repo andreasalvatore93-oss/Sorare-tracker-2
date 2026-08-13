@@ -83,6 +83,31 @@ query AllScoresGrade($slug: String!, $first: Int!) {
 _lock = threading.Lock()
 _giro = collections.Counter()
 
+# FRENO DI RITMO (aggiunto 13/08/2026 dopo un 429 persistente su 3810 slug).
+# Il tetto Sorare non e' una velocita' istantanea ma un CREDITO che si
+# ricarica: 825 richieste di fila passano senza un 429 (misurato), 3810 lo
+# esauriscono e da li' in poi risponde 429 a tutto, con Retry-After da 150 a
+# 290 secondi. Abbassare i thread NON basta -- i thread regolano quante
+# richieste sono in volo insieme, non quante ne parti al minuto. Serve un
+# tetto sul RITMO SOSTENUTO, che e' questo.
+LIMITE_RPM = int(os.environ.get('GRADE_RPM', '450'))   # con 3 chiavi il tetto
+                                                       # documentato e' 600/min
+_partenze = collections.deque()
+
+
+def _aspetta_il_turno():
+    """Non parte piu' di LIMITE_RPM richieste in una finestra di 60 secondi."""
+    while True:
+        with _lock:
+            ora = time.time()
+            while _partenze and ora - _partenze[0] > 60.0:
+                _partenze.popleft()
+            if len(_partenze) < LIMITE_RPM:
+                _partenze.append(ora)
+                return
+            attesa = 60.0 - (ora - _partenze[0]) + 0.05
+        time.sleep(max(0.05, attesa))
+
 
 def _headers():
     h = {'Content-Type': 'application/json', 'Accept': 'application/json',
@@ -102,17 +127,34 @@ def righe_di(slug, partite):
     if not COOKIE or not CSRF:
         return None, 'no_credenziali'
     payload = {'query': QUERY, 'variables': {'slug': slug, 'first': partite}}
-    for tentativo in range(3):
+    for tentativo in range(6):
+        _aspetta_il_turno()
         try:
             r = g._http_session.post(g.GRAPHQL_URL, json=payload,
                                      headers=_headers(), timeout=30)
         except Exception as e:
-            if tentativo == 2:
+            if tentativo == 5:
                 return None, f'rete: {e}'
             time.sleep(1 + tentativo * 2)
             continue
         if r.status_code == 429:
-            time.sleep(5 + tentativo * 10)
+            # SI RISPETTA Retry-After. Prima qui c'era una pausa fissa di
+            # 5 e poi 15 secondi: contro un credito esaurito che vuole 150-290
+            # secondi non serve a niente, e dopo 3 tentativi lo script si
+            # arrendeva dichiarando "429 persistente" un problema che era solo
+            # un'attesa troppo corta. Errore trovato il 13/08 su un lotto da
+            # 3810 slug.
+            attesa = 60.0
+            try:
+                attesa = float(r.headers.get('Retry-After') or 60.0)
+            except ValueError:
+                pass
+            attesa = min(attesa, 300.0) + 1.0
+            with _lock:
+                _partenze.clear()   # il credito e' finito: si riparte da zero
+            print(f'  429 su {slug}: aspetto {attesa:.0f}s '
+                  f'(tentativo {tentativo + 1}/6)', flush=True)
+            time.sleep(attesa)
             continue
         if r.status_code != 200:
             return None, f'HTTP {r.status_code}: {r.text[:120]}'
@@ -203,6 +245,16 @@ def main():
     nuove = []
     falliti = {}
     fatti = 0
+    salvate = 0
+
+    def salva():
+        """Scrittura atomica: prima su un file accanto, poi si rinomina. Se il
+        processo muore a meta' scrittura, l'indice vecchio resta intero."""
+        tmp = PATH_INDICE + '.tmp'
+        with open(tmp, 'w', encoding='utf-8') as fh:
+            json.dump(esistenti + nuove, fh, ensure_ascii=False, indent=1)
+        os.replace(tmp, PATH_INDICE)
+
     with cf.ThreadPoolExecutor(max_workers=args.thread) as ex:
         futuri = {ex.submit(righe_di, s, args.partite): s for s in da_fare}
         for fut in cf.as_completed(futuri):
@@ -217,13 +269,25 @@ def main():
                     if k not in chiavi:
                         chiavi.add(k)
                         nuove.append(r)
-            if fatti % 100 == 0:
+            # CHECKPOINT (13/08/2026): prima si salvava SOLO alla fine, quindi
+            # un run interrotto -- o killato perche' sembrava impantanato --
+            # buttava via tutto il lavoro gia' fatto. Ora l'indice cresce per
+            # gradi: si puo' fermare e ripartire, e il salto dei gia' completi
+            # fa ripartire da dove si era arrivati.
+            if fatti % 200 == 0:
+                salva()
+                salvate = len(nuove)
+                print('  ... %d/%d giocatori, %d righe nuove (salvate), %.0fs'
+                      % (fatti, len(da_fare), len(nuove), time.time() - t0),
+                      flush=True)
+            elif fatti % 50 == 0:
                 print('  ... %d/%d giocatori, %d righe nuove, %.0fs'
-                      % (fatti, len(da_fare), len(nuove), time.time() - t0))
+                      % (fatti, len(da_fare), len(nuove), time.time() - t0),
+                      flush=True)
 
-    esistenti.extend(nuove)
-    with open(PATH_INDICE, 'w', encoding='utf-8') as fh:
-        json.dump(esistenti, fh, ensure_ascii=False, indent=1)
+    salva()
+    del salvate
+    esistenti = esistenti + nuove
 
     print()
     print('righe NUOVE aggiunte: %d   (indice: %d -> %d)'
