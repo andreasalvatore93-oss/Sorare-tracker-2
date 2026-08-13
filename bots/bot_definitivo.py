@@ -1257,9 +1257,15 @@ def graphql_query(query, variables=None, max_retries=3, extra_headers=None, crit
         'Referer': 'https://sorare.com/',
         'Accept-Language': 'it',
         'sorare-client': 'Web',
-        'sorare-version': os.environ.get('SORARE_VERSION', '20260717144535'),
-        'sorare-build': os.environ.get(
-            'SORARE_BUILD', '41952aef67694959421f5e001684878b72a52225'),
+        # 'or' e non il secondo argomento di get (13/08/2026): il workflow passa
+        # SEMPRE queste due variabili, e quando il secret non esiste le passa
+        # VUOTE. get('X', 'riserva') vede una variabile che c'e' e torna la
+        # stringa vuota, quindi il valore di riserva non e' mai entrato in gioco
+        # e i due header partivano vuoti -- proprio quelli che servono a farci
+        # riconoscere come client Web legittimo.
+        'sorare-version': os.environ.get('SORARE_VERSION') or '20260717144535',
+        'sorare-build': (os.environ.get('SORARE_BUILD')
+                         or '41952aef67694959421f5e001684878b72a52225'),
         'sec-fetch-dest': 'empty',
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-site',
@@ -1269,7 +1275,27 @@ def graphql_query(query, variables=None, max_retries=3, extra_headers=None, crit
     if extra_headers and isinstance(extra_headers, dict):
         headers.update(extra_headers)
     payload = {"query": query, "variables": variables or {}}
-    for attempt in range(max_retries):
+    # PRIMA DI DORMIRE, CAMBIA CHIAVE (13/08/2026). Un 429 dice che QUELLA
+    # chiave ha esaurito il suo minuto, non che siano esaurite tutte: i tetti
+    # delle tre chiavi sono indipendenti. Gli header si costruiscono una volta
+    # sola fuori da questo ciclo, quindi finora ogni ritentativo ripartiva con
+    # la chiave gia' bocciata e l'unica cosa che poteva fare era aspettare 2,
+    # poi 4, poi 8 secondi -- un'eternita' dentro una raffica, dove la carta se
+    # la prende un altro bot in millisecondi.
+    #
+    # Le chiavi di riserva si tengono in una LISTA di quelle non ancora
+    # provate, invece di pescare dal giro tondo globale: il giro e' condiviso
+    # fra tutti i thread e la sua posizione non ha niente a che vedere con
+    # questa chiamata, quindi puo' restituire la stessa chiave appena bocciata
+    # e lasciare la terza mai provata. Trovato da un test prima di committare.
+    chiavi_di_riserva = [k for k in _APIKEYS if k != headers.get('APIKEY')]
+    # Le prove con un'altra chiave non consumano il budget delle attese: sono
+    # gratis (nessun sonno) e vanno tentate tutte prima di rassegnarsi.
+    tentativi = 0
+    attese = 0
+    limite_tentativi = max_retries + len(chiavi_di_riserva)
+    while tentativi < limite_tentativi:
+        tentativi += 1
         _graphql_throttle(critical=critical)
         if _HAS_CURL_CFFI:
             r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
@@ -1277,9 +1303,18 @@ def graphql_query(query, variables=None, max_retries=3, extra_headers=None, crit
             r = _http_session.post(GRAPHQL_URL, json=payload, headers=headers, timeout=15)
         if r.status_code == 429:
             _graphql_last_429_ts[0] = time.time()
-            wait_seconds = min((2 ** attempt) * 2, 8.0)
-            log(f"[rate limit] HTTP 429 (tentativo {attempt + 1}/{max_retries}), "
-                f"attendo {wait_seconds:.1f}s...")
+            if chiavi_di_riserva:
+                headers['APIKEY'] = chiavi_di_riserva.pop(0)
+                log(f"[rate limit] HTTP 429 (tentativo {tentativi}), riprovo "
+                    f"SUBITO con un'altra chiave ({len(chiavi_di_riserva)} "
+                    f"ancora da provare)")
+                continue
+            if attese >= max_retries:
+                break
+            wait_seconds = min((2 ** attese) * 2, 8.0)
+            attese += 1
+            log(f"[rate limit] HTTP 429 (attesa {attese}/{max_retries}), tutte "
+                f"le chiavi esaurite, attendo {wait_seconds:.1f}s...")
             time.sleep(wait_seconds)
             continue
         return r.json()
