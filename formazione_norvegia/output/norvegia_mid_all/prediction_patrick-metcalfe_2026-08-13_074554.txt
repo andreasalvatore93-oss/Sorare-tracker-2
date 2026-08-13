@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-13T07:45:54.286723Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) patrick-metcalfe: 53 pt attesi (36-75)
+   SQUADRA: hamkam-hamar | AVVERSARIO: brann-bergen
+======================================================================
+
+######################################################################
+# GIOCATORE: patrick-metcalfe
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: patrick-metcalfe (squadra: hamkam-hamar)
+Generato: 2026-08-13T07:45:54.285682Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 26
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: eliteserien (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-31 | FFK vs HAU | eliteserien | score=28.0 | peso=0.590
+  2025-09-13 | MOL vs FFK | eliteserien | score=45.3 | peso=0.607
+  2025-09-20 | FFK vs BRY | eliteserien | score=31.4 | peso=0.624
+  2025-09-28 | BRA vs FFK | eliteserien | score=45.5 | peso=0.642
+  2025-10-01 | KFU vs FFK | eliteserien | score=35.4 | peso=0.660
+  2025-10-05 | FFK vs HAM | eliteserien | score=51.2 | peso=0.678
+  2025-10-19 | GOD vs FFK | eliteserien | score=58.6 | peso=0.697
+  2025-10-26 | SAN vs FFK | eliteserien | score=42.4 | peso=0.717
+  2026-04-19 | HAM vs KFU | eliteserien | score=48.8 | peso=0.737
+  2026-04-26 | HAM vs STA | eliteserien | score=41.3 | peso=0.758
+  2026-05-03 | KRI vs HAM | eliteserien | score=35.7 | peso=0.779
+  2026-05-08 | HAM vs VIF | eliteserien | score=52.1 | peso=0.801
+  2026-05-16 | FFK vs HAM | eliteserien | score=39.1 | peso=0.824
+  2026-05-25 | HAM vs LSK | eliteserien | score=65.7 | peso=0.847
+  2026-05-29 | AAL vs HAM | eliteserien | score=100.0 | peso=0.871
+  2026-07-12 | SAN vs HAM | eliteserien | score=74.7 | peso=0.895
+  2026-07-22 | BOD vs HAM | eliteserien | score=30.4 | peso=0.920
+  2026-07-26 | S08 vs HAM | eliteserien | score=39.0 | peso=0.946
+  2026-07-31 | VIF vs HAM | eliteserien | score=74.0 | peso=0.973
+  2026-08-09 | HAM vs AAL | eliteserien | score=73.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 52.11
+  di cui Punteggio decisivo (level_score) medio: 40.80 | Punteggio complessivo (granulari) medio: 11.30 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 44.13 (delta +3.32)
+  Efficacia offensiva condizionata: delta venue +0.15, delta avversario -0.05 | Passaggio condizionato: delta venue +0.44, delta avversario -0.54 | Gol subiti condizionato: delta venue -0.55, delta avversario +0.23 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 18.84
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.4 - 74.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.90 (differenza: +3.94)
+Media score in casa: 56.28 | Media score fuori casa: 55.51
+Fattore casa/trasferta applicato: 1.006 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.7
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.185 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.994
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.001
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.995
+Fattore gol subiti (goals_conceded, con cap): 0.993
+Fattore trend (media ultime 5: 58.6 vs media 5 PRECEDENTI: 59.3): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T15:00
+Casa: SK Brann | Trasferta: Hamarkameratene Fotball
+Competizione: eliteserien
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.8 (range 36.1 - 74.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.64
+Punteggio REALE ottenuto in quella partita: 73.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +22.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      39.7    58.6    +18.9     9.2        NO
+   7        7      42.6    42.4     -0.2    11.3        SI
+   8        8      44.1    48.8     +4.7    10.5        SI
+   9        9      50.2    41.3     -8.9    10.1        SI
+  10       10      44.7    35.7     -9.0     9.5        SI
+  11       11      37.7    52.1    +14.4     9.4        NO
+  12       12      40.6    39.1     -1.5     9.4        SI
+  13       13      31.0    65.7    +34.7     9.1        NO
+  14       14      50.1   100.0    +49.9    11.2        NO
+  15       15      51.8    74.7    +22.9    19.7        NO
+  16       16      32.4    30.4     -2.0    20.3        SI
+  17       17      43.3    39.0     -4.3    20.4        SI
+  18       18      48.1    74.0    +25.9    19.9        NO
+  19       19      60.0    73.5    +13.5    20.5        SI
+
+MAE (errore assoluto medio): 15.05
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 57.1%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
