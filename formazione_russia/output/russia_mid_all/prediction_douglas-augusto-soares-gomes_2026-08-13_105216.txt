@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-13T10:52:16.425592Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) douglas-augusto-soares-gomes: 51 pt attesi (38-71)
+   SQUADRA: krasnodar-krasnodar | AVVERSARIO: akhmat-grozny-groznyi
+======================================================================
+
+######################################################################
+# GIOCATORE: douglas-augusto-soares-gomes
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: douglas-augusto-soares-gomes (squadra: krasnodar-krasnodar)
+Generato: 2026-08-13T10:52:16.424864Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 29
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: russian-premier-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-24 | KRY vs KRA | russian-premier-league | score=70.3 | peso=0.574
+  2025-08-31 | CSK vs KRA | russian-premier-league | score=54.8 | peso=0.590
+  2025-09-13 | KRA vs AKR | russian-premier-league | score=51.7 | peso=0.607
+  2025-09-21 | KRA vs ZEN | russian-premier-league | score=44.3 | peso=0.624
+  2025-09-27 | ROS vs KRA | russian-premier-league | score=49.2 | peso=0.642
+  2025-10-04 | KRA vs AKH | russian-premier-league | score=65.1 | peso=0.660
+  2025-10-18 | MAK vs KRA | russian-premier-league | score=55.9 | peso=0.678
+  2025-10-26 | KRA vs RUB | russian-premier-league | score=48.2 | peso=0.697
+  2025-11-02 | KRA vs SPM | russian-premier-league | score=25.3 | peso=0.717
+  2025-11-23 | LOK vs KRA | russian-premier-league | score=71.5 | peso=0.737
+  2025-11-30 | KRA vs KRY | russian-premier-league | score=84.6 | peso=0.758
+  2025-12-07 | KRA vs CSK | russian-premier-league | score=61.5 | peso=0.779
+  2026-02-28 | KRA vs ROS | russian-premier-league | score=40.5 | peso=0.801
+  2026-03-08 | RUB vs KRA | russian-premier-league | score=37.8 | peso=0.824
+  2026-03-14 | SOC vs KRA | russian-premier-league | score=74.4 | peso=0.847
+  2026-03-21 | KRA vs NZN | russian-premier-league | score=24.4 | peso=0.871
+  2026-04-12 | ZEN vs KRA | russian-premier-league | score=39.4 | peso=0.895
+  2026-05-17 | KRA vs ORE | russian-premier-league | score=52.1 | peso=0.920
+  2026-07-26 | RUB vs KRA | russian-premier-league | score=53.3 | peso=0.946
+  2026-08-02 | KRA vs FAK | russian-premier-league | score=41.2 | peso=0.973
+  2026-08-09 | SPM vs KRA | russian-premier-league | score=72.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 52.94
+  di cui Punteggio decisivo (level_score) medio: 37.79 | Punteggio complessivo (granulari) medio: 15.15 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 34.82 (delta -2.96)
+  Efficacia offensiva condizionata: delta venue -0.31, delta avversario +0.22 | Passaggio condizionato: delta venue -1.37, delta avversario +0.63 | Gol subiti condizionato: delta venue +0.17, delta avversario +0.39 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.84
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.4 - 72.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.34 (differenza: +2.50)
+Media score in casa: 48.99 | Media score fuori casa: 57.88
+Fattore casa/trasferta applicato: 0.994 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.1
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 1.007
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.992
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.004
+Fattore trend (media ultime 5: 51.9 vs media 5 PRECEDENTI: 47.5): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T17:45
+Casa: FK Krasnodar | Trasferta: FK Akhmat Grozny
+Competizione: russian-premier-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.3 (range 37.7 - 70.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.67
+Punteggio REALE ottenuto in quella partita: 72.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +20.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      47.7    55.9     +8.2     9.9        SI
+   7        7      56.7    48.2     -8.5     9.1        SI
+   8        8      44.1    25.3    -18.8     8.9        NO
+   9        9      60.1    71.5    +11.4    13.6        SI
+  10       10      57.9    84.6    +26.7    14.6        NO
+  11       11      51.5    61.5    +10.0    17.3        SI
+  12       12      54.4    40.5    -13.9    16.6        SI
+  13       13      56.7    37.8    -18.9    16.6        NO
+  14       14      69.6    74.4     +4.8    16.8        SI
+  15       15      69.1    24.4    -44.7    17.2        NO
+  16       16      39.8    39.4     -0.4    18.9        SI
+  17       17      54.0    52.1     -1.9    18.7        SI
+  18       18      52.3    53.3     +1.0    18.0        SI
+  19       19      64.9    41.2    -23.7    17.4        NO
+  20       20      42.1    72.2    +30.1    17.1        NO
+
+MAE (errore assoluto medio): 14.87
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
