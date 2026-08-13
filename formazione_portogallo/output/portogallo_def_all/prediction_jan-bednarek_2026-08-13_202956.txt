@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-13T06:43:44.263654Z
+Generato: 2026-08-13T20:29:56.002400Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) jan-bednarek: 59 pt attesi (41-79)
-   ORDINAMENTO: 64.87
+1) jan-bednarek: 61 pt attesi (43-81)
+   ORDINAMENTO: 65.13
    SQUADRA: porto-porto | AVVERSARIO: rio-ave-vila-do-conde
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: jan-bednarek (squadra: porto-porto)
-Generato: 2026-08-13T06:43:44.262512Z
+Generato: 2026-08-13T20:29:55.975707Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -54,7 +54,7 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 30.0 partite): 67.58
   di cui Punteggio decisivo (level_score) medio: 38.85 | Punteggio complessivo (granulari) medio: 28.73 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Gol subiti condizionato: delta venue -0.70, delta avversario -0.14 | Passaggio condizionato: delta venue -0.89, delta avversario -0.17 | Clean sheet/disimpegni condizionato: delta venue -0.77, delta avversario +0.10 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+  Gol subiti condizionato: delta venue -0.70, delta avversario -0.02 | Passaggio condizionato: delta venue -0.89, delta avversario +1.99 | Clean sheet/disimpegni condizionato: delta venue -0.77, delta avversario -0.31 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
 Deviazione standard pesata: 18.70
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 48.8 - 87.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.63 (differenza: +2.07)
@@ -62,7 +62,7 @@ Media score in casa: 71.96 | Media score fuori casa: 60.69
 Fattore casa/trasferta applicato: 0.997 (TRASFERTA nella prossima partita)
 Ranking medio avversari affrontati (storico): 10.4
 Ranking prossimo avversario: 16
-Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore forza avversario applicato: 1.075 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 1.000
 Fattore duelli (casa/trasferta, da dati reali): 0.993
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.006
@@ -82,8 +82,8 @@ Competizione: primeira-liga-pt
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 59.3 (range 40.5 - 79.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 64.9
+Score atteso: 61.3 (range 42.6 - 81.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 65.1
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 67.48
