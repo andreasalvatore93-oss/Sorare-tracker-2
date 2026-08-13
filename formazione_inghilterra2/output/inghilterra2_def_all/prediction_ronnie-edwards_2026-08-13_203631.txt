@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-13T07:50:08.871340Z
+Generato: 2026-08-13T20:36:31.282795Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) ronnie-edwards: 48 pt attesi (31-70)
-   ORDINAMENTO: 47.22
+1) ronnie-edwards: 50 pt attesi (33-72)
+   ORDINAMENTO: 47.51
    SQUADRA: queens-park-rangers-london | AVVERSARIO: portsmouth-portsmouth
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: ronnie-edwards (squadra: queens-park-rangers-london)
-Generato: 2026-08-13T07:50:08.870630Z
+Generato: 2026-08-13T20:36:31.281821Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -50,7 +50,7 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 30.0 partite): 47.98
   di cui Punteggio decisivo (level_score) medio: 34.68 | Punteggio complessivo (granulari) medio: 13.30 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Gol subiti condizionato: delta venue -0.23, delta avversario -0.40 | Passaggio condizionato: delta venue -0.36, delta avversario +0.67 | Clean sheet/disimpegni condizionato: delta venue -0.35, delta avversario +0.03 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+  Gol subiti condizionato: delta venue -0.23, delta avversario +0.63 | Passaggio condizionato: delta venue -0.36, delta avversario +1.21 | Clean sheet/disimpegni condizionato: delta venue -0.35, delta avversario +0.76 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
 Deviazione standard pesata: 19.90
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.8 - 70.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.85 (differenza: +3.05)
@@ -58,7 +58,7 @@ Media score in casa: 52.72 | Media score fuori casa: 44.11
 Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
 Ranking medio avversari affrontati (storico): 10.9
 Ranking prossimo avversario: 18
-Fattore forza avversario applicato: 0.802 (gol subiti reali dell'avversario, ultime 10)
+Fattore forza avversario applicato: 0.938 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 0.989
 Fattore duelli (casa/trasferta, da dati reali): 1.000
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
@@ -78,8 +78,8 @@ Competizione: football-league-championship
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 48.0 (range 30.8 - 70.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 47.2
+Score atteso: 50.5 (range 33.3 - 72.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 47.5
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 49.91
