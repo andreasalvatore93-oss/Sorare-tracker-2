@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-13T07:42:46.808201Z
+Generato: 2026-08-13T20:27:07.612314Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) aissa-mandi: 61 pt attesi (46-76)
-   ORDINAMENTO: 62.09
+1) aissa-mandi: 59 pt attesi (44-74)
+   ORDINAMENTO: 62.11
    SQUADRA: levante-valencia | AVVERSARIO: espanyol-barcelona
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: aissa-mandi (squadra: levante-valencia)
-Generato: 2026-08-13T07:42:46.807367Z
+Generato: 2026-08-13T20:27:07.611241Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -57,7 +57,7 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 30.0 partite): 61.47
   di cui Punteggio decisivo (level_score) medio: 36.90 | Punteggio complessivo (granulari) medio: 24.57 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Gol subiti condizionato: delta venue +0.87, delta avversario +0.48 | Passaggio condizionato: delta venue -0.94, delta avversario +0.96 | Clean sheet/disimpegni condizionato: delta venue +1.07, delta avversario +0.81 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+  Gol subiti condizionato: delta venue +0.87, delta avversario -0.31 | Passaggio condizionato: delta venue -0.94, delta avversario +0.75 | Clean sheet/disimpegni condizionato: delta venue +1.07, delta avversario -0.58 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
 Deviazione standard pesata: 15.11
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 46.6 - 76.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.41 (differenza: +1.70)
@@ -65,7 +65,7 @@ Media score in casa: 63.16 | Media score fuori casa: 62.11
 Fattore casa/trasferta applicato: 0.995 (TRASFERTA nella prossima partita)
 Ranking medio avversari affrontati (storico): 8.3
 Ranking prossimo avversario: 11
-Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore forza avversario applicato: 1.007 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 0.998
 Fattore duelli (casa/trasferta, da dati reali): 1.007
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
@@ -85,7 +85,7 @@ Competizione: laliga-es
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 61.1 (range 46.2 - 76.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 58.7 (range 43.9 - 74.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 62.1
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
