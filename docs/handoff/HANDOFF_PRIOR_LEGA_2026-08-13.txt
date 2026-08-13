@@ -23,12 +23,15 @@ niente: l'interruttore e' spento.
 
 1. STATO DEL REPO
 =================
-Branch main. NIENTE E' STATO COMMITTATO di questo filone: tutto in working
-tree. Modifiche in piedi:
+Branch main. COMMITTATO in due giri (9115329ded, ba1313fe1f). File del
+filone:
   - dati_globali/costruisci_livello_lega_ruolo.py     (NUOVO)
   - dati_globali/livello_lega_ruolo.json              (NUOVO, generato)
-  - formazione_mls/predict/test_mls_fwd_all.py        (flag PRIOR_LEGA, spento)
-  - backtest_arene_previsioni.py                      (2 fix al banco di prova)
+  - formazione_mls/predict/test_mls_fwd_all.py        (PRIOR_LEGA, spento:
+      flag, soglia, due modalita' 'ancora'/'diretto', scarto_lega,
+      livello_lega, riporta_su_lega)
+  - backtest_arene_previsioni.py                      (3 fix al banco: lega
+      vera, league passata sempre, quota/lega dello storico)
 In produzione non cambia nulla finche' PRIOR_LEGA_ENABLED resta '0' (default).
 NON propagato alle altre 52 leghe (propaga_modello.py non lanciato): il flag
 esiste solo nel file sorgente MLS, ed e' giusto cosi' finche' non si decide.
