@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-13T07:46:40.468825Z
+Generato: 2026-08-13T20:32:17.579064Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) viktor-melekhin: 54 pt attesi (33-72)
-   ORDINAMENTO: 55.16
+1) viktor-melekhin: 54 pt attesi (32-71)
+   ORDINAMENTO: 54.38
    SQUADRA: rostov-rostov-na-donu | AVVERSARIO: rubin-kazan-kazan
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: viktor-melekhin (squadra: rostov-rostov-na-donu)
-Generato: 2026-08-13T07:46:40.379265Z
+Generato: 2026-08-13T20:32:17.578330Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -53,7 +53,7 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 30.0 partite): 56.02
   di cui Punteggio decisivo (level_score) medio: 38.10 | Punteggio complessivo (granulari) medio: 17.92 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Gol subiti condizionato: delta venue +0.21, delta avversario +0.34 | Passaggio condizionato: delta venue -0.41, delta avversario +0.20 | Clean sheet/disimpegni condizionato: delta venue -0.48, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+  Gol subiti condizionato: delta venue +0.21, delta avversario +0.48 | Passaggio condizionato: delta venue -0.41, delta avversario +0.10 | Clean sheet/disimpegni condizionato: delta venue -0.48, delta avversario -0.01 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
 Deviazione standard pesata: 16.78
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.2 - 73.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.18 (differenza: +1.60)
@@ -61,7 +61,7 @@ Media score in casa: 55.12 | Media score fuori casa: 56.29
 Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 8.4
 Ranking prossimo avversario: 9
-Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore forza avversario applicato: 0.733 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 1.003
 Fattore duelli (casa/trasferta, da dati reali): 1.003
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
@@ -81,8 +81,8 @@ Competizione: russian-premier-league
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 54.5 (range 32.7 - 71.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 55.2
+Score atteso: 54.0 (range 32.2 - 71.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 54.4
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 55.77
