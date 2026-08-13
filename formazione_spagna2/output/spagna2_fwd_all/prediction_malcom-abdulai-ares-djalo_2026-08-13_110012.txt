@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T11:00:12.166009Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) malcom-abdulai-ares-djalo: 48 pt attesi (40-51)
+   ORDINAMENTO: 46.26
+   SQUADRA: eibar-eibar | AVVERSARIO: tenerife-santa-cruz-de-tenerife
+======================================================================
+
+######################################################################
+# GIOCATORE: malcom-abdulai-ares-djalo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: malcom-abdulai-ares-djalo (squadra: eibar-eibar)
+Generato: 2026-08-13T11:00:12.165501Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 41
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: segunda-division-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-13 | CAD vs EIB | segunda-division-es | score=35.1 | peso=0.177
+  2025-10-12 | EIB vs CAS | segunda-division-es | score=45.7 | peso=0.198
+  2026-02-07 | ZAR vs EIB | segunda-division-es | score=34.4 | peso=0.223
+  2026-02-21 | DEP vs EIB | segunda-division-es | score=49.6 | peso=0.250
+  2026-03-08 | LEG vs EIB | segunda-division-es | score=35.8 | peso=0.281
+  2026-03-15 | EIB vs BCF | segunda-division-es | score=49.7 | peso=0.315
+  2026-03-21 | FCA vs EIB | segunda-division-es | score=38.4 | peso=0.354
+  2026-04-02 | RS2 vs EIB | segunda-division-es | score=41.9 | peso=0.397
+  2026-04-05 | EIB vs ADC | segunda-division-es | score=35.6 | peso=0.445
+  2026-04-13 | VLL vs EIB | segunda-division-es | score=45.6 | peso=0.500
+  2026-04-19 | EIB vs HUE | segunda-division-es | score=45.0 | peso=0.561
+  2026-05-02 | EIB vs MCF | segunda-division-es | score=49.8 | peso=0.630
+  2026-05-10 | MIR vs EIB | segunda-division-es | score=75.3 | peso=0.707
+  2026-05-16 | CUL vs EIB | segunda-division-es | score=45.7 | peso=0.794
+  2026-05-24 | EIB vs COR | segunda-division-es | score=41.6 | peso=0.891
+  2026-05-31 | CAS vs EIB | segunda-division-es | score=45.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 46.48
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=16): 49.99 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 37.29 | Punteggio complessivo (granulari) medio: 9.19 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.68 (delta +0.02) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 10.15
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.4 - 49.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 4.36 (differenza: +5.78)
+Media score in casa: 44.57 | Media score fuori casa: 44.76
+Fattore casa/trasferta applicato: 0.996 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.9
+Ranking prossimo avversario: 20
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore trend (media ultime 5: 51.6 vs media 5 PRECEDENTI: 41.3): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T15:00
+Casa: SD Eibar | Trasferta: CD Tenerife
+Competizione: segunda-division-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.0 (range 39.9 - 51.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 46.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.58
+Punteggio REALE ottenuto in quella partita: 45.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -0.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      43.4    38.4     -5.0     7.9        SI
+   7        7      45.1    41.9     -3.2     7.3        SI
+   8        8      40.3    35.6     -4.7     6.6        SI
+   9        9      46.8    45.6     -1.2     6.5        SI
+  10       10      52.3    45.0     -7.3     6.4        NO
+  11       11      28.8    49.8    +21.0     6.0        NO
+  12       12      51.8    75.3    +23.5     6.4        NO
+  13       13      60.0    45.7    -14.3    14.2        NO
+  14       14      40.2    41.6     +1.4    13.2        SI
+  15       15      34.5    45.8    +11.3    12.5        SI
+
+MAE (errore assoluto medio): 9.29
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
