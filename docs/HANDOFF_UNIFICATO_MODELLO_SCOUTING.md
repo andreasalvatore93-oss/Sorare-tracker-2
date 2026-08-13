@@ -11,23 +11,30 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 13/08/2026 sera (Roma, CEST)** — giornata
-su scouting e livello dei campionati. Scouting: A+G dei portieri riallineato
-al generatore, carte della discovery a 50 per pagina con tre chiavi a
-rotazione, arene opzionali col criterio economico, e i 256 predict che passano
-il tetto GitHub non li sceglie piu' l'alfabeto. Modello: misurato che le leghe
-NON sono uguali (§8terdecies) — tabella pronta, interruttore SPENTO, decisione
-dell'utente di non toccare la produzione. Chi riparte legga
-`docs/handoff/PASSAGGIO_ORCHESTRATORE_2026-08-13_SERA.txt`.
+Ultimo aggiornamento: **sessione 13/08/2026 notte (Roma, CEST)**, allineamento
+fatto dal nuovo orchestratore verificando il CODICE, non i documenti. La
+giornata del 13/08 ha prodotto tre cose, tutte gia' scritte qui sotto:
+- **livello dei campionati** misurato (§8terdecies): le leghe NON sono uguali,
+  tabella pronta, interruttore **SPENTO** per decisione dell'utente;
+- **filone intralega CHIUSO** in essenze (§8quaterdecies) e **half-life
+  rimisurato, nessun cambio** (§8quindecies), anche col grade acceso;
+- **quattro difetti del BANCO DI MISURA** trovati e corretti: e' la cosa piu'
+  importante della giornata, il metro giudicava un modello che non esiste
+  (§8quaterdecies in fondo, §8quindecies bug GK, e la voce D3-banco qui sotto).
+In produzione e' cambiato UN SOLO pezzo del modello in tutta la giornata: il
+badge "nuovo campionato" (cosmetico). Handoff della giornata:
+`docs/handoff/HANDOFF_INTRALEGA_HALFLIFE_2026-08-13.txt` e
+`docs/handoff/PASSAGGIO_ORCHESTRATORE_2026-08-13_SERA.txt` (filoni aperti).
 
 Aggiornamento precedente: **sessione 12/08/2026 sera (Roma, CEST)** — giornata
 di test end-to-end su GitHub Actions (GW4/GW5) che ha fatto emergere e
 chiuso 4 bug reali di produzione + aggiunto una feature nuova + un tipo
 formazione nuovo. Dettaglio completo: §8duodecies. **429 GW5 CHIUSO**
-(fix P5+P6 verificato su run vera). **APERTI 3 problemi nuovi emersi subito
-dopo — §8duodecies-bis: crash `_budget_essenze` (blocca ogni run senza
-arene), notifica Telegram bugiarda su run fallita, 92% del predict sprecato
-quando si chiede solo Champions.**
+(fix P5+P6 verificato su run vera). Dei 3 problemi aperti allora
+(§8duodecies-bis) **ne restano 1**: D1 (`_budget_essenze`) e D2 (notifica
+Telegram bugiarda) sono chiusi e verificati nel codice il 13/08 notte;
+**resta APERTO D3** — 92% del predict sprecato quando si chiede solo
+Champions.
 
 Sessione 12/08/2026 notte: **APIKEY Sorare arrivata e attivata.** Header
 HTTP `APIKEY` (separato dal cookie, si aggiunge e non sostituisce) su tutte
@@ -273,6 +280,9 @@ categoria è stata rimisurata e bocciata anche in forma diretta: vedi §5.
 `trend_intensity` a 0.0 ovunque: misurato più volte, monotono verso il
 peggio, chiuso definitivamente il 03/08. `opponent_sensitivity=29.0` è
 l'unico parametro mai risultato instabile in nessun ruolo/lega.
+`half_life` **rimisurato il 13/08/2026** (tutti i ruoli, 11 valori da 3 a 60,
+avversario acceso e poi grade acceso): i quattro valori qui sopra reggono,
+nessun cambio — §8quindecies.
 
 ### 2.2 Scouting acquisti (`scouting_gw.py`) — RISCRITTA IN MODALITA' MINIMALE (09-10/08/2026)
 
@@ -514,6 +524,21 @@ Conseguenze operative, tutte dimostrate:
   2 è *sotto* il rumore atteso. Bocciato.
 - **Trend recente** (`TREND_INTENSITY`): 0,0 su tutti i ruoli e leghe,
   monotono verso il peggio in ogni test.
+- **Confronto INTRALEGA fra reparti avversari** (attacco di A contro difesa di
+  B normalizzati dentro la stessa lega): **CHIUSO il 13/08**, dettaglio in
+  §8quaterdecies. L'idea di normalizzare per lega perde su 4 celle su 4 contro
+  la normalizzazione mondiale che gira oggi. La variante che sembrava
+  sopravvivere (DEF + gol FATTI dall'avversario) è stata bocciata **in
+  essenze** sul banco vero: −2.619 con IC95 [−10.296; +5.217] e il braccio di
+  controllo di segno opposto. Flag e `k` restano nel codice, spenti.
+  **Resta non misurato** un asse diverso, che l'utente aveva intuito: la forza
+  della **propria squadra nuova** (Ernst al Feyenoord, Simsir al Trabzonspor),
+  cosa distinta dal livello della lega — vedi §10bis.
+- **`HALF_LIFE_GAMES` "stantio"**: rimisurato il 13/08 su tutti i ruoli, 11
+  valori da 3 a 60, con avversario acceso **e** in un secondo giro con il
+  grade acceso. **Nessun cambio**: la curva è piatta dove conta (DEF, MID) e i
+  metri si contraddicono dove non lo è (GK, FWD). §8quindecies. Non ripetere
+  questa misura senza un motivo nuovo.
 - **Scomposizione degli all-around per categoria**: nessuna forma soddisfa
   MAE + correlazione + lift insieme, su nessun ruolo (39.594 partite, 26
   leghe, bootstrap appaiato). La compressione che l'aveva motivata riguarda
@@ -1795,11 +1820,27 @@ propagati, `.github/workflows/formazione_giornata.yml`.
 
 ---
 
-## 8duodecies-bis. Test GW5 Champions — 429 CHIUSO, 3 problemi nuovi APERTI
+## 8duodecies-bis. Test GW5 Champions — 429 CHIUSO, D1 e D2 CHIUSI, resta D3
 
-**Stato al 12/08 sera: il 429 è risolto e verificato su run vera. Restano 3
-problemi nuovi, di cui uno BLOCCANTE (D1): non rilanciare il test GW5 finché
-D1 non è corretto, la run rifallisce allo stesso punto.**
+**STATO AGGIORNATO AL 13/08/2026 NOTTE (verificato sul codice, non sui
+documenti):**
+- **D1 `_budget_essenze` — CHIUSO.** `build_formazione_globale.py:2469`
+  inizializza `_budget_essenze = None` prima del blocco condizionale; le
+  letture successive (2486, 2494, 2543) sono tutte protette da
+  `is not None`. Non blocca più nessuna run.
+- **D2 notifica Telegram bugiarda — CHIUSO.** `formazione_giornata.yml:836-841`
+  ha `id:` sullo step di generazione e
+  `if: always() && steps.genera.outcome == 'success'` sulla notifica.
+- **D3 92% del predict sprecato — APERTO.** Verificato il 13/08 notte:
+  `discovery_fixture.py` non contiene **nessuna** occorrenza di `CHAMPIONS`
+  (grep, 0 match), quindi continua a scremare tutte le leghe anche quando si
+  chiede solo la Champions. Il workflow passa `CHAMPIONS` solo al generatore
+  (riga 790). Le ottimizzazioni del 13/08 (checkout sparso per shard,
+  potatura automatica) hanno ridotto il costo del predict ma **non** toccano
+  la causa: la discovery lavora ancora su tutto.
+
+Stato al 12/08 sera (storico): il 429 era risolto e verificato su run vera,
+e i tre problemi qui sotto erano tutti aperti, con D1 bloccante.
 
 ### Il 429 — CHIUSO (fix P5+P6, run 31585784239 pulita)
 
@@ -2610,6 +2651,24 @@ nuovo risultava "identico" non perché il flag fosse inerte ma perché al modell
 non arrivava nemmeno l'avversario. Corretto e riverificato: a flag acceso i
 numeri si muovono.
 
+**LO STESSO DIFETTO STAVA ANCHE NEL BANCO IN ESSENZE — da sapere prima di
+citare qualunque misura passata.** `backtest_arene_previsioni.score_atteso()`,
+quella che alimenta il backtest in essenze (`p23`/`p24`), chiamava `calcola()`
+**senza** `usa_avversario`: quindi anche il metro che ha promosso GK_ATT_AVV
+(§5.6) calcolava con gli aggiustamenti avversario **spenti**. Per un confronto
+appaiato G vs A si compensa in gran parte (l'errore è lo stesso nei due
+bracci); per una correzione che riguarda proprio l'avversario **no**.
+Risolto il 13/08 con un parametro esplicito, **default `False` = comportamento
+invariato** (`backtest_arene_previsioni.py:743, 825, 970-995`), così le misure
+vecchie restano confrontabili e chi vuole il modello vero lo accende a mano.
+Insieme al bug GK di §8quindecies fanno **quattro** difetti dello stesso tipo
+trovati in un giorno solo: il banco misurava una cosa diversa da quella che
+dichiarava. Regola che ne esce, valida per ogni misura futura: **prima di
+leggere un numero dal banco, verificare con quali interruttori è stato
+prodotto** — e in un banco di misura un `except` largo non è prudenza, è un
+modo silenzioso di mentire (è stato `p24`, che non ne ha, a stanare il bug GK
+crashando in faccia).
+
 ---
 
 ## 8quindecies. HALF_LIFE_GAMES rimisurato (13/08/2026) — NON è stantio, non si tocca
@@ -2731,6 +2790,52 @@ spiegare.
 ---
 
 ## 10bis. COSE DA FARE — riscritto il 09/08 notte, ripulito 11/08 (verificato contro il codice, non a memoria)
+
+### APERTO AL 13/08/2026 NOTTE — la lista corta, in ordine di interesse dell'utente
+
+1. **Asse "SQUADRA PROPRIA" — mai misurato.** È la parte del filone intralega
+   che l'utente aveva intuito e che non è stata toccata: non il livello della
+   LEGA (§8terdecies) e non il confronto fra reparti (§8quaterdecies, chiuso),
+   ma **quanto è forte la squadra NUOVA** in cui uno è appena arrivato. Casi
+   reali senza risposta: Ernst al Feyenoord (lega più facile, squadra forte),
+   Simsir al Trabzonspor (lega più dura, squadra forte). Il dataset per
+   provarlo esiste già (`p33_intralega_dataset.py`, zero query, 68s).
+2. **Fix mirato per chi ha cambiato campionato** (il "cerotto" che l'utente
+   ha chiesto): per i ~14 nomi individuati, nelle prime 2-3 giornate nella
+   lega nuova, allineare la previsione alla media del ruolo di quella lega e
+   lasciare che half-life/shrinkage facciano il resto. Nomi, tabella e
+   trappole in `docs/handoff/PASSAGGIO_ORCHESTRATORE_2026-08-13_SERA.txt`.
+   **Attenzione**: la finestra da guardare è quella del MODELLO (365 giorni),
+   non tutto lo storico in cache — contando tutto ci finisce chi ha traslocato
+   tre anni fa. Il valore sta su **MID e DEF** (half-life 25-30, si
+   raddrizzano da soli in mesi), non sui FWD (half-life 6, si raddrizzano in
+   un mese e mezzo da soli).
+3. **CONTO IN SOSPESO sul livello lega**: due misure che non tornano.
+   Sull'aggregato (23.173 punti) la correzione peggiora il MAE di +0,12; sui
+   704 punti che tocca davvero lo migliora (14,56 → 14,27), stesso campione e
+   stesso n. Una delle due è sbagliata e non si sa quale. **Non usare nessuno
+   dei due numeri per decidere finché non torna.** Legato: il look-ahead della
+   tabella dei livelli non è mai stato misurato (lo script accetta già `fino_a`).
+4. **D3 — 92% del predict sprecato** quando si chiede solo la Champions
+   (§8duodecies-bis). Trappola già documentata: la discovery *svuota* i file
+   delle leghe che esamina, quindi la restrizione va committata **insieme**
+   alla scrittura dei file vuoti per le leghe escluse, altrimenti è una
+   regressione.
+5. **Il metro ufficiale non applica il grade.** `backtest_arene_previsioni.py`
+   e `taratura_confronto_parametri.py` non contengono la parola "grade", ma la
+   produzione dal 07/08 schiera su `atteso + sd_gruppo × z_grade`. Per i
+   parametri che toccano la SELEZIONE non è un dettaglio: oggi si aggira con
+   `p37_halflife_con_grade.py`, la strada pulita è portare il voto dentro il
+   banco.
+6. **Riga GK di `p37` NON VALIDA** (prodotta prima del fix del bug che
+   scartava l'89,6% dei punti GK, §8quindecies): va rilanciata se quel numero
+   serve. DEF/MID/FWD reggono.
+7. **Le ri-misure pre-registrate del 25/08** (GK_ATT_AVV §5.6, gruppo grade
+   §8bis-bis). **Da sapere PRIMA di arrivarci**: il "3 fixture" non ha nessuna
+   giustificazione statistica — sono semplicemente le tre giornate successive
+   a quando fu scritta la pre-registrazione, e n=3 GW è piccolo. Chi ci arriva
+   decida che potenza serve davvero, invece di trattare il 25/08 come una
+   scadenza che risponde da sola.
 
 **FATTO, non più aperto (verificato 11/08 leggendo codice/repo, questa
 sezione era rimasta ferma al 09-10/08):**
