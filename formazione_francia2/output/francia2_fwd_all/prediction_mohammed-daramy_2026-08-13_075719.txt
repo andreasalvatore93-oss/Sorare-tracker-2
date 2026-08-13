@@ -1,0 +1,93 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:57:19.329782Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) mohammed-daramy: 52 pt attesi (39-72)
+   ORDINAMENTO: 54.78
+   SQUADRA: reims-reims | AVVERSARIO: dunkerque-dunkerque
+======================================================================
+
+######################################################################
+# GIOCATORE: mohammed-daramy
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mohammed-daramy (squadra: reims-reims)
+Generato: 2026-08-13T07:57:19.328730Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 18
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: ligue-2-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-27 | MON vs SR | ligue-2-fr | score=45.2 | peso=0.397
+  2026-03-21 | EAG vs SR | ligue-2-fr | score=70.3 | peso=0.445
+  2026-04-04 | SR vs BOU | ligue-2-fr | score=44.3 | peso=0.500
+  2026-04-10 | LAV vs SR | ligue-2-fr | score=75.9 | peso=0.561
+  2026-04-18 | SR vs RED | ligue-2-fr | score=41.5 | peso=0.630
+  2026-04-25 | SR vs NAN | ligue-2-fr | score=64.1 | peso=0.707
+  2026-05-02 | LEM vs SR | ligue-2-fr | score=42.9 | peso=0.794
+  2026-05-09 | SR vs PAU | ligue-2-fr | score=76.1 | peso=0.891
+  2026-08-08 | CLE vs SR | ligue-2-fr | score=45.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 56.09
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=9): 54.62 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 43.01 | Punteggio complessivo (granulari) medio: 13.08 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 6.40 (delta +0.77) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.37
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 42.9 - 75.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.75 (differenza: +1.62)
+Media score in casa: 56.50 | Media score fuori casa: 55.86
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.1
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.798 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.006
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T18:45
+Casa: Stade de Reims | Trasferta: US du Littoral de Dunkerque
+Competizione: ligue-2-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.8 (range 38.6 - 71.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 54.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.34
+Punteggio REALE ottenuto in quella partita: 45.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -13.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      40.4    42.9     +2.5    15.7        SI
+   7        7      65.4    76.1    +10.7    15.5        SI
+   8        8      59.9    45.0    -14.9    17.0        SI
+
+MAE (errore assoluto medio): 9.38
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
