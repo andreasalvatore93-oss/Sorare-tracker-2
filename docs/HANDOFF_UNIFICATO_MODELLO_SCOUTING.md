@@ -598,13 +598,51 @@ modello permette"), ma la vista è migliorata e il tetto si è spostato con
 lei: **non è una costante di natura**. Chi migliora la previsione migliora
 il capitano gratis, senza toccare `pick_captain()`.
 
+**LA VARIANZA — PROVATA E CHIUSA lo stesso giorno (13/08), non riproporla.**
+Era l'ultima idea rimasta in piedi: il capitano *moltiplica*, quindi in teoria
+vorrebbe la coda alta a destra e non la media più alta. Testata su tutte le
+12.677 formazioni con `atteso + k × sd_storica`, dove `sd` è la dispersione
+dei punteggi grezzi del giocatore nelle partite precedenti al primo calcio
+d'inizio (finestra 365 giorni, minimo 4 partite, solo partite giocate — le
+assenze non sono volatilità di rendimento). Script:
+`analisi_manager/p65_capitano_varianza.py`.
+
+| k | bonus per arena | delta vs produzione | IC95 |
+|---|---|---|---|
+| −0,50 | 10,907 | −385 | [−868; +58] |
+| −0,25 | 10,928 | −127 | [−505; +229] |
+| **0 (produzione)** | **10,938** | — | — |
+| +0,25 | 10,910 | −348 | [−692; **−8**] |
+| +0,50 | 10,890 | −604 | [−1.156; **−84**] |
+| +1,00 | 10,843 | −1.197 | [−2.033; **−446**] |
+| solo dispersione | 10,313 | −7.918 | [−12.840; −4.430] |
+
+**La curva ha il massimo esattamente su k=0 ed è monotona in entrambe le
+direzioni**; i k positivi sono peggio con l'intervallo che esclude lo zero —
+non "non dimostrati", proprio peggio. Il test non è nullo per costruzione: la
+dispersione si calcola sul **100%** delle carte (mediana 17,9 punti) e il
+criterio cambia capitano in 984-7.790 formazioni secondo k.
+
+Due cose da portarsi via, la seconda vale oltre il capitano:
+1. **L'aritmetica si conferma sul campo.** Il bonus è lineare (+20% del
+   punteggio realizzato), quindi massimizzare la media massimizza il bonus
+   atteso e la varianza non deve entrare. Lo si sapeva a tavolino; ora si
+   vede anche nei dati.
+2. **`atteso` non ha un errore sistematico legato alla volatilità.** Se lo
+   avesse — se cioè il modello comprimesse i giocatori con la coda lunga —
+   un k diverso da zero avrebbe vinto. Non vince nessuno: piccola conferma
+   che la calibrazione regge anche sulle code, non solo al centro.
+
+L'unica strada teoricamente ancora aperta richiede un obiettivo **non
+lineare** (P(podio) invece dei punti attesi), e per calcolarlo servirebbero
+i punteggi degli altri 9 partecipanti, che l'archivio non ha di proposito
+(§5.9: si usano le soglie calibrate). Prima di riaprire da lì, leggere
+§5.5: massimizzare il PREMIO atteso è già risultato identico a massimizzare
+i PUNTI attesi, 5.768 confronti su 5.768 concordi.
+
 **Cosa NON riaprire**: criteri che riordinano lo stesso atteso (grade
 davanti, favorita/sfavorita — t=−0,62 su confronto equo, quote con copertura
-insufficiente). Cosa avrebbe senso provare, se mai: un'informazione che
-l'atteso **non contiene**, per esempio la dispersione attesa del singolo
-giocatore invece della media — il capitano moltiplica, quindi in teoria
-premia la coda alta, e §5.1 dice che la dispersione per-giocatore oggi non è
-calibrata. Mai misurato.
+insufficiente) e la varianza in qualunque forma lineare.
 
 Storia: le "otto ipotesi chiuse" originarie giravano su
 `dati_globali/manager_*.json` (bug D6, §5.8) e sono nulle; il giro del 12/08
