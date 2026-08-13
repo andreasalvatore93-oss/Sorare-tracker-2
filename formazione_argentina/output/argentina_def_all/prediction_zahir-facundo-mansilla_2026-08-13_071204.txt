@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:12:04.846977Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) zahir-facundo-mansilla: 56 pt attesi (38-81)
+   ORDINAMENTO: 59.92
+   SQUADRA: central-cordoba-sde-santiago-del-estero-provincia-de-santiago-del-estero | AVVERSARIO: instituto-ciudad-de-cordoba-provincia-de-cordoba
+======================================================================
+
+######################################################################
+# GIOCATORE: zahir-facundo-mansilla
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: zahir-facundo-mansilla (squadra: central-cordoba-sde-santiago-del-estero-provincia-de-santiago-del-estero)
+Generato: 2026-08-13T07:12:04.845754Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-25 | BEL vs CSE | superliga-argentina-de-futbol | score=50.7 | peso=0.660
+  2025-09-12 | RIE vs CSE | superliga-argentina-de-futbol | score=40.6 | peso=0.675
+  2025-11-16 | CSE vs BAN | superliga-argentina-de-futbol | score=37.1 | peso=0.691
+  2026-01-23 | CSE vs GMD | superliga-argentina-de-futbol | score=46.7 | peso=0.707
+  2026-01-28 | TUC vs CSE | superliga-argentina-de-futbol | score=65.5 | peso=0.724
+  2026-01-31 | SLO vs CSE | superliga-argentina-de-futbol | score=52.4 | peso=0.741
+  2026-02-07 | CSE vs UNI | superliga-argentina-de-futbol | score=58.2 | peso=0.758
+  2026-02-16 | INS vs CSE | superliga-argentina-de-futbol | score=22.2 | peso=0.776
+  2026-02-22 | CSE vs TIG | superliga-argentina-de-futbol | score=60.0 | peso=0.794
+  2026-02-24 | CSE vs CAT | superliga-argentina-de-futbol | score=87.8 | peso=0.812
+  2026-02-28 | IND vs CSE | superliga-argentina-de-futbol | score=38.8 | peso=0.831
+  2026-03-12 | DYJ vs CSE | superliga-argentina-de-futbol | score=51.6 | peso=0.851
+  2026-03-18 | CSE vs RIE | superliga-argentina-de-futbol | score=91.0 | peso=0.871
+  2026-03-23 | EST vs CSE | superliga-argentina-de-futbol | score=51.5 | peso=0.891
+  2026-04-14 | VEL vs CSE | superliga-argentina-de-futbol | score=52.1 | peso=0.912
+  2026-07-24 | GMD vs CSE | superliga-argentina-de-futbol | score=66.4 | peso=0.933
+  2026-07-31 | CSE vs TUC | superliga-argentina-de-futbol | score=35.9 | peso=0.955
+  2026-08-04 | CSE vs SLO | superliga-argentina-de-futbol | score=67.3 | peso=0.977
+  2026-08-11 | UNI vs CSE | superliga-argentina-de-futbol | score=81.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 56.44
+  di cui Punteggio decisivo (level_score) medio: 36.61 | Punteggio complessivo (granulari) medio: 19.83 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.99, delta avversario -0.46 | Passaggio condizionato: delta venue +0.78, delta avversario -0.25 | Clean sheet/disimpegni condizionato: delta venue +1.92, delta avversario -0.43 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.74
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.8 - 81.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.55 (differenza: +3.18)
+Media score in casa: 60.49 | Media score fuori casa: 52.11
+Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.6
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.006
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 1.007
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.008
+Fattore trend (media ultime 5: 60.9 vs media 5 PRECEDENTI: 64.0): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T23:15
+Casa: CA Central Córdoba de Santiago del Estero | Trasferta: Instituto AC Córdoba
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.9 (range 38.3 - 80.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 59.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.73
+Punteggio REALE ottenuto in quella partita: 81.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +26.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      44.1    58.2    +14.0    10.2        NO
+   7        7      36.1    22.2    -13.9    10.0        NO
+   8        8      38.3    60.0    +21.6    14.1        NO
+   9        9      56.0    87.8    +31.8    14.1        NO
+  10       10      46.0    38.8     -7.1    19.0        SI
+  11       11      52.0    51.6     -0.4    18.6        SI
+  12       12      63.6    91.0    +27.4    17.7        NO
+  13       13      37.6    51.5    +13.8    21.0        SI
+  14       14      38.6    52.1    +13.5    20.1        SI
+  15       15      50.4    66.4    +16.1    19.3        SI
+  16       16      60.4    35.9    -24.5    18.9        NO
+  17       17      67.9    67.3     -0.6    19.0        SI
+  18       18      52.2    81.4    +29.2    18.8        NO
+
+MAE (errore assoluto medio): 16.46
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 46.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
