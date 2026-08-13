@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-13T07:23:37.707650Z
+Generato: 2026-08-13T20:27:42.633621Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) kyriani-sabbe: 55 pt attesi (38-84)
-   ORDINAMENTO: 58.42
+1) kyriani-sabbe: 56 pt attesi (39-85)
+   ORDINAMENTO: 60.86
    SQUADRA: club-brugge-brugge | AVVERSARIO: oh-leuven-heverlee
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: kyriani-sabbe (squadra: club-brugge-brugge)
-Generato: 2026-08-13T07:23:37.705955Z
+Generato: 2026-08-13T20:27:42.631789Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -46,7 +46,7 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 30.0 partite): 60.87
   di cui Punteggio decisivo (level_score) medio: 42.98 | Punteggio complessivo (granulari) medio: 17.89 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Gol subiti condizionato: delta venue +0.36, delta avversario +0.96 | Passaggio condizionato: delta venue -2.47, delta avversario +0.12 | Clean sheet/disimpegni condizionato: delta venue +0.10, delta avversario +0.69 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+  Gol subiti condizionato: delta venue +0.36, delta avversario +1.02 | Passaggio condizionato: delta venue -2.47, delta avversario -0.44 | Clean sheet/disimpegni condizionato: delta venue +0.10, delta avversario +0.90 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
 Deviazione standard pesata: 18.93
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 43.7 - 89.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.52 (differenza: +3.40)
@@ -54,7 +54,7 @@ Media score in casa: 63.87 | Media score fuori casa: 54.80
 Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
 Ranking medio avversari affrontati (storico): 6.8
 Ranking prossimo avversario: 15
-Fattore forza avversario applicato: 0.938 (gol subiti reali dell'avversario, ultime 10)
+Fattore forza avversario applicato: 1.280 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 0.997
 Fattore duelli (casa/trasferta, da dati reali): 0.994
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
@@ -74,8 +74,8 @@ Competizione: jupiler-pro-league
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 55.3 (range 38.1 - 83.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 58.4
+Score atteso: 56.4 (range 39.2 - 84.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 60.9
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 61.18
