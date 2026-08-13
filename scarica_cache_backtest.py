@@ -208,8 +208,27 @@ def scarica(slug, pausa, finestra=None):
                      if limite <= (_dt((n.get('anyGame') or {}).get('date')) or limite) <= ultima]
     candidate.sort(key=lambda n: (n.get('anyGame') or {}).get('date') or '', reverse=True)
 
-    nuovi = 0
-    for nodo in candidate[:MAX_DETTAGLI_PER_GIOCATORE]:
+    da_scaricare = candidate[:MAX_DETTAGLI_PER_GIOCATORE]
+
+    # DETTAGLI IN BATCH (13/08/2026). Prima si chiedeva UNA query per partita:
+    # misurato su 20 giocatori, 41,7 dettagli a testa e 35 secondi a
+    # giocatore, cioe' 21 ore per i 2219 dell'archivio. `test_def` ha gia' la
+    # strada buona -- `precarica_dettagli_batch` chiede 30 partite in una
+    # richiesta sola con l'APIKEY (6 senza) -- ma questo script non l'ha mai
+    # chiamata. Riempie `dettagli`, e il ciclo qui sotto salta da solo tutto
+    # quello che ci trova dentro.
+    # SICURA PER COSTRUZIONE: tratta solo le partite FINAL (le altre cambiano
+    # ancora e vanno chieste fresche), e se il batch viene rifiutato non
+    # scrive niente -- il ciclo di sempre le richiede una per una. Il caso
+    # peggiore e' esattamente il comportamento di prima.
+    prima_del_batch = len(dettagli)
+    try:
+        test_def.precarica_dettagli_batch(da_scaricare, dettagli)
+    except Exception as exc:
+        print(f"  batch dettagli non riuscito ({exc}): si prosegue una per una")
+    nuovi = len(dettagli) - prima_del_batch
+
+    for nodo in da_scaricare:
         score_id = nodo['id'].replace('So5Score:', '')
         if score_id in dettagli:
             continue
