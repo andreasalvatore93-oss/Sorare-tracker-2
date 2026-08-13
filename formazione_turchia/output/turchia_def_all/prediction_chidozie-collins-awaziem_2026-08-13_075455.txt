@@ -1,0 +1,127 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:54:55.724414Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) chidozie-collins-awaziem: 49 pt attesi (32-63)
+   ORDINAMENTO: 51.14
+   SQUADRA: konyaspor-konya | AVVERSARIO: rizespor-rize
+======================================================================
+
+######################################################################
+# GIOCATORE: chidozie-collins-awaziem
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: chidozie-collins-awaziem (squadra: konyaspor-konya)
+Generato: 2026-08-13T07:54:55.723540Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 46
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: spor-toto-super-lig (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | NAN vs PSG | ligue-1-fr | score=40.6 | peso=0.574
+  2025-08-24 | STR vs NAN | ligue-1-fr | score=56.0 | peso=0.588
+  2025-08-30 | NAN vs AJA | ligue-1-fr | score=47.3 | peso=0.602
+  2025-09-13 | NIC vs NAN | ligue-1-fr | score=57.9 | peso=0.616
+  2025-09-20 | NAN vs REN | ligue-1-fr | score=37.7 | peso=0.630
+  2025-09-27 | TFC vs NAN | ligue-1-fr | score=31.1 | peso=0.645
+  2025-10-04 | BRE vs NAN | ligue-1-fr | score=65.0 | peso=0.660
+  2025-10-19 | NAN vs LIL | ligue-1-fr | score=44.9 | peso=0.675
+  2025-10-24 | PAR vs NAN | ligue-1-fr | score=55.7 | peso=0.691
+  2025-10-29 | NAN vs ASM | ligue-1-fr | score=46.0 | peso=0.707
+  2025-11-02 | NAN vs MET | ligue-1-fr | score=46.4 | peso=0.724
+  2025-11-08 | HAC vs NAN | ligue-1-fr | score=52.7 | peso=0.741
+  2025-11-23 | NAN vs FCL | ligue-1-fr | score=56.7 | peso=0.758
+  2025-11-30 | OL vs NAN | ligue-1-fr | score=34.0 | peso=0.776
+  2025-12-06 | NAN vs RCL | ligue-1-fr | score=53.3 | peso=0.794
+  2025-12-12 | SCO vs NAN | ligue-1-fr | score=22.5 | peso=0.812
+  2026-01-25 | NAN vs NIC | ligue-1-fr | score=90.3 | peso=0.831
+  2026-02-13 | ASM vs NAN | ligue-1-fr | score=70.8 | peso=0.851
+  2026-02-22 | NAN vs HAC | ligue-1-fr | score=56.9 | peso=0.871
+  2026-03-01 | LIL vs NAN | ligue-1-fr | score=36.9 | peso=0.891
+  2026-03-07 | NAN vs SCO | ligue-1-fr | score=29.9 | peso=0.912
+  2026-03-22 | NAN vs STR | ligue-1-fr | score=60.0 | peso=0.933
+  2026-04-05 | MET vs NAN | ligue-1-fr | score=49.4 | peso=0.955
+  2026-05-02 | NAN vs OM | ligue-1-fr | score=71.8 | peso=0.977
+  2026-05-08 | RCL vs NAN | ligue-1-fr | score=40.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 50.47
+  di cui Punteggio decisivo (level_score) medio: 38.40 | Punteggio complessivo (granulari) medio: 12.07 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.24, delta avversario -0.71 | Passaggio condizionato: delta venue +0.68, delta avversario -0.82 | Clean sheet/disimpegni condizionato: delta venue +0.11, delta avversario -0.42 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.20
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.0 - 65.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.87 (differenza: +3.33)
+Media score in casa: 52.45 | Media score fuori casa: 47.70
+Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.3
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.008
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.006
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.001
+Fattore trend (media ultime 5: 50.5 vs media 5 PRECEDENTI: 55.4): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T16:00
+Casa: Tümosan Konyaspor Kulübü | Trasferta: Çaykur Rize Spor Kulübü
+Competizione: spor-toto-super-lig
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.9 (range 32.4 - 63.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 51.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.02
+Punteggio REALE ottenuto in quella partita: 40.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -10.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 19 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.2    65.0    +15.9    10.7        NO
+   7        7      36.7    44.9     +8.2    12.7        SI
+   8        8      51.4    55.7     +4.3    11.8        SI
+   9        9      44.6    46.0     +1.4    11.5        SI
+  10       10      39.8    46.4     +6.6    10.9        SI
+  11       11      57.7    52.7     -5.0    10.3        SI
+  12       12      48.1    56.7     +8.6     9.9        SI
+  13       13      41.3    34.0     -7.3     9.8        SI
+  14       14      36.9    53.3    +16.4    10.5        NO
+  15       15      56.8    22.5    -34.4    10.2        NO
+  16       16      58.8    90.3    +31.5    12.3        NO
+  17       17      45.8    70.8    +25.0    17.1        NO
+  18       18      60.7    56.9     -3.9    17.5        SI
+  19       19      40.2    36.9     -3.3    17.0        SI
+  20       20      58.7    29.9    -28.8    16.9        NO
+  21       21      48.2    60.0    +11.8    17.3        SI
+  22       22      41.0    49.4     +8.4    17.0        SI
+  23       23      43.9    71.8    +27.9    16.5        NO
+  24       24      38.9    40.5     +1.5    17.0        SI
+
+MAE (errore assoluto medio): 13.17
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 63.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
