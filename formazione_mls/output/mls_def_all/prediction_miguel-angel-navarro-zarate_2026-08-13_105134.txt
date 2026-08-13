@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T10:51:34.531974Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) miguel-angel-navarro-zarate: 56 pt attesi (34-74)
+   ORDINAMENTO: 57.68
+   SQUADRA: colorado-rapids-denver-colorado | AVVERSARIO: sporting-kc-kansas-city-kansas
+======================================================================
+
+######################################################################
+# GIOCATORE: miguel-angel-navarro-zarate
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: miguel-angel-navarro-zarate (squadra: colorado-rapids-denver-colorado)
+Generato: 2026-08-13T10:51:34.526825Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-19 | CAT vs SAM | superliga-argentina-de-futbol | score=100.0 | peso=0.724
+  2025-08-23 | TUC vs CAT | superliga-argentina-de-futbol | score=45.5 | peso=0.741
+  2025-09-09 | ? vs ? | wc-qualification-south-america | score=26.5 | peso=0.758
+  2025-09-21 | ROS vs CAT | superliga-argentina-de-futbol | score=17.2 | peso=0.776
+  2025-11-16 | INS vs CAT | superliga-argentina-de-futbol | score=42.4 | peso=0.794
+  2025-11-23 | BOC vs CAT | superliga-argentina-de-futbol | score=48.9 | peso=0.812
+  2026-03-22 | SKC vs RAP | mlspa | score=65.8 | peso=0.831
+  2026-04-04 | TOR vs RAP | mlspa | score=30.8 | peso=0.851
+  2026-04-26 | VAN vs RAP | mlspa | score=32.1 | peso=0.871
+  2026-05-03 | HOU vs RAP | mlspa | score=28.3 | peso=0.891
+  2026-05-10 | RAP vs STL | mlspa | score=41.1 | peso=0.912
+  2026-05-14 | MIN vs RAP | mlspa | score=38.7 | peso=0.933
+  2026-05-17 | RSL vs RAP | mlspa | score=67.7 | peso=0.955
+  2026-07-26 | STL vs RAP | mlspa | score=64.9 | peso=0.977
+  2026-08-02 | RAP vs ATX | mlspa | score=90.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 49.87
+  di cui Punteggio decisivo (level_score) medio: 37.36 | Punteggio complessivo (granulari) medio: 12.51 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.86, delta avversario +0.34 | Passaggio condizionato: delta venue +2.98, delta avversario +1.47 | Clean sheet/disimpegni condizionato: delta venue +0.59, delta avversario -1.08 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 22.90
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 28.3 - 67.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.96 (differenza: +3.95)
+Media score in casa: 66.04 | Media score fuori casa: 46.89
+Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.3
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.896 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.006
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.006
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 1.003
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.002
+Fattore trend (media ultime 5: 61.2 vs media 5 PRECEDENTI: 40.8): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T01:30
+Casa: Colorado Rapids | Trasferta: Sporting Kansas City 
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 56.0 (range 34.4 - 73.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 57.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.40
+Punteggio REALE ottenuto in quella partita: 90.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +44.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.3    65.8    +19.6    28.3        SI
+   7        7      44.1    30.8    -13.3    27.2        SI
+   8        8      26.6    32.1     +5.5    26.2        SI
+   9        9      36.5    28.3     -8.3    25.2        SI
+  10       10      41.6    41.1     -0.5    24.4        SI
+  11       11      45.7    38.7     -7.1    23.1        SI
+  12       12      37.4    67.7    +30.2    22.1        NO
+  13       13      43.2    64.9    +21.7    22.5        SI
+  14       14      56.4    90.9    +34.5    22.4        NO
+
+MAE (errore assoluto medio): 15.62
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
