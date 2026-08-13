@@ -1,12 +1,11 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-12T23:01:05.222441Z
+Generato: 2026-08-13T20:26:47.388276Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) peter-ankersen: 59 pt attesi (36-81)
-   ORDINAMENTO: 62.55
+1) peter-ankersen: 59 pt attesi (35-80)
+   ORDINAMENTO: 61.62
    SQUADRA: nordsjaelland-farum | AVVERSARIO: silkeborg-silkeborg
-   AMBIGUO_FIXTURE: si
 ======================================================================
 
 ######################################################################
@@ -15,7 +14,7 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: peter-ankersen (squadra: nordsjaelland-farum)
-Generato: 2026-08-12T23:01:05.221505Z
+Generato: 2026-08-13T20:26:47.387204Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -54,7 +53,7 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 30.0 partite): 56.95
   di cui Punteggio decisivo (level_score) medio: 37.44 | Punteggio complessivo (granulari) medio: 19.51 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Gol subiti condizionato: delta venue +0.22, delta avversario -0.14 | Passaggio condizionato: delta venue +3.16, delta avversario -0.68 | Clean sheet/disimpegni condizionato: delta venue +1.02, delta avversario -0.19 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+  Gol subiti condizionato: delta venue +0.22, delta avversario +0.01 | Passaggio condizionato: delta venue +3.16, delta avversario -1.03 | Clean sheet/disimpegni condizionato: delta venue +1.02, delta avversario -0.01 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
 Deviazione standard pesata: 20.61
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.5 - 78.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.42 (differenza: +2.19)
@@ -62,7 +61,7 @@ Media score in casa: 66.12 | Media score fuori casa: 47.45
 Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 6.8
 Ranking prossimo avversario: 7
-Fattore forza avversario applicato: 1.485 (gol subiti reali dell'avversario, ultime 10)
+Fattore forza avversario applicato: 1.075 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 0.997
 Fattore duelli (casa/trasferta, da dati reali): 1.004
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
@@ -78,13 +77,12 @@ P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
 Data: 2026-08-16T12:00
 Casa: FC Nordsjælland | Trasferta: Silkeborg IF
 Competizione: superliga-dk
-ATTENZIONE FIXTURE AMBIGUA: due partite future avevano GIA' le starter odds pubblicate insieme -- scelta quella piu' tardiva (caso limite mai visto prima del 10/08/2026, verificare a mano).
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 59.4 (range 36.0 - 80.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 62.6
+Score atteso: 58.8 (range 35.4 - 80.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 61.6
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 56.34
