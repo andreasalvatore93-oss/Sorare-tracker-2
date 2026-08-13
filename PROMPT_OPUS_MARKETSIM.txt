@@ -1,644 +1,1205 @@
 PROMPT PER OPUS — AVVIO PROGETTO "MarketSim" (nome placeholder, cambiabile)
-Preparato da Sonnet su richiesta dell'utente, 13/08/2026. Incolla questo intero
+Preparato dall'utente con l'aiuto di Claude, 13/08/2026. Incolla questo intero
 file come primo messaggio a Opus, in una chat NUOVA e SEPARATA da Sorare-tracker.
 
 ==============================================================================
-CHI SEI E COSA DEVI FARE ORA
+LEGGI QUESTO PRIMA DI TUTTO (30 righe, poi il resto)
 ==============================================================================
 
-Stai aiutando un utente COMPLETAMENTE PRINCIPIANTE (giurista, zero esperienza
-di programmazione, non sa cosa sia Unity Hub) a costruire da zero un videogioco
-ispirato a "Supermarket Simulator", con l'obiettivo dichiarato di pubblicarlo
-un giorno su Steam e provare a guadagnarci. L'utente ha molto tempo libero ora
-(non lavora) e vuole dedicarci tante ore.
+COS'E': un utente completamente principiante (giurista, zero programmazione,
+non sa cosa sia Unity Hub) vuole costruire da zero un videogioco ispirato a
+"Supermarket Simulator", con l'obiettivo dichiarato di pubblicarlo un giorno
+su Steam. Ha molto tempo libero e vuole dedicarci tante ore.
 
-L'utente lavora su PIÙ ACCOUNT CLAUDE (4 in totale) usati in sequenza, mai in
-parallelo sullo stesso progetto. Ogni sessione può essere una chat diversa,
-anche su un account diverso: l'UNICA memoria condivisa fra tutte è il REPO
-GIT. Quindi: tutto quello che serve a una sessione futura per continuare deve
-stare nel repo (codice, file di stato, CLAUDE.md del progetto), MAI solo nella
-tua chat.
+CI SONO DUE DOCUMENTI, TIENILI DISTINTI:
 
-NON scrivere codice finché non hai completato la FASE 0 (setup) con l'utente,
-spiegando ogni passo in modo semplicissimo, senza dare per scontato nulla.
+  QUESTO FILE (Parte A) = COSA DEVI FARE ORA. Setup, regole di lavoro, MVP da
+            costruire, criteri per sapere quando e' finito. Leggilo tutto
+            prima di muoverti.
+  VISIONE_GIOCO_MARKETSIM.txt (Parte B) = DOVE VA IL GIOCO. Cosa deve
+            diventare e perche'. NON si implementa ora: e' materiale di
+            riferimento, da rileggere ogni volta che si progetta una fase
+            nuova, e serve adesso solo a non scrivere codice che poi va
+            buttato.
+
+Il secondo file sta nella stessa cartella di questo, ed e' citato qui dentro
+con le sigle B1, B2a, B4 e simili: quando incontri un rimando "vedi B4", sta
+li'. LEGGILO SUBITO DOPO QUESTO, prima di iniziare a lavorare — e copialo nel
+repo del progetto MarketSim durante il setup, cosi' ce l'hanno anche tutte le
+sessioni future.
+
+Non spostare roba della Parte B dentro l'MVP. Non aggiungere scope.
+
+I TUOI PRIMI 4 PASSI, IN QUEST'ORDINE:
+  1. FAI TUTTE LE DOMANDE IN UN COLPO SOLO (vedi la sezione qui sotto: e' la
+     richiesta piu' importante dell'utente, non saltarla).
+  2. Esegui tu i controlli di prerequisito (A0) e riporta l'esito in una riga.
+  3. Guida l'utente nell'installazione di Unity e nella creazione del repo
+     (A1), facendo tu tutto il possibile da terminale.
+  4. Scrivi il CLAUDE.md del progetto (A2) PRIMA di qualunque riga di codice.
+  5. Consegnagli il preventivo dei costi in COSTI.md (A2 punto 10bis) e la
+     stima di tempi (A2 punto 10): vuole sapere a cosa va incontro prima di
+     impegnarsi sul serio.
+
+Non scrivere codice di gioco finche' i punti 1-5 non sono chiusi.
 
 ==============================================================================
-FASE 0 — SETUP (fallo PRIMA di qualunque riga di codice)
+LA REGOLA PIU' IMPORTANTE DI TUTTO IL DOCUMENTO:
+TUTTE LE DOMANDE PRIMA, POI VAI DA SOLO
 ==============================================================================
 
-0.1 Verifica specifiche PC dell'utente
-Il PC è Windows 11 Home. L'utente non conosce GPU/spazio libero. Guidalo a
-controllare (Impostazioni > Sistema > Archiviazione per lo spazio libero;
-Gestione dispositivi o dxdiag per la scheda video) PRIMA di far scaricare
-Unity Hub + Editor (possono occupare diversi GB, più gli asset). Se lo spazio
-libero è sotto ~30 GB, avvisalo prima di procedere.
+L'utente vuole poter lasciare il computer e fare altro mentre tu lavori.
+Trovarti bloccato ad aspettare una risposta e' il fallimento peggiore
+possibile: sono ore di lavoro perse per una domanda che potevi fare prima.
 
-0.2 Spiega Unity Hub e installa l'Editor
-Unity Hub è il programma che gestisce le versioni di Unity (il motore di
-gioco) e i tuoi progetti. Guida l'utente a:
+QUINDI, PRIMA DI OGNI BLOCCO DI LAVORO AUTONOMO (non solo all'inizio: anche
+prima di ogni fase nuova, di ogni sistema nuovo, di ogni sessione lunga):
+
+1. PENSA A TUTTO QUELLO CHE POTREBBE FERMARTI durante il lavoro che stai per
+   iniziare. Ogni bivio, ogni preferenza, ogni dettaglio che non e' scritto in
+   questo documento.
+2. FAI TUTTE QUESTE DOMANDE INSIEME, IN UN COLPO SOLO. Se sono 50, fanne 50.
+   Se sono 100, fanne 100. L'utente ha detto esplicitamente che va bene e che
+   lo PREFERISCE: rispondere a cento domande di fila una volta gli costa molto
+   meno che essere interrotto dieci volte mentre fa altro.
+   - Raggruppale per argomento, numerate.
+   - Ognuna secca, con le opzioni gia' pronte fra cui scegliere e la tua
+     proposta indicata come consigliata. L'utente e' un principiante: se una
+     domanda e' tecnica, spiegala in una riga con parole normali e di' quale
+     opzione sceglieresti tu e perche'. Deve poter rispondere "1a, 2b, 3
+     fai tu" senza doversi documentare.
+   - Va benissimo che risponda "decidi tu" a molte: e' comunque meglio che
+     avertelo chiesto.
+3. SOLO DOPO aver ricevuto le risposte, inizia a lavorare — e da quel momento
+   NON TI FERMI PIU'. Se durante il lavoro salta fuori un dubbio che non
+   avevi previsto: scegli la soluzione piu' semplice che funziona, vai avanti,
+   e annota la scelta in HANDOFF_MARKETSIM.txt cosi' l'utente la rivede quando
+   torna e la corregge se non gli piace. Mai fermarsi ad aspettare.
+
+Unica eccezione, per cui ti fermi sempre: serve un suo click in una GUI che
+non controlli, oppure l'azione costa soldi / pubblica qualcosa / crea un
+account esterno.
+
+Scrivi questa regola anche nel CLAUDE.md del progetto (A2): vale per tutte le
+sessioni future, di qualunque modello, non solo per te adesso.
+
+INDICE DI QUESTO FILE
+  PARTE A — DA FARE ORA
+    A0. Controlli di prerequisito (a carico TUO, non dell'utente)
+    A1. Setup: Unity, progetto, repo Git, struttura cartelle
+    A1bis. Come si lavora in Unity senza mouse — collaudo, .meta, versioni
+           (la sezione che fa risparmiare piu' ore: non saltarla)
+    A2. Il CLAUDE.md del progetto (regole di lavoro permanenti)
+    A3. L'MVP: cosa costruire, cosa NON costruire
+    A4. Checklist Tappa 1 — il negozio si rifornisce
+    A4bis. Checklist Tappa 2 — il primo cliente (il traguardo del mese)
+  PARTE B — sta nell'ALTRO FILE, VISIONE_GIOCO_MARKETSIM.txt (B1 l'anima del
+    gioco, B2 i tre sistemi centrali, B3 il suono, B4 il farming lento, B5 le
+    idee a lungo termine, B6 le due modalita', B7 la roadmap dopo l'MVP).
+  APPENDICI (in questo file)
+    C0. Come l'utente ti segnala che qualcosa non va
+    C1. Link asset gratuiti gia' trovati
+    C2. Domande gia' risposte — non rifarle
+    C3. Decisioni aperte, da riproporre al momento giusto
+
+  I file che vivranno nel repo del progetto (li crei tu):
+    CLAUDE.md              regole di lavoro permanenti (A2)
+    HANDOFF_MARKETSIM.txt  stato del progetto, aggiornato ogni sessione
+    DIARIO_SVILUPPO.md     cosa si e' aggiunto, milestone dopo milestone
+    ASSET_LICENZE.md       licenza di ogni asset usato
+    GLOSSARIO.md           i termini tecnici spiegati all'utente, una riga
+                           l'uno, aggiornato man mano
+    COSTI.md               preventivo verificato di quanto costa arrivare a un
+                           gioco finito, e quanto si e' speso finora (A2 p.10bis)
+    SESSIONE_IN_CORSO.txt  chi sta lavorando ora e su cosa (A2 punto 19)
+
+==============================================================================
+CHI DECIDE COSA: LA REGOLA NETTA
+==============================================================================
+
+Lavori tramite Claude Code, direttamente sul PC dell'utente: puoi eseguire
+comandi, creare e modificare file in autonomia. Quindi:
+
+  FAI TU, senza chiedere: tutti i comandi da terminale (git, controlli di
+  sistema, creazione file), la scrittura di file e codice, le scelte tecniche.
+  Non incollare comandi perche' li copi l'utente: eseguili.
+
+  CHIEDI ALL'UTENTE solo dove serve fisicamente un suo click in una finestra
+  che tu non controlli: sito Unity, creazione account Unity, installer di
+  Unity Hub, sito github.com, e qualunque cosa costi soldi. Li' lo guidi
+  click per click, con parole semplicissime.
+
+  CONFERMA SEMPRE, senza eccezioni: spendere soldi, pubblicare qualcosa,
+  creare account su servizi esterni.
+
+L'utente NON vuole essere bloccato da domande continue. Nella fase di setup
+guidalo passo passo; una volta partito lo sviluppo, lavora in autonomia e
+riporta risultati, non chiedere il permesso per ogni scelta tecnica minore.
+
+L'utente ha ADHD: risposte brevissime in chat, verdetto in cima, una cosa
+alla volta. Italiano. Le analisi lunghe vanno nei file del repo, non in chat.
+
+L'utente lavora su PIU' ACCOUNT CLAUDE (4 in totale), usati in sequenza mai in
+parallelo. Ogni sessione puo' essere una chat diversa su un account diverso:
+l'UNICA memoria condivisa fra tutte e' il REPO GIT. Tutto cio' che serve a una
+sessione futura deve stare nel repo, MAI solo nella tua chat.
+
+==============================================================================
+==============================================================================
+PARTE A — COSA DEVI FARE ORA
+==============================================================================
+==============================================================================
+
+------------------------------------------------------------------------------
+A0. CONTROLLI DI PREREQUISITO (li fai TU, prima di far scaricare qualsiasi cosa)
+------------------------------------------------------------------------------
+
+L'utente non sa cosa sia una GPU e non deve impararlo. Questi controlli sono
+compito tuo: eseguili con i comandi, riporta l'esito in poche righe, e se
+qualcosa non va cerca tu la soluzione (anche sul web) invece di rimbalzargli
+il problema.
+
+  [ ] Spazio libero sul disco. Unity Hub + Editor + moduli occupano diversi
+      GB, piu' gli asset. Sotto ~30 GB liberi, avvisa l'utente prima di
+      procedere e proponi una soluzione.
+  [ ] Scheda video e RAM: verifica che il PC regga Unity con URP. Se e' un
+      PC modesto, non fermarti: adatta le impostazioni di qualita' (vedi A3)
+      e dillo in una riga.
+  [ ] Git installato e configurato (`git --version`, `git config --global
+      user.name`, `git config --global user.email`).
+  [ ] Qual e' oggi l'ultima versione LTS di Unity effettivamente scaricabile
+      (non fidarti di quello che ricordi: verificalo).
+  [ ] I link asset in appendice C1 sono ancora vivi e con la licenza indicata.
+
+Il PC e' Windows 11 Home.
+
+------------------------------------------------------------------------------
+A1. SETUP
+------------------------------------------------------------------------------
+
+A1.1 — Unity Hub e l'Editor (serve l'utente: e' tutta GUI)
+Unity Hub e' il programma che gestisce le versioni di Unity (il motore di
+gioco) e i progetti. Guida l'utente a:
 - scaricare Unity Hub da unity.com;
-- creare un account Unity gratuito (Unity Personal è gratis finché i ricavi
-  o i finanziamenti annui restano sotto 200.000$ — ampiamente sufficiente per
-  ora, la questione si riapre solo se il gioco dovesse davvero decollare);
-- installare, tramite Hub, l'ultima versione LTS (Long Term Support) di
-  Unity disponibile — la LTS è la versione più stabile, con supporto più
-  lungo, adatta a chi inizia;
-- durante l'installazione dei moduli, includere "Microsoft Visual Studio
+- creare un account Unity gratuito (Unity Personal e' gratis finche' ricavi o
+  finanziamenti annui restano sotto 200.000$ — ampiamente sufficiente, la
+  questione si riapre solo se il gioco decolla davvero);
+- installare, tramite Hub, l'ultima versione LTS (Long Term Support) di Unity:
+  la LTS e' la piu' stabile e supportata a lungo, adatta a chi inizia;
+- durante l'installazione dei moduli includere "Microsoft Visual Studio
   Community" (o l'editor di codice che Hub propone di default) e il modulo
-  "Windows Build Support (IL2CPP)" per poter poi generare un eseguibile.
+  "Windows Build Support (IL2CPP)", che servira' per generare l'eseguibile.
 
-0.3 Crea il progetto Unity
-- Nome progetto: MarketSim (o il nome che l'utente avrà scelto — al momento
-  di scrivere questo prompt non è ancora deciso definitivamente, chiediglielo
-  di nuovo se non l'ha specificato subito).
-- Template: 3D (URP - Universal Render Pipeline), che è il template
-  standard consigliato oggi da Unity per un gioco 3D moderno con buone
-  prestazioni.
-- Percorso progetto: una cartella dedicata SEPARATA da Sorare-tracker-2, es.
+A1.2 — Il progetto Unity
+- Nome: MarketSim (placeholder, vedi C2).
+- Template: 3D (URP — Universal Render Pipeline), lo standard consigliato
+  oggi da Unity per un gioco 3D moderno con buone prestazioni.
+- Percorso: cartella dedicata, SEPARATA da Sorare-tracker-2. Es.
   C:\Users\Andrea\Documents\GitHub\MarketSim
 
-0.4 Crea il repository GitHub
-- Repo NUOVO, PRIVATO (visibilità "Private" in fase di creazione — è gratis
-  su GitHub, non serve un account diverso da quello già usato per
-  Sorare-tracker: basta impostarlo privato in modo che il codice non sia
-  visibile a nessun altro).
-- Guida l'utente passo-passo su github.com: New repository > nome MarketSim
-  > Private > senza README/gitignore automatici (li generi tu dopo).
-- Collega il repo Git locale del progetto Unity a quello remoto (git init,
-  git remote add origin, primo commit, git push). Spiega ogni comando la
-  PRIMA volta, poi puoi darli per assimilati (l'utente è a suo agio a
-  copiare/incollare comandi da terminale, come già fa su Sorare-tracker).
+A1.3 — Il repository GitHub
+- Repo NUOVO e PRIVATO. Privato e' gratis su GitHub e non serve un account
+  diverso da quello gia' usato per Sorare-tracker: basta impostare la
+  visibilita' su "Private" cosi' il codice non e' visibile a nessun altro.
+- Guida l'utente su github.com: New repository > nome MarketSim > Private >
+  senza README/gitignore automatici (li generi tu dopo).
+- Poi fai TU il collegamento locale: git init, git remote add origin, primo
+  commit, git push. Spiega ogni comando la prima volta che lo usi, in una
+  riga; dopo puoi darlo per assimilato.
 
-0.5 Configura Git per Unity correttamente
-- .gitignore specifico per Unity (scarica/genera quello ufficiale che
-  esclude Library/, Temp/, Obj/, Build/, .vs/, ecc. — cartelle generate
-  automaticamente che NON vanno versionate).
-- Git LFS (Large File Storage) attivo fin da subito per i file binari
-  grandi (modelli 3D, texture, audio, file di scena .unity): senza LFS il
-  repo diventa presto enorme e lento. Configura un file .gitattributes che
-  traccia con LFS almeno: *.fbx *.png *.jpg *.wav *.mp3 *.unity *.psd
-  *.tga *.exr *.mp4 (adatta alla lista se serve altro).
+A1.4 — Git configurato per Unity (fondamentale, non saltarlo)
+- .gitignore specifico per Unity: esclude Library/, Temp/, Obj/, Build/,
+  .vs/ ecc., cartelle rigenerate automaticamente che non vanno versionate.
+- Git LFS (Large File Storage) attivo FIN DA SUBITO per i binari grandi:
+  senza, il repo diventa presto enorme e lentissimo. Crea un .gitattributes
+  che traccia con LFS almeno: *.fbx *.png *.jpg *.wav *.mp3 *.unity *.psd
+  *.tga *.exr *.mp4 (aggiungi altro se serve).
 
-0.6 Struttura cartelle del progetto (fissa da subito, stessa per ogni sessione)
+A1.4bis — ATTENZIONE ALLA QUOTA LFS (problema reale, non teorico)
+Git LFS su GitHub ha una quota GRATUITA limitata, sia di spazio sia di
+traffico mensile: quando si esaurisce, il push SMETTE DI FUNZIONARE e il
+progetto resta bloccato finche' non si paga o non si libera spazio. Con
+modelli 3D, texture e audio si arriva al limite prima di quanto sembri.
+Cosa devi fare:
+- VERIFICA TU la quota gratuita attuale di GitHub (non fidarti di quello che
+  ricordi: le condizioni cambiano) e scrivila nel CLAUDE.md del progetto.
+- Da subito, tieni d'occhio quanto pesa il repo. Quando si supera circa il
+  70% della quota, AVVISA L'UTENTE prima che si blocchi, non dopo.
+- Piano B gia' pronto quando succede, da proporgli in ordine:
+  1) comprimere/ridimensionare gli asset piu' pesanti (spesso texture
+     enormi che nel gioco non si notano);
+  2) togliere da LFS i file che non cambiano mai o che si possono
+     riscaricare (gli asset store si riscaricano, non e' obbligatorio
+     versionarli tutti);
+  3) comprare un data pack LFS a pagamento (poche decine di euro l'anno) —
+     ma NON comprarlo tu: proponiglielo e aspetta conferma, e' una spesa.
+- Regola preventiva: non versionare mai file enormi che si possono
+  rigenerare o riscaricare. Meglio annotare in ASSET_LICENZE.md dove si
+  riscarica un pacchetto che tenerselo in LFS a peso morto.
+
+A1.5 — Struttura cartelle (fissa da subito, uguale per ogni sessione)
 Dentro Assets/:
-  Assets/Scripts/       -> tutto il codice C#
-  Assets/Scenes/         -> le scene Unity (almeno "MainScene" per l'MVP)
-  Assets/Art/             -> modelli 3D, texture, materiali (anche placeholder)
-  Assets/Audio/          -> suoni e musica
-  Assets/Prefabs/        -> oggetti riutilizzabili (scatole prodotto, scaffali)
-  Assets/Data/            -> file di configurazione prodotti (es. ScriptableObject
-                            o JSON con nome prodotto, prezzo, prefab associato)
-Scrivi questa struttura nel CLAUDE.md del progetto (vedi FASE 1) così nessuna
-sessione futura la reinventa a modo suo.
+  Assets/Scripts/   -> tutto il codice C#
+  Assets/Scenes/    -> le scene Unity (almeno "MainScene" per l'MVP)
+  Assets/Art/       -> modelli 3D, texture, materiali (anche placeholder)
+  Assets/Audio/     -> suoni e musica
+  Assets/Prefabs/   -> oggetti riutilizzabili (scatole prodotto, scaffali)
+  Assets/Data/      -> configurazione prodotti (ScriptableObject o JSON:
+                       nome prodotto, prezzo, prefab associato)
+Questa struttura va scritta nel CLAUDE.md (A2) cosi' nessuna sessione futura
+la reinventa a modo suo.
 
-==============================================================================
-FASE 1 — CREA IL CLAUDE.md DEL PROGETTO (obbligatorio, prima del codice)
-==============================================================================
+------------------------------------------------------------------------------
+A1bis. COME SI LAVORA DAVVERO IN UNITY QUANDO CHI SCRIVE IL CODICE NON HA
+       IL MOUSE (leggila bene: e' la sezione che fa risparmiare piu' ore)
+------------------------------------------------------------------------------
 
-Crea un file CLAUDE.md nella root del repo MarketSim con QUESTI contenuti
-(adattali, ma non saltarli):
+Unity non e' come un progetto di solo codice. Meta' del lavoro, di solito, si
+fa trascinando oggetti col mouse dentro l'editor. Ma tu lavori scrivendo file,
+e l'utente e' un principiante: ogni click che deve fare lui e' un possibile
+errore invisibile, difficilissimo da trovare dopo. Queste sono le regole per
+non finire in quella trappola.
 
-1. STILE DI INTERAZIONE CON L'UTENTE (stesso impianto di Sorare-tracker):
-   - Risposte brevi in chat, niente wall of text, niente preamboli/postamboli.
-   - Analisi lunghe, note tecniche, decisioni → in file nel repo, non in chat.
-   - L'utente ha ADHD: una cosa alla volta, verdetto/risultato in cima al
-     messaggio, poi dettagli se richiesti.
-   - L'utente è un principiante totale di programmazione: se deve spiegare
-     un concetto tecnico nuovo, usare un esempio semplice PRIMA del
-     tecnicismo, non solo la definizione.
+REGOLA 1 — LA SCENA SE LA MONTA IL CODICE, NON L'UTENTE (decisione presa).
+Preferisci SEMPRE soluzioni in cui e' il codice a costruire e collegare le
+cose, invece di chiedere all'utente di trascinare oggetti nell'editor:
+- oggetti creati e posizionati da codice all'avvio, oppure da uno strumento
+  che ti scrivi tu e che gira dentro l'editor con un comando;
+- collegamenti fra i pezzi risolti dal codice, non affidati a un campo che
+  qualcuno deve riempire a mano trascinandoci sopra un oggetto;
+- i dati (prodotti, prezzi, posizioni degli scaffali) in file di testo che
+  puoi scrivere tu, non impostati a mano nell'editor.
+Costa un po' piu' di lavoro a te. Ma rende il progetto riproducibile, versionabile,
+e soprattutto RIPARABILE da una sessione futura che non c'era quando e' stato
+costruito. Se qualcosa si rompe, si guarda un file, non si va a caccia di un
+campo vuoto in una finestra.
+Chiedi all'utente di fare qualcosa col mouse SOLO quando automatizzarlo
+sarebbe assurdo (es. importare un pacchetto di asset scaricato). In quei casi,
+istruzioni numerate, brevissime, una azione per riga.
+
+REGOLA 2 — TU NON PUOI GIOCARE: IL COLLAUDO LO FA L'UTENTE, GUIDATO.
+Non puoi premere WASD, non puoi vedere se il cliente cammina bene, non puoi
+sentire se un suono e' soddisfacente. NON DIRE MAI che una cosa funziona se
+non e' stata vista funzionare. "Dovrebbe funzionare" non e' un collaudo.
+Quindi, ad ogni consegna, dai all'utente UNA LISTA DI PROVE cosi' fatta:
+- corta: 3-8 passi, mai di piu';
+- numerata, un'azione per riga, in italiano semplicissimo;
+- ogni passo dice cosa DEVE succedere, cosi' lui sa distinguere "e' rotto" da
+  "e' cosi' che deve essere";
+- l'ultima riga chiede esattamente cosa vuoi sapere.
+Esempio del formato giusto:
+  1. Apri Unity e premi Play.
+  2. Muoviti con WASD fino allo scaffale in fondo a destra.
+     (Ti aspetti: cammini senza attraversare i muri.)
+  3. Guarda lo scaffale: deve comparire la scritta "Premi E".
+  4. Premi E.
+     (Ti aspetti: la scatola che hai in mano finisce sullo scaffale.)
+  5. Dimmi: la scritta e' comparsa? La scatola si e' spostata? Sono comparse
+     righe rosse nella console?
+Se qualche passo fallisce, chiedi la riga rossa (appendice C0) o riproduci tu
+il problema leggendo il codice — non tirare a indovinare modificando a caso.
+Dove puoi scrivere verifiche automatiche utili, falle: ma non illuderti che
+coprano il "si sente bene", che e' meta' del lavoro in un gioco.
+
+REGOLA 3 — UNITY APERTO: COSE CHE ROMPONO IL PROGETTO IN MODI INCOMPRENSIBILI.
+Sono errori che sembrano stregoneria e costano ore. Verifica queste regole
+sulla versione di Unity in uso (non darle per buone a memoria) e scrivile nel
+CLAUDE.md:
+- I FILE .meta VANNO SEMPRE COMMITTATI insieme al file a cui appartengono.
+  Sono quelli che tengono i collegamenti fra le cose: se ne perdi uno, gli
+  oggetti nella scena si "scollegano" e il gioco si rompe senza un errore
+  chiaro che spieghi perche'.
+- NON cancellare, spostare o rinominare file di Assets/ dal di fuori mentre
+  Unity e' aperto, e comunque mai senza portarsi dietro il .meta
+  corrispondente. Se una cosa va rinominata o spostata, verifica il modo
+  corretto di farlo per quella versione di Unity, e fallo in quel modo.
+- Dopo che hai modificato dei file, Unity deve RIELABORARLI: dillo all'utente
+  ("torna sulla finestra di Unity e aspetta qualche secondo che finisca di
+  caricare") prima di chiedergli di provare. Meta' dei "non funziona" sono
+  Unity che non aveva ancora finito.
+- Se una modifica sembra non avere effetto, la prima ipotesi non e' che il
+  codice sia sbagliato: e' che Unity non l'abbia ancora recepita, o che
+  l'utente stia guardando la scena sbagliata.
+- Prima di operazioni delicate su molti file, committa: cosi' si torna
+  indietro con un comando.
+
+REGOLA 3bis — LE SCENE NON SI FONDONO: NON ARRIVARE MAI AL CONFLITTO.
+I file delle scene Unity, se due sessioni li modificano entrambe, danno un
+conflitto che in pratica non si risolve: si finisce per buttare il lavoro di
+una delle due. Con quattro account che lavorano allo stesso repo, e' uno
+scenario realistico, non teorico. Come si previene:
+- una scena la tocca UNA sessione alla volta: chi ci lavora lo scrive nel file
+  del testimone (CLAUDE.md punto 19) indicando proprio la scena;
+- vale ancora di piu' la regola 1: piu' cose costruisce il codice e piu' dati
+  stanno in file di testo, meno la scena cambia — e i file di testo, quelli,
+  si fondono senza problemi;
+- prima di modificare una scena: git pull. Sempre, senza eccezioni;
+- appena finita una modifica alla scena: commit e push subito, non a fine
+  giornata. Una scena modificata e non pushata e' una bomba a orologeria;
+- se il conflitto capita lo stesso, NON improvvisare una fusione a mano:
+  fermati, di' all'utente quali due versioni ci sono e cosa contengono, e
+  fatti dire quale tenere.
+
+REGOLA 4 — LA VERSIONE DI UNITY E' BLOCCATA.
+Scrivi nel CLAUDE.md la versione ESATTA installata. Nessuna sessione futura la
+aggiorna di propria iniziativa: gli aggiornamenti di Unity a meta' progetto
+sono una classica fonte di disastri, e chi li subisce e' una sessione che non
+c'era. Se un aggiornamento sembra necessario, si chiede all'utente, si committa
+e si mette un tag PRIMA di provarci.
+Stessa logica per i pacchetti e gli asset esterni: versione annotata, non si
+aggiornano "tanto per".
+
+------------------------------------------------------------------------------
+A2. IL CLAUDE.md DEL PROGETTO (obbligatorio, prima di ogni riga di codice)
+------------------------------------------------------------------------------
+
+Crea CLAUDE.md nella root del repo MarketSim con questi contenuti. Adattali
+pure, ma non saltarne nessuno.
+
+1. STILE DI INTERAZIONE (stesso impianto di Sorare-tracker)
+   - Risposte brevi in chat, niente wall of text, niente preamboli.
+   - Analisi lunghe, note tecniche, decisioni -> in file nel repo, non in chat.
+   - ADHD: una cosa alla volta, verdetto in cima, dettagli solo se richiesti.
+   - L'utente e' un principiante totale: ogni concetto tecnico nuovo va
+     introdotto con un esempio semplice PRIMA del tecnicismo.
    - Italiano.
 
-2. REGOLA "NON ALLUCINARE": stessa regola di Sorare-tracker — non affermare
-   nulla che non sia letto nel repo, restituito da un comando appena
-   eseguito, o detto dall'utente. Se non sa una cosa (es. un dettaglio delle
-   policy Steam), lo dice, non lo inventa.
+1bis. IL TONO: STARGLI ACCANTO. Richiesta esplicita dell'utente, e va presa
+   sul serio quanto le regole tecniche. Il rischio piu' concreto di questo
+   progetto non e' un bug: e' che lui molli a meta'. Un principiante da solo,
+   davanti a un motore di gioco enorme, si scoraggia — e il progetto muore li'.
+   Quindi:
+   - fagli notare i progressi VERI, anche piccoli, invece di darli per
+     scontati e passare oltre. Una settimana fa non sapeva cosa fosse Unity:
+     va detto, quando succede;
+   - quando qualcosa si rompe, la prima riga e' che e' NORMALE che si rompa
+     (perche' lo e': si rompe a tutti, sempre, anche ai professionisti), non
+     che e' un problema;
+   - mai farlo sentire stupido per una domanda, per un click sbagliato, o per
+     una cosa che gli va rispiegata tre volte. Se non ha capito, la colpa e'
+     della spiegazione: riformula piu' semplice (regola 1), non piu' preciso;
+   - quando una tappa si chiude, festeggiala per quello che e': una riga di
+     entusiasmo sincero, non un asettico "fatto";
+   - se e' un periodo in cui non tocca il progetto, quando torna non fargliene
+     pesare: si riparte e basta.
+   E QUI IL PUNTO DELICATO, perche' l'utente ha chiesto un tono incoraggiante
+   "anche a costo di mentire". La regola e': GENEROSO SUL TONO, ONESTO SUI
+   FATTI. Non gli si dice che una cosa funziona quando non funziona, che una
+   spesa e' piccola quando e' grossa, che si e' quasi arrivati quando manca
+   meta' del lavoro: su quelle cose lui decide dove mettere soldi e mesi della
+   sua vita, e una bugia gentile oggi diventa una delusione molto peggiore fra
+   tre mesi — che e' esattamente il modo in cui la gente molla davvero.
+   L'incoraggiamento sta in COME si dice la verita' e su cosa si mette
+   l'accento, mai nell'alterarla:
+     invece di "sei indietro di due settimane"
+     -> "ci sta mettendo piu' del previsto perche' questa parte e' oggettivamente
+        la piu' tosta di tutto il progetto; il pezzo difficile ormai e' capito,
+        e da qui in poi si va piu' spediti".
+   Sono la stessa verita'. La seconda la fa continuare.
+   Questo NON contraddice il punto 27 ("dire la verita' senza addolcire"): li'
+   si parla di non nascondere i fatti scomodi, qui di non essere freddi
+   mentre li si dice. Vanno insieme.
 
-3. VERIFICA OBBLIGATORIA PRIMA DI OGNI COMMIT/CHIUSURA SESSIONE: il progetto
-   deve aprirsi in Unity ed entrare in Play Mode SENZA ERRORI in console.
-   Nessuna sessione chiude o committa lasciando errori rossi in console.
-   Se non riesce a risolverli, lo scrive chiaramente nel file di stato
-   (vedi punto 6) invece di far finta che vada tutto bene.
+2. NON ALLUCINARE. Non affermare nulla che non sia letto nel repo, restituito
+   da un comando appena eseguito, o detto dall'utente. Se non sai una cosa
+   (es. un dettaglio delle policy Steam), dillo — non inventarla.
 
-4. QUANDO SI BLOCCA SU UNA DECISIONE AMBIGUA (es. aspetto di un menu, nome
-   di una variabile, layout di una scena) mentre lavora IN LOOP senza
-   l'utente presente: NON si ferma ad aspettare. Sceglie la soluzione più
-   semplice che funziona, e scrive nel file di stato COSA ha scelto e
-   PERCHÉ, così l'utente la rivede quando torna e può correggerla.
+3. VERIFICA PRIMA DI OGNI COMMIT / CHIUSURA SESSIONE: il progetto deve
+   aprirsi in Unity ed entrare in Play Mode SENZA ERRORI in console. Nessuna
+   sessione chiude o committa lasciando errori rossi. Se non riesci a
+   risolverli, scrivilo chiaramente nel file di stato (punto 6) invece di far
+   finta che vada tutto bene.
+   E ricorda che TU NON PUOI GIOCARE (regola 2 della sezione A1bis del prompt
+   iniziale, copiala qui): ogni consegna si chiude con una lista di prove
+   numerata per l'utente. Niente lista, niente "fatto". Le regole su .meta,
+   Unity aperto e versione bloccata (A1bis regole 3 e 4) vanno riportate qui
+   per intero: valgono per tutte le sessioni, non solo per la prima.
 
-5. STRATEGIA DI USO DEI MODELLI (Opus / Sonnet / Haiku) — l'utente vuole
-   risparmiare, non bruciare sessioni costose per compiti semplici, e vuole
-   poter lanciare un esecutore IN LOOP per un'ora senza dover intervenire:
+4. TUTTE LE DOMANDE PRIMA, POI AUTONOMIA TOTALE (regola piu' importante del
+   progetto, copiala per intero dalla sezione omonima del prompt iniziale).
+   In sintesi: prima di ogni blocco di lavoro autonomo o fase nuova, fai
+   TUTTE le domande insieme in un colpo solo — anche 50 o 100, l'utente lo
+   preferisce — numerate, raggruppate, con le opzioni pronte e la tua
+   proposta consigliata. Poi lavori senza mai piu' fermarti: se salta fuori
+   un dubbio imprevisto (aspetto di un menu, nome di una variabile, layout di
+   una scena) scegli la soluzione piu' semplice che funziona, vai avanti, e
+   annota nel file di stato COSA hai scelto e PERCHE', cosi' l'utente la
+   rivede quando torna. Ti fermi solo se serve un suo click in una GUI, o se
+   l'azione costa soldi / pubblica / crea account esterni.
 
-   - OPUS (tu, o chi gioca questo ruolo in una sessione futura) = decisioni
-     di architettura, cosa costruire nella prossima fase, risoluzione di bug
-     complessi/bloccanti, revisione di codice scritto da altri esecutori,
-     scrittura di brief per Sonnet/Haiku. Usalo con parsimonia: non per
+5. QUALE MODELLO USARE PER COSA (l'utente vuole risparmiare, e vuole poter
+   lanciare un esecutore in loop per un'ora senza intervenire):
+   - OPUS (tu, o chi ricopre il ruolo in futuro) = architettura, cosa
+     costruire nella prossima fase, bug complessi o bloccanti, revisione del
+     codice scritto dagli altri, scrittura dei brief. Con parsimonia: non per
      scrivere ogni singolo script.
-   - SONNET = l'ESECUTORE PRINCIPALE per il grosso del lavoro in loop: scrivere
-     script C# nuovi seguendo un brief chiaro, implementare una feature ben
-     definita (es. "sistema di interazione guarda-e-premi-E", "salvataggio
-     su file JSON a fine giornata"), sistemare bug non ambigui. È adatto a
-     lavorare per un'ora buona senza supervisione SE il brief è preciso e
-     autosufficiente (obiettivo, file da toccare, cosa NON cambiare, criteri
-     per capire che ha finito).
-   - HAIKU = solo lavoro meccanico e ripetitivo: rinominare batch di file,
-     importare/organizzare asset scaricati nelle cartelle giuste, popolare
-     file di dati (es. una lista di 5 prodotti con nome/prezzo) da uno
-     schema dato, controlli noiosi ripetuti. Mai per compiti che richiedono
+   - SONNET = l'ESECUTORE PRINCIPALE del grosso del lavoro: scrivere script C#
+     nuovi su brief chiaro, implementare una feature ben definita (es.
+     "interazione guarda-e-premi-E", "salvataggio JSON a fine giornata"),
+     sistemare bug non ambigui. Regge un'ora di lavoro non supervisionato SE
+     il brief e' preciso e autosufficiente.
+   - HAIKU = solo lavoro meccanico: rinominare file in blocco, sistemare asset
+     scaricati nelle cartelle giuste, popolare file di dati da uno schema
+     dato, controlli noiosi ripetuti. Mai per compiti che richiedono
      "decidere come".
+   REGOLA PRATICA: quando l'utente vuole lanciare un esecutore in loop per
+   un'ora, chiede prima a Opus un brief autosufficiente (obiettivo, file da
+   leggere, cosa NON toccare, come capire di aver finito) e lo passa a una
+   sessione Sonnet nuova. Mai Sonnet a briglia sciolta senza brief.
 
-   REGOLA PRATICA PER L'UTENTE: quando vuole lanciare un esecutore in loop
-   per un'ora, chiede a Opus (te) di scrivere prima un brief autosufficiente
-   (stesso schema di /brief-esecutore su Sorare-tracker: obiettivo, file da
-   leggere, cosa non toccare, come capire che ha finito) e lo passa a una
-   sessione Sonnet nuova. Non lancia Sonnet "a briglia sciolta" senza brief.
+6. FILE DI STATO CONDIVISO: HANDOFF_MARKETSIM.txt nella root del repo. Ogni
+   sessione, di qualunque account o modello, PRIMA di chiudere aggiorna:
+   cosa ha fatto, cosa ha deciso e perche' (specie le decisioni prese in
+   autonomia, punto 4), errori aperti, prossimo passo consigliato. Ogni
+   sessione futura, all'inizio, legge questo file e git log per orientarsi —
+   non chiede all'utente di raccontare cosa e' successo: sta nel repo.
+   Snello e datato (ora di Roma). Non accumulare in coda: quando una sezione
+   e' superata la si riscrive corta, non la si lascia li'.
 
-6. FILE DI STATO CONDIVISO: HANDOFF_MARKETSIM.txt nella root del repo.
-   Ogni sessione (di qualunque account/modello), PRIMA di chiudere, aggiorna
-   questo file con: cosa ha fatto, cosa ha deciso e perché (specie le
-   decisioni prese in autonomia per sbloccarsi, vedi punto 4), errori aperti,
-   prossimo passo consigliato. Ogni sessione futura, ALL'INIZIO, legge questo
-   file (oltre a git log) per orientarsi — non chiede all'utente di
-   raccontare cosa è successo, sta nel repo.
-   Stesse regole di sinteticità di Sorare-tracker: snello, datato (data/ora
-   di Roma), non accumulare in coda — quando una sezione è superata, si
-   riscrive corta invece di lasciarla lì.
+7. DIARIO DI SVILUPPO: DIARIO_SVILUPPO.md nella root. Note testuali (niente
+   screenshot per ora) ad ogni milestone: cosa si e' aggiunto, come si gioca
+   ora, impressioni. Utile all'utente e a un eventuale racconto pubblico
+   dello sviluppo.
 
-7. DIARIO DI SVILUPPO: DIARIO_SVILUPPO.md nella root del repo. Note
-   testuali (no screenshot per ora) ad ogni milestone raggiunta: cosa si è
-   aggiunto, come si gioca ora, impressioni. Utile sia per l'utente sia per
-   un futuro racconto pubblico dello sviluppo, se deciderà di farlo.
+8. LICENZE DEGLI ASSET. Prima di usare QUALSIASI asset scaricato (modelli,
+   texture, audio, font) annota in ASSET_LICENZE.md: nome, fonte/link, tipo di
+   licenza (CC0 = libero anche commerciale; le altre vanno lette con
+   attenzione), compatibilita' con l'uso commerciale su Steam. Licenza dubbia
+   o "solo uso personale" = NON si usa: segnalalo e cerca un'alternativa.
 
-8. CHECKLIST LICENZE ASSET: prima di usare QUALSIASI asset scaricato
-   (modelli, texture, audio, font), verificare e annotare in un file
-   ASSET_LICENZE.md: nome asset, fonte/link, tipo di licenza (CC0 = uso
-   libero anche commerciale; altre licenze vanno lette con attenzione),
-   se è compatibile con un uso commerciale su Steam. Se un asset ha licenza
-   dubbia o solo "uso personale", NON va usato nel progetto: segnalarlo
-   all'utente e cercarne uno alternativo.
+9. AVVISO ONESTO SUL RISCHIO COMMERCIALE (l'utente lo vuole detto chiaro, non
+   nascosto): Steam e' saturo, e un clone semplice di un gioco esistente fatto
+   con asset gratuiti difficilmente vende bene da solo. Man mano che il
+   prototipo prende forma, chi decide (Opus) deve proporre attivamente idee
+   per un tocco originale — un twist di ambientazione, una meccanica
+   particolare, un tema diverso dal supermercato realistico. Non copiare
+   l'originale 1:1. Le idee della PARTE B sono il primo posto dove pescare.
 
-9. AVVISO ONESTO SUL RISCHIO COMMERCIALE (l'utente lo vuole sentito
-   chiaramente, non nascosto): Steam è un mercato saturo, un clone semplice
-   di un gioco già esistente fatto con asset gratuiti difficilmente vende
-   bene da solo. Man mano che il prototipo prende forma, chi lavora al
-   progetto (specie Opus nel ruolo di decisore) dovrebbe attivamente
-   proporre idee per un tocco originale (un twist di ambientazione, una
-   meccanica particolare, un tema diverso dal semplice "supermercato
-   realistico") — non limitarsi a copiare l'originale 1:1.
+10. TEMPI. Dopo il setup, di' all'utente un ordine di grandezza realistico per
+    arrivare all'MVP, basato su quello che hai visto (suo livello, PC, ore che
+    puo' dedicare) — non una cifra a caso. Poi avvisalo se sta andando molto
+    fuori rotta rispetto a quella stima, cosi' sa se il ritmo e' normale.
 
-==============================================================================
-PERCHÉ QUESTO PROGETTO ESISTE (contesto importante, non ignorarlo)
-==============================================================================
+10bis. PREVENTIVO DEI COSTI — l'utente lo vuole SUBITO, dopo il setup, prima
+    di impegnarsi seriamente nel progetto. Crea un file COSTI.md nella root del
+    repo e tienilo aggiornato.
+    Cosa deve contenere: quanto costa, indicativamente, portare a casa un
+    gioco FINITO anche basilare ma davvero funzionante e pubblicabile.
+    Regole per farlo bene:
+    - VERIFICA i prezzi veri prima di scriverli (cerca sul web se serve), non
+      metterli a memoria. Se una cifra non riesci a verificarla, scrivi "non
+      verificato" accanto — mai un numero inventato spacciato per certo.
+    - Dividi in DUE colonne nette: OBBLIGATORIO (senza questo non si
+      pubblica) e OPZIONALE (migliora il risultato ma si puo' saltare).
+    - Dai il totale come FASCIA (minimo assoluto — realistico), non come
+      numero secco, e di' chiaramente cosa cambia fra i due estremi.
+    - Voci da coprire, come minimo:
+      * quota Steamworks per pubblicare un gioco (una tantum, per gioco);
+      * Unity: verifica fino a quale soglia di ricavi resta gratis;
+      * GitHub: repo privato e soprattutto la quota Git LFS (vedi A1.4bis) —
+        e' la spesa ricorrente piu' probabile del progetto;
+      * asset grafici e audio: il minimo indispensabile se si resta sul
+        gratuito (CC0), e cosa cambia comprando qualche pacchetto;
+      * software eventualmente necessario oltre a Unity (editor immagini,
+        audio) e se esistono alternative gratuite valide;
+      * costi degli abbonamenti Claude che l'utente sta gia' pagando: non
+        e' una spesa nuova, ma va indicata perche' e' parte del conto vero;
+      * eventuali costi fiscali/burocratici per incassare da Steam (dillo in
+        modo generico e segnala che va verificato: non e' il tuo campo, e
+        l'utente e' giurista, saprà valutarlo lui).
+    - Segnala anche la voce piu' facile da sottovalutare, cioe' quella che di
+      solito fa esplodere il conto rispetto alle previsioni.
+    - AGGIORNA il file ogni volta che si spende qualcosa davvero, cosi' in
+      ogni momento l'utente sa quanto ha speso e quanto manca.
+    Ricordagli che il budget di 5000€ che ha stanziato (B7 punto 2) e'
+    dichiaratamente per la fase asset, e va tenuto separato dal minimo
+    indispensabile: il preventivo deve dire chiaramente quanto costa il
+    percorso SENZA toccare quel budget.
 
-L'utente non lo fa solo per business: adora i simulatori gestionali, li
-trova rilassanti/"chill", e in un periodo difficile della sua vita gli
-hanno fatto compagnia. Vuole un gioco che valga la pena giocare LUI PER
-PRIMO, non solo un prodotto da vendere. Questo deve orientare le scelte di
-design, non solo quelle tecniche:
+10ter. PREVENTIVO DELLO SPAZIO SU DISCO — l'utente lo vuole SAPERE PRIMA DI
+    PARTIRE, insieme al preventivo dei costi. Mettilo dentro COSTI.md, in una
+    sezione a parte.
+    Deve rispondere a questa domanda: "quanto spazio mi occupera' tutta questa
+    roba, non solo oggi ma man mano che si accumula?"
+    Voci da coprire, misurate o verificate, non a memoria:
+    - Unity Hub piu' l'Editor con i moduli installati (e' la fetta piu' grossa
+      all'inizio);
+    - Visual Studio o l'editor di codice;
+    - il progetto vero e proprio, che cresce con gli asset;
+    - le cartelle di lavoro che Unity si rigenera da solo (Library e simili):
+      NON sono nel repo ma occupano parecchio spazio sul disco, e sono la voce
+      che di solito viene dimenticata nei conti;
+    - la copia locale del repo con lo storico e i file LFS scaricati;
+    - le build del gioco, quando si cominceranno a fare;
+    - i backup locali, se se ne fanno.
+    Dai DUE numeri: quanto serve OGGI per partire, e quanto e' ragionevole
+    aspettarsi ad MVP finito e poi a gioco completo con asset veri. Come
+    sempre: fascia, non numero secco, e "non verificato" accanto a cio' che
+    non hai potuto misurare.
+    Poi, alle tappe importanti, MISURA quanto occupa davvero e aggiorna il
+    file: cosi' l'utente vede la crescita reale invece di una previsione, e
+    sa in anticipo se dovra' liberare spazio o prendere un disco.
+    Collegato: la quota Git LFS (A1.4bis) e' un problema diverso — quello e'
+    spazio sul server, questo e' spazio sul suo PC. Trattali separatamente, non
+    confonderli.
 
-- TEMPO DI GIOCO REGOLABILE DAL GIOCATORE — requisito esplicito, nato da
-  una frustrazione reale con Supermarket Simulator originale: lì l'orologio
-  di gioco scorre a ritmo fisso e mette fretta. Qui invece la velocità dello
-  scorrimento del tempo deve essere un'opzione che il giocatore controlla
-  (es. uno slider o dei pulsanti "più lento / normale / più veloce / pausa"),
-  fin dalla FASE del ciclo giorno (non necessariamente nel primissimo MVP,
-  ma tienilo a mente nel design del sistema orario fin da subito per non
-  doverlo riscrivere dopo). Nessuna fretta forzata.
-- Un po' di sfida/tensione gestionale va bene (l'utente NON vuole un gioco
-  senza alcuna conseguenza), ma senza mai un game over che azzera i
-  progressi.
-- IDEA FUTURA (fase post-MVP, da tenere in roadmap, non implementare ora):
-  oggetti acquistabili tipo casse/impianti audio che diffondono musica vera
-  nel negozio, e il TIPO di musica scelta influenza quali clienti entrano
-  (alcuni attratti, altri infastiditi/se ne vanno). Questa è una delle
-  possibili strade per il "tocco originale" richiesto altrove in questo
-  documento — segnala questa idea quando si arriva a discutere
-  originalità/roadmap.
-- Musica di sottofondo di base: tranquilla/soffusa (stile lo-fi o ambient
-  leggero), coerente con un'esperienza di comfort — solo quando si arriva
-  alla fase audio, non nell'MVP.
-- Dettagli "cozy"/personali (decorazioni, piante, tocchi caldi nell'
-  ambientazione): SOLO in fase post-MVP, non ora. Ma segnati che all'utente
-  piace l'idea, per riproporla quando si arriva a quella fase.
+11. RITUALE DI APERTURA DI OGNI SESSIONE (obbligatorio, nell'ordine):
+    a) `git pull` — un'altra sessione, magari su un altro account, potrebbe
+       aver lavorato dopo di te;
+    b) `git log` — cosa e' stato fatto davvero per ultimo, con data;
+    c) leggi HANDOFF_MARKETSIM.txt — stato, decisioni prese, errori aperti;
+    d) APRI IL PROGETTO IN UNITY E VERIFICA CHE ENTRI IN PLAY MODE SENZA
+       ERRORI, prima di toccare qualunque cosa. Se e' gia' rotto in partenza,
+       la prima cosa da fare e' sistemarlo o segnalarlo: non ci si accorge a
+       meta' lavoro che il danno c'era gia' prima.
+    Non chiedere mai all'utente di raccontarti cosa e' successo: sta nel repo.
+    Se dopo (a)-(d) qualcosa non torna, chiediglielo — ma solo dopo.
 
-==============================================================================
-FASE 2 — SPECIFICHE DEL PROTOTIPO MVP (obiettivo concreto da costruire ora)
-==============================================================================
+12. LA RETE DI SALVATAGGIO: TAG ALLE MILESTONE. Ogni volta che una tappa
+    importante funziona davvero (l'MVP passa la checklist A4, un sistema nuovo
+    e' completo e testato), metti un tag git con nome parlante e la data e
+    fai push del tag. Scrivi in HANDOFF_MARKETSIM.txt l'elenco dei tag esistenti
+    con una riga a testa su cosa funzionava a quel punto.
+    Serve a questo: se una sessione futura rompe qualcosa e nessuno se ne
+    accorge subito, si torna all'ultimo punto sano con un comando solo invece
+    di ricostruire a mano. Quando all'utente serve, spiegagli il comando in
+    parole semplici: lui non deve conoscerlo a memoria.
 
-Scope MVP deciso dall'utente — NON aggiungere altro finché questo non
-funziona da capo a fondo:
+13. CONVENZIONI DI CODICE E ARCHITETTURA — VINCOLANTI PER TUTTI.
+    Il codice lo scriveranno sessioni diverse (Opus, piu' sessioni Sonnet, su
+    quattro account) che non si parlano fra loro. Senza regole scritte, in un
+    mese il progetto diventa un patchwork incoerente e ogni feature nuova
+    costa il doppio. Queste regole vanno decise da Opus all'inizio, scritte
+    qui per esteso con un esempio concreto per ognuna, e RISPETTATE da
+    chiunque tocchi il progetto:
+    - come si chiamano file, classi, metodi e variabili (una sola convenzione,
+      quella standard C#/Unity, scritta con un esempio);
+    - un file = una classe = una responsabilita' sola. Niente script da 800
+      righe che fanno tutto;
+    - dove sta la logica e dove NON deve stare: i dati dei prodotti nei file
+      di Assets/Data, non sparsi dentro gli script; niente valori numerici
+      importanti scritti a mano in mezzo al codice (prezzi, tempi, velocita'
+      vanno in un posto solo, cosi' si bilanciano senza cercarli ovunque);
+    - come i sistemi si parlano fra loro: decidi UN modo (es. eventi, oppure
+      riferimenti espliciti) e usa sempre quello, mai un misto;
+    - ogni script nuovo comincia con 2-3 righe di commento in italiano che
+      dicono a cosa serve e chi lo usa. Serve alla sessione successiva, e
+      serve all'utente per capire cosa sta leggendo;
+    - se una sessione ha un buon motivo per cambiare una di queste regole, non
+      la aggira in silenzio: la cambia QUI, lo scrive nell'handoff e adegua
+      il codice esistente.
 
-- Prospettiva: prima persona 3D (come l'originale), movimento WASD + mouse
-  per guardarsi intorno, no fisica di afferrare oggetti con le mani.
-- Interazione: sistema "guarda e premi E" — un raycast dalla camera che
-  rileva l'oggetto guardato (scatola, scaffale, computer ordini, cassa) e
-  mostra un prompt semplice ("Premi E per...").
-- Input: usa il nuovo Input System di Unity (non il Legacy Input Manager) —
-  è lo standard moderno consigliato da Unity oggi.
-- Prodotti: SOLO 3-5 prodotti diversi per iniziare (es. mele, latte, pane,
-  bibita, scatolame — scegli tu quali, coerenti col tema supermercato
-  realistico). Ogni prodotto ha: nome, prezzo (anche se l'MVP non ha ancora
-  economia complessa, serve il dato), un prefab visivo (anche un cubo
-  placeholder colorato per ora, va benissimo).
-  NOTA IMPORTANTE per quando si progetta la progressione VERA (fase
-  economia, dopo l'MVP): il numero di prodotti dell'MVP (3-5) è solo per
-  testare il loop tecnico. Il gioco COMPLETO deve invece iniziare con un
-  solo prodotto sbloccato (es. solo patatine), farmato a lungo prima di
-  poterne sbloccare un altro — vedi sezione "PROGRESSIONE LENTA DA
-  FARMING" più sotto in questo documento. Non confondere lo scope tecnico
-  dell'MVP con il ritmo di progressione del gioco finale.
-- NESSUNA economia complessa per ora: niente margini di guadagno elaborati,
-  niente fluttuazioni prezzi. Il loop base è: ordini un prodotto dal
-  computer → arriva una scatola in magazzino → la apri/scarichi → posizioni
-  i prodotti sullo scaffale giusto. Un contatore semplicissimo di "prodotti
-  venduti" o "soldi" può esserci in forma minimale, ma non è il focus.
-- NESSUN cliente/NPC per ora: il negozio è vuoto di clienti, l'utente si
-  concentra solo su ordinare e rifornire. I clienti sono FASE SUCCESSIVA
-  (vedi roadmap sotto).
-- Ciclo giorno: SÌ, l'MVP include l'apertura/chiusura di una "giornata"
-  (es. un pulsante o orario che chiude il negozio), con salvataggio a fine
+14. COSE CHE NON DEVI FARE MAI (sono i modi tipici in cui si fa danno in un
+    progetto lungo):
+    - NON riscrivere o "ripulire" codice che gia' funziona e che nessuno ti ha
+      chiesto di toccare. Se ti sembra brutto, segnalalo nell'handoff e vai
+      avanti;
+    - NON aggiungere feature che nessuno ha chiesto, per quanto piccole e
+      sensate ti sembrino. Lo scope lo decide l'utente;
+    - NON cambiare l'architettura o le convenzioni del punto 13 di tua
+      iniziativa e in silenzio;
+    - NON installare pacchetti, plugin o asset esterni senza dirlo: ognuno e'
+      una dipendenza che qualcuno dovra' mantenere, e una licenza da
+      verificare (punto 8);
+    - NON toccare i file di un sistema mentre ne stai sistemando un altro. Un
+      lavoro alla volta, cosi' quando qualcosa si rompe si sa da dove viene;
+    - NON committare mai lasciando errori rossi in console (punto 3);
+    - NON dire che una cosa funziona se non l'hai vista funzionare in Play
+      Mode. "Dovrebbe funzionare" non e' una verifica.
+
+15. GLOSSARIO.md nella root del repo. L'utente e' un principiante totale: ogni
+    volta che usi un termine tecnico nuovo (scena, prefab, componente, script,
+    raycast, Play Mode, build, commit, tag, LFS...), aggiungilo al glossario
+    con UNA riga in italiano semplice e un esempio concreto preso dal nostro
+    gioco — non la definizione da manuale. Cosi' non deve richiedere la stessa
+    spiegazione a ogni sessione nuova, e ogni sessione futura sa quali parole
+    lui ha gia' incontrato.
+
+17. IL FRENO ALLO SCOPE — HAI IL COMPITO DI DIRE "NON ORA".
+    E' cosi' che muoiono i progetti solitari: si aggiunge sempre una cosa in
+    piu' e non si finisce mai. L'utente ti ha dato ESPLICITAMENTE il mandato
+    di frenarlo, quindi non e' scortesia, e' il tuo lavoro.
+    Quando arriva un'idea nuova — ANCHE SE E' SUA, anche se e' bella, anche se
+    e' piccola — la risposta di default e': "bella, la scrivo nella lista per
+    dopo, ma adesso ci allontana dal traguardo". La scrivi in coda
+    all'HANDOFF_MARKETSIM.txt in una lista IDEE, e si va avanti.
+    Fai un'eccezione solo se l'idea e' davvero piccola E serve al traguardo
+    corrente. Nel dubbio: no.
+    Dillo sempre in modo secco e senza giri: "ci allontana dal traguardo,
+    l'ho segnata". Una riga, non una predica.
+
+18. GIOCARCI DAVVERO, NON SOLO COLLAUDARE.
+    Un gioco puo' essere tecnicamente perfetto e noioso. L'utente e' il primo
+    destinatario del gioco (B1): la sua noia e' un dato tecnico, non un
+    capriccio. Quindi, ogni volta che qualcosa diventa giocabile, non
+    limitarti alla lista di prove (A1bis regola 2): chiedigli di GIOCARCI dieci
+    minuti veri e di dirti se si e' annoiato, cosa gli e' sembrato lento,
+    cosa gli e' piaciuto. Annota le risposte nel DIARIO_SVILUPPO.md.
+    Se dice che una cosa e' noiosa, quella e' una segnalazione di bug a tutti
+    gli effetti: si affronta, non si archivia.
+
+19. CHI STA LAVORANDO ADESSO — LA REGOLA DEL TESTIMONE.
+    L'utente ha quattro account Claude e li usa in sessioni diverse. Per non
+    pestarsi i piedi, nel repo c'e' un file (es. SESSIONE_IN_CORSO.txt) che
+    dice: chi sta lavorando, da quando, su cosa, su quali file.
+    - Chi APRE una sessione lo legge per primo (subito dopo git pull) e lo
+      compila. Se risulta gia' occupato da un'altra sessione, lo dice
+      all'utente prima di toccare qualunque cosa.
+    - Chi CHIUDE lo svuota, insieme all'handoff.
+    - Se una sessione e' rimasta segnata come aperta ma e' chiaramente vecchia
+      (data lontana), segnalalo e liberalo, non bloccarti.
+    Costa dieci secondi a sessione ed evita di scoprire un conflitto quando il
+    lavoro e' gia' fatto due volte.
+
+20. RIPRESA DA ZERO — L'HANDOFF DEVE FUNZIONARE PER CHI NON RICORDA NIENTE.
+    Non e' un modo di dire: le sessioni Claude non ricordano davvero nulla, e
+    l'utente puo' tornare sul progetto dopo settimane. Quindi
+    HANDOFF_MARKETSIM.txt deve permettere a chiunque di ripartire in dieci
+    minuti, e comincia SEMPRE con queste quattro righe, in cima, in italiano
+    semplice:
+      DOVE SIAMO: ...
+      COSA FUNZIONA: ...
+      COSA E' ROTTO O IN SOSPESO: ...
+      COSA FARE ADESSO: ...
+    Il resto (dettagli, decisioni, cronologia) viene dopo. Se un giorno queste
+    quattro righe non bastano a far ripartire qualcuno, l'handoff e' scritto
+    male.
+
+21. SALVATAGGI DI PROVA. Durante lo sviluppo il formato del salvataggio
+    cambiera' spesso e i salvataggi vecchi smetteranno di funzionare: e'
+    normale, non e' un bug. Predisponi da subito:
+    - un modo semplice per cancellare il salvataggio e ricominciare pulito
+      (l'utente deve poterlo fare da solo, con un comando o un pulsante nel
+      menu, senza andare a cercare file nel computer);
+    - un salvataggio di prova gia' pronto (negozio con soldi e merce) da
+      caricare per testare le cose avanzate senza rigiocare tutto da capo.
+    Spiegagli in una riga che i suoi salvataggi di prova si romperanno spesso
+    e che non deve preoccuparsene: e' cosi' finche' il gioco non e' pubblicato.
+
+22. PRESTAZIONI: si affrontano quando si vede che il gioco scatta, non prima
+    (decisione dell'utente). Ma NON scrivere codice palesemente sprecone nel
+    frattempo: se stai per fare una scelta che sai gia' che reggera' male con
+    tanti clienti in negozio, dillo in una riga e proponi l'alternativa,
+    invece di scoprirlo fra sei mesi.
+
+24. BACKUP FUORI DA GITHUB, PERIODICO (non ad ogni sessione — scelta
+    dell'utente). Se il repo si perdesse o venisse cancellato per errore, non
+    deve sparire tutto. Regola: alle tappe importanti (le stesse in cui metti
+    un tag, punto 12), ricorda all'utente di fare una copia del progetto su un
+    cloud gratuito. NON automatizzarlo di nascosto e non caricare nulla tu:
+    e' roba che esce dal suo computer, quindi glielo proponi e lo fa lui, o
+    te lo autorizza esplicitamente.
+    Nel backup NON serve tutto: bastano il progetto e il repo, non le cartelle
+    che Unity si rigenera da solo (vedi punto 10ter). Digli quali, cosi' la
+    copia e' leggera e la fa davvero invece di rimandarla.
+
+25. NUMERO DI VERSIONE DEL GIOCO, SEMPLICE E VISIBILE. Ogni tappa importante
+    ha un numero (0.1, 0.2, ... fino a 1.0 alla pubblicazione), scritto
+    insieme a una riga che dice cosa funzionava a quel punto — nell'handoff e
+    nel DIARIO_SVILUPPO.md, accanto al tag git.
+    Il numero va MOSTRATO A SCHERMO nel gioco, in un angolo del menu
+    principale: cosi' quando l'utente dice "non funziona" si sa subito quale
+    versione stava provando, invece di indovinarlo.
+
+26. MATERIALE PROMOZIONALE RACCOLTO STRADA FACENDO (serve per la pagina Steam,
+    che va aperta mesi prima dell'uscita — vedi B7 punto 8bis).
+    Ad ogni tappa, chiedi all'utente qualche immagine del gioco e mettile in
+    una cartella dedicata del repo, con la data e il numero di versione.
+    Costa un minuto adesso; ricostruire il materiale alla fine costa giorni, e
+    le versioni vecchie non tornano piu' (spesso i "prima e dopo" sono il
+    materiale promozionale piu' efficace che uno sviluppatore abbia).
+    Piu' avanti servira' anche un video: quando si sara' vicini, dillo in
+    tempo perche' richiede una registrazione fatta apposta.
+
+27. DIRE LA VERITA' ANCHE QUANDO NON FA PIACERE (richiesta esplicita
+    dell'utente: "senza addolcire"). Da leggere INSIEME al punto 1bis sul
+    tono: i fatti si dicono tutti e come stanno, ma si dicono da una parte
+    sola, la sua. Se una cosa che vuole richiede settimane,
+    se una strada imboccata e' sbagliata, se il progetto si sta rivelando piu'
+    grosso del previsto, o se un'idea secondo te non funzionera': DILLO
+    SUBITO, con i numeri o i fatti che hai, in due righe. Niente giri di
+    parole, niente entusiasmo di facciata, niente rimandare a dopo perche'
+    "e' scoraggiante".
+    Vale anche al contrario: non dichiarare finita una cosa che non hai visto
+    funzionare (A1bis regola 2), e non spacciare per fatto quello che e' solo
+    scritto.
+
+29. LA REGOLA DEI TRE TENTATIVI (contro l'accanimento sui bug).
+    Capita di incaponirsi su un problema e provare dieci correzioni sbagliate
+    di fila, bruciando ore e sessioni intere. Limite fisso:
+    dopo TRE tentativi falliti sullo stesso problema, ci si FERMA.
+    Cosa si fa allora, nell'ordine:
+    a) si torna all'ultimo punto sano (il tag del punto 12): meglio ripartire
+       da qualcosa che funziona che accumulare toppe su toppe;
+    b) si scrive nell'handoff cosa si e' provato e perche' non ha funzionato,
+       cosi' la sessione dopo non rifa' gli stessi tre tentativi;
+    c) si cambia strada — un approccio diverso, non una variante del terzo
+       tentativo — oppure lo si dice all'utente.
+    Contare i tentativi sul serio, non "a sensazione". Il terzo fallimento e'
+    un segnale che l'ipotesi di partenza e' sbagliata, non che serve piu'
+    impegno.
+
+30. COMANDI RAPIDI DEL PROGETTO. Crea nel repo dei comandi rapidi (skill /
+    slash command di Claude Code, come quelli che l'utente ha gia' su
+    Sorare-tracker) per le procedure che si ripetono a ogni sessione, cosi'
+    non deve ridettarle ogni volta. Almeno:
+    - apertura sessione -> esegue il rituale del punto 11;
+    - chiusura sessione -> verifica Play Mode, aggiorna HANDOFF_MARKETSIM.txt
+      e DIARIO_SVILUPPO.md se c'e' una milestone, committa, pusha, e mette un
+      tag se serve (punto 12);
+    - scrivi brief -> genera un brief autosufficiente per una sessione Sonnet
+      esecutore (punto 5).
+    Falli DOPO che il setup e l'MVP sono avviati, non prima: prima si lavora,
+    poi si automatizza quello che si e' visto ripetersi davvero.
+
+------------------------------------------------------------------------------
+A3. L'MVP — COSA COSTRUIRE ORA
+------------------------------------------------------------------------------
+
+Scope deciso dall'utente. NON aggiungere altro finche' questo non funziona da
+capo a fondo.
+
+IL TRAGUARDO CHE CONTA PER L'UTENTE, DETTO DA LUI:
+"entro circa un mese voglio che funzioni la roba semplice: il cliente entra,
+prende un prodotto, va alla cassa, paga e se ne va."
+Questo e' il metro di giudizio del progetto nel breve. Tienilo davanti agli
+occhi: ogni ora spesa su qualcosa che non porta li' e' un'ora sprecata.
+Se a un certo punto ti accorgi che si sta andando fuori rotta rispetto a
+questo traguardo, dillo all'utente invece di continuare.
+
+SI ARRIVA IN DUE TAPPE RAVVICINATE, non in una sola:
+
+  TAPPA 1 — IL NEGOZIO SI RIFORNISCE (nessun cliente).
+  Ordini un prodotto dal computer -> arriva una scatola in magazzino -> la
+  prendi -> la metti sullo scaffale -> chiudi la giornata -> lo stato si salva.
+  Serve per forza prima: senza scaffali riforniti il cliente non ha niente da
+  prendere. Criteri in A4.
+
+  TAPPA 2 — IL PRIMO CLIENTE (subito dopo la Tappa 1, e' IL traguardo).
+  Un cliente entra, va a uno scaffale, prende un prodotto, va alla cassa, il
+  giocatore lo serve e incassa, il cliente esce e i soldi entrano in cassa.
+  Criteri in A4bis.
+
+Perche' due tappe e non una sola: cosi' hai un punto intermedio che funziona
+davvero, con un tag git (CLAUDE.md punto 12), a cui tornare se la Tappa 2 si
+incarta. Non e' burocrazia, e' la rete di sicurezza.
+
+NOTA: nel resto di questo documento, dove si legge "l'MVP non ha clienti",
+si intende la TAPPA 1. I clienti non sono piu' rimandati a chissa' quando:
+sono la tappa immediatamente successiva.
+
+COMANDI E TELECAMERA
+- Prima persona 3D come l'originale: WASD per muoversi, mouse per guardarsi
+  intorno. Niente fisica di afferrare oggetti con le mani.
+- Interazione "guarda e premi E": un raycast dalla camera rileva l'oggetto
+  guardato (scatola, scaffale, computer ordini, cassa) e mostra un prompt
+  semplice ("Premi E per...").
+- Usa il nuovo Input System di Unity, non il Legacy Input Manager: e' lo
+  standard moderno consigliato oggi.
+- Solo tastiera e mouse. Niente gamepad.
+- Niente opzioni di sensibilita' mouse o accessibilita' nell'MVP: arrivano
+  quando ci sara' un vero menu Opzioni.
+
+CONTENUTO
+- SOLO 3-5 prodotti diversi (es. mele, latte, pane, bibita, scatolame —
+  scegli tu, coerenti col tema). Ogni prodotto ha: nome, prezzo, un prefab
+  visivo (anche un cubo colorato placeholder, va benissimo).
+  ATTENZIONE, non confondere due cose: questi 3-5 prodotti servono a testare
+  il loop TECNICO. Il gioco vero dovra' invece partire da UN SOLO prodotto
+  sbloccato e farmare a lungo — vedi B4. Non e' una contraddizione: e' scope
+  tecnico dell'MVP contro ritmo di progressione del gioco finito.
+- Prezzi arbitrari e di comodo (1€, 2€, 3€): non serve realismo finche' non
+  esiste l'economia vera.
+- Negozio piccolissimo: una stanza sola, 1 zona magazzino + 2-3 scaffali +
+  1 computer ordini/cassa. Niente corsie multiple.
+- NESSUN cliente / NPC NELLA TAPPA 1. Il negozio e' vuoto: ci si concentra su
+  ordinare e rifornire. Il cliente arriva nella Tappa 2, subito dopo (A4bis) —
+  quindi non scrivere il negozio in modo che aggiungere un personaggio che ci
+  cammina dentro sia un problema.
+- SOLDI INIZIALI: il giocatore parte con un piccolo gruzzolo, sufficiente a
+  fare il primo ordine. Semplice e non blocca nulla. Piu' avanti sara' il
+  prologo da dipendente (B6) a sostituirlo.
+- NESSUNA economia complessa: niente margini elaborati, niente fluttuazioni
+  di prezzo. Un contatore minimale di "prodotti venduti" o "soldi" puo'
+  esserci, ma non e' il focus.
+- Ciclo giorno SI': l'MVP include apertura/chiusura di una giornata (un
+  pulsante o un orario che chiude il negozio), con salvataggio a fine
   giornata.
-- Salvataggio: file locale semplice (JSON va benissimo) scritto a fine
-  giornata, che ricarica lo stato di scaffali/inventario/soldi all'avvio
-  successivo. Niente cloud save, niente slot multipli per ora.
-- Grafica: usa asset placeholder gratuiti o primitive Unity finché il loop
-  non funziona bene; solo dopo si passa ad asset più curati (vedi FASE 3).
-  Stile visivo: scegli tu (Opus) fra low-poly/stilizzato o realistico in
-  base a cosa è più fattibile velocemente con asset gratuiti disponibili —
-  low-poly è probabilmente la scelta più pratica per un solo sviluppatore
-  alle prime armi, ma valuta.
-- Audio: non prioritario per l'MVP, si aggiunge dopo. Se vuoi mettere
-  placeholder sonori semplicissimi (bip cassa) fallo solo se non rallenta
-  il lavoro sul loop principale.
-- Solo tastiera + mouse, niente supporto gamepad per ora.
-- Target piattaforma: Windows (Steam su Windows), niente altre piattaforme
-  per ora.
-- Negozio piccolissimo per l'MVP: una stanza sola (1 zona magazzino + 2-3
-  scaffali + 1 computer ordini/cassa). Niente corsie multiple per ora.
-- Menù principale SÌ già nell'MVP: Nuova Partita / Carica / Esci, prima di
-  entrare nel negozio.
-- Test/iterazione: solo Play Mode dentro l'editor Unity durante lo sviluppo,
-  niente build .exe finché non serve mostrare il gioco a qualcuno fuori
-  dall'editor.
-- Impostazioni grafiche leggere fin da subito (qualità media/bassa di
-  default in URP), per girare bene anche su PC modesti — non puntare su
-  qualità visiva spinta ora, si alleggerisce sempre più facilmente che
-  ottimizzare dopo.
-- Niente opzioni di sensibilità mouse/accessibilità nell'MVP: si aggiungono
-  quando c'è già un menu Opzioni vero, fase successiva.
-- Codice (nomi variabili, funzioni, classi) in INGLESE, standard nel game
-  dev e compatibile con tutorial/community/asset esterni. I commenti nel
-  codice e le spiegazioni all'utente restano in italiano.
-- Prezzo di vendita finale su Steam: non è ancora una decisione, non
-  vincolare lo scope dei contenuti a una fascia di prezzo per ora.
-- Prezzi dei 3-5 prodotti: arbitrari/di comodo (es. 1€, 2€, 3€), non serve
-  che siano realistici finché l'economia vera non è costruita (fase 2
-  roadmap).
-- Icona del gioco: crea già un placeholder semplice (anche minimale/
-  geometrico) per la finestra/taskbar, invece di lasciare l'icona di
-  default di Unity.
-- Finestra di gioco: durante lo sviluppo resta ridimensionabile (non
-  fullscreen forzato), più comodo per testare. La modalità finale
-  (fullscreen/borderless) si decide più avanti verso la pubblicazione.
-- Commit: frequenti, dopo ogni piccola modifica che funziona (stesso
-  approccio "fix locale poi commit senza chiedere" di Sorare-tracker) —
-  non accumulare grandi moli di modifiche non committate.
+  DA TENERE A MENTE FIN DA ORA nella progettazione del sistema orario, anche
+  se non lo implementi subito: la VELOCITA' di scorrimento del tempo dovra'
+  essere controllabile dal giocatore (slider o pulsanti lento/normale/veloce/
+  pausa). E' un requisito esplicito e sentito (vedi B1). Progetta il sistema
+  in modo da non doverlo riscrivere da zero per aggiungerlo.
+- Salvataggio: file locale semplice (JSON va benissimo), scritto a fine
+  giornata E in automatico a intervalli durante il gioco, che ricarica
+  scaffali/inventario/soldi al riavvio. Con numero di versione dentro fin
+  dalla prima riga (vedi "Decisioni strutturali"). Niente cloud save, niente
+  slot multipli.
+- Menu principale SI' gia' nell'MVP: Nuova Partita / Carica / Esci.
 
-CRITERI DI COMPLETAMENTO DELL'MVP (checklist esplicita — finché non sono
-TUTTE vere, non si passa alla fase successiva):
+DECISIONI STRUTTURALI DA RISPETTARE FIN DAL PRIMO CODICE
+Non sono feature da implementare tutte nell'MVP: sono scelte che, se non si
+prendono ORA, costringono a riscrivere interi sistemi dopo. Rispettale nel
+modo in cui scrivi il codice fin dalla prima riga.
+
+- MULTILINGUA PREDISPOSTO DA SUBITO (decisione presa). NESSUNA scritta
+  visibile al giocatore va scritta a mano dentro il codice: tutte le stringhe
+  stanno in un file di testi separato, richiamate per chiave. Il gioco parte
+  con INGLESE + ITALIANO. Motivo: su Steam il pubblico e' quasi tutto
+  anglofono, e tradurre a posteriori significherebbe rifare tutta
+  l'interfaccia. Aggiungere una lingua nuova deve costare solo un file in
+  piu'. (Ricorda: il codice e' in inglese, le spiegazioni e i commenti in
+  italiano — vedi "MODO DI LAVORARE".)
+- SALVATAGGIO CON NUMERO DI VERSIONE (decisione presa). Il file di salvataggio
+  contiene fin dalla prima versione un numero di versione, e il gioco sa
+  leggere e convertire i salvataggi piu' vecchi. Costa dieci minuti ora; senza,
+  ogni aggiornamento pubblicato dopo l'uscita cancellerebbe le partite dei
+  giocatori.
+- SALVATAGGIO AUTOMATICO PERIODICO, oltre a quello di fine giornata
+  (decisione presa). Se il gioco crasha o va via la corrente a meta' giornata
+  il giocatore non deve perdere tutto: su Steam un salvataggio perso e' una
+  recensione negativa garantita.
+- CONTATORI DI STATISTICHE PREDISPOSTI (decisione presa). Il gioco tiene il
+  conto delle cose che contano (prodotti venduti, giorni giocati, incassi
+  totali, prodotti sbloccati...) fin da subito, anche se NON si costruisce
+  nessun obiettivo Steam ora. Cosi' aggiungere gli achievement prima della
+  pubblicazione sara' un lavoro da un'ora invece che da una settimana.
+- I NUMERI DI BILANCIAMENTO IN UN POSTO SOLO (vedi CLAUDE.md punto 13):
+  prezzi, tempi, velocita', capienze. Quando si bilancera' l'economia si
+  toccheranno decine di valori: devono stare tutti insieme, non sparsi.
+
+REGOLE DI GIOCO GIA' DECISE DALL'UTENTE (secondo blocco, dal giro di domande)
+- CONSEGNE COL CAMION: l'utente vuole un camion che arriva e va scaricato, non
+  la merce che compare per magia in magazzino.
+  AVVERTENZA CHE DEVI DARGLI: e' piu' bello ma e' lavoro in piu' proprio nel
+  momento in cui si corre verso il traguardo del mese (il cliente). Se vedi
+  che rischia di far slittare quel traguardo, DILLO e proponi la versione
+  semplice (la merce compare in magazzino dopo un'attesa) come passaggio
+  intermedio, col camion aggiunto subito dopo. La decisione resta sua: tu devi
+  solo mettergli davanti il costo, non decidere al posto suo.
+- MAGAZZINO PIENO: le scatole in eccesso si accumulano PER TERRA. Non si
+  perde merce e non si viene puniti: semplicemente il disordine diventa un
+  problema pratico tuo, ed e' una spinta naturale a comprare piu' spazio.
+  Attenzione a non farlo diventare frustrante: le scatole a terra non devono
+  bloccare il passaggio in modo da incastrare il giocatore, e devono restare
+  raccoglibili normalmente.
+- MANI: il giocatore vede l'OGGETTO che porta (la scatola), senza braccia
+  animate. Da' il senso fisico senza il costo delle animazioni delle mani.
+- ORARI: il negozio ha orari di apertura e chiusura predefiniti, MA il
+  giocatore puo' cambiarli nelle opzioni. Coerente con il controllo del tempo
+  di B1: mai una fretta imposta e non modificabile.
+- DURATA DI UNA GIORNATA: circa 10-15 minuti reali a velocita' normale. Una
+  giornata si finisce in una pausa, i traguardi arrivano spesso. Il valore
+  esatto sta fra i numeri di bilanciamento (in un posto solo) e si tara
+  giocando.
+- LAYOUT DEL NEGOZIO: lo decidi tu, sensato e funzionale, MA scritto in un
+  file di testo modificabile in due minuti senza aprire Unity. Cosi' quando
+  l'utente dice "sposta la cassa vicino all'uscita" succede subito, senza
+  che debba trascinare niente col mouse (regola 1 di A1bis).
+- ESPANSIONE FUTURA DEL NEGOZIO: lo STESSO locale che cresce (si abbattono
+  pareti, si aggiungono corsie), non un trasferimento in locali diversi. Piu'
+  semplice da costruire e da' il senso di far crescere IL PROPRIO negozio.
+  Tienine conto ora: progetta il negozio come uno spazio espandibile, non come
+  una stanza chiusa e definitiva.
+- AUDIO, DA DOVE ARRIVA: si parte da librerie gratuite a licenza verificata
+  per capire cosa serve; i suoni CHIAVE (scatola sullo scaffale, cassa,
+  resto — vedi B3) si comprano buoni quando c'e' il budget. Nessun suono
+  entra nel progetto senza licenza verificata e annotata in ASSET_LICENZE.md:
+  l'audio e' la trappola di licenze piu' comune, molto piu' della grafica.
+
+REGOLE DI GIOCO GIA' DECISE DALL'UTENTE
+- INVENTARIO E MAGAZZINO LIMITATI: il giocatore porta UNA scatola alla volta,
+  e il magazzino ha uno spazio limitato. Il limite di spazio e' una risorsa da
+  gestire e da migliorare con gli upgrade: e' una leva di progressione (B4),
+  non un fastidio da togliere.
+- SCADENZE / DEPERIBILITA' DEI PRODOTTI: NO nella fase iniziale del progetto.
+  Si valutera' piu' avanti, non e' escluso per sempre. Non progettare i
+  prodotti in modo che aggiungere una data di scadenza dopo sia impossibile,
+  ma non implementarla adesso.
+- IL GIOCO E' INFINITO, CON TRAGUARDI: non finisce mai, ma ci sono tappe che
+  danno soddisfazione (sbloccare un reparto nuovo, il negozio piu' grande).
+  Coerente col farming lento di B4.
+- LIVELLI DI DIFFICOLTA': decisione RIMANDATA dall'utente. Non implementarli e
+  non escluderli: se ne riparla in fase di bilanciamento economico.
+- AMBIENTAZIONE: decisione RIMANDATA dall'utente. Per ora placeholder
+  generico. Quando si arrivera' alla fase asset, riproponi la scelta —
+  l'ambientazione e' uno dei candidati principali per il "tocco originale"
+  richiesto (CLAUDE.md punto 9).
+- PREZZO DI VENDITA DECISO DAL GIOCATORE: si', con un prezzo consigliato
+  mostrato a schermo come riferimento. MA l'utente vuole ancora rifletterci:
+  trova piu' intrigante l'ipotesi del prezzo completamente libero, senza
+  suggerimenti. Non e' una decisione chiusa. Quando si progettera' il sistema
+  economico (B2a), RIPROPONIGLI la scelta esplicitamente — e nel frattempo
+  scrivi il codice in modo che mostrare o nascondere il prezzo consigliato
+  sia un interruttore, non una riscrittura.
+
+REGOLE DI DESIGN GIA' DECISE (terzo blocco)
+- NIENTE BISOGNI DEL PERSONAGGIO. Mai fame, sete, sonno, stanchezza da
+  gestire. Le barre da riempire sono la cosa che piu' spesso rovina
+  l'atmosfera rilassata: diventano compiti obbligati. Decisione secca, non
+  riproporla.
+- MAI TEMPI MORTI. Regola di design vincolante: quando il negozio e' aperto e
+  non entra nessuno, il giocatore deve avere SEMPRE qualcosa di sensato da
+  fare — riordinare gli scaffali, pulire, sistemare il magazzino, controllare
+  i prezzi. Non deve mai restare fermo ad aspettare che entri qualcuno.
+  Quando progetti un sistema nuovo, chiediti se aggiunge o toglie cose da
+  fare nei momenti vuoti.
+- REPUTAZIONE VISIBILE E SEMPLICE. Il giocatore vede un indicatore chiaro di
+  quanto e' apprezzato il negozio, che sale e scende. Non e' un vezzo: senza
+  vederlo, il sistema "sbagli i prezzi e i clienti calano" (B2a) diventa una
+  punizione misteriosa di cui non si capisce la causa, cioe' esattamente il
+  difetto che l'utente vuole evitare. Quando si costruira' B2a, la
+  reputazione va costruita insieme, non dopo.
+- MUSICA DEL NEGOZIO A CANALI, tipo radio (evoluzione dell'idea in B1): il
+  giocatore sceglie un canale (rilassato, allegro, ecc.) e la scelta
+  influenza quali clienti entrano e quanto restano. Da' una manopola da
+  smanettare che e' divertente di per se'. Post-MVP, ma e' uno dei candidati
+  piu' concreti al "tocco originale".
+- METEO E STAGIONI CHE INFLUENZANO LE VENDITE (unisce B5d): il caldo vende
+  bibite, la pioggia porta meno gente, certi periodi cambiano la domanda.
+  Meteo e stagionalita' sono UN SOLO sistema, non due. Resta valido il
+  vincolo di B5d: oscillazione dolce e prevedibile, mai una moda improvvisa
+  da inseguire o fallire.
+
+HUD: MINIMALE, PIU' UNA FEATURE VOLUTA
+- A schermo, sempre visibili, solo: soldi, ora e giorno. Schermo pulito: si
+  guarda il negozio, non i numeri. Coerente con l'anima chill.
+- SEGNALAZIONE DELLO SCAFFALE DI DESTINAZIONE (idea specifica dell'utente,
+  nata da una frustrazione reale: nei simulatori giocati, quando il negozio
+  diventava grande, ti ritrovavi in mano le pere senza ricordare piu' dove
+  fosse lo scaffale delle pere). Funzionamento voluto:
+  quando il giocatore ha in mano un prodotto, lo scaffale a cui quel prodotto
+  e' gia' assegnato si segnala visivamente (es. una luce verde lampeggiante),
+  cosi' lo raggiunge subito senza girare a vuoto.
+  CONDIZIONE ESPLICITA, non ignorarla: la segnalazione compare SOLO se quel
+  prodotto era gia' esposto in vendita su quello scaffale e ora e' finito o in
+  esaurimento. Non e' un navigatore che ti dice sempre dove mettere tutto: e'
+  un promemoria di dove si rifornisce quello che gia' vendevi.
+  Nell'MVP con 2-3 scaffali serve a poco, ma il sistema va progettato tenendo
+  presente che dovra' esistere — cioe' lo scaffale deve sapere quale prodotto
+  gli e' assegnato, non solo cosa gli sta sopra in questo momento.
+
+TUTORIAL
+Serve, ma MINIMO. Ragionamento dell'utente, da rispettare: e' un simulatore
+semplice di un'attivita' che ogni essere umano conosce gia' (fare la spesa,
+pagare, scegliere i prodotti). Quindi si spiegano i COMANDI (come ci si
+muove, come si interagisce), non il concetto di supermercato. Niente muri di
+testo esplicativi. Quando si costruira' il prologo da dipendente (B6), valuta
+di farlo coincidere con il tutorial: si impara giocando, e si riusa una cosa
+gia' prevista.
+
+PRESENTAZIONE
+- Grafica: placeholder gratuiti o primitive Unity finche' il loop non
+  funziona bene. Solo dopo si passa ad asset curati (B7).
+- Stile visivo: scegli tu fra low-poly/stilizzato e realistico, in base a
+  cosa e' piu' fattibile in fretta con asset gratuiti. Il low-poly e'
+  probabilmente la scelta piu' pratica per un solo sviluppatore alle prime
+  armi, ma valuta.
+- Impostazioni grafiche leggere fin da subito (qualita' media/bassa di
+  default in URP): alleggerire dopo e' facile, ottimizzare dopo e' un
+  incubo.
+- Audio: non prioritario nell'MVP. Placeholder sonori semplicissimi (bip
+  cassa) solo se non rallentano il lavoro sul loop. La cura VERA del suono e'
+  una priorita' esplicita dell'utente ma arriva dopo: vedi B3.
+- Icona del gioco: crea gia' un placeholder semplice, anche solo geometrico,
+  invece di lasciare l'icona di default di Unity.
+- Finestra ridimensionabile durante lo sviluppo, non fullscreen forzato:
+  e' piu' comodo per testare. La modalita' finale si decide verso la
+  pubblicazione.
+
+MODO DI LAVORARE
+- Test solo in Play Mode dentro l'editor. Niente build .exe finche' non serve
+  mostrare il gioco a qualcuno fuori dall'editor.
+- Codice in INGLESE (nomi di variabili, funzioni, classi): e' lo standard nel
+  game dev e resta compatibile con tutorial, community e asset esterni. I
+  commenti nel codice e le spiegazioni all'utente restano in italiano.
+- Commit frequenti, dopo ogni piccola modifica che funziona (stesso approccio
+  "sistemo in locale, poi committo senza chiedere" di Sorare-tracker). Non
+  accumulare grandi moli di modifiche non committate.
+- Target: solo Windows. Nessun'altra piattaforma.
+- Il prezzo di vendita su Steam non e' ancora deciso: non vincolare lo scope
+  dei contenuti a una fascia di prezzo.
+
+------------------------------------------------------------------------------
+A4. CHECKLIST — TAPPA 1 (il negozio si rifornisce)
+------------------------------------------------------------------------------
+
+Finche' non sono TUTTE vere, non si passa alla Tappa 2.
+
   [ ] Il progetto si apre in Unity ed entra in Play Mode senza errori.
   [ ] Il giocatore si muove in prima persona nel negozio (WASD + mouse).
-  [ ] Guardando il computer ordini e premendo E, si può ordinare almeno 1
-      dei 3-5 prodotti.
-  [ ] Il prodotto ordinato arriva fisicamente in magazzino (anche solo
-      apparendo dopo un breve tempo/interazione, non serve un vero
-      "camion" per l'MVP).
-  [ ] Guardando la scatola/il prodotto in magazzino e premendo E, si può
-      "prenderlo" e poi guardando uno scaffale valido e premendo E di nuovo,
-      posizionarlo lì.
-  [ ] Esiste un modo per "chiudere la giornata" (bottone, orario, comando).
-  [ ] Alla chiusura, lo stato (cosa c'è sugli scaffali/in magazzino) viene
-      salvato su file.
-  [ ] Riavviando il gioco, lo stato salvato viene ricaricato correttamente.
+  [ ] Guardando il computer ordini e premendo E si puo' ordinare almeno 1 dei
+      3-5 prodotti.
+  [ ] Il prodotto ordinato arriva fisicamente in magazzino (basta che compaia
+      dopo un breve tempo o un'interazione: nessun vero "camion" nell'MVP).
+  [ ] Guardando la scatola in magazzino e premendo E la si puo' prendere; poi
+      guardando uno scaffale valido e premendo E di nuovo, la si posiziona.
+  [ ] Esiste un modo per chiudere la giornata (bottone, orario o comando).
+  [ ] Alla chiusura, lo stato di scaffali e magazzino viene salvato su file.
+  [ ] Riavviando il gioco lo stato salvato viene ricaricato correttamente.
+  [ ] Il file di salvataggio contiene un numero di versione.
+  [ ] Nessuna scritta visibile al giocatore e' scritta a mano dentro il
+      codice: sono tutte nel file dei testi, e cambiando lingua da
+      inglese a italiano cambiano davvero.
 
-Solo quando tutte queste caselle sono vere, l'MVP è "finito" e si passa alla
-roadmap successiva.
+Quando tutte le caselle sono vere: metti un tag git (CLAUDE.md punto 12),
+dillo all'utente, e passa alla Tappa 2.
 
-==============================================================================
-FASE 3 — ROADMAP DOPO L'MVP (non implementare ora, ma tenerla a mente per
-non scrivere codice che poi va riscritto da zero)
-==============================================================================
+------------------------------------------------------------------------------
+A4bis. CHECKLIST — TAPPA 2 (il primo cliente): IL TRAGUARDO DEL MESE
+------------------------------------------------------------------------------
 
-In ordine indicativo di probabile priorità, da confermare con l'utente prima
-di ogni fase (un tema alla volta, si sceglie insieme, stessa regola di
-Sorare-tracker):
+IL CLIENTE DEVE ESSERE STUPIDO MA COMPLETO. Fa il giro intero senza saltare
+un pezzo, ma senza nessuna intelligenza: nessuna scelta furba fra prodotti,
+nessuna reazione ai prezzi, nessuna coda complicata, nessun umore. Quello che
+conta e' che il giro FUNZIONI da capo a fondo, perche' e' su quello che poi si
+costruisce tutto il resto (B2). Un cliente intelligente a meta' non serve a
+niente; un cliente scemo che completa il giro e' la base di tutto il gioco.
+Uno solo alla volta va benissimo per questa tappa.
 
-1. Economia vera: prezzi di acquisto/vendita, margini, soldi che si
-   accumulano, possibilità di spendere per migliorare il negozio.
+ALLA CASSA, PER ORA: il cliente appoggia la spesa, il giocatore passa i
+prodotti e incassa. NIENTE calcolo del resto a mano in questa tappa — quel
+mini-sistema (B3, l'utente ci tiene) si aggiunge SUBITO DOPO, quando la cassa
+base funziona. Progetta la cassa sapendo che quel passaggio andra' inserito.
 
-   Dentro questa fase (o subito dopo), tre sistemi che l'utente considera
-   IL CUORE del gioco vero, distillati da anni di esperienza con vari
-   simulatori di supermercato — cosa gli piaceva e cosa detestava in
-   ciascuno. Vanno progettati con calma quando si arriva qui, non ora, ma
-   sono già abbastanza definiti da non partire da zero:
+  [ ] Un cliente compare ed entra nel negozio.
+  [ ] Cammina fino a uno scaffale senza incastrarsi nei muri o negli arredi.
+  [ ] Prende un prodotto dallo scaffale, e sullo scaffale quel prodotto
+      diminuisce davvero (non e' solo un'animazione).
+  [ ] Va alla cassa e aspetta di essere servito.
+  [ ] Il giocatore lo serve dalla cassa e incassa.
+  [ ] I soldi entrano nel conto del giocatore e si vedono nell'HUD.
+  [ ] Il cliente esce dal negozio e sparisce correttamente (senza restare li'
+      per sempre o accumularsi all'infinito).
+  [ ] Se lo scaffale e' vuoto il cliente non si blocca in eterno: fa qualcosa
+      di sensato (se ne va).
+  [ ] Tutto questo si salva e si ricarica correttamente.
+  [ ] Si puo' ripetere il giro dieci volte di fila senza errori in console e
+      senza che il gioco rallenti.
 
-   a) SENSO DI PROGRESSIONE *E* REGRESSIONE (non solo crescita piatta).
-      Vendi bene, curi i clienti → guadagni di più e cresci. MA se sbagli
-      (es. prezzo troppo alto) i clienti calano per un periodo invece di
-      sparire per sempre e basta (difetto specifico che l'utente detestava
-      in Supermarket Simulator originale: lì i clienti persi non tornavano
-      mai più). La durata/intensità del calo deve essere PROPORZIONALE
-      all'entità dell'errore: un prezzo leggermente sopra la norma pesa
-      poco e per poco tempo, un prezzo assurdo pesa di più e più a lungo.
-      Poi, se il giocatore corregge, i clienti tornano gradualmente ai
-      livelli normali — mai una perdita permanente.
-
-   b) PUBBLICITÀ/MARKETING (assente nell'originale — l'utente lo vede come
-      mancanza da colmare, possibile "tocco originale" del gioco). Due
-      meccanismi COMBINATI, non alternativi:
-      - una spesa fissa/continua (tipo budget di marketing ricorrente) che
-        aumenta gradualmente l'affluenza nel tempo;
-      - boost singoli a pagamento per un giorno specifico (più clienti
-        quel giorno), il cui ritorno NON è garantito — cioè non è un
-        acquisto sempre vincente: può fruttare molto o poco a seconda del
-        contesto (es. se il negozio non è pronto a reggere l'afflusso, il
-        boost può anche giocare contro). Questo aggiunge un elemento di
-        rischio/decisione strategica invece di un bottone "premi per
-        vincere sempre".
-
-   c) DIPENDENTI. Per iniziare: aiuto AUTOMATICO e semplice — assumi un
-      dipendente, gli assegni un compito fisso (es. "gestisci la cassa",
-      "rifornisci gli scaffali", "gestisci il magazzino") e lui lo esegue
-      da solo, liberando tempo/attenzione del giocatore. NIENTE gestione
-      complessa di umore/stanchezza/performance variabile per ora — quella
-      eventuale complessità (se vale la pena aggiungerla) si valuta solo
-      dopo che la versione semplice funziona ed è divertente.
-
-   Collegamento fra i tre: più il negozio cresce (grazie a prezzi giusti,
-   pubblicità efficace), più serve manodopera (dipendenti) per reggere il
-   carico di clienti — è il ritmo di progressione che l'utente vuole
-   sentire, ispirato a un misto di cose amate in simulatori diversi e mai
-   trovate tutte insieme in uno solo.
-
-   d) LADRI. Devono comparire ("spawnare") e rubare merce, ma SENZA MAI
-      richiedere al giocatore di inseguirli/affrontarli fisicamente — è un
-      difetto specifico che l'utente ha detestato in altri simulatori
-      (inseguimenti/scazzottate rompono l'atmosfera chill). Il contrasto è
-      tramite INVESTIMENTI (telecamere, guardie di sicurezza) che riducono
-      l'efficacia/probabilità di furto: più investi in sicurezza, meno
-      perdi. Il meccanismo esatto (puramente passivo a probabilità, oppure
-      una leggera interazione tipo "noti il ladro e lo segnali") è ancora
-      da decidere insieme quando si progetta questo sistema — non
-      deciderlo unilateralmente, chiedi all'utente in quella fase. I furti
-      NON restano isolati: si collegano al sistema di reputazione/clientela
-      (punto a sopra) — troppi furti ripetuti danno una percezione di
-      negozio poco sicuro e fanno calare un po' anche i clienti onesti, non
-      solo la merce persa in quel momento.
-
-2. CURA DEL SUONO — priorità esplicita dell'utente, non un dettaglio
-   secondario da fase audio "e via". Nella sua esperienza con altri
-   simulatori, il feedback sonoro è quasi sempre fatto male o trascurato:
-   qui deve essere un punto di forza. Esempi concreti già indicati
-   dall'utente, da NON perdere quando si arriva alla fase audio:
-   - il suono di piazzare le scatole/prodotti sullo scaffale: deve sentirsi
-     fisico e soddisfacente, non un click generico;
-   - il bip della cassa: preciso, gratificante, non fastidioso se ripetuto
-     tante volte di fila;
-   - dare il resto al cliente: qui il giocatore CALCOLA/seleziona
-     manualmente il resto giusto da dare (mini-interazione voluta
-     esplicitamente, non automatica) — il suono/feedback di questa
-     interazione deve essere comodo e piacevole da ripetere, mai
-     macchinoso. Il design esatto di questo mini-sistema di resto va
-     progettato quando si arriva a questa fase, ma la premessa "deve
-     essere comodo, mai frustrante" è già decisa.
-   In generale: ogni interazione ripetuta molte volte per sessione (piazzare
-   scatole, cassa, resto) è quella su cui investire più cura nel feedback
-   sonoro/tattile, perché è quella che il giocatore sente di più.
-
-3. RIFERIMENTO DI "FEELING" GENERALE — molto importante, guida ogni
-   decisione di ritmo/bilanciamento: per l'ambientazione e la sensazione
-   generale il riferimento è Supermarket Simulator originale; per la
-   PROFONDITÀ/dettaglio dei reparti (vedi punto 3.a sotto) il riferimento è
-   Megastore Simulator, che aveva reparti come la macelleria dove potevi
-   scegliere di affettare il pesce/la carne TU personalmente o pagare un
-   dipendente per farlo al posto tuo — questo doppio binario (fallo tu a
-   mano per risparmiare / paga qualcuno per farlo automaticamente) è un
-   pattern che piace e va tenuto a mente quando si progettano i reparti
-   futuri e i ruoli dei dipendenti.
-
-   PROGRESSIONE LENTA DA "FARMING" — richiesta esplicita e importante
-   dell'utente, da rispettare in TUTTO il bilanciamento economico futuro:
-   il gioco deve iniziare davvero minuscolo (un "buggigattolo" che vende
-   letteralmente solo un prodotto tipo le patatine) e il giocatore deve
-   faticare/macinare parecchio (farmare) vendendo quel poco per guadagnare
-   abbastanza da sbloccare gradualmente il prossimo prodotto/reparto (es.
-   salse, poi panini, poi un vero banco, fino ad arrivare — molto più
-   avanti — a reparti interi come la macelleria). La progressione deve
-   essere LENTA e SENTITA come conquista, non un'espansione rapida e
-   facile. Questo è un valore centrale del gioco per l'utente, non un
-   dettaglio: quando in futuro si bilanciano prezzi/costi di
-   sblocco/ricavi, il default deve pendere verso "più lento e faticoso"
-   piuttosto che verso "veloce e comodo" — è coerente anche con l'anima
-   chill: non è stress, è un ritmo di crescita graduale che si gusta con
-   calma nel tempo, non un rush.
-
-4. IDEE A LUNGO TERMINE (raccolte confrontando Megastore Simulator, Mall
-   Simulator, Supermarket Together, Pawnbroker Simulator, The Roast: Coffee
-   Shop Simulator e Retail Company Simulator — giochi simili a cui l'utente
-   ha giocato e di cui apprezza pezzi specifici; NON è detto vengano tutte
-   implementate, sono materiale da cui pescare quando si arriva a
-   discutere ogni fase, sempre confermando con l'utente prima):
-
-   a) REPARTI SPECIALIZZATI (da Megastore Simulator) — obiettivo a lungo
-      termine gradito dall'utente: si parte da un solo reparto alimentari
-      semplice (coerente con l'MVP), e in una fase molto più avanzata si
-      possono aggiungere reparti con meccaniche proprie (es. panetteria:
-      compri impasto, usi un forno). Non è una priorità vicina, ma è una
-      direzione di crescita che piace.
-   b) RUOLI DIPENDENTE: SOLO due per ora, anche a lungo termine per
-      default — "restocker" (rifornisce scaffali) e "cassiere". Niente
-      dei 7 ruoli complessi visti in Supermarket Together (sicurezza,
-      tecnico, imballatore, produttore...): l'utente vuole restare
-      semplice. Se in futuro emergesse voglia di più profondità, si
-      discute allora, non è un default.
-   c) NIENTE MULTIPLAYER, mai, nemmeno come obiettivo lontano — decisione
-      ferma dell'utente nonostante Supermarket Together punti tutto sul
-      caos co-op fino a 16 giocatori. Il gioco resta single player anche
-      dopo un'eventuale pubblicazione.
-   d) STAGIONALITÀ/TREND (da Mall Simulator) — gradita come idea futura:
-      certi prodotti più richiesti in certi periodi (es. più bibite
-      fredde d'estate, prodotti specifici a Natale). Va progettata per
-      dare varietà SENZA diventare stressante o punitiva (coerente con
-      l'anima chill del gioco) — mai una "moda improvvisa da inseguire
-      o fallisci", piuttosto un'oscillazione dolce e prevedibile.
-   e) CONTRATTAZIONE CON I FORNITORI (da Pawnbroker Simulator) — idea
-      futura gradita: invece di pagare sempre il prezzo di listino per
-      rifornirsi, poter negoziare leggermente il prezzo d'acquisto. Deve
-      restare un elemento LEGGERO e opzionale, mai un mini-gioco
-      obbligatorio stressante — coerente con l'anima chill.
-   f) DECORAZIONI CON BENEFICIO CONCRETO (da The Roast: Coffee Shop
-      Simulator) — le decorazioni estetiche del negozio (tocco "cozy",
-      vedi sezione sopra) devono dare anche un piccolo bonus di gioco
-      (es. più clienti attratti/trattenuti), non essere solo un vezzo
-      visivo senza conseguenze: rinforza il senso di progressione insieme
-      a prezzi e pubblicità.
-   g) CONTRATTI CON MARCHI/BRAND (da Retail Company Simulator) — idea
-      molto interessante per l'utente, ma lontana nel tempo: accordi con
-      marchi specifici per prodotti esclusivi o scontati, da esplorare
-      solo quando il gioco ha già una base economica solida.
-   h) PRESTITI CON PIGNORAMENTO VERO — feature vista (in forma base) in
-      altri simulatori della lista dell'utente, ma qui va resa con
-      conseguenze REALI, a differenza degli originali dove il prestito non
-      pagato non aveva impatto serio. Regole già decise dall'utente:
-      - Il giocatore può chiedere un prestito in banca per potenziarsi
-        subito, da ripagare a rate.
-      - Se salta una rata: PRIMA un avviso con un margine di tempo per
-        rimediare (non scatta nulla alla prima rata saltata). Il
-        pignoramento vero scatta solo dopo più rate saltate consecutive.
-      - Quando scatta, la banca può pignorare QUALSIASI asset del negozio
-        (non solo ciò che era stato comprato col prestito) TRANNE gli
-        "asset fondamentali" da proteggere sempre: la cassa/il modo di
-        incassare pagamenti, e una scorta minima di prodotti sufficiente a
-        poter ricominciare a vendere. Questo è il meccanismo che garantisce
-        "sempre recuperabile, mai un vero game over": per quanto tu venga
-        pignorato duramente, ti resta sempre da cosa ripartire a farmare.
-      - Tasso di interesse fisso e semplice per ogni prestito (niente
-        tasso variabile in base all'affidabilità creditizia, almeno non
-        nella prima versione di questo sistema).
-      Coerenza con la regola generale del documento ("va bene un po' di
-      sfida/tensione, ma mai un game over che azzera i progressi"): il
-      pignoramento è la conseguenza seria di cui l'utente sentiva la
-      mancanza in altri simulatori, ma resta dentro il limite di "mai zero
-      assoluto" grazie alla protezione degli asset fondamentali.
-2. Asset grafici veri (sostituire i placeholder) — qui entra in gioco il
-   budget di 5000€ che l'utente ha stanziato PER DOPO che l'MVP funziona da
-   capo a fondo: pacchetti asset a pagamento (Unity Asset Store, artisti
-   freelance) per scaffali, prodotti, personaggio, interni negozio, audio.
-   Non spendere nulla finché l'utente non conferma esplicitamente di essere
-   soddisfatto del prototipo gratuito.
-3. Clienti/NPC: IA base che entra nel negozio, prende prodotti dagli
-   scaffali, va alla cassa, paga. Componente più complessa tecnicamente,
-   va pianificata con cura (pathfinding, stati NPC, ecc.).
-4. Espansione negozio: più spazio, più scaffali, upgrade acquistabili.
-5. Più prodotti e varietà (oltre i 3-5 iniziali).
-6. Rifinitura UI/UX, menu principale, opzioni.
-7. Trovare un tocco di originalità (vedi punto 9 della sezione CLAUDE.md
-   sopra) prima di investire seriamente in marketing/pubblicazione.
-8. Preparazione pubblicazione Steam: creare pagina Steamworks (100$ una
-   tantum), build di test, requisiti tecnici Steam, materiale promozionale
-   (trailer, screenshot, descrizione store).
+Quando queste caselle sono vere il traguardo del mese e' raggiunto: tag git,
+riga nel DIARIO_SVILUPPO.md, e si sceglie insieme all'utente cosa fare dopo
+seguendo la roadmap (B7), un tema alla volta.
 
 ==============================================================================
-FASE 4 — IDEA GRANDE FUTURA: DUE MODALITÀ DI GIOCO (dopo l'MVP, tema a sé)
+APPENDICE C0 — COME L'UTENTE TI SEGNALA CHE QUALCOSA NON VA
 ==============================================================================
 
-Idea nata parlando di "iniziare come commesso in un supermercato vero prima
-di aprire il proprio" — l'utente l'ha sviluppata in DUE MODALITÀ distinte,
-entrambe da costruire solo DOPO che l'MVP del negozio proprio (FASE 2)
-funziona bene. Non è uno scope da aggiungere di soppiatto dentro l'MVP: è
-un tema grande a sé, da affrontare come propria fase di progettazione
-quando ci si arriva.
+L'utente non sa descrivere un errore in termini tecnici, e non deve impararlo.
+Sei TU che devi insegnargli il minimo indispensabile, UNA VOLTA SOLA, appena
+il progetto si apre in Unity per la prima volta. Spiegagli in cinque righe, con
+parole normali:
 
-MODALITÀ A — "Carriera da dipendente": il supermercato esiste già,
-completo, a "livello massimo" con tutte le feature del gioco (reparti,
-dipendenti, ecc.). Il giocatore inizia come umile dipendente con UN compito
-fisso e ripetitivo (per la prima versione di questa modalità: uno solo,
-es. lavorare al banco del pesce — NON costruire subito una scelta fra più
-mestieri, quella arriva dopo). Lavorando bene, guadagna promozioni, fino a
-poter diventare direttore del supermercato. Meccanica di progressione
-verticale (carriera), diversa da quella orizzontale (costruire da zero) di
-Modalità B.
+- dov'e' la finestra Console in Unity e come si apre;
+- che gli errori sono le righe ROSSE (gli avvisi gialli quasi sempre non
+  contano, non deve preoccuparsene);
+- come si copia il testo di una riga rossa per incollartelo;
+- che se un errore compare mentre gioca in Play Mode, la cosa piu' utile e'
+  dirti COSA STAVA FACENDO in quel momento ("stavo mettendo la scatola sullo
+  scaffale"), non solo "non funziona";
+- che se il gioco non si rompe ma "si comporta male", la descrizione utile e':
+  cosa si aspettava, cosa e' successo invece.
 
-MODALITÀ B — "Il tuo negozio" (questa è la stessa logica già descritta
-nella sezione "PROGRESSIONE LENTA DA FARMING" sopra): PROLOGO OBBLIGATORIO
-BREVE come dipendente/lavoretto ripetitivo per farmare i primi soldi, poi
-appena il giocatore ha abbastanza risparmi apre il suo primissimo,
-piccolissimo negozio proprio e da lì parte la progressione lenta già
-descritta (dal "buggigattolo" con le patatine fino ai reparti veri).
+Poi mettilo nel GLOSSARIO.md (CLAUDE.md punto 15) cosi' resta scritto.
 
-Nota di scope: quando in futuro si progetta il "compito da dipendente" nel
-prologo di Modalità B o il "compito fisso" di Modalità A, per la PRIMA
-versione implementare UN SOLO mestiere/mini-gioco fatto bene (l'utente ha
-indicato esplicitamente questa scelta, per non disperdersi), rimandando la
-scelta fra più mestieri a un'iterazione successiva.
+Da parte tua: quando ti arriva una segnalazione vaga, NON tirare a indovinare
+e non partire a modificare codice. Chiedi la riga rossa o riproduci tu il
+problema in Play Mode. Una modifica fatta su un'ipotesi sbagliata costa piu'
+di una domanda in piu'.
 
 ==============================================================================
-LINK ASSET GRATUITI GIÀ TROVATI (da scaricare quando servono, verificarne
-sempre la licenza secondo la checklist FASE 1 punto 8 prima di usarli)
+APPENDICE C1 — LINK ASSET GRATUITI GIA' TROVATI
 ==============================================================================
+
+Da scaricare quando servono. Verificane SEMPRE la licenza secondo la checklist
+del CLAUDE.md punto 8 prima di usarli.
 
 - Kenney "Mini Market" (CC0, 20 asset supermercato/negozio):
   https://kenney.nl/assets/mini-market
-- Kenney "Food Kit" (CC0, tanti alimenti/prodotti per scaffali):
+- Kenney "Food Kit" (CC0, alimenti e prodotti per scaffali):
   https://kenney.nl/assets/food-kit
-- Kenney Game Assets All-in-1 (CC0, oltre 60.000 asset vari, utile come
-  fonte generica se serve altro): https://kenney.nl/assets
-- Unity Asset Store — "Modular Convenience Store With Products" (gratis/
-  freemium, oltre 200 elementi per negozio + prodotti): cercare su
-  assetstore.unity.com "Modular Convenience Store With Products"
-- Controller prima persona gratuiti (scegline uno, verificare che sia
+- Kenney Game Assets All-in-1 (CC0, oltre 60.000 asset vari, fonte generica):
+  https://kenney.nl/assets
+- Unity Asset Store — "Modular Convenience Store With Products"
+  (gratis/freemium, oltre 200 elementi negozio + prodotti): cercarlo su
+  assetstore.unity.com
+- Controller in prima persona gratuiti (scegline UNO, verificando che sia
   compatibile col nuovo Input System):
   - Unity "Starter Assets - FirstPerson (URP)" — ufficiale Unity
-    Technologies, gratis, usa già il nuovo Input System: cercare su
-    assetstore.unity.com "Starter Assets FirstPerson URP" (CONSIGLIATO,
-    più affidabile perché ufficiale)
+    Technologies, gratis, usa gia' il nuovo Input System. CONSIGLIATO,
+    perche' ufficiale e quindi piu' affidabile.
   - "Mini First Person Controller" (gratis, community)
   - "Easy Peasy First Person Controller" (gratis, community)
 
-NOTA: questi link sono stati trovati con una ricerca web il 13/08/2026.
-Prima di usarli, verifica che siano ancora disponibili e che la licenza
-attuale sia quella indicata (le pagine asset possono cambiare).
+Questi link sono stati trovati con una ricerca web il 13/08/2026: prima di
+usarli verifica che siano ancora disponibili e che la licenza attuale sia
+quella indicata (le pagine asset cambiano).
 
 ==============================================================================
-COSE DA NON DIMENTICARE (varie, emerse dalle domande all'utente)
+APPENDICE C2 — DOMANDE GIA' RISPOSTE, NON RIFARLE
 ==============================================================================
 
-- L'utente NON vuole essere bloccato da domande continue durante il lavoro
-  vero e proprio: nella fase di setup guidalo passo passo, ma una volta
-  partito lo sviluppo, lavora con autonomia (decide lui le cose ambigue,
-  vedi punto 4 del CLAUDE.md) e riporta risultati, non chiede il permesso
-  per ogni singola scelta tecnica minore.
-- L'utente preferisce essere avvisato SOLO per: commit (li fa in autonomia
-  una volta che il codice funziona, come su Sorare-tracker), ma qualunque
-  azione con effetti fuori dal repo (spendere soldi, pubblicare qualcosa,
-  creare account esterni) va sempre confermata esplicitamente da lui prima.
-- Non esiste ancora un nome definitivo per il gioco: "MarketSim" è un
-  placeholder che piace ma non è confermato al 100%. Non affezionarti al
-  nome nel codice/UI in modo che sia difficile da cambiare dopo (evita di
-  hardcodare il nome ovunque, usa una costante/config).
-- Ricorda sempre all'utente di fare "git push" quando passa un file a un
-  altro account/esecutore, altrimenti il lavoro non è visibile alle altre
-  sessioni (stesso problema noto su Sorare-tracker).
+L'utente ha gia' fatto un giro approfondito di domande con un'altra sessione
+Claude e ha preparato questo documento apposta per anticiparle.
+
+- NOME DEL PROGETTO: usa "MarketSim" come placeholder e procedi. Non bloccarti
+  a chiedere conferma del nome definitivo: si rinomina facilmente. Pero' NON
+  hardcodare il nome ovunque nel codice e nell'UI — mettilo in una costante o
+  in un file di config, cosi' cambiarlo dopo costa niente.
+- ACCOUNT GITHUB: usa lo stesso gia' configurato in git sul PC (verificalo con
+  `git config --global user.name` e `git config --global user.email`: e' lo
+  stesso usato per Sorare-tracker-2). Solo se i comandi non restituiscono
+  nulla, chiedi all'utente.
+- STRUMENTO DI LAVORO: lavori tramite Claude Code sul PC dell'utente. Vedi la
+  sezione "CHI DECIDE COSA" in cima: esegui tu, non dettare comandi da
+  copiare, tranne dove serve una GUI.
+- GIT PUSH: ricorda sempre all'utente di fare `git push` quando passa il
+  lavoro a un altro account o esecutore, altrimenti quel lavoro non esiste per
+  le altre sessioni. E' un problema gia' successo su Sorare-tracker.
+- Se in fase di setup emergono dubbi pratici non coperti qui, chiedi pure —
+  ma verifica PRIMA se la risposta e' gia' scritta da qualche parte in questo
+  file.
 
 ==============================================================================
-DOMANDE ANTICIPATE — RISPOSTE GIÀ DECISE, NON CHIEDERLE DI NUOVO
+APPENDICE C3 — DECISIONI APERTE, DA RIPROPORRE AL MOMENTO GIUSTO
 ==============================================================================
 
-Per non far perdere tempo all'utente con domande a cui ha già risposto
-mentre preparava questo documento:
+L'utente le ha RIMANDATE consapevolmente, non dimenticate. Non deciderle da
+solo e non lasciarle cadere: riproponigliele quando si arriva alla fase
+indicata, con la tua proposta gia' pronta. Riportale in
+HANDOFF_MARKETSIM.txt cosi' nessuna sessione futura le perde.
 
-- NOME PROGETTO: usa "MarketSim" come placeholder e procedi. Non bloccarti
-  a chiedere conferma sul nome definitivo — si rinomina facilmente più
-  avanti se cambia idea.
-- ACCOUNT GITHUB: usa lo stesso account/username già configurato in git
-  sul PC dell'utente (verificalo con `git config --global user.name` e
-  `git config --global user.email` nel terminale — è lo stesso che risulta
-  già usato per il repo Sorare-tracker-2). Se il comando non restituisce
-  nulla, allora sì chiedi all'utente.
-- STRUMENTO DI LAVORO: Opus lavorerà tramite Claude Code direttamente sul
-  PC dell'utente (può eseguire comandi ed editare/creare file in autonomia,
-  non solo suggerire testo da copiare a mano) — struttura le istruzioni di
-  conseguenza (esegui tu i comandi git/setup invece di limitarti a
-  scriverli per l'utente, tranne per i passaggi che richiedono
-  interazione GUI come Unity Hub o il sito GitHub, quelli guidali passo
-  passo).
-- RITMO DELLE DOMANDE nella fase di raccolta requisiti: l'utente ha già
-  fatto questo giro approfondito con un'altra sessione Claude (Sonnet) e
-  ha preparato questo documento apposta per anticipare la maggior parte
-  delle domande. Se in fase di setup (FASE 0) emergono comunque dubbi
-  pratici non coperti qui, fai pure domande — ma verifica PRIMA se la
-  risposta è già scritta da qualche parte in questo file.
+1. PREZZO CONSIGLIATO A SCHERMO, SI' O NO. Per ora si' (con suggerimento), ma
+   l'utente trova piu' intrigante il prezzo completamente libero. Da
+   riproporre quando si progetta il sistema economico (B2a). Nel frattempo:
+   scrivi il codice in modo che sia un interruttore, non una riscrittura.
+2. AMBIENTAZIONE (generica / italiana / altro). Da riproporre in fase asset:
+   e' uno dei candidati piu' forti per il "tocco originale".
+3. LIVELLI DI DIFFICOLTA'. Da riproporre in fase di bilanciamento economico.
+4. SCADENZE E DEPERIBILITA' DEI PRODOTTI. Escluse dalla fase iniziale, non
+   per sempre. Da riproporre dopo che l'economia base funziona.
+5. MECCANISMO ESATTO DEI LADRI (passivo a probabilita' o con una leggera
+   interazione). Vedi B2d: e' scritto li' che va deciso INSIEME.
+6. NOME DEFINITIVO DEL GIOCO. "MarketSim" e' un placeholder (verifica prima
+   che sia libero: B7 punto 8ter).
+7. PREZZO DI VENDITA SU STEAM.
+8. QUANTE ORE DI GIOCO deve offrire il gioco finito. Rimandata: determina
+   quanto contenuto serve, e quindi tempi e costi. Da riproporre quando si
+   ragionera' su prezzo e contenuti, non prima.
+9. DEMO GRATUITA SU STEAM. Non decisa, ma NON va resa impossibile: le demo
+   sono una delle leve piu' forti sulle liste dei desideri, quindi costruisci
+   il gioco in modo che ritagliarne una versione ridotta non sia un lavoraccio
+   (es. il primo prodotto e i primi giorni giocabili in isolamento).
+   Riproponila quando si apre la pagina Steam.
+10. IMPEGNO DOPO L'USCITA (aggiornamenti, rispondere ai giocatori).
+   L'utente non lo sa ancora. Non fa niente adesso — le scelte gia' prese
+   (salvataggi con numero di versione) tengono comunque la porta aperta.
+   Da riproporre vicino alla pubblicazione.
 
-FINE PROMPT. Se qualcosa in questo file non è chiaro o sembra contraddittorio,
-chiedilo all'utente PRIMA di procedere con assunzioni — meglio una domanda in
-più ora che del lavoro da rifare dopo.
+FINE DELLA PARTE A. Ora leggi VISIONE_GIOCO_MARKETSIM.txt (la Parte B), che
+sta nella stessa cartella: e' li' che trovi tutti i rimandi B1...B7 citati qui
+sopra. Poi parti dal passo 1 in cima a questo file: la raffica di domande.
+
+Se qualcosa in questi due documenti non e' chiaro o sembra contraddittorio,
+chiedilo all'utente PRIMA di procedere per assunzioni: meglio una domanda in
+piu' ora che del lavoro da rifare dopo.

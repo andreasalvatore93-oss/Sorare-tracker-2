@@ -1,0 +1,352 @@
+==============================================================================
+MARKETSIM — LA VISIONE DEL GIOCO (PARTE B)
+==============================================================================
+Documento gemello di PROMPT_OPUS_MARKETSIM.txt (la Parte A: setup, regole di
+lavoro, MVP). Quello dice COSA FARE ORA; questo dice DOVE SI VA.
+Preparato dall'utente con l'aiuto di Claude, 13/08/2026.
+
+COME SI USA:
+- NON si implementa niente di quello che c'e' qui dentro adesso. Serve a
+  capire dove va il progetto e a non scrivere codice che poi va buttato.
+- Si rilegge la sezione pertinente OGNI VOLTA che si progetta una fase nuova.
+  Le decisioni qui dentro non sono suggestioni: sono gia' state prese
+  dall'utente, spesso partendo da cose che ha amato o detestato in anni di
+  simulatori giocati. Sono il motivo per cui questo gioco dovrebbe essere
+  diverso dagli altri.
+- Questo file va COPIATO nel repo del progetto MarketSim durante il setup, e
+  aggiornato quando una di queste decisioni cambia o si concretizza.
+- La Parte A vi rimanda continuamente (B1, B2a, B4...): quei riferimenti
+  puntano alle sezioni qui sotto.
+
+INDICE
+  B1. Perche' questo progetto esiste (l'anima del gioco)
+  B2. I tre sistemi che sono il cuore del gioco vero
+  B3. Cura del suono
+  B4. Progressione lenta da farming
+  B5. Idee a lungo termine dai simulatori giocati dall'utente
+  B6. Le due modalita' di gioco
+  B7. Roadmap tecnica dopo l'MVP
+
+------------------------------------------------------------------------------
+B1. PERCHE' QUESTO PROGETTO ESISTE (l'anima del gioco — non ignorarlo)
+------------------------------------------------------------------------------
+
+L'utente non lo fa solo per business: adora i simulatori gestionali, li trova
+rilassanti e "chill", e in un periodo difficile della sua vita gli hanno fatto
+compagnia. Vuole un gioco che valga la pena giocare LUI PER PRIMO, non solo un
+prodotto da vendere. Questo deve orientare le scelte di design, non solo
+quelle tecniche.
+
+- TEMPO DI GIOCO REGOLABILE DAL GIOCATORE — requisito esplicito, nato da una
+  frustrazione reale con Supermarket Simulator originale: li' l'orologio di
+  gioco scorre a ritmo fisso e mette fretta. Qui la velocita' dello
+  scorrimento del tempo deve essere un'opzione che il giocatore controlla
+  (slider, oppure pulsanti "piu' lento / normale / piu' veloce / pausa"),
+  dalla fase del ciclo giorno in poi. Non necessariamente nel primissimo MVP,
+  ma il sistema orario va progettato fin da subito per accoglierlo senza
+  riscritture. Nessuna fretta forzata.
+- Un po' di sfida e tensione gestionale va bene — l'utente NON vuole un gioco
+  senza conseguenze — ma senza mai un game over che azzera i progressi.
+- IDEA FUTURA (post-MVP, non ora): oggetti acquistabili tipo casse e impianti
+  audio che diffondono musica vera nel negozio, dove il TIPO di musica scelto
+  influenza quali clienti entrano (alcuni attratti, altri infastiditi che se
+  ne vanno). E' una delle strade candidate per il "tocco originale" richiesto
+  nel CLAUDE.md punto 9: riproponila quando si discute di originalita' o
+  roadmap.
+- Musica di sottofondo di base: tranquilla e soffusa (lo-fi o ambient
+  leggero), coerente con un'esperienza di comfort. Solo in fase audio.
+- Dettagli "cozy" e personali (decorazioni, piante, tocchi caldi
+  nell'ambientazione): solo post-MVP. Ma segnati che l'idea piace molto
+  all'utente, per riproporgliela quando si arriva li'.
+
+------------------------------------------------------------------------------
+B2. I TRE SISTEMI CHE SONO IL CUORE DEL GIOCO VERO
+------------------------------------------------------------------------------
+
+Distillati da anni di esperienza dell'utente con vari simulatori di
+supermercato: cosa gli piaceva e cosa detestava in ciascuno. Vanno progettati
+con calma quando si arriva alla fase economia, non ora, ma sono gia'
+abbastanza definiti da non partire da zero.
+
+a) PROGRESSIONE *E* REGRESSIONE (non solo crescita piatta)
+   Vendi bene e curi i clienti -> guadagni di piu' e cresci. MA se sbagli (es.
+   prezzo troppo alto) i clienti calano per un periodo, invece di sparire per
+   sempre — difetto specifico che l'utente detestava in Supermarket Simulator
+   originale, dove i clienti persi non tornavano mai piu'. La durata e
+   l'intensita' del calo devono essere PROPORZIONALI all'entita' dell'errore:
+   un prezzo leggermente sopra la norma pesa poco e per poco; un prezzo
+   assurdo pesa molto e a lungo. Se il giocatore corregge, i clienti tornano
+   gradualmente ai livelli normali. Mai una perdita permanente.
+
+b) PUBBLICITA' / MARKETING (assente nell'originale: l'utente lo vede come una
+   mancanza da colmare, e come possibile tocco originale). Due meccanismi
+   COMBINATI, non alternativi:
+   - una spesa fissa e ricorrente, tipo budget di marketing, che aumenta
+     gradualmente l'affluenza nel tempo;
+   - boost singoli a pagamento per un giorno specifico (piu' clienti quel
+     giorno), il cui ritorno NON e' garantito: puo' fruttare molto o poco a
+     seconda del contesto. Se il negozio non e' pronto a reggere l'afflusso,
+     il boost puo' perfino giocare contro. Serve a rendere la pubblicita' una
+     decisione strategica, non un bottone "premi per vincere".
+
+c) DIPENDENTI. Per iniziare, aiuto AUTOMATICO e semplice: assumi un
+   dipendente, gli assegni un compito fisso (gestisci la cassa, rifornisci gli
+   scaffali, gestisci il magazzino) e lui lo esegue da solo, liberando tempo e
+   attenzione del giocatore. NIENTE gestione di umore, stanchezza o
+   performance variabile per ora: quell'eventuale complessita' si valuta solo
+   dopo che la versione semplice funziona ed e' divertente.
+
+d) LADRI. Devono comparire e rubare merce, ma senza MAI richiedere al
+   giocatore di inseguirli o affrontarli fisicamente: e' un difetto specifico
+   che l'utente ha detestato in altri simulatori, perche' inseguimenti e
+   scazzottate rompono l'atmosfera chill. Il contrasto avviene tramite
+   INVESTIMENTI (telecamere, guardie): piu' investi in sicurezza, meno perdi.
+   Il meccanismo esatto — puramente passivo a probabilita', oppure una
+   leggera interazione tipo "noti il ladro e lo segnali" — e' ANCORA DA
+   DECIDERE INSIEME quando si progetta questo sistema: non deciderlo
+   unilateralmente, chiedi all'utente in quella fase.
+   I furti non restano isolati: si collegano alla reputazione (punto a) —
+   troppi furti ripetuti danno la percezione di un negozio poco sicuro e fanno
+   calare un po' anche i clienti onesti, non solo la merce persa.
+
+IL COLLEGAMENTO FRA I TRE: piu' il negozio cresce (grazie a prezzi giusti e
+pubblicita' efficace), piu' serve manodopera per reggere il carico di clienti.
+E' il ritmo di progressione che l'utente vuole sentire, ispirato a un misto di
+cose amate in simulatori diversi e mai trovate tutte insieme in uno solo.
+
+------------------------------------------------------------------------------
+B3. CURA DEL SUONO (priorita' esplicita, non un dettaglio da fase audio)
+------------------------------------------------------------------------------
+
+Nell'esperienza dell'utente con altri simulatori il feedback sonoro e' quasi
+sempre fatto male o trascurato: qui deve essere un punto di forza. Esempi
+concreti gia' indicati, da NON perdere quando si arriva alla fase audio:
+
+- il suono di piazzare scatole e prodotti sullo scaffale deve sentirsi fisico
+  e soddisfacente, non un click generico;
+- il bip della cassa: preciso e gratificante, e non fastidioso quando si
+  ripete decine di volte di fila;
+- DARE IL RESTO AL CLIENTE: il giocatore calcola e seleziona MANUALMENTE il
+  resto giusto. E' una mini-interazione voluta esplicitamente, non
+  automatica. Il feedback di questa interazione deve essere comodo e piacevole
+  da ripetere, mai macchinoso. Il design esatto si progetta quando si arriva
+  li', ma la premessa "deve essere comodo, mai frustrante" e' gia' decisa.
+
+Regola generale: ogni interazione ripetuta molte volte per sessione (piazzare
+scatole, cassa, resto) e' quella su cui investire piu' cura nel feedback
+sonoro e tattile, perche' e' quella che il giocatore sente di piu'.
+
+------------------------------------------------------------------------------
+B4. PROGRESSIONE LENTA DA FARMING (valore centrale, non un dettaglio)
+------------------------------------------------------------------------------
+
+Richiesta esplicita e importante, da rispettare in TUTTO il bilanciamento
+economico futuro. Il gioco deve iniziare davvero minuscolo: un "buggigattolo"
+che vende letteralmente un solo prodotto, tipo le patatine. Il giocatore deve
+faticare e macinare parecchio, vendendo quel poco, per guadagnare abbastanza
+da sbloccare gradualmente il prodotto o reparto successivo (prima le salse,
+poi i panini, poi un vero banco, fino ad arrivare molto piu' avanti a reparti
+interi come la macelleria).
+
+La progressione deve essere LENTA e SENTITA COME CONQUISTA, non un'espansione
+rapida e facile. Quando in futuro si bilanciano prezzi, costi di sblocco e
+ricavi, il default deve pendere verso "piu' lento e faticoso" invece che verso
+"veloce e comodo". Non e' in contrasto con l'anima chill: non e' stress, e' un
+ritmo di crescita graduale da gustarsi con calma, l'opposto di un rush.
+
+IL FARMING DEVE ESSERE CIECO? NO — decisione presa: il giocatore vede una
+LISTA DEI PROSSIMI OBIETTIVI, con cosa potra' sbloccare e quanto costa. E'
+quello che rende sopportabile e anzi piacevole una progressione lenta: si sa
+per cosa si sta lavorando. Un grind lungo e cieco e' solo noia; un grind lungo
+con un traguardo visibile e' attesa, che e' un'altra cosa.
+
+RIFERIMENTI DI "FEELING", per calibrare ritmo e bilanciamento:
+- per l'ambientazione e la sensazione generale: Supermarket Simulator;
+- per la PROFONDITA' e il dettaglio dei reparti: Megastore Simulator, dove in
+  macelleria potevi scegliere di affettare pesce e carne TU personalmente
+  oppure pagare un dipendente per farlo al posto tuo. Questo doppio binario
+  (fallo a mano per risparmiare / paga qualcuno per automatizzarlo) e' un
+  pattern che piace molto e va tenuto a mente quando si progettano i reparti
+  futuri e i ruoli dei dipendenti.
+
+------------------------------------------------------------------------------
+B5. IDEE A LUNGO TERMINE (materiale da cui pescare, non impegni)
+------------------------------------------------------------------------------
+
+Raccolte confrontando Megastore Simulator, Mall Simulator, Supermarket
+Together, Pawnbroker Simulator, The Roast: Coffee Shop Simulator e Retail
+Company Simulator — giochi che l'utente ha giocato e di cui apprezza pezzi
+specifici. NON e' detto che vengano implementate tutte: sono materiale da cui
+pescare quando si discute ogni fase, sempre confermando prima con l'utente.
+
+a) REPARTI SPECIALIZZATI (da Megastore Simulator) — obiettivo a lungo termine
+   gradito: si parte da un solo reparto alimentari semplice (coerente con
+   l'MVP) e in una fase molto piu' avanzata si aggiungono reparti con
+   meccaniche proprie, es. una panetteria dove compri l'impasto e usi un
+   forno. Non e' una priorita' vicina, ma e' una direzione di crescita che
+   piace.
+
+b) RUOLI DIPENDENTE: SOLO DUE, anche a lungo termine per default —
+   "restocker" (rifornisce gli scaffali) e "cassiere". Niente dei 7 ruoli
+   complessi visti in Supermarket Together (sicurezza, tecnico, imballatore,
+   produttore...): l'utente vuole restare semplice. Se in futuro emergesse
+   voglia di piu' profondita' se ne discute allora, non e' un default.
+
+c) NIENTE MULTIPLAYER, mai, nemmeno come obiettivo lontano. Decisione ferma,
+   nonostante Supermarket Together punti tutto sul caos co-op fino a 16
+   giocatori. Il gioco resta single player anche dopo la pubblicazione.
+
+d) STAGIONALITA' E TREND (da Mall Simulator) — gradita come idea futura:
+   certi prodotti piu' richiesti in certi periodi (bibite fredde d'estate,
+   prodotti specifici a Natale). Va progettata per dare varieta' SENZA
+   diventare stressante o punitiva: mai una "moda improvvisa da inseguire o
+   fallisci", piuttosto un'oscillazione dolce e prevedibile.
+
+e) CONTRATTAZIONE CON I FORNITORI (da Pawnbroker Simulator) — invece di pagare
+   sempre il prezzo di listino, poter negoziare leggermente il prezzo
+   d'acquisto. Deve restare un elemento LEGGERO e opzionale, mai un mini-gioco
+   obbligatorio e stressante.
+
+f) DECORAZIONI CON BENEFICIO CONCRETO (da The Roast: Coffee Shop Simulator) —
+   le decorazioni estetiche del negozio (il tocco "cozy" di B1) devono dare
+   anche un piccolo bonus di gioco, es. piu' clienti attratti o trattenuti,
+   invece di essere un vezzo visivo senza conseguenze. Rinforza il senso di
+   progressione insieme a prezzi e pubblicita'.
+
+g) CONTRATTI CON MARCHI (da Retail Company Simulator) — accordi con marchi
+   specifici per prodotti esclusivi o scontati. Idea molto interessante per
+   l'utente ma lontana nel tempo: si esplora solo quando il gioco ha gia' una
+   base economica solida.
+
+h) PRESTITI CON PIGNORAMENTO VERO — vista in forma base in altri simulatori,
+   ma qui va resa con conseguenze REALI, a differenza degli originali dove
+   saltare le rate non aveva impatto serio. Regole gia' decise dall'utente:
+   - il giocatore puo' chiedere un prestito in banca per potenziarsi subito,
+     da ripagare a rate;
+   - se salta una rata: PRIMA un avviso con un margine di tempo per rimediare
+     (alla prima rata saltata non scatta nulla). Il pignoramento vero scatta
+     solo dopo piu' rate saltate consecutive;
+   - quando scatta, la banca puo' pignorare QUALSIASI asset del negozio (non
+     solo cio' che era stato comprato col prestito) TRANNE gli asset
+     fondamentali, sempre protetti: la cassa (il modo di incassare pagamenti)
+     e una scorta minima di prodotti sufficiente a ricominciare a vendere. E'
+     questo il meccanismo che garantisce "sempre recuperabile, mai un vero
+     game over": per quanto tu venga pignorato duramente, ti resta sempre da
+     cosa ripartire a farmare;
+   - tasso di interesse fisso e semplice per ogni prestito, niente tasso
+     variabile legato all'affidabilita' creditizia, almeno nella prima
+     versione.
+   Coerente con la regola generale (B1): un po' di tensione si', game over
+   che azzera i progressi mai.
+
+------------------------------------------------------------------------------
+B6. LE DUE MODALITA' DI GIOCO (tema grande a se', molto dopo l'MVP)
+------------------------------------------------------------------------------
+
+Idea nata parlando di "iniziare come commesso in un supermercato vero prima di
+aprire il proprio". Entrambe da costruire solo DOPO che l'MVP del negozio
+proprio funziona bene. NON e' scope da infilare di soppiatto nell'MVP: e' un
+tema grande, con una sua fase di progettazione dedicata.
+
+MODALITA' A — "Carriera da dipendente": il supermercato esiste gia', completo,
+a livello massimo, con tutte le feature del gioco (reparti, dipendenti...).
+Il giocatore inizia come umile dipendente con UN compito fisso e ripetitivo —
+per la prima versione uno solo, es. il banco del pesce: NON costruire subito
+una scelta fra piu' mestieri, quella arriva dopo. Lavorando bene guadagna
+promozioni, fino a diventare direttore. E' progressione verticale (carriera),
+diversa da quella orizzontale (costruire da zero) della Modalita' B.
+
+MODALITA' B — "Il tuo negozio", cioe' la logica gia' descritta in B4: PROLOGO
+OBBLIGATORIO BREVE come dipendente, con un lavoretto ripetitivo per farmare i
+primi soldi; appena il giocatore ha abbastanza risparmi apre il suo
+primissimo, piccolissimo negozio e da li' parte la progressione lenta (dal
+buggigattolo con le patatine fino ai reparti veri).
+
+Nota di scope: sia per il prologo di B che per il compito fisso di A, nella
+PRIMA versione si implementa UN SOLO mestiere/mini-gioco fatto bene — scelta
+esplicita dell'utente per non disperdersi. La scelta fra piu' mestieri e'
+un'iterazione successiva.
+
+------------------------------------------------------------------------------
+B7. ROADMAP TECNICA DOPO L'MVP
+------------------------------------------------------------------------------
+
+Ordine indicativo di probabile priorita', da confermare con l'utente prima di
+ogni fase: un tema alla volta, si sceglie insieme (stessa regola di
+Sorare-tracker).
+
+1. ECONOMIA VERA: prezzi di acquisto e vendita, margini, soldi che si
+   accumulano, possibilita' di spendere per migliorare il negozio. E' dentro
+   questa fase (o subito dopo) che entrano i tre sistemi di B2 e il
+   bilanciamento di B4.
+2. ASSET GRAFICI VERI, in sostituzione dei placeholder. Qui entra il budget di
+   5000€ che l'utente ha stanziato PER DOPO che l'MVP funziona da capo a
+   fondo: pacchetti a pagamento (Unity Asset Store, artisti freelance) per
+   scaffali, prodotti, personaggio, interni, audio. NON spendere nulla finche'
+   l'utente non conferma esplicitamente di essere soddisfatto del prototipo
+   gratuito.
+3. CLIENTI / NPC EVOLUTI. Il cliente base esiste gia' dalla Tappa 2 (A4bis):
+   qui si aggiunge quello che li' era escluso — piu' clienti insieme, coda
+   alla cassa, scelta fra piu' prodotti, reazione ai prezzi (che e' il
+   collegamento con B2a), il calcolo del resto a mano (B3). E' la componente
+   tecnicamente piu' delicata: pathfinding, stati, prestazioni con molti
+   personaggi. Va pianificata con cura, non improvvisata.
+4. ESPANSIONE DEL NEGOZIO: piu' spazio, piu' scaffali, upgrade acquistabili.
+5. PIU' PRODOTTI E VARIETA', oltre i 3-5 iniziali — coerentemente con il
+   ritmo di sblocco lento di B4.
+6. RIFINITURA UI/UX, menu principale, menu opzioni (qui entrano sensibilita'
+   mouse e accessibilita', rimandate dall'MVP).
+7. CURA DEL SUONO vera e propria (B3). Non lasciarla per ultima come
+   "e via": e' una priorita' esplicita.
+8. TROVARE IL TOCCO DI ORIGINALITA' (CLAUDE.md punto 9, idee in B1 e B5)
+   PRIMA di investire seriamente in marketing e pubblicazione.
+8bis. APRIRE LA PAGINA STEAM MOLTO PRIMA DELL'USCITA — tappa a se', da
+   ricordare all'utente attivamente, non da lasciare alla fine.
+   La pagina del gioco su Steam si puo' pubblicare mesi prima che il gioco
+   esca, e serve a raccogliere le liste dei desideri ("wishlist") di chi lo
+   vede e lo aspetta. E' la leva piu' grossa sulle vendite del primo giorno, e
+   quasi tutti gli sviluppatori alle prime armi la scoprono troppo tardi:
+   arrivano all'uscita senza che nessuno sappia che il gioco esiste.
+   Cosa devi fare: quando il gioco inizia ad avere qualcosa di mostrabile
+   (anche solo il negozio che funziona con un cliente), METTI TU SUL TAVOLO
+   l'argomento invece di aspettare che ci pensi lui. Verifica cosa serve
+   esattamente per aprire una pagina Steam e con che anticipo conviene farlo —
+   non darlo per scontato a memoria, controlla.
+   Ricorda che la quota Steamworks e' una spesa: proponila, non farla.
+
+8ter. CONTROLLI LEGALI PRIMA DI PUBBLICARE (l'utente e' giurista e li
+   valutera' lui, ma tocca a te SOLLEVARLI in tempo utile — non il giorno
+   della pubblicazione):
+   - NOME DEL GIOCO: verificare che non sia gia' usato da un altro gioco su
+     Steam e che non sia un marchio registrato altrui, PRIMA di affezionarsi
+     e stamparlo su icona, pagina store e materiale promozionale. E' anche il
+     motivo per cui il nome non va scritto a mano ovunque nel codice
+     (appendice C2).
+   - CONTENUTI GENERATI DA IA: Steam obbliga a dichiarare se grafica, audio o
+     testi sono stati fatti con l'intelligenza artificiale. Quindi va saputo
+     PRIMA, non al momento di pubblicare: se in qualunque fase si usano asset
+     generati da IA, annotalo in ASSET_LICENZE.md fin da subito, cosi' la
+     dichiarazione si compila leggendo un file invece di ricostruire a memoria
+     mesi di lavoro. Verifica tu le regole aggiornate quando ci si avvicina
+     alla pubblicazione.
+   - SOMIGLIANZA CON IL GIOCO DI PARTENZA: le MECCANICHE di gioco in generale
+     si possono riprendere; nome, marchi, grafica, testi e materiale
+     promozionale altrui no. Nel dubbio su un caso concreto, mettilo davanti
+     all'utente con i fatti (cosa somiglia a cosa, quanto): la valutazione
+     giuridica la fa lui, e' il suo mestiere. Tu devi solo non farlo arrivare
+     alla fine senza essersene accorto.
+
+9. PUBBLICAZIONE STEAM: pagina Steamworks (quota una tantum, verificane
+   l'importo attuale — vedi COSTI.md), build di test, requisiti tecnici,
+   obiettivi Steam costruiti sui contatori gia' predisposti nell'MVP,
+   materiale promozionale (trailer, screenshot, descrizione store).
+   Riproponi qui anche: ambientazione definitiva e livelli di difficolta',
+   due decisioni che l'utente ha esplicitamente rimandato.
+
+
+==============================================================================
+FINE DELLA PARTE B.
+==============================================================================
+Se stai leggendo questo file per primo: torna a PROMPT_OPUS_MARKETSIM.txt (la
+Parte A), che contiene il setup, le regole di lavoro e cosa costruire adesso.
+Niente di quello che hai letto qui si implementa ora.
