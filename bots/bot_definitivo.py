@@ -1383,18 +1383,40 @@ query NextStarterOdds($slug: String!) {
 }
 """
 
-# Cache in RAM (slug -> odds frazionaria o None) per non ripetere la query se lo stesso
-# giocatore si ripresenta piu' volte nella stessa run (es. piu' carte in vendita).
+# Cache in RAM (slug -> (odds frazionaria o None, quando)) per non ripetere la query se
+# lo stesso giocatore si ripresenta piu' volte nella stessa run (es. piu' carte in
+# vendita).
+#
+# SCADENZA (13/08/2026). Prima non ne aveva: il valore letto alla prima ora restava buono
+# per tutte e cinque le ore di una run lunga. Ma le starter odds si muovono man mano che
+# le formazioni si delineano -- un giocatore letto al 40% a inizio serata restava al 40%
+# per il bot anche quando era ormai dato titolare, e continuava a essere scartato. Un
+# quarto d'ora e' abbastanza corto da seguire quel movimento e abbastanza lungo da non
+# rifare la query per ogni carta dello stesso giocatore.
+_STARTER_ODDS_TTL_SECONDS = 900
 _starter_odds_cache = {}
+_starter_odds_lock = threading.Lock()
 
 
 def get_next_starter_odds(player_slug):
     """Restituisce le starter odds (frazione 0-1) per la prossima partita futura del
-    giocatore, o None se assenti/non disponibili. Una sola chiamata HTTP per slug per
-    run (cache in RAM). Chiamata SOLO in modalita' aggressiva."""
-    if player_slug in _starter_odds_cache:
-        return _starter_odds_cache[player_slug]
+    giocatore, o None se assenti/non disponibili. Chiamata SOLO in modalita' aggressiva.
+
+    NON mette in cache i fallimenti (13/08/2026). Prima, se la query andava in eccezione
+    -- rete, timeout, 429 con tutte le chiavi esaurite -- il None finiva in cache come se
+    fosse una risposta del server, e siccome il filtro chiamante tratta None come
+    "scarta", un singolo intoppo di rete metteva quel giocatore in lista nera per il
+    resto della run, in silenzio, anche se era un titolare quasi certo. Il codice non
+    distingueva "il server dice che le odds non ci sono" da "non sono riuscito a
+    chiedere": ora il secondo caso non si ricorda, e al prossimo annuncio si riprova.
+    """
+    adesso = time.time()
+    with _starter_odds_lock:
+        voce = _starter_odds_cache.get(player_slug)
+        if voce is not None and (adesso - voce[1]) < _STARTER_ODDS_TTL_SECONDS:
+            return voce[0]
     odds = None
+    riuscita = False
     try:
         d = graphql_query(NEXT_STARTER_ODDS_QUERY, {"slug": player_slug})
         p = (d.get('data') or {}).get('anyPlayer') or {}
@@ -1405,9 +1427,14 @@ def get_next_starter_odds(player_slug):
                   .get('footballPlayingStatusOdds') or {}).get('starterOddsBasisPoints')
             if bp is not None:
                 odds = bp / 10000.0
+        # Una risposta senza errori vale come risposta anche quando le odds non ci sono:
+        # quello e' un "il server dice di no", legittimo da ricordare.
+        riuscita = not (d or {}).get('errors')
     except Exception as e:
         log(f"[starter odds] errore query per {player_slug}: {e}")
-    _starter_odds_cache[player_slug] = odds
+    if riuscita:
+        with _starter_odds_lock:
+            _starter_odds_cache[player_slug] = (odds, adesso)
     return odds
 
 
