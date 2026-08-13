@@ -916,21 +916,41 @@ Due letture, entrambe utili:
    della lista efficiente è davvero la migliore. (Era un'intuizione
    dell'utente da un vecchio test, ora verificata su tutto l'archivio.)
 
-**LA TENSIONE, da non nascondere**: qui sopra c'è scritto "entrare CONVIENE
-in entrambi i periodi (+82,8 e +19,6 essenze/formazione)", e la fascia 0-10%
-dà invece **−14,6**. Le due misure rispondono a domande diverse — quella
-vecchia guarda le formazioni *di confine* rispetto alla soglia di decisione,
-questa guarda tutte le arene per fascia di guadagno atteso — ma il verso è
-opposto e il campione nuovo è molto più grande. **Da riconciliare prima di
-toccare `QUOTA_MINIMA` in un senso o nell'altro.**
+**LA TENSIONE APPARENTE — SCIOLTA la stessa sera, e la risposta ribalta
+l'intuizione.** Sembrava che le due misure si contraddicessero: qui sopra
+"entrare CONVIENE" (+82,8 e +19,6 essenze/formazione), e la fascia 0-10% che
+rende **−14,6**. Rimisurato sull'archivio intero facendo scegliere al
+MODELLO quante arene giocare al variare del margine d'ingresso
+(`analisi_manager/p59_margine_ingresso.py --margini "0,0.05,0.10,0.15,0.20"`,
+1.338 unità, 61 manager, braccio di produzione):
 
-Nota operativa collegata: `genera_arene_efficienti` in produzione entra fino
-al **pareggio secco** (`margine_quota=0.0`), mentre l'ETICHETTA usa il 10% e
-l'utente le marginali le salta a mano. Il parametro per allinearli esiste ora
-(`margine_quota`, default 0.0 = invariato), misurato su una sola giornata:
-fino al 10% indifferente, oltre il 15% si perde. Serve rimisurarlo
-sull'archivio intero (`analisi_manager/p59_margine_ingresso.py`) prima di
-cambiare il default.
+| margine | arene giocate | netto | vs margine 0 | IC95 |
+|---|---|---|---|---|
+| **0,00 (produzione)** | 5.521 | **+588.127** | — | — |
+| 0,05 | 5.209 | +576.483 | −11.644 | [−16.262; −6.957] |
+| 0,10 | 4.827 | +566.464 | −21.663 | [−29.604; −14.302] |
+| 0,15 | 3.706 | +492.317 | −95.810 | [−127.399; −67.465] |
+| 0,20 | 2.957 | +448.203 | −139.924 | [−181.528; −100.797] |
+
+**Ogni margine perde, in modo monotono, con l'intervallo che esclude lo
+zero. Il default di produzione (pareggio secco) è il migliore: `margine_quota`
+resta 0.0 e `QUOTA_MINIMA` non si tocca.**
+
+**Perché le due misure non erano in contraddizione**: guardano popolazioni
+diverse. p61 guarda le arene che i MANAGER hanno giocato e che cadevano nella
+fascia 0-10% di guadagno atteso — scelte umane, spesso discutibili, che infatti
+rendono −14,6. p59 toglie invece le arene che il MODELLO mette per ULTIME
+nella sua allocazione, cioè la coda di una selezione già ottimizzata: quelle
+valgono **+31,2 essenze ciascuna** (694 arene in meno fra margine 0 e 0,10,
+21.663 essenze perse). Le marginali del modello non sono le marginali
+dell'uomo.
+
+**Conseguenza pratica, controintuitiva ma coerente**: saltare a mano le arene
+che il generatore mette in fondo alla lista **costa**. Combacia con il dato
+sulle sole formazioni di crowss (§5.3 e Binario 1): il braccio che salta
+perdeva −3.350 contro il manager che entrava sempre. L'etichetta "MARGINALE —
+meglio All Stars da 7 o Under 23" descrive bene la fascia in astratto, ma NON
+è un consiglio a saltare quando è il generatore ad aver messo lì quell'arena.
 
 ### 5.10 Leakage grade Sorare — CHIUSO 13/08/2026, punto fisso in CLAUDE.md
 Il voto A-F NON viene riscritto sul risultato della partita (due test
@@ -3032,6 +3052,15 @@ spiegare.
 ## 10bis. COSE DA FARE — riscritto il 09/08 notte, ripulito 11/08 (verificato contro il codice, non a memoria)
 
 ### APERTO AL 13/08/2026 NOTTE — la lista corta, in ordine di interesse dell'utente
+
+**Chiuse nella stessa notte, senza toccare il codice**: il **margine
+d'ingresso** (ogni margine perde in modo monotono, il pareggio secco è il
+migliore — §5.9) e con esso la **tensione §5.9**, che non era una
+contraddizione ma due popolazioni diverse. **D3 Champions**, chiusa come non
+applicabile. E dal backlog vecchio: **voce 5** e **voce 6a** (normalizzazione
+del grade e gruppi da 2 carte), risolte dalla scala storica accesa in
+produzione; **capitano**, richiuso con potenza vera su 12.677 formazioni
+(§5.3).
 
 1. **Asse "SQUADRA PROPRIA" — mai misurato.** È la parte del filone intralega
    che l'utente aveva intuito e che non è stata toccata: non il livello della
