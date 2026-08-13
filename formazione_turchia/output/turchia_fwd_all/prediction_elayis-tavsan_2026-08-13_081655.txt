@@ -1,0 +1,113 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T08:16:55.710879Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) elayis-tavsan: 52 pt attesi (37-67)
+   ORDINAMENTO: 53.05
+   SQUADRA: samsunspor-samsun | AVVERSARIO: goztepe-izmir
+======================================================================
+
+######################################################################
+# GIOCATORE: elayis-tavsan
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: elayis-tavsan (squadra: samsunspor-samsun)
+Generato: 2026-08-13T08:16:55.709967Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 40
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: spor-toto-super-lig (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | PAL vs REG | serie-b-it | score=67.4 | peso=0.125
+  2025-08-29 | REG vs EMP | serie-b-it | score=41.2 | peso=0.140
+  2025-09-20 | REG vs CTZ | serie-b-it | score=42.6 | peso=0.157
+  2025-10-04 | CES vs REG | serie-b-it | score=60.0 | peso=0.177
+  2025-10-18 | REG vs BAR | serie-b-it | score=84.0 | peso=0.198
+  2025-10-28 | REG vs MOD | serie-b-it | score=39.2 | peso=0.223
+  2025-11-01 | AVE vs REG | serie-b-it | score=36.8 | peso=0.250
+  2025-11-08 | REG vs VIR | serie-b-it | score=45.5 | peso=0.281
+  2025-11-29 | REG vs FRO | serie-b-it | score=35.5 | peso=0.315
+  2025-12-13 | REG vs CPA | serie-b-it | score=39.1 | peso=0.354
+  2025-12-27 | SAM vs REG | serie-b-it | score=33.1 | peso=0.397
+  2026-01-24 | SAM vs KOC | spor-toto-super-lig | score=34.1 | peso=0.445
+  2026-01-30 | KAS vs SAM | spor-toto-super-lig | score=38.8 | peso=0.500
+  2026-03-01 | SAM vs GAZ | spor-toto-super-lig | score=44.5 | peso=0.561
+  2026-03-15 | SAM vs KAY | spor-toto-super-lig | score=64.4 | peso=0.630
+  2026-04-09 | RIZ vs SAM | spor-toto-super-lig | score=44.9 | peso=0.707
+  2026-04-27 | ALA vs SAM | spor-toto-super-lig | score=63.4 | peso=0.794
+  2026-05-09 | IBFK vs SAM | spor-toto-super-lig | score=45.3 | peso=0.891
+  2026-05-16 | SAM vs GÖZ | spor-toto-super-lig | score=85.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 52.15
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=19): 52.85 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 45.45 | Punteggio complessivo (granulari) medio: 6.71 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.91 (delta +0.04) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.83
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.8 - 67.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.01 (differenza: +4.81)
+Media score in casa: 57.05 | Media score fuori casa: 48.10
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.2
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.006
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore trend (media ultime 5: 60.6 vs media 5 PRECEDENTI: 37.9): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-17T18:30
+Casa: Samsunspor Kulübü | Trasferta: Göztepe Spor Kulübü
+Competizione: spor-toto-super-lig
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.1 (range 36.7 - 67.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 53.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.53
+Punteggio REALE ottenuto in quella partita: 85.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +37.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      55.8    36.8    -19.0    19.6        SI
+   7        7      52.0    45.5     -6.5    19.6        SI
+   8        8      50.9    35.5    -15.4    18.0        SI
+   9        9      48.3    39.1     -9.2    17.7        SI
+  10       10      46.8    33.1    -13.7    16.6        SI
+  11       11      44.7    34.1    -10.6    16.3        SI
+  12       12      47.6    38.8     -8.8    15.7        SI
+  13       13      42.9    44.5     +1.6    14.7        SI
+  14       14      50.5    64.4    +13.9    13.7        NO
+  15       15      37.7    44.9     +7.2    15.2        SI
+  16       16      44.0    63.4    +19.4    14.2        NO
+  17       17      36.7    45.3     +8.6    14.9        SI
+  18       18      39.3    85.2    +45.9    14.0        NO
+
+MAE (errore assoluto medio): 13.84
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 76.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
