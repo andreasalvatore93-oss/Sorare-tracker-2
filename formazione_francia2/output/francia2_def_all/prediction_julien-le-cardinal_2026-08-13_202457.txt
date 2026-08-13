@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-13T07:41:38.797438Z
+Generato: 2026-08-13T20:24:57.848074Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) julien-le-cardinal: 60 pt attesi (45-72)
-   ORDINAMENTO: 63.09
+1) julien-le-cardinal: 59 pt attesi (45-72)
+   ORDINAMENTO: 63.33
    SQUADRA: saint-etienne-saint-etienne | AVVERSARIO: clermont-clermont-ferrand
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: julien-le-cardinal (squadra: saint-etienne-saint-etienne)
-Generato: 2026-08-13T07:41:38.796623Z
+Generato: 2026-08-13T20:24:57.847318Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -44,7 +44,7 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 30.0 partite): 61.64
   di cui Punteggio decisivo (level_score) medio: 38.79 | Punteggio complessivo (granulari) medio: 22.85 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Gol subiti condizionato: delta venue +1.27, delta avversario +0.66 | Passaggio condizionato: delta venue +0.21, delta avversario +1.36 | Clean sheet/disimpegni condizionato: delta venue +0.93, delta avversario +0.03 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+  Gol subiti condizionato: delta venue +1.27, delta avversario +0.33 | Passaggio condizionato: delta venue +0.21, delta avversario +1.83 | Clean sheet/disimpegni condizionato: delta venue +0.93, delta avversario -0.47 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
 Deviazione standard pesata: 12.76
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 46.9 - 74.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.86 (differenza: +2.90)
@@ -52,7 +52,7 @@ Media score in casa: 65.14 | Media score fuori casa: 56.32
 Fattore casa/trasferta applicato: 0.998 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 11.6
 Ranking prossimo avversario: 11
-Fattore forza avversario applicato: 0.802 (gol subiti reali dell'avversario, ultime 10)
+Fattore forza avversario applicato: 0.870 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 1.004
 Fattore duelli (casa/trasferta, da dati reali): 1.005
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
@@ -72,8 +72,8 @@ Competizione: ligue-2-fr
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 59.6 (range 44.9 - 72.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 63.1
+Score atteso: 59.4 (range 44.7 - 72.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 63.3
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 60.98
