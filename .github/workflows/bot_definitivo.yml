@@ -169,7 +169,16 @@ jobs:
         run: |
           cd bots/sorare-sign
           npm install
-      - run: pip install requests websocket-client curl_cffi
+      # tzdata serve SOLO su Windows, ma si installa sempre perche' su Linux e'
+      # gia' soddisfatto e non costa niente (13/08/2026, trovato dalla prima run
+      # sul PC di casa). Python non porta con se' il database dei fusi orari: su
+      # Linux lo legge da quello di sistema, su Windows quel database non esiste
+      # e ZoneInfo('Europe/Rome') solleva ZoneInfoNotFoundError. Il bot lo usa
+      # per scrivere le scadenze della lista nera in ora di Roma, e l'eccezione
+      # partiva DENTRO il thread che valuta un annuncio: ogni evento veniva
+      # saltato con "eccezione non gestita durante la valutazione", cioe' il bot
+      # girava senza valutare niente -- verde, e completamente inutile.
+      - run: pip install requests websocket-client curl_cffi tzdata
       - name: Run Bot definitivo
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
