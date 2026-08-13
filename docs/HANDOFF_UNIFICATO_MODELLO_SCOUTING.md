@@ -2599,6 +2599,57 @@ numeri si muovono.
 
 ---
 
+## 8quindecies. HALF_LIFE_GAMES rimisurato (13/08/2026) — NON è stantio, non si tocca
+
+Dubbio dell'utente, legittimo: quei valori furono tarati quando il modello era
+agli inizi e non sono mai più stati guardati, mentre intorno è cambiato tutto
+(grade G, GK_ATT_AVV, calibrazione per ruolo). **Rimisurati tutti e quattro i
+ruoli, 11 valori da 3 a 60, con gli aggiustamenti avversario ACCESI** — cioè
+nella condizione in cui il modello gira davvero, che è la novità rispetto alle
+tarature precedenti. **Esito: i valori di produzione stanno dove devono. Nessun
+cambio.**
+
+| ruolo | n punti | produzione | MAE prod → migliore | corr prod → migliore | verdetto |
+|---|---|---|---|---|---|
+| GK | 7.842 | 6 | 16,918 → 16,896 (a 3) | 0,021 → 0,033 (a 3) | vedi sotto |
+| DEF | 31.790 | 30 | 14,964 → 14,964 (20-40) | 0,175 → 0,175 | **pianoro**, indifferente |
+| MID | 29.036 | 25 | 13,253 → 13,251 (12-16) | 0,238 → 0,239 | guadagno sotto il rumore |
+| FWD | 23.173 | 6 | 14,761 → 14,723 (a 3) | 0,248 → 0,239 (a 3) | i metri **si contraddicono** |
+
+**Perché non si tocca niente, in concreto:**
+- **DEF**: da 12 a 60 la MAE cambia di 3 millesimi e la correlazione di zero. Il
+  valore esatto è **irrilevante**: 30 va bene quanto 20 e quanto 40. Il fatto che
+  fu tarato presto non è costato nulla, perché lì la curva è piatta.
+- **MID**: 12-16 è meglio su tutti e tre i metri, ma di **0,002 di MAE** — cioè
+  *sotto* il tremolio fra ambienti già documentato per questo banco (0,003 di MAE,
+  0,0008 di correlazione, §"Cosa deve riprodursi"). Non è un miglioramento, è
+  rumore che capita di avere il segno giusto.
+- **FWD**: la MAE vuole 3, la correlazione e il lift vogliono 6-20. Quando i metri
+  litigano non si applica (e la MAE da sola premia i modelli che non ordinano:
+  è la trappola scritta nella docstring dello strumento). 6 è il compromesso, e
+  regge.
+- **GK**: MAE e correlazione preferirebbero 3, ma la correlazione del portiere è
+  **0,02-0,03**, cioè zero: il modello non ordina i portieri, come già stabilito
+  e chiuso in §5.6. Muovere l'half-life di un ruolo che non ordina significa
+  inseguire rumore. Il suo lift oscilla senza struttura (4,0 → −0,1 → 6,9 → 5,2
+  → 0,9 al crescere del parametro): non è un metro, lì.
+
+**La cosa da portarsi via**: il sospetto era ragionevole ma la risposta è no —
+e il motivo è che **la curva dell'half-life è piatta** su DEF e MID. Non è che
+la vecchia taratura fosse fortunata: è che in quella zona il parametro non
+morde. Non ripetere questa misura senza un motivo nuovo.
+
+Comando esatto (~20 minuti, zero query):
+`python taratura_confronto_parametri.py --ruoli gk,def,mid,fwd --candidati
+"3:0,4:0,6:0,9:0,12:0,16:0,20:0,25:0,30:0,40:0,60:0" --con-avversario`
+Output integrale: `analisi_manager/dati/halflife_rimisura_2026-08-13.txt`
+(+ `.json`). Il secondo giro previsto (stessa griglia con l'avversario spento,
+per capire se la taratura vecchia fosse distorta da quello) **non è stato
+fatto e non serve**: l'ottimo non si è spostato, quindi non c'è niente da
+spiegare.
+
+---
+
 ## 10bis. COSE DA FARE — riscritto il 09/08 notte, ripulito 11/08 (verificato contro il codice, non a memoria)
 
 **FATTO, non più aperto (verificato 11/08 leggendo codice/repo, questa
