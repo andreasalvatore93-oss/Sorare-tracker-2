@@ -1,0 +1,111 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T11:02:46.142550Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) othmane-maamma: 48 pt attesi (35-61)
+   ORDINAMENTO: 46.69
+   SQUADRA: watford-watford | AVVERSARIO: southampton-southampton-hampshire
+======================================================================
+
+######################################################################
+# GIOCATORE: othmane-maamma
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: othmane-maamma (squadra: watford-watford)
+Generato: 2026-08-13T11:02:46.141822Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 45
+Escluse (DID_NOT_PLAY): 20
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-22 | DER vs WAT | football-league-championship | score=35.7 | peso=0.140
+  2025-11-25 | WAT vs PNE | football-league-championship | score=58.0 | peso=0.157
+  2025-12-01 | BIR vs WAT | football-league-championship | score=64.5 | peso=0.177
+  2025-12-06 | WAT vs NOR | football-league-championship | score=41.6 | peso=0.198
+  2025-12-13 | WRE vs WAT | football-league-championship | score=75.8 | peso=0.223
+  2025-12-20 | WAT vs STO | football-league-championship | score=52.1 | peso=0.250
+  2025-12-26 | LEI vs WAT | football-league-championship | score=61.6 | peso=0.281
+  2025-12-29 | NOR vs WAT | football-league-championship | score=39.7 | peso=0.315
+  2026-01-01 | WAT vs BIR | football-league-championship | score=42.8 | peso=0.354
+  2026-01-17 | WAT vs MIL | football-league-championship | score=35.8 | peso=0.397
+  2026-01-21 | WAT vs POR | football-league-championship | score=35.4 | peso=0.445
+  2026-01-24 | BBR vs WAT | football-league-championship | score=46.7 | peso=0.500
+  2026-01-31 | WAT vs SWA | football-league-championship | score=49.3 | peso=0.561
+  2026-02-03 | HUL vs WAT | football-league-championship | score=46.6 | peso=0.630
+  2026-02-07 | SOT vs WAT | football-league-championship | score=61.4 | peso=0.707
+  2026-02-14 | PNE vs WAT | football-league-championship | score=73.4 | peso=0.794
+  2026-04-21 | WBA vs WAT | football-league-championship | score=40.1 | peso=0.891
+  2026-05-02 | WAT vs COV | football-league-championship | score=30.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 48.19
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=18): 50.71 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 39.87 | Punteggio complessivo (granulari) medio: 8.32 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.70 (delta -0.66) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 13.68
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.4 - 61.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.02 (differenza: +1.66)
+Media score in casa: 43.14 | Media score fuori casa: 54.55
+Fattore casa/trasferta applicato: 0.993 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.4
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.867 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.990
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore trend (media ultime 5: 50.3 vs media 5 PRECEDENTI: 42.0): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T12:30
+Casa: Watford FC | Trasferta: Southampton FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.8 (range 35.0 - 61.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 46.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.77
+Punteggio REALE ottenuto in quella partita: 30.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -20.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      77.9    61.6    -16.3    15.3        NO
+   7        7      49.0    39.7     -9.3    14.0        SI
+   8        8      50.7    42.8     -7.9    14.8        SI
+   9        9      36.6    35.8     -0.8    14.2        SI
+  10       10      62.0    35.4    -26.6    14.7        NO
+  11       11      60.3    46.7    -13.6    14.7        SI
+  12       12      45.3    49.3     +4.0    13.6        SI
+  13       13      36.9    46.6     +9.7    12.6        SI
+  14       14      34.4    61.4    +27.0    11.8        NO
+  15       15      53.8    73.4    +19.6    12.2        NO
+  16       16      69.7    40.1    -29.6    14.8        NO
+  17       17      31.5    30.1     -1.4    14.6        SI
+
+MAE (errore assoluto medio): 13.81
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 58.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
