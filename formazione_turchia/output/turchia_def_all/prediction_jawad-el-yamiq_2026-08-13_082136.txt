@@ -1,0 +1,113 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T08:21:36.378567Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) jawad-el-yamiq: 50 pt attesi (24-67)
+   ORDINAMENTO: 54.85
+   SQUADRA: eyupspor-istanbul | AVVERSARIO: besiktas-istanbul
+======================================================================
+
+######################################################################
+# GIOCATORE: jawad-el-yamiq
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jawad-el-yamiq (squadra: eyupspor-istanbul)
+Generato: 2026-08-13T08:21:36.377345Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 32
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: spor-toto-super-lig (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-08 | ? vs ? | wc-qualification-africa | score=48.3 | peso=0.675
+  2025-10-09 | ? vs ? | friendlies | score=100.0 | peso=0.691
+  2025-10-14 | ? vs ? | wc-qualification-africa | score=67.9 | peso=0.707
+  2025-11-14 | ? vs ? | friendlies | score=73.9 | peso=0.724
+  2025-11-18 | ? vs ? | friendlies | score=83.3 | peso=0.741
+  2025-12-21 | ? vs ? | africa-cup-of-nations | score=51.9 | peso=0.758
+  2025-12-26 | ? vs ? | africa-cup-of-nations | score=30.5 | peso=0.776
+  2026-02-07 | ZAR vs EIB | segunda-division-es | score=31.6 | peso=0.794
+  2026-02-22 | FCA vs ZAR | segunda-division-es | score=81.6 | peso=0.812
+  2026-02-28 | ZAR vs BCF | segunda-division-es | score=67.7 | peso=0.831
+  2026-03-29 | ZAR vs RAC | segunda-division-es | score=59.3 | peso=0.851
+  2026-04-02 | LEG vs ZAR | segunda-division-es | score=49.0 | peso=0.871
+  2026-04-05 | ZAR vs MIR | segunda-division-es | score=16.0 | peso=0.891
+  2026-04-11 | COR vs ZAR | segunda-division-es | score=63.5 | peso=0.912
+  2026-04-18 | ZAR vs ADC | segunda-division-es | score=43.2 | peso=0.933
+  2026-04-26 | HUE vs ZAR | segunda-division-es | score=54.1 | peso=0.955
+  2026-05-01 | ZAR vs GCF | segunda-division-es | score=55.8 | peso=0.977
+  2026-05-17 | ZAR vs RSG | segunda-division-es | score=60.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 56.93
+  di cui Punteggio decisivo (level_score) medio: 34.77 | Punteggio complessivo (granulari) medio: 22.16 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.47, delta avversario -0.03 | Passaggio condizionato: delta venue -0.26, delta avversario -2.18 | Clean sheet/disimpegni condizionato: delta venue -1.28, delta avversario +0.08 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 19.38
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.6 - 73.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.55 (differenza: +4.83)
+Media score in casa: 47.75 | Media score fuori casa: 62.04
+Fattore casa/trasferta applicato: 1.006 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.6
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.733 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.994
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.007
+Fattore gol subiti (goals_conceded, con cap): 0.998
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.995
+Fattore trend (media ultime 5: 55.5 vs media 5 PRECEDENTI: 54.0): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T18:30
+Casa: Beşiktaş Jimnastik Kulübü | Trasferta: Eyüp Spor Kulübü
+Competizione: spor-toto-super-lig
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.7 (range 24.3 - 66.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 54.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.66
+Punteggio REALE ottenuto in quella partita: 60.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +4.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      70.9    30.5    -40.4    19.3        NO
+   7        7      64.7    31.6    -33.1    23.9        NO
+   8        8      70.6    81.6    +11.0    25.5        SI
+   9        9      54.6    67.7    +13.1    25.1        SI
+  10       10      45.0    59.3    +14.3    23.7        SI
+  11       11      81.7    49.0    -32.8    22.5        NO
+  12       12      83.0    16.0    -67.0    21.9        NO
+  13       13      54.0    63.5     +9.5    25.3        SI
+  14       14      58.6    43.2    -15.4    24.3        SI
+  15       15      75.8    54.1    -21.7    23.7        SI
+  16       16      60.6    55.8     -4.8    22.9        SI
+  17       17      52.5    60.7     +8.2    22.0        SI
+
+MAE (errore assoluto medio): 22.60
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
