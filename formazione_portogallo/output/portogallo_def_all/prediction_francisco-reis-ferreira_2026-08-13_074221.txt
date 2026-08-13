@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:42:21.067423Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) francisco-reis-ferreira: 56 pt attesi (31-82)
+   ORDINAMENTO: 60.18
+   SQUADRA: estoril-estoril | AVVERSARIO: nacional-funchal-ilha-da-madeira
+======================================================================
+
+######################################################################
+# GIOCATORE: francisco-reis-ferreira
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: francisco-reis-ferreira (squadra: estoril-estoril)
+Generato: 2026-08-13T07:42:21.066303Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 13
+Competizione partita target: primeira-liga-pt (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-06 | EST vs SCL | primeira-liga-pt | score=40.7 | peso=0.724
+  2025-09-13 | EST vs AVS | primeira-liga-pt | score=47.6 | peso=0.741
+  2025-09-21 | GIL vs EST | primeira-liga-pt | score=86.4 | peso=0.758
+  2025-09-27 | EST vs SCP | primeira-liga-pt | score=72.8 | peso=0.776
+  2025-10-03 | CSP vs EST | primeira-liga-pt | score=45.7 | peso=0.794
+  2026-02-07 | EST vs TON | primeira-liga-pt | score=73.5 | peso=0.812
+  2026-02-15 | AVS vs EST | primeira-liga-pt | score=33.2 | peso=0.831
+  2026-02-22 | EST vs GIL | primeira-liga-pt | score=28.3 | peso=0.851
+  2026-02-27 | SCP vs EST | primeira-liga-pt | score=70.6 | peso=0.871
+  2026-03-07 | EST vs CSP | primeira-liga-pt | score=87.1 | peso=0.891
+  2026-03-15 | NAC vs EST | primeira-liga-pt | score=77.1 | peso=0.912
+  2026-03-22 | EST vs RIO | primeira-liga-pt | score=87.1 | peso=0.933
+  2026-04-20 | MOR vs EST | primeira-liga-pt | score=83.8 | peso=0.955
+  2026-04-26 | EST vs FAM | primeira-liga-pt | score=35.6 | peso=0.977
+  2026-08-07 | EST vs FAM | primeira-liga-pt | score=42.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 60.99
+  di cui Punteggio decisivo (level_score) medio: 41.91 | Punteggio complessivo (granulari) medio: 19.07 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.70, delta avversario +0.14 | Passaggio condizionato: delta venue -0.42, delta avversario +0.71 | Clean sheet/disimpegni condizionato: delta venue +0.87, delta avversario +0.78 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 21.49
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.6 - 86.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.93 (differenza: +1.55)
+Media score in casa: 57.23 | Media score fuori casa: 66.12
+Fattore casa/trasferta applicato: 1.004 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.3
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.001
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.007
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.004
+Fattore trend (media ultime 5: 64.6 vs media 5 PRECEDENTI: 58.8): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T14:30
+Casa: CD Nacional Funchal | Trasferta: GD Estoril Praia
+Competizione: primeira-liga-pt
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 56.1 (range 30.7 - 81.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 60.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 62.55
+Punteggio REALE ottenuto in quella partita: 42.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -20.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      72.9    33.2    -39.8    18.8        NO
+   7        7      37.1    28.3     -8.8    20.6        SI
+   8        8      52.9    70.6    +17.7    22.0        SI
+   9        9      61.2    87.1    +25.8    21.5        NO
+  10       10      51.4    77.1    +25.7    23.1        NO
+  11       11      69.7    87.1    +17.4    22.7        SI
+  12       12      53.1    83.8    +30.7    23.2        NO
+  13       13      69.9    35.6    -34.4    23.1        NO
+  14       14      66.9    42.5    -24.4    23.8        NO
+
+MAE (errore assoluto medio): 24.97
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 33.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
