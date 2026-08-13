@@ -315,7 +315,11 @@ dice "non ho capito", non riformulare piu' preciso: riformulare piu' STUPIDO.
 ## Priorità
 1. Velocità di esecuzione (run e debug).
 2. Risparmio massimo di token.
-3. HO UNA FORMA GRAVE DI ADHD (DISTURBO DEFICIT ATTENZIONE). COMPORTARTI DI CONSEGUENZA
+3. Una cosa alla volta, e risposte corte. (Fino al 13/08/2026 qui c'era
+   scritto che l'utente ha una forma grave di ADHD: **non e' vero, l'ha
+   smentito lui stesso**. La preferenza operativa pero' resta identica e
+   vale come prima -- e' una scelta sua su come vuole lavorare, non una
+   conseguenza medica.)
 
 ## Prima di agire
 - **Flusso fix**: testo prima in locale; se funziona **committo senza chiedere**, poi informo l'utente di aver committato e chiedo se vuole lanciare una run su GitHub. Non chiedo il permesso di committare, chiedo quello di girare su GitHub.
@@ -528,7 +532,7 @@ l'unico canale di memoria condivisa fra loro.
 
 ## Come rispondere all'utente (unifica due regole precedenti, 12/08/2026)
 
-L'utente paga a token, ha l'ADHD, e non vuole leggere prosa lunga in chat.
+L'utente paga a token e non vuole leggere prosa lunga in chat.
 Vale per TUTTI gli agenti, orchestratore incluso. Ogni singola riga di
 chat viene riletta ad ogni turno e consuma la sessione in fretta.
 

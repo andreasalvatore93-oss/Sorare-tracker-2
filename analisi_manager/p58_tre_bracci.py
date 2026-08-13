@@ -163,6 +163,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--fixture', action='append', default=[],
                     help='limita a una o piu\' giornate (ripetibile)')
+    ap.add_argument('--sd-contemporanea', action='store_true', dest='sd_contemp',
+                    help='costruisce la tabella sd_atteso dalle righe DI QUESTO '
+                         'run invece che da quella congelata il 12/08 (che '
+                         'contiene solo kickoff 28 lug - 13 ago, cioe\' un '
+                         'periodo SUCCESSIVO a quasi tutte le giornate testate)')
     args = ap.parse_args()
 
     fixtures = B2.elenca_fixture()
@@ -212,6 +217,22 @@ def main():
     tab_sd = carica_tabelle_congelate()
     if tab_sd is None:
         return
+    if args.sd_contemp:
+        # RIGHELLO CONTEMPORANEO (13/08/2026). La tabella sd_atteso congelata
+        # e' costruita su kickoff 28 lug - 13 ago: testando all'indietro, il
+        # braccio G-fisso userebbe una misura di dispersione ricavata da un
+        # periodo SUCCESSIVO alla giornata su cui decide. Non e' leakage
+        # sull'esito (dentro c'e' quanto sono sparpagliati gli attesi, non
+        # chi ha segnato), ma e' informazione che quel giorno non esisteva.
+        # Qui la si ricostruisce dalle righe del run stesso, con la stessa
+        # funzione di produzione. La tabella del VOTO resta quella congelata:
+        # dice quanto vale ogni lettera, ed e' la ricetta pre-registrata.
+        tutte = [r for pre in pre_ok for r in pre['pool_rows']]
+        tab_sd = S21.costruisci_tabella_sd_atteso(tutte)
+        print('tabella sd_atteso: CONTEMPORANEA, ricostruita su %d righe di '
+              'questo run' % len(tutte))
+    else:
+        print('tabella sd_atteso: congelata 12/08 (kickoff 28 lug - 13 ago)')
 
     print('\n--- braccio G-variabile (produzione di oggi) ---')
     g_var, a_var = gioca(pre_ok, 'lega_ruolo')
