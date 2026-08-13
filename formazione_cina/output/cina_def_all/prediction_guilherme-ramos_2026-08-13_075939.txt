@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:59:39.318774Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) guilherme-ramos: 53 pt attesi (30-81)
+   ORDINAMENTO: 51.72
+   SQUADRA: beijing-guoan-beijing | AVVERSARIO: tianjin-teda-tianjin
+======================================================================
+
+######################################################################
+# GIOCATORE: guilherme-ramos
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: guilherme-ramos (squadra: beijing-guoan-beijing)
+Generato: 2026-08-13T07:59:39.318326Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: chinese-super-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-08 | WTT vs GUO | chinese-super-league | score=75.0 | peso=0.660
+  2026-03-14 | SLT vs GUO | chinese-super-league | score=28.9 | peso=0.675
+  2026-03-21 | GUO vs SHE | chinese-super-league | score=66.7 | peso=0.691
+  2026-04-17 | ZGR vs GUO | chinese-super-league | score=70.0 | peso=0.707
+  2026-04-21 | None vs GUO | chinese-super-league | score=74.9 | peso=0.724
+  2026-04-25 | GUO vs TED | chinese-super-league | score=31.7 | peso=0.741
+  2026-05-02 | YUY vs GUO | chinese-super-league | score=24.2 | peso=0.758
+  2026-05-06 | GUO vs DXC | chinese-super-league | score=100.0 | peso=0.776
+  2026-05-10 | GUO vs SHE | chinese-super-league | score=0.0 | peso=0.794
+  2026-05-15 | GUO vs QDJ | chinese-super-league | score=47.0 | peso=0.812
+  2026-05-19 | QYI vs GUO | chinese-super-league | score=80.5 | peso=0.831
+  2026-05-23 | GUO vs HEN | chinese-super-league | score=27.3 | peso=0.851
+  2026-05-30 | CHT vs GUO | chinese-super-league | score=74.2 | peso=0.871
+  2026-06-27 | GUO vs WTT | chinese-super-league | score=86.8 | peso=0.891
+  2026-07-04 | GUO vs SLT | chinese-super-league | score=50.9 | peso=0.912
+  2026-07-17 | GUO vs SHU | chinese-super-league | score=46.5 | peso=0.933
+  2026-07-26 | QIA vs GUO | chinese-super-league | score=30.1 | peso=0.955
+  2026-08-01 | GUO vs ZGR | chinese-super-league | score=49.0 | peso=0.977
+  2026-08-07 | GUO vs None | chinese-super-league | score=42.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 52.51
+  di cui Punteggio decisivo (level_score) medio: 35.20 | Punteggio complessivo (granulari) medio: 17.31 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.29, delta avversario +0.10 | Passaggio condizionato: delta venue +0.29, delta avversario -0.30 | Clean sheet/disimpegni condizionato: delta venue +0.42, delta avversario +1.22 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 24.85
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 28.9 - 80.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 20.13 (differenza: +4.72)
+Media score in casa: 49.80 | Media score fuori casa: 57.25
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.9
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 0.733 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.007
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.002
+Fattore trend (media ultime 5: 43.6 vs media 5 PRECEDENTI: 63.5): 1.000
+P(gioca): 86.36% (fonte: tasso di presenza storico (19/22))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T11:35
+Casa: Tianjin Teda FC | Trasferta: Beijing Guoan FC
+Competizione: chinese-super-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.2 (range 29.6 - 81.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 51.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.23
+Punteggio REALE ottenuto in quella partita: 42.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -11.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.9    24.2    -21.7    21.7        SI
+   7        7      40.9   100.0    +59.1    24.0        NO
+   8        8      64.3     0.0    -64.3    28.6        NO
+   9        9      62.5    47.0    -15.6    34.2        SI
+  10       10      36.8    80.5    +43.7    32.3        NO
+  11       11      56.1    27.3    -28.9    32.1        SI
+  12       12      40.4    74.2    +33.9    31.7        NO
+  13       13      63.1    86.8    +23.7    31.1        SI
+  14       14      48.6    50.9     +2.3    31.4        SI
+  15       15      52.5    46.5     -6.0    30.2        SI
+  16       16      40.1    30.1    -10.0    29.2        SI
+  17       17      51.4    49.0     -2.4    29.1        SI
+  18       18      56.6    42.0    -14.6    28.1        SI
+
+MAE (errore assoluto medio): 25.10
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 69.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
