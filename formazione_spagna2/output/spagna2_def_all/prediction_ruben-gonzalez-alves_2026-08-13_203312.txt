@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-12T23:01:45.684827Z
+Generato: 2026-08-13T20:33:12.250050Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) ruben-gonzalez-alves: 47 pt attesi (24-77)
-   ORDINAMENTO: 48.64
+1) ruben-gonzalez-alves: 47 pt attesi (25-77)
+   ORDINAMENTO: 47.05
    SQUADRA: cordoba-cordoba | AVVERSARIO: burgos-burgos
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: ruben-gonzalez-alves (squadra: cordoba-cordoba)
-Generato: 2026-08-12T23:01:45.684303Z
+Generato: 2026-08-13T20:33:12.214483Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -45,7 +45,7 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 30.0 partite): 52.09
   di cui Punteggio decisivo (level_score) medio: 36.83 | Punteggio complessivo (granulari) medio: 15.26 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Gol subiti condizionato: delta venue -0.44, delta avversario -0.63 | Passaggio condizionato: delta venue -1.49, delta avversario +0.72 | Clean sheet/disimpegni condizionato: delta venue -0.92, delta avversario -1.04 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+  Gol subiti condizionato: delta venue -0.44, delta avversario -0.27 | Passaggio condizionato: delta venue -1.49, delta avversario +0.63 | Clean sheet/disimpegni condizionato: delta venue -0.92, delta avversario -0.15 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
 Deviazione standard pesata: 21.81
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.0 - 82.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.63 (differenza: +3.18)
@@ -53,7 +53,7 @@ Media score in casa: 52.28 | Media score fuori casa: 50.14
 Fattore casa/trasferta applicato: 1.003 (TRASFERTA nella prossima partita)
 Ranking medio avversari affrontati (storico): 12.6
 Ranking prossimo avversario: 7
-Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore forza avversario applicato: 0.597 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 1.002
 Fattore duelli (casa/trasferta, da dati reali): 0.999
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
@@ -73,8 +73,8 @@ Competizione: segunda-division-es
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 46.5 (range 24.4 - 76.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 48.6
+Score atteso: 46.8 (range 24.7 - 77.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 47.1
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 51.01
