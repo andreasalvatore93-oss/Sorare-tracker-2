@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-08T23:16:55.194068Z
+Generato: 2026-08-13T07:28:57.716012Z
 Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
 1) ilias-sebaoui: 50 pt attesi (37-65)
-   ORDINAMENTO: 48.51
+   ORDINAMENTO: 48.76
    SQUADRA: sint-truiden-sint-truiden-st-trond | AVVERSARIO: cercle-brugge-brugge
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: ilias-sebaoui (squadra: sint-truiden-sint-truiden-st-trond)
-Generato: 2026-08-08T23:16:55.193118Z
+Generato: 2026-08-13T07:28:57.704291Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -52,28 +52,28 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2026-05-16 | STV vs GNT | jupiler-pro-league | score=48.2 | peso=0.707
   2026-05-21 | AND vs STV | jupiler-pro-league | score=41.2 | peso=0.794
   2026-05-24 | STV vs KVM | jupiler-pro-league | score=42.4 | peso=0.891
-  2026-08-08 | STV vs LOM | jupiler-pro-league | score=56.9 | peso=1.000
+  2026-08-08 | STV vs LOM | jupiler-pro-league | score=57.1 | peso=1.000
 
 --- CALCOLO FATTORI ---
-Media pesata esponenziale (half-life 6.0 partite): 48.60
-  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 50.31 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
-  di cui Punteggio decisivo (level_score) medio: 39.79 | Punteggio complessivo (granulari) medio: 8.82 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Passaggio condizionato per venue: 4.60 (delta -1.71) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
-Deviazione standard pesata: 13.10
+Media pesata esponenziale (half-life 6.0 partite): 48.62
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 50.33 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 39.79 | Punteggio complessivo (granulari) medio: 8.84 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.60 (delta -1.72) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 13.11
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.5 - 63.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
-Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.54 (differenza: +2.56)
-Media score in casa: 50.28 | Media score fuori casa: 49.35
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.56 (differenza: +2.55)
+Media score in casa: 50.29 | Media score fuori casa: 49.35
 Fattore casa/trasferta applicato: 1.006 (TRASFERTA nella prossima partita)
-Ranking medio avversari affrontati (storico): 5.5
-Ranking prossimo avversario: 3
-Fattore forza avversario applicato: 1.106 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Ranking medio avversari affrontati (storico): 5.8
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.140 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
 Fattore falli (casa/trasferta, da dati reali): 0.990
 Fattore duelli (casa/trasferta, da dati reali): 0.996
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
 Fattore passaggio (accurate_pass/final_third/att_assist): 0.985
 Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
 Fattore trend (media ultime 5: 44.3 vs media 5 PRECEDENTI: 52.9): 1.000
-P(gioca): 100.00% (fonte: tasso di presenza storico (30/30))
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
 
 --- PROSSIMA PARTITA ---
 Data: 2026-08-14T18:45
@@ -83,13 +83,13 @@ Competizione: jupiler-pro-league
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 49.9 (range 36.8 - 65.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 48.5
+Score atteso: 50.0 (range 36.9 - 65.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 48.8
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 47.55
-Punteggio REALE ottenuto in quella partita: 56.9
-Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +9.4
+Punteggio REALE ottenuto in quella partita: 57.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +9.6
 NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
 
 --- PARAMETRI DEL MODELLO (fissati, 25/07) ---
@@ -124,10 +124,10 @@ P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo sto
   25       25      42.6    32.7     -9.9    17.9        SI
   26       26      47.9    48.2     +0.3    18.2        SI
   27       27      46.0    41.2     -4.8    17.1        SI
-  28       28      60.8    42.4    -18.4    16.4        NO
-  29       29      47.8    56.9     +9.1    15.6        SI
+  28       28      67.6    42.4    -25.2    16.4        NO
+  29       29      55.9    57.1     +1.2    15.6        SI
 
-MAE (errore assoluto medio): 12.31
+MAE (errore assoluto medio): 12.26
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
