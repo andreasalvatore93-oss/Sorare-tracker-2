@@ -1423,6 +1423,66 @@ anche coi voti mescolati sopravvivono due terzi del guadagno.
    gruppo), che è una domanda diversa da "chi contro quando". Detto qui
    perché in sessione era stata annunciata come decisiva, e non lo è.
 
+### DOVE ci batte, e la cura che NON funziona (14/08/2026, p68 + p69)
+
+**DOVE.** Il voto medio di un giocatore (componente "chi", calcolata
+leave-one-out sulle sue ALTRE giornate) correla col nostro residuo
+(realizzato − atteso senza voto) a **+0,078** [+0,067; +0,090] su 29.129
+osservazioni deduplicate. Ma non uniformemente:
+
+| partite nell'anno prima | n | corr |
+|---|---|---|
+| 5-10 | 382 | **+0,181** |
+| 10-20 | 2.037 | **+0,134** |
+| 20-35 | 13.884 | +0,067 |
+| 35+ | 12.782 | +0,076 |
+
+| ruolo | corr | half_life |
+|---|---|---|
+| FWD | +0,123 | 6 |
+| GK | +0,113 | 6 |
+| MID | +0,088 | 25 |
+| DEF | +0,079 | 30 |
+
+Il voto ci batte **il doppio sui poco osservati**, e di più proprio su FWD e
+GK — i due ruoli in cui teniamo la memoria corta. Due tagli diversi che
+indicano la stessa cosa: **il problema è dove il campione efficace è
+piccolo**. Script: `analisi_manager/p68_dove_sbagliamo_il_giocatore.py`.
+
+**LA CURA OVVIA È STATA PROVATA E NON FUNZIONA.** Ipotesi: manca uno
+shrinkage, cioè tirare la stima verso un livello di riferimento (media del
+ruolo in quella lega) tanto più forte quanto meno il giocatore è osservato —
+`stima = ancora + w·(atteso − ancora)`, `w = n/(n+k)`. Provata su 30.112
+osservazioni, `k` da 0 a 50 (`analisi_manager/p69_shrinkage_prova.py`):
+
+| k | MAE | corr | lift |
+|---|---|---|---|
+| **0 (produzione)** | **14,4610** | 0,1855 | 6,582 |
+| 5 | 14,4680 | 0,1883 | 6,610 |
+| 10 | 14,4779 | 0,1902 | 6,804 |
+| 20 | 14,4987 | 0,1923 | 6,445 |
+| 50 | 14,5447 | 0,1911 | 6,262 |
+
+**Il MAE peggiora sempre, monotonamente**, e peggiora **anche nella fascia
+0-10 partite** (15,167 → 15,252 con k=5 → 15,341 con k=20), cioè proprio dove
+doveva aiutare. I tre indicatori non si muovono mai insieme: non si applica.
+
+**PERCHÉ non funziona, ed è il pezzo da ricordare**: il modello **lo shrinkage
+lo fa già**. La calibrazione applica `reale ≈ a + b·atteso` con **b < 1** su
+ogni ruolo (DEF 0,831, FWD 0,789, MID 0,740, GK **0,264** —
+`build_formazione_globale.py`, `CALIB_PER_RUOLO`), e un coefficiente sotto 1
+*è* una contrazione verso il livello medio del ruolo. Aggiungerne dell'altro
+sopra significa stringere due volte. **Non riproporre lo shrinkage come cura
+in nessuna forma senza prima tenere conto di `CALIB_PER_RUOLO`.**
+
+**COSA RESTA IN PIEDI.** La diagnosi (il voto ci batte di più sui poco
+osservati) è reale e misurata; la spiegazione "ci fidiamo troppo di poche
+partite" è **falsa**, perché quella correzione c'è già. Quindi su quei
+giocatori il voto usa un'informazione che noi **non guardiamo affatto** —
+non è una questione di quanto pesiamo lo storico. La domanda aperta, che è
+di idee e non di misure: *cosa sa Sorare di un giocatore poco osservato, che
+non sta nei suoi punteggi passati?*
+
 Handoff completo della sessione: `docs/handoff/HANDOFF_GRADE_ACCESO_2026-08-13.txt`.
 
 ### Storia: com'era prima del 13/08 (compresso)
