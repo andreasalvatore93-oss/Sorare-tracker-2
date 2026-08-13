@@ -549,23 +549,67 @@ Conseguenze operative, tutte dimostrate:
 - **Bonus additivi vs moltiplicativi**: la formula additiva è verificata al
   centesimo (§3).
 
-### 5.3 Capitano — CHIUSO per la seconda volta, ora con un motivo dimostrato (12/08/2026)
-Le "otto ipotesi chiuse" originarie giravano su `dati_globali/manager_*.json`
-(bug D6, §5.8): riaperto il 12/08 sull'archivio pulito (`archivio_ufficiale/`,
-1.145 arene con capitano). Ri-testate grade e favorita/sfavorita: entrambe
-NEGATIVE anche sui dati veri (grade peggiora, t=-1,93; favorito interno
-nessun effetto, t=-0,62 su confronto equo; favorito da quote copertura
-insufficiente per essere testabile). **`pick_captain()` non si tocca.**
+### 5.3 Capitano — `pick_captain()` NON si tocca, ma il motivo è cambiato (riscritto 13/08/2026)
 
-Motivo per cui non si tocca, dimostrato non solo misurato: il modello
-oggi cattura +0,69 punti/arena di bonus captain sul caso (15% del massimo
-possibile +4,59). Simulando un criterio con correlazione r nota col
-punteggio vero, il guadagno che +0,69 rappresenta corrisponde esattamente
-a r≈0,156 — la stessa correlazione media che il modello ha davvero sui
-ruoli di movimento (DEF/MID/FWD). **Il capitano prende già tutto quello
-che la vista del modello permette**: non è un problema di regola di
-scelta, è un tetto di previsione. Non riaprire con altre idee di
-selezione — dettaglio completo in
+**RIAPERTO E RIMISURATO IL 13/08**, su obiezione dell'utente: *"il capitano
+col grade l'abbiamo provato, ma su un grade diverso da quello di ora"*.
+Obiezione legittima — il test del 12/08 girava sul voto vecchio, quello che
+si spegneva sul 51%+ delle righe. Rifatto su **12.677 formazioni reali**,
+stesse 5 carte, cambia solo chi porta la fascia (in arena il capitano vale
++20% del suo punteggio REALE, quindi il confronto è esattamente
+0,2 × punteggio del capitano scelto — nessun rumore da altre fonti).
+Script: `analisi_manager/p64_capitano_grade_nuovo.py`.
+
+| regola | bonus per arena |
+|---|---|
+| CASO (a sorte fra le 5) | 9,990 |
+| SENZA VOTO (atteso ignorando il grade) | 10,656 |
+| **PRODUZIONE** (atteso più alto, grade già dentro, margine GK 6,7) | **10,938** |
+| UTENTE (grade più alto → atteso → ruolo MID/FWD/DEF) | 10,955 |
+| ORACOLO (il migliore col senno di poi) | 14,809 |
+
+| confronto | delta | IC95 | positivo |
+|---|---|---|---|
+| **UTENTE − PRODUZIONE** | +218,8 | **[−1.236; +1.554]** | 63,7% |
+| **PRODUZIONE − SENZA VOTO** | **+3.568** | **[+1.883; +5.986]** | 100% |
+| PRODUZIONE − CASO | +12.007 | [+6.756; +19.447] | 100% |
+
+**DUE CONCLUSIONI, e la seconda è nuova.**
+
+1. **La regola esplicita "prima il grade" non aggiunge niente**: +0,017 punti
+   per arena, intervallo largamente a cavallo dello zero. E stavolta **non è
+   mancanza di potenza**: le due regole scelgono un capitano DIVERSO nel 44%
+   dei casi (7.157 concordi su 12.677), quindi il test non è nullo per
+   costruzione — semplicemente non c'è differenza.
+2. **Il grade nuovo AIUTA il capitano**, e questo ribalta il verdetto del
+   12/08 ("grade peggiora, t=−1,93"): +3.568 con l'intervallo che esclude lo
+   zero. Il punto è che il beneficio arriva **da solo**, perché il voto è già
+   dentro `atteso` (GRADE_ENABLED sovrascrive `atteso` con
+   `atteso_combinato`). Metterlo *davanti* all'atteso, come criterio
+   separato, non aggiunge nulla — usarlo dentro l'atteso lo prende già tutto.
+
+**E il tetto si è alzato.** La versione precedente di questa sezione diceva
+che il capitano cattura +0,69 punti/arena sul caso, il **15%** del massimo
+possibile (+4,59), e che quel 15% corrispondeva a una correlazione r≈0,156 —
+la stessa che il modello ha sui ruoli di movimento. Con il grade nuovo il
+margine catturato è **+0,947 su 4,819, cioè il 20%**. L'argomento del tetto
+resta valido nella forma ("il capitano prende quello che la vista del
+modello permette"), ma la vista è migliorata e il tetto si è spostato con
+lei: **non è una costante di natura**. Chi migliora la previsione migliora
+il capitano gratis, senza toccare `pick_captain()`.
+
+**Cosa NON riaprire**: criteri che riordinano lo stesso atteso (grade
+davanti, favorita/sfavorita — t=−0,62 su confronto equo, quote con copertura
+insufficiente). Cosa avrebbe senso provare, se mai: un'informazione che
+l'atteso **non contiene**, per esempio la dispersione attesa del singolo
+giocatore invece della media — il capitano moltiplica, quindi in teoria
+premia la coda alta, e §5.1 dice che la dispersione per-giocatore oggi non è
+calibrata. Mai misurato.
+
+Storia: le "otto ipotesi chiuse" originarie giravano su
+`dati_globali/manager_*.json` (bug D6, §5.8) e sono nulle; il giro del 12/08
+sull'archivio pulito (1.145 arene) è superato da questo, che ne usa 12.677.
+Dettaglio del giro vecchio in
 `docs/handoff/HANDOFF_ORCHESTRATORE_NUOVO_2026-08-12.txt` §2quater.
 
 ### 5.4 Boom — tutto chiuso
