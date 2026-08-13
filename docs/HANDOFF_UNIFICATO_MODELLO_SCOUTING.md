@@ -2108,7 +2108,28 @@ ripetizione.
   (il valore dentro il game log viene riscritto a 0/100 dopo le formazioni
   ufficiali, quindi non è ricostruibile), non per schierare. Priorità bassa,
   decisa con l'utente.
-- **216 file paginano ancora a `first: 5`**, tarati sul vecchio tetto 500.
+- ~~**216 file paginano ancora a `first: 5`**, tarati sul vecchio tetto 500.~~
+  **VOCE SBAGLIATA, corretta il 13/08/2026 contando davvero le occorrenze.**
+  Nel repo TUTTI i `first: 5` sono `anyFutureGames(first: 5)` (217 file, zero
+  altri): non e' una paginazione, e' "le prossime 5 partite di quel
+  giocatore", e il codice ne usa una sola (`_prossima_partita_vera`).
+  Alzarlo non toglie nemmeno una richiesta — ne fa arrivare di piu' per la
+  stessa. Li' non c'era niente da incassare.
+  **Il lever vero era un altro, ed e' stato preso il 13/08/2026**:
+  `PAGE_SIZE = 20` in **104 script di discovery per lega**, tarato sul tetto
+  di complessita' 500 dell'accesso anonimo quando invece quella query ha
+  sempre il cookie (tetto 30.000) e dal 12/08 anche l'APIKEY. Portati a 50,
+  il massimo vero del server, gia' in produzione in `discovery_fixture.py`
+  dal 12/08 e misurato allora sulla stessa `searchCards` (320 carte in **7
+  richieste invece di 16**, stessi slug, stesso nbHits —
+  `docs/handoff/prova_pagesize.py`, commit `577651ac9d`). Attesa: ~2,3x meno
+  richieste sulla parte carte della discovery. Nel repo non resta piu'
+  nessun `PAGE_SIZE = 20`.
+  **Insieme**: il job `discovery` di `formazione_giornata.yml` usava UNA
+  chiave sola per tutti e 4 gli shard (un secchiello da 200 richieste/min);
+  ora ruota le tre chiavi come fa gia' `predict` (`IDX % 3`), quindi 600/min.
+  Fallback verificato in locale: se le chiavi 2 e 3 non ci sono, tutti e
+  quattro gli shard tornano sulla prima, come prima.
 - **`bot_profit`** prende ancora 429 per i suoi 10 thread simultanei: si
   sistema abbassando i thread, non allentando i freni. Gira una volta a
   settimana, non è prioritario.

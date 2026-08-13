@@ -196,7 +196,15 @@ jobs:
       - name: Discovery
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
-          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
+          # TRE CHIAVI, UNA PER SHARD (13/08/2026) -- stessa identica ricetta
+          # gia' in produzione nel job predict, vedi il commento esteso li'.
+          # Qui gli shard sono 4 (gk/def/mid/fwd) e fino a oggi condividevano
+          # una sola chiave, cioe' un solo secchiello da 200 richieste/minuto.
+          # Con la rotazione i primi tre ne prendono uno ciascuno e il quarto
+          # torna sul primo (4 % 3 = 1): il tetto passa da 200 a 600/min.
+          SORARE_APIKEY_A: ${{ secrets.SORARE_APIKEY }}
+          SORARE_APIKEY_B: ${{ secrets.SORARE_APIKEY_2 }}
+          SORARE_APIKEY_C: ${{ secrets.SORARE_APIKEY_3 }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
           SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
@@ -214,6 +222,15 @@ jobs:
         run: |
           set -u
           set -o pipefail
+          # Assegna a questo shard una delle tre chiavi (vedi commento sopra).
+          # Se le chiavi 2 e 3 non fossero nei secret si ricade sulla prima:
+          # la pipeline continua a funzionare esattamente come prima.
+          case $(( IDX % 3 )) in
+            0) export SORARE_APIKEY="$SORARE_APIKEY_A" ;;
+            1) export SORARE_APIKEY="${SORARE_APIKEY_B:-$SORARE_APIKEY_A}" ;;
+            2) export SORARE_APIKEY="${SORARE_APIKEY_C:-$SORARE_APIKEY_A}" ;;
+          esac
+          echo "shard $IDX -> chiave $(( IDX % 3 + 1 )) di 3 (valore non stampato)"
           # STAGGER TOLTO (12/08/2026). Era stato messo qualche ora prima (P6)
           # sull'ipotesi che i 429 nascessero dalla simultaneita'. Quell'ipotesi
           # e' stata poi FALSIFICATA nella fase predict: alzando il pacing da

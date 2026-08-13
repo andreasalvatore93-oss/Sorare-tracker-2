@@ -49,7 +49,13 @@ except ImportError:
 GRAPHQL_URL = 'https://api.sorare.com/graphql'
 USER_SLUG = 'crowss'
 OUTPUT_DIR = 'formazione_resto_mondo/output/resto_mondo_gk_discovery'
-PAGE_SIZE = 20
+# 50 dal 13/08/2026 (era 20, tarato sul tetto di complessita' 500
+# dell'accesso ANONIMO): qui il cookie c'e' sempre -- si chiedono le carte
+# DI UN UTENTE -- e dal 12/08 c'e' anche l'APIKEY, tetto 30.000. MISURATO
+# sulla stessa searchCards: 320 carte in 7 richieste invece di 16, stessi
+# slug e stesso nbHits (docs/handoff/prova_pagesize.py, commit 577651ac9d).
+# 50 e' il massimo vero del server: chiedendone di piu' non ne arrivano.
+PAGE_SIZE = 50
 
 # Eleggibilita' SO5 target -- SOLO "Resto del Mondo" (Sorare la mostra in UI
 # come "Resto del Mondo"). NON e' un domesticLeague.slug (vedi docstring

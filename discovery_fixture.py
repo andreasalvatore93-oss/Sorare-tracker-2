@@ -98,11 +98,15 @@ ODDS_L10_SLEEP = float(os.environ.get('ODDS_L10_SLEEP', '0.7'))
 # paginare si prendono solo i "50 piu' popolari" per ruolo per leaderboard
 # -> copertura crollata al 32.5% invece del 93% reale. Va SEMPRE paginato
 # fino a hasNextPage=False.
-# CARTE PER PAGINA (12/08/2026). I 164 script di discovery per lega hanno
+# CARTE PER PAGINA (12/08/2026). Gli script di discovery per lega avevano
 # PAGE_SIZE = 20, un numero tarato sul tetto di COMPLESSITA' 500 dell'accesso
 # anonimo. Questa query pero' non e' mai anonima -- chiede le carte DI UN
 # UTENTE, quindi il cookie c'e' sempre -- e col cookie il tetto e' gia'
 # 30.000. Quel 20 era prudenza sprecata.
+# AGGIORNAMENTO 13/08/2026: portati a 50 anche loro, tutti e 104 quelli che
+# usano questa stessa searchCards (gli altri script di discovery non hanno
+# una costante PAGE_SIZE: il roster pagina gia' a 50 per conto suo). Adesso
+# nel repo non resta nessun PAGE_SIZE = 20.
 #
 # MISURATO, non dedotto (portieri di crowss, cookie SENZA chiave):
 #   a 20 per pagina -> 320 carte in 16 richieste
