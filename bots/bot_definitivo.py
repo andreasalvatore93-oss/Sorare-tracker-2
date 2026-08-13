@@ -1435,6 +1435,14 @@ def get_next_starter_odds(player_slug):
     if riuscita:
         with _starter_odds_lock:
             _starter_odds_cache[player_slug] = (odds, adesso)
+            # Le voci scadute non verrebbero comunque piu' restituite, ma in una run
+            # da cinque ore resterebbero li' a occupare posto per sempre: ogni tanto
+            # si buttano. La soglia serve a non riscorrere tutta la cache ad ogni
+            # singola scrittura, che e' sul percorso caldo e sotto lock.
+            if len(_starter_odds_cache) > 500:
+                for slug in [s for s, v in _starter_odds_cache.items()
+                             if (adesso - v[1]) >= _STARTER_ODDS_TTL_SECONDS]:
+                    del _starter_odds_cache[slug]
     return odds
 
 
