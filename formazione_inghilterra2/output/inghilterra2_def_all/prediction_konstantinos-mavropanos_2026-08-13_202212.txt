@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-13T07:39:10.229606Z
+Generato: 2026-08-13T20:22:12.032783Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) konstantinos-mavropanos: 56 pt attesi (38-78)
-   ORDINAMENTO: 56.56
+1) konstantinos-mavropanos: 58 pt attesi (41-81)
+   ORDINAMENTO: 56.90
    SQUADRA: west-ham-united-london | AVVERSARIO: burnley-burnley-lancashire
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: konstantinos-mavropanos (squadra: west-ham-united-london)
-Generato: 2026-08-13T07:39:10.201971Z
+Generato: 2026-08-13T20:22:12.031908Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -57,7 +57,7 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 30.0 partite): 54.98
   di cui Punteggio decisivo (level_score) medio: 38.28 | Punteggio complessivo (granulari) medio: 16.70 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Gol subiti condizionato: delta venue -1.12, delta avversario +0.46 | Passaggio condizionato: delta venue +0.08, delta avversario -0.51 | Clean sheet/disimpegni condizionato: delta venue +0.31, delta avversario +1.39 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+  Gol subiti condizionato: delta venue -1.12, delta avversario +1.92 | Passaggio condizionato: delta venue +0.08, delta avversario -0.23 | Clean sheet/disimpegni condizionato: delta venue +0.31, delta avversario +2.01 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
 Deviazione standard pesata: 21.69
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.7 - 77.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.61 (differenza: +3.08)
@@ -65,7 +65,7 @@ Media score in casa: 59.02 | Media score fuori casa: 52.40
 Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
 Ranking medio avversari affrontati (storico): 10.0
 Ranking prossimo avversario: 19
-Fattore forza avversario applicato: 1.349 (gol subiti reali dell'avversario, ultime 10)
+Fattore forza avversario applicato: 1.417 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 1.005
 Fattore duelli (casa/trasferta, da dati reali): 1.002
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
@@ -85,8 +85,8 @@ Competizione: football-league-championship
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 55.8 (range 38.5 - 78.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 56.6
+Score atteso: 58.4 (range 41.1 - 80.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 56.9
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 55.64
