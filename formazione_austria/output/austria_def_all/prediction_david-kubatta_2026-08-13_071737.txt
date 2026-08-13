@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:17:37.096975Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) david-kubatta: 46 pt attesi (34-60)
+   ORDINAMENTO: 43.45
+   SQUADRA: wattens-wattens | AVVERSARIO: salzburg-wals-siezenheim
+======================================================================
+
+######################################################################
+# GIOCATORE: david-kubatta
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: david-kubatta (squadra: wattens-wattens)
+Generato: 2026-08-13T07:17:37.089184Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: austrian-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-21 | ALT vs WSG | austrian-bundesliga | score=40.0 | peso=0.660
+  2025-09-28 | WSG vs RBS | austrian-bundesliga | score=66.7 | peso=0.675
+  2025-10-04 | SVR vs WSG | austrian-bundesliga | score=35.3 | peso=0.691
+  2025-10-25 | WSG vs BWL | austrian-bundesliga | score=44.5 | peso=0.707
+  2025-11-02 | WAC vs WSG | austrian-bundesliga | score=42.8 | peso=0.724
+  2025-11-09 | WSG vs SCR | austrian-bundesliga | score=50.1 | peso=0.741
+  2025-11-23 | RBS vs WSG | austrian-bundesliga | score=60.0 | peso=0.758
+  2025-11-29 | FAK vs WSG | austrian-bundesliga | score=56.2 | peso=0.776
+  2025-12-03 | STU vs WSG | austrian-bundesliga | score=56.4 | peso=0.794
+  2025-12-07 | WSG vs ALT | austrian-bundesliga | score=32.2 | peso=0.812
+  2026-02-14 | WSG vs STU | austrian-bundesliga | score=47.9 | peso=0.831
+  2026-02-22 | WSG vs SVR | austrian-bundesliga | score=42.7 | peso=0.851
+  2026-03-01 | BWL vs WSG | austrian-bundesliga | score=41.1 | peso=0.871
+  2026-03-21 | WSG vs GAK | austrian-bundesliga | score=10.0 | peso=0.891
+  2026-04-04 | WSG vs WAC | austrian-bundesliga | score=52.0 | peso=0.912
+  2026-04-11 | BWL vs WSG | austrian-bundesliga | score=31.2 | peso=0.933
+  2026-05-09 | WSG vs BWL | austrian-bundesliga | score=37.0 | peso=0.955
+  2026-08-01 | WSG vs STU | austrian-bundesliga | score=64.3 | peso=0.977
+  2026-08-07 | ALT vs WSG | austrian-bundesliga | score=11.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 42.55
+  di cui Punteggio decisivo (level_score) medio: 36.22 | Punteggio complessivo (granulari) medio: 6.33 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.34, delta avversario -0.42 | Passaggio condizionato: delta venue +0.48, delta avversario -0.19 | Clean sheet/disimpegni condizionato: delta venue +0.13, delta avversario -0.49 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.50
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.2 - 56.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.06 (differenza: +2.44)
+Media score in casa: 44.73 | Media score fuori casa: 41.57
+Fattore casa/trasferta applicato: 0.995 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.1
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 1.144 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.994
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.994
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.005
+Fattore gol subiti (goals_conceded, con cap): 1.002
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.001
+Fattore trend (media ultime 5: 38.9 vs media 5 PRECEDENTI: 34.5): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T15:00
+Casa: WSG Tirol | Trasferta: FC Red Bull Salzburg
+Competizione: austrian-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.7 (range 34.3 - 59.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 43.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.70
+Punteggio REALE ottenuto in quella partita: 11.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -33.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      42.8    60.0    +17.2    10.9        NO
+   7        7      58.5    56.2     -2.3    11.4        SI
+   8        8      46.7    56.4     +9.7    11.0        SI
+   9        9      50.2    32.2    -18.0    10.6        NO
+  10       10      46.3    47.9     +1.5    11.8        SI
+  11       11      53.1    42.7    -10.4    11.2        SI
+  12       12      57.1    41.1    -16.0    10.8        NO
+  13       13      47.5    10.0    -37.5    10.5        NO
+  14       14      38.0    52.0    +14.1    15.1        SI
+  15       15      53.5    31.2    -22.3    14.7        NO
+  16       16      51.2    37.0    -14.2    14.7        SI
+  17       17      39.7    64.3    +24.6    14.3        NO
+  18       18      43.1    11.3    -31.8    15.0        NO
+
+MAE (errore assoluto medio): 16.90
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 46.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
