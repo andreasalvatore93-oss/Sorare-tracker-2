@@ -362,3 +362,124 @@ r4ggio
 NOTA: ne arriveranno altri (l'obiettivo e' ~150 manager totali). L'utente li
 manda a ondate. L'estrazione e' INCREMENTALE: quando arrivano, si aggiungono
 senza rifare niente di quello che hai gia' fatto. Non aspettarli.
+
+
+ESITO (Sonnet esecutore, 13/08/2026 sera, Roma)
+=================================================
+
+CONTROLLI PRELIMINARI (sezione 3 del brief): tutti tornati esatti.
+  manager gia' in archivio: 29 (confermato con ls)
+  coppie gia' fatte: 706 (confermato contando *_arene_limited.json)
+  giornate chiuse dalla GW55: 44 (confermato con query so5Fixtures)
+  griglia 65x44 = 2860, DA ESTRARRE = 2154 (coerente col ~2150 atteso)
+
+ESTRAZIONE -- FASE 1 (12 giornate GW55->31mar, tutti 65 manager, GW55 solo
+i 36 nuovi come da regola): COMPLETA. 4 lotti da 2-4 giornate, 3 processi
+paralleli (un gruppo di ~22 manager a chiave), 0 errori/429/incompleti in
+tutto il lotto. Verificato su disco (non solo sul log): 65/65 per ogni
+giornata (36/36 per la GW55).
+
+ESTRAZIONE -- FASE 2 (32 giornate 3-apr -> 7-11-ago, solo i buchi: tutte
+per i 36 nuovi, i buchi residui per i 29 vecchi): COMPLETA. Lanciata in un
+colpo solo per fixture (non a lotti separati, il rischio era basso: sono
+"solo mancanti", 1404 coppie effettive su 2080 attese). 0 errori. Verificato
+su disco: 2080/2080.
+
+GRIGLIA FINALE: 65 manager x 44 giornate = 2860 coppie possibili.
+  coppie non vuote (almeno un'arena): 1340
+  arene totali: 13860
+  giocatori (slug) distinti: 5449
+Coppie a zero arene (manager non ha giocato quella settimana, o file scritto
+comunque per completezza): dato valido, non e' un errore -- fa parte della
+regola "zero arene non e' un errore, e' un dato".
+
+GRADE (Passo B + Passo C insieme, con --fixture-tutte): fatto in DUE giri,
+non uno solo -- il primo (thread=6, poi thread=2) e' rimasto bloccato senza
+avanzare (vedi sezione BUG sotto), il secondo con la versione corretta dello
+script (commit 343dce7a58, fix dell'orchestratore mentre ero fermo) ha
+funzionato:
+  giro 1 (collaudo, football-24-27-feb-2026, thread=4): 213 giocatori, 8s,
+    0 falliti, 177 righe nuove.
+  giro 2 (--fixture-tutte, thread=4, prima passata su Fase1+vecchie):
+    3790 giocatori, 952s, 0 falliti, 23048 righe nuove
+    (indice: 172943 -> 195991).
+  giro 3 (--fixture-tutte, thread=4, dopo Fase2): 4418 giocatori, 1078s,
+    0 falliti, 29168 righe nuove (indice: 195991 -> 225159).
+  Nell'insieme: 2 episodi di 429 gestiti bene dal fix (Retry-After
+  rispettato, ripreso da solo, nessun intervento manuale necessario).
+
+C3 -- COPERTURA GRADE PER GIORNATA (indice vs slug in archivio, finestra
+fixture -6/+2 giorni): 42 giornate su 44 hanno almeno un'arena (le altre 2,
+football-11-18-jun-2026 e football-18-24-jun-2026, sono a zero arene per
+TUTTI i 65 manager -- dato, non errore). Su quelle 42: copertura 99,7-100%
+quasi ovunque, minimo 95,2% (football-26-29-may-2026, 59/62). TOTALE:
+32435/32473 righe slug-giornata coperte = 99,9%.
+
+C2 -- DUMP LEGGIBILE (manager crowss, football-3-7-apr-2026, 20 arene):
+  arena 1: tipo uncapped, costo 300, rank 2, premio 800 (netto 500),
+    punteggio totale 358.04
+    hugo-lloris          Goalkeeper  pt=83.00
+    haruya-fujii          Defender    pt=70.28
+    marky-delgado         Midfielder  pt=72.50
+    inigo-vicente-elorduy Forward     pt=40.10
+    sebastian-berhalter   Midfielder  pt=92.16 CAP
+  (altre 19 arene nel file, stesso formato -- vedi
+  archivio_ufficiale/manager_crowss/pre_2026-08-07/football-3-7-apr-2026_arene_limited.json)
+
+D -- CACHE GAME-LOG. scarica_cache_backtest.py --elenco dice "0 mancanti":
+E' UN FALSO NEGATIVO PER QUESTO SCOPO, vedi BUG sotto -- quello script
+copre solo il vecchio backtest_arene (dati_globali/manager_crowss.json), non
+l'archivio_ufficiale a 65 manager. Ho quindi contato a mano (os.walk sulle
+cartelle .game_log_cache di produzione + backtest_arene_cache, come da
+regola CLAUDE.md):
+  slug distinti in archivio_ufficiale: 5449
+  in cache: 3629 (66,6%)
+  MANCANTI: 1820 (33,4%)
+Primi 20 mancanti: aaron-herrera, aaron-ramsdale, aaron-wan-bissaka,
+aaron-zehnter, abdelkabir-abqar, abdoul-traore, abdoulaye-kante-fr,
+abdulia-sanyang, aboubakary-koita, adam-armstrong, adam-davies,
+adam-fernando-bareiro-gamarra, adam-uche-idah, adama-traore-diarra,
+adamo-nagalo, adedire-emmanuel-awokoya-mebude, ademola-ola-adebomi,
+ado-onaiwu, adrian-bajrami, adrian-emmanuel-martinez.
+NON scaricati: l'utente ha detto di fermarmi qui (AskUserQuestion, risposta
+"No, fermati qui"). Elenco completo in
+C:\Users\Andrea\AppData\Local\Temp\claude\...\scratchpad\slug_mancanti_cache.txt
+(locale, non nel repo -- se serve lo si rigenera in un secondo con lo
+script sopra, zero query).
+D3 (leghe senza pipeline): NON verificato, non fatto per mancanza di tempo
+nello scope di questa sessione -- va fatto prima di scaricare la cache.
+D4 (coppie con pool troppo piccolo per selezione dopo i buchi cache): NON
+calcolato, come da istruzione del brief lo fa l'orchestratore.
+
+6BIS -- DISTRIBUZIONE ARENE/POOL (dalle sole 1340 coppie non vuote, pool
+Binario2 = carte distinte con punteggio!=0, regola di p24_binario2_ga.py):
+  1 arena:  259 coppie (19,3%)
+  2 arene:  173 coppie (12,9%)
+  3 arene:  140 coppie (10,4%)
+  4+ arene: 768 coppie (57,3%)
+La maggioranza (57,3%) ha 4+ arene: li' il modello ha davvero carte fra cui
+scegliere. Nessuna conclusione tratta, solo la distribuzione come chiesto.
+
+BUG TROVATI (annotati, non sistemati, come da istruzione "non allargare
+lo scope"):
+1. La PRIMA versione di completa_grade_storico.py (prima del fix
+   dell'orchestratore, commit 343dce7a58) restava bloccata senza
+   avanzare e senza scrivere nulla su migliaia di slug: ne ho lanciate due
+   varianti (thread=6 poi thread=2), entrambe ferme con CPU quasi a zero
+   per minuti, zero righe salvate. Killate a mano. Il fix dell'orchestratore
+   (Retry-After rispettato invece di una pausa fissa troppo corta, salvataggio
+   ogni 200 giocatori) ha risolto: vedi sezione GRADE sopra.
+2. scarica_cache_backtest.py NON copre l'archivio_ufficiale multi-manager:
+   legge solo dati_globali/backtest_arene_cache per il vecchio backtest
+   crowss. Se serve popolare la cache per i 65 manager, va o esteso o
+   sostituito con uno script dedicato che legga gli slug da
+   archivio_ufficiale/manager_*/. Non l'ho scritto: fuori scope.
+
+COSA NON HO FATTO (fuori scope per istruzione esplicita, sezione 7 del
+brief): nessun backtest, nessun p24/p57, nessuna classifica arena completa,
+nessuna competizione oltre le arene Limited, nessuna modifica alla
+produzione, nessuna run GitHub Actions.
+
+FILE TOCCATI: archivio_ufficiale/manager_*/ (nuovi file *_arene_limited.json,
+vedi git status), analisi_manager/dati/storico_grade_crowss_completamento.json
+(indice grade, 70593 -> 225159 righe), questo brief.
