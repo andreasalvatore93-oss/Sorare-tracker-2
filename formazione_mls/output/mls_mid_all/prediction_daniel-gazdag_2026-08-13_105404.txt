@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-04T18:04:44.643663Z
+Generato: 2026-08-13T10:54:04.301051Z
 Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) daniel-gazdag: 48 pt attesi (35-72)
-   SQUADRA: columbus-crew-columbus-ohio | AVVERSARIO: atlas-guadalajara
+1) daniel-gazdag: 47 pt attesi (34-72)
+   SQUADRA: columbus-crew-columbus-ohio | AVVERSARIO: charlotte-fc-charlotte-north-carolina
 ======================================================================
 
 ######################################################################
@@ -13,16 +13,15 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: daniel-gazdag (squadra: columbus-crew-columbus-ohio)
-Generato: 2026-08-04T18:04:44.634829Z
+Generato: 2026-08-13T10:54:04.295823Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
-Partite considerate: 31
+Partite considerate: 30
 Escluse (DID_NOT_PLAY): 4
 Escluse (minutaggio < 60', subentri): 10
-Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
 Partite usate nella media (dalla piu' vecchia alla piu' recente):
-  2025-08-05 | CLB vs LEO | leagues-cup-mls | score=53.6 | peso=0.642
   2025-08-16 | TOR vs CLB | mlspa | score=49.1 | peso=0.660
   2025-08-23 | CLB vs NE | mlspa | score=68.7 | peso=0.678
   2025-08-30 | RBNY vs CLB | mlspa | score=36.2 | peso=0.697
@@ -41,43 +40,42 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2026-08-02 | MIA vs CLB | mlspa | score=41.3 | peso=1.000
 
 --- CALCOLO FATTORI ---
-Media pesata esponenziale (half-life 25.0 partite): 49.91
-  di cui Punteggio decisivo (level_score) medio: 41.41 | Punteggio complessivo (granulari) medio: 8.50 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Punteggio decisivo condizionato per venue: 44.04 (delta +2.64)
-  Efficacia offensiva condizionata: delta venue +0.04, delta avversario +0.95 | Passaggio condizionato: delta venue +1.43, delta avversario -0.50 | Gol subiti condizionato: delta venue +0.56, delta avversario -0.42 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
-Deviazione standard pesata: 16.78
+Media pesata esponenziale (half-life 25.0 partite): 49.73
+  di cui Punteggio decisivo (level_score) medio: 41.72 | Punteggio complessivo (granulari) medio: 8.01 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 39.37 (delta -2.35)
+  Efficacia offensiva condizionata: delta venue -0.05, delta avversario +0.94 | Passaggio condizionato: delta venue -0.92, delta avversario -0.28 | Gol subiti condizionato: delta venue -0.38, delta avversario -0.35 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 17.17
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.2 - 74.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
-Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.86 (differenza: +2.92)
-Media score in casa: 56.69 | Media score fuori casa: 45.97
-Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
-Ranking medio avversari affrontati (storico): 9.2
-Ranking prossimo avversario: 2
-Fattore forza avversario applicato: 0.707 (gol subiti reali dell'avversario, ultime 10)
-Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.751
-Fattore falli (casa/trasferta, da dati reali): 0.999
-Fattore duelli (casa/trasferta, da dati reali): 0.999
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.23 (differenza: +2.94)
+Media score in casa: 57.20 | Media score fuori casa: 45.97
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.9
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.767 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.002
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
-Fattore passaggio (accurate_pass/final_third/att_assist): 1.008
-Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.995
-Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.999
-Fattore gol subiti (goals_conceded, con cap): 1.007
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 0.994
 Fattore trend (media ultime 5: 44.1 vs media 5 PRECEDENTI: 48.3): 1.000
-P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
 
 --- PROSSIMA PARTITA ---
-Data: 2026-08-04T23:45
-Casa: Columbus Crew | Trasferta: Atlas FC de Guadalajara
-Competizione: leagues-cup-mls
+Data: 2026-08-15T23:30
+Casa: Charlotte FC | Trasferta: Columbus Crew
+Competizione: mlspa
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 48.3 (range 34.6 - 72.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 47.2 (range 33.7 - 71.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
-Media pesata calcolata SENZA l'ultima partita: 50.58
+Media pesata calcolata SENZA l'ultima partita: 50.42
 Punteggio REALE ottenuto in quella partita: 41.3
-Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -9.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -9.1
 NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
 
 --- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
@@ -86,24 +84,23 @@ Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultat
 
 --- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
 Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
-Partite testate: 11 (min. 6 partite di storico richieste per ognuna)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
 P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
 
  idx  storico  predetto   reale   errore   range  in_range
-   6        6      66.0    36.8    -29.2    16.7        NO
-   7        7      45.2    44.7     -0.5    18.0        SI
-   8        8      66.2    32.6    -33.6    17.4        NO
-   9        9      39.9    39.4     -0.5    18.2        SI
-  10       10      56.3    74.2    +17.9    17.7        NO
-  11       11      54.9    49.4     -5.5    18.5        SI
-  12       12      49.9    17.8    -32.1    17.6        NO
-  13       13      55.4    45.5     -9.9    20.1        SI
-  14       14      59.4    43.5    -15.9    19.3        SI
-  15       15      42.8    70.6    +27.8    18.6        NO
-  16       16      36.8    41.3     +4.5    19.0        SI
+   6        6      47.1    44.7     -2.4    19.3        SI
+   7        7      67.9    32.6    -35.3    18.4        NO
+   8        8      40.9    39.4     -1.5    19.2        SI
+   9        9      56.7    74.2    +17.5    18.5        SI
+  10       10      55.6    49.4     -6.2    19.3        SI
+  11       11      50.7    17.8    -32.9    18.3        NO
+  12       12      55.9    45.5    -10.4    20.8        SI
+  13       13      59.5    43.5    -16.0    19.9        SI
+  14       14      43.0    70.6    +27.6    19.1        NO
+  15       15      37.3    41.3     +4.0    19.5        SI
 
-MAE (errore assoluto medio): 16.12
-% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 54.5%
+MAE (errore assoluto medio): 15.38
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.0%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
 
