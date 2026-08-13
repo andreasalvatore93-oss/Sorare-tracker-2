@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T08:24:42.811439Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) mohamed-toure-2004-03-26: 50 pt attesi (31-80)
+   ORDINAMENTO: 48.98
+   SQUADRA: norwich-city-norwich-norfolk | AVVERSARIO: west-bromwich-albion-west-bromwich
+======================================================================
+
+######################################################################
+# GIOCATORE: mohamed-toure-2004-03-26
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mohamed-toure-2004-03-26 (squadra: norwich-city-norwich-norfolk)
+Generato: 2026-08-13T08:24:42.810842Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 42
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-09 | ? vs ? | friendlies | score=84.7 | peso=0.099
+  2025-09-22 | RFC vs FCN | superliga-dk | score=37.8 | peso=0.111
+  2025-09-29 | FCM vs RFC | superliga-dk | score=48.1 | peso=0.125
+  2025-10-05 | RFC vs VFF | superliga-dk | score=83.7 | peso=0.140
+  2025-10-10 | ? vs ? | friendlies | score=27.3 | peso=0.157
+  2025-10-19 | FCN vs RFC | superliga-dk | score=28.2 | peso=0.177
+  2025-10-26 | RFC vs SJE | superliga-dk | score=46.3 | peso=0.198
+  2025-11-02 | VFF vs RFC | superliga-dk | score=80.6 | peso=0.223
+  2025-11-09 | RFC vs FCM | superliga-dk | score=38.8 | peso=0.250
+  2025-11-15 | ? vs ? | friendlies | score=38.9 | peso=0.281
+  2025-11-19 | ? vs ? | friendlies | score=31.1 | peso=0.315
+  2025-11-24 | RFC vs OB | superliga-dk | score=35.2 | peso=0.354
+  2025-11-30 | SIF vs RFC | superliga-dk | score=36.7 | peso=0.397
+  2026-02-10 | OXF vs NOR | football-league-championship | score=93.5 | peso=0.445
+  2026-02-21 | NOR vs BIR | football-league-championship | score=60.0 | peso=0.500
+  2026-04-18 | BRC vs NOR | football-league-championship | score=80.7 | peso=0.561
+  2026-04-21 | NOR vs DER | football-league-championship | score=60.0 | peso=0.630
+  2026-04-25 | NOR vs SWA | football-league-championship | score=43.5 | peso=0.707
+  2026-05-02 | HUL vs NOR | football-league-championship | score=63.1 | peso=0.794
+  2026-05-31 | ? vs ? | friendlies | score=31.6 | peso=0.891
+  2026-06-14 | ? vs ? | global-cup | score=34.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 50.55
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=21): 51.88 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 48.11 | Punteggio complessivo (granulari) medio: 2.43 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 2.72 (delta +0.33) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.54
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.6 - 80.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.05 (differenza: +2.49)
+Media score in casa: 54.50 | Media score fuori casa: 79.10
+Fattore casa/trasferta applicato: 1.002 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.5
+Ranking prossimo avversario: 21
+Fattore forza avversario applicato: 0.730 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 46.5 vs media 5 PRECEDENTI: 61.2): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T14:00
+Casa: Norwich City FC | Trasferta: West Bromwich Albion FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.9 (range 30.9 - 79.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.74
+Punteggio REALE ottenuto in quella partita: 34.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -18.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.9    46.3     -2.6    27.4        SI
+   7        7      48.4    80.6    +32.2    24.6        NO
+   8        8      54.2    38.8    -15.4    26.4        SI
+   9        9      51.6    38.9    -12.7    25.0        SI
+  10       10      49.6    31.1    -18.5    23.5        SI
+  11       11      46.8    35.2    -11.6    23.0        SI
+  12       12      45.1    36.7     -8.4    21.8        SI
+  13       13      43.9    93.5    +49.6    20.5        NO
+  14       14      29.7    60.0    +30.3    27.3        NO
+  15       15      45.1    80.7    +35.6    25.7        NO
+  16       16      42.7    60.0    +17.3    26.4        SI
+  17       17      52.1    43.5     -8.6    24.7        SI
+  18       18      42.5    63.1    +20.6    23.6        SI
+  19       19      55.7    31.6    -24.1    22.4        NO
+  20       20      52.7    34.4    -18.3    22.8        SI
+
+MAE (errore assoluto medio): 20.39
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
