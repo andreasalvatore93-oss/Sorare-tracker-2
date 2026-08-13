@@ -1567,7 +1567,8 @@ def _ripristina_pool(card_pool, stato):
         card_pool._used_per_role = usati_ruolo
 
 
-def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool, budget_essenze=None):
+def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool, budget_essenze=None,
+                            cap_per_tipo=None, gia_fatte=None, etichetta='arena efficiente'):
     """Genera arene scegliendo DA SOLO tipo e numero, per essenze attese.
 
     Il generatore classico e' avido sui PUNTI: costruisce la formazione col
@@ -1598,15 +1599,30 @@ def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool, budget_e
     supererebbe il budget a QUESTO passo viene escluso dal confronto SOLO in
     quel passo (non ferma il loop: un tipo piu' economico potrebbe ancora
     starci nei passi successivi); se nessun tipo rientra piu', ci si ferma
-    come quando nessuno rende piu' niente."""
+    come quando nessuno rende piu' niente.
+
+    cap_per_tipo / gia_fatte (13/08/2026, FASE 1b): un tetto per TIPO, non
+    solo sul totale. Servono a far girare qui anche la tornata OPZIONALE, che
+    prima aveva un ciclo tutto suo (round-robin fra i tipi, avanti finche' il
+    pool reggeva) SENZA nessun criterio economico: generava arene sotto il
+    pareggio e le proponeva insieme alle altre. Misurato sui report gia' in
+    repo: nell'unica run che ne ha prodotte (run103, 02/08) 11 arene
+    opzionali su 17 erano etichettate LASCIA PERDERE, contro 3 su 696 fra le
+    richieste. Passando di qui la tornata opzionale eredita il criterio vero:
+    si sceglie il tipo che rende di piu' e ci si ferma quando nessuno rende
+    piu' niente. Entrambi None = comportamento INVARIATO (tornata primaria).
+    'etichetta' cambia solo la riga di log, per distinguere le due tornate."""
     scelte = []
     speso = 0
+    fatte = dict(gia_fatte or {})
     for _ in range(max(0, massimo)):
         migliore = None
         for tipo in tipi:
             soglia = PAREGGIO_ARENA.get(tipo)
             if soglia is None:
                 continue
+            if cap_per_tipo is not None and fatte.get(tipo, 0) >= cap_per_tipo.get(tipo, 0):
+                continue   # questo tipo ha gia' raggiunto il suo tetto
             costo_tipo = COSTO_INGRESSO.get(tipo, 300)
             if budget_essenze is not None and speso + costo_tipo > budget_essenze:
                 continue
@@ -1645,12 +1661,13 @@ def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool, budget_e
         for r in vera:
             if 'error' not in r:
                 scelte.append(r)
+        fatte[tipo] = fatte.get(tipo, 0) + 1
         speso += costo_tipo
         nota_criterio = (f", resa/essenza investita {_resa_confronto:.4f}"
                         if ARENA_CRITERIO == 'capitale' else '')
         nota_budget = (f", speso {speso}/{budget_essenze} essenze"
                        if budget_essenze is not None else '')
-        print(f"  arena efficiente #{len(scelte)}: {LABELS.get(tipo, tipo)} "
+        print(f"  {etichetta} #{len(scelte)}: {LABELS.get(tipo, tipo)} "
               f"-- atteso {atteso:.1f}, resa {_resa:.0f} essenze{nota_criterio}{nota_budget}")
     return scelte
 
@@ -2476,27 +2493,32 @@ def main():
             r['extra'] = True
             extra_results.append(r)
 
+    # ARENE OPZIONALI (riscritto 13/08/2026). Prima qui c'era un round-robin
+    # senza criterio: una formazione a testa per tipo, avanti finche' il pool
+    # reggeva o si toccava ARENA_OPTIONAL_CAP. Non si chiedeva MAI se quella
+    # arena in piu' stesse sopra il pareggio -- mentre la tornata primaria si
+    # ferma proprio quando nessun tipo rende piu' niente. Due criteri opposti
+    # nella stessa run: sopra si smetteva perche' non conveniva, sotto si
+    # ricominciava lo stesso. Misurato sui 165 report gia' in repo: nell'unica
+    # run che ha prodotto arene opzionali (run103, 02/08) 11 su 17 erano
+    # etichettate LASCIA PERDERE, contro 3 su 696 fra quelle richieste.
+    # Ora passa da genera_arene_efficienti come la primaria, con in piu' il
+    # tetto per tipo: stesso criterio, un posto solo dove sta scritto.
+    # NB: in modalita' efficiente/budget (ARENE_EFFICIENTI/ESSENZE_ARENA) i
+    # 'counts' delle arene restano 0, quindi questa tornata non parte -- come
+    # prima. Morde solo quando le arene si chiedono per tipo.
     arena_types_requested = [t for t in PRIORITY_ORDER if counts.get(t, 0) > 0 and _is_arena_type(t)]
-    arena_progress = {t: counts.get(t, 0) for t in arena_types_requested}
-    active = set(arena_types_requested)
-    while active:
-        made_progress = False
-        for tipo in list(active):
-            if arena_progress[tipo] >= ARENA_OPTIONAL_CAP:
-                active.discard(tipo)
-                continue
-            batch = generate_lineups_for_type(tipo, 1, role_data, pools, card_pool)
-            if not batch or 'error' in batch[0]:
-                active.discard(tipo)
-                continue
-            arena_progress[tipo] += 1
-            r = batch[0]
-            r['idx'] = arena_progress[tipo]
+    if arena_types_requested:
+        arena_progress = {t: counts.get(t, 0) for t in arena_types_requested}
+        residuo = sum(max(0, ARENA_OPTIONAL_CAP - n) for n in arena_progress.values())
+        for r in genera_arene_efficienti(
+                arena_types_requested, residuo, role_data, pools, card_pool,
+                cap_per_tipo={t: ARENA_OPTIONAL_CAP for t in arena_types_requested},
+                gia_fatte=dict(arena_progress), etichetta='arena opzionale'):
+            arena_progress[r['tipo']] += 1
+            r['idx'] = arena_progress[r['tipo']]
             r['extra'] = True
             extra_results.append(r)
-            made_progress = True
-        if not made_progress:
-            break
 
     n_extra = len(extra_results)
     if n_extra:

@@ -1206,8 +1206,13 @@ dentro `_apply_grade_group` che vede una lega+ruolo alla volta).
 Verificato A/A: flag spento = bit-identico al comportamento di sempre;
 flag acceso testato su dati sintetici (boost/penalità coerenti col
 voto). Refresh tabelle: `generatore_formazioni/dati/
-aggiorna_grade_scala_produzione.py` (zero query di rete, gira sempre nel
-workflow anche a flag spento, così non sono stantie quando si accende).
+aggiorna_grade_scala_produzione.py` (zero query di rete). **CORREZIONE
+13/08/2026: NON gira più sempre.** Lo step è condizionato a
+`grade_group_storica == '1'` (`formazione_giornata.yml:770`): costava 2m53
+per leggere 11.280 `consiglio_*.txt` e produrre tabelle che a flag spento
+nessuno apre — il 15% della run. Nei log della run appare quindi come step
+SALTATO, ed è giusto così. Accendendo il flag torna a girare, e gira prima
+del generatore nello stesso job: le tabelle sono fresche quando servono.
 Anche nel workflow `formazione_giornata.yml`, input `grade_group_storica`
 (default `'0'`, descrizione esplicita "NON ACCENDERE prima del
 25/08/2026" con il motivo). **Decisione dell'utente (12/08/2026)**: non
@@ -2125,6 +2130,14 @@ ripetizione.
   `docs/handoff/prova_pagesize.py`, commit `577651ac9d`). Attesa: ~2,3x meno
   richieste sulla parte carte della discovery. Nel repo non resta piu'
   nessun `PAGE_SIZE = 20`.
+  **DOVE SI SENTE, verificato sui log della run 31674619946 e non assunto:
+  NON nella pipeline di giornata.** Il job `discovery` di
+  `formazione_giornata.yml` lancia `discovery_fixture.py`, che pagina a 50
+  dal 12/08; i 104 script per lega li usa `calibrazione_lega.yml` (e
+  `audit_leghe_possedute.py` / `diagnostics/discover_missing_leagues.py`).
+  Il guadagno e' li', sulla calibrazione di una lega nuova, non sulla run
+  quotidiana. Detto chiaro perche' la prima versione di questa voce
+  lasciava intendere il contrario.
   **Insieme**: il job `discovery` di `formazione_giornata.yml` usava UNA
   chiave sola per tutti e 4 gli shard (un secchiello da 200 richieste/min);
   ora ruota le tre chiavi come fa gia' `predict` (`IDX % 3`), quindi 600/min.
@@ -2475,6 +2488,34 @@ Voci: 5, 6, 14. La voce 1 (G sopra il filtro odds) è stata
 (segregare il rischio DNP in una Beginner), 7 (correlazione grade ↔
 realizzato: limite superiore alla contaminazione), 3 (perché il
 generatore non ha un criterio nella fase opzionale).
+
+**VOCE 3 — CHIUSA il 13/08/2026.** Era vera: la tornata primaria delle
+arene si ferma quando nessun tipo rende piu' niente
+(`genera_arene_efficienti`), la tornata OPZIONALE invece girava in
+round-robin fra i tipi richiesti finche' il pool reggeva o si toccava
+`ARENA_OPTIONAL_CAP`, **senza mai guardare il pareggio**. Due criteri
+opposti nella stessa run.
+Misura (zero query, 165 report gia' in `generatore_formazioni/output/`):
+le arene opzionali compaiono in **1 report su 165** — run103 del 02/08 —
+e li' erano **11 LASCIA PERDERE su 17**, contro **3 su 696** fra le arene
+richieste. Rarissime perche' in modalita' efficiente/budget
+(`ARENE_EFFICIENTI`/`ESSENZE_ARENA`, quella che l'utente usa oggi) i
+`counts` delle arene restano 0 e la tornata opzionale non parte proprio:
+il difetto mordeva solo chiedendo le arene per tipo. Difetto latente,
+non attivo.
+Fix: la tornata opzionale passa da `genera_arene_efficienti` come la
+primaria, con due parametri nuovi (`cap_per_tipo`, `gia_fatte`, entrambi
+None = comportamento invariato) piu' `etichetta` per distinguere la riga
+di log. Sparisce il ciclo duplicato: il criterio sta scritto in un posto
+solo.
+Verifiche: (a) end-to-end sul pool vero di oggi, vecchio e nuovo
+producono **le stesse 19 opzionali, tutte SCHIERA** (nessuna regressione
+— col mazzo di oggi il freno non deve scattare e infatti non scatta);
+(b) quattro controlli sulla sola logica di scelta, con le funzioni che
+toccano il pool sostituite da finte: niente sotto il pareggio (prima ne
+faceva 10), tetto per tipo rispettato, parametri assenti = tornata
+primaria identica, e sceglie il tipo piu' redditizio invece di alternare.
+Script: `docs/handoff/test_fase_opzionale_arene.py`.
 
 **C. Difetti noti, costo basso, nessuna ricerca.** `PYTHONHASHSEED=0`
 nell'ambiente di lancio (§9); default fasullo `GK_TEAM_CS_WEIGHT=0.5` in
