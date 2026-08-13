@@ -22,6 +22,7 @@ import os
 import sys
 import json
 import io
+import glob
 import time
 import argparse
 import datetime
@@ -82,6 +83,78 @@ def cosa_manca():
             blocchi[slug] += 1
             prima, ultima = finestre.get(slug, (fd, fd))
             finestre[slug] = (min(prima, fd), max(ultima, fd))
+    return mancanti, blocchi, finestre
+
+
+_MESI = {'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+         'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12}
+
+
+def _fine_da_slug(fx):
+    """Ultimo giorno della giornata, letto dallo slug. Stessa regola di
+    estrai_archivio_manager.fine_fixture (non lo importo: quel modulo si
+    tira dietro ricostruisci_manager e build_formazione_globale, qui
+    servirebbero solo per sei righe di calendario).
+
+    Ritorna un datetime NAIVE a fine giornata: partita_target confronta con
+    le date dei game log, che P._dt restituisce come datetime senza fuso
+    (backtest_arene_previsioni.py:51-57). Una `date` qui fa esplodere il
+    confronto.
+    """
+    toks = fx.split('-')[1:]
+    try:
+        anno = int(toks[-1])
+        toks = toks[:-1]
+        i = [j for j, t in enumerate(toks) if t in _MESI][-1]
+        return datetime.datetime(anno, _MESI[toks[i]], int(toks[i - 1]),
+                                 23, 59, 59)
+    except Exception:
+        return None
+
+
+def cosa_manca_archivio():
+    """Come cosa_manca(), ma i bersagli vengono da archivio_ufficiale/.
+
+    PERCHE' ESISTE (13/08/2026): cosa_manca() legge
+    dati_globali/arene_formazioni.json, che e' il vecchio backtest di solo
+    crowss -- 844 slug, tutti gia' in cache. Da quando l'archivio e'
+    multi-manager quel file non descrive piu' il lavoro da fare: con 65
+    manager i giocatori distinti sono migliaia, e lo script rispondeva
+    "0 da scaricare" mentre ne mancavano 1820. Trovato da Sonnet leggendo
+    il codice invece della docstring.
+
+    Il criterio per dire "manca" e' lo STESSO di cosa_manca(): o lo slug non
+    e' in cache, o la cache non arriva abbastanza indietro da avere una
+    partita-target per quella giornata.
+    """
+    cache = C.CacheLocale()
+    disponibili = cache.slug_disponibili()
+    mancanti, blocchi, finestre = {}, collections.Counter(), {}
+    modello = os.path.join(_ROOT, 'archivio_ufficiale', 'manager_*', '**',
+                           '*_arene_limited.json')
+    for percorso in glob.glob(modello, recursive=True):
+        fx = os.path.basename(percorso).replace('_arene_limited.json', '')
+        fd = _fine_da_slug(fx)
+        if fd is None:
+            continue
+        try:
+            dati = _carica(percorso)
+        except Exception:
+            continue
+        righe = dati['righe'] if isinstance(dati, dict) else dati
+        for riga in righe:
+            for carta in (riga.get('carte') or []):
+                slug = carta.get('slug')
+                if not slug:
+                    continue
+                serve = (slug not in disponibili
+                         or P.partita_target(cache, slug, fd) is None)
+                if not serve:
+                    continue
+                mancanti.setdefault(slug, carta.get('ruolo'))
+                blocchi[slug] += 1
+                prima, ultima = finestre.get(slug, (fd, fd))
+                finestre[slug] = (min(prima, fd), max(ultima, fd))
     return mancanti, blocchi, finestre
 
 
@@ -158,12 +231,21 @@ def main():
     # 60 query/min autenticati -> 1.0s e' esattamente al limite, 1.2 sta sotto
     # (trappola 48.D.5 del riassunto). Anonimo: 20/min, servono 3.2s.
     ap.add_argument('--pausa', type=float, default=None)
+    ap.add_argument('--da-archivio', action='store_true', dest='da_archivio',
+                    help='prende i bersagli da archivio_ufficiale/ invece che '
+                         'dal vecchio dati_globali/arene_formazioni.json '
+                         '(844 slug del solo crowss). Default INVARIATO.')
     args = ap.parse_args()
 
     autenticato = bool(os.environ.get('SORARE_COOKIE', '').strip())
+    # La pausa di default resta 1.2s, tarata sui 60/min del solo cookie. CON
+    # LE APIKEY il tetto e' 600/min e si puo' scendere a ~0.15 passando
+    # --pausa: non lo cambio di default perche' chi lancia senza chiavi
+    # verrebbe bannato.
     pausa = args.pausa if args.pausa is not None else (1.2 if autenticato else 3.2)
 
-    mancanti, blocchi, finestre = cosa_manca()
+    mancanti, blocchi, finestre = (cosa_manca_archivio() if args.da_archivio
+                                   else cosa_manca())
     ordinati = sorted(mancanti, key=lambda s: -blocchi[s])
     print(f"Giocatori da scaricare: {len(ordinati)} "
           f"(bloccano {sum(blocchi.values())} presenze in formazione)")
