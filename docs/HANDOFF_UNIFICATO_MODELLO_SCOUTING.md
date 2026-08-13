@@ -1384,6 +1384,45 @@ perché il gruppetto nativo aveva due o tre carte e lo z-score esplodeva. Ora
 tutti con l'atteso invariato: non è il modello che cambia idea sui
 giocatori, è il voto che smette di gridare.
 
+### DUE TERZI "CHI", UN TERZO "QUANDO" — il placebo per-giocatore (13/08/2026, voce 6b)
+
+**La domanda, mai posta prima.** Tutti i placebo fatti su G rimescolano il
+voto **fra giocatori** e rispondono a "il voto porta informazione?" (sì,
+p≤0,048). Questo lo rimescola **fra le giornate dello STESSO giocatore**:
+ognuno si tiene i suoi voti, cambia solo su quale giornata cadono. Risponde
+a "il voto dice *chi* è forte, o *quando* andrà bene?".
+Script: `analisi_manager/p67_placebo_per_giocatore.py` (8 permutazioni,
+1.338 unità, 30.112 coppie giocatore-giornata tutte col voto, 4.076
+giocatori con almeno 2 giornate).
+
+| | netto | guadagno sul braccio senza voto |
+|---|---|---|
+| A (senza voto) | +551.002 | — |
+| **G, voti veri** | **+588.127** | **+37.124** |
+| placebo, mediana di 8 | +575.114 | **+24.111 = 65% del vero** |
+
+Le 8 permutazioni danno dal 47% all'86%, e **nessuna raggiunge il vero**.
+
+**LETTURA: il voto è per due terzi "questo giocatore è forte" e per un terzo
+"questa partita andrà bene".** Entrambe le componenti sono reali — la
+per-partita perché nessun placebo arriva al vero, la per-giocatore perché
+anche coi voti mescolati sopravvivono due terzi del guadagno.
+
+**Conseguenze, in ordine di importanza:**
+1. **Il voto NON è una pagella statica del giocatore**: un terzo del suo
+   valore è legato alla singola giornata. Sostituirlo con un punteggio di
+   qualità fisso per giocatore perderebbe quel terzo.
+2. **I due terzi per-giocatore sono una notizia sul NOSTRO modello, non sul
+   voto.** Se il grade guadagna +24.000 essenze limitandosi a dire "questo
+   giocatore è più forte di quell'altro", allora il nostro storico **non
+   cattura del tutto la qualità dei giocatori**. È il margine più grosso
+   individuato in questa sessione, e non dipende da Sorare: dipende da
+   quanto bene prevediamo. Chi cerca dove lavorare, lavori lì.
+3. **Non decide la voce 14** (tabella fissa per lettera): quella riguarda la
+   SCALA (una lettera vale X punti fissi contro uno z-score dentro il
+   gruppo), che è una domanda diversa da "chi contro quando". Detto qui
+   perché in sessione era stata annunciata come decisiva, e non lo è.
+
 Handoff completo della sessione: `docs/handoff/HANDOFF_GRADE_ACCESO_2026-08-13.txt`.
 
 ### Storia: com'era prima del 13/08 (compresso)
