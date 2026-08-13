@@ -1,0 +1,121 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-13T08:26:15.754095Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) oscar-valentin-martin-luengo: 49 pt attesi (36-67)
+   SQUADRA: rayo-vallecano-madrid | AVVERSARIO: sevilla-sevilla-1890
+======================================================================
+
+######################################################################
+# GIOCATORE: oscar-valentin-martin-luengo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: oscar-valentin-martin-luengo (squadra: rayo-vallecano-madrid)
+Generato: 2026-08-13T08:26:15.753319Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-21 | RAY vs CEL | laliga-es | score=56.4 | peso=0.543
+  2025-09-24 | ATM vs RAY | laliga-es | score=54.4 | peso=0.559
+  2025-09-28 | RAY vs SEV | laliga-es | score=67.3 | peso=0.574
+  2025-10-05 | RSO vs RAY | laliga-es | score=31.1 | peso=0.590
+  2025-10-19 | LEV vs RAY | laliga-es | score=74.7 | peso=0.607
+  2025-10-26 | RAY vs ALA | laliga-es | score=42.5 | peso=0.624
+  2025-11-23 | OVI vs RAY | laliga-es | score=46.4 | peso=0.642
+  2025-12-01 | RAY vs VCF | laliga-es | score=46.5 | peso=0.660
+  2025-12-07 | ESP vs RAY | laliga-es | score=36.0 | peso=0.678
+  2025-12-15 | RAY vs BET | laliga-es | score=46.1 | peso=0.697
+  2025-12-21 | ELC vs RAY | laliga-es | score=57.2 | peso=0.717
+  2026-01-02 | RAY vs GET | laliga-es | score=39.8 | peso=0.737
+  2026-01-11 | RAY vs MLL | laliga-es | score=33.7 | peso=0.758
+  2026-02-15 | RAY vs ATM | laliga-es | score=71.0 | peso=0.779
+  2026-02-21 | BET vs RAY | laliga-es | score=38.3 | peso=0.801
+  2026-03-08 | SEV vs RAY | laliga-es | score=51.9 | peso=0.824
+  2026-03-16 | RAY vs LEV | laliga-es | score=41.2 | peso=0.847
+  2026-04-03 | RAY vs ELC | laliga-es | score=51.4 | peso=0.871
+  2026-04-23 | RAY vs ESP | laliga-es | score=25.9 | peso=0.895
+  2026-05-11 | RAY vs GIR | laliga-es | score=74.2 | peso=0.920
+  2026-05-14 | VCF vs RAY | laliga-es | score=38.7 | peso=0.946
+  2026-05-17 | RAY vs VIL | laliga-es | score=56.7 | peso=0.973
+  2026-05-23 | ALA vs RAY | laliga-es | score=55.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 49.31
+  di cui Punteggio decisivo (level_score) medio: 36.43 | Punteggio complessivo (granulari) medio: 12.88 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 36.85 (delta +0.42)
+  Efficacia offensiva condizionata: delta venue +0.28, delta avversario +0.12 | Passaggio condizionato: delta venue -0.83, delta avversario -0.20 | Gol subiti condizionato: delta venue -0.18, delta avversario -0.08 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 13.34
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.0 - 67.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.78 (differenza: +1.56)
+Media score in casa: 50.21 | Media score fuori casa: 48.45
+Fattore casa/trasferta applicato: 1.001 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.2
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.006 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.005
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.991
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore trend (media ultime 5: 50.5 vs media 5 PRECEDENTI: 50.6): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T19:30
+Casa: Sevilla FC | Trasferta: Rayo Vallecano
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.8 (range 35.5 - 66.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.91
+Punteggio REALE ottenuto in quella partita: 55.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +6.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 17 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      71.4    46.4    -25.0    16.2        NO
+   7        7      48.4    46.5     -1.9    15.2        SI
+   8        8      50.7    36.0    -14.7    14.3        NO
+   9        9      39.6    46.1     +6.5    14.6        SI
+  10       10      56.1    57.2     +1.1    13.9        SI
+  11       11      43.7    39.8     -3.9    13.4        SI
+  12       12      62.1    33.7    -28.4    13.2        NO
+  13       13      36.0    71.0    +35.0    13.5        NO
+  14       14      39.5    38.3     -1.2    14.7        SI
+  15       15      52.7    51.9     -0.8    14.5        SI
+  16       16      59.0    41.2    -17.8    14.0        NO
+  17       17      56.0    51.4     -4.6    13.7        SI
+  18       18      49.0    25.9    -23.1    13.2        NO
+  19       19      60.6    74.2    +13.6    14.2        SI
+  20       20      44.3    38.7     -5.6    15.6        SI
+  21       21      34.8    56.7    +21.9    15.3        NO
+  22       22      53.0    55.8     +2.8    15.0        SI
+
+MAE (errore assoluto medio): 12.22
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 58.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
