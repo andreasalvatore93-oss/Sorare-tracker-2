@@ -2054,13 +2054,21 @@ documenti):**
 - **D2 notifica Telegram bugiarda — CHIUSO.** `formazione_giornata.yml:836-841`
   ha `id:` sullo step di generazione e
   `if: always() && steps.genera.outcome == 'success'` sulla notifica.
-- **D3 92% del predict sprecato — APERTO.** Verificato il 13/08 notte:
+- **D3 92% del predict sprecato — CHIUSA il 13/08 come NON APPLICABILE
+  (decisione dell'utente).** Il difetto è reale e resta nel codice:
   `discovery_fixture.py` non contiene **nessuna** occorrenza di `CHAMPIONS`
-  (grep, 0 match), quindi continua a scremare tutte le leghe anche quando si
-  chiede solo la Champions. Il workflow passa `CHAMPIONS` solo al generatore
-  (riga 790). Le ottimizzazioni del 13/08 (checkout sparso per shard,
-  potatura automatica) hanno ridotto il costo del predict ma **non** toccano
-  la causa: la discovery lavora ancora su tutto.
+  (grep, 0 match), quindi screma tutte le leghe anche quando si chiede solo
+  la Champions; il workflow passa `CHAMPIONS` solo al generatore (riga 790).
+  Ma **si attiva soltanto chiedendo la Champions DA SOLA**, e l'utente non lo
+  fa mai né ha motivo di farlo: le sue run chiedono sempre anche le arene.
+  Run reale sulle odds della GW5 (12/08): nessun problema.
+  È quindi un difetto **latente**, non attivo — stessa categoria della
+  tornata opzionale prima del fix del 13/08. Non vale il costo di toccare la
+  discovery, che è il pezzo più delicato della pipeline. Se un giorno
+  servisse davvero una run solo-Champions, la trappola da ricordare è scritta
+  qui sotto (la discovery **svuota** i file delle leghe che esamina: la
+  restrizione va committata insieme alla scrittura dei file vuoti per le
+  leghe escluse, altrimenti è una regressione).
 
 Stato al 12/08 sera (storico): il 429 era risolto e verificato su run vera,
 e i tre problemi qui sotto erano tutti aperti, con D1 bloccante.
@@ -3048,11 +3056,11 @@ spiegare.
    stesso n. Una delle due è sbagliata e non si sa quale. **Non usare nessuno
    dei due numeri per decidere finché non torna.** Legato: il look-ahead della
    tabella dei livelli non è mai stato misurato (lo script accetta già `fino_a`).
-4. **D3 — 92% del predict sprecato** quando si chiede solo la Champions
-   (§8duodecies-bis). Trappola già documentata: la discovery *svuota* i file
-   delle leghe che esamina, quindi la restrizione va committata **insieme**
-   alla scrittura dei file vuoti per le leghe escluse, altrimenti è una
-   regressione.
+4. ~~D3 — 92% del predict sprecato~~ **CHIUSA il 13/08: non applicabile.**
+   Si attiva solo chiedendo la Champions DA SOLA, cosa che l'utente non fa
+   mai. Difetto latente, resta nel codice e documentato in §8duodecies-bis,
+   non vale il rischio di toccare la discovery per un caso che non si
+   verifica.
 5. **Il metro ufficiale non applica il grade.** `backtest_arene_previsioni.py`
    e `taratura_confronto_parametri.py` non contengono la parola "grade", ma la
    produzione dal 07/08 schiera su `atteso + sd_gruppo × z_grade`. Per i
