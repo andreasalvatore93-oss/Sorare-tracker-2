@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-08T23:17:32.864937Z
+Generato: 2026-08-13T07:16:40.935214Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 1) leon-klassen: 47 pt attesi (29-59)
-   ORDINAMENTO: 46.69
+   ORDINAMENTO: 46.61
    SQUADRA: grazer-ak-graz | AVVERSARIO: rapid-wien-wien
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: leon-klassen (squadra: grazer-ak-graz)
-Generato: 2026-08-08T23:17:32.863465Z
+Generato: 2026-08-13T07:16:40.932495Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -41,19 +41,19 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2026-05-09 | GAK vs ALT | austrian-bundesliga | score=26.8 | peso=0.933
   2026-05-16 | BWL vs GAK | austrian-bundesliga | score=100.0 | peso=0.955
   2026-07-31 | ASK vs GAK | austrian-bundesliga | score=17.2 | peso=0.977
-  2026-08-08 | GAK vs ALU | austrian-bundesliga | score=55.3 | peso=1.000
+  2026-08-08 | GAK vs ALU | austrian-bundesliga | score=53.9 | peso=1.000
 
 --- CALCOLO FATTORI ---
-Media pesata esponenziale (half-life 30.0 partite): 47.50
-  di cui Punteggio decisivo (level_score) medio: 38.28 | Punteggio complessivo (granulari) medio: 9.22 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Gol subiti condizionato: delta venue -0.70, delta avversario +0.10 | Passaggio condizionato: delta venue -0.60, delta avversario +0.30 | Clean sheet/disimpegni condizionato: delta venue -0.56, delta avversario -0.67 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
-Deviazione standard pesata: 19.01
+Media pesata esponenziale (half-life 30.0 partite): 47.41
+  di cui Punteggio decisivo (level_score) medio: 38.28 | Punteggio complessivo (granulari) medio: 9.13 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.70, delta avversario -0.19 | Passaggio condizionato: delta venue -0.58, delta avversario +0.56 | Clean sheet/disimpegni condizionato: delta venue -0.56, delta avversario -0.83 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 18.98
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.3 - 59.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
-Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.30 (differenza: +6.71)
-Media score in casa: 46.62 | Media score fuori casa: 48.29
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.23 (differenza: +6.75)
+Media score in casa: 46.44 | Media score fuori casa: 48.29
 Fattore casa/trasferta applicato: 1.001 (TRASFERTA nella prossima partita)
-Ranking medio avversari affrontati (storico): 5.3
-Ranking prossimo avversario: 3
+Ranking medio avversari affrontati (storico): 5.2
+Ranking prossimo avversario: 2
 Fattore forza avversario applicato: 1.075 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 0.999
 Fattore duelli (casa/trasferta, da dati reali): 1.005
@@ -63,8 +63,8 @@ Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.008
 Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
 Fattore gol subiti (goals_conceded, con cap): 0.995
 Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.997
-Fattore trend (media ultime 5: 50.6 vs media 5 PRECEDENTI: 43.3): 1.000
-P(gioca): 57.58% (fonte: tasso di presenza storico (19/33))
+Fattore trend (media ultime 5: 50.3 vs media 5 PRECEDENTI: 43.3): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
 
 --- PROSSIMA PARTITA ---
 Data: 2026-08-16T17:00
@@ -74,13 +74,13 @@ Competizione: austrian-bundesliga
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 47.1 (range 28.8 - 59.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 46.7
+Score atteso: 46.8 (range 28.7 - 59.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 46.6
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 46.97
-Punteggio REALE ottenuto in quella partita: 55.3
-Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +8.4
+Punteggio REALE ottenuto in quella partita: 53.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +7.0
 NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
 
 --- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
@@ -104,10 +104,10 @@ P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo sto
   14       14      50.4    53.7     +3.3    13.3        SI
   15       15      52.4    26.8    -25.5    13.0        NO
   16       16      56.6   100.0    +43.4    13.7        NO
-  17       17      44.2    17.2    -27.0    20.3        NO
-  18       18      53.0    55.3     +2.3    21.5        SI
+  17       17      42.5    17.2    -25.3    20.3        NO
+  18       18      51.5    53.9     +2.4    21.5        SI
 
-MAE (errore assoluto medio): 14.69
+MAE (errore assoluto medio): 14.56
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 69.2%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
