@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T11:01:13.113923Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) birger-meling: 50 pt attesi (21-74)
+   ORDINAMENTO: 53.54
+   SQUADRA: kobenhavn-kobenhavn | AVVERSARIO: randers-randers
+======================================================================
+
+######################################################################
+# GIOCATORE: birger-meling
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: birger-meling (squadra: kobenhavn-kobenhavn)
+Generato: 2026-08-13T11:01:13.112412Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 31
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: superliga-dk (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-15 | FCN vs FCK | superliga-dk | score=42.7 | peso=0.871
+  2025-10-26 | FCK vs VFF | superliga-dk | score=75.3 | peso=0.891
+  2026-02-08 | FCM vs FCK | superliga-dk | score=48.9 | peso=0.912
+  2026-02-14 | FCK vs FCN | superliga-dk | score=18.1 | peso=0.933
+  2026-03-01 | FCK vs RFC | superliga-dk | score=22.8 | peso=0.955
+  2026-05-17 | FCK vs RFC | superliga-dk | score=49.8 | peso=0.977
+  2026-07-26 | FCK vs LYN | superliga-dk | score=98.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 51.21
+  di cui Punteggio decisivo (level_score) medio: 37.60 | Punteggio complessivo (granulari) medio: 13.61 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.74, delta avversario +1.08 | Passaggio condizionato: delta venue -0.12, delta avversario -0.46 | Clean sheet/disimpegni condizionato: delta venue -1.15, delta avversario +1.24 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 26.64
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 22.8 - 75.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.81 (differenza: +9.84)
+Media score in casa: 52.94 | Media score fuori casa: 45.80
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.4
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 1.280 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.996
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T16:00
+Casa: Randers FC | Trasferta: FC København
+Competizione: superliga-dk
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.7 (range 21.2 - 73.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 53.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 42.64
+Punteggio REALE ottenuto in quella partita: 98.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +56.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      52.3    98.7    +46.4    20.8        NO
+
+MAE (errore assoluto medio): 46.44
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 0.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
