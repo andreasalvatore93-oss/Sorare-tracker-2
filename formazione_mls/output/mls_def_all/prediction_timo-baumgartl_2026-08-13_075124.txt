@@ -1,0 +1,121 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:51:24.273704Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) timo-baumgartl: 51 pt attesi (36-69)
+   ORDINAMENTO: 51.31
+   SQUADRA: st-louis-city-st-louis-missouri | AVVERSARIO: sj-earthquakes-santa-clara-california
+======================================================================
+
+######################################################################
+# GIOCATORE: timo-baumgartl
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: timo-baumgartl (squadra: st-louis-city-st-louis-missouri)
+Generato: 2026-08-13T07:51:24.239743Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 27
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | CHI vs STL | mlspa | score=42.2 | peso=0.616
+  2025-08-24 | VAN vs STL | mlspa | score=60.0 | peso=0.630
+  2025-09-21 | SJ vs STL | mlspa | score=41.7 | peso=0.645
+  2025-09-28 | STL vs LAFC | mlspa | score=31.0 | peso=0.660
+  2026-02-21 | STL vs CLT | mlspa | score=35.8 | peso=0.675
+  2026-03-02 | SD vs STL | mlspa | score=37.1 | peso=0.691
+  2026-03-08 | STL vs SEA | mlspa | score=43.2 | peso=0.707
+  2026-03-15 | LAFC vs STL | mlspa | score=46.3 | peso=0.724
+  2026-03-22 | STL vs NE | mlspa | score=53.0 | peso=0.741
+  2026-04-04 | NYC vs STL | mlspa | score=36.5 | peso=0.758
+  2026-04-12 | DAL vs STL | mlspa | score=94.5 | peso=0.776
+  2026-04-19 | SEA vs STL | mlspa | score=52.6 | peso=0.794
+  2026-04-26 | STL vs SJ | mlspa | score=42.6 | peso=0.812
+  2026-05-03 | ATX vs STL | mlspa | score=26.8 | peso=0.831
+  2026-05-10 | RAP vs STL | mlspa | score=59.2 | peso=0.851
+  2026-05-14 | STL vs LAFC | mlspa | score=39.3 | peso=0.871
+  2026-05-16 | DC vs STL | mlspa | score=52.1 | peso=0.891
+  2026-05-23 | STL vs ATX | mlspa | score=74.2 | peso=0.912
+  2026-07-17 | STL vs SKC | mlspa | score=57.7 | peso=0.933
+  2026-07-23 | LA vs STL | mlspa | score=52.4 | peso=0.955
+  2026-07-26 | STL vs RAP | mlspa | score=70.3 | peso=0.977
+  2026-08-02 | STL vs RSL | mlspa | score=75.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 52.19
+  di cui Punteggio decisivo (level_score) medio: 37.01 | Punteggio complessivo (granulari) medio: 15.18 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.60, delta avversario +0.23 | Passaggio condizionato: delta venue -1.19, delta avversario -0.03 | Clean sheet/disimpegni condizionato: delta venue -0.34, delta avversario +0.25 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 16.24
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.5 - 70.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.98 (differenza: +3.27)
+Media score in casa: 52.27 | Media score fuori casa: 50.12
+Fattore casa/trasferta applicato: 1.005 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.3
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 1.554 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.993
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.998
+Fattore trend (media ultime 5: 66.1 vs media 5 PRECEDENTI: 44.1): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T02:30
+Casa: San Jose Earthquakes | Trasferta: St. Louis City SC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.2 (range 35.5 - 69.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 51.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.77
+Punteggio REALE ottenuto in quella partita: 75.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +24.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.7    43.2     -3.5    10.0        SI
+   7        7      36.4    46.3     +9.8     9.2        NO
+   8        8      38.8    53.0    +14.2     8.8        NO
+   9        9      43.6    36.5     -7.1     9.1        SI
+  10       10      44.3    94.5    +50.3     8.9        NO
+  11       11      55.1    52.6     -2.4    19.2        SI
+  12       12      43.9    42.6     -1.3    18.4        SI
+  13       13      63.3    26.8    -36.5    17.6        NO
+  14       14      55.0    59.2     +4.2    18.0        SI
+  15       15      39.9    39.3     -0.6    17.8        SI
+  16       16      52.3    52.1     -0.2    17.2        SI
+  17       17      58.7    74.2    +15.5    16.7        SI
+  18       18      62.8    57.7     -5.1    17.8        SI
+  19       19      57.9    52.4     -5.5    17.4        SI
+  20       20      56.0    70.3    +14.3    16.8        SI
+  21       21      46.7    75.6    +28.8    17.2        NO
+
+MAE (errore assoluto medio): 12.47
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 68.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
