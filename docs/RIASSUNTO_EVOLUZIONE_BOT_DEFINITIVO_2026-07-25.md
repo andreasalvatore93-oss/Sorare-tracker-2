@@ -6,6 +6,170 @@ descritto qui è già **committato e pushato** su GitHub (ultimo commit di quest
 `6fc87f11`, verificare `git log --oneline -10` per eventuali commit successivi di altri
 workflow automatici) — si può ripartire con `git pull`, non c'è lavoro locale non salvato.
 
+---
+
+## Aggiornamento 13/08/2026 (notte, ~02:30 Roma) — il bot gira sul PC di casa, e cinque difetti trovati leggendo il codice
+
+**In lingua da bar, prima di tutto il resto.**
+
+1. Il bot ora può girare **sul PC di casa invece che su GitHub**, perché da casa
+   Sorare risponde in metà tempo (82 ms contro 168) e nello sniping si vince per
+   millisecondi. Si sceglie con l'input `runner`: `casa` o `github`.
+2. La prima run sul PC era **verde e completamente inutile**: saltava *ogni*
+   annuncio. Su Windows Python non ha il database dei fusi orari, e il bot lo usa
+   per scrivere le scadenze della lista nera. Risolto installando `tzdata`.
+3. Il bot usava **una sola chiave API su tre**. Ora le usa tutte: il tetto passa da
+   200 a 600 richieste al minuto.
+4. Quando prendeva un rifiuto per troppe richieste, **riprovava con la stessa
+   chiave e dormiva fino a 8 secondi**. Ora passa subito a un'altra chiave.
+5. La cache delle odds **si ricordava anche i fallimenti di rete**: un intoppo
+   momentaneo metteva quel giocatore in lista nera per tutte le 5 ore di run.
+6. Il numero di annunci valutati in parallelo **non è un collo di bottiglia** e va
+   lasciato a 6: la prova è nella tabella più sotto.
+
+### Dove gira, e come si sceglie
+
+`runs-on` è deciso dall'input `runner` (default `casa`). Serve perché **il PC è
+acceso solo quando l'utente lo usa**: un job mandato a `casa` con la macchina
+spenta resta in coda, e `github` è la via di scampo.
+
+Sul self-hosted `actions/setup-python` e `actions/setup-node` sono **saltati**
+(`if: runner.environment == 'github-hosted'`): provano a installare scrivendo nel
+registro e il servizio del runner gira come SERVIZIO DI RETE, che quel permesso non
+ha. Si usano gli interpreti di macchina, installati **per tutti gli utenti**
+(`C:\Program Files\Python311`, `C:\Program Files\nodejs`) — le versioni per il solo
+utente stanno in AppData e quell'account non le può nemmeno leggere. Node serve per
+firmare le transazioni (`bots/sorare-sign/decrypt_and_sign.js`) e **non era
+installato**: `winget install OpenJS.NodeJS.LTS --scope machine`, da amministratore.
+Dopo averlo installato i **servizi del runner vanno riavviati**, altrimenti hanno
+ancora il vecchio PATH. Uno step si ferma subito con un messaggio chiaro se Node non
+si vede, invece di far scoprire un `node: command not found` alla prima firma, tre
+ore dentro il log.
+
+Latenza misurata sulle due connessioni di casa (`misura_latenza_sorare.py`, si
+rilancia una volta per rete): la **fibra vince su tutto** — mediana 60 ms contro 88,
+p90 75 contro 97, massimo 89 contro 163.
+
+### Il difetto che rendeva la run verde e vuota
+
+Python non porta con sé il database dei fusi: su Linux lo legge da quello di
+sistema, su Windows quel database non esiste e `ZoneInfo('Europe/Rome')` solleva
+un'eccezione. Il bot lo usa per le scadenze della lista nera, e l'eccezione partiva
+**dentro il thread che valuta un annuncio**: ogni evento finiva in "eccezione non
+gestita durante la valutazione, la salto e continuo". Prima run: 6 annunci arrivati,
+**6 saltati**, run `success`. Risolto aggiungendo `tzdata` al `pip install` (su
+Linux è già soddisfatto, così non c'è un ramo in più da sbagliare). Run successiva:
+zero eccezioni, zero errori di valutazione, zero 429.
+
+**Nota**: `bots/cerbero/cerbero.py` usa anche lui `ZoneInfo` — stesso difetto il
+giorno che finisce su un runner Windows.
+
+### Le tre chiavi, e perché servono davvero (misurato sui log, non supposto)
+
+I tetti delle chiavi sono **indipendenti e si sommano**: 200 richieste/minuto
+ciascuna. Il bot ne usava una. Ora le usa tutte e tre, a giro tondo con lock (i
+thread che valutano gli annunci chiedono la chiave in parallelo).
+
+Il motivo sta nei log di quattro run diurne. Picchi di annunci valutati al minuto:
+31, 36, 31 e **43**. Solo una ha preso 429, quella del 30/07 alle 19:35 di Roma:
+
+| minuto (Roma) | annunci valutati | 429 |
+|---|---|---|
+| 19:33 | **42** | 0 |
+| 19:34 | **18** | **39** |
+| 19:35 | 43 | 0 |
+
+La raffica ha bruciato il budget del minuto, e nel minuto dopo la capacità del bot è
+**crollata a meno della metà** proprio dentro la finestra buona. Quel giorno girava
+col solo cookie (tetto 60/minuto). **Con una chiave sarebbero già 200 e quella
+raffica ci starebbe dentro**: le tre chiavi sono margine su una raffica peggiore, non
+il rimedio a un problema che una chiave non risolve. Un 429 non costa una richiesta
+— costa **30 secondi di modalità SAFE**, in cui ogni chiamata non critica rallenta
+da 50 a 350 ms.
+
+**Ancora da provare**: una run vera in fascia 17-22 contando i 429. Se sono zero, il
+filone si chiude.
+
+### Il ritentativo che dormiva sulla chiave sbagliata
+
+Gli header si costruiscono una volta sola **fuori** dal ciclo dei ritentativi, quindi
+ogni riprova ripartiva con la chiave già bocciata e poteva solo aspettare 2, poi 4,
+poi 8 secondi. Ma un 429 dice che *quella* chiave ha esaurito il suo minuto, non che
+siano esaurite tutte. Ora le chiavi di riserva si tengono in una **lista di quelle
+non ancora provate** — non pescando dal giro tondo globale, la cui posizione è
+condivisa fra i thread e non ha niente a che vedere con la singola chiamata: la prima
+stesura pescava di lì e un test l'ha bocciata subito, perché poteva restituire la
+stessa chiave appena rifiutata e lasciare la terza mai provata. Le prove con
+un'altra chiave **non consumano il budget delle attese** (non dormono).
+
+Provato su cinque scenari: con una sola chiave esaurita ora riesce **senza dormire**
+(prima: 14 secondi e falliva comunque); con tutte esaurite, con una chiave sola e col
+solo cookie il comportamento è **identico a prima**.
+
+### La cache delle odds (vale solo in modalità aggressiva, di default spenta)
+
+`dict` in RAM, slug → odds, muore con la run — **niente su disco**, verificato.
+Aveva due difetti:
+
+- **ricordava i fallimenti.** Se la query andava in eccezione (rete, timeout, 429 con
+  tutte le chiavi esaurite) il `None` finiva in cache come se fosse una risposta del
+  server; siccome il filtro chiamante tratta `None` come "scarta", un singolo intoppo
+  di rete metteva quel giocatore in lista nera **per il resto della run**, in
+  silenzio, anche se era un titolare quasi certo. Il codice non distingueva "il
+  server dice che le odds non ci sono" da "non sono riuscito a chiedere". Ora il
+  secondo caso non si ricorda; una risposta senza errori sì, anche quando le odds non
+  ci sono (è un no legittimo).
+- **non scadeva mai.** Le odds si muovono man mano che le formazioni si delineano, e
+  un giocatore letto al 40% a inizio serata restava al 40% per cinque ore. Ora scade
+  dopo **15 minuti** (deciso dall'utente), con sfoltimento delle voci scadute e un
+  lock, perché i thread la usano in parallelo.
+
+### Perché i thread di valutazione NON sono il collo di bottiglia
+
+Domanda dell'utente: quanto si può alzare `EVENT_WORKER_THREADS`? Risposta: **niente,
+lasciarlo a 6**, ed è ora un input del workflow solo per poterlo misurare senza
+toccare il codice. I tetti in fila:
+
+| | quanto lascia passare |
+|---|---|
+| 6 thread, se fossero liberi | ~30-40 controlli/secondo |
+| **il freno interno da 50 ms** (`_graphql_throttle`) | **20/secondo** — e blocca *tutti* i thread, il sonno è dentro il lock |
+| una APIKEY | 200 al **minuto** (~3,3/secondo) |
+| la raffica peggiore misurata | ~43 annunci/minuto |
+
+Per tenere occupato il freno da 50 ms bastano **3-4 thread**: a 6 è già saturo, e
+portarli a 12 farebbe solo più gente in fila davanti alla stessa porta. Nella raffica
+del 30/07 il bot valutava 0,7 annunci al secondo contro i ~6 che reggeva: **il tappo
+era il tetto delle richieste, non i thread**.
+
+### Altri due difetti trovati, uno chiuso e uno aperto
+
+- **CHIUSO — `sorare-version` e `sorare-build` partivano vuoti.** Il workflow passa
+  sempre le due variabili, e quando il secret non esiste le passa **vuote**;
+  `os.environ.get('X', 'riserva')` vede una variabile che c'è e torna la stringa
+  vuota, quindi il valore di riserva nel codice non è mai entrato in gioco. Sono
+  proprio gli header che servono a farsi riconoscere come client Web legittimo.
+  Risolto con `or`. **Succedeva identico anche su GitHub**, non è un difetto del PC
+  di casa.
+- **APERTO — `EVENT_TIMING_DIAGNOSTIC` è ancora acceso** (default `'si'` a
+  `bot_definitivo.py`), da un'indagine sui tempi del 22/07. Il commento nel codice
+  dice di rimuoverlo a indagine conclusa. Va deciso se l'indagine è chiusa.
+
+### Manutenzione del workflow
+
+Gli input erano **25, il tetto**. Tolti i tre log diagnostici
+(`min_listed_cards_diagnostic`, `recent_avg_price_diagnostic_log`,
+`league_blacklist_verbose_log`), che restano accendibili come variabili d'ambiente
+nel job; aggiunti `runner` e `event_worker_threads`. Ora sono **23**.
+
+Scoperta di passaggio: **`RECENT_AVG_PRICE_DIAGNOSTIC_LOG` era rimasto acceso** da
+una vecchia verifica (il suo default nel codice è `'si'`) e sporcava i log di ogni
+run da allora. Ora è scritto esplicitamente `no`.
+
+**Da sapere**: il bot fa `commit` e `push` della lista nera su `main` **ogni 300
+secondi durante la run**. Chi lavora sul repo mentre il bot gira si vede rifiutare il
+push — successo due volte in questa sessione. Non è un difetto, ma va saputo.
+
 ## Aggiornamento 26/07 (notte, tardissimo) — nona ricalibrazione: rimosso il cutoff
 ## sotto 3€, granularità 8-14€, validazione run diagnostica 4/4
 
