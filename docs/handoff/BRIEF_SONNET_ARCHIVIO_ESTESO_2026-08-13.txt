@@ -100,6 +100,41 @@ L'ORDINE DELLE FASI (deciso dall'utente il 13/08, rispettalo):
    i 29 vecchi servono solo i buchi (alcune giornate sono a 28/29 o 17/29,
    due sono a 1/29). Calcola i buchi dalla griglia, non a memoria.
 
+COME SI USANO LE TRE CHIAVI NELL'ESTRAZIONE (leggilo prima di partire:
+qui sta quasi tutta la differenza di tempo)
+
+   `ricostruisci_manager.py:70` legge UNA sola variabile, `SORARE_APIKEY`,
+   e la mette nell'header (`:172-173`). Quindi un singolo processo di
+   estrazione usa UNA chiave sola: 200 richieste/min, non 600.
+
+   NON modificare il codice per farlo ruotare: e' un file condiviso con la
+   produzione e non serve. Si sfruttano tutte e tre lanciando piu' processi
+   IN PARALLELO, ognuno con una chiave diversa nel proprio ambiente. I tetti
+   delle chiavi sono indipendenti e si sommano (CLAUDE.md), e ogni manager
+   scrive in una cartella sua, quindi non si pestano i piedi.
+
+   Ricetta: dividi i manager in 3 gruppi e lancia tre processi, uno per
+   gruppo, esportando in ciascuno una chiave diversa come SORARE_APIKEY --
+   il primo gruppo con il valore di SORARE_APIKEY, il secondo con quello di
+   SORARE_APIKEY_2, il terzo con SORARE_APIKEY_3. Il cookie e il CSRF sono
+   gli stessi in tutti e tre.
+   Esempio (bash), un gruppo per processo:
+     SORARE_APIKEY="$CHIAVE_2" SORARE_COOKIE=... SORARE_CSRF=... \
+       python estrai_archivio_manager.py --manager <slug> <fixture> ...
+
+   REGOLE mentre giri in parallelo:
+   - MAI due processi sullo STESSO manager (scriverebbero lo stesso file):
+     dividi per manager, mai per giornata.
+   - non superare 6 processi in tutto: esiste un tetto separato di 40
+     richieste contemporaneamente in volo che nessuna chiave alza.
+   - se compaiono 429, NON alzare il parallelismo: abbassalo. Un 429 e' una
+     richiesta da rifare, non un dato mancante.
+   - VERIFICA che la chiave stia davvero agendo prima del lotto grosso:
+     lancia la stessa giornata con la chiave e senza, e confronta i tempi.
+     Se sono uguali, la chiave non arriva al server: fermati e dillo.
+   `completa_grade_storico.py` invece le ruota gia' da solo tutte e tre
+   dentro un unico processo: li' non devi fare niente, basta esportarle.
+
 PASSO A -- estrazione.
    python estrai_archivio_manager.py --manager <slug> <fixture> [<fixture> ...]
    A LOTTI PICCOLI CON CHECKPOINT (regola CLAUDE.md, non e' un consiglio):
