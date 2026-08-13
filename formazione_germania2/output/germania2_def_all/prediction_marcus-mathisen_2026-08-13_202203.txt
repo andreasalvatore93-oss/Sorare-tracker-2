@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
-Generato: 2026-08-13T07:38:59.397769Z
+Generato: 2026-08-13T20:22:03.664962Z
 Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 1) marcus-mathisen: 56 pt attesi (35-73)
-   ORDINAMENTO: 57.54
+   ORDINAMENTO: 57.20
    SQUADRA: st-pauli-hamburg | AVVERSARIO: holstein-kiel-kiel
 ======================================================================
 
@@ -14,7 +14,7 @@ Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: marcus-mathisen (squadra: st-pauli-hamburg)
-Generato: 2026-08-13T07:38:59.396758Z
+Generato: 2026-08-13T20:22:03.663390Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -57,7 +57,7 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 30.0 partite): 58.77
   di cui Punteggio decisivo (level_score) medio: 39.16 | Punteggio complessivo (granulari) medio: 19.61 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Gol subiti condizionato: delta venue -0.49, delta avversario +1.39 | Passaggio condizionato: delta venue -1.39, delta avversario -1.97 | Clean sheet/disimpegni condizionato: delta venue -0.35, delta avversario +1.19 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+  Gol subiti condizionato: delta venue -0.49, delta avversario +0.21 | Passaggio condizionato: delta venue -1.39, delta avversario +0.78 | Clean sheet/disimpegni condizionato: delta venue -0.35, delta avversario -0.05 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
 Deviazione standard pesata: 20.48
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.8 - 75.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.57 (differenza: +2.91)
@@ -65,7 +65,7 @@ Media score in casa: 53.70 | Media score fuori casa: 57.87
 Fattore casa/trasferta applicato: 1.006 (TRASFERTA nella prossima partita)
 Ranking medio avversari affrontati (storico): 9.4
 Ranking prossimo avversario: 7
-Fattore forza avversario applicato: 1.066 (gol subiti reali dell'avversario, ultime 10)
+Fattore forza avversario applicato: 1.007 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 0.990
 Fattore duelli (casa/trasferta, da dati reali): 1.002
 Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
@@ -85,8 +85,8 @@ Competizione: 2-bundesliga
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 55.9 (range 34.9 - 73.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
-Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 57.5
+Score atteso: 56.0 (range 35.0 - 73.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 57.2
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 56.79
