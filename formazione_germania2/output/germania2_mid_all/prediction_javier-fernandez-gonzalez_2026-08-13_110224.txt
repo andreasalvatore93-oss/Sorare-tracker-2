@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-13T11:02:24.732021Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) javier-fernandez-gonzalez: 47 pt attesi (30-65)
+   SQUADRA: nurnberg-nurnberg | AVVERSARIO: greuther-furth-furth
+======================================================================
+
+######################################################################
+# GIOCATORE: javier-fernandez-gonzalez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: javier-fernandez-gonzalez (squadra: nurnberg-nurnberg)
+Generato: 2026-08-13T11:02:24.715568Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 23
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: 2-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-18 | DSC vs FCN | 2-bundesliga | score=49.1 | peso=0.871
+  2026-04-26 | FCN vs FCM | 2-bundesliga | score=47.3 | peso=0.895
+  2026-05-03 | SGF vs FCN | 2-bundesliga | score=33.4 | peso=0.920
+  2026-05-09 | FCN vs S04 | 2-bundesliga | score=44.5 | peso=0.946
+  2026-05-17 | H96 vs FCN | 2-bundesliga | score=60.0 | peso=0.973
+  2026-08-09 | FCN vs SGD | 2-bundesliga | score=68.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 50.87
+  di cui Punteggio decisivo (level_score) medio: 39.34 | Punteggio complessivo (granulari) medio: 11.53 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 41.01 (delta +1.67)
+  Efficacia offensiva condizionata: delta venue -0.55, delta avversario -0.71 | Passaggio condizionato: delta venue -0.41, delta avversario -0.47 | Gol subiti condizionato: delta venue -0.53, delta avversario +0.11 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 11.46
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.4 - 68.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 6.00 (differenza: +5.46)
+Media score in casa: 53.53 | Media score fuori casa: 47.50
+Fattore casa/trasferta applicato: 1.002 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.5
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 1.006 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T11:00
+Casa: SpVgg Greuther Fürth | Trasferta: 1. FC Nürnberg
+Competizione: 2-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.1 (range 29.7 - 65.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.97
+Punteggio REALE ottenuto in quella partita: 68.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +21.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================
