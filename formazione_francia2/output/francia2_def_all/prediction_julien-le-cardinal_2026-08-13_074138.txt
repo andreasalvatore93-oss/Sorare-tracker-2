@@ -1,0 +1,111 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:41:38.797438Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) julien-le-cardinal: 60 pt attesi (45-72)
+   ORDINAMENTO: 63.09
+   SQUADRA: saint-etienne-saint-etienne | AVVERSARIO: clermont-clermont-ferrand
+======================================================================
+
+######################################################################
+# GIOCATORE: julien-le-cardinal
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: julien-le-cardinal (squadra: saint-etienne-saint-etienne)
+Generato: 2026-08-13T07:41:38.796623Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 37
+Escluse (DID_NOT_PLAY): 17
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: ligue-2-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | BRE vs LIL | ligue-1-fr | score=60.0 | peso=0.691
+  2025-08-24 | TFC vs BRE | ligue-1-fr | score=62.0 | peso=0.707
+  2025-08-29 | RCL vs BRE | ligue-1-fr | score=65.4 | peso=0.724
+  2026-02-07 | STE vs MON | ligue-2-fr | score=89.3 | peso=0.741
+  2026-02-14 | EAG vs STE | ligue-2-fr | score=43.3 | peso=0.758
+  2026-02-21 | STE vs LAV | ligue-2-fr | score=46.9 | peso=0.776
+  2026-02-28 | PAU vs STE | ligue-2-fr | score=53.5 | peso=0.794
+  2026-03-07 | STE vs RED | ligue-2-fr | score=70.6 | peso=0.812
+  2026-03-14 | GRE vs STE | ligue-2-fr | score=74.2 | peso=0.831
+  2026-03-21 | STE vs ANN | ligue-2-fr | score=66.4 | peso=0.851
+  2026-04-04 | NAN vs STE | ligue-2-fr | score=37.1 | peso=0.871
+  2026-04-11 | STE vs DUN | ligue-2-fr | score=53.4 | peso=0.891
+  2026-04-18 | SCB vs STE | ligue-2-fr | score=59.4 | peso=0.912
+  2026-05-09 | STE vs AMI | ligue-2-fr | score=50.7 | peso=0.933
+  2026-05-15 | STE vs ROD | play-offs-1-2-fr | score=66.1 | peso=0.955
+  2026-05-26 | STE vs NIC | play-offs-1-2-fr | score=77.7 | peso=0.977
+  2026-08-08 | SOC vs STE | ligue-2-fr | score=70.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 61.64
+  di cui Punteggio decisivo (level_score) medio: 38.79 | Punteggio complessivo (granulari) medio: 22.85 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +1.27, delta avversario +0.66 | Passaggio condizionato: delta venue +0.21, delta avversario +1.36 | Clean sheet/disimpegni condizionato: delta venue +0.93, delta avversario +0.03 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 12.76
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 46.9 - 74.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.86 (differenza: +2.90)
+Media score in casa: 65.14 | Media score fuori casa: 56.32
+Fattore casa/trasferta applicato: 0.998 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.6
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 0.802 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.005
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.995
+Fattore gol subiti (goals_conceded, con cap): 1.007
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.004
+Fattore trend (media ultime 5: 65.1 vs media 5 PRECEDENTI: 60.0): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T18:45
+Casa: AS Saint-Étienne | Trasferta: Clermont Foot 63
+Competizione: ligue-2-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 59.6 (range 44.9 - 72.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 63.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 60.98
+Punteggio REALE ottenuto in quella partita: 70.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +9.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 11 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      65.3    53.5    -11.8    16.6        SI
+   7        7      45.2    70.6    +25.3    15.5        NO
+   8        8      69.2    74.2     +5.0    15.0        SI
+   9        9      47.0    66.4    +19.5    14.8        NO
+  10       10      57.7    37.1    -20.6    14.0        NO
+  11       11      41.9    53.4    +11.6    15.9        SI
+  12       12      73.4    59.4    -14.0    15.3        SI
+  13       13      75.1    50.7    -24.4    14.6        NO
+  14       14      42.0    66.1    +24.1    14.3        NO
+  15       15      70.9    77.7     +6.8    13.8        SI
+  16       16      74.5    70.3     -4.2    14.3        SI
+
+MAE (errore assoluto medio): 15.21
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 54.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
