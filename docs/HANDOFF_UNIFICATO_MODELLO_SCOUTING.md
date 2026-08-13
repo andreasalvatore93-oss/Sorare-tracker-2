@@ -1265,6 +1265,33 @@ dà SOLO lo storico — 0/50 casi coprivano la fixture futura, perché `last:N`
 guarda per costruzione indietro, mai in avanti. Non era la dimostrazione che
 mancasse una rotta per il futuro: era l'argomento sbagliato.)
 
+**IL TETTO DEI 256 PREDICT (13/08/2026, due difetti trovati insieme).**
+La matrice di GitHub Actions accetta al massimo 256 job. Il 13/08 lo
+scouting ne ha chiesti **1545** per la prima volta (GW5, odds 0,80): due
+cose sono venute fuori insieme.
+1. **Il workflow moriva proprio nel caso che diceva di gestire** (run
+   31675855737). Il passo che prepara la lista scrive lo stdout dentro
+   `$GITHUB_OUTPUT`, che accetta solo `chiave=valore`; il messaggio
+   `::warning::...` di troncamento ci finiva dentro e GitHub rifiutava il
+   file intero ("Invalid format"). Corretto: l'avviso va nel riepilogo
+   della run e nel log, e c'e' un output `richiesti` in piu' accanto a
+   `quanti`. Verificato in produzione sulla run 31676604130: "AVVISO: 1545
+   predict richiesti... ne restano fuori 1289", job verde.
+2. **Il taglio a 256 lo decideva l'ALFABETO.** `_scrivi_lavori` scriveva
+   le righe raggruppate per (cartella, ruolo) in ordine alfabetico:
+   troncando restavano tutta l'Argentina e l'Austria, e sparivano MLS,
+   Spagna, Turchia. Visibile nella run 31676604130, dove i 256 job predict
+   sono quasi tutti argentini. Ora le righe escono in ordine di **L10
+   decrescente su tutte le leghe** (a parita', il voto A-F), cioe' i
+   candidati piu' forti per primi: se il taglio scatta, restano fuori i
+   meno interessanti — che e' esattamente cio' che serve a chi legge la
+   tabella ordinata per A+G e guarda solo la cima (uso dichiarato
+   dall'utente il 13/08). L10 e voto sono gia' nel pool, nessuna query in
+   piu'; senza `pool` la funzione si comporta come prima.
+   Test: `docs/handoff/test_ordine_lavori_scouting.py` (stesso INSIEME di
+   lavori, solo ordine diverso; e su 600 candidati il taglio a 256 tiene i
+   256 con L10 piu' alto invece di una lega intera).
+
 **Altro aperto, minore**: leghe senza pipeline (`nb-i`, `nb-ii`,
 `premier-division-ie`, `premier-league-am`, `super-liga-sk`, `virsliga`) non
 ricevono atteso; 429 occasionali (danno piccolo, run 2.7-3.8 min); job
