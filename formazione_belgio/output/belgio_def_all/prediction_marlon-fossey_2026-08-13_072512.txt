@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:25:12.986384Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) marlon-fossey: 50 pt attesi (20-73)
+   ORDINAMENTO: 53.16
+   SQUADRA: standard-liege-liege-luik | AVVERSARIO: mechelen-mechelen-malines
+======================================================================
+
+######################################################################
+# GIOCATORE: marlon-fossey
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: marlon-fossey (squadra: standard-liege-liege-luik)
+Generato: 2026-08-13T07:25:12.984700Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 20
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | USG vs STA | jupiler-pro-league | score=13.8 | peso=0.758
+  2025-08-23 | STA vs CER | jupiler-pro-league | score=34.9 | peso=0.776
+  2025-08-31 | OHL vs STA | jupiler-pro-league | score=34.8 | peso=0.794
+  2025-09-12 | STA vs KVM | jupiler-pro-league | score=90.1 | peso=0.812
+  2025-09-27 | STA vs CLU | jupiler-pro-league | score=11.2 | peso=0.831
+  2025-10-20 | STA vs ANT | jupiler-pro-league | score=100.0 | peso=0.851
+  2025-10-25 | GNT vs STA | jupiler-pro-league | score=21.7 | peso=0.871
+  2026-02-14 | STA vs USG | jupiler-pro-league | score=75.2 | peso=0.891
+  2026-02-22 | GNK vs STA | jupiler-pro-league | score=65.0 | peso=0.912
+  2026-05-16 | STA vs GNK | jupiler-pro-league | score=72.2 | peso=0.933
+  2026-05-19 | WES vs STA | jupiler-pro-league | score=45.8 | peso=0.955
+  2026-05-23 | STA vs CHA | jupiler-pro-league | score=33.7 | peso=0.977
+  2026-08-08 | STA vs CER | jupiler-pro-league | score=66.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 51.76
+  di cui Punteggio decisivo (level_score) medio: 41.16 | Punteggio complessivo (granulari) medio: 10.60 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.96, delta avversario +1.33 | Passaggio condizionato: delta venue -1.19, delta avversario -1.29 | Clean sheet/disimpegni condizionato: delta venue -0.71, delta avversario +0.78 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 27.28
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 21.7 - 75.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 22.96 (differenza: +4.32)
+Media score in casa: 60.42 | Media score fuori casa: 36.23
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.3
+Ranking prossimo avversario: 16
+Fattore forza avversario applicato: 1.827 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.993
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.992
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.997
+Fattore trend (media ultime 5: 56.4 vs media 5 PRECEDENTI: 59.5): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T16:30
+Casa: YR KV Mechelen | Trasferta: Standard de Liège
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.7 (range 19.7 - 73.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 53.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.38
+Punteggio REALE ottenuto in quella partita: 66.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +15.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      40.7    21.7    -19.0    38.9        SI
+   7        7      35.3    75.2    +39.8    37.3        NO
+   8        8      57.4    65.0     +7.6    36.6        SI
+   9        9      61.9    72.2    +10.3    34.8        SI
+  10       10      69.0    45.8    -23.2    33.7        SI
+  11       11      43.0    33.7     -9.3    32.0        SI
+  12       12      51.3    66.1    +14.8    31.0        SI
+
+MAE (errore assoluto medio): 17.73
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 85.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
