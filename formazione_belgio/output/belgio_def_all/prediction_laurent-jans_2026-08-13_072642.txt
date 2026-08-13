@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:26:42.333891Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) laurent-jans: 49 pt attesi (40-63)
+   ORDINAMENTO: 43.60
+   SQUADRA: waasland-beveren-beveren-waas | AVVERSARIO: anderlecht-bruxelles-brussel
+======================================================================
+
+######################################################################
+# GIOCATORE: laurent-jans
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: laurent-jans (squadra: waasland-beveren-beveren-waas)
+Generato: 2026-08-13T07:26:42.332338Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 11
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-04 | ? vs ? | wc-qualification-europe | score=28.9 | peso=0.812
+  2025-09-07 | ? vs ? | wc-qualification-europe | score=41.7 | peso=0.831
+  2025-10-10 | ? vs ? | wc-qualification-europe | score=35.3 | peso=0.851
+  2025-10-13 | ? vs ? | wc-qualification-europe | score=57.8 | peso=0.871
+  2025-11-14 | ? vs ? | wc-qualification-europe | score=35.6 | peso=0.891
+  2025-11-17 | ? vs ? | wc-qualification-europe | score=46.6 | peso=0.912
+  2026-03-26 | ? vs ? | uefa-nations-league | score=72.6 | peso=0.933
+  2026-03-31 | ? vs ? | uefa-nations-league | score=42.3 | peso=0.955
+  2026-06-03 | ? vs ? | friendlies | score=40.4 | peso=0.977
+  2026-08-09 | ANT vs WBE | jupiler-pro-league | score=36.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 43.97
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 8.97 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.29, delta avversario +0.00 | Passaggio condizionato: delta venue +0.33, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue -0.45, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 12.07
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.3 - 57.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 6.84 (differenza: +5.23)
+Media score in casa: 36.88 | Media score fuori casa: 43.97
+Fattore casa/trasferta applicato: 1.001 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.0
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 1.417 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.999
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.998
+Fattore trend (media ultime 5: 47.5 vs media 5 PRECEDENTI: 40.0): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T11:30
+Casa: Waasland-Beveren | Trasferta: RSC Anderlecht
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.8 (range 40.1 - 62.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 43.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.86
+Punteggio REALE ottenuto in quella partita: 36.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      41.2    72.6    +31.4    10.2        NO
+   7        7      46.0    42.3     -3.7    15.6        SI
+   8        8      45.5    40.4     -5.1    14.6        SI
+   9        9      44.9    36.9     -8.0    13.8        SI
+
+MAE (errore assoluto medio): 12.03
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
