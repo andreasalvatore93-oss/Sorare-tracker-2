@@ -1,0 +1,251 @@
+HANDOFF -- FILONE INTRALEGA, HALF-LIFE, E QUATTRO DIFETTI DEL BANCO
+Sessione 13/08/2026, pomeriggio-sera (Roma, CEST). Orchestratore: Opus.
+
+
+LEGGI PRIMA QUESTO, IN LINGUA DA BAR
+====================================
+In produzione e' andata UNA cosa sola: un avviso sulle carte di chi ha appena
+cambiato campionato. Tutto il resto della giornata sono state misure che hanno
+detto no -- ma il no e' arrivato con un numero in mano, non con un rinvio.
+
+La cosa piu' importante non e' nessuno dei filoni: e' che il BANCO DI MISURA
+era rotto in quattro punti, e li abbiamo trovati uno dopo l'altro. Tre volte
+misurava con gli aggiustamenti avversario spenti (cioe' giudicava un modello
+che non esiste), e una volta buttava via il 90% dei portieri senza dirlo.
+Adesso il metro misura quello che dice di misurare. Vale piu' di una
+correzione in piu' nel modello.
+
+L'utente ha alzato due obiezioni, tutte e due giuste e tutte e due hanno
+cambiato il lavoro: (1) "state giudicando col grade spento mentre in
+produzione e' acceso"; (2) "continuate a testare senza toccare mai niente,
+e il metro dei tre indicatori non e' quello che mi fa guadagnare essenze".
+La seconda ha fatto chiudere un filone in un pomeriggio invece che il 25/08.
+
+
+1. STATO DEL REPO
+=================
+Branch main. 7 commit, tutti pushati:
+  72ab99cd51  badge "nuovo campionato" (IN PRODUZIONE, cosmetico)
+  7ea7cc30d2  dataset intralega + due termometri a confronto
+  95e7432713  il cancello vero: dentro la formula il segnale non paga
+  6c9704e112  il lift non diceva no, taceva (misura del suo rumore)
+  c6458dca28  correzione difensore congelata (poi decaduta, vedi sotto)
+  3c2c52d96c  half-life rimisurato: non e' stantio, e' piatto
+  a5d61ccd58  half-life col voto acceso
+  f192ba3fe7  correzione difensore CHIUSA + fix bug portieri
+
+In PRODUZIONE e' cambiata una cosa sola: il badge. Nessun valore del modello
+e' stato toccato. Tutti i flag nuovi sono spenti di default.
+
+File non versionato di proposito: analisi_manager/dati/intralega_righe.json
+(57 MB, si rigenera in 68 secondi a zero query con p33).
+
+
+2. LA DOMANDA DI PARTENZA
+=========================
+L'utente voleva una correzione "intralega": dentro lo stesso campionato,
+confrontare il voto medio degli attaccanti della squadra A nelle ultime 5/10
+partite con quello dei difensori della squadra che affronta. Focus non
+standard, apposta: non "quanto e' forte l'avversario in assoluto" ma il
+confronto fra i due reparti che si incontrano.
+Piu' un secondo asse emerso strada facendo (Ernst al Feyenoord, Simsir al
+Trabzonspor): la forza della PROPRIA squadra nuova, che e' cosa diversa
+dalla lega. Quel secondo asse NON e' stato toccato: resta aperto.
+
+
+3. COSA E' STATO COSTRUITO
+==========================
+analisi_manager/p33_intralega_dataset.py   dataset, 112.484 righe, 31 leghe,
+                                           zero query, ~68s. Scrive anche
+                                           intralega_serie.json (901 KB,
+                                           versionato).
+analisi_manager/p34_intralega_gate.py      cancello economico
+analisi_manager/p35_intralega_termometri.py  voti Sorare contro gol
+analisi_manager/p36_lift_rumore.py         quanto rumore ha il lift
+analisi_manager/p37_halflife_con_grade.py  half-life col voto acceso
+intralega_segnale.py                       il segnale, non in produzione
++ due correzioni nel banco (delta_reparto_avv, delta_gol_fatti_avv), un
+  interruttore --con-avversario nel metro, e due parametri nuovi in p24.
+
+
+4. GLI ESITI, INTEGRALI
+=======================
+
+4.1 L'IPOTESI INTRALEGA E' BOCCIATA
+Normalizzare la forza dell'avversario dentro la sua lega invece che sul mondo:
+4 celle su 4 la normalizzazione MONDIALE (quella che gira oggi) correla di
+piu' col voto vero.
+   FWD vs difesa avversaria, ultime 5   intralega -0,0440  mondiale -0,0493
+   FWD vs difesa avversaria, ultime 10  intralega -0,0437  mondiale -0,0507
+   DEF vs attacco avversario, ultime 5  intralega -0,0349  mondiale -0,0368
+   DEF vs attacco avversario, ultime 10 intralega -0,0373  mondiale -0,0406
+Errore standard a grappolo per partita ~0,012 (il segnale c'e', ~3,4 errori
+standard da zero; e' l'idea di normalizzare per lega che non paga).
+La differenza fra campionati porta informazione vera: cancellarla butta
+segnale invece di pulire rumore.
+
+4.2 DUE TERMOMETRI PER LA STESSA FEBBRE
+Attaccante di A contro la difesa di B (n=5.763, 3.274 partite):
+   voti Sorare dei difensori di B   -0,0728  (es 0,0131)
+   gol subiti da B (la produzione)  +0,0644  (es 0,0138)
+   voti al netto dei gol            -0,0477   <- aggiunge roba sua
+   i due termometri si somigliano solo -0,48
+Difensore di A contro l'attacco di B (n=8.477, 3.670 partite):
+   gol FATTI da B                   -0,0833  (es 0,0143)
+   voti degli attaccanti di B       -0,0379
+   voti al netto dei gol            -0,0053   <- niente
+Nota: la produzione condiziona il DIFENSORE sui gol SUBITI dall'avversario
+(SIGN_BY_ROLE['def']=+1), non su quelli fatti. Quindi il segnale piu' forte
+misurato per quel ruolo era una grandezza che il modello non guardava.
+
+4.3 DENTRO LA FORMULA, PERO', NON PAGA
+Con gli aggiustamenti di produzione ACCESI:
+  FWD, voti dei difensori avversari (23.173 punti): MAE e correlazione si
+  muovono di 3 millesimi, il lift oscilla senza direzione. Chiuso.
+  DEF, gol fatti dall'avversario (31.790 punti):
+     k       -12     -10      -8      -6      -5      -4      -2       0
+     MAE   15,120  15,029  14,965  14,927  14,917  14,913  14,927  14,964
+     corr   0,169   0,176   0,183   0,189   0,190   0,190   0,186   0,175
+     lift%   14,7    14,7    15,0    16,5    16,7    16,9    17,0    17,1
+  Minimo INTERNO e simmetrico su k=-4 (griglia estesa apposta fino a -12 per
+  non congelare un valore di bordo). Ma il lift non sale MAI su tutta la
+  griglia.
+
+4.4 IL LIFT NON DICEVA NO, TACEVA (poi ha detto no in un altro modo)
+Confronto appaiato giorno per giorno (dei tre pezzi del lift solo 'scelto'
+dipende dalla previsione, quindi i due bracci condividono caso e oracolo):
+   lift k=0  17,02%   lift k=-4  16,92%   differenza -0,10
+   IC95 ricampionando le giornate: [-1,70 ; +1,61]  su 285 giornate
+   la scelta cambia davvero in 196 giornate su 285 (test non nullo)
+L'incertezza e' 16 volte l'effetto. MA su tutta la griglia il lift non sale
+mai, quindi non si puo' dire "migliorerebbe con piu' potenza".
+
+4.5 LA MISURA CHE HA CHIUSO IL FILONE -- IN ESSENZE
+Obiezione dell'utente: i tre indicatori sono surrogati, l'unica modifica
+passata in produzione nell'ultimo mese (GK_ATT_AVV) fu decisa in essenze.
+Rifatta con p24 su archivio_ufficiale, 363 coppie manager-giornata appaiate,
+voto acceso e avversario acceso, unica differenza fra i due giri la
+correzione:
+   delta ON-OFF, braccio G (produzione):  -2.619 essenze
+   IC95 sulle coppie manager-GW:          [-10.296 ; +5.217]
+   positivo nel                            24,5% dei ricampionamenti
+   unita' in cui cambia qualcosa:          228 su 363
+   controllo, braccio A (senza voto):     +3.086  (SEGNO OPPOSTO)
+Due bracci opposti dentro il rumore = firma del caso. CHIUSA.
+Numero collaterale da tenere: sullo stesso banco G contro A vale +12.953
+essenze su 201 coppie discordanti (trim simmetrico +11.907).
+
+4.6 HALF-LIFE (richiesta dell'utente, filone a parte)
+Rimisurato su tutti i ruoli, 11 valori da 3 a 60, avversario acceso.
+   ruolo  n punti  produzione  esito
+   GK      7.842      6        MAE/corr vogliono lungo, lift vuole corto:
+                               si contraddicono. corr 0,07 = non ordina.
+   DEF    31.790     30        PIANORO: da 12 a 60 la MAE cambia di 3
+                               millesimi. Il parametro li' non morde.
+   MID    29.036     25        12-16 meglio di 0,002 di MAE = sotto il
+                               tremolio fra ambienti gia' documentato.
+   FWD    23.173      6        MAE vuole 3, corr e lift vogliono 6-20.
+Rifatto anche COL VOTO ACCESO (p37, sui 27.294 punti che hanno il voto
+storico): il voto cambia moltissimo i numeri (DEF corr 0,167->0,233, lift
+17,0->24,2) ma l'ottimo non si sposta, e sul MID si sposta VERSO la
+produzione (senza voto sembrava 12-16, col voto e' esattamente 25).
+Unica tensione residua: FWD col voto, il lift preferisce 12-16 (30,3-30,8)
+al 6 di produzione (29,5) ma la MAE peggiora di 0,048, sopra il rumore.
+NESSUN CAMBIO.
+
+
+5. LE COSE DA SAPERE PRIMA DI DECIDERE (i difetti del banco)
+============================================================
+Quattro difetti veri, tutti trovati oggi, tutti dello stesso tipo: il banco
+misurava una cosa diversa da quella che dichiarava.
+
+D1. taratura_confronto_parametri girava con usa_avversario=False (il default
+    del banco). E' lo stesso banco che aveva fatto accendere
+    FWD_OFFENSE_SENSITIVITY a 3.0 per poi doverla riportare a 0.0.
+    RISOLTO: aggiunto --con-avversario, default spento per non riscrivere le
+    misure vecchie.
+D2. Lo stesso interruttore mancava nel ramo --candidati, quindi un A/A sul
+    flag nuovo risultava "identico" non perche' il flag fosse inerte ma
+    perche' al modello non arrivava nemmeno l'avversario. RISOLTO.
+D3. backtest_arene_previsioni.score_atteso() -- quella che alimenta il
+    backtest in ESSENZE (p23/p24) -- chiamava calcola() senza
+    usa_avversario. Quindi anche il metro che ha promosso GK_ATT_AVV
+    calcolava con gli aggiustamenti avversario spenti. Per un confronto
+    appaiato G vs A si compensa in gran parte; per una correzione che
+    riguarda l'avversario no. RISOLTO con parametro, default invariato.
+D4. IL PIU' GRAVE. Dal fix PRIOR_LEGA del 13/08 mattina, _calcola_base
+    passava `league` a tutti e quattro i ruoli con il commento "e' innocuo".
+    Falso per il portiere: compute_score_atteso_gk e' l'unico dei quattro a
+    non avere quel parametro -> TypeError -> e il try/except di valuta()
+    saltava la riga IN SILENZIO. Misurato: 957 punti GK su 1.068 (89,6%)
+    buttati, e i superstiti erano solo quelli con la partita in coppa
+    (fuori da LEAGUE_DIR). L'intestazione continuava a dire "7.842 punti"
+    perche' stampa i punti RACCOLTI, non quelli valutati.
+    RISOLTO (ruolo != 'Goalkeeper'), verificato 400 su 400.
+    Le righe GK prodotte prima del fix sono state RIFATTE; DEF/MID/FWD non
+    erano toccati.
+    LEZIONE: lo ha stanato p24, che NON ha un except attorno ed e' crashato
+    in faccia. In un banco di misura un except largo non e' prudenza, e' un
+    modo silenzioso di mentire.
+
+Altro da sapere:
+- p37 misura sui 27.294 punti che hanno il voto storico (16-21% della cache)
+  e NON e' un campione casuale: furono raccolti su giocatori presi dai file
+  manager. Dentro quel sottoinsieme i gruppi reggono (92% delle carte in
+  gruppi usabili, mediana 3), quindi "l'ottimo si sposta?" e' lecito;
+  "di quanto sulla popolazione intera" no.
+- La riga GK di p37 e' ancora quella pre-fix: NON VALIDA, va rilanciata se
+  serve.
+- binario2_out.json e binario2_pool_rows.json erano stati sovrascritti dai
+  miei giri e sono stati RIPRISTINATI: sono file condivisi.
+
+
+6. DECISIONI APERTE
+===================
+1. L'ASSE "SQUADRA PROPRIA" non e' mai stato toccato: Ernst che va al
+   Feyenoord (lega piu' facile ma squadra forte) e Simsir al Trabzonspor
+   (lega piu' dura ma squadra forte) restano casi senza risposta. E' la
+   parte del filone intralega che l'utente aveva intuito e che non abbiamo
+   misurato.
+2. FWD half-life col voto: il lift preferirebbe 12-16 al 6 di produzione.
+   Non si applica perche' la MAE peggiora sopra il rumore -- ma e' l'unica
+   voce da riguardare se un giorno si vuole ottimizzare la SELEZIONE invece
+   della previsione.
+3. Il metro ufficiale NON applica il grade. Per i parametri che toccano la
+   selezione non e' un dettaglio: oggi si e' aggirato con p37, ma la strada
+   pulita sarebbe portare il voto dentro il banco.
+4. Restano al 25/08 gli altri due test pre-registrati (GK_ATT_AVV e
+   GRADE_GROUP_STORICA). NOTA: il "3 fixture" non ha nessuna
+   giustificazione statistica da nessuna parte -- sono semplicemente le tre
+   giornate successive a quando fu scritta la pre-registrazione, e il
+   riassunto stesso ammette "n troppo piccolo su 3 GW" (riga 1194).
+   Chi arriva al 25 lo sappia prima, non dopo.
+
+
+7. VERIFICA FATTA SU RICHIESTA DELL'UTENTE
+==========================================
+Sua affermazione: "il grade, prima giornata, +6000 essenze di netto".
+VERIFICATA sull'archivio, ed e' esatta:
+   arene giocate 7-11 ago  27
+   premi lordi             13.350
+   costi d'ingresso         7.100
+   NETTO                   +6.250
+   piazzamenti             5 primi, 5 secondi, 3 terzi = 13 podi su 27
+13 podi su 27 e' il 48% contro il 30% del caso (in un'arena da 10 pagano i
+primi 3): circa 2 deviazioni standard sopra, cioe' capita per fortuna circa
+1 volta su 25. Non e' una dimostrazione -- e misura "le sue arene sono
+andate bene", non "e' stato G a farle andare bene" -- ma non e' niente.
+Il conto e' approssimato: si puo' entrare con piu' formazioni nello stesso
+pool e quelle non sono indipendenti.
+
+
+8. FILE DI RIFERIMENTO
+======================
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md  §8quaterdecies (intralega),
+                                            §8quindecies + bis (half-life),
+                                            §8terdecies (badge)
+analisi_manager/p33..p37                    gli script di misura
+analisi_manager/dati/halflife_*.txt/.json   output integrali
+intralega_segnale.py                        il segnale (non in produzione)
+formazione_mls/predict/test_def.py          GOL_FATTI_AVV, spento, bocciato
+generatore_formazioni/build_formazione_globale.py  badge nuovo campionato
