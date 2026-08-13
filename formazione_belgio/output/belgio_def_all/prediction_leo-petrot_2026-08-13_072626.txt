@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:26:26.230086Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) leo-petrot: 50 pt attesi (36-62)
+   ORDINAMENTO: 49.83
+   SQUADRA: anderlecht-bruxelles-brussel | AVVERSARIO: waasland-beveren-beveren-waas
+   AMBIGUO_FIXTURE: si
+======================================================================
+
+######################################################################
+# GIOCATORE: leo-petrot
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: leo-petrot (squadra: anderlecht-bruxelles-brussel)
+Generato: 2026-08-13T07:26:26.228737Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 42
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 16
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-18 | ELC vs BET | laliga-es | score=37.7 | peso=0.645
+  2025-09-25 | OSA vs ELC | laliga-es | score=66.6 | peso=0.660
+  2025-10-19 | ELC vs ATH | laliga-es | score=52.9 | peso=0.675
+  2025-11-28 | GET vs ELC | laliga-es | score=38.4 | peso=0.691
+  2026-01-10 | VCF vs ELC | laliga-es | score=34.8 | peso=0.707
+  2026-01-19 | ELC vs SEV | laliga-es | score=40.5 | peso=0.724
+  2026-01-23 | LEV vs ELC | laliga-es | score=35.0 | peso=0.741
+  2026-02-07 | RSO vs ELC | laliga-es | score=84.2 | peso=0.758
+  2026-02-13 | ELC vs OSA | laliga-es | score=52.4 | peso=0.776
+  2026-02-20 | ATH vs ELC | laliga-es | score=39.3 | peso=0.794
+  2026-03-01 | ELC vs ESP | laliga-es | score=38.7 | peso=0.812
+  2026-03-08 | VIL vs ELC | laliga-es | score=47.3 | peso=0.831
+  2026-03-14 | RMA vs ELC | laliga-es | score=31.4 | peso=0.851
+  2026-04-03 | RAY vs ELC | laliga-es | score=61.2 | peso=0.871
+  2026-04-11 | ELC vs VCF | laliga-es | score=78.5 | peso=0.891
+  2026-04-22 | ELC vs ATM | laliga-es | score=54.6 | peso=0.912
+  2026-07-23 | HIF vs AND | uefa-europa-league | score=35.0 | peso=0.933
+  2026-07-30 | AND vs HIF | uefa-europa-league | score=35.0 | peso=0.955
+  2026-08-06 | PKT vs AND | uefa-europa-league | score=59.4 | peso=0.977
+  2026-08-09 | AND vs LAL | jupiler-pro-league | score=57.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 49.25
+  di cui Punteggio decisivo (level_score) medio: 38.89 | Punteggio complessivo (granulari) medio: 10.36 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +1.22, delta avversario +0.00 | Passaggio condizionato: delta venue -1.44, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +1.08, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 14.83
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.0 - 61.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.71 (differenza: +2.12)
+Media score in casa: 46.15 | Media score fuori casa: 47.21
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 14.0
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.996
+Fattore gol subiti (goals_conceded, con cap): 1.005
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.004
+Fattore trend (media ultime 5: 48.4 vs media 5 PRECEDENTI: 51.8): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T11:30
+Casa: Waasland-Beveren | Trasferta: RSC Anderlecht
+Competizione: jupiler-pro-league
+ATTENZIONE FIXTURE AMBIGUA: due partite future avevano GIA' le starter odds pubblicate insieme -- scelta quella piu' tardiva (caso limite mai visto prima del 10/08/2026, verificare a mano).
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.9 (range 35.6 - 61.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.72
+Punteggio REALE ottenuto in quella partita: 57.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +8.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.0    35.0    -10.0    12.2        SI
+   7        7      43.5    84.2    +40.8    11.9        NO
+   8        8      49.0    52.4     +3.4    18.9        SI
+   9        9      49.4    39.3    -10.1    17.8        SI
+  10       10      48.3    38.7     -9.6    17.1        SI
+  11       11      47.3    47.3     +0.0    16.5        SI
+  12       12      47.3    31.4    -15.9    15.7        NO
+  13       13      45.9    61.2    +15.3    15.8        SI
+  14       14      47.2    78.5    +31.3    15.8        NO
+  15       15      49.6    54.6     +5.0    17.8        SI
+  16       16      50.0    35.0    -15.0    17.2        SI
+  17       17      48.9    35.0    -13.9    17.1        SI
+  18       18      47.7    59.4    +11.7    16.9        SI
+  19       19      48.4    57.3     +8.9    16.7        SI
+
+MAE (errore assoluto medio): 13.62
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 78.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
