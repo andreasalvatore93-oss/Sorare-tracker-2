@@ -601,6 +601,26 @@ applicava affatto il correttivo, un portiere avrebbe avuto un atteso
 diverso fra generatore e scouting (fino a ~6-7 punti). Stesso flag/formula,
 stessa funzione `gk_att_avv_aggiustamento` del modulo generatore.
 
+**Secondo disallineamento, trovato e chiuso il 13/08/2026 — l'ORDINE, non
+il correttivo.** La colonna Atteso era allineata dall'11/08, la colonna
+**A+G dei soli portieri** no: il generatore calcola l'effetto del grade
+PRIMA del correttivo (`load_league_role_data` chiama `_apply_grade_group`
+e solo dopo `_apply_gk_att_avv`, che sovrascrive `atteso` senza ritoccare
+`atteso_combinato`), lo scouting lo calcolava DOPO, su attesi gia'
+corretti. Effetto: il grade si scala sulla dispersione del gruppo, e
+sommare prima il correttivo la gonfia — l'atteso GK e' quasi piatto
+(sd 0,97 sulle 1.932 righe citate in `build_formazione_globale`) mentre il
+correttivo ha **sd 1,73, range -6,7/+6,0** (misurato sulle 741 squadre di
+`generatore_formazioni/dati/gk_attacco_avversario.json`), quindi il voto
+pesava circa il doppio nello scouting rispetto a come schiera il
+generatore. Fix in `_atteso_combinato_per_gruppo`: il correttivo si scala
+prima di misurare il gruppo e si risomma alla fine. Verificato in locale
+su un gruppo GK sintetico coi numeri veri della tabella (avversari dal
+piu' debole al piu' forte, attesi grezzi piatti): scarti fino a -5,2/+5,2
+punti di A+G sui casi estremi; **non-GK identici bit per bit** e
+**flag `GK_ATT_AVV_ENABLED` spento identico bit per bit** (nessuna
+regressione). Non tocca la colonna Atteso, ne' l'ordinamento dei non-GK.
+
 **RI-MISURA PRE-REGISTRATA — DATA FISSA, NON UN PROMEMORIA A VOCE**
 (l'utente lavora su 3 account diversi, un reminder per-account non basta:
 va letto qui). Motivo: la formula "secca" e' stata scelta fra 5 candidate
@@ -2073,14 +2093,12 @@ ripetizione.
 
 ### 8. Cosa resta aperto
 
-- **Checkout sparso sul predict.** Il repo alleggerito ha già dato la sua
-  parte; il grosso che avanza sono le due cache (1,16 GB, 61% del repo), e
-  l'unico modo di non scaricarle è dare a ogni job la vista delle sole leghe
-  del suo gruppo. Guadagno stimato 30-40 secondi di run, ma il modo in cui
-  fallirebbe è quello brutto: `apply` scrive fuori dal cono e `stage` guarda
-  `git status`, quindi si rischiano artifact incompleti **con la run verde**.
-  Da fare solo con un test che verifichi gli artifact, non fidandosi del colore.
-- **Il file-sveglia ha una tolleranza di un secondo troppo generosa**: quando
+- ~~**Checkout sparso sul predict.**~~ **FATTO il 13/08/2026** (commit
+  `2d238e1d84`, `sparse-checkout` per gruppo di leghe nel job predict di
+  `formazione_giornata.yml:380`; collaudo in `71e1c2ef22`). Non più aperto.
+- ~~**Il file-sveglia ha una tolleranza di un secondo troppo generosa**~~ —
+  sostituito dalla marchiatura esplicita dei file ricevuti da artifact
+  (commit `d8f0a6345e`, 13/08/2026). Testo storico: quando
   `apply` e `marker` girano attaccati, i file applicati rientrano e l'artifact
   dei consigli si porta dentro predizioni che aveva solo ricevuto. Non perde
   dati, spreca banda.

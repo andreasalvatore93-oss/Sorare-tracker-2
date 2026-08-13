@@ -1702,7 +1702,21 @@ def _atteso_combinato_per_gruppo(pool, attesi, gg):
     grade); z_grade e' lo z-score del grade numerico (A=6..F=1) dentro lo
     stesso gruppo. Con meno di 2 atteso o 2 grade nel gruppo, fallback allo
     stesso identico atteso (z=0), mai un numero inventato.
-    Ritorna {slug: atteso_combinato} SOLO per chi ha un atteso."""
+    Ritorna {slug: atteso_combinato} SOLO per chi ha un atteso.
+
+    ORDINE (13/08/2026): il correttivo GK_ATT_AVV e' gia' dentro `attesi`
+    (lo applica _atteso_dai_consigli, per allineare la colonna Atteso al
+    generatore), ma nel generatore l'effetto del grade si calcola PRIMA del
+    correttivo -- load_league_role_data chiama _apply_grade_group e SOLO
+    DOPO _apply_gk_att_avv, che sovrascrive 'atteso' senza ritoccare
+    'atteso_combinato'. Calcolando il grade sugli attesi gia' corretti si
+    gonfia la dispersione del gruppo portieri, e il voto pesa ~il doppio:
+    l'atteso GK di produzione e' quasi piatto (sd 0,97 sulle 1.932 righe
+    citate in build_formazione_globale) mentre il correttivo ha sd 1,73 e
+    range -6,7/+6,0 sulle 741 squadre in tabella. Quindi qui si SCALA il
+    correttivo prima di misurare il gruppo e lo si risomma alla fine,
+    esattamente come fa il generatore. (Lo scarto di arrotondamento e'
+    <=0,05 pt: _atteso_dai_consigli arrotonda a un decimale dopo la somma.)"""
     grade_num = getattr(gg, 'GRADE_NUM', None) or {'A': 6, 'B': 5, 'C': 4, 'D': 3, 'E': 2, 'F': 1}
     gruppi = defaultdict(list)
     for g in pool['giocatori']:
@@ -1710,9 +1724,19 @@ def _atteso_combinato_per_gruppo(pool, attesi, gg):
             continue
         gruppi[(g.get('lega'), g['ruoli'][0])].append(g)
 
+    # Il correttivo GK per slug, ricalcolato con lo stesso helper del
+    # generatore (a flag spento resta vuoto: nessuna riga cambia).
+    gk_adj = {}
+    if (gg is not None and getattr(gg, 'GK_ATT_AVV_ENABLED', False)
+            and hasattr(gg, 'gk_att_avv_aggiustamento')):
+        for g in pool['giocatori']:
+            if (g.get('ruoli') and g['ruoli'][0] == 'GK'
+                    and attesi.get(g['slug']) is not None):
+                gk_adj[g['slug']] = gg.gk_att_avv_aggiustamento(g.get('avversario'))
+
     combinato = {}
     for righe in gruppi.values():
-        vals = [attesi[r['slug']] for r in righe]
+        vals = [attesi[r['slug']] - gk_adj.get(r['slug'], 0.0) for r in righe]
         m = sum(vals) / len(vals)
         sd = (sum((v - m) ** 2 for v in vals) / len(vals)) ** 0.5 if len(vals) >= 2 else 0.0
         grade_members = [grade_num[r['grade']] for r in righe if r.get('grade') in grade_num]
@@ -1724,7 +1748,8 @@ def _atteso_combinato_per_gruppo(pool, attesi, gg):
         for r in righe:
             gn = grade_num.get(r.get('grade'))
             z = (gn - gm) / gsd if (gn is not None and gsd > 0) else 0.0
-            combinato[r['slug']] = attesi[r['slug']] + sd * z
+            base = attesi[r['slug']] - gk_adj.get(r['slug'], 0.0)
+            combinato[r['slug']] = base + sd * z + gk_adj.get(r['slug'], 0.0)
     return combinato
 
 
