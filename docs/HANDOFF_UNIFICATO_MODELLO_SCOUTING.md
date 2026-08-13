@@ -1143,16 +1143,72 @@ famiglia "Limited" mista 7/5 carte, bonus XP nel backtest), risolte l'08/08.
 
 ---
 
-## 8bis-bis. Gruppo del grade esteso alla giornata — priorità 2, marathon 12/08/2026, PRONTO MA SPENTO
+## 8bis-bis. Gruppo del grade esteso alla giornata — **ACCESO IN PRODUZIONE il 13/08/2026**
 
-VERDETTO DA BAR: il voto A-F porta informazione vera anche a livello
-essenze (dimostrato col placebo, non solo per correlazione a livello
-carta) — ma la TAGLIA del guadagno resta incerta, e il numero migliore
-visto oggi (+10.102) è il migliore di ~12 varianti provate sullo stesso
-campione, quindi sovrastimato. Costruito un interruttore in produzione
-(`GRADE_GROUP_STORICA_ENABLED`, **SPENTO di default**) e una
-pre-registrazione congelata per il test fuori campione su GW5/6/7 (chiude
-25/08/2026). **Non accendere prima di quel test.**
+**VERDETTO: validato fuori campione e acceso.** `GRADE_GROUP_STORICA_ENABLED`
+è **'1' di default** in `build_formazione_globale.py` e nell'input del
+workflow, e `scouting_gw.py` prende lo stesso ramo. Commit `e42ee69db3`.
+
+**Non si è aspettato il 25/08**, e il motivo è che quella data non aveva
+nessuna giustificazione statistica: erano le tre giornate successive a
+quando fu scritta la pre-registrazione, e questa stessa sezione ammetteva
+"n troppo piccolo su 3 GW". Invece di aspettare in avanti si è allargato
+l'archivio **all'indietro** — le giornate passate mai usate per tarare la
+ricetta valgono come prova quanto quelle future, e c'erano già: da 29 a 65
+manager, da 25 a 44 giornate, da 3.247 a **13.860 formazioni**.
+
+**I numeri che hanno deciso** (Binario 2, 1.338 unità manager-giornata, 65
+manager, righello contemporaneo — cioè la tabella ricostruita sulle giornate
+testate, non quella di agosto):
+
+| confronto | delta | IC95 | cambia in |
+|---|---|---|---|
+| G-variabile − A | +39.699 | [+19.063; +64.840] | 815/1338 |
+| G-fisso − A | +59.972 | [+35.965; +88.324] | 916/1338 |
+| **G-fisso − G-variabile** | **+20.273** | **[+5.329; +37.274]** | 929/1338 |
+
+Col **margine d'ingresso al 10%** (come gioca davvero l'utente): +21.736
+[+5.555; +40.137]. Con la tabella congelata del 12/08 il delta saliva a
++30.296: quel righello, costruito su kickoff 28 lug–13 ago, **gonfia di circa
+un terzo** quando si testa all'indietro. Il numero buono è quello
+contemporaneo — ed è anche quello che gira in produzione, dove le tabelle si
+rigenerano a ogni run. Due giri dello stesso test danno numeri identici cifra
+per cifra.
+
+**La catena è stata verificata prima di accendere** (regola CLAUDE.md):
+l'atteso medio per carta è **identico al centesimo** nei tre bracci e lo
+scostamento per formazione è **−0,009 punti** su soglie da ~260, quindi
+`PAREGGIO_ARENA`/`GUADAGNO_PER_PUNTO` e i consigli dello scouting restano
+tarati (`analisi_manager/p62_soglie_dopo_gfisso.py`). Cambia solo la
+dispersione, che è il punto: G-fisso ha sd **minore** di G-variabile (MID
+4,98 contro 5,54) — stessa informazione, meno rumorosa, perché non dipende
+più da gruppetti da due carte.
+
+**Tre cose da sapere, scritte per chi legge dopo:**
+1. **Il Binario 1 non conferma con l'intervallo**: stesso segno (+13.450) ma
+   IC95 [−11.950; +44.250], include lo zero. Non è una smentita, è meno
+   potenza — lì l'unica leva è entrare/saltare e il voto cambia la decisione
+   in 639 unità contro 929.
+2. **Il pool esclude le carte a 0/DNP**, cioè è definito guardando l'esito.
+   Vale identico per tutti i bracci, ma sporca i valori assoluti.
+3. **Lo scouting NON si allineava da solo**: `_atteso_combinato_per_gruppo`
+   riscriveva la formula in casa col gruppo nativo. Corretto nello stesso
+   giro; e il workflow ora **committa le due tabelle** che rigenera,
+   altrimenti il generatore avrebbe avuto un righello fresco e lo scouting
+   sarebbe rimasto su quello del 12/08.
+
+Handoff completo della sessione: `docs/handoff/HANDOFF_GRADE_ACCESO_2026-08-13.txt`.
+
+### Storia: com'era prima del 13/08 (compresso)
+
+Il voto entra come z-score dentro il gruppo (lega, ruolo, giornata); con meno
+di 2 membri si spegne da solo, e succedeva sul 51%+ delle righe di
+produzione. La variante prende dispersione e scala da due tabelle storiche.
+Misurata il 12/08 a +10.102 [+1.494; +18.995] su 360 GW-manager — numero poi
+riconosciuto sovrastimato (migliore di ~12 varianti sullo stesso campione) e
+infatti sceso a +20.273 su un campione quasi quadruplo e indipendente. Il
+placebo di allora resta valido: voto rimescolato, 20 permutazioni, tutte
+negative, p≤0,048.
 
 ### Come si è arrivati qui (compresso — l'11/08 sera il gruppo nativo
 lega/ruolo/giornata usato per lo z-score del grade risultò spento per il
