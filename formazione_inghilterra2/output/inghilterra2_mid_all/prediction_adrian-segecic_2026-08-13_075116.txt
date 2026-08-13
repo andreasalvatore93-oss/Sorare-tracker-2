@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-13T07:51:16.252322Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) adrian-segecic: 53 pt attesi (37-69)
+   SQUADRA: portsmouth-portsmouth | AVVERSARIO: queens-park-rangers-london
+======================================================================
+
+######################################################################
+# GIOCATORE: adrian-segecic
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: adrian-segecic (squadra: portsmouth-portsmouth)
+Generato: 2026-08-13T07:51:16.251690Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 45
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 15
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | POR vs NOR | football-league-championship | score=71.2 | peso=0.559
+  2025-08-23 | WBA vs POR | football-league-championship | score=44.2 | peso=0.574
+  2025-08-30 | POR vs PNE | football-league-championship | score=40.6 | peso=0.590
+  2025-09-14 | SOT vs POR | football-league-championship | score=39.6 | peso=0.607
+  2025-09-20 | POR vs SHW | football-league-championship | score=39.9 | peso=0.624
+  2025-09-27 | IPS vs POR | football-league-championship | score=41.8 | peso=0.642
+  2025-11-22 | POR vs MIL | football-league-championship | score=69.2 | peso=0.660
+  2025-11-29 | POR vs BRC | football-league-championship | score=42.3 | peso=0.678
+  2025-12-29 | POR vs CHA | football-league-championship | score=65.6 | peso=0.697
+  2026-01-01 | BRC vs POR | football-league-championship | score=29.1 | peso=0.717
+  2026-01-17 | SHW vs POR | football-league-championship | score=77.5 | peso=0.737
+  2026-01-21 | WAT vs POR | football-league-championship | score=61.2 | peso=0.758
+  2026-01-25 | POR vs SOT | football-league-championship | score=38.1 | peso=0.779
+  2026-01-31 | POR vs WBA | football-league-championship | score=33.2 | peso=0.801
+  2026-02-07 | PNE vs POR | football-league-championship | score=38.0 | peso=0.824
+  2026-02-14 | POR vs SHU | football-league-championship | score=46.9 | peso=0.847
+  2026-02-28 | POR vs HUL | football-league-championship | score=44.5 | peso=0.871
+  2026-04-14 | POR vs IPS | football-league-championship | score=60.0 | peso=0.895
+  2026-04-18 | POR vs LEI | football-league-championship | score=63.6 | peso=0.920
+  2026-04-21 | COV vs POR | football-league-championship | score=68.7 | peso=0.946
+  2026-04-25 | STO vs POR | football-league-championship | score=86.7 | peso=0.973
+  2026-05-02 | POR vs BIR | football-league-championship | score=64.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 54.01
+  di cui Punteggio decisivo (level_score) medio: 47.32 | Punteggio complessivo (granulari) medio: 6.69 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 45.76 (delta -1.55)
+  Efficacia offensiva condizionata: delta venue -0.28, delta avversario +0.33 | Passaggio condizionato: delta venue +0.74, delta avversario -0.32 | Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.97
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.1 - 69.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.56 (differenza: +2.41)
+Media score in casa: 52.31 | Media score fuori casa: 54.09
+Fattore casa/trasferta applicato: 0.998 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.3
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.006
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore trend (media ultime 5: 69.0 vs media 5 PRECEDENTI: 40.3): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T14:00
+Casa: Portsmouth FC | Trasferta: Queens Park Rangers FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.4 (range 37.5 - 68.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.31
+Punteggio REALE ottenuto in quella partita: 64.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +11.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      31.2    69.2    +38.0    12.1        NO
+   7        7      51.3    42.3     -9.0    14.5        SI
+   8        8      61.8    65.6     +3.8    13.7        SI
+   9        9      50.5    29.1    -21.4    14.3        NO
+  10       10      67.3    77.5    +10.2    15.4        SI
+  11       11      56.1    61.2     +5.1    17.6        SI
+  12       12      35.6    38.1     +2.5    17.0        SI
+  13       13      66.0    33.2    -32.8    16.8        NO
+  14       14      50.6    38.0    -12.6    17.0        SI
+  15       15      48.3    46.9     -1.4    16.6        SI
+  16       16      36.4    44.5     +8.1    16.0        SI
+  17       17      30.3    60.0    +29.7    15.4        NO
+  18       18      67.4    63.6     -3.8    15.3        SI
+  19       19      29.4    68.7    +39.3    15.3        NO
+  20       20      59.3    86.7    +27.4    15.6        NO
+  21       21      48.9    64.9    +16.0    17.8        SI
+
+MAE (errore assoluto medio): 16.32
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
