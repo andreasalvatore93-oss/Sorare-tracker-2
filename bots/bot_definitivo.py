@@ -1246,7 +1246,10 @@ def graphql_query(query, variables=None, max_retries=3, extra_headers=None, crit
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Cookie': COOKIES,
-        **({'APIKEY': APIKEY} if APIKEY else {}),
+        # A rotazione fra le chiavi impostate (vedi _prossima_apikey piu' sotto):
+        # i loro tetti sono indipendenti e si sommano. Con una chiave sola il
+        # comportamento e' identico a prima.
+        **({'APIKEY': _prossima_apikey()} if _APIKEYS else {}),
         'x-csrf-token': CSRF_TOKEN,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
                        '(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
@@ -2877,6 +2880,44 @@ mutation CreateDirectOfferMutation($input: createDirectOfferInput!) {
 import uuid
 
 APIKEY = os.environ.get('SORARE_APIKEY', '')  # 12/08/2026: alza il tetto di complessita' e di richieste dell'account
+
+# ROTAZIONE DELLE CHIAVI (13/08/2026). I tetti delle chiavi sono INDIPENDENTI e
+# si SOMMANO: 200 richieste/minuto ciascuna. Con una sola chiave il tetto resta
+# 200, con tre diventa 600.
+#
+# Perche' serve, misurato sui log invece che supposto: nella run del 30/07 il
+# bot ha retto 42 annunci nel minuto delle 19:33, poi nel minuto successivo si
+# e' preso 39 rifiuti HTTP 429 e la sua capacita' e' crollata a 18 annunci --
+# meno della meta', proprio dentro la raffica. Quel giorno girava col solo
+# cookie (tetto 60/minuto): con una chiave sola sarebbero gia' 200 e quella
+# raffica ci starebbe dentro, ma il margine su una raffica peggiore e' sottile,
+# e un 429 non costa una richiesta -- costa 30 secondi di modalita' SAFE, in cui
+# ogni chiamata non critica rallenta da 50 a 350 millisecondi.
+#
+# Se le chiavi 2 e 3 non sono impostate si usa solo la prima: comportamento
+# identico a prima, nessuna regressione. Stesso schema gia' in produzione in
+# scanners/bot_profit.py e nel predict del generatore di formazioni.
+_APIKEYS = [k for k in (APIKEY,
+                        os.environ.get('SORARE_APIKEY_2', ''),
+                        os.environ.get('SORARE_APIKEY_3', '')) if k]
+_apikey_giro = itertools.cycle(_APIKEYS) if _APIKEYS else None
+_apikey_lock = threading.Lock()
+
+
+def _prossima_apikey():
+    """La chiave da usare per la prossima richiesta, a rotazione.
+
+    Il lock serve perche' i thread che valutano gli annunci chiamano in
+    parallelo e itertools.cycle non e' garantito thread-safe.
+
+    Il giro e' tondo (round-robin), non casuale, di proposito: cosi' le chiavi
+    si consumano in modo uniforme e nessuna si esaurisce mentre le altre sono
+    ancora piene -- che e' proprio il caso in cui una chiamata dell'acquisto
+    prenderebbe un 429 e farebbe perdere lo snipe."""
+    if not _apikey_giro:
+        return ''
+    with _apikey_lock:
+        return next(_apikey_giro)
 
 
 def generate_deal_id():

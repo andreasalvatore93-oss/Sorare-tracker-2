@@ -174,7 +174,11 @@ jobs:
       - name: Run Bot definitivo
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          # ATTENZIONE: la prima NON si chiama _1. I tetti delle tre chiavi sono
+          # indipendenti e si sommano (200 richieste/minuto ciascuna, 600 in tutto).
           SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
+          SORARE_APIKEY_2: ${{ secrets.SORARE_APIKEY_2 }}
+          SORARE_APIKEY_3: ${{ secrets.SORARE_APIKEY_3 }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           SORARE_VERSION: ${{ secrets.SORARE_VERSION }}
           SORARE_BUILD: ${{ secrets.SORARE_BUILD }}
