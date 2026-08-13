@@ -2543,7 +2543,10 @@ di produzione accesi, sparisce: su 23.173 punti MAE e correlazione si muovono
 di 3 millesimi e il lift oscilla senza direzione. Era roba che il modello già
 prendeva per altre vie. `p35_intralega_termometri.py`.
 
-**3. Difensore + GOL FATTI dall'avversario: PRE-REGISTRATO, SPENTO.**
+**3. Difensore + GOL FATTI dall'avversario: MISURATO E BOCCIATO, SPENTO.**
+*(Nato come pre-registrazione per il 25/08; chiuso lo stesso giorno perché
+misurato in ESSENZE — vedi in fondo alla voce. Non riaprire senza un'idea
+nuova.)*
 Non è un doppione: la produzione condiziona il DEF sui gol **subiti**
 dall'avversario (`SIGN_BY_ROLE['def']=+1`), i gol **fatti** per quel ruolo non
 entrano da nessuna parte — e infatti il guadagno è misurato **con** gli
@@ -2570,22 +2573,32 @@ Quindi: **due metri dicono di sì, il terzo si astiene** a k=−4. Non scrivere
 che "il lift migliorerebbe con più potenza": la forma della curva dice il
 contrario, il lift al più resta fermo.
 
-**PRE-REGISTRAZIONE — cosa si decide il 25/08/2026 e come.**
-- **Congelato ORA, non si ritocca**: `GOL_FATTI_AVV_K = −4.0`, flag
-  `GOL_FATTI_AVV` (default `'0'`), solo in `formazione_mls/predict/test_def.py`,
-  **non propagato** (come si fece per PRIOR_LEGA, ed è giusto così).
-- **Misura da rifare**: identica a quella di oggi (`taratura_confronto_parametri.py
-  --ruoli def --gol-fatti-avv="-4" --con-avversario`, più `p36_lift_rumore.py`)
-  sulla cache **cresciuta**, che è ciò che aumenta le giornate utili.
-- **Regola di decisione**: si applica se MAE e correlazione restano migliori
-  **e** il delta di lift appaiato ha IC95 sopra lo zero. Si scarta se l'IC95 del
-  lift finisce sotto zero. Se l'IC contiene ancora zero: resta spento e si
-  riprova più avanti.
-- **Aspettativa onesta sulla potenza**: con sd del delta per giornata di 14,78,
-  per vedere +1,5 punti di lift servono **~380 giornate valide** e oggi ne
-  abbiamo **285**. Le 3 fixture nuove di GW5/6/7 da sole **non bastano** a
-  decidere questa voce (portano pochi punti DEF): a farla decidere è la crescita
-  della cache. Detto ora per non illudersi il 25/08.
+**LA MISURA CHE HA CHIUSO IL FILONE — in ESSENZE, il metro che decide.**
+Obiezione dell'utente, giusta: si continuava a giudicare con tre surrogati
+(MAE, correlazione, lift) mentre l'unica modifica al modello accesa
+nell'ultimo mese — GK_ATT_AVV — fu decisa **in essenze**. Rifatta quindi su
+`archivio_ufficiale` con `p24_binario2_ga.py`, **363 coppie manager-giornata
+appaiate**, voto acceso e aggiustamenti avversario accesi, unica differenza fra
+i due giri la correzione:
+
+| | essenze |
+|---|---|
+| delta ON−OFF, **braccio G** (produzione) | **−2.619** |
+| IC95 bootstrap sulle coppie manager-GW | [−10.296 ; +5.217] |
+| positivo in | 24,5% dei ricampionamenti |
+| unità in cui cambia davvero qualcosa | 228 su 363 |
+| controllo, stesso delta sul braccio A | **+3.086** (segno opposto) |
+
+Due bracci con segni opposti, entrambi dentro il rumore: firma del caso, non
+di un effetto — e il test non è nullo (228 unità su 363 cambiano carte).
+**Verdetto: MAE e correlazione migliorano, lift e essenze no. Si chiude.**
+Il flag e il k restano nel codice, spenti, come documentazione di cosa è stato
+provato. Decisione dell'utente, 13/08/2026 sera.
+
+**Numero collaterale, che vale la pena tenere**: sullo stesso banco con gli
+aggiustamenti avversario ACCESI, G contro A vale **+12.953 essenze** su 201
+coppie discordanti (trim simmetrico +11.907). Il grade continua a pagare in
+ogni configurazione in cui lo si misura.
 
 **Difetto del metro trovato e corretto strada facendo** (vale per chiunque lo
 usi): `taratura_confronto_parametri.py` girava con gli aggiustamenti avversario
@@ -2611,7 +2624,7 @@ cambio.**
 
 | ruolo | n punti | produzione | MAE prod → migliore | corr prod → migliore | verdetto |
 |---|---|---|---|---|---|
-| GK | 7.842 | 6 | 16,918 → 16,896 (a 3) | 0,021 → 0,033 (a 3) | vedi sotto |
+| GK | 7.842 | 6 | 16,157 → 16,150 (12-60) | 0,070 → 0,073 (20-60) | vedi sotto |
 | DEF | 31.790 | 30 | 14,964 → 14,964 (20-40) | 0,175 → 0,175 | **pianoro**, indifferente |
 | MID | 29.036 | 25 | 13,253 → 13,251 (12-16) | 0,238 → 0,239 | guadagno sotto il rumore |
 | FWD | 23.173 | 6 | 14,761 → 14,723 (a 3) | 0,248 → 0,239 (a 3) | i metri **si contraddicono** |
@@ -2628,11 +2641,31 @@ cambio.**
   litigano non si applica (e la MAE da sola premia i modelli che non ordinano:
   è la trappola scritta nella docstring dello strumento). 6 è il compromesso, e
   regge.
-- **GK**: MAE e correlazione preferirebbero 3, ma la correlazione del portiere è
-  **0,02-0,03**, cioè zero: il modello non ordina i portieri, come già stabilito
-  e chiuso in §5.6. Muovere l'half-life di un ruolo che non ordina significa
-  inseguire rumore. Il suo lift oscilla senza struttura (4,0 → −0,1 → 6,9 → 5,2
-  → 0,9 al crescere del parametro): non è un metro, lì.
+- **GK**: qui MAE e correlazione preferiscono **lungo** (12-60), il lift
+  preferisce **corto** (8,2 a hl=3 contro 6,7 a 6 e 4,6 a 20-30): si
+  contraddicono, quindi non si applica. E la correlazione resta **0,07**, cioè
+  praticamente zero — il modello non ordina i portieri, come già chiuso in §5.6.
+  **ATTENZIONE — questa riga è stata RIFATTA il 13/08 sera**: la prima versione
+  (MAE 16,918, corr 0,021) era calcolata su un campione mutilato da un bug,
+  vedi sotto. Non citare i numeri vecchi.
+
+**BUG TROVATO E CORRETTO IL 13/08 SERA — righe GK buttate in silenzio.**
+`_calcola_base` (backtest) passava `league` a tutti e quattro i ruoli dopo il
+fix PRIOR_LEGA del 13/08 mattina, con il commento "è innocuo a correzioni
+spente". **Falso per il GK**: `compute_score_atteso_gk` è l'unico dei quattro
+che non ha quel parametro, quindi alzava `TypeError` — e
+`taratura_confronto_parametri.valuta` avvolge la chiamata in un `try/except`
+che fa `continue`, quindi le righe sparivano **senza un errore visibile**.
+Misurato: **957 punti GK su 1.068 (89,6%) scartati**, e i sopravvissuti erano
+solo quelli con la partita bersaglio fuori da `LEAGUE_DIR` (le coppe) — il
+campione peggiore possibile. L'intestazione della tabella continuava a dire
+"7.842 punti" perché stampa i punti RACCOLTI, non quelli valutati.
+Fix: `if ctx.get('lega_vera') and ruolo != 'Goalkeeper'`. Verificato: 400 punti
+GK su 400 ora si calcolano, zero falliti. **DEF/MID/FWD non erano toccati**
+(le loro funzioni accettano `league`), quindi tutte le altre misure del 13/08
+reggono. Lo ha stanato `p24`, che NON ha un try/except attorno e quindi è
+crashato in faccia invece di dare un numero sbagliato: è l'argomento più forte
+contro gli except larghi in un banco di misura.
 
 **La cosa da portarsi via**: il sospetto era ragionevole ma la risposta è no —
 e il motivo è che **la curva dell'half-life è piatta** su DEF e MID. Non è che
@@ -2669,9 +2702,10 @@ senza il voto era davvero misurare un altro modello.
   non tremolio. Metri che litigano ⇒ non si applica. È però l'unica voce di
   questo filone che meriti un secondo sguardo se un giorno si vuole ottimizzare
   la SELEZIONE invece della previsione.
-- **GK**: MAE peggiora col voto e la correlazione resta 0,05-0,06 (cioè zero);
-  il lift non è nemmeno calcolabile (troppo poche giornate con abbastanza
-  candidati nel sottoinsieme). Confermato inconcludente, coerente con §5.6.
+- **GK**: riga **NON VALIDA**, prodotta prima del fix del bug descritto sopra
+  (89,6% dei punti GK scartati in silenzio). `p37` va rilanciato per il solo GK
+  se quella riga serve davvero; per gli altri tre ruoli i numeri reggono, le
+  loro funzioni accettano `league`.
 
 **Limite del campione, da citare sempre insieme a questi numeri**: si misura sui
 27.294 punti che hanno il voto storico (16-21% della cache), raccolti a suo

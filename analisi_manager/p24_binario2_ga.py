@@ -63,6 +63,17 @@ GRADE_GROUP_MODE = os.environ.get('GRADE_GROUP_MODE', 'lega_ruolo')
 FATTORE_STORICO = float(os.environ.get('FATTORE_STORICO', '1.0'))
 GRADE_SCALE_PATH = os.path.join('generatore_formazioni', 'dati', 'grade_scala_storica.json')
 
+# Aggiustamenti avversario di produzione (opponent_lambda_mult, Stadio D).
+# Default '0' = comportamento INVARIATO, cioe' come sono state fatte tutte le
+# misure precedenti su questo banco (compresa quella che ha promosso
+# GK_ATT_AVV). Si accende per misurare correzioni che riguardano l'avversario:
+# senza, si misurerebbe il pezzo nuovo fuori dalla formula in cui vive.
+USA_AVVERSARIO = os.environ.get('USA_AVVERSARIO', '0') == '1'
+# Correzione pre-registrata sul difensore (test_def.GOL_FATTI_AVV_K = -4.0).
+# Vuoto = spenta, comportamento invariato.
+GOL_FATTI_AVV_K = float(os.environ['GOL_FATTI_AVV_K']) \
+    if os.environ.get('GOL_FATTI_AVV_K') else None
+
 ROLE_CODE = {'Goalkeeper': 'GK', 'Defender': 'DEF', 'Midfielder': 'MID', 'Forward': 'FWD'}
 TIPI_ARENA = ['ARENA_ALLSTARS_260', 'ARENA_ALLSTARS_220', 'ARENA_ALLSTARS_UNCAPPED',
              'ARENA_ALLSTARS_BEGINNER']
@@ -154,7 +165,10 @@ def prepara_pool_rows_grezze(pool, primo_kickoff, fine_giornata, idx_grade, lega
         if cod is None:
             scarti['ruolo_sconosciuto'] += 1
             continue
-        res = P.score_atteso(cache, c['slug'], ruolo, fine_giornata, cutoff_giornata=primo_kickoff)
+        res = P.score_atteso(cache, c['slug'], ruolo, fine_giornata,
+                             cutoff_giornata=primo_kickoff,
+                             usa_avversario=USA_AVVERSARIO,
+                             gol_fatti_avv_k=GOL_FATTI_AVV_K)
         if res is None or res.get('atteso') is None:
             scarti['no_atteso'] += 1
             continue

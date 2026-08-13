@@ -845,7 +845,19 @@ def _calcola_base(ctx, half_life=None, trend_intensity=None, shrink_k=None,
     # sarebbe stata falsata in silenzio: tutti MLS. Passarla e' innocuo a
     # correzioni spente (senza next_opponent_team_slug nessuna funzione la
     # legge) e necessario per misurare quelle nuove.
-    if ctx.get('lega_vera'):
+    # ...MA NON AL PORTIERE (bug reale, trovato il 13/08/2026 sera).
+    # `compute_score_atteso_gk` NON ha il parametro `league` (gli altri tre
+    # ruoli si'), quindi passarglielo alza TypeError. Il commento qui sopra
+    # diceva "e' innocuo a correzioni spente": falso per il GK.
+    # COME SI E' MANIFESTATO, ed e' il motivo per cui era rimasto nascosto:
+    # `taratura_confronto_parametri.valuta` avvolge la chiamata in un
+    # try/except che fa `continue`, quindi le righe GK sparivano IN SILENZIO
+    # invece di far fallire la misura. Misurato: 957 punti GK su 1.068 (89,6%)
+    # venivano buttati -- restavano solo quelli con la partita bersaglio in una
+    # competizione fuori da LEAGUE_DIR (coppe), cioe' il campione peggiore
+    # possibile. Le tabelle GK prodotte il 13/08 prima di questo fix sono da
+    # rifare; DEF/MID/FWD non sono toccati.
+    if ctx.get('lega_vera') and ruolo != 'Goalkeeper':
         extra.setdefault('league', ctx['lega_vera'])
     if ruolo == 'Forward':
         # solo FWD: e' l'unico ruolo in cui i parametri esistono finche' il
@@ -955,17 +967,33 @@ def calcola_con_maschera(ctx, half_life=None, trend_intensity=None):
 
 
 def score_atteso(cache, slug, ruolo, fine_giornata, cutoff_giornata=None,
-                 favorito_k=None, ranking_k=None):
+                 favorito_k=None, ranking_k=None, usa_avversario=False,
+                 gol_fatti_avv_k=None):
     """Il punteggio atteso di produzione per quella giornata, o None.
 
     Ritorna un dizionario con previsione, L10 al momento della scelta e la
     partita target (serve per sapere in casa/fuori e per il taglio storico).
-    `cutoff_giornata`: vedi contesto()."""
+    `cutoff_giornata`: vedi contesto().
+
+    `usa_avversario` (13/08/2026): default False = comportamento INVARIATO,
+    cioe' come e' sempre stato -- ma va detto chiaro a chi legge, perche' non
+    e' ovvio: questa funzione e' quella che alimenta il backtest in ESSENZE
+    (p23/p24 sull'archivio ufficiale), quindi finora anche quel metro
+    calcolava gli attesi con gli aggiustamenti avversario SPENTI. Per un
+    confronto appaiato fra due bracci che condividono la stessa base (G vs A)
+    si compensa in gran parte; per misurare una correzione che riguarda
+    proprio l'AVVERSARIO no, e va acceso. Il default resta invariato per non
+    riscrivere in silenzio i numeri delle misure gia' fatte.
+
+    `gol_fatti_avv_k`: la correzione pre-registrata sul difensore (vedi
+    test_def.GOL_FATTI_AVV_K). None = spenta."""
     ctx = contesto(cache, slug, ruolo, fine_giornata, cutoff_giornata)
     if ctx is None:
         return None
     s, casa, cutoff, squadra = ctx['s'], ctx['casa'], ctx['cutoff'], ctx['squadra']
-    atteso = calcola(ctx, favorito_k=favorito_k, ranking_k=ranking_k)
+    atteso = calcola(ctx, favorito_k=favorito_k, ranking_k=ranking_k,
+                     usa_avversario=usa_avversario,
+                     gol_fatti_avv_k=gol_fatti_avv_k)
 
     # L10 al momento della scelta: la stessa misura che Sorare usa per il cap
     # delle arene (media degli ultimi 10 punteggi validi prima della giornata).

@@ -122,11 +122,25 @@ WINDOW_SIZE = 30  # AMPLIATO (29/07) da 15 a 30 su richiesta esplicita dell'uten
 HALF_LIFE_GAMES = 30.0  # AGGIORNATO (01/08): 20.0 -> 30.0. Rimisurato sul pool completo (831 difensori, 8 leghe con discovery_global): MAE 14.8000 contro 14.8024, e soprattutto REGGE FUORI CAMPIONE nel 98% delle meta' casuali (verifica_fuori_campione.py) -- non e' il vincitore scelto sugli stessi dati. Guadagno piccolo (-0.016%) ma reale; sulla selezione dei 5 e' neutro (283.0 vs 282.9 di totale medio). Storico del valore precedente sotto.
 # HALF_LIFE_GAMES = 20.0  # AGGIORNATO (29/07): retuning post-fix opponent_lambda_mult/Stadio D/goals_conceded cap, backtest walk-forward su TUTTE le 28 leghe (551 giocatori) -- ginocchio rendimento decrescente a 20 (MAE -0.55% circa vs 9.0), grid esteso fino a 150 senza vero minimo interno (monotono, convergenza asintotica verso nessun decadimento).
 # ---------------------------------------------------------------------------
-# GOL FATTI DALL'AVVERSARIO -- PRE-REGISTRATO, SPENTO (13/08/2026)
+# GOL FATTI DALL'AVVERSARIO -- MISURATO E BOCCIATO, SPENTO (13/08/2026)
 # ---------------------------------------------------------------------------
-# NON ACCENDERE PRIMA DEL 25/08/2026. Decisione dell'utente: si valuta insieme
-# agli altri due test pre-registrati che chiudono quel giorno (GK_ATT_AVV e
-# GRADE_GROUP_STORICA, vedi docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md).
+# NON RIAPRIRE senza un'idea nuova. Era nato come pre-registrazione da valutare
+# il 25/08; nella stessa sessione e' stato misurato in ESSENZE -- il metro che
+# decide davvero, quello che ha promosso GK_ATT_AVV in produzione -- e ha
+# risposto NO, quindi la pre-registrazione e' decaduta ed e' diventata una
+# bocciatura. Il codice resta, spento, perche' documenta cosa e' stato provato.
+#
+# IL NUMERO CHE HA CHIUSO IL FILONE (archivio_ufficiale, 363 coppie
+# manager-giornata appaiate, voto acceso e aggiustamenti avversario accesi,
+# unica differenza fra i due giri la correzione stessa):
+#   delta sul braccio G (quello di produzione): -2.619 essenze,
+#   IC95 [-10.296 ; +5.217], positivo solo nel 24,5% dei ricampionamenti.
+#   Controllo sul braccio A (senza voto): +3.086, cioe' SEGNO OPPOSTO.
+# Due bracci con segni opposti, entrambi dentro il rumore: e' la firma del
+# caso, non di un effetto. E non era un test vuoto -- in 228 unita' su 363 la
+# correzione cambia davvero le carte scelte.
+# Messo insieme al lift (che su tutta la griglia non sale MAI), i due metri
+# che contano per il gioco dicono no; migliorano solo MAE e correlazione.
 #
 # COS'E'. Quanto segna di solito la squadra avversaria (gol FATTI, ultime 10,
 # normalizzati sulle costanti globali gia' validate), sommato allo score_atteso
@@ -149,9 +163,8 @@ HALF_LIFE_GAMES = 30.0  # AGGIORNATO (01/08): 20.0 -> 30.0. Rimisurato sul pool 
 #   (analisi_manager/p36_lift_rumore.py). La regola dei tre metri non e' ne'
 #   soddisfatta ne' violata: da qui la pre-registrazione invece della scelta.
 GOL_FATTI_AVV_ENABLED = os.environ.get('GOL_FATTI_AVV', '0') == '1'
-# k CONGELATO il 13/08/2026 (punti per deviazione standard). Si sceglie ORA e
-# non si ritocca sui dati nuovi, altrimenti la pre-registrazione non vale
-# niente. NON e' un valore di bordo scelto per comodita': la griglia e' stata
+# k (punti per deviazione standard) che era stato congelato per il test.
+# NON e' un valore di bordo scelto per comodita': la griglia era stata
 # estesa apposta fino a -12 e il minimo e' INTERNO e simmetrico --
 #   k       -12     -10      -8      -6      -5      -4      -3      -2      -1       0
 #   MAE   15.120  15.029  14.965  14.927  14.917  14.913  14.917  14.927  14.942  14.964
@@ -160,10 +173,8 @@ GOL_FATTI_AVV_ENABLED = os.environ.get('GOL_FATTI_AVV', '0') == '1'
 # la forma del rumore.
 # ONESTA' SUL TERZO METRO: su TUTTA la griglia il lift non sale MAI. E' piatto
 # dentro il rumore fino a -4/-5 (-0,1/-0,4) e peggiora nettamente oltre (-2,1
-# a k=-8, -2,4 a k=-12). Quindi non si puo' dire "il lift migliorerebbe con
-# piu' potenza": si puo' dire solo che a k=-4 non distingue. Chi valutera' il
-# 25/08 deve saperlo, altrimenti legge questa voce come piu' promettente di
-# quanto sia.
+# a k=-8, -2,4 a k=-12). Non si puo' quindi dire "il lift migliorerebbe con
+# piu' potenza": si puo' dire solo che a k=-4 non distingue.
 GOL_FATTI_AVV_K = -4.0
 
 RANGE_MULTIPLIER = 1.1  # AGGIORNATO (30/07, richiesta esplicita utente): centrato sulla copertura reale target ~68% (validate_range_multiplier_coverage.py, 917 giocatori/11004 punti test: 1.2 dava 72.8% di copertura, un po' largo; 1.1 da' 68.7%). Solo cosmetico -- non tocca score_atteso/selezione, cambia solo l'ampiezza del range mostrato.
