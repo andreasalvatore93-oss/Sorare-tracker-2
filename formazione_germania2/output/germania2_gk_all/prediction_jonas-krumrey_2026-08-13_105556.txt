@@ -1,0 +1,116 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-13T10:55:56.597387Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) jonas-krumrey: 51 pt attesi (36-80)
+   SQUADRA: osnabruck-osnabruck | AVVERSARIO: magdeburg-magdeburg
+======================================================================
+
+######################################################################
+# GIOCATORE: jonas-krumrey
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jonas-krumrey (squadra: osnabruck-osnabruck)
+Generato: 2026-08-13T10:55:56.596583Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: 2-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-24 | SGF vs KIE | 2-bundesliga | score=91.1 | peso=0.099
+  2025-08-30 | KIE vs H96 | 2-bundesliga | score=37.5 | peso=0.111
+  2025-09-13 | S04 vs KIE | 2-bundesliga | score=85.7 | peso=0.125
+  2025-09-21 | KIE vs KSC | 2-bundesliga | score=87.0 | peso=0.140
+  2025-09-27 | ELV vs KIE | 2-bundesliga | score=34.4 | peso=0.157
+  2025-10-04 | KIE vs SVD | 2-bundesliga | score=36.7 | peso=0.177
+  2025-10-19 | FCN vs KIE | 2-bundesliga | score=55.2 | peso=0.198
+  2025-10-25 | KIE vs BOC | 2-bundesliga | score=40.6 | peso=0.223
+  2025-10-31 | PRM vs KIE | 2-bundesliga | score=39.9 | peso=0.250
+  2025-11-09 | KIE vs F95 | 2-bundesliga | score=80.7 | peso=0.281
+  2025-11-23 | FCK vs KIE | 2-bundesliga | score=40.3 | peso=0.315
+  2025-11-29 | KIE vs BSC | 2-bundesliga | score=38.4 | peso=0.354
+  2025-12-07 | EBS vs KIE | 2-bundesliga | score=47.7 | peso=0.397
+  2025-12-13 | FCM vs KIE | 2-bundesliga | score=39.9 | peso=0.445
+  2025-12-20 | KIE vs SGD | 2-bundesliga | score=54.8 | peso=0.500
+  2026-01-18 | KIE vs SCP | 2-bundesliga | score=81.4 | peso=0.561
+  2026-01-23 | DSC vs KIE | 2-bundesliga | score=42.1 | peso=0.630
+  2026-01-31 | KIE vs SGF | 2-bundesliga | score=32.6 | peso=0.707
+  2026-02-15 | KIE vs S04 | 2-bundesliga | score=76.8 | peso=0.794
+  2026-02-21 | KSC vs KIE | 2-bundesliga | score=44.4 | peso=0.891
+  2026-08-08 | FCH vs OSN | 2-bundesliga | score=13.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 47.92
+  di cui Punteggio decisivo (level_score) medio: 41.10 | Punteggio complessivo (granulari) medio: 6.82 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 39.00 (delta -2.11 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +2.61, delta avversario +0.20 | Possesso condizionato per venue: delta +0.09 | Goalkeeping condizionato per venue: delta +1.22 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 21.19
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.6 - 76.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.66 (differenza: +3.52)
+Media score in casa: 56.65 | Media score fuori casa: 52.07
+Fattore casa/trasferta applicato: 1.074 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.9
+Ranking prossimo avversario: 18
+Fattore forza avversario applicato: 0.815 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.000
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.003
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.007
+Tasso storico clean sheet (porta inviolata nei primi 60'): 23.8% (bonus atteso incorporato nella media pesata: ~6.0pt)
+Fattore trend (media ultime 5: 40.7 vs media 5 PRECEDENTI: 54.7): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T11:00
+Casa: VfL Osnabrück | Trasferta: 1. FC Magdeburg
+Competizione: 2-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.4 (range 36.1 - 80.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.59
+Punteggio REALE ottenuto in quella partita: 13.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -39.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      56.0    55.2     -0.8    29.6        SI
+   7        7      68.2    40.6    -27.6    26.6        NO
+   8        8      86.2    39.9    -46.3    25.3        NO
+   9        9      61.6    80.7    +19.1    24.0        SI
+  10       10      62.9    40.3    -22.6    25.0        SI
+  11       11      47.5    38.4     -9.1    24.0        SI
+  12       12      39.0    47.7     +8.7    23.2        SI
+  13       13      70.2    39.9    -30.3    21.6        NO
+  14       14      63.0    54.8     -8.2    20.6        SI
+  15       15      38.7    81.4    +42.7    19.2        NO
+  16       16      61.8    42.1    -19.7    21.5        SI
+  17       17      53.9    32.6    -21.3    20.7        NO
+  18       18      36.1    76.8    +40.7    20.8        NO
+  19       19      44.5    44.4     -0.1    21.9        SI
+  20       20      50.4    13.6    -36.8    20.8        NO
+
+MAE (errore assoluto medio): 22.28
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 53.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
