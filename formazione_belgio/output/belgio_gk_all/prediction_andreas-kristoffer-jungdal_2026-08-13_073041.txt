@@ -1,9 +1,9 @@
 ======================================================================
 CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-08T23:17:36.357270Z
+Generato: 2026-08-13T07:30:41.382837Z
 Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
-1) andreas-kristoffer-jungdal: 50 pt attesi (27-81)
+1) andreas-kristoffer-jungdal: 50 pt attesi (26-81)
    SQUADRA: westerlo-westerlo | AVVERSARIO: genk-genk
 ======================================================================
 
@@ -13,7 +13,7 @@ Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: andreas-kristoffer-jungdal (squadra: westerlo-westerlo)
-Generato: 2026-08-08T23:17:36.310153Z
+Generato: 2026-08-13T07:30:41.381648Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -51,29 +51,29 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2026-05-16 | CHA vs WES | jupiler-pro-league | score=79.6 | peso=0.707
   2026-05-19 | WES vs STA | jupiler-pro-league | score=54.1 | peso=0.794
   2026-05-23 | ANT vs WES | jupiler-pro-league | score=48.5 | peso=0.891
-  2026-08-08 | WES vs USG | jupiler-pro-league | score=25.1 | peso=1.000
+  2026-08-08 | WES vs USG | jupiler-pro-league | score=23.8 | peso=1.000
 
 --- CALCOLO FATTORI ---
-Media pesata esponenziale (half-life 6.0 partite): 48.41
-  di cui Punteggio decisivo (level_score) medio: 40.99 | Punteggio complessivo (granulari) medio: 7.42 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+Media pesata esponenziale (half-life 6.0 partite): 48.26
+  di cui Punteggio decisivo (level_score) medio: 40.99 | Punteggio complessivo (granulari) medio: 7.28 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
   Punteggio decisivo condizionato per forza prossimo avversario: 45.39 (delta +4.41 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
-  Gol subiti condizionato: delta venue +3.12, delta avversario +1.88 | Possesso condizionato per venue: delta -0.01 | Goalkeeping condizionato per venue: delta -1.21 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
-Deviazione standard pesata: 22.29
-  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 25.1 - 79.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
-Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 20.19 (differenza: +2.10)
-Media score in casa: 46.71 | Media score fuori casa: 55.12
-Fattore casa/trasferta applicato: 1.062 (TRASFERTA nella prossima partita)
+  Gol subiti condizionato: delta venue +3.12, delta avversario +1.88 | Possesso condizionato per venue: delta +0.01 | Goalkeeping condizionato per venue: delta -1.21 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 22.45
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 23.8 - 79.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 20.37 (differenza: +2.08)
+Media score in casa: 46.63 | Media score fuori casa: 55.12
+Fattore casa/trasferta applicato: 1.063 (TRASFERTA nella prossima partita)
 Ranking medio avversari affrontati (storico): 7.3
-Ranking prossimo avversario: 10
-Fattore forza avversario applicato: 0.934 (gol fatti reali dell'avversario, ultime 10; delta granulare parate -0.00 pt)
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.114 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
 NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
 Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.995
 Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.000
 Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.996
 Fattore gol subiti (goals_conceded, con cap, non applicato): 1.006
 Tasso storico clean sheet (porta inviolata nei primi 60'): 33.3% (bonus atteso incorporato nella media pesata: ~8.3pt)
-Fattore trend (media ultime 5: 43.3 vs media 5 PRECEDENTI: 49.4): 1.000
-P(gioca): 100.00% (fonte: tasso di presenza storico (30/30))
+Fattore trend (media ultime 5: 42.9 vs media 5 PRECEDENTI: 49.4): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
 
 --- PROSSIMA PARTITA ---
 Data: 2026-08-15T18:45
@@ -83,12 +83,12 @@ Competizione: jupiler-pro-league
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 50.3 (range 27.0 - 81.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 50.2 (range 25.7 - 81.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 51.37
-Punteggio REALE ottenuto in quella partita: 25.1
-Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -26.3
+Punteggio REALE ottenuto in quella partita: 23.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -27.6
 NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
 
 --- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
@@ -124,9 +124,9 @@ P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo sto
   26       26      56.8    79.6    +22.8    27.6        SI
   27       27      38.3    54.1    +15.8    28.4        SI
   28       28      60.4    48.5    -11.9    26.8        SI
-  29       29      37.2    25.1    -12.1    25.3        SI
+  29       29      37.2    23.8    -13.4    25.3        SI
 
-MAE (errore assoluto medio): 18.82
+MAE (errore assoluto medio): 18.87
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
