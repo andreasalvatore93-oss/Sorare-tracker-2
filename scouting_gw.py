@@ -1068,7 +1068,7 @@ def scrivi_discovery(pool, leghe=None, limite_per_ruolo=None):
             f.write(f"{cartella}\t{RUOLO_DIR[ruolo]}\t{quanti}\n")
     log(f"Indice per i predict: {os.path.relpath(indice, REPO_ROOT)}")
 
-    _scrivi_lavori(per_gruppo, limite_per_ruolo)
+    _scrivi_lavori(per_gruppo, limite_per_ruolo, pool)
     return scritti
 
 
@@ -1121,15 +1121,38 @@ def _predizioni_gia_fatte(coppie):
     return da_fare, gia
 
 
-def _scrivi_lavori(per_gruppo, limite_per_ruolo):
+def _scrivi_lavori(per_gruppo, limite_per_ruolo, pool=None):
     """L'elenco `lega|ruolo|slug` dei predict che servono DAVVERO.
 
     Lo legge il workflow per costruire la matrice: chi ha gia' la previsione
-    di questa giornata non genera nemmeno il job."""
+    di questa giornata non genera nemmeno il job.
+
+    L'ORDINE CONTA (13/08/2026). La matrice di GitHub accetta al massimo 256
+    job: oltre quel numero il workflow tronca la lista. Prima le righe
+    uscivano raggruppate per (cartella, ruolo) in ordine ALFABETICO -- quindi
+    il taglio a 256 teneva tutta l'Argentina e l'Austria e buttava via MLS,
+    Spagna e Turchia, per il solo fatto di come si chiamano. Con 1543 lavori
+    richiesti (run 31675855737) la tabella si sarebbe riempita di candidati
+    scelti dall'alfabeto.
+    Ora le righe escono in ordine di L10 decrescente su TUTTE le leghe (a
+    parita' di L10 decide il voto A-F), cioe' i candidati piu' forti per
+    primi: se il taglio scatta, restano fuori i meno interessanti. L10 e voto
+    sono gia' nel pool, nessuna query in piu'. Se `pool` non viene passato si
+    resta all'ordine di prima -- nessuna regressione per chi chiama la
+    funzione senza."""
     coppie = []
     for (cartella, ruolo), slugs in sorted(per_gruppo.items()):
         for slug in (slugs[:limite_per_ruolo] if limite_per_ruolo else slugs):
             coppie.append((cartella, RUOLO_DIR[ruolo], slug))
+    if pool is not None:
+        grade_num = {'A': 6, 'B': 5, 'C': 4, 'D': 3, 'E': 2, 'F': 1}
+        forza = {}
+        for g in pool.get('giocatori', []):
+            if g.get('slug'):
+                forza[g['slug']] = (g.get('l10') or 0.0,
+                                    grade_num.get(g.get('grade'), 0))
+        coppie.sort(key=lambda c: (-forza.get(c[2], (0.0, 0))[0],
+                                   -forza.get(c[2], (0.0, 0))[1], c[0], c[1], c[2]))
     da_fare, gia = _predizioni_gia_fatte(coppie)
     dest = os.path.join(REPO_ROOT, 'dati_globali', 'scouting_lavori.txt')
     with open(dest, 'w', encoding='utf-8') as f:
