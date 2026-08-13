@@ -1,0 +1,131 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T07:49:05.306826Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) igor-diveev: 54 pt attesi (29-81)
+   ORDINAMENTO: 55.55
+   SQUADRA: zenit-sankt-peterburg-st-petersburg | AVVERSARIO: dinamo-moskva-moskva
+======================================================================
+
+######################################################################
+# GIOCATORE: igor-diveev
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: igor-diveev (squadra: zenit-sankt-peterburg-st-petersburg)
+Generato: 2026-08-13T07:49:05.306094Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 29
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: russian-premier-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | DIN vs CSK | russian-premier-league | score=42.8 | peso=0.548
+  2025-08-24 | CSK vs AKR | russian-premier-league | score=50.7 | peso=0.561
+  2025-08-31 | CSK vs KRA | russian-premier-league | score=45.5 | peso=0.574
+  2025-09-14 | ROS vs CSK | russian-premier-league | score=58.6 | peso=0.588
+  2025-09-28 | CSK vs BAL | russian-premier-league | score=95.1 | peso=0.602
+  2025-10-05 | CSK vs SPM | russian-premier-league | score=27.0 | peso=0.616
+  2025-10-18 | LOK vs CSK | russian-premier-league | score=49.3 | peso=0.630
+  2025-10-25 | CSK vs KRY | russian-premier-league | score=86.9 | peso=0.645
+  2025-10-31 | CSK vs NZN | russian-premier-league | score=81.4 | peso=0.660
+  2025-11-08 | MAK vs CSK | russian-premier-league | score=76.9 | peso=0.675
+  2025-11-22 | SPM vs CSK | russian-premier-league | score=32.6 | peso=0.691
+  2025-11-29 | CSK vs ORE | russian-premier-league | score=96.6 | peso=0.707
+  2025-12-07 | KRA vs CSK | russian-premier-league | score=18.7 | peso=0.724
+  2026-02-27 | ZEN vs BAL | russian-premier-league | score=66.2 | peso=0.741
+  2026-03-08 | ORE vs ZEN | russian-premier-league | score=43.0 | peso=0.758
+  2026-03-22 | DIN vs ZEN | russian-premier-league | score=28.6 | peso=0.776
+  2026-04-04 | ZEN vs KRY | russian-premier-league | score=56.4 | peso=0.794
+  2026-04-12 | ZEN vs KRA | russian-premier-league | score=38.2 | peso=0.812
+  2026-04-19 | MAK vs ZEN | russian-premier-league | score=68.9 | peso=0.831
+  2026-04-22 | LOK vs ZEN | russian-premier-league | score=21.1 | peso=0.851
+  2026-04-26 | ZEN vs AKH | russian-premier-league | score=89.6 | peso=0.871
+  2026-05-02 | CSK vs ZEN | russian-premier-league | score=84.3 | peso=0.891
+  2026-05-10 | ZEN vs SOC | russian-premier-league | score=55.8 | peso=0.912
+  2026-05-17 | ROS vs ZEN | russian-premier-league | score=49.2 | peso=0.933
+  2026-07-25 | AKR vs ZEN | russian-premier-league | score=59.8 | peso=0.955
+  2026-08-02 | ORE vs ZEN | russian-premier-league | score=62.7 | peso=0.977
+  2026-08-09 | ZEN vs ROD | russian-premier-league | score=58.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 57.32
+  di cui Punteggio decisivo (level_score) medio: 37.94 | Punteggio complessivo (granulari) medio: 19.38 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.21, delta avversario +0.18 | Passaggio condizionato: delta venue -0.18, delta avversario +0.31 | Clean sheet/disimpegni condizionato: delta venue -1.07, delta avversario -0.74 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 21.64
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.6 - 84.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.71 (differenza: +1.92)
+Media score in casa: 60.74 | Media score fuori casa: 52.20
+Fattore casa/trasferta applicato: 1.001 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.5
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 0.938 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.008
+Fattore duelli (casa/trasferta, da dati reali): 1.006
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.996
+Fattore trend (media ultime 5: 57.3 vs media 5 PRECEDENTI: 60.9): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T11:30
+Casa: FK Zenit St. Petersburg | Trasferta: FC Dynamo Moscow
+Competizione: russian-premier-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.8 (range 29.1 - 80.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 55.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 57.26
+Punteggio REALE ottenuto in quella partita: 58.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +1.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 21 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      53.4    49.3     -4.1    23.5        SI
+   7        7      52.8    86.9    +34.1    21.7        NO
+   8        8      57.4    81.4    +24.0    23.9        NO
+   9        9      60.3    76.9    +16.6    24.0        SI
+  10       10      62.1    32.6    -29.5    23.4        NO
+  11       11      59.1    96.6    +37.5    24.2        NO
+  12       12      62.7    18.7    -44.0    26.0        NO
+  13       13      58.8    66.2     +7.4    28.4        SI
+  14       14      63.5    43.0    -20.6    27.3        SI
+  15       15      67.8    28.6    -39.2    26.6        NO
+  16       16      57.0    56.4     -0.6    27.0        SI
+  17       17      43.2    38.2     -5.0    26.0        SI
+  18       18      45.8    68.9    +23.1    25.6        SI
+  19       19      63.5    21.1    -42.4    25.1        NO
+  20       20      58.5    89.6    +31.1    25.9        NO
+  21       21      47.7    84.3    +36.5    26.9        NO
+  22       22      73.3    55.8    -17.5    27.1        SI
+  23       23      50.7    49.2     -1.4    26.3        SI
+  24       24      69.9    59.8    -10.1    25.7        SI
+  25       25      57.4    62.7     +5.3    25.0        SI
+  26       26      60.9    58.4     -2.5    24.4        SI
+
+MAE (errore assoluto medio): 20.60
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 57.1%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
