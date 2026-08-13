@@ -483,3 +483,64 @@ produzione, nessuna run GitHub Actions.
 FILE TOCCATI: archivio_ufficiale/manager_*/ (nuovi file *_arene_limited.json,
 vedi git status), analisi_manager/dati/storico_grade_crowss_completamento.json
 (indice grade, 70593 -> 225159 righe), questo brief.
+
+
+ESITO 2 -- CACHE GAME-LOG (Sonnet esecutore, 13/08/2026 sera, seguito)
+========================================================================
+
+Brief separato ricevuto in chat (non un file): riempire la cache game-log
+per i 1820-2219 giocatori mancanti trovati sopra. Riassunto:
+
+TENTATIVO 1 (fallito, annotato per chi legge dopo): la prima proposta era
+`--max` crescente (200, 400, 600...) in loop. SBAGLIATA: cosa_manca_archivio()
+viene ricalcolata da zero a ogni lancio e --max riprocessa il game-log di
+TUTTI i primi N giocatori ogni volta (non solo i nuovi). Misurato: lotto
+max=200 -> 657s, lotto max=400 -> 1257s (quasi il costo di 400 giocatori
+tutti nuovi, non i 200 in piu' attesi). Estrapolato, il pattern avrebbe
+richiesto ~13-14 ore invece delle ~2 stimate. Fermato dopo 2 lotti (nessun
+danno: lo script salva giocatore per giocatore, i dati dei primi 400 restano
+validi). L'orchestratore ha confermato il bug nel proprio brief e corretto
+la strada.
+
+TENTATIVO 2 (giusto): un unico passaggio, senza --max:
+  python scarica_cache_backtest.py --da-archivio --pausa 0.15
+Risultato: 1195/1195 giocatori (il numero e' sceso da 2219 perche' i lotti
+del tentativo 1, anche se sprecati in tempo, avevano comunque scritto cache
+vera per ~1000 giocatori), 3142s (52 minuti), 17355 dettagli scaricati,
+ZERO errori, ZERO 429 reali durante l'intero passaggio.
+
+VERIFICA INDIPENDENTE (--elenco dopo, come richiesto): mancanti scesi da
+2219 a 49. I 49 residui sono TUTTI casi di finestra-non-coperta (il game-log
+del giocatore esiste ma non arriva alla partita-target specifica di quella
+giornata, es. thomas-muller con una sola finestra al 20/07/2026), non
+assenza di cache.
+
+COPERTURA FINALE (ricontrollata sul filesystem, non sul contatore dello
+script): 5449/5449 slug dell'archivio_ufficiale hanno un file
+*_gamelog.json in cache = 100% file presenti. La metrica "manca" dello
+script (99,1%, 49/5449) e' piu' severa: conta anche chi ha il file ma non
+la partita-target esatta.
+
+DUE DIFETTI VERI TROVATI LEGGENDO IL CODICE (non le docstring), come
+richiesto dal punto 0 del secondo brief:
+1. `scarica_cache_backtest.py:144` chiamava sempre
+   `fetch_game_detail(..., is_final=False)`, uno alla volta: la funzione
+   batch `precarica_dettagli_batch` (BATCH_DETTAGLIO=30 con APIKEY) esisteva
+   in test_def.py ma non era mai invocata da questo script. Segnalato,
+   l'orchestratore l'ha cablata in una riga: velocita' passata da 35s/
+   giocatore a 3,4s/giocatore (misurato su 20 giocatori nuovi: 699s -> 68s).
+2. `cosa_manca()` (la funzione originale, non quella nuova) legge da
+   dati_globali/arene_formazioni.json, che ha solo 844 slug (il vecchio
+   backtest solo-crowss): NON vedeva affatto gli slug dell'archivio_ufficiale
+   a 65 manager. L'orchestratore ha aggiunto `--da-archivio` /
+   `cosa_manca_archivio()` per puntare alla fonte giusta, stesso criterio di
+   "manca", stesso formato di output.
+
+NON FATTO (fuori scope, come da istruzione esplicita): non ho lanciato
+`python backtest_arene.py` (e' il vecchio backtest solo-crowss, non
+pertinente al filone che si sta validando qui). D3 (leghe senza pipeline
+fra i 49 residui) non verificato, tempo permettendo lo fa una sessione
+successiva.
+
+FILE TOCCATI (aggiuntivi): dati_globali/backtest_arene_cache/.game_log_cache/
+e .cache/ (nuova cache, non di produzione), questo brief.
