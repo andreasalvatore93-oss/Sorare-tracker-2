@@ -1,0 +1,215 @@
+HANDOFF -- IL LIVELLO DELLE LEGHE NEL MODELLO (PRIOR_LEGA)
+Sessione 13/08/2026, pomeriggio (Roma, CEST). Orchestratore: Opus.
+
+
+IN DIECI RIGHE, IN LINGUA DA BAR
+================================
+Un giocatore che cambia campionato si porta dietro lo storico della lega
+vecchia, e il modello lo tratta come se le due leghe fossero uguali. Non lo
+sono: misurato, chi sale di categoria perde 5,5 punti a partita e chi scende
+ne guadagna 7, a parita' di minuti giocati. Il caso vivo e' Vicente (e Andres
+Martin): fenomeni in Segunda, ora in Liga col Racing promosso, e il modello
+li valuta 63,6 e 58,1 quando il dato dice ~51-53.
+
+Ho costruito la tabella del livello di ogni lega e l'ho agganciata all'ancora
+dello shrinkage, dietro interruttore SPENTO. Il risultato: sugli attaccanti
+migliora l'errore medio (MAE -0,115) ma PEGGIORA l'ordinamento (correlazione
+-0,017, lift -1,3 punti). Per la regola del repo -- si applica solo se le tre
+misure si muovono insieme -- COSI' NON SI APPLICA. Resta da provare la
+versione stretta: correggere SOLO chi ha lo storico in un'altra lega, invece
+di tutti.
+
+
+1. STATO DEL REPO
+=================
+Branch main. NIENTE E' STATO COMMITTATO di questo filone: tutto in working
+tree. Modifiche in piedi:
+  - dati_globali/costruisci_livello_lega_ruolo.py     (NUOVO)
+  - dati_globali/livello_lega_ruolo.json              (NUOVO, generato)
+  - formazione_mls/predict/test_mls_fwd_all.py        (flag PRIOR_LEGA, spento)
+  - backtest_arene_previsioni.py                      (2 fix al banco di prova)
+In produzione non cambia nulla finche' PRIOR_LEGA_ENABLED resta '0' (default).
+NON propagato alle altre 52 leghe (propaga_modello.py non lanciato): il flag
+esiste solo nel file sorgente MLS, ed e' giusto cosi' finche' non si decide.
+
+
+2. LA DOMANDA DI PARTENZA
+=========================
+Domanda dell'utente guardando la sua arena: Vicente e Berhalter giocano la
+prima partita in un campionato nuovo portandosi dietro punteggi altissimi
+fatti altrove. "Come pesiamo diversamente i campionati, invece di
+standardizzarli tutti?" Verificato: oggi la calibrazione e' una sola coppia
+di numeri PER RUOLO, identica per tutte le 53 leghe
+(build_formazione_globale.py:433). La lega entra solo attraverso lo storico
+personale del giocatore.
+
+
+3. COSA E' STATO MISURATO (tutto a zero query, cache game-log gia' in repo)
+==========================================================================
+
+3.1 IL FENOMENO ESISTE ED E' GROSSO
+Cambi di campionato veri estratti dalla cache (coppe e continentali escluse,
+persistenza >=3 partite): 884 casi usabili. A parita' di minuti giocati
+(>=60 min sia prima sia dopo):
+   salgono di categoria   n=104   -5,47 punti   (fra -6,9 e -4,1)   77% peggiora
+   scendono di categoria  n= 31   +7,09 punti   (fra +4,1 e +10,1)  29% peggiora
+I minuti spiegavano solo 0,7 punti dei 6,1 grezzi. La simmetria (-5,5 su, +7
+giu) e' l'argomento piu' forte che sia un effetto vero.
+
+3.2 NON E' RITORNO ALLA MEDIA (il controllo che poteva chiudere il filone)
+Gruppo di controllo: 3.795 giocatori con la STESSA struttura (5 partite
+prima, 3 dopo, tutte da titolare) che NON hanno cambiato lega, confrontati a
+parita' di livello di partenza.
+   livello di partenza   promossi          fermi (controllo)   differenza
+   media 50-55           -4,97 (n=25)      -0,38 (n=1157)      -4,59 +-3,4
+   media 55-60           -6,69 (n=13)      -0,79 (n= 627)      -5,90 +-8,4
+   media 60+            -17,28 (n=30)      -2,79 (n= 363)     -14,49 +-4,2
+   tutti                 -5,31 (n=104)     +0,01 (n=3795)      -5,32
+Chi resta nella sua lega non cala affatto (+0,0). Stesso esito tenendo solo
+le finestre che scavalcano una pausa estiva. E l'effetto e' una SCALA, non
+una tassa fissa: piu' eri sopra la media della lega vecchia, piu' ne perdi.
+
+3.3 QUANTO SI TRASFERISCE, E LA VERIFICA FUORI CAMPIONE
+584 cambi di lega, taglio temporale al 2026-02-07 (medie di lega e pendenza
+stimate SOLO sul passato), 120 casi mai visti:
+   A) come fa oggi (gli porto avanti la sua media)   6,96 punti di errore
+   B) diventa la media della lega nuova              5,52
+   C) media lega nuova + 21% di quanto era sopra     5,54
+B e C coincidono fuori campione: il vantaggio della lega vecchia, nelle prime
+partite, NON si trasferisce. La regola utile e' semplicemente "fara' la media
+del suo ruolo nella lega dove va".
+
+3.4 LA TABELLA DEI LIVELLI -- PRIMA SBAGLIATA, POI RIFATTA
+Prima versione: media grezza dei punteggi per (lega, ruolo). SBAGLIATA, e
+l'ha vista l'utente: confonde "la lega e' generosa" con "in quella lega
+abbiamo in cache giocatori forti". Le celle in cima erano Russia MID con OTTO
+giocatori e Cina MID con dodici -- e stanno in cache perche' sono roba
+scoutata, cioe' gente forte.
+Seconda versione (quella in repo): si stimano INSIEME bravura del giocatore
+ed effetto della lega, a giri alterni, ancorando la media pesata degli
+effetti a zero. A reggere il confronto fra leghe sono i giocatori passati per
+due leghe ("ponti"), contati in ogni voce. Aggiunto un minimo di 30 GIOCATORI
+distinti oltre alle 200 partite: le celle scendono da 105 a 67, e Cina/Russia
+escono da sole.
+Quanto cambia (attaccanti, scarto dalla lega media):
+   lega            grezzo    pulito
+   Premier League   -2,1      -9,5
+   Serie A          -1,9      -5,7
+   Bundesliga       -0,2      -5,6
+   Liga             -1,5      -4,2
+   Segunda          +2,6      +0,2
+   MLS              +0,8      +1,9
+Grezzo e pulito si somigliano poco (0,33-0,55). Ha senso: in Premier giocano
+i piu' forti del mondo, quindi la media grezza sembra normale mentre lo
+STESSO giocatore li' fa 9 punti in meno. Sul caso Vicente i due metodi
+concordano (Segunda -> Liga vale ~-4,4 punti in entrambi).
+PORTIERI: fuori. Solo 4 leghe sopra soglia, numeri instabili, e il loro voto
+dipende quasi solo dal clean sheet (nota dell'utente).
+
+
+4. LA MODIFICA, E DUE DIFETTI DEL BANCO DI PROVA TROVATI STRADA FACENDO
+======================================================================
+La modifica e' un punto solo. Lo shrinkage tira la previsione verso
+   prior = 47,44 + 6,62 * presence_rate        (uguale per tutte le leghe)
+Con PRIOR_LEGA_ENABLED=1 si somma a quel prior lo SCARTO della lega in cui il
+giocatore gioca adesso. A lega media lo scarto e' 0. Non tocca la forza dello
+shrinkage, solo dove punta. Fallback espliciti a 0.0: flag spento, lega
+sconosciuta, cella sotto soglia.
+A/A verificato PRIMA di misurare (regola CLAUDE.md): flag spento, stessa
+previsione identica su leghe diverse (61,514 in Liga e in Cina); acceso,
+60,64 e 65,07.
+
+DIFETTO 1 (backtest_arene_previsioni.py:285). ctx['lega'] era scritto a mano
+'mls' PER TUTTI, con un commento che lo giustificava. Conseguenza: la prima
+misura e' uscita IDENTICA accesa e spenta, e senza controllare si sarebbe
+concluso "la lega non serve" -- per un difetto del banco, non per un fatto.
+Aggiunto ctx['lega_vera'] (competizione della partita bersaglio -> cartella
+via LEAGUE_DIR), lasciando 'lega' com'era per non spostare opponent_strength.
+
+DIFETTO 2 (stesso file, _calcola_base). Il parametro `league` arrivava alle
+funzioni di produzione solo dentro `if av:` (usa_avversario acceso). Spento,
+ogni giocatore del mondo veniva calcolato con league='mls', il default della
+firma. Ora si passa sempre, e quando le correzioni avversario sono accese
+resta il comportamento di prima (l'update di av sovrascrive).
+
+NOTA sulla chiave: la tabella e' chiavata per CARTELLA del repo ('spagna'),
+non per slug di competizione ('laliga-es'), perche' e' la cartella cio' che i
+predict si passano da soli (league='spagna' nella firma di
+formazione_spagna/predict/). Le divisioni restano separate: spagna/spagna2,
+inghilterra/inghilterra2. L'unica cartella con due slug e' 'mls'.
+
+
+5. IL RISULTATO, INTEGRALE -- E NON E' BUONO
+============================================
+taratura_confronto_parametri.py --ruoli fwd,mid, riga di produzione,
+PRIOR_LEGA_ENABLED=0 contro =1, stesso campione nello stesso giro:
+
+   ruolo  misura          SPENTO    ACCESO     delta    verso
+   fwd    n punti          21971     21971
+          MAE             14,757    14,642    -0,115   meglio
+          correlazione     0,251     0,234    -0,017   PEGGIO
+          lift %          27,052    25,730    -1,322   PEGGIO
+   mid    (invariato: il flag e' solo nel file FWD, atteso)
+
+REGOLA CLAUDE.md: si applica solo se MAE, correlazione e lift si muovono
+INSIEME. Qui no. Il MAE migliora perche' l'ancora per-lega comprime le
+previsioni verso il livello locale, che e' esattamente il modo in cui un
+modello "sicuro" vince sul MAE e perde sull'ordinare -- il rischio scritto
+nella docstring dello stesso strumento di taratura.
+Da notare: dentro una lega lo scarto e' una COSTANTE uguale per tutti, quindi
+non puo' cambiare l'ordine dei giocatori della stessa lega. Puo' cambiare
+solo i confronti FRA leghe -- ed e' li' che peggiora.
+
+VERDETTO: come modifica generale (tutti i giocatori, sempre) NON SI APPLICA.
+
+
+6. COSA RESTA APERTO
+====================
+6.1 LA VERSIONE STRETTA -- MISURATA, E PROMETTE. Applicare la correzione SOLO
+a chi ha lo storico in un'altra lega (il caso Vicente), lasciando gli altri
+com'erano. E' l'ipotesi vera di partenza; quella bocciata al punto 5 e' la
+sua generalizzazione a tutti.
+Misura appaiata sugli stessi 40.869 punti (FWD+MID), spezzati per quota di
+storico giocata in un'ALTRA competizione rispetto alla partita bersaglio:
+
+  quota storico altrove    n        MAE spento->acceso    corr spento->acceso
+  0-20%   (stessa lega)   18.690    13,479 -> 13,456      0,246 -> 0,245  peggio
+  20-50%  (misto)         16.267    14,126 -> 13,976      0,263 -> 0,259  peggio
+  50-80%                   4.513    14,036 -> 13,839      0,200 -> 0,213  MEGLIO
+  80%+    (cambio vero)    1.399    13,891 -> 13,791      0,159 -> 0,173  MEGLIO
+
+Il verso si ribalta esattamente dove diceva l'ipotesi: sopra il 50% di
+storico in un'altra lega MIGLIORANO INSIEME errore e ordinamento; sotto, la
+correlazione peggiora di un'inezia. I casi "cambio vero" sono il 3,4% dei
+punti -- pochi, ma sono precisamente quelli su cui oggi il modello sbaglia di
+piu' (correlazione 0,159 contro 0,246 di chi sta fermo: il modello, su chi
+cambia lega, ordina molto peggio).
+MANCA LA TERZA MISURA: il lift di selezione sui sottogruppi non e' stato
+calcolato (lo strumento lo produce solo sull'intera popolazione). Senza
+quello la regola delle tre misure non e' soddisfatta e NON si applica ancora.
+Prossimo passo concreto: gate nel codice su "quota di storico in altra
+competizione >= 0,5" (il predict la conosce, costruisce lui la finestra) e
+rifare la taratura completa con il lift.
+Nota tecnica utile: la finestra storica si filtra sulla stessa competizione
+solo se ci sono almeno 20 partite (MIN_SAME_COMPETITION); sotto quella soglia
+il modello guarda tutte le competizioni -- cioe' proprio la lega vecchia. E'
+il meccanismo per cui il caso Vicente si produce.
+6.2 LOOK-AHEAD DELLA TABELLA: non misurato. La tabella e' costruita su tutta
+la storia, anche successiva ai punti di test. Il precedente GK_ATT_AVV ha
+misurato lo stesso difetto e l'ha trovato trascurabile (0,096 punti contro sd
+1,727), ma qui va rifatto: costruisci_livello_lega_ruolo.py accetta gia' un
+argomento `fino_a` apposta.
+6.3 SE LA VERSIONE STRETTA FUNZIONA: propagare con propaga_modello.py agli
+altri ruoli e alle 52 leghe, e ripercorrere la catena produzione -> soglie
+arena -> scouting (CLAUDE.md).
+6.4 I PORTIERI restano fuori per scelta, non per dimenticanza.
+
+
+7. FILE DI RIFERIMENTO
+======================
+dati_globali/costruisci_livello_lega_ruolo.py   costruisce la tabella
+dati_globali/livello_lega_ruolo.json            la tabella (67 celle)
+formazione_mls/predict/test_mls_fwd_all.py      flag PRIOR_LEGA + scarto_lega
+backtest_arene_previsioni.py                    i due fix al banco
+taratura_confronto_parametri.py                 lo strumento di giudizio
+analisi_manager/dati/_livello_pulito.json       grezzo contro pulito, per lega
