@@ -1,0 +1,111 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-13T08:26:32.685976Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) manuel-morlanes-arino: 52 pt attesi (40-61)
+   SQUADRA: mallorca-palma-de-mallorca | AVVERSARIO: real-valladolid-valladolid
+======================================================================
+
+######################################################################
+# GIOCATORE: manuel-morlanes-arino
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: manuel-morlanes-arino (squadra: mallorca-palma-de-mallorca)
+Generato: 2026-08-13T08:26:32.685429Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: segunda-division-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-30 | RMA vs MLL | laliga-es | score=45.0 | peso=0.624
+  2025-09-15 | ESP vs MLL | laliga-es | score=53.9 | peso=0.642
+  2025-09-21 | MLL vs ATM | laliga-es | score=56.9 | peso=0.660
+  2025-09-27 | MLL vs ALA | laliga-es | score=57.7 | peso=0.678
+  2025-10-04 | ATH vs MLL | laliga-es | score=46.6 | peso=0.697
+  2025-10-18 | SEV vs MLL | laliga-es | score=43.9 | peso=0.717
+  2025-10-26 | MLL vs LEV | laliga-es | score=56.8 | peso=0.737
+  2025-11-02 | BET vs MLL | laliga-es | score=42.1 | peso=0.758
+  2025-12-13 | MLL vs ELC | laliga-es | score=68.8 | peso=0.779
+  2026-03-07 | OSA vs MLL | laliga-es | score=42.3 | peso=0.801
+  2026-04-04 | MLL vs RMA | laliga-es | score=60.5 | peso=0.824
+  2026-04-12 | MLL vs RAY | laliga-es | score=45.1 | peso=0.847
+  2026-04-21 | MLL vs VCF | laliga-es | score=53.6 | peso=0.871
+  2026-05-01 | GIR vs MLL | laliga-es | score=51.2 | peso=0.895
+  2026-05-10 | MLL vs VIL | laliga-es | score=37.5 | peso=0.920
+  2026-05-13 | GET vs MLL | laliga-es | score=28.5 | peso=0.946
+  2026-05-17 | LEV vs MLL | laliga-es | score=40.0 | peso=0.973
+  2026-05-23 | MLL vs OVI | laliga-es | score=91.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 51.31
+  di cui Punteggio decisivo (level_score) medio: 39.53 | Punteggio complessivo (granulari) medio: 11.78 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 42.34 (delta +2.81)
+  Efficacia offensiva condizionata: delta venue +0.51, delta avversario +0.51 | Passaggio condizionato: delta venue +0.54, delta avversario +0.42 | Gol subiti condizionato: delta venue +0.68, delta avversario +0.32 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 14.59
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.0 - 60.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.51 (differenza: +6.08)
+Media score in casa: 58.74 | Media score fuori casa: 43.72
+Fattore casa/trasferta applicato: 1.007 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.7
+Ranking prossimo avversario: 17
+Fattore forza avversario applicato: 0.707 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.006
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.004
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.001
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.006
+Fattore gol subiti (goals_conceded, con cap): 1.008
+Fattore trend (media ultime 5: 50.3 vs media 5 PRECEDENTI: 53.9): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T19:30
+Casa: RCD Mallorca | Trasferta: Real Valladolid CF
+Competizione: segunda-division-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.6 (range 40.3 - 60.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.28
+Punteggio REALE ottenuto in quella partita: 91.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +43.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      63.3    56.8     -6.5     6.3        NO
+   7        7      41.5    42.1     +0.6     6.3        SI
+   8        8      60.8    68.8     +8.0     6.8        NO
+   9        9      63.6    42.3    -21.3     9.3        NO
+  10       10      36.4    60.5    +24.1     9.4        NO
+  11       11      49.3    45.1     -4.2     9.4        SI
+  12       12      50.7    53.6     +2.9     9.3        SI
+  13       13      67.1    51.2    -15.9     8.9        NO
+  14       14      39.0    37.5     -1.5     8.5        SI
+  15       15      44.8    28.5    -16.3     9.2        NO
+  16       16      58.3    40.0    -18.3    10.9        NO
+  17       17      66.0    91.8    +25.8    10.8        NO
+
+MAE (errore assoluto medio): 12.12
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 33.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
