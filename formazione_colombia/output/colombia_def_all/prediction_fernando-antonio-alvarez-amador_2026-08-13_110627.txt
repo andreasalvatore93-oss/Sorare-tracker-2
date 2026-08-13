@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T11:06:27.308708Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) fernando-antonio-alvarez-amador: 43 pt attesi (34-61)
+   ORDINAMENTO: 42.08
+   SQUADRA: deportivo-cali-santiago-de-cali | AVVERSARIO: millonarios-bogota-d-c
+======================================================================
+
+######################################################################
+# GIOCATORE: fernando-antonio-alvarez-amador
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: fernando-antonio-alvarez-amador (squadra: deportivo-cali-santiago-de-cali)
+Generato: 2026-08-13T11:06:27.308053Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: primera-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-18 | JAG vs CAL | primera-a | score=47.8 | peso=0.724
+  2026-01-24 | CAL vs MED | primera-a | score=46.6 | peso=0.741
+  2026-01-29 | ADR vs CAL | primera-a | score=38.5 | peso=0.758
+  2026-02-01 | CAL vs PAS | primera-a | score=36.1 | peso=0.776
+  2026-02-08 | CAL vs MIL | primera-a | score=62.3 | peso=0.794
+  2026-02-12 | EQU vs CAL | primera-a | score=20.9 | peso=0.812
+  2026-03-14 | CUC vs CAL | primera-a | score=41.6 | peso=0.831
+  2026-03-19 | CAL vs SFE | primera-a | score=28.4 | peso=0.851
+  2026-03-22 | PET vs CAL | primera-a | score=35.1 | peso=0.871
+  2026-03-29 | CAL vs PER | primera-a | score=43.8 | peso=0.891
+  2026-04-04 | JUN vs CAL | primera-a | score=38.9 | peso=0.912
+  2026-04-12 | CAL vs LLA | primera-a | score=42.4 | peso=0.933
+  2026-07-25 | CAL vs JAG | primera-a | score=70.2 | peso=0.955
+  2026-08-01 | MED vs CAL | primera-a | score=44.5 | peso=0.977
+  2026-08-09 | PAS vs CAL | primera-a | score=61.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 44.33
+  di cui Punteggio decisivo (level_score) medio: 33.61 | Punteggio complessivo (granulari) medio: 10.72 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.75, delta avversario -0.26 | Passaggio condizionato: delta venue -1.03, delta avversario -1.19 | Clean sheet/disimpegni condizionato: delta venue -0.66, delta avversario -0.53 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 12.70
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.1 - 61.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.42 (differenza: +3.28)
+Media score in casa: 47.11 | Media score fuori casa: 41.16
+Fattore casa/trasferta applicato: 1.004 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.9
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 0.802 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.005
+Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.997
+Fattore trend (media ultime 5: 51.8 vs media 5 PRECEDENTI: 34.1): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-17T23:10
+Casa: Millonarios FC SA | Trasferta: Asociación Deportivo Cali
+Competizione: primera-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.3 (range 34.1 - 60.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 42.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 42.85
+Punteggio REALE ottenuto in quella partita: 61.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +19.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      53.3    41.6    -11.7    14.2        SI
+   7        7      45.0    28.4    -16.6    13.1        NO
+   8        8      47.9    35.1    -12.7    13.2        SI
+   9        9      45.2    43.8     -1.4    12.4        SI
+  10       10      50.0    38.9    -11.1    11.8        SI
+  11       11      31.9    42.4    +10.4    11.2        SI
+  12       12      49.5    70.2    +20.7    10.7        NO
+  13       13      29.0    44.5    +15.5    13.9        NO
+  14       14      31.5    61.9    +30.4    13.3        NO
+
+MAE (errore assoluto medio): 14.50
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 55.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
