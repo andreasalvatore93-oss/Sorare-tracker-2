@@ -1,0 +1,135 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-13T08:22:53.873186Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) abraham-marcus: 50 pt attesi (36-65)
+   ORDINAMENTO: 49.11
+   SQUADRA: estrela-amadora | AVVERSARIO: alverca-alverca
+======================================================================
+
+######################################################################
+# GIOCATORE: abraham-marcus
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: abraham-marcus (squadra: estrela-amadora)
+Generato: 2026-08-13T08:22:53.872037Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: primeira-liga-pt (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | EST vs SLB | primeira-liga-pt | score=41.3 | peso=0.035
+  2025-08-25 | EST vs ALV | primeira-liga-pt | score=42.4 | peso=0.039
+  2025-08-31 | SCL vs EST | primeira-liga-pt | score=47.2 | peso=0.044
+  2025-09-14 | EST vs VIG | primeira-liga-pt | score=39.0 | peso=0.050
+  2025-09-21 | TON vs EST | primeira-liga-pt | score=49.2 | peso=0.056
+  2025-09-27 | EST vs AVS | primeira-liga-pt | score=72.9 | peso=0.062
+  2025-10-25 | EST vs RIO | primeira-liga-pt | score=45.5 | peso=0.070
+  2025-11-01 | CSP vs EST | primeira-liga-pt | score=77.8 | peso=0.079
+  2025-11-09 | EST vs NAC | primeira-liga-pt | score=44.3 | peso=0.088
+  2025-11-30 | SCP vs EST | primeira-liga-pt | score=42.8 | peso=0.099
+  2025-12-07 | EST vs ARO | primeira-liga-pt | score=81.2 | peso=0.111
+  2025-12-15 | POR vs EST | primeira-liga-pt | score=61.6 | peso=0.125
+  2025-12-20 | EST vs MOR | primeira-liga-pt | score=49.0 | peso=0.140
+  2025-12-27 | FAM vs EST | primeira-liga-pt | score=43.2 | peso=0.157
+  2026-01-03 | EST vs BRA | primeira-liga-pt | score=69.6 | peso=0.177
+  2026-02-07 | EST vs SCL | primeira-liga-pt | score=53.7 | peso=0.198
+  2026-02-14 | VIG vs EST | primeira-liga-pt | score=63.7 | peso=0.223
+  2026-02-20 | EST vs TON | primeira-liga-pt | score=62.3 | peso=0.250
+  2026-02-28 | AVS vs EST | primeira-liga-pt | score=43.7 | peso=0.281
+  2026-03-08 | EST vs GIL | primeira-liga-pt | score=63.4 | peso=0.315
+  2026-03-15 | RIO vs EST | primeira-liga-pt | score=50.3 | peso=0.354
+  2026-03-20 | EST vs CSP | primeira-liga-pt | score=100.0 | peso=0.397
+  2026-04-04 | NAC vs EST | primeira-liga-pt | score=45.0 | peso=0.445
+  2026-04-11 | EST vs SCP | primeira-liga-pt | score=47.3 | peso=0.500
+  2026-04-19 | ARO vs EST | primeira-liga-pt | score=64.1 | peso=0.561
+  2026-04-26 | EST vs POR | primeira-liga-pt | score=34.5 | peso=0.630
+  2026-05-02 | MOR vs EST | primeira-liga-pt | score=38.5 | peso=0.707
+  2026-05-11 | EST vs FAM | primeira-liga-pt | score=47.3 | peso=0.794
+  2026-05-16 | BRA vs EST | primeira-liga-pt | score=34.4 | peso=0.891
+  2026-08-08 | EST vs SCP | primeira-liga-pt | score=30.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 48.63
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 50.33 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 40.09 | Punteggio complessivo (granulari) medio: 8.54 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.33 (delta -0.39) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.53
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.4 - 63.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.78 (differenza: +4.75)
+Media score in casa: 54.35 | Media score fuori casa: 50.88
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.3
+Ranking prossimo avversario: 18
+Fattore forza avversario applicato: 1.038 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 37.0 vs media 5 PRECEDENTI: 61.3): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T14:30
+Casa: Alverca | Trasferta: CF Estrela da Amadora
+Competizione: primeira-liga-pt
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.3 (range 36.1 - 65.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.97
+Punteggio REALE ottenuto in quella partita: 30.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -20.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      52.8    45.5     -7.3    14.3        SI
+   7        7      50.5    77.8    +27.3    13.0        NO
+   8        8      43.3    44.3     +1.0    17.2        SI
+   9        9      50.0    42.8     -7.2    16.3        SI
+  10       10      30.0    81.2    +51.2    15.5        NO
+  11       11      33.5    61.6    +28.1    18.9        NO
+  12       12      49.0    49.0     +0.0    17.6        SI
+  13       13      60.8    43.2    -17.6    16.6        NO
+  14       14      52.6    69.6    +17.0    16.2        NO
+  15       15      52.8    53.7     +0.9    16.3        SI
+  16       16      66.3    63.7     -2.6    15.2        SI
+  17       17      66.9    62.3     -4.6    14.6        SI
+  18       18      68.6    43.7    -24.9    13.8        NO
+  19       19      37.8    63.4    +25.6    13.9        NO
+  20       20      64.2    50.3    -13.9    13.3        NO
+  21       21      61.6   100.0    +38.4    12.7        NO
+  22       22      53.7    45.0     -8.7    20.3        SI
+  23       23      59.6    47.3    -12.3    20.0        SI
+  24       24      37.2    64.1    +26.9    19.3        NO
+  25       25      37.1    34.5     -2.6    18.3        SI
+  26       26      49.2    38.5    -10.7    19.3        SI
+  27       27      59.5    47.3    -12.2    19.3        SI
+  28       28      52.1    34.4    -17.7    18.3        SI
+  29       29      52.8    30.2    -22.6    18.5        NO
+
+MAE (errore assoluto medio): 15.89
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 54.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
