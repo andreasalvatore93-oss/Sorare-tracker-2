@@ -3132,15 +3132,24 @@ Ricognizione fatta dopo la chiusura di capitano-grade (`2da426e987`) e
 copertura-grade (`de527216e8`). Raggruppati per natura, così si sceglie
 sapendo che tipo di lavoro si compra.
 
-**A. Bloccati dalla POTENZA STATISTICA, non dall'idea.** Tre filoni di G
-(copertura b/c, capitano, tabella fissa) sono finiti con IC95 larghi
-±20-30k in allocazione su 6 GW e 24 manager. Nessuno dei tre si sblocca
-rifacendo i conti sugli stessi dati: o si allarga il campione, o si
-misura sulle giornate reali dell'utente (strada che ha indicato lui).
-**Prima di aprire un altro test-di-formula su questo archivio, chiedersi
-se ha la potenza per rispondere** — le ultime tre volte non l'aveva.
-Voci: 5, 6, 14. La voce 1 (G sopra il filtro odds) è stata
-**ridimensionata**: poggiava su una premessa falsa sul pool, vedi lì.
+**A. Bloccati dalla POTENZA STATISTICA — quasi tutti SCIOLTI il 13/08.**
+Diceva: tre filoni di G (copertura b/c = voci 5 e 6a, capitano = voce 6,
+tabella fissa = voce 14) finiti con IC95 larghi ±20-30k su **6 GW e 24
+manager**, e "nessuno si sblocca rifacendo i conti sugli stessi dati: o si
+allarga il campione...". Il campione è stato allargato a **44 GW e 65
+manager** (1.338 unità, 13.860 formazioni). Stato aggiornato:
+- **copertura (voci 5, 6a): non servono più**, risolte dalla scala storica
+  accesa in produzione (§8bis-bis);
+- **capitano: RICHIUSO il 13/08 con potenza vera** — regola col grade
+  nuovo, ordine di ruolo e varianza, tutte e tre negative o nulle su 12.677
+  formazioni (§5.3). Non è più un problema di campione;
+- **tabella fissa (voce 14)**: l'unica ancora sensata da riprovare, ma
+  **prima** va fatta la voce 6b (placebo per-giocatore), che dice se abbia
+  senso di esistere.
+La voce 1 (G sopra il filtro odds) era già stata **ridimensionata**:
+poggiava su una premessa falsa sul pool, vedi lì.
+**Resta valida la regola generale**: prima di aprire un test-di-formula,
+chiedersi se ha la potenza per rispondere.
 
 **B. Misurabili subito, dati già in repo, nessuna query.** Voce 7
 (correlazione grade ↔
@@ -3364,16 +3373,27 @@ dicevano che inseguirli peggiorava il totale, ma erano **senza G**. Serve
 anche sistemare il realizzato dei backtest non-arena, che oggi non li
 calcola affatto (p16/p17 righe 61-65).
 
-**5. Normalizzazione del grade** (§8bis): il grade è ignorato sul 23%
-delle carte perché i gruppi (lega, ruolo) sono troppo piccoli. La prima
-cura (scala storica) è stata misurata e scartata: serve un'idea NUOVA. Non
-urgente, G funziona così com'è.
+**5. Normalizzazione del grade — RISOLTA il 13/08/2026.** Diceva: "il grade
+è ignorato sul 23% delle carte perché i gruppi (lega, ruolo) sono troppo
+piccoli; la prima cura (scala storica) è stata misurata e scartata, serve
+un'idea NUOVA". La cura era quella giusta, era la taratura a essere
+sbagliata: ritarata (fattore 0,482), validata fuori campione e **accesa in
+produzione** — §8bis-bis. Il voto ora si applica sempre. Voce chiusa, non
+da rifare.
 
-**6. Due verifiche economiche su G**: (a) dove il gruppo ha esattamente 2
-carte col grade lo spostamento è meccanico ±1 sd, mai misurato se lì G
-peggiori; (b) placebo permutando i grade **fra giornate dello stesso
-giocatore** invece che fra giocatori — risponde se il segnale sia "questo
-giocatore è forte" o "questa partita andrà bene".
+**6. Due verifiche economiche su G.**
+(a) **SUPERATA dalla stessa modifica**: riguardava i gruppi con esattamente
+2 carte, dove lo spostamento era meccanico ±1 sd. Con la scala storica il
+gruppetto nativo non si usa più e il caso sparisce per costruzione.
+(b) **APERTA, ed è la parte che vale.** Placebo permutando i grade **fra le
+giornate dello STESSO giocatore** invece che fra giocatori. Tutti i placebo
+fatti finora rimescolano fra giocatori, e rispondono a "il voto porta
+informazione?". Questo risponde a una domanda mai posta: il voto dice
+**"questo giocatore è forte"** — informazione che il modello ha già dallo
+storico — oppure **"questa partita andrà bene"**, che è informazione nuova?
+Zero query. Cambia come si legge tutto il filone, e in particolare decide se
+la "tabella fissa per lettera" (voce 14) abbia senso di esistere: se il voto
+è un giudizio sul giocatore, no; se è sulla singola partita, sì.
 
 **7. Correlazione grade ↔ punteggio realizzato della stessa partita**: mai
 misurata, zero query. Limite superiore alla contaminazione possibile.

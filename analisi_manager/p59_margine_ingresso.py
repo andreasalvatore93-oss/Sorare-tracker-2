@@ -78,7 +78,16 @@ def main():
     ap.add_argument('--fixture', action='append', default=[])
     ap.add_argument('--braccio', default='G', choices=['G', 'A'],
                     help='G = con il voto (produzione), A = senza voto')
+    ap.add_argument('--margini', default='',
+                    help='griglia separata da virgole, es "0,0.05,0.10,0.15,0.20". '
+                         'Vuoto = quella di default. Su tutto l\'archivio ogni '
+                         'margine costa un giro completo (~12 minuti), quindi '
+                         'conviene restringerla alla zona che decide.')
     args = ap.parse_args()
+
+    global MARGINI
+    if args.margini:
+        MARGINI = [float(x) for x in args.margini.split(',') if x.strip()]
 
     fixtures = B2.elenca_fixture()
     if args.fixture:
