@@ -357,6 +357,7 @@ christopher-negele,365 giorni
 chui-hiromu-mayaka,365 giorni
 cieran-slicker,365 giorni
 clement-diop-degoud,365 giorni
+coba-gomes-da-costa,365 giorni
 cody-mizell,365 giorni
 cole-mrowka,3 giorni
 colin-dagba,365 giorni
@@ -1924,3 +1925,25 @@ zvonimir-subaric,3 giorni
 
 ## thin_market
 # THIN MARKET -- giocatori con mercato troppo ristretto (poche transazioni recenti): i loro annunci vengono ignorati per il tempo indicato, per evitare di comprare/offrire su un mercato poco liquido.
+roger-fernandes-classic,2026-08-15T00:07:57.505747+00:00  # scade: 15/08/2026 02:07 ora di Roma
+
+## campionato
+# CAMPIONATI BLACKLISTATI -- slug del campionato (es. 'premiership-gb-sct'), SEZIONE SEPARATA da manager/giocatori/thin_market/cooldown, non confonderla con le altre. Ogni carta di un giocatore attivo in uno di questi campionati viene ignorata COMPLETAMENTE (nessun acquisto, nessuna offerta), controllato PRIMA di qualunque altra valutazione per risparmiare tempo. Durata di default 15 giorni, rinnovabile o modificabile a mano come le altre sezioni.
+# (vuoto)
+
+## campionato_inseason_temp
+# BLACKLIST TRANSITORIA IN-SEASON -- slug del campionato: SOLO le carte in_season di questo campionato vengono ignorate (nessun acquisto, nessuna offerta), le carte classic dello stesso campionato restano valutate normalmente. Pensata per campionati con carte in_season appena uscite e dal prezzo ancora troppo variabile/instabile per fidarsi. Per questi campionati il confronto di mercato usa lo stesso modello di MLS/K League (classic confrontata solo con classic, in_season solo con in_season) -- vedi EXCLUDED_LEAGUE_SLUGS. Durata di default 15 giorni. Scadenza ASSOLUTA in ISO (come thin_market/cooldown_acquisto/fix_urgente, FIX 29/07: prima era durata testuale, che si reinterpretava 'da adesso' ad ogni lettura e non scorreva mai davvero se la riga non veniva riscritta -- vedi commento in _lista_nera_leggi_righe).
+# (vuoto)
+
+## forma_bassa_ultime_5
+# FORMA BASSA ULTIME 5 -- giocatori con media punti SO5 nelle ultime 5 partite giocate inferiore a 30: ignorati per il tempo indicato (default 1 mese), SEZIONE SEPARATA e distinta dai blacklist permanenti (coverage/media-zero restano in 'giocatore'), perche' questa e' una condizione transitoria che puo' rientrare -- non merita un blocco di 365gg.
+aaron-ramsdale,2026-08-16T00:09:03.185292+00:00  # scade: 16/08/2026 02:09 ora di Roma
+altay-bayindir,2026-08-16T00:08:23.273952+00:00  # scade: 16/08/2026 02:08 ora di Roma
+dylan-borso,2026-08-16T00:06:58.790017+00:00  # scade: 16/08/2026 02:06 ora di Roma
+hirving-rodrigo-lozano-bahena,2026-08-16T00:10:05.241826+00:00  # scade: 16/08/2026 02:10 ora di Roma
+jeroen-zoet,2026-08-16T00:08:23.033989+00:00  # scade: 16/08/2026 02:08 ora di Roma
+
+## fix_urgente
+# FIX URGENTI -- sezione SEPARATA dalla blacklist 'giocatore' normale, per casi particolari/situazioni impreviste che richiedono uno stop immediato su un giocatore specifico (acquisti E offerte bloccati), senza mescolarli con la blacklist manuale ordinaria. Scadenza ASSOLUTA in ISO (come thin_market/cooldown_acquisto), non una durata testuale rinnovabile.
+# (vuoto)
+
