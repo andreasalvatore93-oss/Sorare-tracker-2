@@ -1099,6 +1099,57 @@ SCOUTING_RIUSA_PREDIZIONI = os.environ.get(
     'SCOUTING_RIUSA_PREDIZIONI', '1').strip() not in ('0', 'false', 'no', '')
 
 
+# Quanto indietro puo' stare un tentativo "DATI INSUFFICIENTI" per valere
+# ancora. Le fixture Sorare sono settimanali: un tentativo fatto nei 7 giorni
+# che portano a questa giornata e' un tentativo DI questa giornata. Piu'
+# vecchio di cosi' si ritenta, perche' nel frattempo il giocatore puo' aver
+# giocato e essersi costruito lo storico che gli mancava.
+GIORNI_VALIDITA_DATI_INSUFFICIENTI = 7
+
+
+def _tentativo_senza_dati_recente(bf, lega, ruolo, slug):
+    """True se per questo giocatore esiste gia' un tentativo RECENTE finito in
+    'DATI INSUFFICIENTI'.
+
+    PERCHE' ESISTE (14/08/2026, misurato sulla run 31791622211). Il predict di
+    un giocatore senza storico sufficiente produce comunque il suo file, ma
+    dentro c'e' "DATI INSUFFICIENTI" al posto della previsione -- e quindi
+    nessuna riga con la data della partita. `_predizione_riutilizzabile` cerca
+    esattamente quella riga (best_five.py, _DATA_PREDIZIONE_RE): non
+    trovandola dice "non riusabile", e il giocatore torna in lista ad OGNI
+    run. Misura: 180 candidati su 1793 restavano senza A+G, tutti e 180 con
+    esito DATI INSUFFICIENTI, e tutti e 180 rientravano nei lavori del giro
+    dopo. Quella run aveva 181 lavori: 180 erano ritentativi certi di
+    fallire di nuovo, cioe' praticamente tutta la run.
+
+    Il tentativo NON e' un risultato, quindi non si riusa niente: si evita
+    soltanto di ripagarlo. Dentro la stessa giornata l'esito non puo'
+    cambiare -- il game log si muove solo quando il giocatore gioca."""
+    import glob as _glob
+    try:
+        cartelle = [bf._dir_predizioni_best_five(lega, ruolo),
+                    bf.output_dir_per_ruolo(lega, ruolo)]
+    except Exception:
+        return False
+    limite = datetime.datetime.utcnow() - datetime.timedelta(
+        days=GIORNI_VALIDITA_DATI_INSUFFICIENTI)
+    for cartella in cartelle:
+        for path in _glob.glob(os.path.join(cartella, f'prediction_{slug}_*.txt')):
+            try:
+                quando = bf._timestamp_da_nome_file(path)
+            except Exception:
+                continue
+            if not quando or quando < limite:
+                continue
+            try:
+                with open(path, encoding='utf-8', errors='ignore') as f:
+                    if 'DATI INSUFFICIENTI' in f.read():
+                        return True
+            except OSError:
+                continue
+    return False
+
+
 def _predizioni_gia_fatte(coppie):
     """(da_fare, gia_fatte) sulla lista di (lega, ruolo_dir, slug)."""
     try:
@@ -1108,11 +1159,21 @@ def _predizioni_gia_fatte(coppie):
         return list(coppie), []
     da_fare, gia = [], []
     n_riusabili = 0
+    n_senza_dati = 0
     for lega, ruolo, slug in coppie:
         try:
             riusabile, _kickoff, _path = bf._predizione_riutilizzabile(lega, ruolo, slug)
         except Exception:
             riusabile = False
+        if (SCOUTING_RIUSA_PREDIZIONI and not riusabile
+                and _tentativo_senza_dati_recente(bf, lega, ruolo, slug)):
+            # Non e' una previsione riusabile: e' un tentativo gia' fatto e
+            # gia' fallito. Si salta comunque, ma si conta a parte -- se un
+            # giorno questo numero esplode, e' un difetto di dati, non un
+            # risparmio.
+            n_senza_dati += 1
+            gia.append((lega, ruolo, slug))
+            continue
         if riusabile:
             n_riusabili += 1
         (gia if (riusabile and SCOUTING_RIUSA_PREDIZIONI) else da_fare).append(
@@ -1120,6 +1181,11 @@ def _predizioni_gia_fatte(coppie):
     if SCOUTING_RIUSA_PREDIZIONI:
         log(f"[riuso] ACCESO (SCOUTING_RIUSA_PREDIZIONI=1): {n_riusabili}/{len(coppie)} "
             f"previsioni riusate da disco.")
+        if n_senza_dati:
+            log(f"[riuso] altri {n_senza_dati} saltati perche' un tentativo recente "
+                f"(ultimi {GIORNI_VALIDITA_DATI_INSUFFICIENTI} giorni) era finito in "
+                f"DATI INSUFFICIENTI: non hanno storico bastante, rifarli darebbe lo "
+                f"stesso esito. Restano senza Atteso nella tabella.")
     else:
         log(f"[riuso] SPENTO per lo scouting (default, SCOUTING_RIUSA_PREDIZIONI=0): "
             f"{n_riusabili}/{len(coppie)} previsioni erano riusabili ma vengono "
