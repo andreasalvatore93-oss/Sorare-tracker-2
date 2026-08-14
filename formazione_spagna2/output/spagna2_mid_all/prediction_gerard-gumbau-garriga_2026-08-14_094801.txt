@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-14T09:48:01.071842Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) gerard-gumbau-garriga: 54 pt attesi (31-84)
+   SQUADRA: granada-granada | AVVERSARIO: real-oviedo-oviedo
+======================================================================
+
+######################################################################
+# GIOCATORE: gerard-gumbau-garriga
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: gerard-gumbau-garriga (squadra: granada-granada)
+Generato: 2026-08-14T09:48:01.071118Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 53
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 25
+Competizione partita target: segunda-division-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-21 | NEM vs RAY | uefa-europa-conference-league | score=73.1 | peso=0.697
+  2025-10-02 | RAY vs SHK | uefa-europa-conference-league | score=93.6 | peso=0.717
+  2025-10-23 | BKH vs RAY | uefa-europa-conference-league | score=35.7 | peso=0.737
+  2025-12-01 | RAY vs VCF | laliga-es | score=86.0 | peso=0.758
+  2025-12-18 | RAY vs DRI | uefa-europa-conference-league | score=88.2 | peso=0.779
+  2026-01-18 | CEL vs RAY | laliga-es | score=52.1 | peso=0.801
+  2026-02-15 | RAY vs ATM | laliga-es | score=43.7 | peso=0.824
+  2026-02-21 | BET vs RAY | laliga-es | score=37.9 | peso=0.847
+  2026-02-28 | RAY vs ATH | laliga-es | score=39.4 | peso=0.871
+  2026-03-08 | SEV vs RAY | laliga-es | score=33.8 | peso=0.895
+  2026-04-12 | MLL vs RAY | laliga-es | score=39.9 | peso=0.920
+  2026-05-03 | GET vs RAY | laliga-es | score=60.0 | peso=0.946
+  2026-05-14 | VCF vs RAY | laliga-es | score=100.0 | peso=0.973
+  2026-05-23 | ALA vs RAY | laliga-es | score=34.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 57.65
+  di cui Punteggio decisivo (level_score) medio: 42.34 | Punteggio complessivo (granulari) medio: 15.31 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 41.57 (delta -0.78)
+  Efficacia offensiva condizionata: delta venue -0.65, delta avversario -0.25 | Passaggio condizionato: delta venue -0.85, delta avversario -0.65 | Gol subiti condizionato: delta venue -0.35, delta avversario -0.49 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 23.79
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.8 - 88.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 21.01 (differenza: +2.79)
+Media score in casa: 70.18 | Media score fuori casa: 51.92
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.7
+Ranking prossimo avversario: 20
+Fattore forza avversario applicato: 1.185 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore trend (media ultime 5: 54.0 vs media 5 PRECEDENTI: 51.6): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T17:00
+Casa: Real Oviedo | Trasferta: Granada CF
+Competizione: segunda-division-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.9 (range 31.0 - 84.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 59.77
+Punteggio REALE ottenuto in quella partita: 34.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -25.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      63.7    43.7    -20.0    23.1        SI
+   7        7      63.1    37.9    -25.2    23.9        NO
+   8        8      77.3    39.4    -37.9    24.8        NO
+   9        9      71.1    33.8    -37.3    24.7        NO
+  10       10      75.0    39.9    -35.1    25.0        NO
+  11       11      49.3    60.0    +10.7    24.4        SI
+  12       12      54.0   100.0    +46.0    23.2        NO
+  13       13      68.5    34.8    -33.7    26.2        NO
+
+MAE (errore assoluto medio): 30.74
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 25.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
