@@ -1,0 +1,131 @@
+HANDOFF -- ARENE A BUDGET FISSO: IL MIX SE LO CALCOLA IL BOT
+Sessione 14/08/2026 pomeriggio (Roma, CEST). Orchestratore-esecutore: Opus.
+
+VERDETTO DA BAR, IN DIECI RIGHE
+-------------------------------
+Hai 3.000 essenze da spendere in arene. Il bot comprava sempre le arene piu'
+ricche, che costano 300 l'una: undici arene e budget finito. Ma con la stessa
+spesa puoi comprarne diciassette, mescolando qualche arena da 200 e qualche
+arena da 100 -- e porti a casa PIU' essenze, non meno: 1.510 invece di 1.378,
+il 9,6% in piu'.
+Il meccanismo per farlo c'era gia' nel codice, ma era spento, e per accenderlo
+bisognava scrivere a mano un numero (il "prezzo-ombra") che nessuno puo'
+indovinare, perche' cambia col budget e col mazzo del giorno: 0,5 andava bene
+su 5.000 essenze, su 3.000 lascia in tasca 1.900 essenze senza dire niente.
+Adesso quel numero lo cerca il bot da solo a ogni run: prova otto valori sugli
+stessi dati (senza chiedere niente a Sorare), stampa cosa otterrebbe con
+ciascuno e tiene il migliore. Nel form tu metti solo le essenze.
+
+1. STATO DEL REPO
+-----------------
+Branch main, tutto committato e PUSHATO. Tre commit:
+  498123bbbd  arena_criterio tolto dal workflow, torna hardcoded 'assoluto'
+  d39051b79b  genera_arene_budget_ottimo: il prezzo-ombra lo cerca il bot
+  ea2447162a  CLAUDE_ERRORS.md, registro errori + richiamo in CLAUDE.md
+In produzione (workflow formazione_giornata.yml): ARENA_CRITERIO='assoluto'
+fisso, input arena_criterio SPARITO dal form, essenze_arena default '0',
+lambda_essenza default '0' = ricerca automatica accesa.
+NON verificato su una run vera di Actions: al momento della scrittura la
+modifica e' solo passata dagli smoke test locali. L'utente lancia da solo.
+
+2. LA DOMANDA DI PARTENZA
+-------------------------
+Dell'utente, schierando la giornata 14-18 agosto con 7.500 essenze: "il bot mi
+genera quasi tutte cap 260; con un budget limitato, siamo sicuri che non
+convenga un mix con 220 e Beginner?". Domanda giusta: la risposta e' si'.
+
+3. COSA E' STATO TOCCATO
+------------------------
+generatore_formazioni/build_formazione_globale.py
+  + _resa_totale_arene(scelte): metro UNICO per confrontare mix diversi (la
+    retta di produzione, pareggio + guadagno/punto). Non dipende da
+    ARENA_CRITERIO ne' dal lambda con cui il mix e' stato scelto -- serviva
+    perche' criteri diversi stampano rese in unita' diverse e sommarle e'
+    l'errore che ha prodotto meta' della confusione di giornata.
+  + LAMBDA_GRIGLIA = (0, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50)
+  + genera_arene_budget_ottimo(...): per ogni lambda rigenera le arene sugli
+    stessi dati in memoria, misura, disfa il pool, e alla fine rigenera il mix
+    vincente. Un lambda_essenza messo a mano continua a vincere e salta la
+    ricerca (serve a riprodurre run vecchie).
+  + _istantanea_pool_copia(): _ripristina_pool ASSEGNA gli oggetti veri, non
+    copie. Senza questa copia fresca il secondo tentativo ripartiva dal pool
+    gia' consumato dal primo, con meno arene e NESSUN errore visibile.
+  ~ call site (~riga 2940): con budget si passa da genera_arene_budget_ottimo,
+    senza budget resta la scelta di sempre.
+.github/workflows/formazione_giornata.yml
+  - input arena_criterio (tolto), ARENA_CRITERIO: 'assoluto' fisso
+  ~ essenze_arena default '4500' -> '0'; gameweek default '5' -> '' (era
+    rimasto acceso da una prova: ogni settimana sarebbe stato il numero
+    sbagliato)
+  ~ lambda_essenza: descrizione riscritta in "LASCIA 0, lo cerca il bot"
+CLAUDE_ERRORS.md (nuovo) + richiamo in cima a CLAUDE.md.
+
+Come si rilancia (zero rete, ~3 minuti):
+  ESSENZE_ARENA=3000 ARENE_EFFICIENTI=0 ALLSTARS=0 ALLSTARS_U23=0 \
+  CHAMPIONS=0 IN_SEASON=0 python generatore_formazioni/build_formazione_globale.py
+Banco a pool controllato (fuori dal repo, scratchpad della sessione):
+  test100.py <budget> <criterio> <carte_per_ruolo>, con AUTO=1 per la ricerca.
+  Prende le predizioni gia' committate, tiene le N migliori per ruolo con una
+  carta a testa, chiama la funzione di produzione.
+
+4. NUMERI INTEGRALI
+-------------------
+Banco controllato: 194 carte (GK 44, DEF 50, MID 50, FWD 50 -- di portieri con
+carta ce ne sono solo 44 in tutto il mazzo), budget 3.000, criterio assoluto.
+Slot riempiti al massimo 85 su 194 carte: c'e' selezione vera, non allocazione.
+
+  prezzo-ombra   arene   speso        mix                        guadagno
+  0,00 (oggi)      11    3000/3000    8x260 + 3x220                +1.378
+  0,10             11    3000/3000    8x260 + 3x220                +1.381
+  0,15             15    3000/3000    6x260 + 3x220 + 6 Beg        +1.489
+  0,20             15    3000/3000    6x260 + 3x220 + 6 Beg        +1.496
+  0,25 VINCE       17    3000/3000    5x260 + 3x220 + 9 Beg        +1.510
+  0,30             19    2900/3000    4x260 + 2x220 + 13 Beg       +1.474
+  0,40             10    1700/3000    3x260 + 1x220 + 6 Beg        +1.062
+  0,50             6     1100/3000    2x260 + 1x220 + 3 Beg          +792
+
+Stesso banco a 100 carte, budget 3.000: 10 arene tutte cap 260, +1.277 (0,426
+per essenza). Con 194 carte il pool piu' profondo fa entrare la cap 220.
+
+Generatore VERO end-to-end, mazzo intero della giornata, budget 3.000, ricerca
+accesa: sceglie 0,10 -> 20 arene (2x260 + 6x220 + 12 Beg), +904 contro +756
+del comportamento vecchio (+19,6%). Il lambda vincente e' DIVERSO da quello
+del banco: e' esattamente il motivo per cui non puo' essere una costante.
+
+Criteri di scelta del tipo, stesso metro (retta) e stesso budget:
+  mazzo intero, 7.500 essenze:  assoluto 4.284 | netto_vero 4.256 | capitale 2.573
+  194 carte,    3.000 essenze:  assoluto 1.378 | netto_vero 1.384 | capitale 1.209
+assoluto e netto_vero cambiano segno fra i due test (+0,4% e -0,7%): non c'e'
+un vincitore, per questo l'input e' stato tolto invece che ritarato.
+
+5. DA SAPERE PRIMA DI DECIDERE
+------------------------------
+- Il guadagno e' ATTESO, calcolato sulla retta pareggio/guadagno-per-punto
+  (costanti del 09/08, 5.031 osservazioni). Non e' un risultato realizzato:
+  nessuna giornata e' ancora stata giocata col mix nuovo.
+- La ricerca costa ~8 rigenerazioni del solo blocco arene. Sul mazzo intero
+  sono decine di secondi in piu' per run, zero query di rete. Se un giorno
+  diventasse pesante, la griglia si accorcia in una riga (LAMBDA_GRIGLIA).
+- Cosa dice il dato STORICO sulle Beginner, e va tenuto presente: e' il tipo
+  che storicamente ha reso PEGGIO (tutti i manager -3,7%, crowss -17,4%).
+  L'utente sostiene che dipendeva da chi/come le schierava (carte scarse,
+  scelte a mano, mazzo piu' corto). Plausibile ma NON verificato: la prima
+  giornata giocata col mix nuovo e' anche il primo test vero di questa
+  spiegazione. Vale la pena guardare il consuntivo delle sole Beginner.
+- Il vincolo che morde non e' sempre il budget: sul banco a 100 carte finivano
+  prima le CARTE. Il controllo pool-contro-slot va rifatto a ogni test.
+
+6. DECISIONE APERTA
+-------------------
+Nessuna sul codice. Restano due domande da guardare dopo la prima giornata
+vera: (a) le Beginner rendono davvero come dice il modello, o lo storico
+negativo ha una causa che non abbiamo capito; (b) se la griglia del lambda
+va allargata sotto 0,10 (sul mazzo intero il vincitore era il secondo valore
+della griglia, quindi l'ottimo potrebbe stare piu' in basso).
+
+7. FILE DI RIFERIMENTO
+----------------------
+generatore_formazioni/build_formazione_globale.py  (genera_arene_budget_ottimo)
+.github/workflows/formazione_giornata.yml
+CLAUDE_ERRORS.md                                   (registro errori, 6 voci)
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md         (aggiornato in cima)

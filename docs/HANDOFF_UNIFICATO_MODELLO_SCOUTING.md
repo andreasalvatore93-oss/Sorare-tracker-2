@@ -11,7 +11,30 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 14/08/2026 mattina (Roma, CEST)**. Tre cose
+Ultimo aggiornamento: **sessione 14/08/2026 pomeriggio (Roma, CEST)** — arene
+a budget fisso. Una cosa sola, ma cambia le formazioni:
+- **il mix di arene dentro un budget se lo calcola il bot** (§8septendecies):
+  con un budget in essenze la scelta avida comprava solo cap 260 (300 l'una);
+  un mix con cap 220 e Beginner rende di più a parità di spesa. Misurato su
+  pool controllato di 194 carte e 3.000 essenze: **+1.510 contro +1.378
+  (+9,6%)**, 17 arene invece di 11. Il meccanismo (`LAMBDA_ESSENZA`, prezzo-
+  ombra) esisteva già ma era spento e andava indovinato a mano; ora
+  `genera_arene_budget_ottimo` prova la griglia e tiene il mix migliore.
+- **`arena_criterio` tolto dal workflow** (torna hardcoded `assoluto`):
+  misurati sullo stesso metro e budget, `assoluto` 4.284 / `netto_vero` 4.256
+  / `capitale` 2.573. I primi due sono indistinguibili, l'input era solo un
+  modo per sbagliare.
+- **Cause vere delle run rosse del 14/08**: NON diagnosticate con certezza
+  (tre spiegazioni possibili mai isolate, vedi `CLAUDE_ERRORS.md` E1). Dopo
+  l'aggiornamento del secret `SORARE_COOKIE` la run è tornata verde.
+- Catena di produzione: nessun valore di predizione toccato, quindi
+  `PAREGGIO_ARENA`/`GUADAGNO_PER_PUNTO` e lo scouting restano validi — cambia
+  solo QUALI arene si comprano con un budget dato.
+- Novità di processo: **`CLAUDE_ERRORS.md`**, registro errori, lettura
+  obbligatoria a inizio sessione (richiamato in cima a `CLAUDE.md`).
+Handoff di sessione: `docs/handoff/HANDOFF_ARENE_BUDGET_2026-08-14.txt`.
+
+Aggiornamento precedente: **sessione 14/08/2026 mattina (Roma, CEST)**. Tre cose
 in produzione, tutte verificate sul banco e con A/A:
 - **correttivo cambio campionato ACCESO** (§8terdecies riscritta): chi arriva
   da un'altra lega non è più previsto come se giocasse ancora là. Supera il
