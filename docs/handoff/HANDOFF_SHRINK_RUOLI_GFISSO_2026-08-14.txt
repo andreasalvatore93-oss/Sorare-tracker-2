@@ -1,0 +1,125 @@
+HANDOFF -- SHRINK_K DI TUTTI I RUOLI RIMISURATI COL VOTO ACCESO
+Sessione del 14/08/2026, ora di Roma (CEST). Orchestratore: Opus.
+Commit finale: c9295e3888 (pushato su main).
+
+=============================================================================
+IN LINGUA DA BAR, DIECI RIGHE -- il resto sotto e' il rigore
+=============================================================================
+Si e' partiti da una domanda: "i giocatori che vengono da un periodo d'oro
+li paghiamo troppo cari?". Risposta: NO, il modello li sgonfia gia' bene e
+lo fa nel modo giusto. Ma cercando quello e' saltato fuori altro: i quattro
+parametri che decidono QUANTO sgonfiare erano stati scelti prima del 13/08,
+cioe' prima che il voto A-F entrasse in produzione. Erano tarati su un
+modello che non c'e' piu'. Rimisurati tutti e quattro col voto acceso: il
+centrocampo era rimasto indietro (l'unico a 5, gli altri a 15 e 30) e
+l'attacco era finito tarato CONTRO il voto. Cambiati tutti e due, insieme,
+dopo averli misurati come gioca davvero il generatore. Da adesso vedrai meno
+centrocampisti e piu' attaccanti in formazione, e circa un punto in piu' a
+giornata. Difensore e portiere: guardati, vanno bene, non toccati.
+
+=============================================================================
+1. STATO DEL REPO
+=============================================================================
+Branch main, tutto pushato, zero commit locali in sospeso.
+  c9295e3888  MID a 15 e FWD a 5 (IN PRODUZIONE, 54 leghe)
+  bc7a56ff13  tutti gli shrink_k rimisurati col voto (misure, hash riscritto
+              da un rebase di un'altra sessione)
+  54548411ab  diagnosi striscia d'oro (misure)
+ATTENZIONE: un'altra sessione lavorava sullo stesso repo (commit di scouting
+3cbd2fbd25 e precedenti) e ha fatto un rebase che ha riscritto gli hash dei
+miei due commit di misura. Nessun conflitto, nessun file perso.
+
+IN PRODUZIONE: formazione_*/predict/test_mid.py SHRINK_K_OUTLIER_MID = 15.0
+e test_mls_fwd_all.py SHRINK_K_OUTLIER_FWD = 5.0, su tutte le 54 leghe.
+NON in produzione: niente altro di questa sessione (tutto il resto e' misura).
+
+=============================================================================
+2. PERCHE' ESISTEVA QUESTO LAVORO
+=============================================================================
+L'handoff del 13-14/08 sul correttivo di lega lasciava aperta una voce: chi
+cambia campionato perde 12 punti, ma ~7 li perde anche chi non si e' mosso,
+"e' come il modello tratta chiunque arrivi da un periodo eccezionale". Era
+indicato come il filone piu' grosso mai aperto. Questa sessione lo ha aperto.
+
+=============================================================================
+3. COSA HO COSTRUITO
+=============================================================================
+UN SOLO strumento nuovo: taratura_striscia_oro.py (radice del repo). Zero
+query di rete, legge la cache game-log condivisa. Quattro modalita':
+  --ruoli fwd,mid,def,gk --con-avversario
+      diagnosi: residuo per fascia di livello e per fascia di striscia
+  --shrink 5,10,15,20,30 [--con-grade]
+      griglia di shrink_k sul metro ufficiale + "pendenza" (il difetto)
+  --confronto 5,15 [--con-grade] [--per-periodo]
+      confronto appaiato con incertezza (bootstrap sui giocatori per
+      MAE/corr, sulle giornate per il lift col 'caso' esatto di p36)
+  --combinato
+      LA MISURA CHE DECIDE: tutti i ruoli insieme, calibrati per ruolo, col
+      voto sul calibrato, i due cambi valutati in un colpo solo
+Tempi: ~10 min di raccolta + ~5 min per valore di shrink. Nessuna rete.
+
+=============================================================================
+4. OUTPUT NUMERICO
+=============================================================================
+Tutto in docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8sexdecies (tabelle
+per ruolo, confronti appaiati, misura combinata, catena). Non lo ripeto qui
+per non tenere due copie che divergono. I json grezzi stanno in
+dati_globali/taratura_striscia_*.json e NON sono versionati (dati_globali/
+e' in .gitignore): si rifanno con lo script.
+
+I due numeri che contano:
+  - forma vera dell'arena: +0,815 punti reali a giornata sulle cinque carte,
+    lift +0,26 con IC [-0,67;+1,15] -- non peggiora, guadagno non
+    distinguibile da zero;
+  - cinque carte libere dal ruolo: +3,95 punti, lift +1,64 IC [+0,11;+3,13].
+RISULTATO NULLO ONESTO: la "striscia d'oro" come la intendeva l'handoff
+precedente NON esiste come difetto nostro. Chi viene da un periodo da 78 di
+media e' previsto 63,5 e ne fa 64,8.
+
+=============================================================================
+5. LE COSE DA SAPERE PRIMA DI DECIDERE
+=============================================================================
+a) MIO ERRORE, corretto in corsa dall'utente: la prima griglia l'ho girata
+   SENZA voto e senza aver letto i valori degli altri ruoli. Il guadagno di
+   ordinamento sul MID (+0,0026, certo al 100%) col voto si sgonfiava a
+   +0,0007 e spariva. Da li' la regola nuova in CLAUDE.md.
+b) SECONDO ERRORE, corretto dall'utente: misuravo un ruolo alla volta. E'
+   cieco sul punto che conta, perche' abbassare i centrocampisti li mette in
+   competizione con difensori e attaccanti, non con altri centrocampisti. La
+   misura --combinato nasce da una sua domanda.
+c) LIMITI DELLA MISURA COMBINATA, non risolti: il pool del banco e' TUTTI i
+   giocatori in cache, non le carte possedute e i probabili titolari --
+   quindi le percentuali del mix (MID 23%, FWD 33%) NON sono quelle che si
+   vedranno, vale il confronto prima/dopo e non il livello; campione
+   ristretto all'83% con voto in finestra (non casuale); il capitano e'
+   applicato alla carta piu' alta, non con la regola vera.
+d) Il lift a shape arena include lo zero: il guadagno e' probabile, non
+   certo. Chi rilegge fra un mese non trasformi "+0,8 punti" in un fatto.
+
+=============================================================================
+6. DECISIONI APERTE (nessuna presa da me)
+=============================================================================
+1. FWD SOTTO 5 MAI MISURATO. La griglia partiva da 5 e il verso diceva
+   "meno shrinkage e' meglio sul lift": l'ottimo potrebbe essere 2 o 0.
+   Costa un run di ~20 minuti, zero rete: python taratura_striscia_oro.py
+   --ruoli fwd --con-avversario --con-grade --shrink 0,2,5,10
+2. IL PORTIERE HA IL DIFETTO PIU' GRANDE E LO SHRINKAGE NON LO CURA:
+   pendenza -8 a k=30, e alzando k non migliora (a 60 e' -5 ma MAE e corr
+   fermi). Se si riapre il portiere, il buco e' li'. Non aperto oggi.
+3. VERIFICA SUL CAMPO: nessuna run reale e' stata fatta dopo il cambio. La
+   prossima run di formazione_giornata e' la prima col modello nuovo -- vale
+   la pena guardare il report e vedere se il mix di ruoli si e' spostato
+   come previsto.
+4. Restano aperte dalla sessione precedente e NON toccate oggi: il gradino
+   di 2,5 punti quando il badge cambio-lega si spegne a meta' gennaio 2027.
+
+=============================================================================
+7. FILE DI RIFERIMENTO
+=============================================================================
+taratura_striscia_oro.py                          lo strumento
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8sexdecies   numeri e catena
+CLAUDE.md  "OGNI TEST PARTE DA G FISSO IN PRODUZIONE"    regola nuova
+CLAUDE.md  "I tre cancelli si PESANO, non si contano"    regola nuova
+formazione_mls/predict/test_mid.py:117            il valore nuovo, MID
+formazione_mls/predict/test_mls_fwd_all.py:151    il valore nuovo, FWD
+analisi_manager/p36_lift_rumore.py                il 'caso' esatto del lift
