@@ -1,5 +1,19 @@
 # REGOLE FONDAMENTALI, IN ORDINE DI PRIORITA' (12/08/2026)
 
+> ## LEGGERE ANCHE `CLAUDE_ERRORS.md` — OBBLIGATORIO, A OGNI INIZIO SESSIONE
+>
+> Istituito dall'utente il 14/08/2026. `CLAUDE_ERRORS.md` e' il registro degli
+> errori commessi dalle sessioni: cosa e' stato detto o fatto, perche' era
+> sbagliato, come si evita. Si legge INSIEME a questo file, prima di lavorare —
+> non e' un archivio storico, e' l'elenco dei modi in cui questo lavoro va
+> storto, e la meta' delle voci descrive errori gia' ripetuti da sessioni
+> diverse.
+>
+> **E si SCRIVE**: ogni volta che si sbaglia, la voce va aggiunta li' dentro
+> nella stessa sessione, prima di chiudere. Vale anche per gli errori scoperti
+> a posteriori e per quelli di altre sessioni. Un errore non scritto viene
+> rifatto.
+
 Le 5 regole che seguono sono TUTTE vincolanti, in questo ordine: se sembrano
 in conflitto, vince quella che sta più in alto. Erano 5 blocchi separati che
 si dichiaravano ciascuno "sovrasta tutte le altre" — confusionario, non
