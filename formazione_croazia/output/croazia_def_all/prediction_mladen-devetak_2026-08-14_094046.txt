@@ -1,0 +1,125 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-14T09:40:46.908202Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) mladen-devetak: 42 pt attesi (25-57)
+   ORDINAMENTO: 41.87
+   SQUADRA: rijeka-rijeka | AVVERSARIO: varazdin-varazdin
+======================================================================
+
+######################################################################
+# GIOCATORE: mladen-devetak
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mladen-devetak (squadra: rijeka-rijeka)
+Generato: 2026-08-14T09:40:46.906637Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 36
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: 1-hnl (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | RIJ vs DIN | 1-hnl | score=22.3 | peso=0.588
+  2025-08-31 | HAJ vs RIJ | 1-hnl | score=28.7 | peso=0.602
+  2025-09-13 | RIJ vs LOK | 1-hnl | score=38.6 | peso=0.616
+  2025-09-22 | V91 vs RIJ | 1-hnl | score=2.8 | peso=0.630
+  2025-09-27 | RIJ vs IST | 1-hnl | score=39.6 | peso=0.645
+  2025-10-27 | RIJ vs OSI | 1-hnl | score=76.0 | peso=0.660
+  2025-11-01 | DIN vs RIJ | 1-hnl | score=37.3 | peso=0.675
+  2025-11-09 | VAR vs RIJ | 1-hnl | score=48.3 | peso=0.691
+  2025-11-22 | RIJ vs HAJ | 1-hnl | score=60.0 | peso=0.707
+  2025-11-30 | LOK vs RIJ | 1-hnl | score=9.7 | peso=0.724
+  2025-12-06 | RIJ vs V91 | 1-hnl | score=24.4 | peso=0.741
+  2025-12-21 | RIJ vs GOR | 1-hnl | score=45.7 | peso=0.758
+  2026-01-24 | RIJ vs SLA | 1-hnl | score=60.2 | peso=0.776
+  2026-02-08 | RIJ vs DIN | 1-hnl | score=44.6 | peso=0.794
+  2026-02-22 | HAJ vs RIJ | 1-hnl | score=29.0 | peso=0.812
+  2026-03-01 | RIJ vs LOK | 1-hnl | score=46.6 | peso=0.831
+  2026-04-04 | SLA vs RIJ | 1-hnl | score=42.4 | peso=0.851
+  2026-04-22 | VAR vs RIJ | 1-hnl | score=33.1 | peso=0.871
+  2026-04-26 | RIJ vs HAJ | 1-hnl | score=48.1 | peso=0.891
+  2026-05-03 | LOK vs RIJ | 1-hnl | score=76.0 | peso=0.912
+  2026-05-08 | RIJ vs V91 | 1-hnl | score=88.9 | peso=0.933
+  2026-05-17 | IST vs RIJ | 1-hnl | score=50.6 | peso=0.955
+  2026-05-23 | RIJ vs GOR | 1-hnl | score=50.0 | peso=0.977
+  2026-08-02 | RIJ vs RUD | 1-hnl | score=52.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 45.40
+  di cui Punteggio decisivo (level_score) medio: 40.53 | Punteggio complessivo (granulari) medio: 4.87 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.72, delta avversario -0.32 | Passaggio condizionato: delta venue +0.33, delta avversario -1.26 | Clean sheet/disimpegni condizionato: delta venue -0.91, delta avversario -0.92 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 19.37
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 28.7 - 60.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.45 (differenza: +3.93)
+Media score in casa: 49.81 | Media score fuori casa: 35.78
+Fattore casa/trasferta applicato: 0.994 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.0
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.597 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.995
+Fattore trend (media ultime 5: 63.1 vs media 5 PRECEDENTI: 39.9): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T16:30
+Casa: NK Varaždin | Trasferta: HNK Rijeka
+Competizione: 1-hnl
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.1 (range 25.4 - 56.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 41.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.01
+Punteggio REALE ottenuto in quella partita: 52.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +7.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 18 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      33.4    37.3     +4.0    24.8        SI
+   7        7      31.5    48.3    +16.7    22.9        SI
+   8        8      40.6    60.0    +19.4    21.8        SI
+   9        9      37.1     9.7    -27.4    22.0        NO
+  10       10      43.9    24.4    -19.5    23.2        SI
+  11       11      39.3    45.7     +6.4    22.4        SI
+  12       12      41.4    60.2    +18.7    21.6        SI
+  13       13      36.8    44.6     +7.8    21.9        SI
+  14       14      40.2    29.0    -11.2    21.0        SI
+  15       15      35.3    46.6    +11.2    20.4        SI
+  16       16      42.6    42.4     -0.2    19.8        SI
+  17       17      33.4    33.1     -0.3    19.1        SI
+  18       18      41.5    48.1     +6.6    18.5        SI
+  19       19      34.9    76.0    +41.1    18.1        NO
+  20       20      48.8    88.9    +40.1    20.1        NO
+  21       21      43.9    50.6     +6.7    23.0        SI
+  22       22      49.1    50.0     +0.8    22.4        SI
+  23       23      52.5    52.2     -0.3    21.8        SI
+
+MAE (errore assoluto medio): 13.25
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 83.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
