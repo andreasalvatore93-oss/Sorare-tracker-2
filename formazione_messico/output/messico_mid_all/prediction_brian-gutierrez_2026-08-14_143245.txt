@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-14T14:32:45.528805Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) brian-gutierrez: 51 pt attesi (37-72)
+   SQUADRA: guadalajara-zapopan-guadalajara | AVVERSARIO: santos-laguna-torreon
+======================================================================
+
+######################################################################
+# GIOCATORE: brian-gutierrez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: brian-gutierrez (squadra: guadalajara-zapopan-guadalajara)
+Generato: 2026-08-14T14:32:45.527414Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 24
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: liga-mx (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-10 | CHI vs PAC | liga-mx | score=58.9 | peso=0.779
+  2026-01-14 | JUA vs CHI | liga-mx | score=47.1 | peso=0.801
+  2026-01-17 | CHI vs QUE | liga-mx | score=41.2 | peso=0.824
+  2026-01-31 | ASL vs CHI | liga-mx | score=35.7 | peso=0.847
+  2026-03-19 | CHI vs LEO | liga-mx | score=76.0 | peso=0.871
+  2026-04-19 | CHI vs PUE | liga-mx | score=92.4 | peso=0.895
+  2026-04-23 | NEC vs CHI | liga-mx | score=47.3 | peso=0.920
+  2026-04-26 | CHI vs TIJ | liga-mx | score=43.8 | peso=0.946
+  2026-07-25 | CHI vs JUA | liga-mx | score=54.4 | peso=0.973
+  2026-08-01 | PUE vs CHI | liga-mx | score=58.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 55.72
+  di cui Punteggio decisivo (level_score) medio: 41.00 | Punteggio complessivo (granulari) medio: 14.73 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 38.33 (delta -2.66)
+  Efficacia offensiva condizionata: delta venue -0.35, delta avversario +1.25 | Passaggio condizionato: delta venue -0.52, delta avversario -0.57 | Gol subiti condizionato: delta venue -0.32, delta avversario -0.22 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 16.30
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.2 - 76.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.44 (differenza: +5.87)
+Media score in casa: 61.12 | Media score fuori casa: 47.25
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.5
+Ranking prossimo avversario: 17
+Fattore forza avversario applicato: 1.245 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.006
+Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore trend (media ultime 5: 59.0 vs media 5 PRECEDENTI: 51.9): 1.000
+P(gioca): 60.00% (fonte: starterOddsBasisPoints (6000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-17T01:10
+Casa: Club Santos Laguna | Trasferta: CD Guadalajara
+Competizione: liga-mx
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.4 (range 36.9 - 71.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.32
+Punteggio REALE ottenuto in quella partita: 58.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +3.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      51.9    47.3     -4.6    22.4        SI
+   7        7      40.6    43.8     +3.2    21.1        SI
+   8        8      51.0    54.4     +3.4    20.3        SI
+   9        9      57.7    58.9     +1.2    19.0        SI
+
+MAE (errore assoluto medio): 3.09
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
