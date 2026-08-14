@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-04T12:30:24.459820Z
+Generato: 2026-08-14T09:42:54.060811Z
 Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) ezequiel-eduardo-bullaude: 52 pt attesi (27-73)
-   SQUADRA: santos-laguna-torreon | AVVERSARIO: new-york-city-new-york-new-york
+1) ezequiel-eduardo-bullaude: 53 pt attesi (28-74)
+   SQUADRA: santos-laguna-torreon | AVVERSARIO: guadalajara-zapopan-guadalajara
 ======================================================================
 
 ######################################################################
@@ -13,14 +13,14 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: ezequiel-eduardo-bullaude (squadra: santos-laguna-torreon)
-Generato: 2026-08-04T12:30:24.443494Z
+Generato: 2026-08-14T09:42:54.059360Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
-Partite considerate: 38
-Escluse (DID_NOT_PLAY): 10
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 5
 Escluse (minutaggio < 60', subentri): 11
-Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Competizione partita target: liga-mx (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
 Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2026-01-15 | TOL vs SAN | liga-mx | score=60.0 | peso=0.642
   2026-01-18 | SAN vs JUA | liga-mx | score=73.9 | peso=0.660
@@ -43,36 +43,35 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 25.0 partite): 52.48
   di cui Punteggio decisivo (level_score) medio: 45.83 | Punteggio complessivo (granulari) medio: 6.66 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Punteggio decisivo condizionato per venue: 43.49 (delta -2.33)
-  Efficacia offensiva condizionata: delta venue -0.36, delta avversario +0.60 | Passaggio condizionato: delta venue +0.19, delta avversario +0.42 | Gol subiti condizionato: delta venue -0.61, delta avversario +0.14 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+  Punteggio decisivo condizionato per venue: 48.34 (delta +2.51)
+  Efficacia offensiva condizionata: delta venue +0.39, delta avversario +0.60 | Passaggio condizionato: delta venue -0.21, delta avversario +0.42 | Gol subiti condizionato: delta venue +0.66, delta avversario +0.14 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
 Deviazione standard pesata: 20.62
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 27.6 - 73.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.88 (differenza: +4.73)
 Media score in casa: 59.07 | Media score fuori casa: 47.23
-Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 7.6
-Ranking prossimo avversario: 5
-Fattore forza avversario applicato: 1.066 (gol subiti reali dell'avversario, ultime 10)
-Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.911
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.826 (gol subiti reali dell'avversario, ultime 10)
 Fattore falli (casa/trasferta, da dati reali): 1.000
-Fattore duelli (casa/trasferta, da dati reali): 0.999
-Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
-Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
 Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
-Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
-Fattore gol subiti (goals_conceded, con cap): 0.993
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.007
 Fattore trend (media ultime 5: 55.8 vs media 5 PRECEDENTI: 40.0): 1.000
 P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
 
 --- PROSSIMA PARTITA ---
-Data: 2026-08-06T23:30
-Casa: New York City FC | Trasferta: Club Santos Laguna
-Competizione: leagues-cup-mls
+Data: 2026-08-17T01:10
+Casa: Club Santos Laguna | Trasferta: CD Guadalajara
+Competizione: liga-mx
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 51.6 (range 26.7 - 73.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 53.0 (range 28.1 - 74.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 52.11
