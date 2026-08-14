@@ -1283,6 +1283,102 @@ QUOTA_MINIMA = 0.10
 # produzione: il default non cambia finche' l'utente non decide.
 ARENA_CRITERIO = os.environ.get('ARENA_CRITERIO', 'assoluto')
 
+# 'netto_vero' (14/08/2026, MISURA -- default INVARIATO): invece della retta
+# (atteso - PAREGGIO_ARENA) * GUADAGNO_PER_PUNTO, calcola il guadagno atteso
+# SIMULANDO la gara come fa consiglio_arena: nove avversari pescati da arene
+# vere di quel tipo, posizione, e premio pescato fra quelli davvero incassati
+# per quella posizione (cosi' le arene jackpot entrano alla loro frequenza
+# vera, ~5%). Nessun altro comportamento cambia.
+#
+# PERCHE' (misurato il 14/08 su richiesta dell'utente): la retta e' tarata
+# sulla PENDENZA nell'intorno del pareggio, +-5 punti
+# (analisi_manager/p27_premi_veri_soglie.py:14), ma il generatore la usa fino
+# a +57 punti sopra il pareggio. Non sbaglia solo in modulo (-11%/-32%), che
+# sarebbe innocuo in un confronto: sbaglia DI PIU' SU CERTI TIPI, e sempre
+# nello stesso verso. Ad atteso 289.5 sottostima la cap 260 del 18%, la
+# Beginner del 19% e la cap 220 del 26% -- ed e' questo scarto disuguale, non
+# il livello, che tiene la cap 220 fuori da ogni mix.
+#
+# LAMBDA_ESSENZA: prezzo-ombra di un'essenza, sottratto al guadagno prima del
+# confronto fra tipi (si sceglie il tipo che massimizza netto - lambda*costo).
+# 0.0 = confronto sul netto grezzo, comportamento avido di sempre. Serve con
+# un budget FISSO: senza, l'avidita' passo-per-passo compra sempre il tipo dal
+# netto assoluto piu' alto e finisce le essenze sulle prime formazioni, invece
+# di lasciare alle formazioni di mezzo un'arena che costa meno. Alzandolo si
+# comprano meno arene ma piu' redditizie; il valore giusto e' quello che
+# esaurisce il budget senza avanzi.
+LAMBDA_ESSENZA = float(os.environ.get('LAMBDA_ESSENZA', '0') or 0)
+
+# sigma del punteggio REALE attorno al previsto, per tipo (Passo 2 del giro
+# soglie 08/08, riusata da p27_premi_veri_soglie.py:12-14, non riricavata qui)
+SIGMA_ARENA_TIPO = {
+    'cap 260': 50.52, 'cap 220': 46.70, 'Uncapped': 53.72, 'Beginner': 50.18,
+}
+# i nostri tipi -> le chiavi di consiglio_arena.REGOLE
+TIPO_A_CONSIGLIO = {
+    'ARENA_ALLSTARS_260': 'cap 260', 'ARENA_ALLSTARS_220': 'cap 220',
+    'ARENA_ALLSTARS_UNCAPPED': 'Uncapped', 'ARENA_ALLSTARS_BEGINNER': 'Beginner',
+    'ARENA_ALLSTARS_ELITE': 'Uncapped',   # elite: mai giocate, campo uncapped
+}
+TIPO_A_CONSIGLIO.update({arena_type(lg): 'cap 260' for lg in ARENA_LEAGUES})
+
+_NETTO_CTX = None
+_NETTO_CACHE = {}
+
+
+def _netto_ctx():
+    """Carica una volta sola consiglio_arena, i premi veri e il campo avversari.
+
+    ARCHIVIO_ARENE va impostato PRIMA dell'import: consiglio_arena legge la
+    variabile a livello di modulo. Si usa arene_storico_full_v2.json (2.125
+    arene), lo stesso archivio con cui sono state ricavate PAREGGIO_ARENA e
+    GUADAGNO_PER_PUNTO -- altrimenti le due strade non sarebbero confrontabili.
+    """
+    global _NETTO_CTX
+    if _NETTO_CTX is None:
+        import collections as _c
+        import json as _j
+        os.environ.setdefault('ARCHIVIO_ARENE', 'dati_globali/arene_storico_full_v2.json')
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        import consiglio_arena as _C
+        _norm = {'Cap 260': 'cap 260', 'Cap 220': 'cap 220',
+                 'Uncapped': 'Uncapped', 'Beginner': 'Beginner'}
+        oss = _c.defaultdict(list)
+        with open('dati_globali/premi_arene_2026-08-08.json', encoding='utf-8') as f:
+            for a in _j.load(f)['arene']:
+                tn = _norm.get(a['tipo'])
+                if tn is None:
+                    continue
+                for pos, q in a['premi_per_posizione']:
+                    if pos <= 3 and q is not None:
+                        oss[(tn, pos)].append(q)
+        _C._PREMI_OSS = oss
+        _NETTO_CTX = (_C, _C.campo_per_tipo())
+    return _NETTO_CTX
+
+
+def _netto_vero_arena(tipo, atteso):
+    """Guadagno netto atteso (essenze), premi e piazzamenti veri, meno l'ingresso.
+
+    None se il tipo non ha un campo di avversari da cui pescare: chi chiama
+    ricade sulla retta, non si inventa un numero.
+    """
+    chiave = TIPO_A_CONSIGLIO.get(tipo)
+    if chiave is None:
+        return None
+    memo = (chiave, round(atteso, 1))
+    if memo in _NETTO_CACHE:
+        return _NETTO_CACHE[memo]
+    C, campo = _netto_ctx()
+    avversari = campo.get(chiave) or []
+    regole = C.REGOLE.get(chiave)
+    if not avversari or regole is None:
+        return None
+    incasso = C.incasso_medio(atteso, avversari, regole['premi'],
+                              sigma=SIGMA_ARENA_TIPO.get(chiave, 50.0), tipo=chiave)
+    _NETTO_CACHE[memo] = incasso - regole['costo']
+    return _NETTO_CACHE[memo]
+
 
 def _etichetta_arena(tipo, atteso):
     """(testo, colore) da mostrare accanto alla formazione.
@@ -2015,8 +2111,18 @@ def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool, budget_e
             # Il segno di 'resa' non cambia (COSTO_INGRESSO sempre positivo),
             # quindi il criterio di stop "migliore[0] <= 0" sotto resta valido
             # in entrambi i casi -- verificato, non solo assunto.
+            # 'netto_vero' (14/08/2026): la resa non e' piu' la retta ma il
+            # guadagno simulato coi premi e i piazzamenti veri. Se il tipo non
+            # ha un campo di avversari si resta sulla retta gia' calcolata
+            # sopra, invece di saltare il tipo o inventare un numero.
+            if ARENA_CRITERIO == 'netto_vero':
+                _n = _netto_vero_arena(tipo, atteso)
+                if _n is not None:
+                    resa = _n
             if ARENA_CRITERIO == 'capitale':
                 resa_confronto = resa / COSTO_INGRESSO.get(tipo, 300)
+            elif LAMBDA_ESSENZA:
+                resa_confronto = resa - LAMBDA_ESSENZA * costo_tipo
             else:
                 resa_confronto = resa
             if migliore is None or resa_confronto > migliore[0]:
@@ -2029,7 +2135,17 @@ def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool, budget_e
         # Con margine_quota=0.0 la condizione e' resa <= 0, identica a prima
         # (COSTO_INGRESSO e' sempre positivo, quindi resa/costo <= 0 se e solo
         # se resa <= 0 -- gia' verificato per ARENA_CRITERIO, stessa ragione).
-        if migliore is None or migliore[3] <= migliore[4] * margine_quota:
+        # Col prezzo-ombra acceso lo stop si sposta sul valore GIA' scontato
+        # (migliore[0] = netto - lambda*costo): fermarsi sul netto grezzo
+        # comprerebbe comunque le arene marginali che lambda ha appena
+        # dichiarato non convenienti, e il budget non basterebbe per quelle
+        # buone. Con LAMBDA_ESSENZA=0 la condizione torna identica a prima.
+        if migliore is None:
+            break
+        if LAMBDA_ESSENZA and ARENA_CRITERIO != 'capitale':
+            if migliore[0] <= 0:
+                break
+        elif migliore[3] <= migliore[4] * margine_quota:
             break
         _resa_confronto, tipo, atteso, _resa, costo_tipo = migliore
         vera = generate_lineups_for_type(tipo, 1, role_data, pools, card_pool)

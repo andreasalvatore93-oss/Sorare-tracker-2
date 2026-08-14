@@ -52,6 +52,14 @@ on:
         description: 'Arene dedicate per lega (es. mls,kleague o "tutte"). Vuoto = disattivate (default): solo Arena All Stars.'
         required: false
         default: ''
+      arena_criterio:
+        description: 'Come il bot confronta i tipi di arena. assoluto = default di sempre (retta pareggio/guadagno-per-punto). netto_vero = guadagno simulato coi premi e i piazzamenti reali. capitale = resa per essenza (vecchia misura 08/08).'
+        required: false
+        default: 'assoluto'
+      lambda_essenza:
+        description: 'Prezzo-ombra di unessenza, solo con un budget fisso in essenze_arena: si sceglie il tipo che massimizza netto - lambda*costo. 0 = spento (default). Piu alto = meno arene ma piu redditizie; il valore giusto e quello che esaurisce il budget senza avanzi (misurato 0.5 su budget 5000).'
+        required: false
+        default: '0'
       escludi_lockate:
         description: 'Escludi le carte schierate in formazioni BLOCCATE (non modificabili) di questa giornata. Le formazioni ancora modificabili non contano. 0=no, 1=si (default)'
         required: false
@@ -789,13 +797,15 @@ jobs:
           ALLSTARS_U23: ${{ github.event.inputs.allstars_u23 }}
           CHAMPIONS: ${{ github.event.inputs.champions }}
           ARENA_LEAGUES_ENABLED: ${{ github.event.inputs.arena_leghe_abilitate }}
-          # Hardcoded (10/08, tolti dagli input per non confondere in fase di
-          # lancio): LIST_UNUSED_CANDIDATES e' solo log, zero costo, sempre
-          # acceso; ARENA_CRITERIO resta sul comportamento di sempre
-          # (assoluto), la misura 'capitale' non e' stata scelta per la
-          # produzione.
+          # LIST_UNUSED_CANDIDATES e' solo log, zero costo, sempre acceso.
+          # ARENA_CRITERIO era hardcoded ad 'assoluto' dal 10/08; dal
+          # 14/08 torna un input perche' serve poterlo mettere a
+          # 'netto_vero' (guadagno simulato coi premi veri) senza toccare il
+          # file. Il DEFAULT dell'input resta 'assoluto': le run automatiche
+          # non cambiano comportamento di un bit.
           LIST_UNUSED_CANDIDATES: '1'
-          ARENA_CRITERIO: 'assoluto'
+          ARENA_CRITERIO: ${{ github.event.inputs.arena_criterio }}
+          LAMBDA_ESSENZA: ${{ github.event.inputs.lambda_essenza }}
           EXTEND_ODDS_060_070: ${{ github.event.inputs.extend_odds_060_070 }}
           PYTHONUNBUFFERED: "1"
         run: python generatore_formazioni/build_formazione_globale.py
