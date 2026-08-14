@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-14T09:39:45.877394Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) maximiliano-samuel-romero: 54 pt attesi (35-68)
+   ORDINAMENTO: 55.39
+   SQUADRA: colo-colo-santiago-de-chile | AVVERSARIO: o-higgins-rancagua
+======================================================================
+
+######################################################################
+# GIOCATORE: maximiliano-samuel-romero
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: maximiliano-samuel-romero (squadra: colo-colo-santiago-de-chile)
+Generato: 2026-08-14T09:39:45.851689Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 29
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: primera-division-cl (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | OHI vs CBR | primera-division-cl | score=60.0 | peso=0.088
+  2025-08-23 | LIM vs OHI | primera-division-cl | score=42.2 | peso=0.099
+  2025-08-30 | OHI vs AUD | primera-division-cl | score=67.9 | peso=0.111
+  2025-09-13 | PAL vs OHI | primera-division-cl | score=76.0 | peso=0.125
+  2025-10-26 | OHI vs COQ | primera-division-cl | score=32.0 | peso=0.140
+  2025-11-02 | UCA vs OHI | primera-division-cl | score=77.9 | peso=0.157
+  2025-11-23 | OHI vs UCH | primera-division-cl | score=31.5 | peso=0.177
+  2025-11-30 | ESP vs OHI | primera-division-cl | score=72.0 | peso=0.198
+  2025-12-06 | OHI vs EVE | primera-division-cl | score=42.6 | peso=0.223
+  2026-01-31 | LIM vs COL | primera-division-cl | score=68.7 | peso=0.250
+  2026-02-07 | COL vs EVE | primera-division-cl | score=38.9 | peso=0.281
+  2026-02-15 | COL vs LAC | primera-division-cl | score=67.3 | peso=0.315
+  2026-02-21 | OHI vs COL | primera-division-cl | score=38.3 | peso=0.354
+  2026-03-01 | COL vs UCH | primera-division-cl | score=40.1 | peso=0.397
+  2026-03-07 | AUD vs COL | primera-division-cl | score=61.8 | peso=0.445
+  2026-03-16 | COL vs HUA | primera-division-cl | score=60.5 | peso=0.500
+  2026-04-05 | CON vs COL | primera-division-cl | score=38.9 | peso=0.561
+  2026-04-26 | UCO vs COL | primera-division-cl | score=68.8 | peso=0.630
+  2026-05-03 | COL vs COQ | primera-division-cl | score=65.6 | peso=0.707
+  2026-07-25 | COL vs LIM | primera-division-cl | score=35.6 | peso=0.794
+  2026-08-01 | EVE vs COL | primera-division-cl | score=76.8 | peso=0.891
+  2026-08-09 | LAC vs COL | primera-division-cl | score=68.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 57.57
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=22): 56.02 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 52.43 | Punteggio complessivo (granulari) medio: 5.14 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 1.89 (delta -0.44) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 15.49
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.3 - 72.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.07 (differenza: +0.42)
+Media score in casa: 51.33 | Media score fuori casa: 60.29
+Fattore casa/trasferta applicato: 0.996 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.5
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 63.1 vs media 5 PRECEDENTI: 47.9): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T21:30
+Casa: CSD Colo-Colo | Trasferta: CD O'Higgins
+Competizione: primera-division-cl
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.9 (range 34.7 - 68.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 55.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.07
+Punteggio REALE ottenuto in quella partita: 68.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +12.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      60.0    31.5    -28.5    20.6        NO
+   7        7      54.4    72.0    +17.6    22.6        SI
+   8        8      57.6    42.6    -15.0    21.9        SI
+   9        9      55.1    68.7    +13.6    21.0        SI
+  10       10      51.3    38.9    -12.4    20.1        SI
+  11       11      72.4    67.3     -5.1    20.0        SI
+  12       12      58.9    38.3    -20.6    19.2        NO
+  13       13      39.1    40.1     +1.0    19.2        SI
+  14       14      58.1    61.8     +3.7    18.6        SI
+  15       15      53.3    60.5     +7.2    17.8        SI
+  16       16      55.8    38.9    -16.9    16.8        NO
+  17       17      60.7    68.8     +8.1    16.8        SI
+  18       18      49.2    65.6    +16.4    16.9        SI
+  19       19      53.1    35.6    -17.5    16.4        NO
+  20       20      45.4    76.8    +31.4    17.1        NO
+  21       21      69.8    68.7     -1.1    18.3        SI
+
+MAE (errore assoluto medio): 13.50
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 68.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
