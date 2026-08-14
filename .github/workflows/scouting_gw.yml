@@ -328,20 +328,43 @@ jobs:
       - name: Impacchetta previsioni e cache
         if: always()
         run: |
-          git add -f ':(glob)formazione_*/output/**/.cache/*' \
-                     ':(glob)formazione_*/output/**/.game_log_cache/*' || true
-          git add ':(glob)formazione_*/output/**/prediction_*.txt' \
-                  ':(glob)formazione_*/output/**/prediction_log.json' \
-                  ':(glob)formazione_*/output/**/grid_search/*' || true
+          # UN add PER PATHSPEC (14/08/2026, trovato dallo smoke test): un
+          # `git add A B C` muore INTERO se uno solo dei tre non matcha
+          # ("fatal: pathspec ... did not match any files"), e col `|| true`
+          # in fondo l'errore non si vede: il job consegnerebbe zero file
+          # avendo predetto tutto. E' la stessa lezione gia' scritta nel job
+          # `candidati` ("add SEPARATI", run 30817534591), che qui non era
+          # stata applicata. Basta uno shard di soli GK, senza grid_search,
+          # perche' il caso si presenti.
+          for P in ':(glob)formazione_*/output/**/.cache/*' \
+                   ':(glob)formazione_*/output/**/.game_log_cache/*'; do
+            git add -f "$P" || true
+          done
+          for P in ':(glob)formazione_*/output/**/prediction_*.txt' \
+                   ':(glob)formazione_*/output/**/prediction_log.json' \
+                   ':(glob)formazione_*/output/**/grid_search/*'; do
+            git add "$P" || true
+          done
           # Solo i file che questo job ha davvero toccato: l'indice dice quali
           # sono, senza doverli indovinare per data o per glob.
-          git diff --cached --name-only > /tmp/cambiati.txt
-          if [ ! -s /tmp/cambiati.txt ]; then
+          # --diff-filter=ACMR (14/08/2026): l'indice elenca ANCHE le
+          # cancellazioni, e un predict cancella sempre qualcosa -- scrive
+          # prediction_<slug>_<data>_<ora>.txt nuovo e toglie quello vecchio.
+          # Passando anche quei nomi a tar, tar moriva con "Cannot stat: No
+          # such file or directory" e il job finiva rosso DOPO aver predetto
+          # tutti e 25 i giocatori (run 31790910888, 8 shard su 21 persi cosi').
+          git diff --cached --name-only --diff-filter=ACMR > /tmp/cambiati.txt
+          # Le cancellazioni viaggiano a parte, in un file di servizio dentro
+          # l'archivio: senza, i prediction_*.txt vecchi resterebbero nel repo
+          # per sempre (prima li rimuoveva il commit del singolo job).
+          mkdir -p .scouting_shard
+          git diff --cached --name-only --diff-filter=D > .scouting_shard/cancellati.txt
+          if [ ! -s /tmp/cambiati.txt ] && [ ! -s .scouting_shard/cancellati.txt ]; then
             echo "niente da consegnare"
             exit 0
           fi
-          echo "$(wc -l < /tmp/cambiati.txt) file da consegnare"
-          tar -czf "predict-shard-${SHARD}.tgz" -T /tmp/cambiati.txt
+          echo "$(wc -l < /tmp/cambiati.txt) file da consegnare, $(wc -l < .scouting_shard/cancellati.txt) da rimuovere"
+          tar -czf "predict-shard-${SHARD}.tgz" .scouting_shard/cancellati.txt -T /tmp/cambiati.txt
         env:
           SHARD: ${{ matrix.shard }}
 

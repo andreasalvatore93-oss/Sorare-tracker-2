@@ -87,6 +87,29 @@ def _fondi_prediction_log(dest, sorgente):
     return aggiunte
 
 
+def _applica_cancellazioni(elenco, repo):
+    """I prediction_*.txt che il predict ha sostituito: il file di servizio
+    `.scouting_shard/cancellati.txt` dentro l'archivio li elenca. Senza questo
+    passaggio resterebbero nel repo per sempre (prima li toglieva il commit del
+    singolo job). Si cancella SOLO dentro il repo e solo file, mai cartelle."""
+    tolti = 0
+    try:
+        with open(elenco, encoding='utf-8') as f:
+            nomi = [r.strip() for r in f if r.strip()]
+    except Exception:
+        return 0
+    radice = os.path.abspath(repo)
+    for nome in nomi:
+        percorso = os.path.abspath(os.path.join(repo, nome))
+        if not percorso.startswith(radice + os.sep):
+            log(f"ATTENZIONE: {nome} e' fuori dal repo, non lo tocco")
+            continue
+        if os.path.isfile(percorso):
+            os.remove(percorso)
+            tolti += 1
+    return tolti
+
+
 def raccogli(cartella_artifact, repo=REPO_ROOT):
     archivi = sorted(glob.glob(os.path.join(cartella_artifact, '**', '*.tgz'),
                                recursive=True))
@@ -97,6 +120,7 @@ def raccogli(cartella_artifact, repo=REPO_ROOT):
     log(f"{len(archivi)} archivi da rimettere nel repo.")
     n_file = 0
     n_log = 0
+    n_tolti = 0
     for archivio in archivi:
         tmp = tempfile.mkdtemp(prefix='shard_')
         try:
@@ -107,10 +131,16 @@ def raccogli(cartella_artifact, repo=REPO_ROOT):
                           if not m.name.startswith(('/', '..'))
                           and '..' not in m.name.split('/')]
                 tar.extractall(tmp, members=membri)
+            elenco_tolti = os.path.join(tmp, '.scouting_shard', 'cancellati.txt')
+            if os.path.isfile(elenco_tolti):
+                n_tolti += _applica_cancellazioni(elenco_tolti, repo)
             for radice, _dirs, file_ in os.walk(tmp):
                 for nome in file_:
                     sorgente = os.path.join(radice, nome)
                     relativo = os.path.relpath(sorgente, tmp)
+                    # File di servizio dell'archivio, non roba da copiare.
+                    if relativo.replace(os.sep, '/').startswith('.scouting_shard/'):
+                        continue
                     dest = os.path.join(repo, relativo)
                     os.makedirs(os.path.dirname(dest), exist_ok=True)
                     if nome == 'prediction_log.json' and os.path.exists(dest):
@@ -121,7 +151,7 @@ def raccogli(cartella_artifact, repo=REPO_ROOT):
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
     log(f"{n_file} file rimessi nel repo, {n_log} righe nuove nei "
-        f"prediction_log.json fusi.")
+        f"prediction_log.json fusi, {n_tolti} previsioni vecchie rimosse.")
     return len(archivi), n_file
 
 
