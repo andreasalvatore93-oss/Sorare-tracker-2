@@ -36,9 +36,11 @@ GAMEWEEK = os.environ.get('GAMEWEEK', '').strip()
 FIXTURE_SLUG = os.environ.get('FIXTURE_SLUG', '').strip()
 
 # EXTEND_ODDS_060_070 (10/08/2026, richiesta esplicita utente): filone
-# "pool suppletivo" nel generatore (solo Arena Beginner/All Stars/U23,
-# meccanismo di riserva quando la prima tornata a MIN_ODDS non riempie gli
-# slot richiesti). Di default (flag spento) il comportamento e' INVARIATO:
+# "pool suppletivo" nel generatore (Arena Beginner + All Stars + All Stars
+# Under23 + Champions -- quest'ultima aggiunta il 12/08/2026 col tipo stesso,
+# commit 7e0621f329; qui c'era scritto "solo Beginner/All Stars/U23", vero
+# fino all'11/08, corretto il 14/08 dopo verifica sul codice), meccanismo di
+# riserva quando la prima tornata a MIN_ODDS non riempie gli slot richiesti. Di default (flag spento) il comportamento e' INVARIATO:
 # sotto MIN_ODDS si scarta e basta. Acceso, si tiene ANCHE la fascia
 # 0.60-0.70 inclusi (non un range continuo: le starter-odds Sorare escono a
 # blocchi da 10, quindi 0.60/0.70 sono gli UNICI due valori possibili sotto
