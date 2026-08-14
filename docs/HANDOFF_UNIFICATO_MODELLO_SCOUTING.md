@@ -3294,19 +3294,27 @@ produzione; **capitano**, richiuso con potenza vera su 12.677 formazioni
    verifica.
 5. **Il metro ufficiale non applica il grade.** `backtest_arene_previsioni.py`
    e `taratura_confronto_parametri.py` non contengono la parola "grade", ma la
-   produzione dal 07/08 schiera su `atteso + sd_gruppo × z_grade`. Per i
-   parametri che toccano la SELEZIONE non è un dettaglio: oggi si aggira con
-   `p37_halflife_con_grade.py`, la strada pulita è portare il voto dentro il
-   banco.
+   produzione dal 13/08 sera schiera su GRADE_GROUP_STORICA (tabelle storiche
+   + `GRADE_FATTORE_STORICO`=0,482 + ricentraggio per ruolo — non più il
+   vecchio `atteso + sd_gruppo × z_grade` di gruppo nativo). `p37_halflife_
+   con_grade.py` (13/08 mattina) aggira il buco ma con la formula VECCHIA,
+   superata la sera stessa: la sua conclusione ("l'ottimo non si sposta") va
+   riverificata con la formula giusta prima di fidarsene. **14/08: brief
+   spedito a Opus** (`docs/handoff/BRIEF_OPUS_METRO_CON_GRADE_2026-08-14.txt`)
+   con tre dubbi metodologici aperti prima di scrivere codice — popolazione
+   del ricentraggio (metro storico multi-mese vs produzione una giornata),
+   possibile look-ahead delle tabelle storiche, e se il voto (fattore fisso)
+   possa mai cambiare il RANKING dei parametri in griglia o solo i valori
+   assoluti di MAE/lift. Risposta in attesa.
 6. **Riga GK di `p37` NON VALIDA** (prodotta prima del fix del bug che
    scartava l'89,6% dei punti GK, §8quindecies): va rilanciata se quel numero
    serve. DEF/MID/FWD reggono.
-7. **Le ri-misure pre-registrate del 25/08** (GK_ATT_AVV §5.6, gruppo grade
-   §8bis-bis). **Da sapere PRIMA di arrivarci**: il "3 fixture" non ha nessuna
-   giustificazione statistica — sono semplicemente le tre giornate successive
-   a quando fu scritta la pre-registrazione, e n=3 GW è piccolo. Chi ci arriva
-   decida che potenza serve davvero, invece di trattare il 25/08 come una
-   scadenza che risponde da sola.
+7. ~~Le ri-misure pre-registrate del 25/08~~ **CHIUSA il 14/08: era già
+   fatta.** GK_ATT_AVV (§5.6) e il gruppo grade (§8bis-bis) sono stati
+   entrambi ri-misurati fuori campione il 13/08/2026 stesso (allargando
+   l'archivio all'indietro invece di aspettare il 25/08, che non aveva
+   giustificazione statistica) — entrambi già decisi e in produzione. Voce
+   rimasta in questa lista per una svista, segnalata dall'utente il 14/08.
 
 **FATTO, non più aperto (verificato 11/08 leggendo codice/repo, questa
 sezione era rimasta ferma al 09-10/08):**

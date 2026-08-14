@@ -1,0 +1,152 @@
+BRIEF PER OPUS ESECUTORE — 14/08/2026, inizio sessione anche per te
+Contesto: chat pulita, non sai nulla di questa conversazione. L'utente fa da
+navetta (copia-incolla), non c'e' messaggistica diretta attiva ora.
+
+============================================================
+0. COSA LEGGERE PRIMA (in questo ordine)
+============================================================
+1. CLAUDE.md alla radice del repo (tutto, e' corto) — in particolare la
+   regola "prima di misurare l'effetto di un componente, dimostro che
+   l'interruttore funziona" e "la catena di produzione, mai saltare un
+   anello".
+2. docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md:
+   - righe 1316-1662 (§8bis-bis): la storia del grade, com'e' arrivato alla
+     formula attuale GRADE_GROUP_STORICA, acceso in produzione il 13/08.
+   - righe 3295-3300 (§10bis, voce 5, ancora presente nel file — l'ho
+     lasciata li' apposta per te, e' quella che stiamo valutando).
+3. I file di codice, con i numeri di riga esatti dati sotto — non fidarti
+   della mia parafrasi, leggi il codice.
+
+============================================================
+1. LA DOMANDA, UNA SOLA
+============================================================
+Il "metro ufficiale" con cui si tarano i parametri del modello predittivo
+(taratura_confronto_parametri.py, che usa backtest_arene_previsioni.py) NON
+applica il grade (il voto A-F): valuta ogni riga su MAE/correlazione/lift
+calcolati sul solo `atteso`, mentre la PRODUZIONE dal 07/08 schiera su
+`atteso_combinato = atteso + [contributo del grade]`.
+
+Domanda: vale la pena "portare il voto dentro il banco" (far si' che il
+metro veda atteso_combinato, non atteso nudo, quando si tara un parametro),
+e se si', COME farlo senza introdurre un bug piu' grande del problema che
+si vuole risolvere? Non ti chiedo di scrivere subito il codice: ti chiedo
+un giudizio metodologico su tre punti aperti (sezione 4) prima che io
+implementi.
+
+============================================================
+2. LA MIA IPOTESI, PRIMA DEI NUMERI (se esce il contrario e' un risultato
+   valido, va scritto cosi')
+============================================================
+Ipotesi: l'effetto pratico sara' PICCOLO. Motivo: esiste gia' un tentativo
+precedente su questo fronte, analisi_manager/p37_halflife_con_grade.py
+(13/08 mattina), che ha ritarato l'half-life con e senza voto sullo STESSO
+campione appaiato — l'ottimo non si e' spostato in modo decisivo. MA quel
+test usa la formula VECCHIA del grade (z-score nel gruppo nativo
+lega/ruolo/giorno, righe 75-99 del file), che il 13/08 SERA e' stata
+sostituita in produzione da GRADE_GROUP_STORICA (tabelle storiche +
+GRADE_FATTORE_STORICO=0.482 + ricentraggio per ruolo). Quindi p37 misura
+un modello che la produzione non usa piu' da qualche ora dopo che p37
+stesso e' stato scritto. Non so se la conclusione regge con la formula
+giusta: e' proprio quello che manca.
+
+============================================================
+3. IL CAMPIONE, CON I NUMERI DI CONTROLLO
+============================================================
+`taratura_confronto_parametri.raccogli()` (file taratura_confronto_
+parametri.py, righe 40-65) itera TUTTI gli slug della cache game-log
+condivisa (`backtest_arene_cache.CacheLocale().slug_disponibili()`) e
+produce una riga per ogni partita FINAL con storico sufficiente
+(MIN_STORICO). Questo e' un campione MOLTO piu' ampio della cache grade.
+
+Il grade e' disponibile solo per un sottoinsieme. Fonte esistente unica
+(non ce ne sono altre in repo, verificato):
+  analisi_manager/p12_backtest_formazione_grade.py, funzione
+  carica_indice_grade() (righe 170-220 circa): legge storico_grade_GK_*.json
+  + storico_grade_{Defender,Midfielder,Forward}_20260806.json +
+  storico_grade_crowss_20260806.json. Docstring di p37 (riga 22-27) dice:
+  copertura 16-21% delle righe in cache, campione NON casuale (giocatori
+  presi dai file manager, cioe' gente che qualcuno ha davvero schierato).
+  NUMERO DI CONTROLLO da ritrovare: se ricarichi carica_indice_grade() e
+  incroci con i punti di raccogli(), la quota con voto deve stare in quella
+  fascia 16-21%. Se esce molto diverso, fermati: la fonte e' cambiata o la
+  sto descrivendo male.
+
+============================================================
+4. TRE PUNTI DOVE HO DUBBI METODOLOGICI (qui mi serve il tuo giudizio)
+============================================================
+
+**A. Il ricentraggio per ruolo vede una POPOLAZIONE diversa in produzione
+e nel metro.**
+`_recentra_grade_per_ruolo` (generatore_formazioni/build_formazione_
+globale.py, righe 1437-1466) calcola la costante di ricentraggio come
+media di (atteso_combinato - atteso_cal) su TUTTE le righe dello stesso
+ruolo, ma SOLO quelle della singola run di produzione (una giornata, tutte
+le leghe insieme — poche centinaia/migliaia di righe). Nel metro, il
+campione naturale e' storico multi-mese su migliaia di partite passate.
+Ricentrare su una popolazione cosi' diversa (dimensione e composizione)
+dalla popolazione che la costante ricentra IN PRODUZIONE rischia di
+produrre una costante che non rispecchia nessuna delle due situazioni
+reali. Non so se questo invalidi il confronto o se sia trascurabile.
+
+**B. Le tabelle storiche (grade_scala_produzione.json, sd_atteso_
+produzione.json — generatore_formazioni/dati/) sono costruite sui
+consiglio_*.txt, cioe' sulla popolazione che la produzione punteggia
+DAVVERO (non sull'archivio backtest). Usarle dentro il metro va bene per
+LEGGERE il voto (mean/sd per lega|ruolo, funzioni _scala_storica_per e
+_sd_atteso_storico_per, righe 505-520 e 577-591), ma non contengono
+informazione temporale: non c'e' modo di sapere se una riga del metro
+(che puo' risalire a mesi fa) avrebbe visto la stessa tabella. E' un
+possibile look-ahead (la tabella di oggi applicata a partite di 6 mesi fa).
+Il filone GK_ATT_AVV ha gia' avuto un problema simile (tabella costruita
+senza taglio per data, poi verificato con un walk-forward e giudicato
+irrilevante — vedi handoff §5.6, riga ~710). Va rifatto lo stesso controllo
+qui, o si puo' assumere che l'ordine di grandezza sia simile?
+
+**C. Vale il costo?** Il grade sposta la scelta di arene SOLO tramite
+`atteso_combinato`, e quello che il metro sceglie oggi (half_life, trend,
+correzioni contesto/casa/avversario) e' un parametro di `atteso` PRIMA che
+il grade venga sommato. Se il grade si somma con un fattore fisso
+(GRADE_FATTORE_STORICO=0.482) indipendente dai parametri sotto test, la
+sua unica interazione col metro e' tramite `sd_atteso` (che scala il
+contributo del voto) — e quella tabella e' RICALCOLATA a parte
+(aggiorna_grade_scala_produzione.py), non dentro il grid search. Prima di
+scrivere codice: e' plausibile che il ranking dei parametri (chi vince la
+griglia) NON cambi mai, perche' il grade si somma con lo stesso peso a
+tutte le candidate della griglia? Se la risposta e' si', "portare il voto
+dentro il banco" potrebbe essere lavoro sprecato per il caso d'uso
+principale (scegliere half_life/trend/correzioni) — utile solo per MAE/
+lift assoluti, non per la DECISIONE fra candidati. Dimmi se questo
+ragionamento e' giusto o ha un buco.
+
+============================================================
+5. COSA NON FARE
+============================================================
+- Non toccare la produzione (build_formazione_globale.py,
+  scouting_gw.py): questo brief riguarda SOLO gli strumenti di misura
+  (taratura_confronto_parametri.py, backtest_arene_previsioni.py) o uno
+  script satellite nuovo.
+- Non lanciare run GitHub, non fare query di rete: tutto quello che serve
+  e' gia' in cache/repo (stessa cosa che ha fatto p37).
+- Se decidi che vale la pena implementare, fallo dietro una funzione/flag
+  esplicito che non cambia il comportamento di default degli script
+  esistenti (stesso pattern di `usa_avversario` in taratura_confronto_
+  parametri.py riga 92-105).
+- Non "sistemare" la voce 5 del backlog (§10bis) tu stesso: quella la
+  chiudo io nell'handoff una volta che ho la tua risposta.
+
+============================================================
+6. COSA CONSEGNARE
+============================================================
+Non serve un numero: serve un giudizio scritto sui tre punti A/B/C sopra,
+e se possibile una raccomandazione: (a) implementare come descritto al
+punto 1, (b) implementare ma con una scelta diversa su uno dei tre punti
+(quale, e perche'), (c) non vale il costo per il motivo C, si chiude la
+voce 5 del backlog come "non necessaria" e si documenta perche'.
+
+============================================================
+7. DOVE SCRIVERE L'ESITO
+============================================================
+In coda a docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md, sezione §10bis (dove
+sta oggi la voce 5), NON in un file nuovo. Committa solo quel file (e uno
+script satellite se lo scrivi). Di' all'utente in 5 righe cosa hai deciso,
+il resto sta nel file.
