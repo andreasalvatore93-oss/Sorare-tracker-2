@@ -43,7 +43,7 @@ import argparse
 import datetime
 import concurrent.futures
 import importlib.util
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 if hasattr(sys.stdout, 'buffer'):  # console Windows in cp1252: i nomi non
     import io as _io      # latini farebbero morire lo script IN STAMPA, dopo
@@ -1470,6 +1470,9 @@ a:hover{color:#8ab4ff}
   padding:4px 10px;font-size:12px;cursor:pointer}
 .btn-scelta:hover{border-color:#4a5164;color:#e6e8ee}
 .btn-scelta.attivo{background:#2a3550;color:#8ab4ff;border-color:#8ab4ff}
+#filtro-lega{background:#1a1d26;color:#e6e8ee;border:1px solid #2a2f3d;border-radius:4px;
+  padding:4px 8px;font-size:12px;cursor:pointer;max-width:320px}
+#filtro-lega:hover{border-color:#4a5164}
 </style></head><body>
 <h1>Scouting -- %(fixture)s</h1>
 <div class="meta">%(quando)s &middot; %(n)d candidati &middot; %(filtri)s</div>
@@ -1838,6 +1841,14 @@ _HTML_CONTROLLI_MINIMALE = """
   function ruoliDi(tr) {
     return (tr.getAttribute('data-ruoli') || '').split(',').filter(Boolean);
   }
+  // Filtro campionato: si combina con la vista attiva (ruolo/Best Five/Best per
+  // ruolo), non la sostituisce -- scegliendo una lega, i "best" si calcolano
+  // dentro quella lega, che e' il senso di chiedere "solo la Liga".
+  var selLega = document.getElementById('filtro-lega');
+  function passaLega(tr) {
+    if (!selLega || !selLega.value) return true;
+    return (tr.getAttribute('data-lega') || '') === selLega.value;
+  }
   function rapporto(tr) {
     var prezzo = numAttr(tr, 'data-prezzo');
     var punteggio = numAttr(tr, 'data-ag');
@@ -1874,16 +1885,16 @@ _HTML_CONTROLLI_MINIMALE = """
     tutte.forEach(pulisciStiliRiga);
 
     if (vista === 'TUTTI') {
-      tutte.forEach(function (tr) { tr.style.display = ''; });
+      tutte.forEach(function (tr) { tr.style.display = passaLega(tr) ? '' : 'none'; });
       return;
     }
     if (vista === 'GK' || vista === 'DEF' || vista === 'MID' || vista === 'FWD') {
       tutte.forEach(function (tr) {
-        tr.style.display = (ruoliDi(tr).indexOf(vista) !== -1) ? '' : 'none';
+        tr.style.display = (ruoliDi(tr).indexOf(vista) !== -1 && passaLega(tr)) ? '' : 'none';
       });
       return;
     }
-    var conRapporto = tutte.map(function (tr) {
+    var conRapporto = tutte.filter(passaLega).map(function (tr) {
       return { tr: tr, r: rapporto(tr) };
     }).filter(function (x) { return x.r !== null; });
 
@@ -1928,6 +1939,7 @@ _HTML_CONTROLLI_MINIMALE = """
     vista = (vista === 'BESTROLE') ? 'TUTTI' : 'BESTROLE';
     applica();
   });
+  if (selLega) selLega.addEventListener('change', applica);
 })();
 </script>
 """
@@ -1945,6 +1957,14 @@ def _tabella_minimale(pool, attesi, gg=None, fixture_ambigue=frozenset()):
     righe = sorted(pool['giocatori'],
                    key=lambda g: -(combinato.get(g['slug'], float('-inf'))))
 
+    # Menu campionati: solo le leghe davvero presenti nel pool, con quanti
+    # candidati ciascuna (cosi' si vede subito se una lega ha 3 nomi o 300).
+    conta_leghe = Counter(g.get('lega') for g in righe if g.get('lega'))
+    opzioni = ["<option value=''>Tutti i campionati (%d)</option>" % len(righe)]
+    for lega_slug, n in sorted(conta_leghe.items(), key=lambda kv: (-kv[1], kv[0])):
+        opzioni.append("<option value='%s'>%s (%d)</option>"
+                       % (lega_slug, lega_slug.replace('-', ' '), n))
+
     pezzi = [
         f"<h2>{len(righe)} candidati</h2>"
         "<div class='meta'>A+G = atteso + effetto del grade dentro il gruppo "
@@ -1957,6 +1977,12 @@ def _tabella_minimale(pool, attesi, gg=None, fixture_ambigue=frozenset()):
         "<button type='button' class='btn-scelta btn-ruolo' data-ruolo='DEF'>DEF</button> "
         "<button type='button' class='btn-scelta btn-ruolo' data-ruolo='MID'>MID</button> "
         "<button type='button' class='btn-scelta btn-ruolo' data-ruolo='FWD'>FWD</button>"
+        "</div>"
+        "<div class='meta'>Campionato: "
+        "<select id='filtro-lega'>" + ''.join(opzioni) + "</select> "
+        "<span class='muted'>si combina con i bottoni qui sopra: scegliendo una "
+        "lega, anche Best Five e Best per ruolo si calcolano solo dentro quella."
+        "</span>"
         "</div>"
         "<div class='meta'>"
         "<button type='button' id='btn-best5' class='btn-scelta'>Best Five</button> "
@@ -1992,6 +2018,7 @@ def _tabella_minimale(pool, attesi, gg=None, fixture_ambigue=frozenset()):
         pezzi.append(
             "<tr"
             f" data-ruoli='{','.join(g['ruoli'])}'"
+            f" data-lega='{g.get('lega') or ''}'"
             f" data-prezzo='{'' if prezzo_num is None else prezzo_num}'"
             f" data-atteso='{'' if atteso is None else atteso}'"
             f" data-ag='{'' if ag is None else ag}'>"
