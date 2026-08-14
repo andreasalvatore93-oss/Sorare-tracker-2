@@ -24,6 +24,19 @@ a budget fisso. Una cosa sola, ma cambia le formazioni:
   misurati sullo stesso metro e budget, `assoluto` 4.284 / `netto_vero` 4.256
   / `capitale` 2.573. I primi due sono indistinguibili, l'input era solo un
   modo per sbagliare.
+- **Verificato con metro indipendente**, non con la retta che il metodo
+  ottimizza (sarebbe circolare): campi avversari e premi VERI, 20.000 giornate
+  simulate. Le tante arene sottili vincono a ogni budget (+107 a 2.000, +177 a
+  5.000 essenze) **e dimezzano il rischio** (giornate in perdita 14,0% → 9,6%
+  a budget 5.000). Regge anche ipotizzando un modello ottimista di 15 punti.
+  Sotto i 1.000 essenze i due mix coincidono: la ricerca non peggiora mai.
+- **Due run vere verdi**: #227 (budget 1.000, ricerca → 0,25, +412 contro
+  +372) e #228 (budget 5.000, ricerca → 0,00, cioè il criterio vecchio). Il
+  meccanismo cambia il mix solo quando il budget è stretto rispetto al mazzo.
+- **Unica domanda aperta**: le Beginner reali rendono come dice il modello?
+  Storicamente sono il tipo peggiore (−3,7% tutti i manager, −17,4% crowss) e
+  sono quelle che il mix nuovo compra in quantità. Da guardare sul consuntivo
+  della prima giornata giocata così, separando le sole Beginner.
 - **Cause vere delle run rosse del 14/08**: NON diagnosticate con certezza
   (tre spiegazioni possibili mai isolate, vedi `CLAUDE_ERRORS.md` E1). Dopo
   l'aggiornamento del secret `SORARE_COOKIE` la run è tornata verde.

@@ -15,6 +15,11 @@ su 5.000 essenze, su 3.000 lascia in tasca 1.900 essenze senza dire niente.
 Adesso quel numero lo cerca il bot da solo a ogni run: prova otto valori sugli
 stessi dati (senza chiedere niente a Sorare), stampa cosa otterrebbe con
 ciascuno e tiene il migliore. Nel form tu metti solo le essenze.
+E la domanda giusta ("tante arene sottili o poche grasse?") e' stata poi
+verificata con un metro diverso -- campi avversari e premi VERI, 20.000
+giornate simulate: le tante arene sottili vincono sempre, e per giunta
+dimezzano le giornate storte. Regge anche immaginando un modello ottimista
+che gonfia i punteggi di 15 punti. Dettaglio al punto 4bis.
 
 1. STATO DEL REPO
 -----------------
@@ -25,8 +30,24 @@ Branch main, tutto committato e PUSHATO. Tre commit:
 In produzione (workflow formazione_giornata.yml): ARENA_CRITERIO='assoluto'
 fisso, input arena_criterio SPARITO dal form, essenze_arena default '0',
 lambda_essenza default '0' = ricerca automatica accesa.
-NON verificato su una run vera di Actions: al momento della scrittura la
-modifica e' solo passata dagli smoke test locali. L'utente lancia da solo.
+VERIFICATO SU DUE RUN VERE di Actions, entrambe verdi, col codice nuovo:
+  run #227 (Actions 31812023329), budget 1.000: ricerca -> 0,25; 7 arene
+    (3 cap 220 + 4 Beginner), 1.000/1.000 spese, guadagno atteso +412 contro
+    i +372 che avrebbe dato il criterio vecchio (+11%). 212 carte avanzate:
+    a fermare non era il mazzo, era il budget.
+  run #228 (Actions 31813403921), budget 5.000: la ricerca ha eletto 0,00,
+    cioe' il criterio vecchio -- 28 arene, 4.500/5.000 spese. Escludendo le
+    6 marginali (sotto il 10% dell'ingresso, tutte Beginner da 1-9 essenze)
+    restano 22 arene, +828 essenze su 3.900 investite, 37,6 per arena.
+Le due run insieme dicono la cosa giusta sul meccanismo: NON cambia sempre il
+mix, cambia quando il budget e' stretto rispetto al mazzo. Su 5.000 essenze
+con quel mazzo non c'era niente da guadagnare, su 1.000 si'.
+
+RUN ROSSE DEL POMERIGGIO (contesto, non un difetto del codice nuovo): le run
+delle 13:22-13:26 fallivano con timeout/UNAUTHORIZED su OGNI query Sorare.
+Dopo l'aggiornamento del secret SORARE_COOKIE sono tornate verdi, ma la causa
+NON e' stata isolata (restavano in piedi anche 'APIKEY revocata' e 'IP dei
+runner strozzato'). Vedi CLAUDE_ERRORS.md E1: non spacciarla per risolta.
 
 2. LA DOMANDA DI PARTENZA
 -------------------------
@@ -98,6 +119,61 @@ Criteri di scelta del tipo, stesso metro (retta) e stesso budget:
 assoluto e netto_vero cambiano segno fra i due test (+0,4% e -0,7%): non c'e'
 un vincitore, per questo l'input e' stato tolto invece che ritarato.
 
+4bis. IL BACKTEST CHE HA CHIUSO LA DOMANDA (metro indipendente)
+--------------------------------------------------------------
+PERCHE' SERVIVA. Il +1.510 contro +1.378 del punto 4 e' calcolato con la
+STESSA retta che il metodo nuovo massimizza: e' circolare, non prova niente
+sul mondo. Domanda vera dell'utente: a parita' di budget, meglio poche arene
+col margine grosso o tante col margine sottile?
+
+METODO (nessuna riga della retta usata). Per ogni formazione del mix si pesca
+un CAMPO AVVERSARI vero dalle 2.125 arene storiche del suo tipo
+(dati_globali/arene_storico_full_v2.json), si pesca il punteggio realizzato
+attorno all'atteso con la sigma misurata per tipo (cap 260 50,52; cap 220
+46,70; Beginner 50,18), si calcola il piazzamento e si paga col PREMIO
+davvero osservato per quella posizione (dati_globali/premi_arene_2026-08-08.json,
+jackpot inclusi alla loro frequenza vera). 20.000 giornate simulate per
+strategia; si guarda la distribuzione, non solo la media.
+
+RISULTATI (essenze NETTE, costo d'ingresso gia' sottratto):
+  budget   vecchio (lambda 0)        nuovo (ricerca)          differenza
+    500    2 arene   media  +470     identico                     0
+  1.000    4 arene   media  +883     identico                     0
+  2.000    7 arene   media +1.431   11 arene  media +1.538      +107
+  3.000   12 arene   media +1.886   16 arene  media +1.928       +41
+  5.000   20 arene   media +2.422   29 arene  media +2.599      +177
+Sotto i 1.000 essenze i due mix COINCIDONO: la ricerca non peggiora mai.
+
+RISCHIO -- e' la parte che non ci si aspettava. Piu' arene sottili non sono
+piu' rischiose, sono MENO rischiose (si spalma su piu' tavoli):
+  budget 2.000: giornate in perdita 18,1% -> 12,8%; 10% peggiore -600 -> -200
+  budget 3.000: giornate in perdita 15,1% -> 12,1%; 10% peggiore -400 -> -200
+  budget 5.000: giornate in perdita 14,0% ->  9,6%; 10% peggiore -400 ->    0
+
+TENUTA SE IL MODELLO E' OTTIMISTA. E' lo scenario che dovrebbe punire le arene
+vicine al pareggio, quindi il test che poteva ribaltare tutto. Differenza
+media a favore del nuovo, togliendo punti a TUTTE le formazioni:
+  errore del modello:      0      -5     -10     -15  punti
+  budget 2.000:         +107     +65     +55     +26
+  budget 5.000:         +177    +164    +154    +112
+Vince in tutti gli scenari, e vince sul rischio in tutti (esempio estremo,
+-10 punti e budget 5.000: giornate in perdita 32,9% col vecchio, 28,6% col
+nuovo). Il vantaggio si assottiglia ma non cambia mai segno.
+
+LIMITI, detti chiaramente. (a) E' una simulazione: campi e premi sono veri,
+le giornate no. (b) Giorno per giorno il margine e' piccolo -- il mix nuovo
+incassa piu' del vecchio nel ~52% delle giornate, non nel 90%: e' un
+vantaggio che si raccoglie sulla stagione, non sulla singola domenica.
+(c) La sigma e' presa uguale per tutte le formazioni dello stesso tipo.
+
+LO SCRIPT NON E' IN REPO: l'utente ha scelto di non committarlo. Chi lo
+rifara' parta da qui -- servono B.load_league_role_data + B.filter_by_window +
+B.build_quality_pools + CardPool sui conteggi uniti, poi B._netto_ctx() da'
+(consiglio_arena, campo_per_tipo) e C._PREMI_OSS i premi osservati; i due mix
+si generano con B.genera_arene_efficienti (LAMBDA_ESSENZA=0) e
+B.genera_arene_budget_ottimo, disfando il pool con
+B._istantanea_pool/_ripristina_pool fra l'uno e l'altro. Mezz'ora di lavoro.
+
 5. DA SAPERE PRIMA DI DECIDERE
 ------------------------------
 - Il guadagno e' ATTESO, calcolato sulla retta pareggio/guadagno-per-punto
@@ -117,11 +193,18 @@ un vincitore, per questo l'input e' stato tolto invece che ritarato.
 
 6. DECISIONE APERTA
 -------------------
-Nessuna sul codice. Restano due domande da guardare dopo la prima giornata
-vera: (a) le Beginner rendono davvero come dice il modello, o lo storico
-negativo ha una causa che non abbiamo capito; (b) se la griglia del lambda
-va allargata sotto 0,10 (sul mazzo intero il vincitore era il secondo valore
-della griglia, quindi l'ottimo potrebbe stare piu' in basso).
+Nessuna sul codice: il filone si chiude qui, verificato con metro
+indipendente (4bis). Resta UNA domanda sola, e si risponde solo col
+consuntivo: **le Beginner reali rendono come dice il modello?** Sono il tipo
+che storicamente ha reso peggio (tutti i manager -3,7%, crowss -17,4%) e sono
+proprio quelle che il mix nuovo compra in quantita'. La spiegazione
+dell'utente (le schierava a mano, con le carte scarse, con un mazzo piu'
+corto) e' plausibile e NON verificata. La prima giornata giocata col mix
+nuovo e' anche il primo test vero: guardare il consuntivo delle SOLE
+Beginner, separato dagli altri tipi.
+Chiusa invece la questione della griglia: il vincitore e' stato 0,25 (run
+#227), 0,10 e 0,00 in altri casi -- la griglia copre bene, non serve
+allargarla sotto lo 0,10.
 
 7. FILE DI RIFERIMENTO
 ----------------------
