@@ -2013,6 +2013,121 @@ def _ripristina_pool(card_pool, stato):
         card_pool._used_per_role = usati_ruolo
 
 
+def _resa_totale_arene(scelte):
+    """Essenze attese di un insieme di arene, sulla retta di produzione.
+
+    Metro UNICO per confrontare mix diversi fra loro: non dipende da
+    ARENA_CRITERIO ne' da LAMBDA_ESSENZA, che cambiano solo COME si sceglie.
+    """
+    tot = 0.0
+    for r in scelte:
+        tipo = r.get('tipo')
+        soglia = PAREGGIO_ARENA.get(tipo)
+        if soglia is None:
+            continue
+        tot += (_atteso_con_capitano(r) - soglia) * GUADAGNO_PER_PUNTO.get(tipo, 7.9)
+    return tot
+
+
+# Griglia del prezzo-ombra provata dalla ricerca automatica. Il valore giusto
+# NON e' una costante: dipende dal budget e dal mazzo del giorno (misurato il
+# 14/08 sugli stessi dati: 0.20 e' il migliore a budget 3.000, mentre lo 0.50
+# suggerito a suo tempo su budget 5.000 li' si ferma dopo 1.100 essenze e
+# lascia il resto in tasca). Per questo lo cerca il bot invece di chiederlo
+# all'utente.
+LAMBDA_GRIGLIA = (0.0, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50)
+
+
+def genera_arene_budget_ottimo(tipi, massimo, role_data, pools, card_pool,
+                               budget_essenze, griglia=LAMBDA_GRIGLIA):
+    """Sceglie il mix di arene che rende di piu' DENTRO il budget.
+
+    Perche' esiste (14/08/2026, richiesta esplicita dell'utente). Con un
+    budget fisso la scelta avida "prendi sempre l'arena che rende di piu' in
+    assoluto" compra solo cap 260: sono le piu' redditizie per formazione, ma
+    costano 300 l'una e finiscono il budget in fretta. Un mix con qualche cap
+    220 e qualche Beginner puo' rendere di piu' a parita' di spesa -- e lo
+    fa davvero: misurato su 194 carte e 3.000 essenze, 15 arene miste rendono
+    +1.496 contro +1.378 delle 11 sole 260/220 (+8,6%).
+
+    Il mix si ottiene col prezzo-ombra LAMBDA_ESSENZA, che sconta ogni arena
+    del suo costo d'ingresso. Il valore giusto pero' cambia con budget e
+    mazzo, quindi qui si prova tutta la griglia e si tiene il risultato
+    MIGLIORE MISURATO (piu' essenze attese, a parita' quello che spende meno),
+    invece di far indovinare un numero all'utente.
+
+    Nessuna query di rete: si rigenera sugli stessi dati gia' in memoria,
+    disfando il pool fra un tentativo e l'altro.
+    """
+    global LAMBDA_ESSENZA
+    lambda_utente = LAMBDA_ESSENZA
+    if lambda_utente:
+        # Valore imposto a mano: si rispetta e non si cerca niente. Serve a
+        # poter riprodurre una run vecchia, o a forzare la mano in un test.
+        print(f"prezzo-ombra imposto a mano ({lambda_utente}): nessuna ricerca.")
+        return genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool,
+                                       budget_essenze=budget_essenze)
+
+    print(f"\nRicerca del mix migliore dentro il budget ({len(griglia)} tentativi, "
+          f"zero query: si rigenera sugli stessi dati).")
+    stato = _istantanea_pool(card_pool)
+    migliore = None   # (resa, -speso, lam, scelte)
+    try:
+        for lam in griglia:
+            LAMBDA_ESSENZA = lam
+            _ripristina_pool(card_pool, _istantanea_pool_copia(stato))
+            with _stampa_zitta():
+                scelte = genera_arene_efficienti(tipi, massimo, role_data, pools,
+                                                 card_pool, budget_essenze=budget_essenze)
+            resa = _resa_totale_arene(scelte)
+            speso = sum(COSTO_INGRESSO.get(r.get('tipo'), 300) for r in scelte)
+            mix = {}
+            for r in scelte:
+                mix[LABELS.get(r.get('tipo'), r.get('tipo'))] = \
+                    mix.get(LABELS.get(r.get('tipo'), r.get('tipo')), 0) + 1
+            print(f"  prezzo-ombra {lam:.2f}: {len(scelte):2d} arene, "
+                  f"{speso}/{budget_essenze} essenze, guadagno atteso {resa:.0f} "
+                  f"({', '.join(f'{v}x {k}' for k, v in sorted(mix.items()))})")
+            chiave = (round(resa, 3), -speso)
+            if migliore is None or chiave > migliore[0]:
+                migliore = (chiave, lam, scelte)
+    finally:
+        LAMBDA_ESSENZA = lambda_utente
+        _ripristina_pool(card_pool, stato)
+
+    lam_vinc = migliore[1]
+    print(f"Scelto prezzo-ombra {lam_vinc:.2f} (guadagno atteso "
+          f"{migliore[0][0]:.0f} essenze). Rigenero il mix definitivo:")
+    LAMBDA_ESSENZA = lam_vinc
+    try:
+        return genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool,
+                                       budget_essenze=budget_essenze)
+    finally:
+        LAMBDA_ESSENZA = lambda_utente
+
+
+def _istantanea_pool_copia(stato):
+    """Copia FRESCA di un'istantanea: _ripristina_pool assegna gli oggetti
+    veri, quindi senza copiare il secondo tentativo ripartirebbe dal pool gia'
+    consumato dal primo (bug silenzioso: meno arene ai tentativi successivi)."""
+    import copy
+    return (copy.deepcopy(stato[0]), copy.deepcopy(stato[1]))
+
+
+class _stampa_zitta:
+    """Zittisce i print dei tentativi: interessano solo le righe di sintesi."""
+
+    def __enter__(self):
+        import io
+        self._vero = sys.stdout
+        sys.stdout = io.StringIO()
+        return self
+
+    def __exit__(self, *_):
+        sys.stdout = self._vero
+        return False
+
+
 def genera_arene_efficienti(tipi, massimo, role_data, pools, card_pool, budget_essenze=None,
                             cap_per_tipo=None, gia_fatte=None, etichetta='arena efficiente',
                             margine_quota=0.0):
@@ -2831,8 +2946,15 @@ def main():
             print(f"\n=== ARENE EFFICIENTI: fino a {_massimo_arene}, tipo scelto dal bot")
         print("Nessun tipo e' disattivato: quelli che non rendono non vengono")
         print("scelti, e torneranno appena il mazzo li rendera' convenienti.")
-        _arene_eff_scelte = genera_arene_efficienti(_tipi, _massimo_arene, role_data,
-                                                     pools, card_pool, budget_essenze=_budget_essenze)
+        if _budget_essenze is not None:
+            # Budget fisso: il mix migliore dentro quel budget non e' quello
+            # avido (vedi genera_arene_budget_ottimo). Senza budget non c'e'
+            # niente da ottimizzare e si resta sulla scelta di sempre.
+            _arene_eff_scelte = genera_arene_budget_ottimo(_tipi, _massimo_arene, role_data,
+                                                           pools, card_pool, _budget_essenze)
+        else:
+            _arene_eff_scelte = genera_arene_efficienti(_tipi, _massimo_arene, role_data,
+                                                         pools, card_pool, budget_essenze=None)
         all_results.extend(_arene_eff_scelte)
         # Essenze spese dalla tornata primaria (12/08/2026, bug reale: con
         # SOLO ESSENZE_ARENA impostata -- senza 'arene' -- il pool suppletivo

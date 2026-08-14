@@ -35,7 +35,7 @@ on:
       essenze_arena:
         description: 'Essenze da investire in arena (priorita 2, in ALTERNATIVA o insieme ad "arene"): il bot genera arene efficienti finche il costo cumulato d.ingresso non supera questo budget. Vuoto = nessun limite, si ricade sul solo numero richiesto in "arene".'
         required: false
-        default: '4500'
+        default: '0'
       allstars:
         description: 'Numero di All Stars da 7, priorita 3. 0 = nessuna.'
         required: false
@@ -53,7 +53,7 @@ on:
         required: false
         default: ''
       lambda_essenza:
-        description: 'Prezzo-ombra di unessenza, solo con un budget fisso in essenze_arena: si sceglie il tipo che massimizza netto - lambda*costo. 0 = spento (default). Piu alto = meno arene ma piu redditizie; il valore giusto e quello che esaurisce il budget senza avanzi (misurato 0.5 su budget 5000).'
+        description: 'LASCIA 0. Prezzo-ombra di unessenza: con 0 (default) lo cerca DA SOLO il bot, provando tutta la griglia e tenendo il mix che rende di piu dentro il budget. Il valore giusto cambia con budget e mazzo del giorno, quindi metterlo a mano peggiora quasi sempre: valorizzalo solo per riprodurre una run vecchia.'
         required: false
         default: '0'
       escludi_lockate:
