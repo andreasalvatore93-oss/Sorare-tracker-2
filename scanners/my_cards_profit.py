@@ -58,6 +58,7 @@ FIX 10/08 (richiesta esplicita dell'utente, 3 modifiche testate in locale sull'a
 """
 import os
 import json
+import time
 from datetime import datetime, timedelta
 import track
 
@@ -705,9 +706,17 @@ def _report_viewer_url():
     """raw.githack.com serve raw.githubusercontent.com col Content-Type text/html corretto,
     cosi' il link apre la pagina renderizzata invece di scaricare il file -- stesso schema gia'
     collaudato in produzione da bot_profit_telegram_notify.py (funziona solo su repo pubblici,
-    gia' verificato li')."""
+    gia' verificato li').
+
+    FIX 14/08 (caso reale segnalato dall'utente, sergi-dominguez-viloria-2026-limited-121):
+    l'URL era identico ad ogni run, quindi il browser/la webview di Telegram riapriva la copia
+    gia' vista e mostrava i prezzi di giorni prima -- sembrava una cache dei minimi nostra, ma
+    i minimi erano stati rimisurati (log: 21.03EUR il 10/08, 14.00EUR il 14/08) e anche il file
+    su githack era gia' quello nuovo. Si aggiunge un parametro `?v=<epoch>` diverso ad ogni
+    run: e' un URL nuovo per il browser, nessuna cache lo copre, e githack ignora la query."""
     path_url = REPORT_PATH.replace(os.sep, '/')
-    return f"https://raw.githack.com/{REPO_SLUG}/{GIT_REF}/{path_url}"
+    return (f"https://raw.githack.com/{REPO_SLUG}/{GIT_REF}/{path_url}"
+            f"?v={int(time.time())}")
 
 
 def generate_and_send_report(profit_cards, craft_cards):
