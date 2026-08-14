@@ -3255,6 +3255,45 @@ spiegare.
 
 ## 10bis. COSE DA FARE — riscritto il 09/08 notte, ripulito 11/08 (verificato contro il codice, non a memoria)
 
+### 🔴 BUG DI PRODUZIONE APERTO — trovato il 14/08/2026 ore 09:10 Roma (Opus, controllo della run 31776364504)
+
+**Da quando GRADE_GROUP_STORICA_ENABLED è acceso di default (13/08 sera), il
+correttivo GK_ATT_AVV non ha PIÙ NESSUN EFFETTO sulla scelta.** Non è
+un'ipotesi: dimostrato con un test sintetico locale (due portieri identici,
+avversari con aggiustamento +0,03 e +5,11 → dopo la catena completa hanno lo
+stesso `atteso` 50,53).
+
+Perché, in `generatore_formazioni/build_formazione_globale.py`
+(`load_league_role_data`, righe 1416-1429):
+1. `_apply_grade_group(rows)` col flag storico ACCESO esce presto (riga 635):
+   scrive `atteso_cal`/`atteso_combinato` ma **non tocca** `atteso`;
+2. `_apply_gk_att_avv(rows)` (riga 1418) somma il correttivo dentro `atteso`;
+3. `_recentra_grade_per_ruolo` (riga 1462) fa `r['atteso'] =
+   r['atteso_combinato'] - media`, e `atteso_combinato` era stato calcolato al
+   passo 1, **prima** del correttivo GK → il passo 2 viene cancellato.
+
+Col flag storico SPENTO (comportamento fino al 13/08) il bug non c'era:
+`_apply_grade_group` scriveva `atteso` da sé al passo 1 e il correttivo GK si
+sommava sopra. È quindi una **regressione introdotta dall'accensione**, non un
+difetto vecchio.
+
+Impatto: la run 212 del 14/08 (24 formazioni, già consegnate) ha schierato i
+portieri **senza** il correttivo dell'attacco avversario — cioè con l'atteso GK
+di nuovo quasi piatto, differenziato solo dal voto. Gli aggiustamenti in
+tabella arrivano a ±5 punti, quindi non è cosmetico. DEF/MID/FWD non sono
+toccati (nessun altro modificatore vive fra i passi 1 e 3).
+
+Fix proposto (una riga, NON ancora applicato — decide l'utente): in
+`_recentra_grade_per_ruolo` applicare il voto come DELTA sul valore corrente
+invece di sovrascrivere:
+`r['atteso'] = round(r['atteso'] + (r['atteso_combinato'] - r['atteso_cal'] -
+media), 2)` (idem `sort_score`), così sopravvivono entrambi i correttivi.
+Alternativa: spostare `_apply_gk_att_avv` PRIMA di `_apply_grade_group`, così
+il voto si somma su un `atteso_cal` che già contiene il GK. Da testare con
+l'A/A prima di committare, e da riverificare a valle sulle soglie arena
+(catena di produzione: il livello medio dei GK si sposta, di quanto è da
+misurare — non stimato qui).
+
 ### APERTO AL 13/08/2026 NOTTE — la lista corta, in ordine di interesse dell'utente
 
 **Chiuse nella stessa notte, senza toccare il codice**: il **margine
@@ -3299,13 +3338,74 @@ produzione; **capitano**, richiuso con potenza vera su 12.677 formazioni
    vecchio `atteso + sd_gruppo × z_grade` di gruppo nativo). `p37_halflife_
    con_grade.py` (13/08 mattina) aggira il buco ma con la formula VECCHIA,
    superata la sera stessa: la sua conclusione ("l'ottimo non si sposta") va
-   riverificata con la formula giusta prima di fidarsene. **14/08: brief
-   spedito a Opus** (`docs/handoff/BRIEF_OPUS_METRO_CON_GRADE_2026-08-14.txt`)
-   con tre dubbi metodologici aperti prima di scrivere codice — popolazione
-   del ricentraggio (metro storico multi-mese vs produzione una giornata),
-   possibile look-ahead delle tabelle storiche, e se il voto (fattore fisso)
-   possa mai cambiare il RANKING dei parametri in griglia o solo i valori
-   assoluti di MAE/lift. Risposta in attesa.
+   riverificata con la formula giusta prima di fidarsene.
+
+   **RISPOSTA OPUS, 14/08/2026 ore 09:10 Roma (brief
+   `docs/handoff/BRIEF_OPUS_METRO_CON_GRADE_2026-08-14.txt`).
+   Raccomandazione: (b) IMPLEMENTARE, ma a DUE COLONNE, non sostituendo il
+   metro attuale.** Dettaglio sui tre dubbi:
+
+   - **A (popolazione del ricentraggio): NON è un problema per la decisione.**
+     Il ricentraggio è una COSTANTE additiva per ruolo, e il metro valuta un
+     ruolo alla volta (`sotto = [p for p in punti if p[0] == RUOLI[b]]`,
+     `taratura_confronto_parametri.py:260`). Una costante sommata a tutte le
+     righe dello stesso ruolo **non cambia correlazione, non cambia sd_prev e
+     non cambia il lift** (non cambia l'ordinamento dentro la giornata): tocca
+     solo MAE e bias. Quindi la scelta di produzione non è a rischio. Per
+     avere anche MAE/bias giusti basta ricalcolare la costante SUL CAMPIONE
+     DEL METRO con la stessa ricetta (media di `atteso_combinato - atteso_cal`
+     per ruolo), mai copiarla da una run di produzione. Ed è pure necessario:
+     le due popolazioni hanno voti diversi (i candidati di produzione hanno
+     media voto 2,42 nel pool del 14/08 contro tabella 3,00; le righe del
+     metro sono partite FINAL, dove gli F che non giocano quasi spariscono) —
+     il ricentraggio è proprio ciò che rende confrontabili le due.
+   - **B (look-ahead delle tabelle storiche): rischio quasi nullo, walk-forward
+     NON necessario.** Le due tabelle non contengono nessun esito:
+     `grade_scala_produzione.json` è media/sd delle LETTERE, `sd_atteso_
+     produzione.json` è la dispersione delle PREVISIONI del modello. Nessuna
+     delle due vede un punteggio realizzato, quindi non esiste il canale
+     attraverso cui il futuro entrerebbe. Quello che resta è una
+     MIS-calibrazione (tabella 2026 applicata a partite di mesi fa): sposta lo
+     z verso lo zero, cioè **sottostima** il contributo del voto — direzione
+     conservativa, come già il margine residuo del voto (CLAUDE.md, punto
+     fisso 13/08). Diverso e già chiuso è il look-ahead del voto per riga:
+     nessun leakage sistematico, residuo ~13% conservativo.
+     ATTENZIONE però a una cosa vera: `sd_atteso_produzione.json` è la
+     dispersione degli attesi **del modello di oggi**. Se una candidata della
+     griglia venisse adottata, quella tabella andrebbe RIGENERATA
+     (`aggiorna_grade_scala_produzione.py`) perché il peso del voto cambia con
+     essa — è la catena di produzione, anello in più da non saltare.
+   - **C (il ranking può cambiare?): il ragionamento HA UN BUCO, e si vede sui
+     dati.** È vero che il termine del voto è additivo e indipendente dai
+     parametri sotto test (dipende solo da lega, ruolo, lettera). Ma MAE,
+     correlazione e lift **non sono lineari**: `corr(x+g, y) =
+     (cov(x,y)+cov(g,y)) / (sd(x+g)·sd(y))`, e sia `sd(x)` sia `cov(x,g)`
+     cambiano da candidata a candidata. In parole da bar: se il voto dice già
+     "questo è forte", un parametro che scopre la stessa cosa non aggiunge
+     niente, ma il metro di oggi — che il voto non lo vede — glielo conta come
+     merito. Il metro col voto acceso premia ciò che il voto NON sa già.
+     E il termine non è piccolo: sd del contributo = 0,482 × sd_atteso
+     (≈4,85-5,26) × sd(z) ≈ **2,3-2,5 punti**, contro un sd_prev del metro di
+     3,0-4,0. Cioè il voto pesa quanto un terzo/quaranta per cento della
+     varianza del segnale su cui si sceglie: non è una correzione di contorno.
+     La prova empirica sta già in `p37` (formula vecchia, quindi se mai
+     SOTTOSTIMA): FWD lift senza voto ottimo a hl 9-12 (25,0), col voto a
+     hl 16 (30,8); DEF lift 18,7 → 24,8. La riga GK di p37 resta NON VALIDA
+     (voce 6 qui sotto).
+     Contro-effetto da mettere in conto: aggiungendo a tutte le candidate lo
+     stesso segnale forte, le differenze FRA candidate si assottigliano —
+     il metro col voto è più fedele ma **meno sensibile**.
+   - **COME FARLO (proposta operativa, non ancora implementata).** Un flag
+     `--con-grade` in `taratura_confronto_parametri.py`, stesso pattern di
+     `usa_avversario` (default OFF = tutte le misure precedenti restano
+     confrontabili), che stampa le due colonne appaiate come fa `p37`. Regola
+     di decisione: si sceglie il parametro sulla colonna SENZA voto (più
+     risoluzione), ma **una candidata che migliora senza voto e peggiora col
+     voto va scartata** — è ridondante col voto e in produzione non renderà.
+     Costo: il campione col voto è ~30% delle righe (27.294 su ~92.000 in
+     `p37`, non il 16-21% scritto nella sua docstring — quel numero è vecchio,
+     l'indice è cresciuto), non casuale, quindi la colonna col voto vale come
+     GATE, non come metro fine.
 6. **Riga GK di `p37` NON VALIDA** (prodotta prima del fix del bug che
    scartava l'89,6% dei punti GK, §8quindecies): va rilanciata se quel numero
    serve. DEF/MID/FWD reggono.
