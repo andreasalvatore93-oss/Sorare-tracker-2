@@ -3427,6 +3427,40 @@ produzione; **capitano**, richiuso con potenza vera su 12.677 formazioni
      `p37`, non il 16-21% scritto nella sua docstring — quel numero è vecchio,
      l'indice è cresciuto), non casuale, quindi la colonna col voto vale come
      GATE, non come metro fine.
+
+   **IMPLEMENTATO il 14/08/2026 (orchestratore), come raccomandato.**
+   `--con-grade` in `taratura_confronto_parametri.py` (funzioni `valuta()`,
+   `griglia_favorito()`, helper `_con_grade`/`_metriche`/`_carica_grade`):
+   default OFF, A/A verificato (senza il flag l'output è quello di sempre,
+   nessun percorso di calcolo cambia). Riusa senza riscrivere
+   `p12_backtest_formazione_grade.applica_gruppi_grade(modo='storica_completa')`
+   + ricentraggio per ruolo, la STESSA formula di produzione. Anche
+   `p37_halflife_con_grade.py` corretto allo stesso modo (usava la formula
+   VECCHIA, superata il 13/08 sera) e rilanciato per intero:
+
+   | ruolo | n col voto | senza→col MAE | senza→col corr | senza→col lift% |
+   |---|---|---|---|---|
+   | GK | 10.207 | 16,13→16,13 (piatto) | 0,07→0,08 | 6,7→5,8 (hl=6, prod) |
+   | DEF | 40.045 | 14,99→14,76 | 0,169→0,218 | 16,3→21,4 (hl=30, prod) |
+   | MID | 35.440 | 13,05→12,77 | 0,239→0,290 | 24,8→29,4 (hl=25, prod) |
+   | FWD | 30.308 | 14,47→14,18 | 0,251→0,300 | 26,4→29,9 (hl=6, prod) |
+
+   Conferma qualitativa del punto C: su FWD il lift col voto continua a
+   salire oltre hl=6 fino a un plateau 31,0-31,5% verso hl=12-16 (contro
+   26,4-27,3% senza voto, che plateaua prima) — stesso fenomeno segnalato da
+   Opus sulla formula vecchia, riprodotto con quella giusta. Non è una
+   ritaratura (servirebbe bootstrap/IC, non fatto qui): è la controprova che
+   il GATE funziona ed è sensibile, esattamente come doveva.
+   **Prova pratica del GATE su una griglia vera** (`--favorito 0,1,2
+   --con-avversario --con-grade`, FWD, n=2.996): la correzione "favorito_k"
+   PASSA il criterio standard (MAE/corr/lift migliorano insieme, k=1 e k=2)
+   ma il GATE la boccia (lift col voto peggiora, −0,6 e −1,7) — è il caso
+   esatto che il punto C prevedeva: una correzione ridondante col voto, che
+   il metro di oggi (senza voto) scambierebbe per un miglioramento vero.
+   Nessun parametro di produzione toccato: solo lo strumento di misura.
+   File: `taratura_confronto_parametri.py`, `analisi_manager/
+   p37_halflife_con_grade.py`, `analisi_manager/dati/
+   halflife_con_grade_2026-08-14.json`.
 6. **Riga GK di `p37` NON VALIDA** (prodotta prima del fix del bug che
    scartava l'89,6% dei punti GK, §8quindecies): va rilanciata se quel numero
    serve. DEF/MID/FWD reggono.

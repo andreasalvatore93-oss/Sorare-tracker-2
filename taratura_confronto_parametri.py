@@ -23,6 +23,7 @@ import argparse
 import collections
 import datetime
 import json
+import os
 import random
 import statistics
 import sys
@@ -35,6 +36,68 @@ try:
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 except Exception:
     pass
+
+RUOLO_CODICE = {'Goalkeeper': 'GK', 'Defender': 'DEF', 'Midfielder': 'MID', 'Forward': 'FWD'}
+
+
+def _carica_grade():
+    """Import lazy (solo con --con-grade): carica l'indice completo del
+    voto e il modulo che sa applicarlo con la formula CORRENTE di
+    produzione (GRADE_GROUP_STORICA). Riusa senza riscrivere -- stessa
+    infrastruttura di analisi_manager/p62_soglie_dopo_gfisso.py e
+    p37_halflife_con_grade.py."""
+    _root = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, os.path.join(_root, 'analisi_manager'))
+    import p12_backtest_formazione_grade as S21
+    idx_grade, _ = S21.carica_indice_grade()
+    return S21, idx_grade
+
+
+def _metriche(previsioni, reali, giorni):
+    """MAE/corr/sd/bias/lift su una lista di previsioni appaiate a reali e
+    giorni -- fattorizzato da valuta() cosi' lo stesso metro si applica
+    identico alla colonna 'senza voto' e alla colonna 'con voto'."""
+    mae = statistics.mean(abs(y - x) for x, y in zip(previsioni, reali))
+    mx, my = statistics.mean(previsioni), statistics.mean(reali)
+    sx, sy = statistics.pstdev(previsioni), statistics.pstdev(reali)
+    corr = (sum((a - mx) * (b - my) for a, b in zip(previsioni, reali))
+            / len(previsioni) / (sx * sy)) if sx > 0 and sy > 0 else 0.0
+    finte = [(None, None, g, p, r) for g, p, r in zip(giorni, previsioni, reali)]
+    lift, n_gg = lift_selezione(finte)
+    return {'mae': mae, 'corr': corr, 'sd_prev': sx, 'sd_reale': sy,
+            'bias': my - mx, 'lift': lift, 'giornate': n_gg, 'n': len(previsioni)}
+
+
+def _con_grade(righe, S21mod, idx_grade):
+    """righe: [(ruolo, slug, data, ctx, prevv, reale)], GIA' filtrate su
+    quelle con voto in finestra -> lista di previsioni combinate con la
+    formula CORRENTE di produzione (GRADE_GROUP_STORICA: tabelle storiche +
+    GRADE_FATTORE_STORICO + ricentraggio per ruolo, S21.applica_gruppi_grade
+    modo='storica_completa'). Stessa infrastruttura di p37_halflife_con_
+    grade.py (14/08/2026, risposta al brief BRIEF_OPUS_METRO_CON_GRADE):
+    niente qui viene reinventato, si riusa build_formazione_globale via S21.
+    Tabella sd_atteso "righello contemporaneo": fresca sul campione di questa
+    misura (nessun esito realizzato dentro, verificato -- vedi risposta di
+    Opus in HANDOFF_UNIFICATO §10bis)."""
+    rows = []
+    for ruolo, slug, data, ctx, p, _reale in righe:
+        gn = S21mod.grade_in_finestra(idx_grade, slug, data)
+        rows.append({'lega': ctx.get('lega_vera') or '?',
+                     'codice': RUOLO_CODICE.get(ruolo, ruolo),
+                     '_cal': p, '_grade': gn})
+    tab_sd = S21mod.costruisci_tabella_sd_atteso(rows)
+    S21mod.applica_gruppi_grade(rows, modo='storica_completa',
+                                tabella_sd_storica=tab_sd,
+                                fattore_storico=S21mod.bfg.GRADE_FATTORE_STORICO)
+    per_ruolo = collections.defaultdict(list)
+    for r in rows:
+        per_ruolo[r['codice']].append(r)
+    for _codice, membri in per_ruolo.items():
+        diffs = [r['_combinato'] - r['_cal'] for r in membri]
+        media = sum(diffs) / len(diffs) if diffs else 0.0
+        for r in membri:
+            r['_combinato'] -= media
+    return [r['_combinato'] for r in rows]
 
 
 def raccogli(cache, slugs, voluti, limite=None):
@@ -90,7 +153,8 @@ def lift_selezione(righe, quanti=5, prove=200, seme=3):
 
 
 def valuta(punti, hl, ti, favorito_k=None, ranking_k=None, casa_k=None,
-           reparto_avv_k=None, gol_fatti_avv_k=None, usa_avversario=False):
+           reparto_avv_k=None, gol_fatti_avv_k=None, usa_avversario=False,
+           usa_grade=False, idx_grade=None, S21mod=None):
     """`usa_avversario` (13/08/2026, filone intralega): accende gli
     aggiustamenti avversario che girano in PRODUZIONE (opponent_lambda_mult,
     Stadio D) mentre si tara una correzione nuova.
@@ -102,7 +166,18 @@ def valuta(punti, hl, ti, favorito_k=None, ranking_k=None, casa_k=None,
     accendere FWD_OFFENSE_SENSITIVITY a 3.0 per poi doverla spegnere a 0.0
     (opponent_strength.py:335-348: "il -0.38% di MAE che lo aveva
     giustificato veniva da un banco che teneva SPENTI gli aggiustamenti
-    avversario")."""
+    avversario").
+
+    `usa_grade` (14/08/2026, risposta di Opus al brief BRIEF_OPUS_METRO_CON_
+    GRADE, voce 5 di HANDOFF_UNIFICATO §10bis): NON sostituisce il metro,
+    AGGIUNGE una colonna 'con_grade' -- confronto appaiato senza/con voto,
+    ristretto al sottoinsieme con voto in finestra (~30% delle righe,
+    campione non casuale: vale come GATE, non come metro fine). La
+    decisione resta sulla colonna SENZA voto (risoluzione piena su tutto il
+    campione); una candidata che migliora senza voto ma peggiora col voto va
+    scartata (ridondante col voto, non rende in produzione). Richiede
+    idx_grade/S21mod gia' caricati dal chiamante (_carica_grade(), una volta
+    sola: caricare l'indice a ogni punto di griglia sarebbe lentissimo)."""
     righe = []
     for ruolo, slug, data, ctx, reale in punti:
         try:
@@ -113,17 +188,22 @@ def valuta(punti, hl, ti, favorito_k=None, ranking_k=None, casa_k=None,
                              usa_avversario=usa_avversario)
         except Exception:
             continue
-        righe.append((ruolo, slug, data, p, reale))
-    X = [r[3] for r in righe]
-    Y = [r[4] for r in righe]
-    mae = statistics.mean(abs(y - x) for x, y in zip(X, Y))
-    mx, my = statistics.mean(X), statistics.mean(Y)
-    sx, sy = statistics.pstdev(X), statistics.pstdev(Y)
-    corr = (sum((a - mx) * (b - my) for a, b in zip(X, Y)) / len(X) / (sx * sy)
-            if sx > 0 and sy > 0 else 0.0)
-    lift, n_gg = lift_selezione(righe)
-    return {'mae': mae, 'corr': corr, 'sd_prev': sx, 'sd_reale': sy,
-            'bias': my - mx, 'lift': lift, 'giornate': n_gg, 'n': len(righe)}
+        righe.append((ruolo, slug, data, ctx, p, reale))
+    X = [r[4] for r in righe]
+    Y = [r[5] for r in righe]
+    base = _metriche(X, Y, [r[2] for r in righe])
+    if usa_grade:
+        graded = [r for r in righe
+                  if S21mod.grade_in_finestra(idx_grade, r[1], r[2]) is not None]
+        if graded:
+            con_prev = _con_grade(graded, S21mod, idx_grade)
+            reali_g = [r[5] for r in graded]
+            giorni_g = [r[2] for r in graded]
+            senza_prev = [r[4] for r in graded]
+            base['con_grade'] = {'n': len(graded),
+                                 'senza': _metriche(senza_prev, reali_g, giorni_g),
+                                 'con': _metriche(con_prev, reali_g, giorni_g)}
+    return base
 
 
 CORREZIONI = {
@@ -154,7 +234,8 @@ CORREZIONI = {
 
 
 def griglia_favorito(breve, punti, prod, spec, quale='favorito', fissi=None,
-                     usa_avversario=False):
+                     usa_avversario=False, usa_grade=False, idx_grade=None,
+                     S21mod=None):
     """La correzione di contesto partita, giudicata sullo stesso metro.
 
     Tiene half_life/trend di produzione e muove solo k: cosi' l'unica cosa che
@@ -167,7 +248,13 @@ def griglia_favorito(breve, punti, prod, spec, quale='favorito', fissi=None,
 
     `fissi` tiene accese altre correzioni mentre la griglia muove questa: e' il
     modo di chiedere "quanto aggiunge la seconda ALLA prima", non "quanto vale
-    da sola"."""
+    da sola".
+
+    `usa_grade` (14/08/2026, vedi valuta()): stampa in coda la colonna
+    'con voto' come GATE -- non cambia il verdetto PASSA/no (che resta sulla
+    colonna senza voto, piena risoluzione), segnala solo se una candidata che
+    passa senza voto peggiora quando il voto e' acceso: e' il caso in cui la
+    correzione e' ridondante col voto e in produzione non rendera'."""
     titolo, chiave = CORREZIONI[quale]
     fissi = dict(fissi or {})
     ks = [float(x) for x in spec.split(',') if x.strip()]
@@ -187,6 +274,7 @@ def griglia_favorito(breve, punti, prod, spec, quale='favorito', fissi=None,
     risultati = []
     for k in ks:
         r = valuta(punti, hl, ti, usa_avversario=usa_avversario,
+                   usa_grade=usa_grade, idx_grade=idx_grade, S21mod=S21mod,
                    **dict(fissi, **{chiave: k}))
         r['favorito_k'] = k
         r['correzione'] = quale
@@ -204,9 +292,29 @@ def griglia_favorito(breve, punti, prod, spec, quale='favorito', fissi=None,
         segni = (r['mae'] < base['mae'], r['corr'] > base['corr'],
                  (r['lift'] or 0) > (base['lift'] or 0))
         esito = 'PASSA' if all(segni) else 'no'
-        print('  k=%-6g MAE %+6.3f  corr %+6.4f  lift %+5.1f   %s' %
+        gate = ''
+        if esito == 'PASSA' and usa_grade and 'con_grade' in r and 'con_grade' in base:
+            cg, cg0 = r['con_grade']['con'], base['con_grade']['con']
+            peggiora = cg['lift'] is not None and cg0['lift'] is not None \
+                and cg['lift'] < cg0['lift']
+            gate = '   [GATE col voto: %s, lift %+.1f]' % (
+                'BOCCIA -- ridondante col voto' if peggiora else 'ok', cg['lift'] - cg0['lift'])
+        print('  k=%-6g MAE %+6.3f  corr %+6.4f  lift %+5.1f   %s%s' %
               (r['favorito_k'], r['mae'] - base['mae'], r['corr'] - base['corr'],
-               (r['lift'] or 0) - (base['lift'] or 0), esito))
+               (r['lift'] or 0) - (base['lift'] or 0), esito, gate))
+    if usa_grade:
+        print('\ncolonna col voto (GATE, campione ~30% non casuale) -- senza voto vs con voto, stesso k:')
+        print('%-16s | %7s %7s %7s | %7s %7s %7s' %
+              ('k', 'MAE', 'corr', 'lift%', 'MAE', 'corr', 'lift%'))
+        for r in risultati:
+            if 'con_grade' not in r:
+                continue
+            s, c = r['con_grade']['senza'], r['con_grade']['con']
+            print('%-16s | %7.3f %7.3f %7s | %7.3f %7.3f %7s' %
+                  ('%g' % r['favorito_k'], s['mae'], s['corr'],
+                   ('%.1f' % s['lift']) if s['lift'] is not None else '--',
+                   c['mae'], c['corr'],
+                   ('%.1f' % c['lift']) if c['lift'] is not None else '--'))
     print()
     return risultati
 
@@ -243,9 +351,22 @@ def main():
                          'riguardi l avversario: senza, si misura il pezzo nuovo '
                          'fuori dalla formula in cui deve vivere (e come si '
                          'accese per sbaglio FWD_OFFENSE_SENSITIVITY).')
+    ap.add_argument('--con-grade', action='store_true', dest='con_grade',
+                    help='aggiunge la colonna GATE col voto (14/08/2026, '
+                         'risposta di Opus al brief BRIEF_OPUS_METRO_CON_GRADE, '
+                         'HANDOFF_UNIFICATO §10bis voce 5): non sostituisce il '
+                         'metro, segnala solo le candidate che passano senza '
+                         'voto ma peggiorano col voto (ridondanti, non rendono '
+                         'in produzione). Costoso (carica l indice grade '
+                         'completo): usare solo quando serve.')
     ap.add_argument('--max', type=int, default=0)
     ap.add_argument('--json', default='dati_globali/taratura_confronto_parametri.json')
     args = ap.parse_args()
+
+    S21mod, idx_grade = (_carica_grade() if args.con_grade else (None, None))
+    if args.con_grade:
+        n_coppie = sum(len(v) for v in idx_grade.values())
+        print('--con-grade: %d coppie (slug, giorno) nell indice voto\n' % n_coppie)
 
     brevi = [r.strip() for r in args.ruoli.split(',') if r.strip()]
     voluti = {RUOLI[b] for b in brevi}
@@ -266,25 +387,26 @@ def main():
                 or args.gol_fatti_avv:
             esiti[b] = []
             av = args.con_avversario
+            g = dict(usa_grade=args.con_grade, idx_grade=idx_grade, S21mod=S21mod)
             if args.ranking:
                 esiti[b] += griglia_favorito(b, sotto, prod, args.ranking, 'ranking',
-                                             usa_avversario=av)
+                                             usa_avversario=av, **g)
             if args.favorito:
                 esiti[b] += griglia_favorito(b, sotto, prod, args.favorito, 'favorito',
-                                             usa_avversario=av)
+                                             usa_avversario=av, **g)
             if args.reparto_avv:
                 esiti[b] += griglia_favorito(b, sotto, prod, args.reparto_avv,
-                                             'reparto_avv', usa_avversario=av)
+                                             'reparto_avv', usa_avversario=av, **g)
             if args.gol_fatti_avv:
                 esiti[b] += griglia_favorito(b, sotto, prod, args.gol_fatti_avv,
-                                             'gol_fatti_avv', usa_avversario=av)
+                                             'gol_fatti_avv', usa_avversario=av, **g)
             if args.casa:
                 fissi = {}
                 for pezzo in args.con_ranking.split(','):
                     if ':' in pezzo and pezzo.split(':')[0].strip() == b:
                         fissi['ranking_k'] = float(pezzo.split(':')[1])
                 esiti[b] += griglia_favorito(b, sotto, prod, args.casa, 'casa', fissi,
-                                             usa_avversario=av)
+                                             usa_avversario=av, **g)
             continue
         if args.candidati:
             cand = [tuple(float(x) for x in c.split(':')) for c in args.candidati.split(',')]
@@ -305,7 +427,8 @@ def main():
             # arrivava nemmeno l'avversario. Un A/A su un flag che dipende
             # dall'avversario risultava percio' "identico" -- non perche' il
             # flag fosse inerte, ma perche' il banco non gli passava il dato.
-            r = valuta(sotto, hl, ti, usa_avversario=args.con_avversario)
+            r = valuta(sotto, hl, ti, usa_avversario=args.con_avversario,
+                      usa_grade=args.con_grade, idx_grade=idx_grade, S21mod=S21mod)
             r['half_life'], r['trend_intensity'] = hl, ti
             r['produzione'] = (hl, ti) == prod
             risultati.append(r)
@@ -313,6 +436,19 @@ def main():
                   ('%s / %s' % (hl, ti), r['mae'], r['corr'], r['sd_prev'], r['sd_reale'],
                    r['bias'], ('%.1f' % r['lift']) if r['lift'] is not None else '--',
                    '   <- produzione' if r['produzione'] else ''))
+        if args.con_grade:
+            print('\ncolonna col voto (GATE, campione ~30% non casuale) -- '
+                  'senza voto vs con voto, stesso half_life/trend:')
+            print('%-16s | %7s %7s %7s | %7s %7s %7s' %
+                  ('half_life/trend', 'MAE', 'corr', 'lift%', 'MAE', 'corr', 'lift%'))
+            for r in risultati:
+                if 'con_grade' not in r:
+                    continue
+                s, c = r['con_grade']['senza'], r['con_grade']['con']
+                print('%-16s | %7.3f %7.3f %7s | %7.3f %7.3f %7s' %
+                      ('%s / %s' % (r['half_life'], r['trend_intensity']),
+                       s['mae'], s['corr'], ('%.1f' % s['lift']) if s['lift'] is not None else '--',
+                       c['mae'], c['corr'], ('%.1f' % c['lift']) if c['lift'] is not None else '--'))
         esiti[b] = risultati
         print()
 
