@@ -3330,12 +3330,56 @@ spiegare.
 
 ## 8sexdecies. SHRINK_K RIMISURATO SU TUTTI I RUOLI COL VOTO ACCESO (14/08/2026)
 
-**In due righe.** I quattro `SHRINK_K_OUTLIER` sono stati tarati PRIMA che G
-fisso andasse in produzione (13/08), cioè su un modello che non esiste più.
-Rimisurati tutti e quattro col voto acceso: **il centrocampo è rimasto
-indietro** (5 contro 15/15/30 degli altri) e **l'attaccante ora è tarato
-contro il voto**. Nessuna modifica applicata: sono misure, la decisione è
-dell'utente.
+**In due righe.** I quattro `SHRINK_K_OUTLIER` erano tarati PRIMA che G fisso
+andasse in produzione (13/08), cioè su un modello che non esiste più.
+Rimisurati tutti e quattro col voto acceso: **MID 5 → 15** e **FWD 15 → 5**,
+IN PRODUZIONE dal 14/08/2026 (propagati a tutte le 54 leghe). DEF (15) e GK
+(30) invariati.
+
+**LA MISURA CHE HA DECISO** (14/08, idea dell'utente, e ha ragione lui): non
+i test per ruolo, ma **tutti i ruoli insieme, calibrati, col voto — prima e
+dopo i due cambi in un colpo solo** (`taratura_striscia_oro.py --combinato`,
+139.463 righe, 116.175 col voto, 356 giornate). Un test dentro il singolo
+ruolo è cieco proprio sul punto che conta: abbassare i centrocampisti non li
+mette contro altri centrocampisti, li mette contro difensori e attaccanti che
+nessuno ha toccato. E i ruoli si confrontano solo DOPO la calibrazione (le
+rette vanno da 0,264 del GK a 0,831 del DEF: gli attesi grezzi di ruoli
+diversi non sono la stessa moneta). Ordine replicato dalla produzione,
+verificato nel codice: **grezzo → calibrato per ruolo → voto sul calibrato**.
+- *Con la forma vera dell'arena* (GK+DEF+MID+FWD+un quinto fra DEF/MID/FWD):
+  **+0,815 punti reali a giornata** sulle cinque carte, lift +0,26 con IC
+  [−0,67;+1,15] — non peggiora, ma il guadagno **non è distinguibile da zero**.
+- *A cinque carte libere dal ruolo*: **+3,95 punti a giornata**, lift +1,64
+  con IC [+0,11;+3,13] che esclude lo zero. La differenza fra i due numeri è
+  la spiegazione di tutto: nell'arena ogni reparto ha uno slot garantito,
+  quindi il guadagno "scegliere meglio FRA i reparti" si incassa solo sul
+  quinto slot.
+- *Il mix si sposta davvero*: MID scelti dal 34,6% al 23,2%, FWD dal 22,3% al
+  33,0% (shape arena). Lo spostamento è nella direzione giusta — il punteggio
+  incassato sale — ma è grosso e va saputo.
+- *MAE su tutti i ruoli*: 13,788 → 13,747.
+
+**CATENA VERIFICATA, non assunta** (è l'anello che per poco non saltavo):
+l'**atteso di formazione** — il numero che si confronta con `PAREGGIO_ARENA` —
+passa da **305,97 a 307,29** (+1,31, cinque carte più capitano al 20%) contro
+una soglia di 264,5 sulla cap 260. Si muove **verso l'alto**, cioè nel verso
+innocuo: non fa scartare arene che convengono. Vale il 3% del margine tipico
+sopra soglia; qualche formazione al limite può cambiare lato, il grosso no.
+**Soglie e scouting restano tarati.** Lo scouting in particolare non va
+allineato a mano: non ha copie locali di calibrazione, fattore del voto o
+tabella sd (`scouting_gw.py` le importa dal generatore — commento esplicito
+"mai una copia locale") e legge i `consiglio_*.txt` dei predict, quindi
+eredita il cambio da solo. Le due tabelle del voto, che dipendono dalla
+dispersione degli attesi e quindi diventerebbero stantie, si rigenerano
+**nella stessa run subito prima del generatore**
+(`formazione_giornata.yml:770`): nessuna azione manuale.
+
+**LIMITI DICHIARATI della misura combinata** (non risolti, da tenere in
+conto): il pool del banco è *tutti i giocatori in cache*, non le carte
+possedute e i probabili titolari — quindi il **mix in percentuale non è
+quello che si vedrà**, è valido il confronto prima/dopo, non il livello; il
+campione è ristretto all'83% con voto in finestra (non casuale); il capitano
+è applicato alla carta più alta, non con la regola vera di scelta.
 
 **DA DOVE NASCE.** Non dal voto, ma dalla "striscia d'oro": il ~7 punti che
 il §8terdecies attribuiva a chi viene da un periodo eccezionale. **Non è un
@@ -3348,20 +3392,21 @@ quello della fascia 35-45 (zero = nessun difetto). Strumento:
 incertezza, taglio nel tempo, tutto con `--con-grade`).
 
 **COSA DICE IL METRO** (col voto acceso, campione pieno per ruolo):
-- **MID (oggi 5)**: a 15 il MAE cala di **0,116** — certo al 100% dei
+- **MID (era 5)**: a 15 il MAE cala di **0,116** — certo al 100% dei
   ricampionamenti e in **entrambe** le metà di calendario — con correlazione
   (−0,001) e lift (+0,55) **indistinguibili da zero**, e la pendenza da −9,3
   a −2,4. Nessun costo misurabile, ma il guadagno è tutto sul numero, non
   sulla scelta delle carte.
-- **FWD (oggi 15)**: tornando a **5** il MAE cala di **0,148** (100%) e il
+- **FWD (era 15)**: tornando a **5** il MAE cala di **0,148** (100%) e il
   **lift sale di 1,60 con IC [+0,49;+2,75] che ESCLUDE lo zero** (nel periodo
   recente +1,91, IC [+0,77;+3,12]); la correlazione però peggiora di 0,0039
-  con IC che esclude lo zero a sua volta. **Non passa la regola delle tre
-  misure** (due contro una), quindi non si applica d'ufficio — ma è l'unico
-  punto di tutta la giornata in cui il lift, il metro più vicino a ciò che si
-  fa davvero (scegliere cinque carte), si sbilancia in modo netto. Il 15 fu
-  scelto il 03/08 col metro senza voto: è il caso da manuale della regola
-  nuova in `CLAUDE.md` ("ogni test parte da G fisso in produzione").
+  con IC che esclude lo zero a sua volta. È un **conflitto vero**, non
+  un'astensione: due metri contro uno. Applicato per **decisione esplicita
+  dell'utente** — "preferisco centrare i primi della classe e piuttosto
+  sbagliare gli altri" — ed è il caso che ha prodotto la sezione "i tre
+  cancelli si PESANO" in `CLAUDE.md`. Il costo cade sui consigli di acquisto
+  dello scouting (che ordina tutta la lista), il guadagno sulle formazioni
+  (che usano solo la testa). Il 15 fu scelto il 03/08 col metro senza voto.
 - **DEF (oggi 15)**: dentro l'ottimo piatto (MAE 14,757 a 15 contro 14,749 a
   20, correlazione identica). **Niente da cambiare.**
 - **GK (oggi 30)**: alzare non rende (da 30 a 60 il MAE si muove di 0,017,

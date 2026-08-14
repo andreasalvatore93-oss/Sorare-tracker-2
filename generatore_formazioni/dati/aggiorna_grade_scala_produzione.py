@@ -1,15 +1,23 @@
 # -*- coding: utf-8 -*-
 """Costruisce le due tabelle usate dal correttivo "gruppo grade esteso"
-(build_formazione_globale.py, flag GRADE_GROUP_STORICA_ENABLED, SPENTO di
-default -- filone "gruppo grade esteso alla giornata", priorita' 2,
-11-12/08/2026, docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8bis-bis).
+(build_formazione_globale.py, flag GRADE_GROUP_STORICA_ENABLED -- filone
+"gruppo grade esteso alla giornata", 11-12/08/2026,
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8bis-bis).
 
-STATO (12/08/2026): il flag e' PRONTO ma SPENTO. Opus ha verificato la
-ricetta col placebo (il voto ha segnale vero, p<=0,048) ma ha detto
-testualmente "pronta per il fuori campione pre-registrato, NON per la
-produzione diretta" -- il test fuori campione (GW5/6/7, chiude 25/08/2026,
-vedi analisi_manager/p57_grade_fuoricampo_preregistrato.py) NON e' ancora
-stato fatto. NON accendere GRADE_GROUP_STORICA_ENABLED prima di quel test.
+STATO (aggiornato 14/08/2026): il flag e' **ACCESO di default dal 13/08/2026**
+(`os.environ.get('GRADE_GROUP_STORICA_ENABLED', '1')`), cioe' G fisso E' IN
+PRODUZIONE. Questa docstring diceva ancora "PRONTO ma SPENTO" e "non accendere
+prima del 25/08": era ferma al 12/08, corretta il 14/08 leggendo il default
+nel codice. Il test pre-registrato del 25/08 non e' stato aspettato per la
+ragione scritta nel commento del flag: quella data non aveva giustificazione
+statistica, si e' invece allargato l'archivio all'indietro (65 manager, 44
+giornate, mai usate per tarare la ricetta) e misurato li'.
+
+PERCHE' QUESTO SCRIPT CONTA: le due tabelle dipendono dalla DISPERSIONE degli
+attesi, quindi ogni volta che cambia un parametro del modello (esempio reale:
+SHRINK_K_OUTLIER di MID e FWD il 14/08, §8sexdecies) diventano stantie. Il
+workflow le rigenera da solo nella stessa run, subito prima del generatore
+(formazione_giornata.yml, step `if inputs.grade_group_storica == '1'`).
 
 Fonte (decisa da Opus il 12/08): i `consiglio_*.txt` di TUTTE le leghe/
 ruoli, deduplicati per (lega,codice,slug,kickoff) -- stessa popolazione

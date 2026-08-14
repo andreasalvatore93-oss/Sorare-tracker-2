@@ -150,6 +150,107 @@ TREND_INTENSITY = 0.0  # AZZERATO (03/08) dopo il fix delle finestre sovrapposte
 # resta 5.0 (differenza vs k=4 vista trascurabile, nessun cambio li').
 SHRINK_K_OUTLIER_FWD = 15.0  # AGGIORNATO (03/08): 5.0 -> 15.0. Rimisurato DOPO il fix delle partite senza dettaglio, ed e' proprio quel fix a spostare l'ottimo: prima il grezzo era gonfiato (il punteggio intero finiva nel granulare), quindi tirarlo verso il prior sembrava dannoso e la taratura sceglieva poco shrinkage. Col grezzo corretto conviene tirare di piu'. Misurato su 18.992 punti walk-forward, 885 attaccanti: MAE 14.092 -> 14.049 (-0.31%), correlazione previsto/realizzato 0.250 -> 0.257, selezione dei primi cinque 28.2% -> 28.4%. Tutte e tre le misure si muovono nello stesso verso, che e' la condizione per applicare. Storia del valore precedente sotto.  # AGGIORNATO (29/07, modello unico GLOBALE su 25 leghe pooled): backtest walk-forward su ~1700 punti di test, MAE -0.49% -- la vecchia esclusione "peggiora fuori MLS" non e' risultata riproducibile col volume di dati attuale (vedi RIASSUNTO sez.29), stesso valore ora su TUTTE le leghe
 MEDIA_RUOLO_FWD_PRIOR = 53.74  # AGGIORNATO (29/07): media grezza pool 25 leghe (solo diagnostico, la produzione usa il prior dinamico da presence_rate)
+
+# --- PRIOR_LEGA (13/08/2026) -- SPENTO di default, in misura --------------
+# Lo shrinkage sopra tira la previsione verso un prior che oggi e' lo STESSO
+# per tutte e 53 le leghe. Misurato sulla cache game-log (105 celle
+# lega/ruolo, >=200 partite da titolare ciascuna): le leghe non sono uguali.
+# Attaccanti: Chinese Super League 58.1, Portogallo 56.5 ... Premier 50.1,
+# Championship 49.1. Nove punti fra la piu' generosa e la piu' avara, cioe'
+# piu' del doppio dell'effetto che lo shrinkage stesso sposta.
+# Conta perche' chi cambia campionato si porta dietro solo il ~20% del
+# vantaggio che aveva nella lega vecchia (584 cambi, verifica fuori campione
+# su 120 mai visti: prevedere "fara' la media della lega nuova" sbaglia 5.5
+# punti contro i 7.0 di "gli porto avanti la sua media"). Con l'ancora
+# globale, un fenomeno della Segunda che sale in Liga resta valutato come se
+# le due leghe fossero la stessa cosa.
+# Qui si sposta l'ancora, non la forza: al prior dinamico si somma lo SCARTO
+# fra il livello della lega in cui gioca e la media di tutte le leghe per
+# quel ruolo. A lega media lo scarto e' 0 e non cambia niente.
+# Tabella: dati_globali/livello_lega_ruolo.json
+# (dati_globali/costruisci_livello_lega_ruolo.py, zero query).
+PRIOR_LEGA_ENABLED = os.environ.get('PRIOR_LEGA_ENABLED', '0') == '1'
+_PRIOR_LEGA_PATH = os.environ.get(
+    'PRIOR_LEGA_DATA_PATH',
+    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__)))), 'dati_globali', 'livello_lega_ruolo.json'))
+_PRIOR_LEGA = {}
+if PRIOR_LEGA_ENABLED:
+    try:
+        with open(_PRIOR_LEGA_PATH, encoding='utf-8') as _f:
+            _PRIOR_LEGA = json.load(_f)
+    except Exception as _e:
+        print(f"ATTENZIONE: PRIOR_LEGA_ENABLED=1 ma {_PRIOR_LEGA_PATH} non "
+              f"leggibile ({_e}) -- prior di lega disattivato per questa run.")
+        PRIOR_LEGA_ENABLED = False
+
+
+# SOLO A CHI VIENE DA UN'ALTRA LEGA (13/08/2026, seconda parola). La prima
+# versione spostava l'ancora per TUTTI: misurato su 21.971 punti, il MAE
+# migliorava (-0,115) ma correlazione e lift PEGGIORAVANO (-0,017, -1,3), e
+# la regola del repo chiede che le tre misure si muovano insieme. Il motivo
+# e' meccanico: dentro una lega lo scarto e' una costante uguale per tutti,
+# quindi non riordina nessuno -- puo' solo spostare i confronti FRA leghe, e
+# li' peggiorava.
+# Spezzando la misura per quota di storico giocata in un'ALTRA competizione,
+# il verso si ribalta proprio dove diceva l'ipotesi di partenza:
+#    0-20% altrove  n=18.690  MAE 13,479->13,456  corr 0,246->0,245  peggio
+#   20-50% altrove  n=16.267  MAE 14,126->13,976  corr 0,263->0,259  peggio
+#   50-80% altrove  n= 4.513  MAE 14,036->13,839  corr 0,200->0,213  MEGLIO
+#     80%+ altrove  n= 1.399  MAE 13,891->13,791  corr 0,159->0,173  MEGLIO
+# Sono il 3,4% dei punti, ma sono quelli su cui il modello e' piu' cieco
+# (correlazione 0,159 contro 0,246 di chi non si e' mosso). Da qui la soglia.
+PRIOR_LEGA_SOGLIA = float(os.environ.get('PRIOR_LEGA_SOGLIA', '0.5'))
+# Modalita' della correzione di lega: 'ancora' (dentro il prior dello
+# shrinkage) o 'diretto' (sul risultato finito). Sono ALTERNATIVE. Il perche'
+# e la misura che ha portato alla seconda stanno sopra riporta_su_lega().
+PRIOR_LEGA_MODO = os.environ.get('PRIOR_LEGA_MODO', 'ancora')
+PRIOR_LEGA_K = float(os.environ.get('PRIOR_LEGA_K', '0.21'))
+
+
+def _lega_normalizzata(lega):
+    """Cartelle che sono lo stesso campionato -> una sola (giappone100 ->
+    giappone, la J1 100 Year Vision e' la J1 con le stesse squadre). L'elenco
+    sta dentro la tabella, sotto 'alias', scritto da chi la costruisce: qui
+    non si duplica niente, si legge."""
+    return ((_PRIOR_LEGA.get('alias') or {}).get(lega, lega)) if lega else lega
+
+
+def scarto_lega(ruolo, lega, quota_altra_lega=None, lega_storico=None):
+    """Quanto quella lega e' piu' generosa (o avara) della media delle leghe,
+    per quel ruolo. 0.0 se il flag e' spento, se la lega non e' in tabella o
+    se la cella ha troppe poche partite: fallback esplicito, mai un numero
+    inventato -- e a 0.0 il prior resta identico a quello di sempre.
+
+    `quota_altra_lega` e' la quota dello storico giocata in una competizione
+    DIVERSA da quella della partita da prevedere. Sotto PRIOR_LEGA_SOGLIA la
+    correzione non si applica (vedi il commento sopra: li' peggiorava
+    l'ordinamento). None = ignoto: non si applica, perche' correggere alla
+    cieca e' il caso in cui si e' gia' misurato un peggioramento."""
+    if not PRIOR_LEGA_ENABLED or not lega:
+        return 0.0
+    # le due modalita' sono ALTERNATIVE, non cumulative (13/08/2026): in
+    # 'diretto' la correzione la fa riporta_su_lega() sul risultato finito, e
+    # se anche l'ancora si spostasse la stessa lega verrebbe contata due
+    # volte (misurato: mezzo punto di troppo). Qui si sta zitti.
+    if PRIOR_LEGA_MODO == 'diretto':
+        return 0.0
+    # IL CANCELLO (13/08/2026, seconda versione). Prima era "quota di storico
+    # in un'altra competizione >= soglia": sbagliato, quella quota schizza al
+    # 100% quando la partita da prevedere e' di COPPA (li' tutto il
+    # campionato risulta 'altra competizione'). Su 1.187 attaccanti prendeva
+    # 231 casi e ne correggeva 16. Il confronto diretto fra la lega dello
+    # storico e quella della partita coglie invece solo i cambi veri -- e si
+    # spegne da solo appena il giocatore accumula partite nella lega nuova,
+    # perche' allora lo storico diventa suo. La quota resta come diagnostica.
+    if not lega_storico or _lega_normalizzata(lega_storico) == _lega_normalizzata(lega):
+        return 0.0
+    cella = (_PRIOR_LEGA.get('per_lega_ruolo') or {}).get(
+        f'{_lega_normalizzata(lega)}|{ruolo}')
+    base = (_PRIOR_LEGA.get('per_ruolo') or {}).get(ruolo)
+    if not cella or not base:
+        return 0.0
+    return cella['media'] - base['media']
 MIN_MINUTES_PLAYED = 60  # partite giocate sotto questa soglia (subentri) escluse dalla finestra
 MIN_STARTER_ODDS = 0.0  # DISATTIVATO (28/07, richiesta esplicita utente): era un secondo filtro starter-odds fisso al 70%, indipendente e non collegato alla soglia scelta in discovery_fixture.py -- anche con starter_odds_min=0 nel workflow, questo continuava a scartare in silenzio chi era sotto 70%. discovery_fixture.py applica gia' il filtro configurabile a monte, questo era ridondante.
 SKIP_GRANULAR_DETAIL = False  # RIPRISTINATO (24/07): con la strategia GitHub Actions matrix, ogni giocatore gira in un job/processo SEPARATO con budget di complessita' fresco — il problema di saturazione cumulativa (che colpiva il 2o+ giocatore in un unico processo) non si presenta piu'. I fattori granulari (falli/duelli/passaggio/ecc.) sono quindi di nuovo calcolati per ogni giocatore.
@@ -1549,6 +1650,61 @@ def run_grid_search(scores, is_home_flags, opponent_rankings, min_history=6,
     return results
 
 
+
+# --- PRIOR_LEGA in modalita' DIRETTA (13/08/2026, terzo tempo) ------------
+# Perche' serve una seconda modalita'. La prima (modo 'ancora') infilava lo
+# scarto di lega dentro il prior dello shrinkage, che pesa 15/(n+15): su un
+# giocatore con 53 partite di storico -- il profilo esatto del "fenomeno
+# della Segunda" -- il peso e' 0,22 e dei -4,2 punti di scarto ne arrivavano
+# 0,9. Dieci volte troppo poco per il caso che la correzione doveva
+# risolvere, e abbastanza per sporcare i confronti fra leghe: misurato, MAE
+# e correlazione peggioravano.
+# La modalita' 'diretto' agisce sul risultato, non sull'ancora:
+#     previsione = livello(lega nuova) + K * (previsione - livello(lega vecchia))
+# cioe' "riportalo al livello del campionato dove va, e lasciagli la quota K
+# del vantaggio che aveva in quello da cui viene". K = 0,21 misurato fuori
+# campione su 120 cambi di lega mai visti (vedi handoff del 13/08): B e C
+# coincidevano, cioe' del vantaggio vecchio non si trasferisce quasi niente.
+# APPROSSIMAZIONE DICHIARATA: i livelli di lega sono misurati sui punteggi
+# REALIZZATI, mentre qui score_atteso e' sulla scala grezza (la calibrazione
+# arriva dopo, con pendenza 0,789). Le due scale coincidono al centro e
+# divergono agli estremi. Il banco di prova confronta gia' grezzo contro
+# realizzato, quindi la misura e' coerente con se stessa, ma se questa
+# modalita' andasse in produzione la correzione va rifatta DOPO la
+# calibrazione, non qui.
+
+
+def livello_lega(ruolo, lega):
+    """Il punteggio medio di quel ruolo in quella lega, in punti veri.
+    None se non lo sappiamo (lega ignota o cella sotto soglia)."""
+    if not lega:
+        return None
+    cella = (_PRIOR_LEGA.get('per_lega_ruolo') or {}).get(
+        f'{_lega_normalizzata(lega)}|{ruolo}')
+    base = (_PRIOR_LEGA.get('per_ruolo') or {}).get(ruolo)
+    if not cella or not base:
+        return None
+    return base['media_generale'] + cella['media']
+
+
+def riporta_su_lega(previsione, ruolo, lega_nuova, lega_storico, quota_altra_lega):
+    """La previsione riportata sul livello della lega in cui si gioca ADESSO.
+
+    Torna la previsione INVARIATA in tutti i casi in cui non siamo sicuri:
+    flag spento, modalita' diversa, quota sotto soglia, una delle due leghe
+    ignota, o le due leghe coincidono (allora non c'e' niente da correggere).
+    Nessun numero inventato, mai."""
+    if (not PRIOR_LEGA_ENABLED or PRIOR_LEGA_MODO != 'diretto'
+            or not lega_nuova or not lega_storico
+            or _lega_normalizzata(lega_nuova) == _lega_normalizzata(lega_storico)):
+        return previsione
+    liv_nuova = livello_lega(ruolo, lega_nuova)
+    liv_vecchia = livello_lega(ruolo, lega_storico)
+    if liv_nuova is None or liv_vecchia is None:
+        return previsione
+    return liv_nuova + PRIOR_LEGA_K * (previsione - liv_vecchia)
+
+
 def compute_score_atteso_fwd(scores, is_home_flags,
                              residual_values, granulari_values,
                              pos_decisive_values, neg_decisive_values,
@@ -1560,12 +1716,13 @@ def compute_score_atteso_fwd(scores, is_home_flags,
                              use_stadio_d=True,
                              presence_rate=None, opponent_lambda_mult=None,
                              next_opponent_team_slug=None, next_game_date=None, league='brasile',
-                             offensive_values=None, detail_ok_flags=None):
+                             offensive_values=None, detail_ok_flags=None,
+                             quota_altra_lega=None, lega_storico=None):
     """FUNZIONE CONDIVISA (27/07, punto 26.D.4): calcola lo `score_atteso` FWD di
     PRODUZIONE, da usare SIA in build_prediction SIA nel backtest di calibrazione,
     cosi' le due non possono divergere. Gemella di compute_score_atteso_def in
     test_def.py, ma la formula FWD e' DIVERSA:
-    - shrinkage con SHRINK_K_OUTLIER_FWD / MEDIA_RUOLO_FWD_PRIOR (5.0 / 53.02);
+    - shrinkage con SHRINK_K_OUTLIER_FWD / MEDIA_RUOLO_FWD_PRIOR (15.0 / 53.02);
     - Stadio D molto piu' snello: la SOLA correzione "Passaggio" condizionata per
       venue (nessun condizionamento per forza avversario, che per FWD e' risultato
       rumore su tutte le sotto-categorie).
@@ -1611,6 +1768,13 @@ def compute_score_atteso_fwd(scores, is_home_flags,
     # decisione utente via popup): era 47.44 + 6.62 * presence_rate.
     if presence_rate is not None:
         media_ruolo_prior = max(0.0, 47.44 + 6.62 * presence_rate)
+    # PRIOR_LEGA (13/08/2026, spento di default -- vedi il commento sulla
+    # costante): sposta l'ancora dello shrinkage sul livello della lega in cui
+    # il giocatore gioca ADESSO. A flag spento scarto_lega() vale 0.0 e questa
+    # riga non cambia un decimale.
+    media_ruolo_prior = max(0.0, media_ruolo_prior
+                            + scarto_lega('FWD', league, quota_altra_lega,
+                                          lega_storico))
     grezzo_nuovo = level_score_atteso + media_granulari_pesata * fattore_trend_granulare
     if offensive_values is not None and next_opponent_team_slug:
         _offensive_hist = weighted_mean(offensive_values, weights_det)
@@ -1633,12 +1797,15 @@ def compute_score_atteso_fwd(scores, is_home_flags,
 
     # --- Stadio D (FWD): sola correzione "Passaggio" condizionata per venue ---
     if not use_stadio_d:
-        return score_atteso
+        return riporta_su_lega(score_atteso, 'FWD', league, lega_storico, quota_altra_lega)
     fallback_passaggio = weighted_mean(passing_values, weights_det)
     media_passaggio_condizionata_venue = media_condizionata(
         passing_values, weights_det, is_home_flags, target_is_home, fallback_passaggio)
     score_atteso += (media_passaggio_condizionata_venue - fallback_passaggio)
-    return score_atteso
+    # ULTIMA COSA prima di uscire (13/08/2026): la correzione di lega agisce
+    # sul risultato finito, non su un pezzo intermedio -- vedi il commento
+    # sulla modalita' 'diretto'. A flag spento e' l'identita'.
+    return riporta_su_lega(score_atteso, 'FWD', league, lega_storico, quota_altra_lega)
 
 
 def rigorous_backtest_prod_fwd(scores, is_home_flags,

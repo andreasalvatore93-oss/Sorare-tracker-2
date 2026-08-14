@@ -347,6 +347,21 @@ dice "non ho capito", non riformulare piu' preciso: riformulare piu' STUPIDO.
 - **Flusso fix**: testo prima in locale; se funziona **committo senza chiedere**, poi informo l'utente di aver committato e chiedo se vuole lanciare una run su GitHub. Non chiedo il permesso di committare, chiedo quello di girare su GitHub.
 - Per le altre azioni con effetti non-git (run GitHub, cancellazioni), **chiedo sempre** prima.
 - Test **in locale**, velocissimi. Niente GitHub Actions finché non sono sicuro al 100%.
+- **SMOKE TEST LOCALE OBBLIGATORIO PRIMA DI OGNI RUN SU GITHUB** (14/08/2026,
+  regola dettata dall'utente). Nessuna run di Actions parte se prima non ho
+  riprodotto in locale, in piccolo, il pezzo che ho toccato. Non e' il test
+  completo: e' il minimo che fa scattare l'errore se c'e'. Vale anche quando
+  "e' solo una riga di YAML" -- l'YAML non si compila e l'errore si scopre a
+  run bruciata. Costa minuti, la run ne costa decine.
+  Nato da due run vere nello stesso giorno sullo scouting: la prima (31790157363)
+  finita VERDE in 4 minuti avendo predetto ZERO giocatori (un file ignorato da
+  .gitignore che non arrivava su main); la seconda (31790910888) con 8 job su
+  21 rossi dopo aver predetto tutto (tar su un file cancellato). Entrambi gli
+  errori li avrebbe presi uno smoke test da 30 secondi -- e infatti, scritto
+  DOPO, ne ha trovato subito un terzo che non era ancora esploso (`git add`
+  multi-pathspec che muore intero se uno solo non matcha).
+  Esempio di riferimento: `tests/smoke_scouting_shard.sh` (repo git
+  usa-e-getta, zero rete, zero effetti sul repo vero).
 - Se mi serve il cookie/credenziali Sorare, li **chiedo**.
 - Non cancello nulla finché non sono sicuro: prima i test, poi la pulizia.
 - Non passo da un tool all'altro finché non ho **verificato con un test** che quello corrente funziona.
@@ -424,7 +439,46 @@ rapido che potrebbe dargli torto, e lanciarlo subito.
   `docs/handoff/RISPOSTA_OPUS_VELOCITA_STRUTTURALE_2026-08-12.txt`.
 
 ## Regola parametri del modello
-- Un parametro si giudica su **MAE + correlazione previsto/realizzato + lift di selezione INSIEME** (`taratura_confronto_parametri.py`). Si applica solo se si muovono tutte e tre nello stesso verso. Il MAE da solo premia i modelli che non ordinano niente.
+- Un parametro si giudica su **MAE + correlazione previsto/realizzato + lift di selezione INSIEME** (`taratura_confronto_parametri.py`). Il MAE da solo premia i modelli che non ordinano niente.
+
+### I tre cancelli si PESANO, non si contano (14/08/2026)
+
+Precisazione dettata dall'utente. Fino a oggi qui c'era scritto "si applica
+solo se si muovono tutte e tre nello stesso verso": resta la regola di
+default, ma **non e' un NO secco automatico**. Quando i tre metri si
+contraddicono si guarda COSA misura ciascuno e cosa serve al caso concreto,
+invece di contare due contro uno e chiudere.
+
+Cosa misura ciascuno, e a chi serve:
+- **lift** = quando scegli le CINQUE carte da schierare, becchi quelle
+  giuste? E' letteralmente l'operazione che fa l'utente ogni giornata. Conta
+  la TESTA della classifica.
+- **correlazione** = quanto bene ordini TUTTA la lista, compresi i giocatori
+  che non schiereresti mai. Conta per lo **scouting**, che ordina tutte le
+  carte comprabili, non solo le prime cinque.
+- **MAE** = quanto sbagli il punteggio in valore assoluto. Conta per le
+  **soglie arena** e per l'economia (`PAREGGIO_ARENA`, `GUADAGNO_PER_PUNTO`),
+  che sono tarate sui punti attesi, non sull'ordine.
+
+Caso reale che ha prodotto questa precisazione (14/08, `SHRINK_K_OUTLIER_FWD`
+15 -> 5, §8sexdecies): MAE e lift miglioravano in modo certo, la correlazione
+peggiorava in modo altrettanto certo. Contando i voti sarebbe stato un NO.
+Pesandoli e' un SI', **per scelta esplicita dell'utente**: "preferisco
+centrare i primi della classe e piuttosto sbagliare gli altri". La perdita
+cade sull'ordine dei giocatori che non schiera; il guadagno sulla scelta di
+quelli che schiera.
+
+Come si applica senza trasformarla in una scusa per far passare tutto:
+1. **Il conflitto va detto, mai nascosto**: quale metro peggiora, di quanto, e
+   con quanta certezza (IC che esclude o no lo zero).
+2. **Si dice DOVE cade il costo**, in termini concreti (qui: i consigli di
+   acquisto dello scouting, non le formazioni).
+3. **Decide l'utente**, non chi misura: si porta il bilanciamento, non il
+   verdetto gia' preso.
+4. **Un metro che tace non e' un metro che dice no** (13/08, commit
+   6c9704e112): se l'IC del lift e' molto piu' largo della differenza, quello
+   e' un'astensione. Un conflitto vero e' quando l'IC ESCLUDE lo zero da
+   entrambe le parti.
 
 ## OGNI TEST PARTE DA G FISSO IN PRODUZIONE (14/08/2026)
 

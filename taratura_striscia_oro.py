@@ -338,6 +338,26 @@ def confronto_appaiato(dati, k_a, k_b, prove=300, seme=11):
             fuori[data] = (scelto_b - scelto_a) / (oracolo - caso) * 100
         return fuori
 
+    # CATENA DI PRODUZIONE (CLAUDE.md): un parametro che sposta lo score_atteso
+    # sposta anche le soglie arena, che sono tarate sui punti attesi. Il numero
+    # che conta NON e' lo spostamento medio su tutte le righe (il pool vero non
+    # e' la popolazione: e' fatto di probabili titolari, cioe' della coda alta,
+    # dove lo shrinkage tira verso il basso). Qui si guarda lo spostamento sui
+    # SOLI candidati veri: i primi cinque per previsione di ogni giornata.
+    per_data_top = collections.defaultdict(list)
+    for r in dati:
+        per_data_top[r[1]].append(r)
+    scarti = []
+    for _data, v in per_data_top.items():
+        if len(v) < 15:
+            continue
+        for r in sorted(v, key=lambda x: -x[2])[:5]:
+            scarti.append(r[3] - r[2])
+    if scarti:
+        print('  spostamento dell atteso sui primi cinque della giornata: '
+              '%+.3f punti a carta (%d carte, %d giornate)'
+              % (statistics.mean(scarti), len(scarti), len(scarti) // 5))
+
     d_mae, d_corr = _mae_corr(dati)
     per_giorno = _lift_per_giorno(dati)
     d_lift = statistics.mean(per_giorno.values()) if per_giorno else None
@@ -381,9 +401,157 @@ def confronto_appaiato(dati, k_a, k_b, prove=300, seme=11):
             'ic_mae': _ic(b_mae), 'ic_corr': _ic(b_corr), 'ic_lift': _ic(b_lift)}
 
 
+SHRINK_PRIMA = {'Goalkeeper': 30.0, 'Defender': 15.0, 'Midfielder': 5.0, 'Forward': 15.0}
+SHRINK_DOPO = {'Goalkeeper': 30.0, 'Defender': 15.0, 'Midfielder': 15.0, 'Forward': 5.0}
+
+
+def combinato(punti, grade, usa_avversario, prima=None, dopo=None, prove=300, seme=11):
+    """TUTTI I RUOLI INSIEME, come li vede il generatore (14/08/2026, richiesta
+    dell'utente -- ed e' la misura giusta, quella per ruolo era cieca sul punto
+    che conta).
+
+    PERCHE' NON BASTA IL TEST PER RUOLO. Abbassare l'atteso dei centrocampisti
+    non li mette in competizione con altri centrocampisti: li mette in
+    competizione con difensori e attaccanti, che nessuno ha toccato. Un test
+    dentro il singolo ruolo non puo' vedere se il knapsack comincia a preferire
+    un altro reparto: misura il centrocampo contro se stesso.
+
+    PERCHE' SERVE LA CALIBRAZIONE. I quattro ruoli non sono nella stessa
+    moneta: le rette di CALIB_PER_RUOLO hanno pendenze da 0,264 (GK) a 0,831
+    (DEF). Confrontare gli attesi GREZZI di ruoli diversi non ha senso, ed e'
+    esattamente cio' che il generatore non fa -- lui calibra prima (riga
+    `calibra_riga(row, role)`) e solo dopo mette tutti in classifica.
+
+    ORDINE REPLICATO DALLA PRODUZIONE, verificato nel codice:
+        grezzo -> calibrato (a + b*grezzo, per ruolo) -> + voto (sul calibrato)
+    Nel banco ufficiale il voto si somma al grezzo: dentro un ruolo e'
+    innocuo (e' una trasformazione affine, ordine e correlazione non cambiano),
+    fra ruoli no -- qui serve l'ordine vero.
+
+    DUE LIFT, perche' misurano cose diverse:
+      libero  = i primi cinque della giornata a prescindere dal ruolo;
+      shape   = un GK, un DEF, un MID, un FWD piu' un quinto fra DEF/MID/FWD,
+                che e' la forma vera di un'arena All Stars.
+    """
+    prima = prima or SHRINK_PRIMA
+    dopo = dopo or SHRINK_DOPO
+    S21mod, idx_grade = grade
+    cal = S21mod.bfg.CALIB_PER_RUOLO
+    righe = []
+    for ruolo, slug, data, ctx, reale in punti:
+        cod = RUOLO_CODICE.get(ruolo, ruolo)
+        try:
+            ga = prev.calcola(ctx, shrink_k=prima[ruolo], usa_avversario=usa_avversario)
+            gb = prev.calcola(ctx, shrink_k=dopo[ruolo], usa_avversario=usa_avversario)
+        except Exception:
+            continue
+        a, b = cal.get(cod, (S21mod.bfg.CALIB_A, S21mod.bfg.CALIB_B))
+        righe.append((ruolo, slug, data, ctx, round(a + b * ga, 1),
+                      round(a + b * gb, 1), reale, cod))
+    con_voto = [r for r in righe
+                if S21mod.grade_in_finestra(idx_grade, r[1], r[2]) is not None]
+    print('  %d righe, %d col voto in finestra (%.1f%%)'
+          % (len(righe), len(con_voto), 100.0 * len(con_voto) / max(1, len(righe))))
+    comb_a = _con_grade([(r[0], r[1], r[2], r[3], r[4], r[6]) for r in con_voto],
+                        S21mod, idx_grade)
+    comb_b = _con_grade([(r[0], r[1], r[2], r[3], r[5], r[6]) for r in con_voto],
+                        S21mod, idx_grade)
+    dati = [(r[1], r[2], ca, cb, r[6], r[7])
+            for r, ca, cb in zip(con_voto, comb_a, comb_b)]
+
+    def _cinque(v, chiave, shape):
+        """le cinque carte scelte da una colonna, libere o a shape arena"""
+        ordinate = sorted(v, key=lambda x: -x[chiave])
+        if not shape:
+            return ordinate[:5]
+        presi, usati = [], set()
+        for cod in ('GK', 'DEF', 'MID', 'FWD'):
+            for i, r in enumerate(ordinate):
+                if r[5] == cod and i not in usati:
+                    presi.append(r)
+                    usati.add(i)
+                    break
+        for i, r in enumerate(ordinate):
+            if len(presi) >= 5:
+                break
+            if i not in usati and r[5] in ('DEF', 'MID', 'FWD'):
+                presi.append(r)
+                usati.add(i)
+        return presi if len(presi) == 5 else []
+
+    per_data = collections.defaultdict(list)
+    for r in dati:
+        per_data[r[1]].append(r)
+    for shape in (False, True):
+        quote, mix_a, mix_b = [], collections.Counter(), collections.Counter()
+        att_prima, att_dopo = [], []
+        for _d, v in per_data.items():
+            if len(v) < 15:
+                continue
+            sa, sb = _cinque(v, 2, shape), _cinque(v, 3, shape)
+            if not sa or not sb:
+                continue
+            att_prima.append(sum(r[2] for r in sa) + 0.2 * max(r[2] for r in sa))
+            att_dopo.append(sum(r[3] for r in sb) + 0.2 * max(r[3] for r in sb))
+            reali = [r[4] for r in v]
+            caso = 5 * (sum(reali) / len(reali))
+            oracolo = sum(sorted(reali, reverse=True)[:5])
+            if oracolo - caso <= 0:
+                continue
+            quote.append(((sum(r[4] for r in sb) - sum(r[4] for r in sa))
+                          / (oracolo - caso) * 100,
+                          sum(r[4] for r in sb) - sum(r[4] for r in sa)))
+            for r in sa:
+                mix_a[r[5]] += 1
+            for r in sb:
+                mix_b[r[5]] += 1
+        if not quote:
+            continue
+        rnd = random.Random(seme)
+        boot = [statistics.mean([rnd.choice(quote)[0] for _ in quote])
+                for _ in range(2000)]
+        boot.sort()
+        print('\n  LIFT %s -- %d giornate' % ('a shape arena' if shape else 'libero', len(quote)))
+        print('    delta lift  %+.3f punti percentuali   IC 90%% [%+.3f ; %+.3f]'
+              % (statistics.mean(q[0] for q in quote),
+                 boot[int(0.05 * len(boot))], boot[int(0.95 * len(boot))]))
+        print('    delta punti REALI incassati dalle cinque carte: %+.3f a giornata'
+              % statistics.mean(q[1] for q in quote))
+        tot_a, tot_b = sum(mix_a.values()), sum(mix_b.values())
+        print('    mix dei ruoli scelti  prima: %s'
+              % ', '.join('%s %.1f%%' % (c, 100.0 * mix_a[c] / tot_a)
+                          for c in ('GK', 'DEF', 'MID', 'FWD')))
+        print('    mix dei ruoli scelti   dopo: %s'
+              % ', '.join('%s %.1f%%' % (c, 100.0 * mix_b[c] / tot_b)
+                          for c in ('GK', 'DEF', 'MID', 'FWD')))
+        # L'ANELLO DELLA CATENA (CLAUDE.md): PAREGGIO_ARENA e' un ATTESO di
+        # formazione (264,5 sulla cap 260, in punteggio reale perche' la
+        # previsione arriva calibrata). Se il cambio abbassa l'atteso delle
+        # cinque carte, arene che convengono verrebbero giudicate non
+        # convenienti IN SILENZIO -- e viceversa. Qui si misura proprio quel
+        # numero, col capitano (+20%, come in arena) sulla carta piu' alta.
+        if att_prima:
+            print('    ATTESO di formazione (5 carte + capitano 20%%): '
+                  '%.2f -> %.2f (%+.2f punti)  [soglia cap 260 = 264.5]'
+                  % (statistics.mean(att_prima), statistics.mean(att_dopo),
+                     statistics.mean(att_dopo) - statistics.mean(att_prima)))
+
+    ma = statistics.mean(abs(r[4] - r[2]) for r in dati)
+    mb = statistics.mean(abs(r[4] - r[3]) for r in dati)
+    print('\n  MAE sul calibrato+voto, tutti i ruoli: %.3f -> %.3f (%+.3f)'
+          % (ma, mb, mb - ma))
+    return {'n': len(dati), 'mae_prima': ma, 'mae_dopo': mb}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--ruoli', default='fwd,mid,def,gk')
+    ap.add_argument('--combinato', action='store_true',
+                    help='TUTTI i ruoli insieme, calibrati per ruolo e col voto '
+                         'sul calibrato (ordine di produzione): confronta i '
+                         'valori shrink_k PRIMA e DOPO in un colpo solo, ed e '
+                         'l unica misura che vede il mix fra reparti. Implica '
+                         '--con-grade e --con-avversario.')
     ap.add_argument('--con-grade', action='store_true', dest='con_grade',
                     help='giudica sull atteso COMBINATO col voto A-F, cioe il '
                          'numero che entra davvero nel knapsack in produzione. '
@@ -413,6 +581,18 @@ def main():
     print('%d giocatori in cache, ruoli: %s' % (len(slugs), ', '.join(brevi)))
     punti = raccogli(cache, slugs, voluti, args.max or None)
     print('%d punti di test' % len(punti))
+
+    if args.combinato:
+        print('\n' + '=' * 104)
+        print('COMBINATO -- tutti i ruoli, calibrati, col voto. PRIMA %s / DOPO %s'
+              % ({RUOLO_CODICE[k]: v for k, v in SHRINK_PRIMA.items()},
+                 {RUOLO_CODICE[k]: v for k, v in SHRINK_DOPO.items()}))
+        print('=' * 104)
+        esito = combinato(punti, _carica_grade(), True)
+        with open(args.json, 'w', encoding='utf-8') as fh:
+            json.dump(esito, fh, ensure_ascii=False, indent=2)
+        print('\nsalvato in %s' % args.json)
+        return 0
 
     if args.confronto:
         k_a, k_b = [float(v) for v in args.confronto.split(',')]
