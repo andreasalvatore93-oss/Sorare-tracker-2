@@ -921,8 +921,14 @@ def _league_dir_map():
 
 def _lega_dominante_storico(path, oggi, giorni, league_dir):
     """Cartella con piu' partite negli ultimi `giorni`, letta dal game log.
-    Ritorna (cartella, n_partite_li, n_partite_totali) oppure None se lo
-    storico utile e' vuoto (giocatore nuovo, o solo coppe)."""
+    Ritorna (cartella, n_partite_li, n_partite_totali, livello) oppure None se
+    lo storico utile e' vuoto (giocatore nuovo, o solo coppe).
+
+    `livello` (14/08/2026) e' la media dei punteggi da TITOLARE nella lega
+    dominante, None se sono meno di 5. Serve al correttivo di cambio
+    campionato -- vedi _correttivo_lega -- perche' chi sale paga in
+    proporzione a quanto stava sopra la media. Si legge qui e non in una
+    seconda funzione per non riaprire lo stesso file due volte."""
     try:
         with open(path, encoding='utf-8') as fh:
             log = json.load(fh)
@@ -930,6 +936,7 @@ def _lega_dominante_storico(path, oggi, giorni, league_dir):
         return None
     limite = oggi - datetime.timedelta(days=giorni)
     conta = defaultdict(int)
+    punti = defaultdict(list)
     for riga in log.values():
         gioco = riga.get('anyGame') or {}
         data = (gioco.get('date') or '')[:10]
@@ -945,11 +952,151 @@ def _lega_dominante_storico(path, oggi, giorni, league_dir):
         cartella = league_dir.get(comp)
         if cartella is None:
             continue     # coppa/continentale: non dice nulla sulla lega
-        conta[_cartella_lega(cartella)] += 1
+        lega = _cartella_lega(cartella)
+        conta[lega] += 1
+        stat = riga.get('anyPlayerGameStats') or {}
+        sc = riga.get('score')
+        if (sc is not None and int(stat.get('gameStarted') or 0) == 1
+                and int(stat.get('minsPlayed') or 0) >= 60):
+            punti[lega].append(float(sc))
     if not conta:
         return None
     dominante = max(conta.items(), key=lambda kv: kv[1])
-    return dominante[0], dominante[1], sum(conta.values())
+    vv = punti.get(dominante[0]) or []
+    livello = (sum(vv) / len(vv)) if len(vv) >= 5 else None
+    return dominante[0], dominante[1], sum(conta.values()), livello
+
+
+# --- CORRETTIVO CAMBIO CAMPIONATO (14/08/2026) ----------------------------
+# Fino a ieri il cambio di campionato aveva solo il badge cosmetico qui sotto:
+# il giocatore appena arrivato veniva previsto con uno storico tarato sulla
+# lega VECCHIA, e finiva in cima alle formazioni senza che nessuno lo sapesse
+# (caso Vicente/Martin, promossi dalla Segunda alla Liga).
+#
+# La tabella (generatore_formazioni/dati/coef_lega.json) la costruisce
+# aggiorna_coef_lega.py dai giocatori che si sono trasferiti davvero -- la
+# sua docstring spiega i due modi sbagliati di misurarlo, entrambi provati e
+# scartati (il minutaggio contato due volte, e la regressione finta).
+#
+# TRE PROPRIETA' VOLUTE DALL'UTENTE, tutte per costruzione e non per
+# promessa:
+#  1. NON tocca lo storico. Agisce solo sull'atteso di questa giornata: i
+#     game log restano quelli veri, e la lega nuova li riempie da sola.
+#  2. SI SPEGNE DA SOLO. Il peso e' la quota di storico ANCORA nella lega
+#     vecchia: a storico adeguato vale esattamente zero, senza che nessuno
+#     debba ricordarsi di toglierlo.
+#  3. E' STRUTTURALE, non un lavoro per giornata: la tabella si rigenera
+#     quando si vuole (i coefficienti si muovono coi mercati, non con le
+#     partite), la parte che cambia ogni giornata la calcola il generatore.
+#
+# VALIDAZIONE (banco ufficiale, 136.778 righe, coefficienti ristimati SENZA
+# i giocatori testati): sulle righe toccate MAE 14,077 -> 13,980 e
+# correlazione 0,1643 -> 0,1872; bootstrap sui GIOCATORI, migliora nel 98,3%
+# e nel 99,1% dei ricampionamenti, IC che esclude lo zero in entrambi. Il
+# lift va nel verso giusto (+0,14) ma NON e' distinguibile dallo zero
+# (IC [-0,07;+0,40], positivo nell'88,5%): tocca il 2,9% delle righe, era
+# atteso. Su TUTTE le righe MAE e livello non si muovono di un decimale,
+# quindi soglie arena e scouting restano tarati -- verificato, non assunto.
+# Fuori campione nel tempo: correlazione +0,38, verso giusto nel 70%.
+# Per spegnerlo: CORRETTIVO_LEGA_ENABLED=0 nell'ambiente.
+CORRETTIVO_LEGA_ENABLED = os.environ.get('CORRETTIVO_LEGA_ENABLED', '1') == '1'
+COEF_LEGA_PATH = os.environ.get(
+    'COEF_LEGA_PATH', os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'dati', 'coef_lega.json'))
+# Passaggi minimi perche' una lega abbia un coefficiente credibile. Sotto
+# questa soglia il correttivo NON si applica (zero esplicito, non un numero
+# piccolo e inventato): con 2 trasferiti -- il Peru' -- il coefficiente e'
+# rumore. Richiesta esplicita dell'utente: "se una lega di riferimento ha 5
+# giocatori, sballiamo anche la ricalibrazione".
+CORRETTIVO_LEGA_MIN_PASSAGGI = int(os.environ.get('CORRETTIVO_LEGA_MIN_PASSAGGI', '12'))
+CORRETTIVO_LEGA_TETTO = float(os.environ.get('CORRETTIVO_LEGA_TETTO', '8'))
+_COEF_LEGA = None
+if CORRETTIVO_LEGA_ENABLED:
+    if os.path.exists(COEF_LEGA_PATH):
+        with open(COEF_LEGA_PATH, encoding='utf-8') as _f:
+            _COEF_LEGA = json.load(_f)
+    else:
+        print(f"ATTENZIONE: CORRETTIVO_LEGA_ENABLED=1 ma {COEF_LEGA_PATH} non "
+              "esiste -- rilanciare generatore_formazioni/dati/aggiorna_coef_lega.py. "
+              "Fallback: correttivo cambio campionato SPENTO per questa run.")
+        CORRETTIVO_LEGA_ENABLED = False
+
+
+def _correttivo_lega_punti(da, a, quota, livello):
+    """Punti da sommare all'atteso, e il perche' in chiaro (per il log).
+
+    Ritorna (punti, motivo). punti=0.0 quando una delle due leghe non ha
+    materiale a sufficienza: e' una scelta scritta, non l'assenza di un dato.
+    """
+    if not _COEF_LEGA:
+        return 0.0, 'tabella assente'
+    coef = _COEF_LEGA.get('coef_lega') or {}
+    passaggi = _COEF_LEGA.get('passaggi_per_lega') or {}
+    if da not in coef or a not in coef:
+        return 0.0, 'lega senza coefficiente'
+    if min(passaggi.get(da, 0), passaggi.get(a, 0)) < CORRETTIVO_LEGA_MIN_PASSAGGI:
+        return 0.0, 'troppo pochi trasferiti per fidarsi'
+    # Stima DIRETTA della coppia se esiste (piu' affidabile di quella in
+    # catena: sulla Spagna la catena dava -2,7 contro -5,0 diretto, perche'
+    # l'ipotesi "un solo numero per lega" e' un'approssimazione).
+    dirette = _COEF_LEGA.get('coppie_dirette') or {}
+    delta = dirette.get(f'{da}|{a}')
+    fonte = 'diretto'
+    if delta is None:
+        delta = coef[a] - coef[da]
+        fonte = 'catena'
+    # Chi SALE in una lega piu' dura paga anche in proporzione a quanto stava
+    # sopra la media: la pendenza di chi si muove meno quella di chi resta
+    # (che e' quasi zero -- restando, il livello non si sgonfia).
+    extra = 0.0
+    if delta < -1.5 and livello is not None:
+        extra = ((livello - _COEF_LEGA.get('livello_medio', 50.0))
+                 * (_COEF_LEGA.get('pendenza_sale', 0.0)
+                    - _COEF_LEGA.get('pendenza_resta', 0.0)))
+    punti = _COEF_LEGA.get('scala', 0.75) * quota * (delta + extra)
+    # TETTO DI SICUREZZA. Non e' una misura, e' un paracadute: richiesta
+    # esplicita dell'utente ("basta che non sballi eccessivamente"). Sul banco
+    # la correzione piena stava fra -8,3 e +9,4 punti dopo la scala, quindi a
+    # +/-8 taglia solo la coda estrema (oggi un candidato su 57, Nathan Ake
+    # dalla Premier alla Turchia). Serve soprattutto in futuro, se una lega
+    # con pochi trasferiti finisse per caso sopra la soglia e producesse un
+    # numero fuori scala. Alzare/abbassare con CORRETTIVO_LEGA_TETTO.
+    tetto = CORRETTIVO_LEGA_TETTO
+    if tetto and abs(punti) > tetto:
+        punti = tetto if punti > 0 else -tetto
+        return punti, (f'{fonte} {delta:+.1f}, outlier {extra:+.1f}, '
+                       f'quota {quota:.2f} -> TAGLIATO al tetto {tetto:g}')
+    return punti, f'{fonte} {delta:+.1f}, outlier {extra:+.1f}, quota {quota:.2f}'
+
+
+def _correttivo_lega(rows):
+    """Applica il correttivo a chi il badge ha gia' segnato come arrivato da
+    un'altra lega. Va chiamato DOPO _annota_nuovo_campionato (che calcola
+    lega di provenienza, quota e livello) e PRIMA di _recentra_grade_per_
+    ruolo, che somma il voto sul valore corrente."""
+    if not CORRETTIVO_LEGA_ENABLED or not rows:
+        return 0, 0.0
+    n = 0
+    somma = 0.0
+    for r in rows:
+        if not r.get('nuovo_campionato') or r.get('atteso') is None:
+            continue
+        n_dom, n_tot = r.get('_nc_partite') or (0, 0)
+        if not n_tot:
+            continue
+        punti, motivo = _correttivo_lega_punti(
+            r.get('_nc_da'), _cartella_lega(r.get('league')),
+            n_dom / n_tot, r.get('_nc_livello'))
+        r['_corr_lega'] = round(punti, 2)
+        r['_corr_lega_motivo'] = motivo
+        if not punti:
+            continue
+        r['atteso'] = round(r['atteso'] + punti, 2)
+        if r.get('sort_score') is not None:
+            r['sort_score'] = r['atteso']
+        n += 1
+        somma += punti
+    return n, somma
 
 
 def _annota_nuovo_campionato(rows, league, role):
@@ -975,11 +1122,12 @@ def _annota_nuovo_campionato(rows, league, role):
             oggi, NUOVO_CAMPIONATO_GIORNI, league_dir)
         if esito is None:
             continue
-        dominante, n_dom, n_tot = esito
+        dominante, n_dom, n_tot, livello = esito
         if dominante != lega_ora:
             row['nuovo_campionato'] = True
             row['_nc_da'] = dominante
             row['_nc_partite'] = (n_dom, n_tot)
+            row['_nc_livello'] = livello
             flaggati += 1
     return flaggati
 
@@ -1367,6 +1515,8 @@ def load_league_role_data():
     role_counts = {lg: {} for lg in LEAGUES}
     names = {}
     _nc_tot = 0
+    _cl_tot = 0
+    _cl_punti = 0.0
     for league in LEAGUES:
         for role in ROLES:
             out_dir = CONSIGLIO_DIRS[league][role]
@@ -1421,6 +1571,14 @@ def load_league_role_data():
             # rendere evidente che non entra in nessun calcolo (a differenza
             # del grade e del correttivo GK, dove l'ordine conta davvero).
             _nc_tot += _annota_nuovo_campionato(rows, league, role)
+            # Correttivo cambio campionato: subito dopo il badge (che ha
+            # calcolato provenienza, quota e livello) e PRIMA del
+            # ricentraggio del voto, che somma il suo delta sul valore
+            # corrente -- cosi' i due si sommano invece di cancellarsi
+            # (bug reale del 14/08 mattina fra voto e correttivo GK).
+            _cl_n, _cl_somma = _correttivo_lega(rows)
+            _cl_tot += _cl_n
+            _cl_punti += _cl_somma
             names.update(bff.load_player_names(DISCOVERY_DIRS[league][role]))
             print(f"[{league}/{role}] {path or 'NESSUN FILE TROVATO'} -> {len(rows)} giocatori")
             role_data[league][role] = rows
@@ -1429,8 +1587,14 @@ def load_league_role_data():
         _recentra_grade_per_ruolo(role_data)
     if NUOVO_CAMPIONATO_ENABLED:
         print(f"\nBadge 'nuovo campionato': {_nc_tot} candidati con lo storico "
-              f"in un'altra lega negli ultimi {NUOVO_CAMPIONATO_GIORNI} giorni "
-              f"(solo cosmetico, nessun effetto sulla selezione).")
+              f"in un'altra lega negli ultimi {NUOVO_CAMPIONATO_GIORNI} giorni.")
+    if CORRETTIVO_LEGA_ENABLED:
+        media = (_cl_punti / _cl_tot) if _cl_tot else 0.0
+        print(f"[correttivo_lega] applicato a {_cl_tot} candidati su {_nc_tot} "
+              f"segnalati (gli altri: lega senza abbastanza trasferiti, "
+              f"soglia {CORRETTIVO_LEGA_MIN_PASSAGGI}). Media {media:+.2f} punti, "
+              f"totale {_cl_punti:+.1f}. Si azzera da solo quando lo storico "
+              f"nella lega nuova prende il sopravvento.")
     return role_data, role_counts, names
 
 
