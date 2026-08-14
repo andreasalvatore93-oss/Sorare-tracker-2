@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-04T22:47:15.366347Z
+Generato: 2026-08-14T09:47:28.225925Z
 Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
-1) walter-leandro-capeloza-artune: 46 pt attesi (36-59)
-   SQUADRA: mirassol-mirassol-sao-paulo | AVVERSARIO: cruzeiro-belo-horizonte-minas-gerais
+1) walter-leandro-capeloza-artune: 46 pt attesi (35-59)
+   SQUADRA: mirassol-mirassol-sao-paulo | AVVERSARIO: flamengo-rio-de-janeiro-rio-de-janeiro
 ======================================================================
 
 ######################################################################
@@ -13,12 +13,12 @@ Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: walter-leandro-capeloza-artune (squadra: mirassol-mirassol-sao-paulo)
-Generato: 2026-08-04T22:47:15.365516Z
+Generato: 2026-08-14T09:47:28.224937Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
-Partite considerate: 33
-Escluse (DID_NOT_PLAY): 3
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 4
 Escluse (minutaggio < 60', subentri): 0
 Competizione partita target: campeonato-brasileiro-serie-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
 Partite usate nella media (dalla piu' vecchia alla piu' recente):
@@ -57,34 +57,33 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 Media pesata esponenziale (half-life 6.0 partite): 43.06
   di cui Punteggio decisivo (level_score) medio: 37.11 | Punteggio complessivo (granulari) medio: 5.94 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
   Punteggio decisivo condizionato per forza prossimo avversario: 37.86 (delta +0.75 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
-  Gol subiti condizionato: delta venue -0.78, delta avversario -0.73 | Possesso condizionato per venue: delta +0.18 | Goalkeeping condizionato per venue: delta +0.50 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+  Gol subiti condizionato: delta venue +0.82, delta avversario -0.73 | Possesso condizionato per venue: delta -0.20 | Goalkeeping condizionato per venue: delta -0.53 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
 Deviazione standard pesata: 11.85
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.6 - 56.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.42 (differenza: +2.43)
 Media score in casa: 49.69 | Media score fuori casa: 43.21
-Fattore casa/trasferta applicato: 0.973 (TRASFERTA nella prossima partita)
+Fattore casa/trasferta applicato: 1.030 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 10.9
-Ranking prossimo avversario: 7
-Fattore forza avversario applicato: 1.189 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
-Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.867
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.575 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
 NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
-Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.001
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.999
 Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.000
-Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.002
-Fattore gol subiti (goals_conceded, con cap, non applicato): 0.996
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.998
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.004
 Tasso storico clean sheet (porta inviolata nei primi 60'): 16.7% (bonus atteso incorporato nella media pesata: ~4.2pt)
 Fattore trend (media ultime 5: 43.7 vs media 5 PRECEDENTI: 41.8): 1.000
-P(gioca): 90.91% (fonte: tasso di presenza storico (30/33))
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
 
 --- PROSSIMA PARTITA ---
-Data: 2026-08-09T14:00
-Casa: Cruzeiro EC | Trasferta: Mirassol Futebol Clube
+Data: 2026-08-16T21:30
+Casa: Mirassol Futebol Clube | Trasferta: CR Flamengo
 Competizione: campeonato-brasileiro-serie-a
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 46.0 (range 35.5 - 59.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 45.9 (range 35.5 - 59.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 42.59
