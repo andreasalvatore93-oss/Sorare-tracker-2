@@ -11,9 +11,21 @@ come riferimento corrente):
 `docs/RIASSUNTO_EVOLUZIONE_TOOL_FORMAZIONI.md`, `docs/HANDOFF_BEST_FIVE.md`,
 `docs/HANDOFF.md` e gli `HANDOFF_*_2026-08-04.txt` in `docs/handoff/`.
 
-Ultimo aggiornamento: **sessione 13/08/2026 notte (Roma, CEST)**, allineamento
-fatto dal nuovo orchestratore verificando il CODICE, non i documenti. La
-giornata del 13/08 ha prodotto tre cose, tutte gia' scritte qui sotto:
+Ultimo aggiornamento: **sessione 14/08/2026 mattina (Roma, CEST)**. Tre cose
+in produzione, tutte verificate sul banco e con A/A:
+- **correttivo cambio campionato ACCESO** (§8terdecies riscritta): chi arriva
+  da un'altra lega non è più previsto come se giocasse ancora là. Supera il
+  tentativo PRIOR_LEGA del 13/08 e ne rettifica il −14,49.
+- **bug del correttivo GK** trovato e chiuso (§10bis in cima): dal 13/08 sera
+  l'accensione del voto lo stava cancellando in silenzio. Una sola run di
+  produzione colpita.
+- **carte già schierate** escluse dal pool anche se la formazione è ancora
+  modificabile, e `pool_gw.json` con timbro di run contro il riuso stantio.
+Handoff di sessione: `docs/handoff/HANDOFF_PIPELINE_LOCKATE_GK_2026-08-14.txt`.
+
+Aggiornamento precedente: **sessione 13/08/2026 notte (Roma, CEST)**,
+allineamento fatto dal nuovo orchestratore verificando il CODICE, non i
+documenti. La giornata del 13/08 ha prodotto tre cose:
 - **livello dei campionati** misurato (§8terdecies): le leghe NON sono uguali,
   tabella pronta, interruttore **SPENTO** per decisione dell'utente;
 - **filone intralega CHIUSO** in essenze (§8quaterdecies) e **half-life
@@ -2893,16 +2905,85 @@ di nuovo questa voce.
 
 ---
 
-## 8terdecies. IL LIVELLO DEI CAMPIONATI (13/08/2026) — misurato, NON in produzione
+## 8terdecies. IL LIVELLO DEI CAMPIONATI — IN PRODUZIONE dal 14/08/2026
 
-**In due righe.** Il modello tratta tutte le 53 leghe come uguali (una sola
-calibrazione per ruolo). Non lo sono: chi sale di categoria perde **5,5 punti**
-a partita, chi scende ne guadagna 7, a parità di minuti — e non è ritorno alla
-media (3.795 giocatori rimasti nella loro lega non calano affatto). Costruita
-la tabella dei livelli e un interruttore, **spento**. Dettaglio integrale:
-`docs/handoff/HANDOFF_PRIOR_LEGA_2026-08-13.txt`.
+**In due righe.** Il modello trattava tutte le 53 leghe come uguali (una sola
+calibrazione per ruolo). Non lo sono: chi cambia campionato si portava dietro
+un atteso tarato sulla lega vecchia. Dal 14/08 c'è un correttivo acceso di
+default (`CORRETTIVO_LEGA_ENABLED`), stimato sui giocatori che si sono
+trasferiti davvero. Il tentativo del 13/08 (PRIOR_LEGA, tre varianti tutte
+bocciate) è **superato**: restava in `test_mls_fwd_all.py` a flag spento e non
+propagato, non è la strada da riprendere.
 
-**FATTO IL 13/08/2026 SERA — BADGE COSMETICO "NUOVO CAMPIONATO", ACCESO.**
+**COME È FATTO** (`build_formazione_globale.py::_correttivo_lega`, tabella
+`generatore_formazioni/dati/coef_lega.json` da `aggiorna_coef_lega.py`):
+`punti = scala(0,75) × quota_storico_vecchio × delta_lega`, dove `delta_lega`
+è la stima diretta della coppia se ha ≥8 trasferiti per verso, altrimenti
+quella in catena. Leghe sotto 12 passaggi: **zero esplicito**. Tetto ±8 punti
+(paracadute dichiarato, non una misura: oggi taglia solo Aké). Si spegne da
+solo — a storico adeguato la quota è 0. Non tocca mai lo storico.
+
+**I DUE MODI SBAGLIATI DI MISURARLO, provati e scartati** (sono la parte da
+non ripetere):
+1. *Usare tutte le partite.* Il salto di categoria sembrava costare 16 punti,
+   ma la media su TUTTI i passaggi veniva **+7,55** invece di ~0 — impossibile
+   per un effetto di lega, per ogni salita c'è una discesa. Era il minutaggio
+   (chi scende gioca titolare, chi sale va in panchina). Col filtro
+   **titolare→titolare** la media di controllo va a **+0,14** e il salto costa
+   5-10. Gli 8-10 punti di differenza il modello li sa già dalle starter odds:
+   contarli qui li conterebbe due volte.
+2. *La regressione verso la media misurata in modo ingenuo* esce anche quando
+   non c'è. Con lo split (livello da metà partite, variazione sull'altra) e il
+   gruppo di controllo: chi **resta** non regredisce (−0,03), chi **sale** sì
+   (−0,10).
+
+**RETTIFICA DEL −14,49 DI IERI** (§3.2 di `HANDOFF_PRIOR_LEGA_2026-08-13.txt`):
+era gonfiato dal gruppo di controllo. Coi loro stessi bucket sui dati di oggi,
+i "fermi" sopra 60 calano di **6,83**, non di 2,79 — quindi la differenza
+causale per i promossi di alto livello è **−5,1**, non −14,5. Il crollo grezzo
+però è reale: chi sale di categoria passa in media **da 64 a 52**; di quei 12
+punti ~7 li perde anche chi non si è mosso (è come il modello tratta chi viene
+da una striscia d'oro, problema diverso) e ~5 sono causati dal salto.
+
+**VALIDAZIONE** (banco ufficiale, 136.778 righe, 3.838 toccate, 510 giocatori,
+coefficienti ristimati SENZA i giocatori testati): sulle righe toccate MAE
+14,077 → 13,980 e correlazione 0,164 → 0,187; bootstrap **sui giocatori**
+positivo nel 98,3% e 99,1%, IC che esclude lo zero. Lift +0,14 ma NON
+distinguibile da zero (IC [−0,07;+0,40]) — tocca il 2,9% delle righe, atteso.
+Su TUTTE le righe MAE e livello invariati al terzo decimale: **soglie arena e
+scouting restano tarati**, verificato non assunto. Fuori campione nel tempo:
+correlazione +0,38, verso giusto nel 70%. La classifica esce
+football-plausibile da sola: inghilterra −11,0, germania −5,6, spagna −5,3,
+italia −4,3, e ogni seconda divisione sopra la sua prima.
+
+**TRE COSE BOCCIATE IL 14/08, non riproporre senza prove nuove:**
+- *Termine "da outlier"* (togliere ai promossi anche una quota del vantaggio
+  personale): peggiora in modo **monotono**, q=0,20 migliora solo nel 3% dei
+  ricampionamenti. Rimosso il 14/08.
+- *Versione "solo in discesa"* (q=0,7): MAE meglio nel 100% dei casi,
+  ordinamento peggio nel 100%. È la trappola scritta nella docstring di
+  `taratura_confronto_parametri`, non passa la regola delle tre misure.
+- *Half-life corto per i soli trasferiti* (idea dell'utente): su 1.738
+  osservazioni l'half-life lungo vince a ogni giornata e sull'ordinamento
+  sempre. Due o tre partite sono troppo poche — lo storico vecchio è
+  "sbagliato ma stabile" contro "giusto ma casuale".
+
+**IL PERCHÉ, che vale più dei numeri:** fra i trasferiti **l'ordinamento
+regge**. Calano tutti, ma i più forti prima restano i più forti dopo:
+appiattirli sulla media della lega nuova butta via informazione vera. È anche
+la risposta alla domanda "e se continuasse a fare il fenomeno?". Altro dato
+contro-intuitivo: i trasferiti **non sono più imprevedibili** degli altri
+(dispersione 17,1 contro 17,3) — non hanno più incertezza, hanno uno
+sbilanciamento sistematico, ed è quello che si corregge.
+
+**COPERTURA**: 26 leghe di produzione su 52 hanno coefficiente (tutte quelle
+che contano); 5 sotto soglia (cile 5, colombia 7, russia 9, croazia 11, perù
+2) e 21 senza trasferiti misurabili (arabia, grecia, polonia, svezia…) restano
+a zero. Cresce da sola: basta rilanciare `aggiorna_coef_lega.py` ogni tanto
+(dopo il mercato), non serve per giornata.
+
+**BADGE COSMETICO "NUOVO CAMPIONATO"** (13/08, resta e ora affianca il
+correttivo).
 Unica cosa che va in produzione da questo filone, per decisione dell'utente:
 nessuna correzione dell'atteso, solo un avviso nel report. La carta di chi ha
 lo storico in un'altra lega mostra `🌍 Nuovo campionato` (pcard + tabella "Top
@@ -2932,14 +3013,11 @@ DUMP_JSON le arene efficienti escono TUTTE con `idx=1` — accoppiarle per
 `(tipo, idx)` confronta sette arene diverse con la stessa e fa sembrare che
 cambi tutto. Accoppiarle per posizione dentro il tipo.)*
 
-**DECISIONE DELL'UTENTE (13/08 sera): non si tocca la produzione.** I casi
-veri sono **14 su 178 carte** e solo 3-4 pesano (Vicente −18, Berhalter −16,
-Martín −13). Per quei pochi si valuta un **fix mirato** di 2-3 giornate
-(allinearli alla media del ruolo in quella lega, poi il modello fa il resto).
-Il filone strutturale che l'utente vuole aprire è un altro — **correlazioni
-intralega fra squadre avversarie** (attacco di A contro difesa di B nello
-stesso campionato): vedi
-`docs/handoff/PASSAGGIO_ORCHESTRATORE_2026-08-13_SERA.txt`, sezione B.
+*(Storico: il 13/08 sera si era deciso di non toccare la produzione, con i
+casi stimati Vicente −18, Berhalter −16, Martín −13. Quei numeri sono
+**superati** dalla rettifica sopra: col correttivo del 14/08 Vicente vale
+−3,8. Il "fix mirato di 2-3 giornate" ipotizzato allora è stato provato ed è
+la voce "half-life corto" fra le bocciate.)*
 
 **Il numero che ha cambiato le priorità** — la memoria del modello
 (`HALF_LIFE_GAMES`) è 6 partite per FWD/GK ma **25 per i MID e 30 per i DEF**.
@@ -2955,18 +3033,15 @@ Gli attaccanti si raddrizzano da soli in un mese e mezzo; **centrocampisti e
 difensori restano sbagliati per mesi**. Il valore di una correzione di lega sta
 lì, non sugli attaccanti.
 
-**Cosa è pronto e cosa no.** Tabella `dati_globali/livello_lega_ruolo.json`
-(67 celle, stimata separando la bravura dei giocatori dall'effetto della lega —
-la media grezza è sbagliata e confonde le due cose), rigenerabile con
-`dati_globali/costruisci_livello_lega_ruolo.py` a zero query. Flag
-`PRIOR_LEGA_ENABLED` (default `'0'`) **solo in `test_mls_fwd_all.py`**, non
-propagato. Tre modi di usarla provati, tutti e tre bocciati sulle metriche
-aggregate; **conto in sospeso**: sui 704 punti che la correzione tocca davvero
-l'errore invece migliora (14,56 → 14,27), e le due misure non tornano — non
-usare nessuno dei due numeri per decidere finché non si capisce quale è
-sbagliata. Corretti anche 3 difetti del banco di prova
+**Roba del 13/08 che resta valida ma NON è la strada corrente**: la tabella
+`dati_globali/livello_lega_ruolo.json` (67 celle) e il flag `PRIOR_LEGA_ENABLED`
+(default `'0'`, solo in `test_mls_fwd_all.py`, mai propagato) — soppiantati da
+`coef_lega.json`. Restano validi e utili i 3 difetti del banco corretti allora
 (`backtest_arene_previsioni.py`), fra cui la lega scritta a mano `'mls'` per
-tutti i giocatori del mondo.
+tutti i giocatori del mondo. Il "conto in sospeso" fra metrica aggregata e
+sottogruppo è **chiuso**: la lezione era che una correzione che tocca il 2-3%
+delle righe va giudicata sulle righe che tocca, con bootstrap sui giocatori —
+ed è così che è stato validato il correttivo nuovo.
 
 ## 8quaterdecies. FILONE INTRALEGA (13/08/2026) — CHIUSO PER INTERO, ultimo asse compreso
 
