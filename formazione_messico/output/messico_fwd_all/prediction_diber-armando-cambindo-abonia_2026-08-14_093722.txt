@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-14T09:37:22.241155Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) diber-armando-cambindo-abonia: 54 pt attesi (30-74)
+   ORDINAMENTO: 54.96
+   SQUADRA: leon-leon-de-los-aldamas | AVVERSARIO: necaxa-aguascalientes
+======================================================================
+
+######################################################################
+# GIOCATORE: diber-armando-cambindo-abonia
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: diber-armando-cambindo-abonia (squadra: leon-leon-de-los-aldamas)
+Generato: 2026-08-14T09:37:22.239947Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: liga-mx (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | NEC vs LEO | liga-mx | score=34.2 | peso=0.088
+  2025-08-24 | MON vs NEC | liga-mx | score=36.5 | peso=0.099
+  2025-09-27 | ATS vs NEC | liga-mx | score=64.4 | peso=0.111
+  2025-10-04 | NEC vs PAC | liga-mx | score=23.3 | peso=0.125
+  2025-10-18 | TIG vs NEC | liga-mx | score=87.9 | peso=0.140
+  2025-10-22 | NEC vs CAZ | liga-mx | score=36.4 | peso=0.157
+  2025-10-27 | ASL vs NEC | liga-mx | score=72.6 | peso=0.177
+  2025-11-08 | MAZ vs NEC | liga-mx | score=31.4 | peso=0.198
+  2026-01-14 | PAC vs LEO | liga-mx | score=25.1 | peso=0.223
+  2026-01-18 | PUM vs LEO | liga-mx | score=76.4 | peso=0.250
+  2026-02-01 | LEO vs TIG | liga-mx | score=60.0 | peso=0.281
+  2026-02-15 | MON vs LEO | liga-mx | score=38.8 | peso=0.315
+  2026-02-22 | LEO vs SAN | liga-mx | score=60.0 | peso=0.354
+  2026-03-01 | LEO vs NEC | liga-mx | score=71.9 | peso=0.397
+  2026-03-07 | MAZ vs LEO | liga-mx | score=60.0 | peso=0.445
+  2026-03-15 | LEO vs TIJ | liga-mx | score=37.5 | peso=0.500
+  2026-03-19 | CHI vs LEO | liga-mx | score=33.2 | peso=0.561
+  2026-04-05 | LEO vs ATS | liga-mx | score=64.2 | peso=0.630
+  2026-04-11 | PUE vs LEO | liga-mx | score=33.2 | peso=0.707
+  2026-04-19 | LEO vs JUA | liga-mx | score=60.0 | peso=0.794
+  2026-04-22 | LEO vs AME | liga-mx | score=68.4 | peso=0.891
+  2026-04-26 | TOL vs LEO | liga-mx | score=86.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 56.86
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=22): 55.60 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 51.53 | Punteggio complessivo (granulari) medio: 5.34 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.99 (delta +1.04) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.00
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.2 - 76.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.41 (differenza: +0.59)
+Media score in casa: 60.29 | Media score fuori casa: 48.39
+Fattore casa/trasferta applicato: 0.995 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.4
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 0.969 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.007
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.006
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 62.4 vs media 5 PRECEDENTI: 52.5): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-18T01:00
+Casa: Club Necaxa | Trasferta: Club León
+Competizione: liga-mx
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.0 (range 30.4 - 73.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 55.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.92
+Punteggio REALE ottenuto in quella partita: 86.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +33.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.2    72.6    +24.4    26.4        SI
+   7        7      53.0    31.4    -21.6    26.2        SI
+   8        8      62.5    25.1    -37.4    25.5        NO
+   9        9      35.4    76.4    +41.0    25.5        NO
+  10       10      67.3    60.0     -7.3    26.8        SI
+  11       11      41.7    38.8     -2.9    25.0        SI
+  12       12      66.2    60.0     -6.2    23.7        SI
+  13       13      42.2    71.9    +29.7    22.4        NO
+  14       14      68.2    60.0     -8.2    22.4        SI
+  15       15      39.4    37.5     -1.9    21.0        SI
+  16       16      48.1    33.2    -14.9    20.7        SI
+  17       17      48.6    64.2    +15.6    20.7        SI
+  18       18      55.0    33.2    -21.8    20.1        NO
+  19       19      48.1    60.0    +11.9    20.1        SI
+  20       20      51.2    68.4    +17.2    19.2        SI
+  21       21      61.4    86.2    +24.8    19.2        NO
+
+MAE (errore assoluto medio): 17.94
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 68.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
