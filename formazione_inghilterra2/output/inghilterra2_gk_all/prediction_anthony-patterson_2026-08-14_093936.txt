@@ -1,0 +1,106 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-14T09:39:36.148607Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) anthony-patterson: 48 pt attesi (34-64)
+   SQUADRA: wrexham-wrexham-wrecsam | AVVERSARIO: cardiff-city-cardiff
+======================================================================
+
+######################################################################
+# GIOCATORE: anthony-patterson
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: anthony-patterson (squadra: wrexham-wrexham-wrecsam)
+Generato: 2026-08-14T09:39:36.147909Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 41
+Escluse (DID_NOT_PLAY): 25
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-21 | MIL vs POR | football-league-championship | score=32.4 | peso=0.177
+  2026-02-25 | MIL vs BIR | football-league-championship | score=68.9 | peso=0.198
+  2026-02-28 | PNE vs MIL | football-league-championship | score=61.3 | peso=0.223
+  2026-03-07 | HUL vs MIL | football-league-championship | score=50.6 | peso=0.250
+  2026-03-10 | MIL vs DER | football-league-championship | score=62.9 | peso=0.281
+  2026-03-14 | MIL vs BBR | football-league-championship | score=20.2 | peso=0.315
+  2026-03-21 | IPS vs MIL | football-league-championship | score=37.8 | peso=0.354
+  2026-04-03 | MID vs MIL | football-league-championship | score=44.0 | peso=0.397
+  2026-04-06 | MIL vs NOR | football-league-championship | score=36.2 | peso=0.445
+  2026-04-10 | WBA vs MIL | football-league-championship | score=60.0 | peso=0.500
+  2026-04-18 | MIL vs QPR | football-league-championship | score=65.8 | peso=0.561
+  2026-04-21 | STO vs MIL | football-league-championship | score=45.0 | peso=0.630
+  2026-04-24 | LEI vs MIL | football-league-championship | score=43.1 | peso=0.707
+  2026-05-02 | MIL vs OXF | football-league-championship | score=69.1 | peso=0.794
+  2026-05-08 | HUL vs MIL | football-league-championship | score=61.4 | peso=0.891
+  2026-05-11 | MIL vs HUL | football-league-championship | score=36.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 50.29
+  di cui Punteggio decisivo (level_score) medio: 46.16 | Punteggio complessivo (granulari) medio: 4.13 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 47.48 (delta +1.31 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.73, delta avversario +0.58 | Possesso condizionato per venue: delta -0.18 | Goalkeeping condizionato per venue: delta +0.46 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 13.76
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.4 - 65.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.61 (differenza: +2.15)
+Media score in casa: 48.99 | Media score fuori casa: 50.40
+Fattore casa/trasferta applicato: 1.003 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.6
+Ranking prossimo avversario: 24
+Fattore forza avversario applicato: 1.000 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.998
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.002
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.004
+Tasso storico clean sheet (porta inviolata nei primi 60'): 43.8% (bonus atteso incorporato nella media pesata: ~10.9pt)
+Fattore trend (media ultime 5: 50.9 vs media 5 PRECEDENTI: 50.5): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-17T19:00
+Casa: Cardiff City FC | Trasferta: Wrexham FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.3 (range 34.4 - 63.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.36
+Punteggio REALE ottenuto in quella partita: 36.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -16.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      33.5    37.8     +4.3    20.9        SI
+   7        7      37.9    44.0     +6.1    19.3        SI
+   8        8      42.6    36.2     -6.4    17.5        SI
+   9        9      63.5    60.0     -3.5    16.5        SI
+  10       10      49.0    65.8    +16.8    16.5        NO
+  11       11      60.6    45.0    -15.6    17.1        SI
+  12       12      68.8    43.1    -25.7    16.0        NO
+  13       13      62.5    69.1     +6.6    15.0        SI
+  14       14      36.9    61.4    +24.5    16.2        NO
+  15       15      39.8    36.4     -3.4    15.6        SI
+
+MAE (errore assoluto medio): 11.28
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
