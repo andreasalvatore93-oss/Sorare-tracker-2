@@ -421,6 +421,77 @@ def _grade_bench_page(so5_slug, position, after):
     return [], False, None
 
 
+POOL_GW_PATH = 'pool_gw.json'
+# Quanto puo' essere vecchio pool_gw.json FUORI da GitHub Actions, in minuti
+# (14/08/2026). Dentro Actions non serve: li' vale il timbro di run, esatto.
+POOL_GW_ETA_MAX_MIN = float(os.environ.get('POOL_GW_ETA_MAX_MIN', '20'))
+# Interruttore esplicito per riaccettare l'artifact senza controlli (mai
+# l'assenza di un dato a decidere: se lo si vuole spento, lo si scrive).
+POOL_GW_CONTROLLA_ETA = os.environ.get('POOL_GW_CONTROLLA_ETA', '1') == '1'
+
+
+def _run_corrente():
+    """Timbro della run in corso, '' fuori da GitHub Actions. RUN_ATTEMPT
+    incluso apposta: un 'Re-run jobs' riusa lo STESSO RUN_ID, e senza il
+    tentativo un artifact del primo giro passerebbe per fresco."""
+    rid = (os.environ.get('GITHUB_RUN_ID') or '').strip()
+    if not rid:
+        return ''
+    return f"{rid}:{(os.environ.get('GITHUB_RUN_ATTEMPT') or '1').strip()}"
+
+
+def _pool_gw_carica(fixture_slug, tag):
+    """pool_gw.json se e' l'artifact DI QUESTA run e DI QUESTA giornata.
+    None (col motivo a log) altrimenti: chi chiama rifa' la fetch dal vivo.
+
+    PERCHE' (14/08/2026). Qui c'era scritto che il file "nasce e muore dentro
+    la run, non e' committato e non puo' invecchiare": vero su GitHub (checkout
+    fresco, ed e' gitignorato), FALSO in locale, dove il file resta nella
+    cartella di lavoro e alla run dopo veniva riusato solo perche' la giornata
+    dentro era ancora quella -- carte bloccate, odds e voti di mezz'ora prima
+    presi per attuali, in silenzio. Due controlli, uno per ambiente:
+      - dentro Actions il timbro di run e' esatto e non ammette dubbi;
+      - fuori, dove un timbro non c'e', decide l'eta' del file
+        (POOL_GW_ETA_MAX_MIN, default 20 minuti).
+    """
+    if not os.path.exists(POOL_GW_PATH):
+        return None
+    try:
+        with open(POOL_GW_PATH, encoding='utf-8') as f:
+            d = json.load(f)
+    except Exception as e:
+        log(f"{tag} {POOL_GW_PATH} illeggibile ({e}): faccio la fetch diretta.")
+        return None
+    if d.get('fixture') != fixture_slug:
+        log(f"{tag} ATTENZIONE: {POOL_GW_PATH} e' della giornata "
+            f"{d.get('fixture')!r}, non {fixture_slug!r}: lo IGNORO e faccio "
+            f"la fetch diretta.")
+        return None
+    if not POOL_GW_CONTROLLA_ETA:
+        return d
+    mia = _run_corrente()
+    if mia:
+        if (d.get('run') or '') != mia:
+            log(f"{tag} {POOL_GW_PATH} porta il timbro della run "
+                f"{d.get('run') or '(nessuno)'} e questa e' la {mia}: lo IGNORO "
+                f"e faccio la fetch diretta.")
+            return None
+        return d
+    # Fuori da Actions: nessun timbro affidabile, decide l'eta'.
+    try:
+        scritto = float(d.get('scritto_a') or 0) or os.path.getmtime(POOL_GW_PATH)
+    except Exception:
+        scritto = 0.0
+    eta_min = (time.time() - scritto) / 60.0 if scritto else 1e9
+    if eta_min > POOL_GW_ETA_MAX_MIN:
+        log(f"{tag} {POOL_GW_PATH} ha {eta_min:.0f} minuti (limite "
+            f"{POOL_GW_ETA_MAX_MIN:.0f}, POOL_GW_ETA_MAX_MIN): lo IGNORO e "
+            f"faccio la fetch diretta. Fuori da GitHub il file resta nella "
+            f"cartella e invecchia.")
+        return None
+    return d
+
+
 def fetch_grade_live(fixture_slug):
     """Grade (A..F) per slug giocatore, sulla GW aperta 'fixture_slug'.
     Ritorna (grade_map, copertura_per_leaderboard) -- copertura_per_leaderboard
@@ -438,22 +509,12 @@ def fetch_grade_live(fixture_slug):
     # run, non e' committato e non puo' invecchiare; se la giornata dentro non
     # e' quella che stiamo processando lo si scarta, perche' un artifact di
     # un'altra giornata sarebbe il fallback silenzioso da evitare.
-    p = 'pool_gw.json'
-    if os.path.exists(p):
-        try:
-            with open(p, encoding='utf-8') as f:
-                d = json.load(f)
-            if d.get('fixture') != fixture_slug:
-                log(f"[grade] ATTENZIONE: {p} e' della giornata "
-                    f"{d.get('fixture')!r}, non {fixture_slug!r}: lo IGNORO e "
-                    f"faccio la fetch diretta.")
-            else:
-                gm = d.get('grade_map') or {}
-                log(f"[grade] da artifact {p}: {len(gm)} slug con grade "
-                    f"(fetch fatta una sola volta dal job 'grade' di questa run).")
-                return gm, d.get('copertura') or {}
-        except Exception as e:
-            log(f"[grade] {p} illeggibile ({e}): faccio la fetch diretta.")
+    d = _pool_gw_carica(fixture_slug, '[grade]')
+    if d is not None:
+        gm = d.get('grade_map') or {}
+        log(f"[grade] da artifact {POOL_GW_PATH}: {len(gm)} slug con grade "
+            f"(fetch fatta una sola volta dal job 'grade' di questa run).")
+        return gm, d.get('copertura') or {}
     if not SORARE_CSRF:
         log("[grade] SORARE_CSRF assente: la query bench potrebbe fallire o "
             "tornare vuota senza CSRF. Procedo comunque, verifica copertura.")
@@ -1088,26 +1149,17 @@ def _odds_giornata_condivise(fixture_slug):
         return _odds_giornata_cache[fixture_slug]
     odds = {}
     _autorevole = False
-    p = 'pool_gw.json'
-    if os.path.exists(p):
-        try:
-            with open(p, encoding='utf-8') as f:
-                d = json.load(f)
-            if d.get('fixture') == fixture_slug:
-                odds = d.get('odds') or {}
-                _autorevole = bool(d.get('odds_fetched'))
-                if odds:
-                    log(f"[odds] da artifact {p}: {len(odds)} giocatori con odds "
-                        f"(nessuna query: fetch fatta una volta sola in questa run).")
-                elif _autorevole:
-                    log(f"[odds] artifact {p}: il pool ha gia' interrogato le "
-                        f"partite di questa giornata e le odds NON sono ancora "
-                        f"pubblicate. NON rifaccio la fetch.")
-            else:
-                log(f"[odds] {p} e' della giornata {d.get('fixture')!r}, non "
-                    f"{fixture_slug!r}: lo IGNORO.")
-        except Exception as e:
-            log(f"[odds] {p} illeggibile ({e}).")
+    d = _pool_gw_carica(fixture_slug, '[odds]')
+    if d is not None:
+        odds = d.get('odds') or {}
+        _autorevole = bool(d.get('odds_fetched'))
+        if odds:
+            log(f"[odds] da artifact {POOL_GW_PATH}: {len(odds)} giocatori con odds "
+                f"(nessuna query: fetch fatta una volta sola in questa run).")
+        elif _autorevole:
+            log(f"[odds] artifact {POOL_GW_PATH}: il pool ha gia' interrogato le "
+                f"partite di questa giornata e le odds NON sono ancora "
+                f"pubblicate. NON rifaccio la fetch.")
     if not odds and not _autorevole:
         try:
             odds = odds_per_giornata(fixture_slug) or {}
@@ -1376,19 +1428,13 @@ def main():
     _carte_bloccate = set()
     n_carte_saltate = [0]
     if ESCLUDI_LOCKATE:
-        p = 'pool_gw.json'
+        _d = _pool_gw_carica(fx.get('slug'), '[lockate]')
         letto_da_artifact = False
-        if os.path.exists(p):
-            try:
-                with open(p, encoding='utf-8') as f:
-                    _d = json.load(f)
-                if _d.get('fixture') == fx.get('slug') and _d.get('carte_bloccate') is not None:
-                    _carte_bloccate = set(_d['carte_bloccate'])
-                    letto_da_artifact = True
-                    log(f"[lockate] da artifact {p}: {len(_carte_bloccate)} carte "
-                        f"gia' impegnate in formazioni BLOCCATE, le escludo dal pool.")
-            except Exception as e:
-                log(f"[lockate] {p} illeggibile ({e}), interrogo Sorare.")
+        if _d is not None and _d.get('carte_bloccate') is not None:
+            _carte_bloccate = set(_d['carte_bloccate'])
+            letto_da_artifact = True
+            log(f"[lockate] da artifact {POOL_GW_PATH}: {len(_carte_bloccate)} carte "
+                f"gia' impegnate in formazioni BLOCCATE, le escludo dal pool.")
         if not letto_da_artifact:
             _carte_bloccate, _det = carte_bloccate_live(fx.get('slug'))
             _sorte = ('ESCLUSE anche loro (ESCLUDI_MODIFICABILI=1)'

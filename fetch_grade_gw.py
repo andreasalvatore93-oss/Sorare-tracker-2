@@ -20,7 +20,11 @@ la funzione bulk esisteva dal 03/08 -- era gia' usata dallo scouting, ma la
 discovery non l'aveva mai collegata.
 
 Non e' una cache: il file nasce e muore dentro la run, non e' committato, e
-chi lo legge lo scarta se la giornata dentro non e' la sua.
+chi lo legge lo scarta se la giornata dentro non e' la sua -- piu' (dal
+14/08/2026) se non porta il timbro della run in corso, o se in locale ha piu'
+di POOL_GW_ETA_MAX_MIN minuti. Il solo controllo sulla giornata non bastava:
+in locale il file resta nella cartella di lavoro e alla run successiva della
+STESSA giornata veniva riusato come se fosse fresco.
 
 NON fallisce se manca qualcosa: scrive comunque il file e lascia che siano gli
 avvisi della discovery a segnalare il buco, cosi' un problema di grade non
@@ -29,6 +33,7 @@ currentUser=None significa sessione non autenticata, NON giornata chiusa.
 """
 import json
 import sys
+import time
 
 import discovery_fixture as df
 
@@ -63,8 +68,15 @@ def main():
               f"Modificabili non in-season: {det['modificabili_libere']} "
               f"({_sorte}).")
 
+    # TIMBRO DI FRESCHEZZA (14/08/2026). 'run' identifica la run di Actions
+    # che ha scritto il file (vuoto in locale), 'scritto_a' e' l'epoch UTC:
+    # li legge df._pool_gw_carica per rifiutare un pool_gw.json avanzato da
+    # un'altra run. Senza, bastava che la giornata dentro fosse ancora quella
+    # e il file passava per fresco -- innocuo su GitHub (checkout pulito,
+    # file gitignorato), non in locale, dove resta nella cartella.
     dati = {'fixture': fixture_slug, 'odds': odds, 'odds_fetched': True,
-            'copertura': copertura, 'grade_map': grade_map}
+            'copertura': copertura, 'grade_map': grade_map,
+            'run': df._run_corrente(), 'scritto_a': time.time()}
     if carte_bloccate is not None:
         dati['carte_bloccate'] = carte_bloccate
     with open(OUT, 'w', encoding='utf-8') as f:
