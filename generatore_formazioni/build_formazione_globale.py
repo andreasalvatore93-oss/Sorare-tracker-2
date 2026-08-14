@@ -1022,11 +1022,28 @@ if CORRETTIVO_LEGA_ENABLED:
         CORRETTIVO_LEGA_ENABLED = False
 
 
-def _correttivo_lega_punti(da, a, quota, livello):
+def _correttivo_lega_punti(da, a, quota):
     """Punti da sommare all'atteso, e il perche' in chiaro (per il log).
 
     Ritorna (punti, motivo). punti=0.0 quando una delle due leghe non ha
     materiale a sufficienza: e' una scelta scritta, non l'assenza di un dato.
+
+    SOLO L'EFFETTO DI LEGA (semplificato il 14/08/2026, dopo misura). La prima
+    versione aggiungeva un termine "da outlier": chi saliva pagava anche in
+    proporzione a quanto stava sopra la media della sua vecchia lega. Provata
+    l'intera famiglia sul banco (136.778 righe, 3.838 toccate) con q da 0 a 1:
+    OGNI grammo di quel termine peggiora, in modo monotono -- q=0,20 migliora
+    solo nel 3% dei ricampionamenti sui giocatori, q=0,30 nel 2%. E la
+    variante "solo in discesa" (q=0,7) migliora il MAE nel 100% dei casi ma
+    peggiora l'ordinamento nel 100%: e' la trappola scritta nella docstring di
+    taratura_confronto_parametri (comprimere verso la media vince sul MAE e
+    perde sulla selezione), quindi non passa la regola delle tre misure.
+    Il perche' e' il fatto piu' utile emerso: fra i trasferiti l'ordinamento
+    REGGE. Crollano tutti -- chi sale di categoria passa in media da 64 a 52 --
+    ma i piu' forti prima restano i piu' forti dopo, quindi appiattirli sulla
+    media della lega nuova butta via informazione vera.
+    Togliendolo (q=0) si migliora su entrambe le misure rispetto alla versione
+    del mattino: MAE meglio nell'85% dei ricampionamenti, ordinamento nel 92%.
     """
     if not _COEF_LEGA:
         return 0.0, 'tabella assente'
@@ -1045,15 +1062,7 @@ def _correttivo_lega_punti(da, a, quota, livello):
     if delta is None:
         delta = coef[a] - coef[da]
         fonte = 'catena'
-    # Chi SALE in una lega piu' dura paga anche in proporzione a quanto stava
-    # sopra la media: la pendenza di chi si muove meno quella di chi resta
-    # (che e' quasi zero -- restando, il livello non si sgonfia).
-    extra = 0.0
-    if delta < -1.5 and livello is not None:
-        extra = ((livello - _COEF_LEGA.get('livello_medio', 50.0))
-                 * (_COEF_LEGA.get('pendenza_sale', 0.0)
-                    - _COEF_LEGA.get('pendenza_resta', 0.0)))
-    punti = _COEF_LEGA.get('scala', 0.75) * quota * (delta + extra)
+    punti = _COEF_LEGA.get('scala', 0.75) * quota * delta
     # TETTO DI SICUREZZA. Non e' una misura, e' un paracadute: richiesta
     # esplicita dell'utente ("basta che non sballi eccessivamente"). Sul banco
     # la correzione piena stava fra -8,3 e +9,4 punti dopo la scala, quindi a
@@ -1064,9 +1073,9 @@ def _correttivo_lega_punti(da, a, quota, livello):
     tetto = CORRETTIVO_LEGA_TETTO
     if tetto and abs(punti) > tetto:
         punti = tetto if punti > 0 else -tetto
-        return punti, (f'{fonte} {delta:+.1f}, outlier {extra:+.1f}, '
-                       f'quota {quota:.2f} -> TAGLIATO al tetto {tetto:g}')
-    return punti, f'{fonte} {delta:+.1f}, outlier {extra:+.1f}, quota {quota:.2f}'
+        return punti, (f'{fonte} {delta:+.1f}, quota {quota:.2f} '
+                       f'-> TAGLIATO al tetto {tetto:g}')
+    return punti, f'{fonte} {delta:+.1f}, quota {quota:.2f}'
 
 
 def _correttivo_lega(rows):
@@ -1085,8 +1094,7 @@ def _correttivo_lega(rows):
         if not n_tot:
             continue
         punti, motivo = _correttivo_lega_punti(
-            r.get('_nc_da'), _cartella_lega(r.get('league')),
-            n_dom / n_tot, r.get('_nc_livello'))
+            r.get('_nc_da'), _cartella_lega(r.get('league')), n_dom / n_tot)
         r['_corr_lega'] = round(punti, 2)
         r['_corr_lega_motivo'] = motivo
         if not punti:

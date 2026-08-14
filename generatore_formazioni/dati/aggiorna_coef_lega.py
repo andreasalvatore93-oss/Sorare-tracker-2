@@ -34,7 +34,14 @@ COSA PRODUCE
   coppie_dirette     stima diretta A<->B dove ci sono almeno 8 trasferiti per
                      verso: piu' affidabile della stima in catena, che sulla
                      Spagna sottostimava (-2,7 contro -5,0 diretto)
-  pendenza_sale / pendenza_resta / livello_medio   per il termine da outlier
+  pendenza_sale / pendenza_resta / livello_medio   MISURA, non piu' usata dalla
+                     produzione. Servivano a un termine "da outlier" (chi sale
+                     paga in proporzione a quanto stava sopra la media), tolto
+                     il 14/08 dopo il banco: peggiorava in modo monotono, e il
+                     motivo e' che fra i trasferiti l'ordinamento regge (calano
+                     tutti, ma i piu' forti restano i piu' forti). Restano qui
+                     perche' sono il numero che lo dimostra: chi RESTA nella
+                     sua lega non regredisce (-0,03), chi SALE si' (-0,10).
   scala              0,75, il valore che massimizza MAE e correlazione sul
                      banco ufficiale (e coerente col +0,65 stimato fuori
                      campione, due strade indipendenti)
