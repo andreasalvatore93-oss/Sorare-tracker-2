@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       gameweek:
-        description: 'Numero giornata Sorare (es. 95)'
+        description: 'Numero giornata Sorare (es. 95). Vuoto = risolve da sola la prossima giornata aperta.'
         required: false
         default: ''
       fixture_slug:
@@ -33,9 +33,9 @@ on:
         required: false
         default: '0'
       essenze_arena:
-        description: 'Essenze da investire in arena (priorita 2, in ALTERNATIVA o insieme ad "arene"): il bot genera arene efficienti finche il costo cumulato d.ingresso non supera questo budget. Vuoto (default) = nessun limite, si ricade sul solo numero richiesto in "arene".'
+        description: 'Essenze da investire in arena (priorita 2, in ALTERNATIVA o insieme ad "arene"): il bot genera arene efficienti finche il costo cumulato d.ingresso non supera questo budget. Vuoto = nessun limite, si ricade sul solo numero richiesto in "arene".'
         required: false
-        default: ''
+        default: '4500'
       allstars:
         description: 'Numero di All Stars da 7, priorita 3. 0 = nessuna.'
         required: false
@@ -52,10 +52,6 @@ on:
         description: 'Arene dedicate per lega (es. mls,kleague o "tutte"). Vuoto = disattivate (default): solo Arena All Stars.'
         required: false
         default: ''
-      arena_criterio:
-        description: 'Come il bot confronta i tipi di arena. assoluto = default di sempre (retta pareggio/guadagno-per-punto). netto_vero = guadagno simulato coi premi e i piazzamenti reali. capitale = resa per essenza (vecchia misura 08/08).'
-        required: false
-        default: 'assoluto'
       lambda_essenza:
         description: 'Prezzo-ombra di unessenza, solo con un budget fisso in essenze_arena: si sceglie il tipo che massimizza netto - lambda*costo. 0 = spento (default). Piu alto = meno arene ma piu redditizie; il valore giusto e quello che esaurisce il budget senza avanzi (misurato 0.5 su budget 5000).'
         required: false
@@ -798,13 +794,14 @@ jobs:
           CHAMPIONS: ${{ github.event.inputs.champions }}
           ARENA_LEAGUES_ENABLED: ${{ github.event.inputs.arena_leghe_abilitate }}
           # LIST_UNUSED_CANDIDATES e' solo log, zero costo, sempre acceso.
-          # ARENA_CRITERIO era hardcoded ad 'assoluto' dal 10/08; dal
-          # 14/08 torna un input perche' serve poterlo mettere a
-          # 'netto_vero' (guadagno simulato coi premi veri) senza toccare il
-          # file. Il DEFAULT dell'input resta 'assoluto': le run automatiche
-          # non cambiano comportamento di un bit.
+          # ARENA_CRITERIO: torna hardcoded ad 'assoluto' (14/08, decisione
+          # dell'utente). L'input aggiunto in mattinata per provare
+          # 'netto_vero'/'capitale' e' stato tolto: misurato sullo stesso
+          # metro e sullo stesso budget (7.500), 'assoluto' resta il migliore
+          # (4.284 essenze contro 4.256 di netto_vero e 2.573 di capitale),
+          # quindi l'interruttore era solo un modo per sbagliare.
           LIST_UNUSED_CANDIDATES: '1'
-          ARENA_CRITERIO: ${{ github.event.inputs.arena_criterio }}
+          ARENA_CRITERIO: 'assoluto'
           LAMBDA_ESSENZA: ${{ github.event.inputs.lambda_essenza }}
           EXTEND_ODDS_060_070: ${{ github.event.inputs.extend_odds_060_070 }}
           PYTHONUNBUFFERED: "1"
