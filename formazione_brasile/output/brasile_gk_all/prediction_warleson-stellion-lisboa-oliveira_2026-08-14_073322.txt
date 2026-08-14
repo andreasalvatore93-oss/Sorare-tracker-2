@@ -1,0 +1,116 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-14T07:33:22.476724Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) warleson-stellion-lisboa-oliveira: 47 pt attesi (16-71)
+   SQUADRA: botafogo-rio-de-janeiro-rio-de-janeiro | AVVERSARIO: vitoria-salvador-bahia
+======================================================================
+
+######################################################################
+# GIOCATORE: warleson-stellion-lisboa-oliveira
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: warleson-stellion-lisboa-oliveira (squadra: botafogo-rio-de-janeiro-rio-de-janeiro)
+Generato: 2026-08-14T07:33:22.475976Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 15
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: campeonato-brasileiro-serie-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-04 | ANT vs CER | jupiler-pro-league | score=61.0 | peso=0.099
+  2025-12-21 | OHL vs CER | jupiler-pro-league | score=70.5 | peso=0.111
+  2025-12-26 | CER vs USG | jupiler-pro-league | score=60.0 | peso=0.125
+  2026-01-17 | WES vs CER | jupiler-pro-league | score=74.0 | peso=0.140
+  2026-01-25 | GNK vs CER | jupiler-pro-league | score=56.0 | peso=0.157
+  2026-02-07 | CHA vs CER | jupiler-pro-league | score=43.4 | peso=0.177
+  2026-02-15 | CER vs CLU | jupiler-pro-league | score=32.5 | peso=0.198
+  2026-02-20 | GNT vs CER | jupiler-pro-league | score=70.5 | peso=0.223
+  2026-03-01 | CER vs DEN | jupiler-pro-league | score=89.6 | peso=0.250
+  2026-03-08 | STV vs CER | jupiler-pro-league | score=48.8 | peso=0.281
+  2026-03-15 | CER vs LAL | jupiler-pro-league | score=33.1 | peso=0.315
+  2026-03-22 | AND vs CER | jupiler-pro-league | score=55.4 | peso=0.354
+  2026-04-04 | ZWA vs CER | jupiler-pro-league | score=15.7 | peso=0.397
+  2026-04-11 | CER vs LAL | jupiler-pro-league | score=71.0 | peso=0.445
+  2026-04-19 | DEN vs CER | jupiler-pro-league | score=32.8 | peso=0.500
+  2026-04-24 | CER vs DEN | jupiler-pro-league | score=50.4 | peso=0.561
+  2026-05-01 | CER vs ZWA | jupiler-pro-league | score=36.8 | peso=0.630
+  2026-07-23 | BOT vs VIT | campeonato-brasileiro-serie-a | score=70.7 | peso=0.707
+  2026-07-26 | CRU vs BOT | campeonato-brasileiro-serie-a | score=74.1 | peso=0.794
+  2026-08-09 | BOT vs FLU | campeonato-brasileiro-serie-a | score=44.7 | peso=0.891
+  2026-08-14 | CIE vs BOT | conmebol-sudamericana | score=0.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 46.87
+  di cui Punteggio decisivo (level_score) medio: 40.60 | Punteggio complessivo (granulari) medio: 6.27 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 43.83 (delta +3.23 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -2.36, delta avversario +1.41 | Possesso condizionato per venue: delta -0.41 | Goalkeeping condizionato per venue: delta +1.16 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 24.14
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 15.7 - 71.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.22 (differenza: +6.93)
+Media score in casa: 57.70 | Media score fuori casa: 37.40
+Fattore casa/trasferta applicato: 0.973 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.2
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.353 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.995
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.002
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.995
+Tasso storico clean sheet (porta inviolata nei primi 60'): 33.3% (bonus atteso incorporato nella media pesata: ~8.3pt)
+Fattore trend (media ultime 5: 42.9 vs media 5 PRECEDENTI: 45.2): 1.000
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T21:30
+Casa: EC Vitória | Trasferta: Botafogo FR
+Competizione: campeonato-brasileiro-serie-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.1 (range 16.0 - 71.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.14
+Punteggio REALE ottenuto in quella partita: 0.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -52.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      59.6    32.5    -27.1    12.2        NO
+   7        7      54.3    70.5    +16.2    16.5        SI
+   8        8      57.2    89.6    +32.4    16.6        NO
+   9        9      62.7    48.8    -13.9    20.6        SI
+  10       10      60.5    33.1    -27.4    19.7        NO
+  11       11      56.3    55.4     -0.9    21.4        SI
+  12       12      56.2    15.7    -40.5    19.8        NO
+  13       13      50.5    71.0    +20.5    24.5        SI
+  14       14      53.3    32.8    -20.5    24.1        SI
+  15       15      50.6    50.4     -0.2    23.8        SI
+  16       16      50.5    36.8    -13.7    22.3        SI
+  17       17      48.8    70.7    +21.9    21.4        NO
+  18       18      37.3    74.1    +36.8    21.7        NO
+  19       19      43.9    44.7     +0.8    22.1        SI
+  20       20      50.8     0.7    -50.1    21.0        NO
+
+MAE (errore assoluto medio): 21.52
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 53.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
