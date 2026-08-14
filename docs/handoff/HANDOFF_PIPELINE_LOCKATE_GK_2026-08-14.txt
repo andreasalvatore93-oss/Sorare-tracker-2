@@ -1,0 +1,163 @@
+HANDOFF — pipeline formazione giornata: carte lockate, freschezza del pool,
+correttivo GK. Sessione del 14/08/2026, ore 07:00-08:00 Roma (05:00-06:00 UTC).
+
+
+IL VERDETTO DA BAR, IN DIECI RIGHE
+==================================
+Tre cose rotte trovate e sistemate stamattina, tutte in produzione, tutte
+pushate su main.
+1. Il voto A-F, acceso ieri sera, stava CANCELLANDO il correttivo del
+   portiere: due portieri con avversari opposti finivano con lo stesso
+   punteggio. Sistemato, e verificato sui portieri veri della giornata.
+2. Se avevi gia' schierato una formazione su Sorare ma potevi ancora
+   modificarla, il bot ti riproponeva quelle stesse carte. Ora una
+   formazione inviata e' considerata fatta, in tutte le competizioni.
+3. Il file con odds/voti/carte impegnate era considerato buono solo perche'
+   dentro c'era la giornata giusta: in locale poteva avere ore e passava per
+   fresco. Ora si porta dietro il timbro della run che lo ha scritto.
+E una cosa NON rotta: la giornata storta di run214 era colpa di due run
+lanciate insieme, non del modello. Rilanciata una sola, tutto a posto.
+
+
+1. STATO DEL REPO
+=================
+Branch: main. Tutto committato e pushato.
+  aa09310b5d  fix correttivo GK cancellato dal voto (build_formazione_globale)
+  c1ef623766  risposta al brief "metro con grade" in HANDOFF_UNIFICATO §10bis
+  471ced95f3  commento stantio sul suppletivo/Champions in discovery_fixture
+  5c572d2c2b  ESCLUDI_MODIFICABILI: formazioni inviate = carte impegnate
+  d8bf6d5ef5  pool_gw.json: timbro di run + eta', un solo punto di lettura
+In produzione: tutto quanto sopra, verificato sulla run 31780076830 (run215).
+Non mio, committato da Sonnet nella stessa working tree: 4978f90278
+(--con-grade sul banco di taratura). Non l'ho toccato.
+
+
+2. PERCHE' ESISTEVA QUESTO LAVORO
+=================================
+L'utente aveva appena acceso in produzione il voto A-F con le tabelle
+storiche (GRADE_GROUP_STORICA, 13/08 sera) e ha chiesto di controllare dal
+CODICE, non dal log, che fosse applicato bene sulla prima run piena. Il
+controllo ha trovato un bug diverso e piu' grave, e da li' sono uscite le
+altre due cose.
+
+
+3. COSA HO TOCCATO
+==================
+generatore_formazioni/build_formazione_globale.py
+  _recentra_grade_per_ruolo: il voto ora si somma come DELTA sul valore
+  corrente invece di sovrascrivere 'atteso'.
+  Prima: r['atteso'] = r['atteso_combinato'] - media
+  Dopo:  delta = atteso_combinato - atteso_cal - media; atteso = atteso + delta
+  Motivo: fra _apply_grade_group (che calcola atteso_combinato) e questa
+  funzione gira _apply_gk_att_avv, che scrive dentro 'atteso'. Sovrascrivere
+  riportava al valore di PRIMA del correttivo GK.
+
+discovery_fixture.py
+  - ESCLUDI_MODIFICABILI (default 1): le carte di una formazione ancora
+    modificabile sono escluse dal pool in QUALUNQUE competizione, non solo
+    In Season.
+  - POOL_GW_PATH / _run_corrente() / _pool_gw_carica(): un solo punto di
+    lettura di pool_gw.json per i tre consumatori (grade, odds, lockate),
+    con controllo di freschezza.
+  - POOL_GW_ETA_MAX_MIN (default 20 min), POOL_GW_CONTROLLA_ETA (default 1).
+
+fetch_grade_gw.py
+  Scrive nel file 'run' (GITHUB_RUN_ID:GITHUB_RUN_ATTEMPT, vuoto in locale)
+  e 'scritto_a' (epoch).
+
+Come si rilancia: nulla di dedicato, sono tutti pezzi della pipeline di
+formazione_giornata.yml. Zero query di rete aggiunte.
+
+
+4. NUMERI, PER INTERO
+=====================
+4.1 QUANDO IL CORRETTIVO GK E' MORTO (git + log di produzione)
+  8d91d808ae  12/08 02:01  codice del ricentraggio, flag SPENTO -> inerte
+  e42ee69db3  13/08 22:15  flag ACCESO di default -> bug vivo
+  run 31674619946  13/08 mattina  GRADE_GROUP_STORICA=0, GK=1  -> correttivo VIVO
+  run 31776364504  14/08 08:34    entrambi a 1                 -> correttivo MORTO
+  Fra le due non c'e' nessun'altra run di formazione_giornata.yml: UNA SOLA
+  run di produzione colpita. Tutte le validazioni del correttivo GK fatte il
+  12-13/08 restano valide.
+
+4.2 PROVA DEL FIX
+  Sintetica (funzioni di produzione, ordine di produzione, tabelle vere):
+    due GK voto A, avversari con aggiustamento +0,03 e +5,11
+    prima del fix -> 50,53 e 50,53 (identici)
+    dopo il fix   -> 50,55 e 55,65
+  A/A vecchio contro nuovo su dati sintetici: DEF/MID/FWD BIT-IDENTICI, GK
+  identico quando l'avversario non e' in tabella.
+  Su dati veri, 18 portieri presenti sia in run212 (col bug) sia in run215:
+    sengezer       53,61 -> 56,50  (+2,89)
+    miras-blanco   49,36 -> 51,15  (+1,79)
+    song           50,42 -> 52,11  (+1,69)
+    turner         48,87 -> 50,28  (+1,41)
+    freese         47,99 -> 46,59  (-1,40)
+    delavalee      47,30 -> 47,30  ( 0,00)  <- avversario non in tabella
+  Si muove nelle due direzioni, come deve. Delavalee fermo e' il controllo.
+
+4.3 CARTE LOCKATE (run 31780076830)
+  [pool] formazioni BLOCCATE: 0 + modificabili IN SEASON: 0 -> 7 carte
+  escluse dal pool. Modificabili non in-season: 1 (ESCLUSE anche loro).
+  Le 7 carte sono quelle della Champions che l'utente aveva schierato a mano.
+
+4.4 FRESCHEZZA DI pool_gw.json — sei casi testati
+  Actions, stessa run                       USATO     <- su GitHub nulla cambia
+  Actions, run diversa                      SCARTATO
+  Actions, stesso RUN_ID ma attempt 2       SCARTATO
+  Locale, file di 2 minuti                  USATO
+  Locale, file di 45 minuti                 SCARTATO
+  Giornata sbagliata                        SCARTATO
+
+4.5 LA GIORNATA STORTA DI run214 — NON ERA IL MODELLO
+  Due run lanciate a 32 secondi di distanza (31778569502 e 31778604693).
+                        candidati GK/DEF/MID/FWD   formazioni
+    run212 (sola)            81 / 189 / 163 / 125     24 richieste
+    run214 (in coppia)       31 /  57 /  44 /  20     16 su 22
+    run215 (sola, dopo)      81 / 188 / 161 / 124     30
+  Il pool a monte era identico (2470 contro 2484 giocatori sopra 0.80) e le
+  predizioni erano state calcolate e committate: croazia/gk ha i suoi
+  prediction_*.txt delle 07:08 nel repo, ma il consiglio costruito alle
+  07:12 e' VUOTO. Causa (ipotesi forte, non verificata riga per riga): il
+  job `consiglio` fa `checkout ref: main`, cioe' prende main com'e' in quel
+  momento e non lo stato della propria run, quindi ha lavorato sui candidati
+  monchi lasciati dall'altra run (che aveva 16 shard di predict invece di 45).
+
+
+5. COSE DA SAPERE PRIMA DI DECIDERE
+===================================
+- La causa di 4.5 NON e' dimostrata fino in fondo: e' il correlato piu'
+  forte (due run insieme) piu' un meccanismo plausibile (`ref: main`). Se
+  ricapita con UNA run sola, l'ipotesi cade e va guardato il passo consiglio.
+  Non ho toccato niente li' dentro.
+- Tutti i job erano "success" mentre la run214 produceva meta' del lavoro:
+  vale ancora la regola "run verde non vuol dire riuscita, contare i file".
+- ESCLUDI_MODIFICABILI cambia il comportamento di produzione: se l'utente
+  volesse far RIFARE meglio dal bot una formazione gia' inviata, ora deve
+  prima cancellarla su Sorare. Alla run successiva le carte tornano libere
+  da sole (la lettura e' live ogni run, verificato).
+- Champions 0 su 2 nella run215 NON e' un difetto: delle 5 leghe ammesse
+  quattro sono ferme in questa giornata, la Spagna offre 4 GK, 7 DEF, 1 MID,
+  3 FWD. Un solo centrocampista, gia' impegnato: lo slot MID2 non si puo'
+  riempire. Il suppletivo e' partito regolarmente e ha provato anche lui.
+
+
+6. DECISIONE APERTA
+===================
+Nessuna aperta su questo filone. Le tre cose sono chiuse e verificate.
+Restano fuori, per scelta e non per dimenticanza:
+  a) di quanto si sposta il livello MEDIO dei GK ora che il correttivo e'
+     tornato, e se questo tocca PAREGGIO_ARENA/GUADAGNO_PER_PUNTO e lo
+     scouting (catena di produzione). Non misurato.
+  b) il passo `consiglio` con `checkout ref: main`: se si vuole rendere
+     impossibile la collisione invece che sconsigliarla, e' li' che si mette
+     mano (concurrency group sul workflow, o checkout dello SHA della run).
+
+
+7. FILE DI RIFERIMENTO
+======================
+generatore_formazioni/build_formazione_globale.py   (_recentra_grade_per_ruolo)
+discovery_fixture.py                                (_pool_gw_carica, carte_bloccate_live)
+fetch_grade_gw.py
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §10bis    (bug GK + risposta brief metro/grade)
+docs/handoff/BRIEF_OPUS_METRO_CON_GRADE_2026-08-14.txt

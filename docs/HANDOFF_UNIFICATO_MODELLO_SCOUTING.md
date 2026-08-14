@@ -3311,9 +3311,15 @@ Verifiche fatte prima del commit, entrambe passate:
   +0,03 e +5,11, prima del fix finivano **entrambi a 50,53**; dopo il fix
   50,55 e 55,65. Voto e correttivo si sommano come devono.
 
-Da riverificare a valle (catena di produzione): il livello medio dei GK si
-sposta rispetto alla run del 14/08, di quanto è da misurare — **non stimato
-qui**. La run di controllo la lancia l'utente.
+**CONFERMA SU DATI VERI** (run di controllo 31780076830, run215, stessa
+giornata e stessi dati della run col bug). Sui 18 portieri presenti in
+entrambe, il punteggio si muove ora in **entrambe** le direzioni, da −1,40 a
++2,89: sengezer 53,61 → 56,50; miras-blanco 49,36 → 51,15; song 50,42 →
+52,11; freese 47,99 → 46,59. Controllo interno che vale più dei numeri:
+**delavalee resta a 47,30 esatti**, cioè il caso "avversario non in tabella"
+dove il correttivo vale zero per costruzione. Il correttivo GK è vivo.
+Resta da misurare, quando servirà, di quanto si sposta il livello MEDIO dei
+GK e se tocca le soglie arena — **non stimato qui**.
 
 ### APERTO AL 13/08/2026 NOTTE — la lista corta, in ordine di interesse dell'utente
 
