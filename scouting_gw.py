@@ -1082,15 +1082,21 @@ def scrivi_discovery(pool, leghe=None, limite_per_ruolo=None):
 # la giornata corrente, quindi scade da sola quando la giornata chiude, senza
 # che nessuna soglia debba indovinare quando.
 #
-# SPENTO DI DEFAULT PER LO SCOUTING (09/08/2026, richiesta esplicita
-# dell'utente): finche' il grade G non e' innestato con sicurezza nello
-# scouting, una previsione salvata prima potrebbe essere stata calcolata
-# senza G o con un grade diverso e verrebbe riusata in silenzio. Questo NON
-# tocca `best_five.RIUSA_PREDIZIONI` (che resta '1' per il generatore di
-# formazioni): `bf` qui e' un'istanza fresca caricata da `_import`, spegnere
-# il riuso qui non spegne nient'altro che importi best_five altrove.
+# ACCESO DI DEFAULT DAL 14/08/2026 (richiesta esplicita dell'utente). Era
+# spento dal 09/08 per un timore preciso: che una previsione salvata prima
+# fosse stata calcolata senza il grade G e venisse riusata in silenzio. Il
+# motivo per cui si puo' riaccendere e' che la validita' NON e' un tetto di
+# ore ma la FINESTRA DELLA FIXTURE (best_five._predizione_riutilizzabile): una
+# previsione vale solo se la partita che predice cade dentro la giornata
+# corrente, quindi cambiando giornata scade da sola, tutta insieme.
+# Con la matrice a shard il costo di rifare tutto sarebbe comunque alto e
+# inutile: il predict di un giocatore gia' fatto per QUESTA giornata
+# ridarebbe lo stesso numero.
+# Questo NON tocca `best_five.RIUSA_PREDIZIONI` (che resta '1' per il
+# generatore di formazioni): `bf` qui e' un'istanza fresca caricata da
+# `_import`, accendere o spegnere il riuso qui non tocca nient'altro.
 SCOUTING_RIUSA_PREDIZIONI = os.environ.get(
-    'SCOUTING_RIUSA_PREDIZIONI', '0').strip() not in ('0', 'false', 'no', '')
+    'SCOUTING_RIUSA_PREDIZIONI', '1').strip() not in ('0', 'false', 'no', '')
 
 
 def _predizioni_gia_fatte(coppie):
