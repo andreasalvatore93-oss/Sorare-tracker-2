@@ -1,0 +1,116 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-14T09:51:09.878207Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) leonardo-matias-baiersdorf-linck: 46 pt attesi (23-63)
+   SQUADRA: estrela-amadora | AVVERSARIO: alverca-alverca
+======================================================================
+
+######################################################################
+# GIOCATORE: leonardo-matias-baiersdorf-linck
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: leonardo-matias-baiersdorf-linck (squadra: estrela-amadora)
+Generato: 2026-08-14T09:51:09.877319Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 55
+Escluse (DID_NOT_PLAY): 33
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: primeira-liga-pt (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-17 | BOT vs MIR | campeonato-brasileiro-serie-a | score=35.4 | peso=0.099
+  2025-09-20 | BOT vs CAM | campeonato-brasileiro-serie-a | score=67.0 | peso=0.111
+  2025-09-24 | GRE vs BOT | campeonato-brasileiro-serie-a | score=47.6 | peso=0.125
+  2025-09-28 | FLU vs BOT | campeonato-brasileiro-serie-a | score=34.7 | peso=0.140
+  2025-10-02 | BOT vs BAH | campeonato-brasileiro-serie-a | score=32.0 | peso=0.157
+  2025-10-04 | INT vs BOT | campeonato-brasileiro-serie-a | score=18.3 | peso=0.177
+  2025-10-15 | BOT vs FLA | campeonato-brasileiro-serie-a | score=22.4 | peso=0.198
+  2025-10-19 | CEA vs BOT | campeonato-brasileiro-serie-a | score=70.0 | peso=0.223
+  2025-10-26 | BOT vs SAN | campeonato-brasileiro-serie-a | score=40.9 | peso=0.250
+  2025-11-01 | MIR vs BOT | campeonato-brasileiro-serie-a | score=64.2 | peso=0.281
+  2025-11-05 | BOT vs VAS | campeonato-brasileiro-serie-a | score=61.9 | peso=0.315
+  2025-11-09 | VIT vs BOT | campeonato-brasileiro-serie-a | score=60.0 | peso=0.354
+  2025-11-18 | BOT vs SCR | campeonato-brasileiro-serie-a | score=35.5 | peso=0.397
+  2025-11-22 | BOT vs GRE | campeonato-brasileiro-serie-a | score=40.4 | peso=0.445
+  2025-11-30 | COR vs BOT | campeonato-brasileiro-serie-a | score=16.9 | peso=0.500
+  2026-02-19 | NPO vs BOT | conmebol-libertadores | score=30.6 | peso=0.561
+  2026-02-26 | BOT vs NPO | conmebol-libertadores | score=82.1 | peso=0.630
+  2026-03-04 | BAR vs BOT | conmebol-libertadores | score=21.9 | peso=0.707
+  2026-03-11 | BOT vs BAR | conmebol-libertadores | score=47.2 | peso=0.794
+  2026-07-16 | BOT vs SAN | campeonato-brasileiro-serie-a | score=54.3 | peso=0.891
+  2026-08-08 | EST vs SCP | primeira-liga-pt | score=46.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 45.06
+  di cui Punteggio decisivo (level_score) medio: 37.41 | Punteggio complessivo (granulari) medio: 7.65 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 37.01 (delta -0.40 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.00, delta avversario -0.67 | Possesso condizionato per venue: delta +0.00 | Goalkeeping condizionato per venue: delta +0.00 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 17.75
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 21.9 - 61.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.72 (differenza: +4.03)
+Media score in casa: 46.70 | Media score fuori casa: 45.06
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.0
+Ranking prossimo avversario: 18
+Fattore forza avversario applicato: 1.174 (gol fatti reali dell'avversario, ultime 10; delta granulare parate -0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.000
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.000
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.000
+Tasso storico clean sheet (porta inviolata nei primi 60'): 28.6% (bonus atteso incorporato nella media pesata: ~7.1pt)
+Fattore trend (media ultime 5: 49.7 vs media 5 PRECEDENTI: 35.0): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T14:30
+Casa: Alverca | Trasferta: CF Estrela da Amadora
+Competizione: primeira-liga-pt
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.0 (range 22.9 - 62.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.84
+Punteggio REALE ottenuto in quella partita: 46.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +1.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      37.1    22.4    -14.7    17.2        SI
+   7        7      34.2    70.0    +35.8    16.8        NO
+   8        8      40.7    40.9     +0.2    22.0        SI
+   9        9      40.7    64.2    +23.5    20.0        NO
+  10       10      44.5    61.9    +17.4    20.8        SI
+  11       11      47.1    60.0    +12.9    20.5        SI
+  12       12      49.0    35.5    -13.5    19.7        SI
+  13       13      47.1    40.4     -6.7    19.0        SI
+  14       14      46.2    16.9    -29.3    17.9        NO
+  15       15      42.3    30.6    -11.7    20.2        SI
+  16       16      40.8    82.1    +41.3    19.4        NO
+  17       17      46.0    21.9    -24.1    24.0        NO
+  18       18      43.0    47.2     +4.2    24.3        SI
+  19       19      43.5    54.3    +10.8    22.8        SI
+  20       20      44.8    46.7     +1.9    21.7        SI
+
+MAE (errore assoluto medio): 16.53
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
