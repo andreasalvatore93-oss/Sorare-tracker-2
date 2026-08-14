@@ -3546,6 +3546,30 @@ cache committate, più il pip install. Se un giorno servisse scendere ancora,
 
 ## 10bis. COSE DA FARE — riscritto il 09/08 notte, ripulito 11/08 (verificato contro il codice, non a memoria)
 
+### APERTE DAL 14/08/2026 (filone shrink_k, §8sexdecies) — nessuna urgente
+
+1. **FWD sotto 5: mai misurato.** La griglia partiva da 5 e il verso diceva
+   "meno compressione, più lift". L'ottimo potrebbe stare a 2 o a 0. Un run,
+   ~20 minuti, zero rete:
+   `python taratura_striscia_oro.py --ruoli fwd --con-avversario --con-grade --shrink 0,2,5,10`
+   Attenzione: il FWD è il ruolo dove i tre metri si contraddicono (lift e
+   MAE contro correlazione), quindi si applica solo ripesando come il 14/08 —
+   vedi "i tre cancelli si PESANO" in `CLAUDE.md`.
+2. **IL PORTIERE HA IL DIFETTO PIÙ GRANDE E LO SHRINKAGE NON LO CURA.** Chi
+   viene da un periodo alto viene sovrastimato più che in ogni altro ruolo
+   (pendenza −8 a k=30, la peggiore delle quattro), ma alzare `k` non serve:
+   da 30 a 60 il MAE si muove di 0,017 e la correlazione resta ferma a
+   0,079-0,080. Serve un'idea diversa, non un parametro diverso. È il
+   candidato naturale se si riapre il portiere.
+3. **Esito della prima run col modello nuovo**: l'utente l'ha lanciata il
+   14/08 subito dopo il cambio. Da guardare se il mix di ruoli si è spostato
+   come previsto dalla misura (meno MID, più FWD) e se i consigli di acquisto
+   dello scouting reggono — è lì che cade il costo di correlazione del FWD.
+4. **Il gradino di 2,5 punti a metà gennaio 2027**, quando il badge "nuovo
+   campionato" si spegne per chi si è trasferito la scorsa estate (aperta dal
+   13-14/08, vedi `docs/handoff/HANDOFF_PIPELINE_LOCKATE_GK_2026-08-14.txt`).
+   Smussabile, non ancora deciso se vale la pena.
+
 ### BUG DI PRODUZIONE — trovato e CHIUSO il 14/08/2026 (Opus, controllo della run 31776364504)
 
 **Da quando GRADE_GROUP_STORICA_ENABLED è acceso di default (13/08 sera), il
