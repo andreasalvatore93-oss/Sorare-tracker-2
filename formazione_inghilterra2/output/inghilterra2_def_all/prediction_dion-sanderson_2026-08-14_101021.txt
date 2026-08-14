@@ -1,0 +1,137 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-14T10:10:21.987535Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) dion-sanderson: 45 pt attesi (34-57)
+   ORDINAMENTO: 41.36
+   SQUADRA: derby-county-derby | AVVERSARIO: charlton-athletic-london-greater-london
+======================================================================
+
+######################################################################
+# GIOCATORE: dion-sanderson
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: dion-sanderson (squadra: derby-county-derby)
+Generato: 2026-08-14T10:10:21.986499Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 39
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-30 | DER vs CHA | football-league-championship | score=54.7 | peso=0.512
+  2025-10-04 | DER vs SOT | football-league-championship | score=44.7 | peso=0.524
+  2025-10-18 | OXF vs DER | football-league-championship | score=41.1 | peso=0.536
+  2025-10-21 | DER vs NOR | football-league-championship | score=54.2 | peso=0.548
+  2025-10-25 | DER vs QPR | football-league-championship | score=71.0 | peso=0.561
+  2025-11-01 | SHU vs DER | football-league-championship | score=31.9 | peso=0.574
+  2025-11-04 | DER vs HUL | football-league-championship | score=36.0 | peso=0.588
+  2025-11-08 | BBR vs DER | football-league-championship | score=23.8 | peso=0.602
+  2025-11-22 | DER vs WAT | football-league-championship | score=60.0 | peso=0.616
+  2025-11-29 | MID vs DER | football-league-championship | score=41.9 | peso=0.630
+  2025-12-06 | DER vs LEI | football-league-championship | score=40.4 | peso=0.645
+  2025-12-10 | DER vs MIL | football-league-championship | score=42.9 | peso=0.660
+  2025-12-15 | SHW vs DER | football-league-championship | score=63.7 | peso=0.675
+  2025-12-20 | DER vs POR | football-league-championship | score=47.2 | peso=0.691
+  2025-12-29 | LEI vs DER | football-league-championship | score=64.5 | peso=0.707
+  2026-01-01 | DER vs MID | football-league-championship | score=49.0 | peso=0.724
+  2026-01-04 | DER vs WRE | football-league-championship | score=39.8 | peso=0.741
+  2026-01-30 | BRC vs DER | football-league-championship | score=36.9 | peso=0.758
+  2026-02-14 | DER vs SWA | football-league-championship | score=64.1 | peso=0.776
+  2026-02-21 | WAT vs DER | football-league-championship | score=35.4 | peso=0.794
+  2026-02-28 | DER vs BBR | football-league-championship | score=37.2 | peso=0.812
+  2026-03-07 | DER vs SHW | football-league-championship | score=20.3 | peso=0.831
+  2026-03-10 | MIL vs DER | football-league-championship | score=35.1 | peso=0.851
+  2026-03-16 | POR vs DER | football-league-championship | score=47.8 | peso=0.871
+  2026-03-21 | DER vs BIR | football-league-championship | score=48.3 | peso=0.891
+  2026-04-03 | COV vs DER | football-league-championship | score=29.7 | peso=0.912
+  2026-04-06 | DER vs STO | football-league-championship | score=38.5 | peso=0.933
+  2026-04-11 | SOT vs DER | football-league-championship | score=23.8 | peso=0.955
+  2026-04-18 | DER vs OXF | football-league-championship | score=53.2 | peso=0.977
+  2026-04-25 | QPR vs DER | football-league-championship | score=36.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 43.05
+  di cui Punteggio decisivo (level_score) medio: 35.20 | Punteggio complessivo (granulari) medio: 7.85 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.86, delta avversario +0.54 | Passaggio condizionato: delta venue +0.02, delta avversario -0.49 | Clean sheet/disimpegni condizionato: delta venue -0.95, delta avversario +1.04 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 12.46
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.9 - 54.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.11 (differenza: +1.35)
+Media score in casa: 47.15 | Media score fuori casa: 39.40
+Fattore casa/trasferta applicato: 1.001 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 13.5
+Ranking prossimo avversario: 19
+Fattore forza avversario applicato: 1.075 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
+Fattore gol subiti (goals_conceded, con cap): 0.994
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.995
+Fattore trend (media ultime 5: 36.5 vs media 5 PRECEDENTI: 38.0): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T14:00
+Casa: Charlton Athletic FC | Trasferta: Derby County FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.2 (range 34.0 - 56.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 41.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.35
+Punteggio REALE ottenuto in quella partita: 36.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      37.1    36.0     -1.1    13.8        SI
+   7        7      58.8    23.8    -35.0    13.8        NO
+   8        8      49.0    60.0    +11.0    15.6        SI
+   9        9      31.7    41.9    +10.2    15.7        SI
+  10       10      62.9    40.4    -22.5    14.9        NO
+  11       11      28.8    42.9    +14.0    14.2        SI
+  12       12      60.8    63.7     +2.9    13.6        SI
+  13       13      54.1    47.2     -6.9    14.2        SI
+  14       14      60.2    64.5     +4.3    13.6        SI
+  15       15      32.4    49.0    +16.6    14.1        NO
+  16       16      36.8    39.8     +3.0    13.6        SI
+  17       17      44.3    36.9     -7.4    13.3        SI
+  18       18      43.2    64.1    +20.9    13.2        NO
+  19       19      51.3    35.4    -15.9    13.6        NO
+  20       20      58.6    37.2    -21.4    13.5        NO
+  21       21      63.8    20.3    -43.5    13.4        NO
+  22       22      27.0    35.1     +8.1    14.6        SI
+  23       23      50.0    47.8     -2.2    14.4        SI
+  24       24      39.1    48.3     +9.2    14.1        SI
+  25       25      24.6    29.7     +5.1    13.7        SI
+  26       26      50.6    38.5    -12.1    13.9        SI
+  27       27      29.0    23.8     -5.2    13.6        SI
+  28       28      57.0    53.2     -3.8    14.1        SI
+  29       29      44.7    36.7     -8.0    13.9        SI
+
+MAE (errore assoluto medio): 12.11
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

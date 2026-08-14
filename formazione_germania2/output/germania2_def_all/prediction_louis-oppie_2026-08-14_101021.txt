@@ -1,0 +1,113 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-14T10:10:21.881993Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) louis-oppie: 44 pt attesi (27-56)
+   ORDINAMENTO: 40.01
+   SQUADRA: st-pauli-hamburg | AVVERSARIO: holstein-kiel-kiel
+======================================================================
+
+######################################################################
+# GIOCATORE: louis-oppie
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: louis-oppie (squadra: st-pauli-hamburg)
+Generato: 2026-08-14T10:10:21.880817Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: 2-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | STP vs BVB | bundesliga-de | score=45.6 | peso=0.675
+  2025-08-29 | HSV vs STP | bundesliga-de | score=52.2 | peso=0.691
+  2025-09-14 | STP vs FCA | bundesliga-de | score=22.4 | peso=0.707
+  2025-09-19 | VFB vs STP | bundesliga-de | score=8.1 | peso=0.724
+  2025-09-27 | STP vs B04 | bundesliga-de | score=60.0 | peso=0.741
+  2025-10-04 | SVW vs STP | bundesliga-de | score=51.7 | peso=0.758
+  2025-10-19 | STP vs TSG | bundesliga-de | score=33.8 | peso=0.776
+  2025-10-25 | SGE vs STP | bundesliga-de | score=49.8 | peso=0.794
+  2025-11-01 | STP vs BMG | bundesliga-de | score=30.9 | peso=0.812
+  2025-11-09 | SCF vs STP | bundesliga-de | score=60.0 | peso=0.831
+  2025-11-23 | STP vs FCU | bundesliga-de | score=43.0 | peso=0.851
+  2025-12-06 | KOE vs STP | bundesliga-de | score=34.1 | peso=0.871
+  2025-12-13 | STP vs FCH | bundesliga-de | score=33.6 | peso=0.891
+  2025-12-21 | M05 vs STP | bundesliga-de | score=51.4 | peso=0.912
+  2026-01-23 | STP vs HSV | bundesliga-de | score=36.5 | peso=0.933
+  2026-05-09 | RBL vs STP | bundesliga-de | score=38.5 | peso=0.955
+  2026-05-16 | STP vs WOB | bundesliga-de | score=21.8 | peso=0.977
+  2026-08-09 | STP vs SGF | 2-bundesliga | score=39.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 39.47
+  di cui Punteggio decisivo (level_score) medio: 36.69 | Punteggio complessivo (granulari) medio: 2.78 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.81, delta avversario +0.38 | Passaggio condizionato: delta venue -0.66, delta avversario -0.51 | Clean sheet/disimpegni condizionato: delta venue +0.37, delta avversario -0.67 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 12.99
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 22.4 - 51.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.52 (differenza: +2.48)
+Media score in casa: 36.75 | Media score fuori casa: 43.23
+Fattore casa/trasferta applicato: 1.003 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.7
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 1.007 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
+Fattore gol subiti (goals_conceded, con cap): 1.004
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.002
+Fattore trend (media ultime 5: 37.4 vs media 5 PRECEDENTI: 40.2): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T16:30
+Casa: Kieler SV Holstein 1900 | Trasferta: FC St. Pauli
+Competizione: 2-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.8 (range 26.7 - 56.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 40.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 39.44
+Punteggio REALE ottenuto in quella partita: 39.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +0.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      35.8    33.8     -2.0    20.4        SI
+   7        7      39.4    49.8    +10.4    19.0        SI
+   8        8      46.4    30.9    -15.5    18.1        SI
+   9        9      37.9    60.0    +22.1    17.3        NO
+  10       10      45.7    43.0     -2.6    17.8        SI
+  11       11      50.1    34.1    -16.0    16.9        SI
+  12       12      34.2    33.6     -0.6    16.3        SI
+  13       13      42.7    51.4     +8.7    15.7        SI
+  14       14      47.4    36.5    -10.9    15.4        SI
+  15       15      32.9    38.5     +5.6    14.9        SI
+  16       16      45.4    21.8    -23.6    14.3        NO
+  17       17      39.5    39.9     +0.4    14.8        SI
+
+MAE (errore assoluto medio): 9.86
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 83.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

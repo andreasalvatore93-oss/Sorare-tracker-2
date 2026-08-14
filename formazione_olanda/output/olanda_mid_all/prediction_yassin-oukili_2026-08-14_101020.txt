@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-14T10:10:20.388331Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) yassin-oukili: 43 pt attesi (35-66)
+   SQUADRA: fortuna-sittard-sittard | AVVERSARIO: cambuur-leeuwarden
+======================================================================
+
+######################################################################
+# GIOCATORE: yassin-oukili
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: yassin-oukili (squadra: fortuna-sittard-sittard)
+Generato: 2026-08-14T10:10:20.386587Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 13
+Competizione partita target: eredivisie (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-13 | CSP vs GIL | primeira-liga-pt | score=64.3 | peso=0.824
+  2025-12-21 | TON vs CSP | primeira-liga-pt | score=37.6 | peso=0.847
+  2025-12-28 | CSP vs VIG | primeira-liga-pt | score=23.5 | peso=0.871
+  2026-01-04 | RIO vs CSP | primeira-liga-pt | score=33.4 | peso=0.895
+  2026-04-04 | AZ vs FOR | eredivisie | score=33.3 | peso=0.920
+  2026-05-10 | FOR vs ZWO | eredivisie | score=62.6 | peso=0.946
+  2026-05-17 | UTR vs FOR | eredivisie | score=32.3 | peso=0.973
+  2026-08-08 | PSV vs FOR | eredivisie | score=31.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 39.62
+  di cui Punteggio decisivo (level_score) medio: 38.25 | Punteggio complessivo (granulari) medio: 1.37 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 41.88 (delta +3.62)
+  Efficacia offensiva condizionata: delta venue +0.35, delta avversario +0.30 | Passaggio condizionato: delta venue +0.29, delta avversario +0.58 | Gol subiti condizionato: delta venue -0.16, delta avversario -0.27 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 13.95
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.8 - 62.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.04 (differenza: +2.91)
+Media score in casa: 62.60 | Media score fuori casa: 32.47
+Fattore casa/trasferta applicato: 1.006 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.2
+Ranking prossimo avversario: 18
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 0.998
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T19:00
+Casa: Fortuna Sittard | Trasferta: SC Cambuur Leeuwarden
+Competizione: eredivisie
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.6 (range 34.8 - 65.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 40.87
+Punteggio REALE ottenuto in quella partita: 31.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -9.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.8    32.3    -13.5    17.0        SI
+   7        7      40.0    31.8     -8.2    16.1        SI
+
+MAE (errore assoluto medio): 10.86
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

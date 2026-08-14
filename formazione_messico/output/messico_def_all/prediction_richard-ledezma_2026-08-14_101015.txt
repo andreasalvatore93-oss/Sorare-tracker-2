@@ -1,0 +1,129 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-14T10:10:15.095842Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) richard-ledezma: 51 pt attesi (38-71)
+   ORDINAMENTO: 49.55
+   SQUADRA: guadalajara-zapopan-guadalajara | AVVERSARIO: santos-laguna-torreon
+======================================================================
+
+######################################################################
+# GIOCATORE: richard-ledezma
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: richard-ledezma (squadra: guadalajara-zapopan-guadalajara)
+Generato: 2026-08-14T10:10:15.074699Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 40
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: liga-mx (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | CHI vs JUA | liga-mx | score=39.0 | peso=0.561
+  2025-09-27 | PUE vs CHI | liga-mx | score=60.0 | peso=0.574
+  2025-10-06 | PUM vs CHI | liga-mx | score=36.7 | peso=0.588
+  2025-10-19 | CHI vs MAZ | liga-mx | score=98.6 | peso=0.602
+  2025-10-23 | QUE vs CHI | liga-mx | score=26.3 | peso=0.616
+  2025-11-08 | CHI vs MON | liga-mx | score=91.0 | peso=0.630
+  2025-11-28 | CHI vs CAZ | liga-mx | score=29.3 | peso=0.645
+  2025-12-01 | CAZ vs CHI | liga-mx | score=38.3 | peso=0.660
+  2026-01-10 | CHI vs PAC | liga-mx | score=46.7 | peso=0.675
+  2026-01-14 | JUA vs CHI | liga-mx | score=42.2 | peso=0.691
+  2026-01-17 | CHI vs QUE | liga-mx | score=72.3 | peso=0.707
+  2026-01-31 | ASL vs CHI | liga-mx | score=62.3 | peso=0.724
+  2026-02-07 | MAZ vs CHI | liga-mx | score=50.9 | peso=0.741
+  2026-02-15 | CHI vs AME | liga-mx | score=47.6 | peso=0.758
+  2026-02-22 | CAZ vs CHI | liga-mx | score=37.8 | peso=0.776
+  2026-03-08 | ATS vs CHI | liga-mx | score=38.5 | peso=0.794
+  2026-03-14 | CHI vs SAN | liga-mx | score=69.2 | peso=0.812
+  2026-03-22 | MON vs CHI | liga-mx | score=74.9 | peso=0.831
+  2026-04-06 | CHI vs PUM | liga-mx | score=36.0 | peso=0.851
+  2026-04-23 | NEC vs CHI | liga-mx | score=43.3 | peso=0.871
+  2026-04-26 | CHI vs TIJ | liga-mx | score=43.8 | peso=0.891
+  2026-05-03 | TIG vs CHI | liga-mx | score=29.2 | peso=0.912
+  2026-05-10 | CHI vs TIG | liga-mx | score=43.4 | peso=0.933
+  2026-05-14 | CAZ vs CHI | liga-mx | score=39.4 | peso=0.955
+  2026-07-25 | CHI vs JUA | liga-mx | score=54.1 | peso=0.977
+  2026-08-01 | PUE vs CHI | liga-mx | score=46.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 49.32
+  di cui Punteggio decisivo (level_score) medio: 40.87 | Punteggio complessivo (granulari) medio: 8.45 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.55, delta avversario +0.56 | Passaggio condizionato: delta venue -0.65, delta avversario +1.08 | Clean sheet/disimpegni condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.09
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.7 - 69.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.64 (differenza: +2.45)
+Media score in casa: 55.92 | Media score fuori casa: 44.72
+Fattore casa/trasferta applicato: 0.997 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.2
+Ranking prossimo avversario: 17
+Fattore forza avversario applicato: 1.280 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.994
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 0.992
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.000
+Fattore trend (media ultime 5: 42.7 vs media 5 PRECEDENTI: 53.1): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-17T01:10
+Casa: Club Santos Laguna | Trasferta: CD Guadalajara
+Competizione: liga-mx
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.1 (range 38.4 - 70.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.48
+Punteggio REALE ottenuto in quella partita: 46.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -3.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 20 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      55.6    29.3    -26.3    30.6        SI
+   7        7      49.7    38.3    -11.4    30.5        SI
+   8        8      63.0    46.7    -16.3    29.0        SI
+   9        9      49.9    42.2     -7.7    27.3        SI
+  10       10      49.4    72.3    +22.9    25.9        SI
+  11       11      65.3    62.3     -3.0    25.6        SI
+  12       12      67.0    50.9    -16.1    24.6        SI
+  13       13      54.0    47.6     -6.4    23.5        SI
+  14       14      45.4    37.8     -7.6    22.6        SI
+  15       15      48.2    38.5     -9.7    22.1        SI
+  16       16      68.5    69.2     +0.7    21.6        SI
+  17       17      40.6    74.9    +34.3    21.5        NO
+  18       18      43.2    36.0     -7.2    21.7        SI
+  19       19      44.1    43.3     -0.8    21.5        SI
+  20       20      40.8    43.8     +3.0    21.0        SI
+  21       21      64.9    29.2    -35.7    20.4        NO
+  22       22      66.2    43.4    -22.8    20.7        NO
+  23       23      43.0    39.4     -3.6    20.1        SI
+  24       24      48.8    54.1     +5.3    19.8        SI
+  25       25      52.8    46.3     -6.5    19.3        SI
+
+MAE (errore assoluto medio): 12.36
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 85.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

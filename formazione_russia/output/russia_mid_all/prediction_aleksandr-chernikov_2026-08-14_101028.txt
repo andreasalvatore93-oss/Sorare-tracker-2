@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-14T10:10:28.310463Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) aleksandr-chernikov: 46 pt attesi (40-58)
+   SQUADRA: krasnodar-krasnodar | AVVERSARIO: akhmat-grozny-groznyi
+======================================================================
+
+######################################################################
+# GIOCATORE: aleksandr-chernikov
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: aleksandr-chernikov (squadra: krasnodar-krasnodar)
+Generato: 2026-08-14T10:10:28.309661Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 29
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: russian-premier-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | KRA vs SOC | russian-premier-league | score=56.8 | peso=0.678
+  2025-08-24 | KRY vs KRA | russian-premier-league | score=42.5 | peso=0.697
+  2025-08-31 | CSK vs KRA | russian-premier-league | score=39.9 | peso=0.717
+  2025-10-18 | MAK vs KRA | russian-premier-league | score=50.5 | peso=0.737
+  2025-10-26 | KRA vs RUB | russian-premier-league | score=47.7 | peso=0.758
+  2025-11-02 | KRA vs SPM | russian-premier-league | score=64.7 | peso=0.779
+  2025-11-09 | BAL vs KRA | russian-premier-league | score=29.4 | peso=0.801
+  2025-11-23 | LOK vs KRA | russian-premier-league | score=39.5 | peso=0.824
+  2025-12-07 | KRA vs CSK | russian-premier-league | score=58.5 | peso=0.847
+  2026-04-19 | KRA vs BAL | russian-premier-league | score=44.0 | peso=0.871
+  2026-04-23 | SPM vs KRA | russian-premier-league | score=50.2 | peso=0.895
+  2026-05-03 | AKR vs KRA | russian-premier-league | score=51.1 | peso=0.920
+  2026-07-26 | RUB vs KRA | russian-premier-league | score=41.6 | peso=0.946
+  2026-08-02 | KRA vs FAK | russian-premier-league | score=39.1 | peso=0.973
+  2026-08-09 | SPM vs KRA | russian-premier-league | score=31.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 45.41
+  di cui Punteggio decisivo (level_score) medio: 36.57 | Punteggio complessivo (granulari) medio: 8.84 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 37.88 (delta +1.31)
+  Efficacia offensiva condizionata: delta venue -0.08, delta avversario -0.28 | Passaggio condizionato: delta venue +0.24, delta avversario +0.78 | Gol subiti condizionato: delta venue +0.01, delta avversario +0.30 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 9.46
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.1 - 56.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 7.55 (differenza: +1.92)
+Media score in casa: 51.80 | Media score fuori casa: 41.77
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.4
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 0.973 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.007
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore trend (media ultime 5: 42.4 vs media 5 PRECEDENTI: 47.2): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T17:45
+Casa: FK Krasnodar | Trasferta: FK Akhmat Grozny
+Competizione: russian-premier-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.4 (range 40.1 - 57.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.65
+Punteggio REALE ottenuto in quella partita: 31.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -15.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      41.7    29.4    -12.3     9.3        NO
+   7        7      54.4    39.5    -14.9    12.0        NO
+   8        8      42.5    58.5    +16.0    11.5        NO
+   9        9      41.2    44.0     +2.8    11.7        SI
+  10       10      38.5    50.2    +11.7    11.1        NO
+  11       11      60.5    51.1     -9.4    10.5        SI
+  12       12      48.5    41.6     -6.9    10.1        SI
+  13       13      59.2    39.1    -20.1     9.8        NO
+  14       14      36.9    31.2     -5.7     9.7        SI
+
+MAE (errore assoluto medio): 11.09
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 44.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

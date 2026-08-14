@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-14T10:10:22.043153Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) jose-salomon-rondon-gimenez: 49 pt attesi (33-71)
+   ORDINAMENTO: 46.90
+   SQUADRA: pachuca-pachuca-de-soto | AVVERSARIO: puebla-puebla
+======================================================================
+
+######################################################################
+# GIOCATORE: jose-salomon-rondon-gimenez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jose-salomon-rondon-gimenez (squadra: pachuca-pachuca-de-soto)
+Generato: 2026-08-14T10:10:22.042000Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 24
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: liga-mx (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-01 | QUE vs PAC | liga-mx | score=36.7 | peso=0.177
+  2026-02-08 | PAC vs JUA | liga-mx | score=68.1 | peso=0.198
+  2026-02-14 | PAC vs ATS | liga-mx | score=60.0 | peso=0.223
+  2026-02-21 | TIG vs PAC | liga-mx | score=63.6 | peso=0.250
+  2026-02-28 | MAZ vs PAC | liga-mx | score=35.3 | peso=0.281
+  2026-03-04 | PAC vs NEC | liga-mx | score=44.1 | peso=0.315
+  2026-03-08 | PAC vs PUE | liga-mx | score=42.5 | peso=0.354
+  2026-03-14 | ASL vs PAC | liga-mx | score=69.0 | peso=0.397
+  2026-03-22 | PAC vs TOL | liga-mx | score=29.4 | peso=0.445
+  2026-04-05 | CAZ vs PAC | liga-mx | score=30.0 | peso=0.500
+  2026-04-12 | PAC vs SAN | liga-mx | score=35.7 | peso=0.561
+  2026-04-19 | MON vs PAC | liga-mx | score=36.3 | peso=0.630
+  2026-04-25 | PAC vs PUM | liga-mx | score=17.4 | peso=0.707
+  2026-07-18 | PUM vs PAC | liga-mx | score=84.9 | peso=0.794
+  2026-07-27 | PAC vs QUE | liga-mx | score=60.0 | peso=0.891
+  2026-08-02 | LEO vs PAC | liga-mx | score=40.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 46.65
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=16): 50.08 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 43.11 | Punteggio complessivo (granulari) medio: 3.54 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.22 (delta +0.22) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.14
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.0 - 68.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.99 (differenza: +6.16)
+Media score in casa: 44.65 | Media score fuori casa: 49.55
+Fattore casa/trasferta applicato: 0.998 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.0
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.994
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.004
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 47.8 vs media 5 PRECEDENTI: 41.3): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-18T03:06
+Casa: CF Pachuca | Trasferta: Puebla FC
+Competizione: liga-mx
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.3 (range 32.7 - 70.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 46.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.55
+Punteggio REALE ottenuto in quella partita: 40.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      52.3    42.5     -9.8    14.7        SI
+   7        7      57.8    69.0    +11.2    13.7        SI
+   8        8      58.2    29.4    -28.8    15.2        NO
+   9        9      39.5    30.0     -9.5    17.1        SI
+  10       10      57.4    35.7    -21.7    17.6        NO
+  11       11      32.5    36.3     +3.8    16.7        SI
+  12       12      31.5    17.4    -14.1    15.8        SI
+  13       13      29.4    84.9    +55.5    17.8        NO
+  14       14      42.8    60.0    +17.2    24.4        SI
+  15       15      56.4    40.6    -15.8    23.4        SI
+
+MAE (errore assoluto medio): 18.74
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

@@ -1,0 +1,111 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-14T10:10:28.515326Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) mario-martin-rielves: 36 pt attesi (22-53)
+   SQUADRA: getafe-getafe-madrid | AVVERSARIO: deportivo-alaves-vitoria-gasteiz
+======================================================================
+
+######################################################################
+# GIOCATORE: mario-martin-rielves
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mario-martin-rielves (squadra: getafe-getafe-madrid)
+Generato: 2026-08-14T10:10:28.498293Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 17
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | CEL vs GET | laliga-es | score=54.4 | peso=0.624
+  2025-08-25 | SEV vs GET | laliga-es | score=19.3 | peso=0.642
+  2025-09-13 | GET vs OVI | laliga-es | score=60.0 | peso=0.660
+  2025-09-24 | GET vs ALA | laliga-es | score=42.6 | peso=0.678
+  2025-10-19 | GET vs RMA | laliga-es | score=21.8 | peso=0.697
+  2025-11-09 | MLL vs GET | laliga-es | score=44.4 | peso=0.717
+  2025-11-23 | GET vs ATM | laliga-es | score=16.7 | peso=0.737
+  2025-12-06 | VIL vs GET | laliga-es | score=26.8 | peso=0.758
+  2025-12-13 | GET vs ESP | laliga-es | score=30.1 | peso=0.779
+  2026-01-09 | GET vs RSO | laliga-es | score=22.7 | peso=0.801
+  2026-01-18 | GET vs VCF | laliga-es | score=51.8 | peso=0.824
+  2026-01-26 | GIR vs GET | laliga-es | score=40.9 | peso=0.847
+  2026-02-01 | GET vs CEL | laliga-es | score=49.7 | peso=0.871
+  2026-04-22 | RSO vs GET | laliga-es | score=26.3 | peso=0.895
+  2026-04-25 | GET vs FCB | laliga-es | score=27.1 | peso=0.920
+  2026-05-13 | GET vs MLL | laliga-es | score=18.3 | peso=0.946
+  2026-05-17 | ELC vs GET | laliga-es | score=26.3 | peso=0.973
+  2026-05-23 | GET vs OSA | laliga-es | score=29.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 33.20
+  di cui Punteggio decisivo (level_score) medio: 36.15 | Punteggio complessivo (granulari) medio: -2.95 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 35.48 (delta -0.67)
+  Efficacia offensiva condizionata: delta venue +0.23, delta avversario +0.35 | Passaggio condizionato: delta venue -0.01, delta avversario -0.27 | Gol subiti condizionato: delta venue -0.08, delta avversario +0.14 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 12.84
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 19.3 - 49.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.42 (differenza: +1.42)
+Media score in casa: 33.62 | Media score fuori casa: 34.06
+Fattore casa/trasferta applicato: 0.997 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.9
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 1.305 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.007
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore trend (media ultime 5: 25.4 vs media 5 PRECEDENTI: 39.4): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T17:30
+Casa: D. Alavés | Trasferta: Getafe CF
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 36.1 (range 22.2 - 52.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 33.52
+Punteggio REALE ottenuto in quella partita: 29.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -4.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      28.8    16.7    -12.1    16.6        SI
+   7        7      26.8    26.8     +0.0    17.9        SI
+   8        8      36.2    30.1     -6.1    17.1        SI
+   9        9      34.2    22.7    -11.5    16.1        SI
+  10       10      31.7    51.8    +20.1    15.7        NO
+  11       11      46.3    40.9     -5.4    16.1        SI
+  12       12      29.9    49.7    +19.8    15.4        NO
+  13       13      36.5    26.3    -10.2    15.4        SI
+  14       14      24.6    27.1     +2.5    15.1        SI
+  15       15      45.4    18.3    -27.1    14.7        NO
+  16       16      39.8    26.3    -13.5    15.0        SI
+  17       17      40.9    29.0    -11.9    14.6        SI
+
+MAE (errore assoluto medio): 11.70
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

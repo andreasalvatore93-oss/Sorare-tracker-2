@@ -1,0 +1,111 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-14T10:10:32.516779Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) je-ho-yu: 42 pt attesi (38-51)
+   SQUADRA: gwangju-gwangju | AVVERSARIO: pohang-steelers-pohang
+======================================================================
+
+######################################################################
+# GIOCATORE: je-ho-yu
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: je-ho-yu (squadra: gwangju-gwangju)
+Generato: 2026-08-14T10:10:32.515407Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | GWA vs GAN | k-league-1 | score=36.6 | peso=0.624
+  2025-09-21 | SEO vs GWA | k-league-1 | score=38.9 | peso=0.642
+  2025-10-04 | GWA vs DAE | k-league-1 | score=46.5 | peso=0.660
+  2025-10-18 | ULS vs GWA | k-league-1 | score=38.5 | peso=0.678
+  2025-11-02 | GWA vs JEJ | k-league-1 | score=37.5 | peso=0.697
+  2025-11-08 | DAE vs GWA | k-league-1 | score=40.8 | peso=0.717
+  2025-11-22 | GWA vs ULS | k-league-1 | score=39.1 | peso=0.737
+  2026-03-01 | JEJ vs GWA | k-league-1 | score=53.5 | peso=0.758
+  2026-03-07 | GWA vs INC | k-league-1 | score=36.4 | peso=0.779
+  2026-03-14 | GWA vs JMO | k-league-1 | score=40.1 | peso=0.801
+  2026-03-17 | SAN vs GWA | k-league-1 | score=41.4 | peso=0.824
+  2026-03-22 | SEO vs GWA | k-league-1 | score=41.3 | peso=0.847
+  2026-04-04 | GAN vs GWA | k-league-1 | score=19.3 | peso=0.871
+  2026-07-05 | GWA vs ULS | k-league-1 | score=43.7 | peso=0.895
+  2026-07-11 | GWA vs POH | k-league-1 | score=33.5 | peso=0.920
+  2026-07-19 | ANY vs GWA | k-league-1 | score=49.1 | peso=0.946
+  2026-07-22 | GWA vs SAN | k-league-1 | score=38.0 | peso=0.973
+  2026-08-08 | BUC vs GWA | k-league-1 | score=49.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 40.30
+  di cui Punteggio decisivo (level_score) medio: 33.79 | Punteggio complessivo (granulari) medio: 6.51 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 34.57 (delta +0.78)
+  Efficacia offensiva condizionata: delta venue +0.02, delta avversario -0.03 | Passaggio condizionato: delta venue -0.60, delta avversario -0.05 | Gol subiti condizionato: delta venue +0.21, delta avversario -0.03 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 7.45
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.4 - 49.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 4.65 (differenza: +2.79)
+Media score in casa: 39.04 | Media score fuori casa: 41.41
+Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 5.2
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.066 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 1.002
+Fattore trend (media ultime 5: 42.9 vs media 5 PRECEDENTI: 35.5): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T10:30
+Casa: Gwangju FC | Trasferta: Pohang Steelers FC
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.0 (range 38.1 - 50.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 39.58
+Punteggio REALE ottenuto in quella partita: 49.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +10.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      36.8    39.1     +2.3     3.6        SI
+   7        7      41.8    53.5    +11.7     3.3        NO
+   8        8      45.7    36.4     -9.3     6.0        NO
+   9        9      38.8    40.1     +1.3     6.0        SI
+  10       10      49.7    41.4     -8.3     5.6        NO
+  11       11      36.2    41.3     +5.1     5.3        SI
+  12       12      40.9    19.3    -21.6     5.1        NO
+  13       13      35.6    43.7     +8.1     8.4        SI
+  14       14      44.4    33.5    -10.9     8.1        NO
+  15       15      41.4    49.1     +7.7     8.0        SI
+  16       16      46.8    38.0     -8.8     8.2        NO
+  17       17      48.5    49.9     +1.4     7.9        SI
+
+MAE (errore assoluto medio): 8.06
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

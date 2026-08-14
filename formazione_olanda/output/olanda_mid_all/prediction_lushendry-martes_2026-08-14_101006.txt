@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-14T10:10:06.246119Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) lushendry-martes: 47 pt attesi (28-62)
+   SQUADRA: sparta-rotterdam-rotterdam | AVVERSARIO: telstar-velsen-zuid
+======================================================================
+
+######################################################################
+# GIOCATORE: lushendry-martes
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: lushendry-martes (squadra: sparta-rotterdam-rotterdam)
+Generato: 2026-08-14T10:10:06.244671Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 23
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: eredivisie (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-11 | SPA vs HER | eredivisie | score=45.9 | peso=0.779
+  2026-01-18 | FEY vs SPA | eredivisie | score=26.2 | peso=0.801
+  2026-01-25 | UTR vs SPA | eredivisie | score=46.9 | peso=0.824
+  2026-01-31 | SPA vs GRO | eredivisie | score=54.2 | peso=0.847
+  2026-02-07 | FOR vs SPA | eredivisie | score=63.7 | peso=0.871
+  2026-02-22 | AZ vs SPA | eredivisie | score=43.8 | peso=0.895
+  2026-03-21 | SPA vs VOL | eredivisie | score=56.8 | peso=0.920
+  2026-04-22 | TEL vs SPA | eredivisie | score=60.2 | peso=0.946
+  2026-05-03 | SPA vs GAE | eredivisie | score=19.4 | peso=0.973
+  2026-08-09 | SPA vs FEY | eredivisie | score=34.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 44.94
+  di cui Punteggio decisivo (level_score) medio: 32.80 | Punteggio complessivo (granulari) medio: 12.13 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 33.90 (delta +1.10)
+  Efficacia offensiva condizionata: delta venue +0.30, delta avversario -0.31 | Passaggio condizionato: delta venue +0.75, delta avversario -0.82 | Gol subiti condizionato: delta venue -1.41, delta avversario -1.11 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 14.14
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 26.2 - 60.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.80 (differenza: +3.35)
+Media score in casa: 42.05 | Media score fuori casa: 48.14
+Fattore casa/trasferta applicato: 1.002 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.5
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.126 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore trend (media ultime 5: 42.5 vs media 5 PRECEDENTI: 47.7): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-14T18:00
+Casa: SC Telstar | Trasferta: Sparta Rotterdam
+Competizione: eredivisie
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.5 (range 27.8 - 61.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.33
+Punteggio REALE ottenuto in quella partita: 34.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      58.2    56.8     -1.4    12.5        SI
+   7        7      41.8    60.2    +18.3    12.1        NO
+   8        8      37.1    19.4    -17.7    12.1        NO
+   9        9      43.2    34.0     -9.2    15.9        SI
+
+MAE (errore assoluto medio): 11.67
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

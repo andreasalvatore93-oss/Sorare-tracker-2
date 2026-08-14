@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-14T10:10:27.657006Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) topi-keskinen: 47 pt attesi (33-58)
+   ORDINAMENTO: 44.14
+   SQUADRA: ob-odense | AVVERSARIO: horsens-horsens
+======================================================================
+
+######################################################################
+# GIOCATORE: topi-keskinen
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: topi-keskinen (squadra: ob-odense)
+Generato: 2026-08-14T10:10:27.656094Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 57
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 31
+Competizione partita target: superliga-dk (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-21 | ABE vs FCS | uefa-europa-league | score=43.9 | peso=0.111
+  2025-08-28 | FCS vs ABE | uefa-europa-league | score=35.4 | peso=0.125
+  2025-08-31 | ABE vs FAL | premiership-gb-sct | score=46.8 | peso=0.140
+  2025-09-04 | ? vs ? | friendlies | score=19.6 | peso=0.157
+  2025-09-13 | ABE vs LIV | premiership-gb-sct | score=40.8 | peso=0.177
+  2025-10-02 | ABE vs SHK | uefa-europa-conference-league | score=34.2 | peso=0.198
+  2025-10-12 | ? vs ? | wc-qualification-europe | score=44.9 | peso=0.223
+  2025-11-17 | ? vs ? | friendlies | score=31.5 | peso=0.250
+  2025-11-23 | ABE vs HEA | premiership-gb-sct | score=69.5 | peso=0.281
+  2025-12-03 | ABE vs STM | premiership-gb-sct | score=31.9 | peso=0.315
+  2025-12-11 | ABE vs STR | uefa-europa-conference-league | score=38.8 | peso=0.354
+  2025-12-14 | ABE vs KIL | premiership-gb-sct | score=15.8 | peso=0.397
+  2026-01-03 | FAL vs ABE | premiership-gb-sct | score=38.0 | peso=0.445
+  2026-01-24 | ABE vs LIV | premiership-gb-sct | score=98.4 | peso=0.500
+  2026-01-31 | KIL vs ABE | premiership-gb-sct | score=38.3 | peso=0.561
+  2026-02-15 | MOT vs ABE | premiership-gb-sct | score=46.9 | peso=0.630
+  2026-05-17 | DUN vs ABE | premiership-gb-sct | score=33.1 | peso=0.707
+  2026-07-24 | VFF vs OB | superliga-dk | score=53.7 | peso=0.794
+  2026-08-03 | OB vs SJE | superliga-dk | score=40.0 | peso=0.891
+  2026-08-10 | SIF vs OB | superliga-dk | score=27.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 42.03
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=20): 47.05 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 37.23 | Punteggio complessivo (granulari) medio: 4.80 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 5.21 (delta +0.66) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.88
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 27.8 - 53.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.00 (differenza: +7.88)
+Media score in casa: 40.00 | Media score fuori casa: 40.75
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.3
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 40.3 vs media 5 PRECEDENTI: 45.9): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T12:00
+Casa: Odense BK | Trasferta: AC Horsens
+Competizione: superliga-dk
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.8 (range 32.6 - 58.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 44.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.99
+Punteggio REALE ottenuto in quella partita: 27.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -16.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      36.3    44.9     +8.6    10.1        SI
+   7        7      38.0    31.5     -6.5     9.9        SI
+   8        8      36.8    69.5    +32.7     9.4        NO
+   9        9      42.3    31.9    -10.4    16.5        SI
+  10       10      40.6    38.8     -1.8    15.7        SI
+  11       11      40.4    15.8    -24.6    14.5        NO
+  12       12      36.8    38.0     +1.2    16.7        SI
+  13       13      37.0    98.4    +61.4    15.5        NO
+  14       14      45.3    38.3     -7.0    28.2        SI
+  15       15      44.4    46.9     +2.5    26.4        SI
+  16       16      44.7    33.1    -11.6    24.6        SI
+  17       17      43.2    53.7    +10.5    23.5        SI
+  18       18      52.2    40.0    -12.2    22.3        SI
+  19       19      43.6    27.8    -15.8    21.0        SI
+
+MAE (errore assoluto medio): 14.78
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 78.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

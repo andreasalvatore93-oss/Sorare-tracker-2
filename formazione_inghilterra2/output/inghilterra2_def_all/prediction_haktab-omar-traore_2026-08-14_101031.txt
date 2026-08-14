@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-14T10:10:31.626453Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) haktab-omar-traore: 41 pt attesi (32-47)
+   ORDINAMENTO: 29.61
+   SQUADRA: watford-watford | AVVERSARIO: southampton-southampton-hampshire
+======================================================================
+
+######################################################################
+# GIOCATORE: haktab-omar-traore
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: haktab-omar-traore (squadra: watford-watford)
+Generato: 2026-08-14T10:10:31.625471Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-13 | FCH vs BVB | bundesliga-de | score=24.4 | peso=0.724
+  2025-09-20 | HSV vs FCH | bundesliga-de | score=79.9 | peso=0.741
+  2025-09-27 | FCH vs FCA | bundesliga-de | score=27.1 | peso=0.758
+  2025-10-05 | VFB vs FCH | bundesliga-de | score=27.0 | peso=0.776
+  2025-10-18 | FCH vs SVW | bundesliga-de | score=24.1 | peso=0.794
+  2025-10-25 | TSG vs FCH | bundesliga-de | score=29.6 | peso=0.812
+  2025-11-08 | B04 vs FCH | bundesliga-de | score=24.4 | peso=0.831
+  2025-11-22 | FCH vs BMG | bundesliga-de | score=28.7 | peso=0.851
+  2025-12-21 | FCH vs BAY | bundesliga-de | score=12.1 | peso=0.871
+  2026-01-10 | FCH vs KOE | bundesliga-de | score=31.6 | peso=0.891
+  2026-01-13 | M05 vs FCH | bundesliga-de | score=45.3 | peso=0.912
+  2026-02-01 | BVB vs FCH | bundesliga-de | score=9.3 | peso=0.933
+  2026-02-22 | FCH vs VFB | bundesliga-de | score=21.2 | peso=0.955
+  2026-03-07 | FCH vs TSG | bundesliga-de | score=34.6 | peso=0.977
+  2026-05-10 | KOE vs FCH | bundesliga-de | score=36.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 30.02
+  di cui Punteggio decisivo (level_score) medio: 36.44 | Punteggio complessivo (granulari) medio: -6.42 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.30, delta avversario +0.27 | Passaggio condizionato: delta venue -0.35, delta avversario +1.59 | Clean sheet/disimpegni condizionato: delta venue +0.16, delta avversario +0.05 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.21
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 21.2 - 36.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 7.89 (differenza: +7.31)
+Media score in casa: 25.45 | Media score fuori casa: 35.97
+Fattore casa/trasferta applicato: 0.996 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.7
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.733 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.995
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.993
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.006
+Fattore trend (media ultime 5: 29.4 vs media 5 PRECEDENTI: 25.2): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T12:30
+Casa: Watford FC | Trasferta: Southampton FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 41.1 (range 32.3 - 47.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 29.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 29.49
+Punteggio REALE ottenuto in quella partita: 36.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +6.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      33.2    24.4     -8.7    21.7        SI
+   7        7      37.8    28.7     -9.1    20.4        SI
+   8        8      24.2    12.1    -12.1    19.1        SI
+   9        9      36.3    31.6     -4.7    19.3        SI
+  10       10      33.1    45.3    +12.2    18.3        SI
+  11       11      25.6     9.3    -16.4    18.0        SI
+  12       12      25.5    21.2     -4.3    18.6        SI
+  13       13      26.1    34.6     +8.5    18.0        SI
+  14       14      37.0    36.4     -0.6    17.3        SI
+
+MAE (errore assoluto medio): 8.51
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

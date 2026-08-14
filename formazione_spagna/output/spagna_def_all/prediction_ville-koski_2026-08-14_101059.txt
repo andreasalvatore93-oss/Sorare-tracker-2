@@ -1,0 +1,127 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-14T10:10:59.232134Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) ville-koski: 46 pt attesi (27-65)
+   ORDINAMENTO: 43.96
+   SQUADRA: deportivo-alaves-vitoria-gasteiz | AVVERSARIO: getafe-getafe-madrid
+======================================================================
+
+######################################################################
+# GIOCATORE: ville-koski
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ville-koski (squadra: deportivo-alaves-vitoria-gasteiz)
+Generato: 2026-08-14T10:10:59.231105Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 44
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-15 | V91 vs IST | 1-hnl | score=34.7 | peso=0.574
+  2025-08-23 | DIN vs IST | 1-hnl | score=55.4 | peso=0.588
+  2025-08-29 | IST vs GOR | 1-hnl | score=64.9 | peso=0.602
+  2025-09-04 | ? vs ? | friendlies | score=43.0 | peso=0.616
+  2025-09-07 | ? vs ? | wc-qualification-europe | score=27.8 | peso=0.630
+  2025-09-12 | SLA vs IST | 1-hnl | score=28.8 | peso=0.645
+  2025-09-21 | IST vs OSI | 1-hnl | score=69.4 | peso=0.660
+  2025-09-27 | RIJ vs IST | 1-hnl | score=65.0 | peso=0.675
+  2025-10-03 | IST vs VAR | 1-hnl | score=74.8 | peso=0.691
+  2025-10-09 | ? vs ? | wc-qualification-europe | score=33.4 | peso=0.707
+  2025-10-12 | ? vs ? | wc-qualification-europe | score=18.2 | peso=0.724
+  2025-10-19 | IST vs HAJ | 1-hnl | score=25.3 | peso=0.741
+  2025-10-25 | LOK vs IST | 1-hnl | score=42.1 | peso=0.758
+  2025-11-01 | IST vs V91 | 1-hnl | score=41.5 | peso=0.776
+  2025-11-09 | IST vs DIN | 1-hnl | score=45.8 | peso=0.794
+  2025-11-14 | ? vs ? | wc-qualification-europe | score=38.7 | peso=0.812
+  2025-11-17 | ? vs ? | friendlies | score=68.2 | peso=0.831
+  2025-11-23 | GOR vs IST | 1-hnl | score=43.3 | peso=0.851
+  2025-11-29 | IST vs SLA | 1-hnl | score=53.1 | peso=0.871
+  2025-12-07 | OSI vs IST | 1-hnl | score=43.3 | peso=0.891
+  2026-05-13 | ALA vs FCB | laliga-es | score=60.7 | peso=0.912
+  2026-05-17 | OVI vs ALA | laliga-es | score=52.4 | peso=0.933
+  2026-05-23 | ALA vs RAY | laliga-es | score=38.3 | peso=0.955
+  2026-05-31 | ? vs ? | friendlies | score=60.0 | peso=0.977
+  2026-06-05 | ? vs ? | friendlies | score=22.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 45.96
+  di cui Punteggio decisivo (level_score) medio: 36.27 | Punteggio complessivo (granulari) medio: 9.69 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.16, delta avversario +0.17 | Passaggio condizionato: delta venue -1.31, delta avversario -1.18 | Clean sheet/disimpegni condizionato: delta venue +0.45, delta avversario +0.75 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.28
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 27.8 - 64.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.72 (differenza: +1.56)
+Media score in casa: 49.50 | Media score fuori casa: 52.36
+Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.7
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.665 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.001
+Fattore trend (media ultime 5: 46.4 vs media 5 PRECEDENTI: 49.3): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T17:30
+Casa: D. Alavés | Trasferta: Getafe CF
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.6 (range 27.5 - 64.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 44.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.26
+Punteggio REALE ottenuto in quella partita: 22.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -24.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 19 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      42.2    69.4    +27.2    15.1        NO
+   7        7      46.3    65.0    +18.7    17.6        NO
+   8        8      48.9    74.8    +25.9    17.8        NO
+   9        9      52.0    33.4    -18.6    19.1        SI
+  10       10      50.0    18.2    -31.8    19.1        NO
+  11       11      46.7    25.3    -21.4    21.0        NO
+  12       12      44.7    42.1     -2.6    21.1        SI
+  13       13      44.5    41.5     -3.0    20.2        SI
+  14       14      44.2    45.8     +1.5    19.4        SI
+  15       15      44.4    38.7     -5.7    18.6        SI
+  16       16      43.9    68.2    +24.3    18.0        NO
+  17       17      45.6    43.3     -2.3    18.6        SI
+  18       18      45.5    53.1     +7.6    18.0        SI
+  19       19      46.0    43.3     -2.7    17.5        SI
+  20       20      45.8    60.7    +14.9    17.0        SI
+  21       21      70.0    52.4    -17.7    16.9        NO
+  22       22      43.3    38.3     -5.0    16.5        SI
+  23       23      46.5    60.0    +13.5    16.2        SI
+  24       24      47.3    22.4    -24.9    16.1        NO
+
+MAE (errore assoluto medio): 14.16
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 57.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

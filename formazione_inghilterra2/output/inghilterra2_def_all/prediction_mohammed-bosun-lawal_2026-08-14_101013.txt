@@ -1,0 +1,123 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-14T10:10:13.881595Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) mohammed-bosun-lawal: 47 pt attesi (32-68)
+   ORDINAMENTO: 49.84
+   SQUADRA: stoke-city-stoke-on-trent | AVVERSARIO: swansea-city-swansea
+======================================================================
+
+######################################################################
+# GIOCATORE: mohammed-bosun-lawal
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mohammed-bosun-lawal (squadra: stoke-city-stoke-on-trent)
+Generato: 2026-08-14T10:10:13.880644Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 45
+Escluse (DID_NOT_PLAY): 19
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | SHW vs STO | football-league-championship | score=42.3 | peso=0.602
+  2025-08-23 | SOT vs STO | football-league-championship | score=41.4 | peso=0.616
+  2025-08-30 | STO vs WBA | football-league-championship | score=37.1 | peso=0.630
+  2025-09-13 | STO vs BIR | football-league-championship | score=100.0 | peso=0.645
+  2025-09-20 | QPR vs STO | football-league-championship | score=55.8 | peso=0.660
+  2025-09-27 | STO vs NOR | football-league-championship | score=48.1 | peso=0.675
+  2025-09-30 | MID vs STO | football-league-championship | score=69.9 | peso=0.691
+  2025-11-29 | STO vs HUL | football-league-championship | score=32.9 | peso=0.707
+  2025-12-06 | SHU vs STO | football-league-championship | score=33.0 | peso=0.724
+  2025-12-10 | IPS vs STO | football-league-championship | score=34.1 | peso=0.741
+  2025-12-20 | WAT vs STO | football-league-championship | score=41.4 | peso=0.758
+  2025-12-26 | STO vs PNE | football-league-championship | score=61.4 | peso=0.776
+  2025-12-29 | STO vs SHU | football-league-championship | score=49.1 | peso=0.794
+  2026-01-01 | HUL vs STO | football-league-championship | score=79.5 | peso=0.812
+  2026-01-04 | NOR vs STO | football-league-championship | score=62.8 | peso=0.831
+  2026-01-17 | STO vs QPR | football-league-championship | score=57.4 | peso=0.851
+  2026-01-21 | STO vs MID | football-league-championship | score=13.4 | peso=0.871
+  2026-01-31 | STO vs SOT | football-league-championship | score=34.5 | peso=0.891
+  2026-02-07 | WBA vs STO | football-league-championship | score=46.9 | peso=0.912
+  2026-04-03 | STO vs SHW | football-league-championship | score=71.9 | peso=0.933
+  2026-04-06 | DER vs STO | football-league-championship | score=39.4 | peso=0.955
+  2026-04-11 | STO vs BBR | football-league-championship | score=47.3 | peso=0.977
+  2026-04-18 | WRE vs STO | football-league-championship | score=33.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 48.88
+  di cui Punteggio decisivo (level_score) medio: 34.93 | Punteggio complessivo (granulari) medio: 13.95 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.08, delta avversario -1.03 | Passaggio condizionato: delta venue +1.28, delta avversario -0.79 | Clean sheet/disimpegni condizionato: delta venue -0.35, delta avversario -0.73 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 18.14
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.8 - 69.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.82 (differenza: +4.32)
+Media score in casa: 50.28 | Media score fuori casa: 48.35
+Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.8
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.212 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.009
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.007
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.998
+Fattore trend (media ultime 5: 47.6 vs media 5 PRECEDENTI: 48.9): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T14:00
+Casa: Stoke City FC | Trasferta: Swansea City AFC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.4 (range 32.3 - 68.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.76
+Punteggio REALE ottenuto in quella partita: 33.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -16.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 17 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      37.3    69.9    +32.5    23.5        NO
+   7        7      44.2    32.9    -11.3    22.5        SI
+   8        8      55.8    33.0    -22.8    22.8        NO
+   9        9      33.5    34.1     +0.6    22.6        SI
+  10       10      57.3    41.4    -16.0    22.1        SI
+  11       11      53.4    61.4     +8.0    21.1        SI
+  12       12      52.8    49.1     -3.6    20.5        SI
+  13       13      39.1    79.5    +40.3    19.6        NO
+  14       14      47.4    62.8    +15.4    20.8        SI
+  15       15      60.5    57.4     -3.1    20.3        SI
+  16       16      42.0    13.4    -28.6    19.5        NO
+  17       17      38.3    34.5     -3.8    21.9        SI
+  18       18      67.1    46.9    -20.1    21.6        SI
+  19       19      70.9    71.9     +1.0    20.9        SI
+  20       20      43.7    39.4     -4.3    21.1        SI
+  21       21      64.7    47.3    -17.4    20.7        SI
+  22       22      41.0    33.8     -7.2    20.1        SI
+
+MAE (errore assoluto medio): 13.89
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 76.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

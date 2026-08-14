@@ -1,0 +1,123 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-14T10:10:16.585657Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) jasper-dahlhaus: 48 pt attesi (37-64)
+   ORDINAMENTO: 45.63
+   SQUADRA: fortuna-sittard-sittard | AVVERSARIO: cambuur-leeuwarden
+======================================================================
+
+######################################################################
+# GIOCATORE: jasper-dahlhaus
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jasper-dahlhaus (squadra: fortuna-sittard-sittard)
+Generato: 2026-08-14T10:10:16.583880Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: eredivisie (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-17 | NAC vs FOR | eredivisie | score=52.8 | peso=0.602
+  2025-08-31 | FOR vs NEC | eredivisie | score=38.6 | peso=0.616
+  2025-09-14 | TEL vs FOR | eredivisie | score=71.8 | peso=0.630
+  2025-09-17 | FEY vs FOR | eredivisie | score=23.9 | peso=0.645
+  2025-09-20 | FOR vs UTR | eredivisie | score=57.1 | peso=0.660
+  2025-09-26 | TWE vs FOR | eredivisie | score=9.5 | peso=0.675
+  2025-10-04 | FOR vs VOL | eredivisie | score=71.6 | peso=0.691
+  2025-10-19 | EXC vs FOR | eredivisie | score=61.0 | peso=0.707
+  2025-10-25 | FOR vs GRO | eredivisie | score=32.2 | peso=0.724
+  2025-10-31 | PSV vs FOR | eredivisie | score=24.4 | peso=0.741
+  2025-11-08 | FOR vs HEE | eredivisie | score=71.7 | peso=0.758
+  2025-11-22 | SPA vs FOR | eredivisie | score=32.7 | peso=0.776
+  2025-11-29 | FOR vs HER | eredivisie | score=47.9 | peso=0.794
+  2026-02-28 | NEC vs FOR | eredivisie | score=38.8 | peso=0.812
+  2026-03-08 | FOR vs TEL | eredivisie | score=43.5 | peso=0.831
+  2026-03-14 | VOL vs FOR | eredivisie | score=37.0 | peso=0.851
+  2026-03-21 | FOR vs TWE | eredivisie | score=33.2 | peso=0.871
+  2026-04-04 | AZ vs FOR | eredivisie | score=60.0 | peso=0.891
+  2026-04-12 | FOR vs NAC | eredivisie | score=43.2 | peso=0.912
+  2026-04-25 | HEE vs FOR | eredivisie | score=52.2 | peso=0.933
+  2026-05-03 | FOR vs FEY | eredivisie | score=45.9 | peso=0.955
+  2026-05-17 | UTR vs FOR | eredivisie | score=36.3 | peso=0.977
+  2026-08-08 | PSV vs FOR | eredivisie | score=32.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 43.95
+  di cui Punteggio decisivo (level_score) medio: 37.44 | Punteggio complessivo (granulari) medio: 6.50 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.82, delta avversario +0.00 | Passaggio condizionato: delta venue -0.10, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +1.11, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.24
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.3 - 60.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.16 (differenza: +2.08)
+Media score in casa: 48.49 | Media score fuori casa: 40.98
+Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.5
+Ranking prossimo avversario: 18
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.004
+Fattore gol subiti (goals_conceded, con cap): 1.005
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.008
+Fattore trend (media ultime 5: 41.8 vs media 5 PRECEDENTI: 42.6): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T19:00
+Casa: Fortuna Sittard | Trasferta: SC Cambuur Leeuwarden
+Competizione: eredivisie
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.4 (range 36.8 - 64.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 45.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.63
+Punteggio REALE ottenuto in quella partita: 32.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 17 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.2    71.6    +22.3    23.3        SI
+   7        7      28.6    61.0    +32.4    24.4        NO
+   8        8      39.6    32.2     -7.5    23.4        SI
+   9        9      46.3    24.4    -21.9    22.7        SI
+  10       10      41.4    71.7    +30.3    22.7        NO
+  11       11      51.7    32.7    -19.0    23.4        SI
+  12       12      58.6    47.9    -10.7    22.7        SI
+  13       13      45.9    38.8     -7.1    21.7        SI
+  14       14      38.3    43.5     +5.2    20.9        SI
+  15       15      53.1    37.0    -16.1    20.1        SI
+  16       16      50.2    33.2    -17.0    19.5        SI
+  17       17      31.4    60.0    +28.6    19.0        NO
+  18       18      55.6    43.2    -12.3    18.9        SI
+  19       19      39.8    52.2    +12.3    18.3        SI
+  20       20      39.8    45.9     +6.1    17.8        SI
+  21       21      46.9    36.3    -10.6    17.3        SI
+  22       22      43.2    32.3    -10.8    17.0        SI
+
+MAE (errore assoluto medio): 15.90
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 82.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

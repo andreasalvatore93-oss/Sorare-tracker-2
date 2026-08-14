@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-14T10:10:11.778152Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) karlan-ahearne-grant: 48 pt attesi (34-69)
+   ORDINAMENTO: 46.91
+   SQUADRA: charlton-athletic-london-greater-london | AVVERSARIO: derby-county-derby
+======================================================================
+
+######################################################################
+# GIOCATORE: karlan-ahearne-grant
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: karlan-ahearne-grant (squadra: charlton-athletic-london-greater-london)
+Generato: 2026-08-14T10:10:11.777424Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 45
+Escluse (DID_NOT_PLAY): 19
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | WRE vs WBA | football-league-championship | score=34.7 | peso=0.198
+  2025-11-04 | CHA vs WBA | football-league-championship | score=44.6 | peso=0.223
+  2025-11-08 | WBA vs OXF | football-league-championship | score=37.2 | peso=0.250
+  2025-11-22 | COV vs WBA | football-league-championship | score=40.6 | peso=0.281
+  2025-11-26 | WBA vs BIR | football-league-championship | score=43.1 | peso=0.315
+  2025-12-06 | QPR vs WBA | football-league-championship | score=33.4 | peso=0.354
+  2025-12-09 | SOT vs WBA | football-league-championship | score=77.2 | peso=0.397
+  2025-12-12 | WBA vs SHU | football-league-championship | score=75.7 | peso=0.445
+  2025-12-20 | HUL vs WBA | football-league-championship | score=45.9 | peso=0.500
+  2025-12-26 | WBA vs BRC | football-league-championship | score=48.5 | peso=0.561
+  2025-12-29 | WBA vs QPR | football-league-championship | score=43.2 | peso=0.630
+  2026-01-01 | SWA vs WBA | football-league-championship | score=45.2 | peso=0.707
+  2026-01-05 | LEI vs WBA | football-league-championship | score=67.8 | peso=0.794
+  2026-01-16 | WBA vs MID | football-league-championship | score=37.6 | peso=0.891
+  2026-01-20 | WBA vs NOR | football-league-championship | score=33.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 47.35
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=15): 50.55 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 40.42 | Punteggio complessivo (granulari) medio: 6.93 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 5.36 (delta +0.02) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.03
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.4 - 67.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.47 (differenza: +1.56)
+Media score in casa: 45.53 | Media score fuori casa: 48.67
+Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.5
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.003 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 45.4 vs media 5 PRECEDENTI: 56.1): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T14:00
+Casa: Charlton Athletic FC | Trasferta: Derby County FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.2 (range 34.3 - 68.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 46.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.49
+Punteggio REALE ottenuto in quella partita: 33.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -16.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      27.7    77.2    +49.5     4.8        NO
+   7        7      49.0    75.7    +26.7    18.1        NO
+   8        8      42.0    45.9     +3.9    20.9        SI
+   9        9      52.9    48.5     -4.4    19.2        SI
+  10       10      57.6    43.2    -14.4    17.6        SI
+  11       11      48.7    45.2     -3.5    16.5        SI
+  12       12      68.3    67.8     -0.5    15.3        SI
+  13       13      38.7    37.6     -1.1    16.1        SI
+  14       14      44.9    33.4    -11.5    16.0        SI
+
+MAE (errore assoluto medio): 12.84
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 77.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

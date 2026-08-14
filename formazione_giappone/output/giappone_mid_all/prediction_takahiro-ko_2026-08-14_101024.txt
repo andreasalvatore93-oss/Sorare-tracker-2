@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-14T10:10:24.871899Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) takahiro-ko: 47 pt attesi (36-61)
+   SQUADRA: tokyo-tokyo | AVVERSARIO: vissel-kobe-kobe
+======================================================================
+
+######################################################################
+# GIOCATORE: takahiro-ko
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: takahiro-ko (squadra: tokyo-tokyo)
+Generato: 2026-08-14T10:10:24.870945Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 15
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: j1-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-15 | TOK vs VER | j1-league | score=41.9 | peso=0.678
+  2025-09-20 | FRO vs TOK | j1-league | score=31.4 | peso=0.697
+  2025-09-28 | TOK vs FMA | j1-league | score=66.7 | peso=0.717
+  2025-10-04 | SSP vs TOK | j1-league | score=48.2 | peso=0.737
+  2025-10-17 | SFR vs TOK | j1-league | score=43.4 | peso=0.758
+  2025-10-25 | TOK vs FAG | j1-league | score=92.7 | peso=0.779
+  2025-11-09 | MAC vs TOK | j1-league | score=41.7 | peso=0.801
+  2025-11-30 | VIS vs TOK | j1-league | score=50.9 | peso=0.824
+  2025-12-06 | TOK vs ALB | j1-league | score=48.5 | peso=0.847
+  2026-02-07 | TOK vs ANT | j1-100-year-vision-league | score=62.4 | peso=0.871
+  2026-02-14 | TOK vs RED | j1-100-year-vision-league | score=39.6 | peso=0.895
+  2026-03-22 | VER vs TOK | j1-100-year-vision-league | score=37.4 | peso=0.920
+  2026-05-02 | TOK vs FRO | j1-100-year-vision-league | score=45.7 | peso=0.946
+  2026-05-06 | TOK vs JEF | j1-100-year-vision-league | score=41.9 | peso=0.973
+  2026-08-08 | TOK vs MAC | j1-league | score=37.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 48.28
+  di cui Punteggio decisivo (level_score) medio: 38.63 | Punteggio complessivo (granulari) medio: 9.65 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 36.65 (delta -1.98)
+  Efficacia offensiva condizionata: delta venue -0.51, delta avversario +0.38 | Passaggio condizionato: delta venue -1.59, delta avversario +0.43 | Gol subiti condizionato: delta venue +0.83, delta avversario -0.45 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 14.40
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.4 - 62.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.52 (differenza: +5.88)
+Media score in casa: 52.98 | Media score fuori casa: 42.17
+Fattore casa/trasferta applicato: 0.995 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.7
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.006 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.994
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.992
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.006
+Fattore trend (media ultime 5: 40.4 vs media 5 PRECEDENTI: 59.0): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-15T10:00
+Casa: Vissel Kobe | Trasferta: FC Tokyo
+Competizione: j1-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.6 (range 35.7 - 60.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.23
+Punteggio REALE ottenuto in quella partita: 37.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -11.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      37.8    41.7     +3.9    22.6        SI
+   7        7      51.1    50.9     -0.2    21.4        SI
+   8        8      74.2    48.5    -25.7    19.9        NO
+   9        9      42.3    62.4    +20.1    18.7        NO
+  10       10      61.0    39.6    -21.4    18.0        NO
+  11       11      52.2    37.4    -14.8    17.6        SI
+  12       12      53.5    45.7     -7.8    17.4        SI
+  13       13      66.8    41.9    -24.9    16.6        NO
+  14       14      33.7    37.4     +3.7    16.1        SI
+
+MAE (errore assoluto medio): 13.61
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 55.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

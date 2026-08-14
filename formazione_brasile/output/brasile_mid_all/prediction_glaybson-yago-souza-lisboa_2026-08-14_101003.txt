@@ -1,0 +1,109 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-14T10:10:03.445696Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) glaybson-yago-souza-lisboa: 42 pt attesi (32-51)
+   SQUADRA: remo-belem-para | AVVERSARIO: internacional-porto-alegre-rio-grande-do-sul
+======================================================================
+
+######################################################################
+# GIOCATORE: glaybson-yago-souza-lisboa
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: glaybson-yago-souza-lisboa (squadra: remo-belem-para)
+Generato: 2026-08-14T10:10:03.444759Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 42
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 19
+Competizione partita target: campeonato-brasileiro-serie-a (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-16 | FLU vs FOR | campeonato-brasileiro-serie-a | score=35.7 | peso=0.642
+  2025-09-13 | FOR vs VIT | campeonato-brasileiro-serie-a | score=44.9 | peso=0.660
+  2025-09-21 | PAL vs FOR | campeonato-brasileiro-serie-a | score=34.1 | peso=0.678
+  2025-09-27 | FOR vs SCR | campeonato-brasileiro-serie-a | score=34.8 | peso=0.697
+  2025-10-02 | FOR vs SPA | campeonato-brasileiro-serie-a | score=32.7 | peso=0.717
+  2026-01-28 | VIT vs REM | campeonato-brasileiro-serie-a | score=31.1 | peso=0.737
+  2026-03-12 | REM vs FLU | campeonato-brasileiro-serie-a | score=28.6 | peso=0.758
+  2026-03-22 | REM vs BAH | campeonato-brasileiro-serie-a | score=49.9 | peso=0.779
+  2026-04-05 | GRE vs REM | campeonato-brasileiro-serie-a | score=24.8 | peso=0.801
+  2026-04-25 | REM vs CRU | campeonato-brasileiro-serie-a | score=46.5 | peso=0.824
+  2026-05-02 | BOT vs REM | campeonato-brasileiro-serie-a | score=40.4 | peso=0.847
+  2026-05-10 | REM vs PAL | campeonato-brasileiro-serie-a | score=67.7 | peso=0.871
+  2026-05-17 | CHA vs REM | campeonato-brasileiro-serie-a | score=65.1 | peso=0.895
+  2026-05-31 | REM vs SPA | campeonato-brasileiro-serie-a | score=39.6 | peso=0.920
+  2026-07-23 | COR vs REM | campeonato-brasileiro-serie-a | score=35.1 | peso=0.946
+  2026-07-26 | REM vs VIT | campeonato-brasileiro-serie-a | score=37.3 | peso=0.973
+  2026-08-08 | REM vs CAM | campeonato-brasileiro-serie-a | score=35.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 40.55
+  di cui Punteggio decisivo (level_score) medio: 37.05 | Punteggio complessivo (granulari) medio: 3.51 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 36.77 (delta -0.27)
+  Efficacia offensiva condizionata: delta venue +0.45, delta avversario +0.18 | Passaggio condizionato: delta venue +0.00, delta avversario -0.28 | Gol subiti condizionato: delta venue -0.46, delta avversario +0.22 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 11.58
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.1 - 49.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.07 (differenza: +2.51)
+Media score in casa: 43.51 | Media score fuori casa: 39.30
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.0
+Ranking prossimo avversario: 16
+Fattore forza avversario applicato: 1.066 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.999
+Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore trend (media ultime 5: 42.1 vs media 5 PRECEDENTI: 46.1): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-17T23:00
+Casa: SC Internacional | Trasferta: Clube do Remo
+Competizione: campeonato-brasileiro-serie-a
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 41.8 (range 32.3 - 51.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 40.99
+Punteggio REALE ottenuto in quella partita: 35.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 11 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      24.4    28.6     +4.2     4.8        SI
+   7        7      29.9    49.9    +20.0     5.2        NO
+   8        8      48.4    24.8    -23.6     7.6        NO
+   9        9      31.9    46.5    +14.6     8.3        NO
+  10       10      34.5    40.4     +5.9     8.8        SI
+  11       11      27.0    67.7    +40.7     8.4        NO
+  12       12      55.9    65.1     +9.2    12.8        SI
+  13       13      46.6    39.6     -7.0    14.6        SI
+  14       14      40.7    35.1     -5.6    14.0        SI
+  15       15      46.9    37.3     -9.6    13.6        SI
+  16       16      43.3    35.0     -8.3    13.1        SI
+
+MAE (errore assoluto medio): 13.51
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 63.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
