@@ -234,6 +234,11 @@ query FootballComposeBenchQuery($so5LeaderboardSlug: String!, $filters: BenchFil
 
 
 ESCLUDI_LOCKATE = os.environ.get('ESCLUDI_LOCKATE', '0') == '1'
+# ESCLUDI_MODIFICABILI (14/08/2026): estende l'esclusione anche alle
+# formazioni ancora MODIFICABILI di qualunque competizione, non solo alle
+# IN SEASON. Vale solo dentro ESCLUDI_LOCKATE (se quello e' spento, qui non
+# si arriva nemmeno). Default acceso; 0 per il comportamento pre-14/08.
+ESCLUDI_MODIFICABILI = os.environ.get('ESCLUDI_MODIFICABILI', '1') == '1'
 
 # LE MIE FORMAZIONI GIA' SCHIERATE (07/08/2026, richiesta dell'utente).
 # Problema reale: rilanciando il generatore a giornata iniziata, lui ripescava
@@ -318,20 +323,28 @@ def carte_bloccate_live(fixture_slug):
                     continue
                 lb = (lineup.get('so5Leaderboard') or {}).get('slug') or ''
                 if lineup.get('canEdit'):
-                    # MODIFICABILE. Di regola le sue carte restano LIBERE, ma
-                    # non se la competizione e' IN SEASON (07/08, richiesta
-                    # dell'utente dopo il primo uso sul campo): quelle
-                    # formazioni non le smonta, quindi le carte sono impegnate
-                    # nei fatti anche se Sorare lascia ancora il tasto
-                    # Modifica. Riconosciute dallo slug della leaderboard, che
-                    # contiene 'in_season' (verificato: le due K League
-                    # modificabili della GW3 sono
-                    # ...-in_season_korea_limited_pvp e ..._pve, mentre tutte
-                    # le bloccate non lo contengono).
+                    # MODIFICABILE. Fino al 13/08 le sue carte restavano
+                    # LIBERE tranne che per le IN SEASON (07/08: "quelle non
+                    # le smonto mai, sono impegnate nei fatti anche se Sorare
+                    # lascia il tasto Modifica"). Dal 14/08 la regola vale per
+                    # TUTTE le competizioni (richiesta esplicita dell'utente):
+                    # il caso che l'ha aperta e' la Champions da 7, nata il
+                    # 12/08 -- cinque giorni DOPO la regola in_season, quindi
+                    # mai coperta. Una formazione gia' inviata la si considera
+                    # fatta: le sue carte non tornano nel pool.
+                    # ATTENZIONE, non e' un blocco eterno: questa lettura e'
+                    # LIVE ad ogni run (fetch_grade_gw.py chiama sempre questa
+                    # funzione, mai la cache), quindi se l'utente cancella la
+                    # formazione su Sorare, alla run successiva le carte
+                    # tornano disponibili da sole.
+                    # Per tornare al comportamento vecchio:
+                    # ESCLUDI_MODIFICABILI=0 nell'ambiente.
                     if 'in_season' not in lb:
                         n_modificabili += 1
-                        continue
-                    n_in_season += 1
+                        if not ESCLUDI_MODIFICABILI:
+                            continue
+                    else:
+                        n_in_season += 1
                 else:
                     n_bloccate += 1
                 for a in (lineup.get('so5Appearances') or []):
@@ -1378,11 +1391,13 @@ def main():
                 log(f"[lockate] {p} illeggibile ({e}), interrogo Sorare.")
         if not letto_da_artifact:
             _carte_bloccate, _det = carte_bloccate_live(fx.get('slug'))
+            _sorte = ('ESCLUSE anche loro (ESCLUDI_MODIFICABILI=1)'
+                      if ESCLUDI_MODIFICABILI else 'le loro carte restano DISPONIBILI')
             log(f"[lockate] {_det['bloccate']} bloccate + "
                 f"{_det['in_season_modificabili']} modificabili IN SEASON -> "
                 f"{len(_carte_bloccate)} carte escluse dal pool; "
                 f"{_det['modificabili_libere']} formazioni modificabili non "
-                f"in-season, le loro carte restano DISPONIBILI.")
+                f"in-season, {_sorte}.")
         if not _carte_bloccate:
             log("[lockate] ATTENZIONE: nessuna carta bloccata trovata. Se avevi "
                 "gia' schierato formazioni non modificabili, questo e' un "

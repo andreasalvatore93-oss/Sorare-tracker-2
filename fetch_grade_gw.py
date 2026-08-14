@@ -55,11 +55,13 @@ def main():
     if df.ESCLUDI_LOCKATE:
         carte, det = df.carte_bloccate_live(fixture_slug)
         carte_bloccate = sorted(carte)
+        _sorte = ("ESCLUSE anche loro (ESCLUDI_MODIFICABILI=1)"
+                  if df.ESCLUDI_MODIFICABILI else "le loro carte restano disponibili")
         print(f"[pool] formazioni BLOCCATE: {det['bloccate']} + "
               f"modificabili IN SEASON: {det['in_season_modificabili']} -> "
               f"{len(carte_bloccate)} carte escluse dal pool. "
               f"Modificabili non in-season: {det['modificabili_libere']} "
-              f"(le loro carte restano disponibili).")
+              f"({_sorte}).")
 
     dati = {'fixture': fixture_slug, 'odds': odds, 'odds_fetched': True,
             'copertura': copertura, 'grade_map': grade_map}
