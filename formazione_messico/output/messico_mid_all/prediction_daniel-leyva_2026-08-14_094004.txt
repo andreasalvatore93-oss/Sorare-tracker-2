@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-04T12:30:22.999409Z
+Generato: 2026-08-14T09:40:04.798378Z
 Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) daniel-leyva: 53 pt attesi (40-78)
-   SQUADRA: necaxa-aguascalientes | AVVERSARIO: chicago-fire-bridgeview-illinois
+1) daniel-leyva: 54 pt attesi (44-68)
+   SQUADRA: necaxa-aguascalientes | AVVERSARIO: leon-leon-de-los-aldamas
 ======================================================================
 
 ######################################################################
@@ -13,18 +13,15 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: daniel-leyva (squadra: necaxa-aguascalientes)
-Generato: 2026-08-04T12:30:22.998472Z
+Generato: 2026-08-14T09:40:04.797289Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
-Partite considerate: 37
-Escluse (DID_NOT_PLAY): 6
-Escluse (minutaggio < 60', subentri): 12
-Competizione partita target: leagues-cup-mls (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite considerate: 20
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: liga-mx (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
 Partite usate nella media (dalla piu' vecchia alla piu' recente):
-  2025-08-25 | SEA vs SKC | mlspa | score=84.6 | peso=0.607
-  2025-10-12 | SEA vs RSL | mlspa | score=64.2 | peso=0.624
-  2025-10-18 | NYC vs SEA | mlspa | score=88.1 | peso=0.642
   2026-01-11 | SAN vs NEC | liga-mx | score=43.9 | peso=0.660
   2026-02-07 | NEC vs ASL | liga-mx | score=89.9 | peso=0.678
   2026-02-15 | JUA vs NEC | liga-mx | score=44.4 | peso=0.697
@@ -43,43 +40,42 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
   2026-08-03 | TOL vs NEC | liga-mx | score=48.3 | peso=1.000
 
 --- CALCOLO FATTORI ---
-Media pesata esponenziale (half-life 25.0 partite): 57.05
-  di cui Punteggio decisivo (level_score) medio: 40.01 | Punteggio complessivo (granulari) medio: 17.04 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Punteggio decisivo condizionato per venue: 39.02 (delta -0.99)
-  Efficacia offensiva condizionata: delta venue -0.84, delta avversario +0.41 | Passaggio condizionato: delta venue -1.43, delta avversario +0.06 | Gol subiti condizionato: delta venue -0.80, delta avversario -0.17 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
-Deviazione standard pesata: 16.58
-  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 43.9 - 82.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
-Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.88 (differenza: +2.70)
+Media pesata esponenziale (half-life 25.0 partite): 53.91
+  di cui Punteggio decisivo (level_score) medio: 37.88 | Punteggio complessivo (granulari) medio: 16.03 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 37.67 (delta -0.20)
+  Efficacia offensiva condizionata: delta venue +0.67, delta avversario -0.50 | Passaggio condizionato: delta venue +0.92, delta avversario -0.43 | Gol subiti condizionato: delta venue +0.61, delta avversario +0.13 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 14.82
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 43.9 - 67.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.86 (differenza: +3.96)
 Media score in casa: 58.13 | Media score fuori casa: 50.31
-Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
 Ranking medio avversari affrontati (storico): 8.9
-Ranking prossimo avversario: 4
-Fattore forza avversario applicato: 1.245 (gol subiti reali dell'avversario, ultime 10)
-Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 0.830
-Fattore falli (casa/trasferta, da dati reali): 1.003
-Fattore duelli (casa/trasferta, da dati reali): 1.001
-Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.992
-Fattore passaggio (accurate_pass/final_third/att_assist): 0.993
-Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
-Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.994
-Fattore gol subiti (goals_conceded, con cap): 0.992
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.994
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.005
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.001
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.005
+Fattore gol subiti (goals_conceded, con cap): 1.007
 Fattore trend (media ultime 5: 45.7 vs media 5 PRECEDENTI: 54.6): 1.000
 P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
 
 --- PROSSIMA PARTITA ---
-Data: 2026-08-07T00:30
-Casa: Chicago Fire FC | Trasferta: Club Necaxa
-Competizione: leagues-cup-mls
+Data: 2026-08-18T01:00
+Casa: Club Necaxa | Trasferta: Club León
+Competizione: liga-mx
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 53.0 (range 39.8 - 77.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 54.2 (range 44.2 - 67.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
-Media pesata calcolata SENZA l'ultima partita: 57.67
+Media pesata calcolata SENZA l'ultima partita: 54.37
 Punteggio REALE ottenuto in quella partita: 48.3
-Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -9.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.1
 NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
 
 --- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
@@ -88,26 +84,23 @@ Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultat
 
 --- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
 Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
-Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
 P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
 
  idx  storico  predetto   reale   errore   range  in_range
-   6        6      69.1    62.4     -6.7    21.8        SI
-   7        7      68.6    82.0    +13.4    20.2        SI
-   8        8      65.6    51.6    -14.0    19.5        SI
-   9        9      42.0    56.4    +14.4    19.4        SI
-  10       10      61.7    36.4    -25.3    18.7        NO
-  11       11      41.0    61.9    +20.9    20.3        NO
-  12       12      76.5    49.9    -26.6    19.3        NO
-  13       13      73.7    67.4     -6.3    18.9        SI
-  14       14      51.5    56.3     +4.8    18.1        SI
-  15       15      48.2    45.6     -2.6    17.5        SI
-  16       16      41.6    50.9     +9.3    17.5        SI
-  17       17      50.8    28.1    -22.7    17.0        NO
-  18       18      43.8    48.3     +4.5    18.7        SI
+   6        6      39.0    56.4    +17.4    19.5        SI
+   7        7      58.0    36.4    -21.6    18.1        NO
+   8        8      38.0    61.9    +23.9    19.3        NO
+   9        9      71.6    49.9    -21.7    18.1        NO
+  10       10      69.2    67.4     -1.8    17.3        SI
+  11       11      48.9    56.3     +7.4    16.7        SI
+  12       12      45.9    45.6     -0.3    15.9        SI
+  13       13      39.7    50.9    +11.2    15.7        SI
+  14       14      48.6    28.1    -20.5    15.2        NO
+  15       15      41.7    48.3     +6.6    16.9        SI
 
-MAE (errore assoluto medio): 13.20
-% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 69.2%
+MAE (errore assoluto medio): 13.23
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
 
