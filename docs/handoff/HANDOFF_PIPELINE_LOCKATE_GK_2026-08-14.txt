@@ -1,11 +1,13 @@
-HANDOFF — pipeline formazione giornata: carte lockate, freschezza del pool,
-correttivo GK. Sessione del 14/08/2026, ore 07:00-08:00 Roma (05:00-06:00 UTC).
+HANDOFF — sessione del 14/08/2026, ore 07:00-11:00 Roma (05:00-09:00 UTC).
+Pipeline formazione giornata (carte lockate, freschezza del pool, correttivo
+GK) + correttivo cambio campionato in produzione.
 
 
 IL VERDETTO DA BAR, IN DIECI RIGHE
 ==================================
-Tre cose rotte trovate e sistemate stamattina, tutte in produzione, tutte
-pushate su main.
+Quattro cose sistemate stamattina, tutte in produzione, tutte pushate su main.
+La quarta e' nuova: chi cambia campionato non viene piu' previsto come se
+giocasse ancora in quello vecchio (Vicente, Martin). Le altre tre:
 1. Il voto A-F, acceso ieri sera, stava CANCELLANDO il correttivo del
    portiere: due portieri con avversari opposti finivano con lo stesso
    punteggio. Sistemato, e verificato sui portieri veri della giornata.
@@ -19,10 +21,46 @@ E una cosa NON rotta: la giornata storta di run214 era colpa di due run
 lanciate insieme, non del modello. Rilanciata una sola, tutto a posto.
 
 
+0. IL CORRETTIVO CAMBIO CAMPIONATO (la parte nuova, ore 09:00-11:00)
+====================================================================
+Commit e6140c2d05 (acceso) e 1954161d47 (semplificato dopo misura).
+Il dettaglio completo -- metodo, numeri, cosa e' stato bocciato -- sta in
+docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md §8terdecies, riscritta da capo.
+Qui solo quello che serve per orientarsi:
+
+- COSA FA: chi ha lo storico in un'altra lega prende
+  scala(0,75) x quota_storico_vecchio x delta_lega. Nient'altro.
+  Vicente -3,8 | Martin -3,8 | Ernst -0,5 | Almada +5,4 | Ake +8,0 (al tetto).
+- LE TRE PROPRIETA' CHIESTE DALL'UTENTE, per costruzione: non tocca lo
+  storico, si spegne da solo (quota -> 0), e' strutturale (nessuna lista di
+  nomi, nessun lavoro per giornata).
+- QUANTO DURA: simulato sul game log vero, Vicente e' a zero verso META'
+  GENNAIO 2027. Si sgonfia da due lati: le partite nuove si accumulano E
+  quelle vecchie escono dalla finestra di 365 giorni (42 -> 21). ATTENZIONE:
+  non e' liscio -- scende fino a ~-2,5 poi SALTA a zero quando la lega nuova
+  diventa dominante. Gradino di 2,5 punti, noto e accettato.
+- COSA E' STATO BOCCIATO (non riproporre): termine da outlier, versione "solo
+  in discesa", half-life corto per i trasferiti. Motivi e numeri in §8terdecies.
+- IL PERCHE' PIU' UTILE: fra i trasferiti l'ordinamento REGGE. Calano tutti
+  (da 64 a 52 in media chi sale di categoria) ma i piu' forti prima restano i
+  piu' forti dopo. E non sono piu' imprevedibili degli altri (dispersione
+  17,1 contro 17,3): non hanno piu' incertezza, hanno uno sbilanciamento.
+- RETTIFICA DI IERI: il -14,49 di HANDOFF_PRIOR_LEGA_2026-08-13.txt era
+  gonfiato dal gruppo di controllo (i "fermi" sopra 60 calano di 6,83, non di
+  2,79). La differenza causale e' -5,1. Il crollo grezzo pero' e' reale.
+- DA RIFARE OGNI TANTO, NON OGNI GIORNATA:
+  python generatore_formazioni/dati/aggiorna_coef_lega.py
+  (zero query, ~10 min, legge le cache game-log. Dopo il mercato e' il
+  momento naturale.)
+
+
 1. STATO DEL REPO
 =================
 Branch: main. Tutto committato e pushato.
   aa09310b5d  fix correttivo GK cancellato dal voto (build_formazione_globale)
+  e6140c2d05  correttivo cambio campionato, ACCESO di default
+  1954161d47  ...semplificato dopo misura (tolto il termine da outlier)
+  609329613d  handoff intermedio
   c1ef623766  risposta al brief "metro con grade" in HANDOFF_UNIFICATO §10bis
   471ced95f3  commento stantio sul suppletivo/Champions in discovery_fixture
   5c572d2c2b  ESCLUDI_MODIFICABILI: formazioni inviate = carte impegnate
@@ -144,7 +182,15 @@ formazione_giornata.yml. Zero query di rete aggiunte.
 
 6. DECISIONE APERTA
 ===================
-Nessuna aperta su questo filone. Le tre cose sono chiuse e verificate.
+Sul correttivo cambio campionato: nessuna, l'utente ha approvato la versione
+semplificata e l'ha lasciata accesa di default. Restano note due cose non
+misurate: (a) il gradino di 2,5 punti quando il badge si spegne, smussabile
+usando la quota al posto dell'interruttore "chi e' la lega dominante";
+(b) i ~7 punti di calo che subisce anche chi NON cambia lega quando viene da
+una striscia d'oro -- non e' un problema di leghe, e' come il modello tratta
+i giocatori in forma eccezionale, e vale per tutti. Filone mai aperto.
+
+Sul resto: nessuna aperta. Le tre cose sono chiuse e verificate.
 Restano fuori, per scelta e non per dimenticanza:
   a) di quanto si sposta il livello MEDIO dei GK ora che il correttivo e'
      tornato, e se questo tocca PAREGGIO_ARENA/GUADAGNO_PER_PUNTO e lo
