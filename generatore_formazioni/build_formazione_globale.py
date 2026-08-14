@@ -1457,7 +1457,21 @@ def _recentra_grade_per_ruolo(role_data):
         diffs = [r['atteso_combinato'] - r['atteso_cal'] for r in rows]
         media = sum(diffs) / len(diffs) if diffs else 0.0
         for r in rows:
-            r['atteso_combinato'] = round(r['atteso_combinato'] - media, 2)
+            # Il voto si somma come DELTA sul valore CORRENTE, non si
+            # sovrascrive (BUG REALE, 14/08/2026). Fra _apply_grade_group e
+            # questa funzione gira _apply_gk_att_avv, che scrive dentro
+            # 'atteso': riscrivendo atteso = atteso_combinato si tornava al
+            # valore di PRIMA del correttivo GK, cancellandolo. Inerte dal
+            # commit e42ee69db3 (13/08/2026 22:15 Roma, accensione di
+            # GRADE_GROUP_STORICA_ENABLED) fino a qui: una sola run di
+            # produzione colpita, la 31776364504 del 14/08. Dimostrato con
+            # due GK identici e avversari da +0,03 e +5,11 che finivano con
+            # lo stesso atteso. Su DEF/MID/FWD non cambia NIENTE (nessun
+            # altro modificatore vive fra i due passi: atteso == atteso_cal,
+            # quindi base + delta == atteso_combinato - media, bit-identico).
+            delta = r['atteso_combinato'] - r['atteso_cal'] - media
+            base = r['atteso'] if r.get('atteso') is not None else r['atteso_cal']
+            r['atteso_combinato'] = round(base + delta, 2)
             if GRADE_ENABLED:
                 r['atteso'] = r['atteso_combinato']
                 if r.get('sort_score') is not None:

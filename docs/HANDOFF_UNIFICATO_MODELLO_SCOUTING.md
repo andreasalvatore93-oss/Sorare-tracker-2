@@ -3255,7 +3255,7 @@ spiegare.
 
 ## 10bis. COSE DA FARE — riscritto il 09/08 notte, ripulito 11/08 (verificato contro il codice, non a memoria)
 
-### 🔴 BUG DI PRODUZIONE APERTO — trovato il 14/08/2026 ore 09:10 Roma (Opus, controllo della run 31776364504)
+### BUG DI PRODUZIONE — trovato e CHIUSO il 14/08/2026 (Opus, controllo della run 31776364504)
 
 **Da quando GRADE_GROUP_STORICA_ENABLED è acceso di default (13/08 sera), il
 correttivo GK_ATT_AVV non ha PIÙ NESSUN EFFETTO sulla scelta.** Non è
@@ -3272,6 +3272,18 @@ Perché, in `generatore_formazioni/build_formazione_globale.py`
    r['atteso_combinato'] - media`, e `atteso_combinato` era stato calcolato al
    passo 1, **prima** del correttivo GK → il passo 2 viene cancellato.
 
+**QUANDO è morto, con le date esatte** (git, non a memoria): il codice che
+cancella esiste dal commit `8d91d808ae` (12/08 02:01) ma era **inerte**, perché
+il flag era spento di default. È diventato vivo con `e42ee69db3` (13/08 ore
+**22:15 Roma**, "Il voto A-F si applica sempre"), che ha acceso insieme il
+default nel codice e l'input del workflow. Verificato sui log di produzione:
+run 31674619946 (13/08 mattina) `GK_ATT_AVV_ENABLED: 1` +
+`GRADE_GROUP_STORICA_ENABLED: 0` → correttivo VIVO; run 31776364504 (14/08)
+entrambi a 1 → correttivo MORTO. Fra le due non c'è nessun'altra run di
+`formazione_giornata.yml`: **una sola run di produzione colpita**, quella del
+14/08. Tutte le validazioni del correttivo GK fatte il 12-13/08 restano quindi
+valide, misuravano un correttivo davvero acceso.
+
 Col flag storico SPENTO (comportamento fino al 13/08) il bug non c'era:
 `_apply_grade_group` scriveva `atteso` da sé al passo 1 e il correttivo GK si
 sommava sopra. È quindi una **regressione introdotta dall'accensione**, non un
@@ -3283,16 +3295,25 @@ di nuovo quasi piatto, differenziato solo dal voto. Gli aggiustamenti in
 tabella arrivano a ±5 punti, quindi non è cosmetico. DEF/MID/FWD non sono
 toccati (nessun altro modificatore vive fra i passi 1 e 3).
 
-Fix proposto (una riga, NON ancora applicato — decide l'utente): in
-`_recentra_grade_per_ruolo` applicare il voto come DELTA sul valore corrente
-invece di sovrascrivere:
-`r['atteso'] = round(r['atteso'] + (r['atteso_combinato'] - r['atteso_cal'] -
-media), 2)` (idem `sort_score`), così sopravvivono entrambi i correttivi.
-Alternativa: spostare `_apply_gk_att_avv` PRIMA di `_apply_grade_group`, così
-il voto si somma su un `atteso_cal` che già contiene il GK. Da testare con
-l'A/A prima di committare, e da riverificare a valle sulle soglie arena
-(catena di produzione: il livello medio dei GK si sposta, di quanto è da
-misurare — non stimato qui).
+**FIX APPLICATO** (14/08, autorizzato dall'utente): in
+`_recentra_grade_per_ruolo` il voto si somma come DELTA sul valore corrente
+(`delta = atteso_combinato - atteso_cal - media`, poi `atteso = base + delta`)
+invece di sovrascrivere, così sopravvivono entrambi i correttivi. Scartata
+l'alternativa di spostare `_apply_gk_att_avv` prima del voto: cambierebbe
+anche `atteso_cal`, cioè la base su cui si legge il voto, e non è quello che
+si vuole misurare.
+Verifiche fatte prima del commit, entrambe passate:
+- **A/A vecchio-contro-nuovo su dati sintetici**: DEF/MID/FWD **bit-identici**
+  (con atteso == atteso_cal, `base + delta` è algebricamente
+  `atteso_combinato - media`), e GK identico quando l'avversario non è in
+  tabella (correttivo assente → nessun cambiamento);
+- **il correttivo GK torna vivo**: due portieri stesso voto A, avversari da
+  +0,03 e +5,11, prima del fix finivano **entrambi a 50,53**; dopo il fix
+  50,55 e 55,65. Voto e correttivo si sommano come devono.
+
+Da riverificare a valle (catena di produzione): il livello medio dei GK si
+sposta rispetto alla run del 14/08, di quanto è da misurare — **non stimato
+qui**. La run di controllo la lancia l'utente.
 
 ### APERTO AL 13/08/2026 NOTTE — la lista corta, in ordine di interesse dell'utente
 
