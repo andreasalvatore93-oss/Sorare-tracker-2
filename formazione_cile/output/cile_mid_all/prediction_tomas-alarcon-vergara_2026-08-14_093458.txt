@@ -1,10 +1,10 @@
 ======================================================================
 CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
-Generato: 2026-08-04T22:44:00.563198Z
+Generato: 2026-08-14T09:34:58.405741Z
 Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
-1) tomas-alarcon-vergara: 49 pt attesi (35-74)
-   SQUADRA: colo-colo-santiago-de-chile | AVVERSARIO: union-la-calera-la-calera
+1) tomas-alarcon-vergara: 52 pt attesi (39-78)
+   SQUADRA: colo-colo-santiago-de-chile | AVVERSARIO: o-higgins-rancagua
 ======================================================================
 
 ######################################################################
@@ -13,7 +13,7 @@ Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
 ======================================================================
 TOOL_FORMAZIONE_OWUSU - Prototipo v1
 Giocatore: tomas-alarcon-vergara (squadra: colo-colo-santiago-de-chile)
-Generato: 2026-08-04T22:44:00.562648Z
+Generato: 2026-08-14T09:34:58.405018Z
 ======================================================================
 
 --- FINESTRA DI ANALISI ---
@@ -44,36 +44,35 @@ Partite usate nella media (dalla piu' vecchia alla piu' recente):
 --- CALCOLO FATTORI ---
 Media pesata esponenziale (half-life 25.0 partite): 52.37
   di cui Punteggio decisivo (level_score) medio: 35.59 | Punteggio complessivo (granulari) medio: 16.78 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
-  Punteggio decisivo condizionato per venue: 33.94 (delta -1.65)
-  Efficacia offensiva condizionata: delta venue -0.43, delta avversario +0.27 | Passaggio condizionato: delta venue -2.00, delta avversario +2.60 | Gol subiti condizionato: delta venue -0.24, delta avversario +0.18 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+  Punteggio decisivo condizionato per venue: 37.18 (delta +1.59)
+  Efficacia offensiva condizionata: delta venue +0.41, delta avversario +0.27 | Passaggio condizionato: delta venue +1.92, delta avversario +2.60 | Gol subiti condizionato: delta venue +0.23, delta avversario +0.18 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
 Deviazione standard pesata: 19.41
   Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.8 - 77.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
 Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.31 (differenza: +7.10)
 Media score in casa: 59.94 | Media score fuori casa: 44.64
-Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
-Ranking medio avversari affrontati (storico): 9.6
-Ranking prossimo avversario: 16
+Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.4
+Ranking prossimo avversario: 11
 Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
-Fattore ranking avversario (DIAGNOSTICO, non applicato dal 26/07): 1.220
-Fattore falli (casa/trasferta, da dati reali): 0.999
-Fattore duelli (casa/trasferta, da dati reali): 0.991
-Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
-Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
-Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
-Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.999
-Fattore gol subiti (goals_conceded, con cap): 0.997
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.009
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.005
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 1.003
 Fattore trend (media ultime 5: 55.8 vs media 5 PRECEDENTI: 51.5): 1.000
-P(gioca): 62.07% (fonte: tasso di presenza storico (18/29))
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
 
 --- PROSSIMA PARTITA ---
-Data: 2026-08-09T21:30
-Casa: CD Unión La Calera | Trasferta: CSD Colo-Colo
+Data: 2026-08-16T21:30
+Casa: CSD Colo-Colo | Trasferta: CD O'Higgins
 Competizione: primera-division-cl
 
 ======================================================================
 PREDIZIONE
 ======================================================================
-Score atteso: 48.7 (range 35.1 - 73.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score atteso: 52.5 (range 38.9 - 77.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
 
 --- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
 Media pesata calcolata SENZA l'ultima partita: 55.70
@@ -102,9 +101,9 @@ P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo sto
   14       14      40.3    37.7     -2.6    13.1        SI
   15       15      62.5    92.7    +30.2    13.3        NO
   16       16      56.5    66.6    +10.1    17.5        SI
-  17       17      51.3     7.8    -43.5    17.2        NO
+  17       17      45.7     7.8    -37.9    17.2        NO
 
-MAE (errore assoluto medio): 14.85
+MAE (errore assoluto medio): 14.38
 % di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
 
 NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
