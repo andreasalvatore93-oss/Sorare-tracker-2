@@ -1476,9 +1476,10 @@ a:hover{color:#8ab4ff}
   padding:4px 10px;font-size:12px;cursor:pointer}
 .btn-scelta:hover{border-color:#4a5164;color:#e6e8ee}
 .btn-scelta.attivo{background:#2a3550;color:#8ab4ff;border-color:#8ab4ff}
-#filtro-lega{background:#1a1d26;color:#e6e8ee;border:1px solid #2a2f3d;border-radius:4px;
-  padding:4px 8px;font-size:12px;cursor:pointer;max-width:320px}
-#filtro-lega:hover{border-color:#4a5164}
+#filtro-lega,#filtro-prezzo{background:#1a1d26;color:#e6e8ee;border:1px solid #2a2f3d;
+  border-radius:4px;padding:4px 8px;font-size:12px;max-width:320px}
+#filtro-lega{cursor:pointer}
+#filtro-lega:hover,#filtro-prezzo:hover,#filtro-prezzo:focus{border-color:#4a5164}
 </style></head><body>
 <h1>Scouting -- %(fixture)s</h1>
 <div class="meta">%(quando)s &middot; %(n)d candidati &middot; %(filtri)s</div>
@@ -1855,6 +1856,26 @@ _HTML_CONTROLLI_MINIMALE = """
     if (!selLega || !selLega.value) return true;
     return (tr.getAttribute('data-lega') || '') === selLega.value;
   }
+  // Tetto di prezzo scritto a mano: "1,50" mostra solo chi costa al massimo
+  // 1,50 euro. Si accetta sia la virgola sia il punto (l'utente scrive con la
+  // virgola, JS capisce solo il punto). Chi non ha prezzo resta FUORI quando
+  // il tetto e' attivo: non si sa quanto costa, e mostrarlo fra i "sotto 1,50"
+  // sarebbe una risposta inventata.
+  var inpPrezzo = document.getElementById('filtro-prezzo');
+  function tettoPrezzo() {
+    if (!inpPrezzo) return null;
+    var grezzo = (inpPrezzo.value || '').trim().replace(',', '.');
+    if (!grezzo) return null;
+    var n = parseFloat(grezzo);
+    return isNaN(n) ? null : n;
+  }
+  function passaPrezzo(tr) {
+    var tetto = tettoPrezzo();
+    if (tetto === null) return true;
+    var p = numAttr(tr, 'data-prezzo');
+    return p !== null && p <= tetto;
+  }
+  function passaFiltri(tr) { return passaLega(tr) && passaPrezzo(tr); }
   function rapporto(tr) {
     var prezzo = numAttr(tr, 'data-prezzo');
     var punteggio = numAttr(tr, 'data-ag');
@@ -1891,16 +1912,16 @@ _HTML_CONTROLLI_MINIMALE = """
     tutte.forEach(pulisciStiliRiga);
 
     if (vista === 'TUTTI') {
-      tutte.forEach(function (tr) { tr.style.display = passaLega(tr) ? '' : 'none'; });
+      tutte.forEach(function (tr) { tr.style.display = passaFiltri(tr) ? '' : 'none'; });
       return;
     }
     if (vista === 'GK' || vista === 'DEF' || vista === 'MID' || vista === 'FWD') {
       tutte.forEach(function (tr) {
-        tr.style.display = (ruoliDi(tr).indexOf(vista) !== -1 && passaLega(tr)) ? '' : 'none';
+        tr.style.display = (ruoliDi(tr).indexOf(vista) !== -1 && passaFiltri(tr)) ? '' : 'none';
       });
       return;
     }
-    var conRapporto = tutte.filter(passaLega).map(function (tr) {
+    var conRapporto = tutte.filter(passaFiltri).map(function (tr) {
       return { tr: tr, r: rapporto(tr) };
     }).filter(function (x) { return x.r !== null; });
 
@@ -1946,6 +1967,10 @@ _HTML_CONTROLLI_MINIMALE = """
     applica();
   });
   if (selLega) selLega.addEventListener('change', applica);
+  if (inpPrezzo) {
+    inpPrezzo.addEventListener('input', applica);
+    inpPrezzo.addEventListener('change', applica);
+  }
 })();
 </script>
 """
@@ -1985,10 +2010,15 @@ def _tabella_minimale(pool, attesi, gg=None, fixture_ambigue=frozenset()):
         "<button type='button' class='btn-scelta btn-ruolo' data-ruolo='FWD'>FWD</button>"
         "</div>"
         "<div class='meta'>Campionato: "
-        "<select id='filtro-lega'>" + ''.join(opzioni) + "</select> "
-        "<span class='muted'>si combina con i bottoni qui sopra: scegliendo una "
-        "lega, anche Best Five e Best per ruolo si calcolano solo dentro quella."
-        "</span>"
+        "<select id='filtro-lega'>" + ''.join(opzioni) + "</select>"
+        " &nbsp; Prezzo massimo: "
+        "<input type='text' id='filtro-prezzo' inputmode='decimal' size='6' "
+        "placeholder='es. 1,50' title=\"Mostra solo chi costa al massimo questa "
+        "cifra. Vuoto = nessun tetto. Chi non ha prezzo resta fuori quando il "
+        "tetto e' attivo.\"> &euro;"
+        "<span class='muted'> &mdash; si combinano con i bottoni qui sopra: "
+        "scelti lega e tetto, anche Best Five e Best per ruolo si calcolano solo "
+        "dentro quello che resta.</span>"
         "</div>"
         "<div class='meta'>"
         "<button type='button' id='btn-best5' class='btn-scelta'>Best Five</button> "

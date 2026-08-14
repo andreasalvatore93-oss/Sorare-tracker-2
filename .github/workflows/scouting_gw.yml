@@ -142,7 +142,21 @@ jobs:
           # scouting_*.json porta il PREZZO MINIMO ancorato alla fixture e serve
           # a --riusa-pool nel job report.
           git add ':(glob)formazione_*/output/**/player_slugs.json' || true
-          git add dati_globali/scouting_da_predire.tsv dati_globali/scouting_lavori.txt || true
+          # -f OBBLIGATORIO (14/08/2026): .gitignore riga 6 ignora
+          # `/dati_globali/*` INTERO, quindi senza -f questo add falliva in
+          # silenzio (c'e' un `|| true` in fondo) e i due file non arrivavano
+          # mai su main. Conseguenze misurate, entrambe invisibili perche' la
+          # run restava verde:
+          #   - il job `consigli` legge scouting_da_predire.tsv e non lo
+          #     trovava ("No such file or directory", run 31788094097 job
+          #     94734314801): NESSUN consiglio veniva generato, da chissa'
+          #     quante run;
+          #   - dal 14/08 i job predict leggono scouting_lavori.txt per sapere
+          #     quali giocatori toccano loro: senza il file predicono zero
+          #     (run 31790157363, 21 shard tutti a "0 predetti").
+          # Il vicino `git add -f ':(glob)dati_globali/scouting_*.json'` aveva
+          # gia' il -f proprio per questo motivo.
+          git add -f dati_globali/scouting_da_predire.tsv dati_globali/scouting_lavori.txt || true
           git add -f ':(glob)dati_globali/scouting_*.json' || true
           git commit -m "Scouting: discovery dei candidati" || echo "niente da committare"
           # Push a prova di conflitto: se un'altra run (es. il generatore) ha
@@ -263,8 +277,17 @@ jobs:
           PYTHONUNBUFFERED: "1"
         run: |
           # Le righe di QUESTO shard: numero_riga % numero_shard == indice.
+          # Se la lista non c'e', si muore QUI dicendolo. Senza questo
+          # controllo il `while ... done < file` mancante stampava "0
+          # predetti" e usciva 0: la run finiva VERDE avendo predetto niente
+          # (run 31790157363, tutti e 21 gli shard). Un job che non ha fatto
+          # il suo lavoro deve essere rosso.
+          if [ ! -s dati_globali/scouting_lavori.txt ]; then
+            echo "::error::dati_globali/scouting_lavori.txt manca o e' vuoto: il job candidati non l'ha committato (serve git add -f, .gitignore ignora /dati_globali/*)."
+            exit 1
+          fi
           N_SHARD=$(python -c "import json,os; print(len(json.loads(os.environ['SHARDS'])))")
-          echo "shard $SHARD di $N_SHARD"
+          echo "shard $SHARD di $N_SHARD, $(wc -l < dati_globali/scouting_lavori.txt) lavori in lista"
           # Un giocatore che va in errore non deve portarsi via gli altri 24
           # dello stesso job: si logga e si continua (set +e).
           set +e
@@ -371,6 +394,14 @@ jobs:
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
           PYTHONUNBUFFERED: "1"
         run: |
+          # Stesso controllo del job predict: senza questo elenco non si
+          # genera NESSUN consiglio, e prima del 14/08/2026 e' esattamente
+          # quello che succedeva a ogni run, in silenzio e col verde acceso
+          # (il file era ignorato da .gitignore e non arrivava mai su main).
+          if [ ! -s dati_globali/scouting_da_predire.tsv ]; then
+            echo "::error::dati_globali/scouting_da_predire.tsv manca o e' vuoto: nessun consiglio da generare (il job candidati deve committarlo con git add -f)."
+            exit 1
+          fi
           set +e
           while IFS=$'\t' read -r LEGA RUOLO QUANTI; do
             [ -n "$LEGA" ] || continue
