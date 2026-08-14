@@ -3389,6 +3389,116 @@ Si rifanno con lo script, ~15 minuti a run, zero rete.
 
 ---
 
+## 8septdecies. SCOUTING — la run da 27 minuti ora ne dura 4, e il tetto dei 256 non c'è più (14/08/2026, sera Roma)
+
+**In cinque righe da bar.** Lo scouting ci metteva mezz'ora e riusciva a
+predire solo 256 giocatori su 1543 richiesti: gli altri restavano senza
+Atteso. Guardando dove finiva il tempo si è scoperto che **il modello ci
+metteva 3 secondi a giocatore e il salvataggio su GitHub 68**: 256 job che
+facevano la fila alla cassa per scrivere sullo stesso branch. Tolta la fila e
+raggruppati i giocatori, la stessa cosa dura 4 minuti e i giocatori coperti
+sono tutti. In più non si ritentano più ad ogni run i 180 giocatori che il
+modello non può prevedere.
+
+**LA MISURA CHE HA DECISO TUTTO** (run 31740179423, 256 predict, 27,1 minuti,
+mediana per job):
+
+| step del job | mediana |
+|---|---|
+| checkout del repo | 25 s |
+| pip install | 4 s |
+| **il predict vero** | **3 s** |
+| **git commit + push della previsione** | **68 s** |
+
+Il 64% del tempo era contesa su `main`, non calcolo. L'API Sorare non
+c'entrava niente: nessun 429, nessuna attesa di rete.
+
+**COSA È CAMBIATO** (`.github/workflows/scouting_gw.yml`, `scouting_gw.py`,
+`scouting_raccogli_predict.py` nuovo):
+
+1. **I job predict non pushano più.** Impacchettano quello che hanno prodotto
+   in un `.tgz` (artifact per shard) e il job `consigli` li rimette insieme
+   con UN commit solo. Il `prediction_log.json`, che è condiviso da tutti i
+   giocatori dello stesso gruppo lega/ruolo, viene **fuso** chiave per chiave
+   (a parità di chiave vince `generated_at` più recente): copiandolo e basta,
+   l'ultimo shard cancellava le righe degli altri — e nella matrice vecchia
+   succedeva già, per via del `git merge -X ours` nei retry.
+2. **La matrice porta indici di shard, non nomi di giocatori.** Ogni job
+   prende le righe con `numero_riga % numero_shard == suo_indice` e ne predice
+   `per_job` (default 25). Il tetto di 256 della matrice GitHub non è più sui
+   GIOCATORI ma sugli SHARD: **6400 giocatori a run**. La ripartizione è a
+   giro e non a blocchi, così i candidati forti (la lista arriva ordinata per
+   L10) si spalmano su tutti i job.
+3. **Riuso previsioni ACCESO di default** (`SCOUTING_RIUSA_PREDIZIONI=1`) e
+   **tabella minima accesa di default**. Il riuso è ancorato alla finestra
+   della fixture, non a un tetto di ore: scade da solo a fine giornata.
+4. **Non si ritentano i giocatori senza storico.** Un predict senza dati
+   scrive comunque il suo file, ma con "DATI INSUFFICIENTI" e **senza la riga
+   della data partita** — che è esattamente quella che `_predizione_
+   riutilizzabile` cerca (`best_five.py:561`). Risultato: 180 giocatori
+   rientravano nei lavori ad ogni run. Ora un tentativo fallito così vale 7
+   giorni (le fixture sono settimanali; dopo, il giocatore può aver giocato e
+   essersi costruito lo storico) ed è contato a parte nel log.
+
+**COSA SI È ROTTO PER STRADA — tre trappole, tutte da ricordare:**
+
+- **Il file di lavoro non arrivava mai su main.** `.gitignore` riga 6 ignora
+  `/dati_globali/*` INTERO, e il workflow faceva `git add` senza `-f` con un
+  `|| true` in fondo: falliva in silenzio. Con la matrice vecchia non si
+  notava (i nomi passavano dalla matrice); con quella nuova i job leggono
+  `scouting_lavori.txt` e **predicevano zero** (run 31790157363: verde, 4
+  minuti, zero lavoro fatto). Lo stesso valeva per
+  `scouting_da_predire.tsv`, che serve allo step dei consigli — e che quindi
+  non girava già da prima (non tocca la tabella: l'Atteso viene dalle
+  predizioni grezze, `_atteso_dai_consigli`, non dai consigli aggregati).
+- **`tar` moriva sui file cancellati.** `git diff --cached --name-only`
+  elenca anche le cancellazioni, e ogni predict ne produce una (scrive il
+  `prediction_*.txt` nuovo, toglie il vecchio): `tar` riceveva un nome che
+  non esiste più e usciva con "Cannot stat" DOPO aver predetto tutti e 25 i
+  giocatori (run 31790910888, 8 shard su 21). Ora `--diff-filter=ACMR`, e le
+  cancellazioni viaggiano a parte in `.scouting_shard/cancellati.txt` dentro
+  l'archivio, applicate da chi ricompone.
+- **`git add A B C` muore intero se un solo pathspec non matcha** (basta uno
+  shard di soli GK, senza `grid_search`). Col `|| true` il job avrebbe
+  consegnato zero file in silenzio. Ora un add per pathspec. **Questa non è
+  esplosa in produzione: l'ha trovata lo smoke test.**
+
+**LO SMOKE TEST**: `tests/smoke_scouting_shard.sh` — repo git usa-e-getta,
+zero rete, nessun effetto sul repo vero. Riproduce i due step non provabili
+senza bruciare una run (impacchettamento e ricomposizione) e copre i tre casi
+qui sopra. Da rilanciare ogni volta che si tocca quello step. È il motivo per
+cui la regola dello smoke test obbligatorio è finita in `CLAUDE.md`.
+
+**DOVE SIAMO ARRIVATI**, run per run dello stesso giorno:
+
+| run | predict fatti | durata | note |
+|---|---|---|---|
+| 31740179423 | 256 (di 1543 richiesti) | 27,1 min | prima del lavoro |
+| 31790157363 | 0 | 4,0 min | verde ma vuota (file ignorato) |
+| 31790910888 | 520 | 4,9 min | 8 shard su 21 rossi (tar) |
+| 31791622211 | 181 | 4,0 min | verde, 0 falliti |
+| **31792395611** | **3** | **3,9 min** | verde: 1612 riusate, 180 senza storico saltati |
+
+Report finale: **1795 candidati, 1615 con A+G (90%)**, 1710 col prezzo. Col
+vecchio tetto di 256 la copertura era circa un settimo.
+
+**HTML DELLO SCOUTING — due filtri nuovi** (`_tabella_minimale`, tabella
+minima): un **menu a tendina dei campionati** (solo le leghe presenti nel
+pool, col numero di candidati: MLS 199, Championship 166, 2.Bundesliga 148…)
+e una **casella "prezzo massimo"** scritta a mano (`1,50` accetta virgola e
+punto). Si combinano fra loro e con i bottoni ruolo/Best Five: scelti lega e
+tetto, anche i "best" si calcolano dentro quello che resta. Chi non ha prezzo
+resta fuori quando il tetto è attivo (non si sa quanto costa: mostrarlo fra i
+"sotto 1,50" sarebbe una risposta inventata). Righe marcate con `data-lega`
+e `data-prezzo`, mai testo da riparsare.
+
+**RESTA SUL TAVOLO** (non fatto, non urgente): i ~4 minuti di adesso sono
+quasi tutti infrastruttura — 25s di checkout per job, pesante per via delle
+cache committate, più il pip install. Se un giorno servisse scendere ancora,
+è lì che si va a prendere il tempo, non nel modello.
+
+---
+
 ## 10bis. COSE DA FARE — riscritto il 09/08 notte, ripulito 11/08 (verificato contro il codice, non a memoria)
 
 ### BUG DI PRODUZIONE — trovato e CHIUSO il 14/08/2026 (Opus, controllo della run 31776364504)

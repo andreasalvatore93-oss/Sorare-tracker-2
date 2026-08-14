@@ -1,0 +1,158 @@
+HANDOFF — SCOUTING: VELOCITA' DELLE RUN, FILTRI HTML, MY CARDS PROFIT
+Sessione del 14/08/2026, pomeriggio (Roma). Orchestratore: Opus.
+
+
+IN DIECI RIGHE, DA BAR
+----------------------
+Lo scouting ci metteva mezz'ora e riusciva a coprire solo 256 giocatori su
+1543: gli altri restavano senza il numero che interessa (A+G). Andando a
+vedere dove finiva il tempo e' saltato fuori che il modello ci mette 3
+secondi a giocatore e il salvataggio su GitHub 68: erano 256 lavoretti che
+facevano la fila alla cassa per scrivere sullo stesso quaderno. Tolta la
+fila (adesso consegnano un pacchetto e uno solo mette a posto alla fine) e
+messi 25 giocatori per lavoretto, la stessa cosa dura 4 minuti e li copre
+tutti. In piu' non si riprovano piu' ad ogni giro i 180 giocatori che il
+modello non puo' proprio prevedere perche' hanno giocato troppo poco.
+Nel report HTML ci sono due filtri nuovi: campionato e prezzo massimo.
+Sul bot my cards profit: i prezzi NON erano cachati, era il link Telegram
+che riapriva la pagina vecchia. Risolto con un codice diverso ad ogni run.
+
+
+1. STATO DEL REPO
+-----------------
+Branch: main. Tutto committato e pushato.
+
+Commit di questa sessione, in ordine:
+  4ed139af42  Scouting: menu a tendina per filtrare per campionato
+  582de182f9  my_cards_profit: link al report con cache-buster
+  839a211b03  Scouting: matrice a shard e un commit solo
+  737b58756f  Scouting: filtro prezzo + git add -f sui file di lavoro
+  6354a60268  Scouting: tar non muore sui file cancellati + smoke test
+  b7babdbfbf  Scouting: non ritenta i giocatori senza storico
+
+IN PRODUZIONE: tutto quanto sopra. Verificato con la run 31792395611
+(verde, 3,9 minuti).
+
+NON COMMITTATO DA ME, di un'altra sessione, lasciato intatto:
+  - CLAUDE.md  (contiene sia il §"i tre cancelli si pesano" dell'altra
+    sessione, sia la mia regola nuova sullo smoke test obbligatorio --
+    va committato da chi chiude quel lavoro, o su richiesta);
+  - ~50 file formazione_*/predict/test_*.py (propagazione modello in corso).
+
+
+2. PERCHE' ESISTEVA QUESTO LAVORO
+---------------------------------
+L'utente: "lo scouting ci mette un sacco, e piu' di 256 alla volta non li
+predice, devo fare un sacco di giri". Con oltre 1000 candidati per giornata
+il tetto di 256 job della matrice GitHub tagliava fuori la maggior parte
+dei giocatori, che restavano senza Atteso in tabella.
+
+
+3. COSA HO TOCCATO
+------------------
+NUOVI:
+  scouting_raccogli_predict.py    rimette nel repo gli artifact dei job
+                                  predict; FONDE i prediction_log.json
+                                  invece di sovrascriverli; applica le
+                                  cancellazioni elencate nell'archivio.
+  tests/smoke_scouting_shard.sh   smoke test locale, zero rete, repo git
+                                  usa-e-getta. Si lancia con:
+                                    bash tests/smoke_scouting_shard.sh /tmp/smoke "$(pwd)"
+
+MODIFICATI:
+  .github/workflows/scouting_gw.yml
+     - matrice su INDICI DI SHARD invece che sui nomi dei giocatori;
+       ogni job ne predice `per_job` (nuovo input, default 25);
+     - i job predict non pushano piu': tar + upload-artifact;
+     - il job consigli scarica gli artifact e li ricompone prima di
+       girare, poi UN commit solo;
+     - riusa_predizioni e minimal ora default TRUE;
+     - git add -f sui due file di lavoro (vedi punto 5);
+     - due controlli che fanno morire il job se manca un file di lavoro,
+       invece di riportare zero e passare verde.
+  scouting_gw.py
+     - SCOUTING_RIUSA_PREDIZIONI default 1 (era 0);
+     - _tentativo_senza_dati_recente(): salta chi ha un tentativo DATI
+       INSUFFICIENTI negli ultimi 7 giorni;
+     - tabella minima: menu campionati + casella prezzo massimo.
+  scanners/my_cards_profit.py
+     - _report_viewer_url() aggiunge ?v=<epoch> al link Telegram.
+
+
+4. NUMERI, TUTTI
+----------------
+Dove finiva il tempo (run 31740179423, 256 predict, mediana per job):
+  checkout .................. 25 s
+  pip install ................ 4 s
+  IL PREDICT VERO ............ 3 s
+  git commit + push ......... 68 s   <-- 64% del totale
+Somma: 453 minuti-macchina per 27,1 minuti di run.
+
+Le run del giorno, in ordine:
+  31740179423   256 predict (di 1543 richiesti)   27,1 min   prima del lavoro
+  31788094097   256 predict                       27,1 min   baseline confermata
+  31790157363     0 predict                        4,0 min   VERDE MA VUOTA
+  31790910888   520 predict                        4,9 min   8 shard su 21 rossi
+  31791622211   181 predict                        4,0 min   verde, 0 falliti
+  31792395611     3 predict                        3,9 min   verde, a regime
+
+Report finale (31792395611): 1795 candidati, 1615 con A+G (90%), 1710 col
+prezzo, 23 leghe nel menu. Log del job candidati: 1612 previsioni riusate,
+180 saltate per DATI INSUFFICIENTI, 3 predict da fare.
+
+Giocatori senza A+G: 180 su 1795. Verificati UNO PER UNO leggendo il file
+prodotto dal predict: 180 su 180 riportano "DATI INSUFFICIENTI". Non sono
+leghe scoperte (2-Bundesliga 28, Jupiler 25, Eredivisie 24, Championship 22,
+Primeira 21, Austria 16, Segunda 13, HNL 13...): sono giocatori con troppo
+poco storico. Caso ispezionato per intero: aaron-sky-schwarz.
+
+
+5. LE COSE DA SAPERE PRIMA DI TOCCARE ANCORA (gli errori, per intero)
+--------------------------------------------------------------------
+a) UNA RUN VERDE NON VUOL DIRE RIUSCITA. La 31790157363 e' finita success in
+   4 minuti avendo predetto ZERO giocatori. Causa: .gitignore riga 6 ignora
+   /dati_globali/* INTERO, il workflow faceva `git add` senza -f con un
+   `|| true` in fondo, il file dei lavori non arrivava mai su main e i job
+   leggevano il vuoto. Ora c'e' -f, e due controlli espliciti che fanno
+   MORIRE il job se il file manca.
+b) Lo stesso difetto teneva fermo da prima anche lo step dei consigli
+   (scouting_da_predire.tsv, stesso .gitignore). NON tocca la tabella:
+   l'Atteso viene dalle predizioni grezze (_atteso_dai_consigli), non dai
+   consigli aggregati -- lo dice la docstring della funzione, e l'utente
+   l'aveva fatto notare correttamente in chat. Dirlo come "lo scouting non
+   funzionava" era mio errore, corretto subito.
+c) tar muore sui file CANCELLATI. Ogni predict cancella il proprio
+   prediction_*.txt vecchio; `git diff --cached --name-only` li elenca; tar
+   riceveva nomi inesistenti e usciva con "Cannot stat" DOPO aver predetto
+   tutto (31790910888, 8 shard su 21). Ora --diff-filter=ACMR, cancellazioni
+   a parte dentro l'archivio.
+d) `git add A B C` muore INTERO se un solo pathspec non matcha (basta uno
+   shard di soli GK, senza grid_search). Col `|| true` avrebbe consegnato
+   zero file in silenzio. Trovata dallo smoke test, mai esplosa in
+   produzione. La stessa lezione era gia' scritta nel job candidati dal
+   30817534591 e non era stata applicata qui.
+e) prediction_log.json e' condiviso per gruppo lega/ruolo: va FUSO, non
+   sovrascritto, altrimenti l'ultimo shard cancella le righe degli altri.
+   (Nella matrice vecchia succedeva gia', col git merge -X ours dei retry.)
+
+
+6. DECISIONE APERTA
+-------------------
+Nessuna aperta su questo filone: l'utente ha detto "va bene cosi".
+Sul tavolo, se un giorno servisse: i ~4 minuti di adesso sono quasi tutti
+infrastruttura (25s di checkout per job, repo pesante per le cache
+committate, piu' pip install). Il modello non c'entra piu'.
+
+
+7. FILE DI RIFERIMENTO
+----------------------
+  docs/HANDOFF_UNIFICATO_MODELLO_SCOUTING.md   §8septdecies (questo lavoro)
+  .github/workflows/scouting_gw.yml
+  scouting_gw.py                                _tentativo_senza_dati_recente,
+                                                _tabella_minimale,
+                                                _HTML_CONTROLLI_MINIMALE
+  scouting_raccogli_predict.py
+  tests/smoke_scouting_shard.sh
+  scanners/my_cards_profit.py                   _report_viewer_url
+  CLAUDE.md                                     regola smoke test obbligatorio
+                                                (scritta, NON ancora committata)
