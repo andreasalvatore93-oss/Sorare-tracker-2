@@ -61,15 +61,20 @@ on:
         default: false
         type: boolean
       riusa_predizioni:
-        description: 'Riusa le previsioni gia'' calcolate per questa giornata (piu'' veloce, ma non ricalcola con G)'
+        description: 'Riusa le previsioni gia'' calcolate per QUESTA giornata (ancorate alla fixture: scadono da sole quando la giornata chiude)'
         required: false
-        default: false
+        default: true
         type: boolean
       minimal:
         description: 'Tabella minima: giocatore/ruolo/club/odds/prezzo/atteso/grade (niente arene ne'' essenze/GW)'
         required: false
-        default: false
+        default: true
         type: boolean
+      per_job:
+        description: 'Quanti giocatori predice ogni job della matrice (25 = un checkout ogni 25 invece che ogni 1)'
+        required: false
+        default: '25'
+        type: string
 
 permissions:
   contents: write
@@ -79,12 +84,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
-      lavori: ${{ steps.lista.outputs.lavori }}
+      shards: ${{ steps.lista.outputs.shards }}
       quanti: ${{ steps.lista.outputs.quanti }}
-      # quanti = quelli che la matrice fara' davvero (max 256); richiesti =
-      # quanti ne servivano. Se differiscono, dei candidati restano senza
-      # Atteso: serve saperlo a valle, non solo nel log.
+      # quanti = i giocatori che la matrice predice davvero; richiesti = quanti
+      # ne servivano. Se differiscono, dei candidati restano senza Atteso:
+      # serve saperlo a valle, non solo nel log.
       richiesti: ${{ steps.lista.outputs.richiesti }}
+      per_job: ${{ steps.lista.outputs.per_job }}
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
@@ -153,46 +159,69 @@ jobs:
             git merge --no-edit -X ours origin/main || true
           done
 
-      # Una voce per giocatore, "lega|ruolo|slug". La matrice di GitHub ne
-      # accetta al massimo 256: si tronca dicendolo, invece di fallire.
-      # La lista la scrive scouting_gw.py, che sa gia' chi ha una previsione
-      # valida per QUESTA giornata e lo esclude (best_five._predizione_
-      # riutilizzabile, agganciata alla finestra della fixture). Alla seconda
-      # run sulla stessa giornata la matrice e' quasi vuota: non e' un refresh
-      # leggero, e' zero query.
+      # La lista "lega|ruolo|slug" la scrive scouting_gw.py in
+      # dati_globali/scouting_lavori.txt (committato dallo step precedente:
+      # ogni job della matrice se lo ritrova col proprio checkout), gia' senza
+      # chi ha una previsione valida per QUESTA giornata -- best_five.
+      # _predizione_riutilizzabile, agganciata alla finestra della fixture.
+      #
+      # QUI NON SI PASSANO PIU' I NOMI ALLA MATRICE (14/08/2026), si passano
+      # gli INDICI DEGLI SHARD: ogni job prende le righe con
+      # `numero_riga % numero_shard == suo_indice` e ne predice `per_job`.
+      # Due conseguenze misurate:
+      #   - il tetto di 256 della matrice GitHub non e' piu' sui GIOCATORI ma
+      #     sugli SHARD: con per_job=25 sono 6400 giocatori a run, e i 1543
+      #     predict della run 31675855737 (che veniva troncata a 256) ci
+      #     stanno tutti;
+      #   - il checkout (25s, il secondo costo del job dopo il push) si paga
+      #     una volta ogni `per_job` giocatori invece che ogni giocatore.
+      # La ripartizione e' a giro (modulo), non a blocchi: la lista arriva
+      # ordinata per L10 decrescente, e cosi' i candidati piu' forti si
+      # spalmano su tutti gli shard invece di stare tutti nel primo -- se un
+      # job fallisce non porta via in blocco i migliori.
       - name: Prepara la lista dei predict
         id: lista
         if: ${{ inputs.predict }}
+        env:
+          PER_JOB: ${{ inputs.per_job }}
         run: |
           # NIENTE che non sia chiave=valore su stdout (13/08/2026): qui lo
           # stdout FINISCE dentro $GITHUB_OUTPUT, che accetta solo quel
           # formato. La riga '::warning::...' ci finiva dentro e faceva
           # fallire il job con "Unable to process file command 'output'
-          # successfully / Invalid format" -- proprio nel caso che il
-          # commento qui sopra dice di voler gestire senza fallire (run
-          # 31675855737, 1543 predict richiesti: la prima volta che si e'
-          # superato il tetto). L'avviso va nel riepilogo della run e nel
-          # log, non nel file degli output.
+          # successfully / Invalid format" (run 31675855737). L'avviso va nel
+          # riepilogo della run e nel log, non nel file degli output.
           python - <<'PY' >> "$GITHUB_OUTPUT"
-          import json, os, sys
+          import json, math, os, sys
           lavori = []
           f = 'dati_globali/scouting_lavori.txt'
           if os.path.exists(f):
               lavori = [r.strip() for r in open(f, encoding='utf-8') if r.strip()]
           richiesti = len(lavori)
-          if richiesti > 256:
-              avviso = (f'{richiesti} predict richiesti, la matrice GitHub ne accetta '
-                        f'256: ne restano fuori {richiesti - 256}, che nella tabella '
-                        f'dello scouting resteranno senza Atteso.')
+          try:
+              per_job = max(1, int((os.environ.get('PER_JOB') or '25').strip()))
+          except ValueError:
+              per_job = 25
+          shards = min(256, math.ceil(richiesti / per_job)) if richiesti else 0
+          # Con piu' di 256*per_job lavori si tronca comunque, ma ora il tetto
+          # vero e' 6400 giocatori (per_job=25) invece di 256: chi resta fuori
+          # lo prende la run successiva, che col riuso acceso salta tutti
+          # quelli gia' predetti per questa giornata.
+          copribili = shards * per_job
+          if richiesti > copribili:
+              avviso = (f'{richiesti} predict richiesti, questa run ne copre {copribili} '
+                        f'({shards} job x {per_job}): ne restano fuori '
+                        f'{richiesti - copribili}, che nella tabella resteranno senza '
+                        f'Atteso finche non li prende una run successiva.')
               print(f'AVVISO: {avviso}', file=sys.stderr)
               riepilogo = os.environ.get('GITHUB_STEP_SUMMARY')
               if riepilogo:
                   with open(riepilogo, 'a', encoding='utf-8') as r:
-                      r.write(f'**Predict troncati** -- {avviso}\n')
-              lavori = lavori[:256]
-          print(f'lavori={json.dumps(lavori)}')
-          print(f'quanti={len(lavori)}')
+                      r.write(f'**Predict oltre la capienza della run** -- {avviso}\n')
+          print(f'shards={json.dumps(list(range(shards)))}')
+          print(f'quanti={min(richiesti, copribili)}')
           print(f'richiesti={richiesti}')
+          print(f'per_job={per_job}')
           PY
 
   predict:
@@ -209,7 +238,7 @@ jobs:
       # 30814827740) invece di ~10.
       max-parallel: 20
       matrix:
-        lavoro: ${{ fromJson(needs.candidati.outputs.lavori) }}
+        shard: ${{ fromJson(needs.candidati.outputs.shards) }}
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
@@ -220,6 +249,8 @@ jobs:
 
       - name: Predict
         env:
+          SHARD: ${{ matrix.shard }}
+          SHARDS: ${{ needs.candidati.outputs.shards }}
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
           # Chiavi 2 e 3: i tetti Sorare sono per chiave e si sommano
@@ -231,43 +262,73 @@ jobs:
           SORARE_DEVICE_FINGERPRINT: ${{ secrets.SORARE_DEVICE_FINGERPRINT }}
           PYTHONUNBUFFERED: "1"
         run: |
-          IFS='|' read -r LEGA RUOLO SLUG <<< "${{ matrix.lavoro }}"
-          case "$RUOLO" in
-            gk)  PY=test_gk.py ;;
-            def) PY=test_def.py ;;
-            mid) PY=test_mid.py ;;
-            fwd) PY=test_mls_fwd_all.py ;;
-          esac
-          if [ ! -f "formazione_$LEGA/predict/$PY" ]; then
-            echo "::warning::manca formazione_$LEGA/predict/$PY"
-            exit 0
-          fi
-          TARGET_SLUG="$SLUG" python "formazione_$LEGA/predict/$PY"
+          # Le righe di QUESTO shard: numero_riga % numero_shard == indice.
+          N_SHARD=$(python -c "import json,os; print(len(json.loads(os.environ['SHARDS'])))")
+          echo "shard $SHARD di $N_SHARD"
+          # Un giocatore che va in errore non deve portarsi via gli altri 24
+          # dello stesso job: si logga e si continua (set +e).
+          set +e
+          RIGA=-1
+          FATTI=0; SALTATI=0; FALLITI=0
+          while IFS='|' read -r LEGA RUOLO SLUG; do
+            [ -n "$LEGA" ] || continue
+            RIGA=$((RIGA + 1))
+            [ $((RIGA % N_SHARD)) -eq "$SHARD" ] || continue
+            case "$RUOLO" in
+              gk)  PY=test_gk.py ;;
+              def) PY=test_def.py ;;
+              mid) PY=test_mid.py ;;
+              fwd) PY=test_mls_fwd_all.py ;;
+            esac
+            if [ ! -f "formazione_$LEGA/predict/$PY" ]; then
+              echo "::warning::manca formazione_$LEGA/predict/$PY ($SLUG)"
+              SALTATI=$((SALTATI + 1))
+              continue
+            fi
+            TARGET_SLUG="$SLUG" python "formazione_$LEGA/predict/$PY"
+            if [ $? -eq 0 ]; then FATTI=$((FATTI + 1)); else
+              echo "::warning::predict fallito: $LEGA/$RUOLO/$SLUG"
+              FALLITI=$((FALLITI + 1))
+            fi
+          done < dati_globali/scouting_lavori.txt
+          set -e
+          echo "shard $SHARD: $FATTI predetti, $SALTATI senza pipeline, $FALLITI falliti"
 
-      # Commit per giocatore con retry, come la calibrazione: con otto job che
-      # scrivono insieme il push va in conflitto di continuo, e perdere la cache
-      # di un giocatore significa ripagarne l'assorbimento a ritroso.
-      - name: Salva previsione e cache
+      # NIENTE push da qui (14/08/2026). Misurato sui 256 job della run
+      # 31740179423: il predict vero durava 3 secondi, il commit+push della sua
+      # previsione 68 -- il 64% del tempo era la fila di job che si accodavano
+      # a scrivere su main, ciascuno con retry, sleep e merge. Ora ogni shard
+      # impacchetta cio' che ha prodotto e lo consegna come artifact; a
+      # rimetterlo nel repo con UN commit solo ci pensa il job `consigli`
+      # (scouting_raccogli_predict.py, che sa anche fondere i
+      # prediction_log.json invece di sovrascriverli).
+      - name: Impacchetta previsioni e cache
         if: always()
         run: |
-          IFS='|' read -r LEGA RUOLO SLUG <<< "${{ matrix.lavoro }}"
-          git config user.name  "sorare-tracker-bot"
-          git config user.email "bot@users.noreply.github.com"
           git add -f ':(glob)formazione_*/output/**/.cache/*' \
                      ':(glob)formazione_*/output/**/.game_log_cache/*' || true
           git add ':(glob)formazione_*/output/**/prediction_*.txt' \
                   ':(glob)formazione_*/output/**/prediction_log.json' \
                   ':(glob)formazione_*/output/**/grid_search/*' || true
-          if git diff --cached --quiet; then echo "niente da salvare"; exit 0; fi
-          git commit -m "Scouting: predict $LEGA/$RUOLO $SLUG"
-          tentativo=0
-          until git push; do
-            tentativo=$((tentativo + 1))
-            [ $tentativo -ge 15 ] && { echo "push fallito 15 volte, abbandono"; exit 1; }
-            sleep $((RANDOM % 12 + 5))
-            git fetch origin main
-            git merge --no-edit -X ours origin/main || true
-          done
+          # Solo i file che questo job ha davvero toccato: l'indice dice quali
+          # sono, senza doverli indovinare per data o per glob.
+          git diff --cached --name-only > /tmp/cambiati.txt
+          if [ ! -s /tmp/cambiati.txt ]; then
+            echo "niente da consegnare"
+            exit 0
+          fi
+          echo "$(wc -l < /tmp/cambiati.txt) file da consegnare"
+          tar -czf "predict-shard-${SHARD}.tgz" -T /tmp/cambiati.txt
+        env:
+          SHARD: ${{ matrix.shard }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: predict-shard-${{ matrix.shard }}
+          path: predict-shard-${{ matrix.shard }}.tgz
+          retention-days: 1
+          if-no-files-found: ignore
 
   consigli:
     needs: [candidati, predict]
@@ -284,6 +345,19 @@ jobs:
           cache-dependency-path: requirements-formazione.txt
       - run: pip install -r requirements-formazione.txt
       - run: pip install curl_cffi websocket-client
+
+      # Le previsioni della matrice arrivano qui, non da main: i job predict
+      # non pushano piu' (vedi il commento accanto a "Impacchetta previsioni e
+      # cache"). Senza questo passaggio i consigli e il report girerebbero sui
+      # file vecchi e la colonna Atteso resterebbe indietro di una run.
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: predict-shard-*
+          path: _artifact_predict
+        continue-on-error: true
+
+      - name: Rimetti nel repo previsioni e cache dei predict
+        run: python scouting_raccogli_predict.py _artifact_predict
 
       - name: Consigli
         env:
@@ -347,8 +421,13 @@ jobs:
           git add generatore_formazioni/output/scouting_ultimo.html
           git add -f ':(glob)formazione_*/output/**/.cache/*' \
                      ':(glob)formazione_*/output/**/.game_log_cache/*' || true
+          # prediction_*.txt: prima li committava ogni job della matrice, ora
+          # arrivano tutti qui dagli artifact -- se non si aggiungono, il riuso
+          # della prossima run non trova niente da riusare.
           git add ':(glob)formazione_*/output/**/consiglio_*.txt' \
-                  ':(glob)formazione_*/output/**/prediction_log.json' || true
+                  ':(glob)formazione_*/output/**/prediction_*.txt' \
+                  ':(glob)formazione_*/output/**/prediction_log.json' \
+                  ':(glob)formazione_*/output/**/grid_search/*' || true
           # Pool della giornata col prezzo minimo, ancorato alla fixture.
           # :(glob) per matchare anche il file untracked (plain non lo fa).
           git add -f ':(glob)dati_globali/scouting_*.json' || true
