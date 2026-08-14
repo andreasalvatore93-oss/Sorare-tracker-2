@@ -85,6 +85,7 @@ esistente, cosi' si vede subito quali sono i difetti cronici.
   dell'utente era giusto e andava assecondato muovendosi).
 
 ### E4. Ho continuato a commentare quando erano stati chiesti solo i numeri
+**RIPETUTO il 14/08/2026 poche ore dopo, vedi E7.**
 
 - **COSA HO FATTO**: dopo un esplicito *"non mi servono i tuoi commenti, voglio
   solo risultati"* ho continuato ad aggiungere paragrafi di interpretazione in
@@ -133,3 +134,27 @@ esistente, cosi' si vede subito quali sono i difetti cronici.
 - **REGOLA VIOLATA**: nessuna esisteva. Vale la pena tenerla a mente cosi':
   *un parametro che cambia col budget o col mazzo e' un parametro da calcolare,
   non da chiedere.*
+
+### E7. "Poi ti dico io cosa fare" — e io ho risposto anche a quello che non aveva chiesto
+
+- **COSA HO FATTO**: l'utente ha chiesto di fotografare una run e calcolare
+  **il guadagno atteso totale**, chiudendo con *"poi ti dico io cosa fare"*.
+  Ho consegnato una tabella di sette righe, il confronto col comportamento
+  vecchio, il conteggio delle carte inutilizzate e una riga di commento su
+  cosa fosse il vincolo. La risposta giusta era una riga: il totale.
+- **PERCHE' ERA SBAGLIATO**: *"poi ti dico io cosa fare"* dice esplicitamente
+  che l'analisi la vuole guidare lui, un passo alla volta. Rispondere in
+  anticipo a domande non fatte non e' zelo: gli toglie il controllo della
+  conversazione, e su un tema dove aveva gia' ricevuto risposte contraddittorie
+  da due sessioni e' esattamente cio' che lo aveva fatto impazzire. In piu'
+  ogni riga la paga.
+- **COME SI EVITA**: quando la richiesta contiene un numero preciso da
+  calcolare, rispondere con QUEL numero e fermarsi. Le tabelle si consegnano
+  solo se le chiede, o se il numero da solo sarebbe ambiguo (e in quel caso
+  una riga di contesto, non dieci). Se e' stato detto "poi ti dico io", non
+  proporre il passo successivo.
+- **REGOLA VIOLATA**: "Come rispondere all'utente" (in chat il minimo, mai
+  prosa non richiesta) + "Una cosa alla volta". E' la **ripetizione di E4**
+  nella stessa sessione, dopo che me l'aveva gia' contestato: la lezione non
+  era stata assorbita, il che e' precisamente il motivo per cui questo file
+  esiste.
