@@ -1722,7 +1722,7 @@ def compute_score_atteso_fwd(scores, is_home_flags,
     PRODUZIONE, da usare SIA in build_prediction SIA nel backtest di calibrazione,
     cosi' le due non possono divergere. Gemella di compute_score_atteso_def in
     test_def.py, ma la formula FWD e' DIVERSA:
-    - shrinkage con SHRINK_K_OUTLIER_FWD / MEDIA_RUOLO_FWD_PRIOR (5.0 / 53.02);
+    - shrinkage con SHRINK_K_OUTLIER_FWD / MEDIA_RUOLO_FWD_PRIOR (15.0 / 53.02);
     - Stadio D molto piu' snello: la SOLA correzione "Passaggio" condizionata per
       venue (nessun condizionamento per forza avversario, che per FWD e' risultato
       rumore su tutte le sotto-categorie).

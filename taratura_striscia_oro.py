@@ -52,7 +52,8 @@ import sys
 import backtest_arene_cache
 import backtest_arene_previsioni as prev
 from taratura_halflife_trend import RUOLI
-from taratura_confronto_parametri import raccogli, RUOLO_CODICE, _metriche
+from taratura_confronto_parametri import (raccogli, RUOLO_CODICE, _metriche,
+                                          _carica_grade, _con_grade)
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 'analisi_manager'))
@@ -194,7 +195,7 @@ def tabella(righe, titolo, modo='livello'):
             'n': len(righe), 'giocatori': len({r[1] for r in righe})}
 
 
-def griglia_shrink(punti, valori, usa_avversario):
+def griglia_shrink(punti, valori, usa_avversario, grade=None):
     """La cura candidata, giudicata sul metro ufficiale (MAE + correlazione +
     lift INSIEME, mai il MAE da solo: comprimere verso la media abbassa il MAE
     e puo' distruggere l'ordinamento -- e' scritto nella docstring di
@@ -208,7 +209,7 @@ def griglia_shrink(punti, valori, usa_avversario):
           ('shrink_k', 'MAE', 'corr', 'sd prev', 'bias', 'lift%', 'pendenza'))
     esito = []
     for k in valori:
-        righe = []
+        grezze = []
         for ruolo, slug, data, ctx, reale in punti:
             try:
                 p = prev.calcola(ctx, shrink_k=k, usa_avversario=usa_avversario)
@@ -219,8 +220,22 @@ def griglia_shrink(punti, valori, usa_avversario):
             if n < 3:
                 continue
             w = modulo.exponential_weights(n, modulo.HALF_LIFE_GAMES)
-            righe.append((RUOLO_CODICE.get(ruolo, ruolo), slug, data,
-                          0.0, p, reale, n, modulo.weighted_mean(scores, w)))
+            grezze.append((ruolo, slug, data, ctx, p, reale, n,
+                           modulo.weighted_mean(scores, w)))
+        if grade:
+            # si giudica sull'atteso COMBINATO col voto, cioe' il numero che
+            # entra nel knapsack in produzione. Senza questo si tara un pezzo
+            # fuori dalla formula in cui vive -- stesso errore per cui il banco
+            # ha --con-avversario.
+            S21mod, idx_grade = grade
+            grezze = [g for g in grezze
+                      if S21mod.grade_in_finestra(idx_grade, g[1], g[2]) is not None]
+            comb = _con_grade([(g[0], g[1], g[2], g[3], g[4], g[5]) for g in grezze],
+                              S21mod, idx_grade)
+            grezze = [(g[0], g[1], g[2], g[3], c, g[5], g[6], g[7])
+                      for g, c in zip(grezze, comb)]
+        righe = [(RUOLO_CODICE.get(g[0], g[0]), g[1], g[2], 0.0, g[4], g[5],
+                  g[6], g[7]) for g in grezze]
         m = _metriche([r[4] for r in righe], [r[5] for r in righe],
                       [r[2] for r in righe])
         res_tutti = statistics.mean(r[5] - r[4] for r in righe)
@@ -239,7 +254,50 @@ def griglia_shrink(punti, valori, usa_avversario):
     return esito
 
 
-def confronto_appaiato(punti, k_a, k_b, usa_avversario, prove=300, seme=11):
+def prevedi_appaiato(punti, k_a, k_b, usa_avversario, grade=None):
+    """Le due previsioni sulla stessa riga nello stesso run: tutto il resto e'
+    identico per costruzione. Separata dal giudizio perche' il taglio nel
+    tempo deve riusare le STESSE previsioni, non ricalcolarle.
+
+    `grade` = (S21mod, idx_grade) accende la colonna COL VOTO: al posto
+    dell'atteso calibrato si giudica `atteso + GRADE_FATTORE_STORICO *
+    sd_atteso * z`, cioe' il numero che in produzione entra davvero nel
+    knapsack (GRADE_ENABLED e GRADE_GROUP_STORICA_ENABLED sono entrambi '1'
+    di default in build_formazione_globale). Serve perche' due terzi del
+    valore del voto sono "questo giocatore e' forte" (p67/p68): e' la STESSA
+    dimensione su cui si misura qui il difetto, quindi il voto potrebbe gia'
+    correggerlo -- o peggiorarlo. Il campione si restringe alle righe con voto
+    in finestra (~30%, non casuale): vale come GATE, non come metro fine."""
+    righe = []
+    for ruolo, slug, data, ctx, reale in punti:
+        try:
+            pa = prev.calcola(ctx, shrink_k=k_a, usa_avversario=usa_avversario)
+            pb = prev.calcola(ctx, shrink_k=k_b, usa_avversario=usa_avversario)
+        except Exception:
+            continue
+        righe.append((ruolo, slug, data, ctx, pa, pb, reale))
+    if not grade:
+        return [(r[1], r[2], r[4], r[5], r[6]) for r in righe]
+
+    S21mod, idx_grade = grade
+    con_voto = [r for r in righe
+                if S21mod.grade_in_finestra(idx_grade, r[1], r[2]) is not None]
+    print('  col voto: %d righe su %d hanno il voto in finestra (%.1f%%)'
+          % (len(con_voto), len(righe), 100.0 * len(con_voto) / max(1, len(righe))))
+    if not con_voto:
+        return []
+    # una passata per colonna: la tabella sd_atteso si ricostruisce sul
+    # proprio atteso, com'e' giusto (in produzione con quel modello sarebbe
+    # quella)
+    comb_a = _con_grade([(r[0], r[1], r[2], r[3], r[4], r[6]) for r in con_voto],
+                        S21mod, idx_grade)
+    comb_b = _con_grade([(r[0], r[1], r[2], r[3], r[5], r[6]) for r in con_voto],
+                        S21mod, idx_grade)
+    return [(r[1], r[2], ca, cb, r[6])
+            for r, ca, cb in zip(con_voto, comb_a, comb_b)]
+
+
+def confronto_appaiato(dati, k_a, k_b, prove=300, seme=11):
     """A contro B sulle STESSE righe, con l'incertezza del DELTA.
 
     Serve perche' la griglia da sola non basta a decidere: fra k=5 e k=10 il
@@ -252,14 +310,6 @@ def confronto_appaiato(punti, k_a, k_b, usa_avversario, prove=300, seme=11):
         definito (si sceglie cinque carte per giornata).
     Le due previsioni sono calcolate sulla stessa riga nello stesso run:
     tutto il resto e' identico per costruzione."""
-    dati = []
-    for ruolo, slug, data, ctx, reale in punti:
-        try:
-            pa = prev.calcola(ctx, shrink_k=k_a, usa_avversario=usa_avversario)
-            pb = prev.calcola(ctx, shrink_k=k_b, usa_avversario=usa_avversario)
-        except Exception:
-            continue
-        dati.append((slug, data, pa, pb, reale))
     print('\n%d righe appaiate, %d giocatori, %d giornate'
           % (len(dati), len({d[0] for d in dati}), len({d[1] for d in dati})))
 
@@ -334,6 +384,14 @@ def confronto_appaiato(punti, k_a, k_b, usa_avversario, prove=300, seme=11):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--ruoli', default='fwd,mid,def,gk')
+    ap.add_argument('--con-grade', action='store_true', dest='con_grade',
+                    help='giudica sull atteso COMBINATO col voto A-F, cioe il '
+                         'numero che entra davvero nel knapsack in produzione. '
+                         'Costoso (carica l indice voto completo) e ristretto '
+                         'alle righe con voto in finestra (~30%%).')
+    ap.add_argument('--per-periodo', action='store_true', dest='per_periodo',
+                    help='ripete il confronto sulle due meta di calendario: '
+                         'il verso del delta deve essere lo stesso in tutte e due')
     ap.add_argument('--confronto', default='',
                     help='due valori di shrink_k appaiati con incertezza sul '
                          'delta, es. 5,10 (il primo e la produzione)')
@@ -358,6 +416,7 @@ def main():
 
     if args.confronto:
         k_a, k_b = [float(v) for v in args.confronto.split(',')]
+        grade = _carica_grade() if args.con_grade else None
         esiti = {}
         for b in brevi:
             sotto = [p for p in punti if p[0] == RUOLI[b]]
@@ -366,7 +425,23 @@ def main():
             print('\n' + '=' * 104)
             print('CONFRONTO APPAIATO shrink_k -- RUOLO %s (%d punti)' % (b.upper(), len(sotto)))
             print('=' * 104)
-            esiti[b] = confronto_appaiato(sotto, k_a, k_b, args.con_avversario)
+            dati = prevedi_appaiato(sotto, k_a, k_b, args.con_avversario, grade)
+            esiti[b] = confronto_appaiato(dati, k_a, k_b)
+            if args.per_periodo:
+                # FUORI CAMPIONE NEL TEMPO. Non c'e' niente da "ristimare"
+                # (shrink_k e' scelto, non fittato), quindi la domanda giusta
+                # non e' "regge su dati mai visti" ma "il verso del delta e' lo
+                # stesso in due periodi diversi?". Se cambia segno fra prima e
+                # seconda meta', il guadagno globale e' un accidente di
+                # calendario, non una proprieta' del modello.
+                date = sorted(d[1] for d in dati)
+                mediana = date[len(date) // 2]
+                for et, sel in (('PRIMA di %s' % mediana, lambda d: d[1] < mediana),
+                                ('DAL %s in poi' % mediana, lambda d: d[1] >= mediana)):
+                    parte = [d for d in dati if sel(d)]
+                    print('\n--- %s ---' % et)
+                    esiti['%s_%s' % (b, et[:5].strip())] = confronto_appaiato(
+                        parte, k_a, k_b)
         with open(args.json, 'w', encoding='utf-8') as fh:
             json.dump(esiti, fh, ensure_ascii=False, indent=2)
         print('\nsalvato in %s' % args.json)
@@ -374,15 +449,17 @@ def main():
 
     if args.shrink:
         valori = [float(v) for v in args.shrink.split(',')]
+        grade = _carica_grade() if args.con_grade else None
         esiti = {}
         for b in brevi:
             sotto = [p for p in punti if p[0] == RUOLI[b]]
             if not sotto:
                 continue
             print('\n' + '=' * 104)
-            print('GRIGLIA shrink_k -- RUOLO %s (%d punti)' % (b.upper(), len(sotto)))
+            print('GRIGLIA shrink_k -- RUOLO %s (%d punti)%s'
+                  % (b.upper(), len(sotto), ' COL VOTO' if grade else ''))
             print('=' * 104)
-            esiti[b] = griglia_shrink(sotto, valori, args.con_avversario)
+            esiti[b] = griglia_shrink(sotto, valori, args.con_avversario, grade)
         with open(args.json, 'w', encoding='utf-8') as fh:
             json.dump(esiti, fh, ensure_ascii=False, indent=2)
         print('\nsalvato in %s' % args.json)

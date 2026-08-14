@@ -3328,6 +3328,67 @@ spiegare.
 
 ---
 
+## 8sexdecies. SHRINK_K RIMISURATO SU TUTTI I RUOLI COL VOTO ACCESO (14/08/2026)
+
+**In due righe.** I quattro `SHRINK_K_OUTLIER` sono stati tarati PRIMA che G
+fisso andasse in produzione (13/08), cioè su un modello che non esiste più.
+Rimisurati tutti e quattro col voto acceso: **il centrocampo è rimasto
+indietro** (5 contro 15/15/30 degli altri) e **l'attaccante ora è tarato
+contro il voto**. Nessuna modifica applicata: sono misure, la decisione è
+dell'utente.
+
+**DA DOVE NASCE.** Non dal voto, ma dalla "striscia d'oro": il ~7 punti che
+il §8terdecies attribuiva a chi viene da un periodo eccezionale. **Non è un
+errore nostro**: su 136.778 righe (5.987 giocatori, tutti i ruoli, zero
+query) chi arriva da un periodo da 78 di media è previsto 63,5 e ne fa 64,8 —
+la compressione c'è ed è tarata bene. Il difetto residuo è per ruolo, e si
+misura come *pendenza*: residuo medio della fascia di livello 65-75 meno
+quello della fascia 35-45 (zero = nessun difetto). Strumento:
+`taratura_striscia_oro.py` (diagnosi, griglia, confronto appaiato con
+incertezza, taglio nel tempo, tutto con `--con-grade`).
+
+**COSA DICE IL METRO** (col voto acceso, campione pieno per ruolo):
+- **MID (oggi 5)**: a 15 il MAE cala di **0,116** — certo al 100% dei
+  ricampionamenti e in **entrambe** le metà di calendario — con correlazione
+  (−0,001) e lift (+0,55) **indistinguibili da zero**, e la pendenza da −9,3
+  a −2,4. Nessun costo misurabile, ma il guadagno è tutto sul numero, non
+  sulla scelta delle carte.
+- **FWD (oggi 15)**: tornando a **5** il MAE cala di **0,148** (100%) e il
+  **lift sale di 1,60 con IC [+0,49;+2,75] che ESCLUDE lo zero** (nel periodo
+  recente +1,91, IC [+0,77;+3,12]); la correlazione però peggiora di 0,0039
+  con IC che esclude lo zero a sua volta. **Non passa la regola delle tre
+  misure** (due contro una), quindi non si applica d'ufficio — ma è l'unico
+  punto di tutta la giornata in cui il lift, il metro più vicino a ciò che si
+  fa davvero (scegliere cinque carte), si sbilancia in modo netto. Il 15 fu
+  scelto il 03/08 col metro senza voto: è il caso da manuale della regola
+  nuova in `CLAUDE.md` ("ogni test parte da G fisso in produzione").
+- **DEF (oggi 15)**: dentro l'ottimo piatto (MAE 14,757 a 15 contro 14,749 a
+  20, correlazione identica). **Niente da cambiare.**
+- **GK (oggi 30)**: alzare non rende (da 30 a 60 il MAE si muove di 0,017,
+  correlazione ferma a 0,079-0,080). **Niente da cambiare.** Resta però la
+  pendenza più alta di tutte (−8 a k=30) e lo shrinkage non la cura: se un
+  giorno si riapre il portiere, il difetto è lì.
+
+**COSA NON RIFARE.** La stessa griglia SENZA voto: dà un guadagno di
+ordinamento sul MID (+0,0026, certo al 100%) che col voto si sgonfia a
++0,0007 e sparisce nel rumore. È l'errore che ha prodotto la regola in
+`CLAUDE.md`. E la diagnosi "striscia" intesa come *recente meno la propria
+media*: ha dispersione troppo piccola (sd ~4,7) e non separa niente — la
+lettura che conta è il **livello assoluto** del periodo recente.
+
+**SE SI DECIDE DI APPLICARE**: si tocca solo `formazione_mls/predict/`, poi
+`propaga_modello.py` (54 leghe), poi la catena — soglie arena
+(`PAREGGIO_ARENA`/`GUADAGNO_PER_PUNTO`) e scouting — va **riverificata**, non
+assunta: `shrink_k` sposta il livello dell'atteso (il bias del MID passa da
+−1,81 a −1,30) e le soglie sono tarate su quel livello.
+
+**Dati grezzi** (non versionati, `dati_globali/` è in `.gitignore`):
+`taratura_striscia_oro.json`, `taratura_striscia_griglia_voto_{mid,deffwd,gk}.json`,
+`taratura_striscia_conf15_mid.json`, `taratura_striscia_conf_fwd.json`.
+Si rifanno con lo script, ~15 minuti a run, zero rete.
+
+---
+
 ## 10bis. COSE DA FARE — riscritto il 09/08 notte, ripulito 11/08 (verificato contro il codice, non a memoria)
 
 ### BUG DI PRODUZIONE — trovato e CHIUSO il 14/08/2026 (Opus, controllo della run 31776364504)

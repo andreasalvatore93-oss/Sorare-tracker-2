@@ -426,6 +426,48 @@ rapido che potrebbe dargli torto, e lanciarlo subito.
 ## Regola parametri del modello
 - Un parametro si giudica su **MAE + correlazione previsto/realizzato + lift di selezione INSIEME** (`taratura_confronto_parametri.py`). Si applica solo se si muovono tutte e tre nello stesso verso. Il MAE da solo premia i modelli che non ordinano niente.
 
+## OGNI TEST PARTE DA G FISSO IN PRODUZIONE (14/08/2026)
+
+Regola dettata dall'utente. Vale per TUTTI i test, non solo per quelli che
+parlano del voto.
+
+**Il fatto, letto nel codice** (`build_formazione_globale.py`, default degli
+interruttori, non un handoff): `GRADE_ENABLED` e' acceso dal 07/08/2026 e
+`GRADE_GROUP_STORICA_ENABLED` (**G fisso**) dal 13/08/2026, entrambi default
+`'1'`. Il numero che entra davvero nel knapsack e' quindi
+
+    atteso_combinato = atteso_calibrato + 0,482 x sd_atteso x z_voto
+
+con le due tabelle in `generatore_formazioni/dati/`
+(`grade_scala_produzione.json`, `sd_atteso_produzione.json`, rigenerabili con
+`aggiorna_grade_scala_produzione.py`) e il **ricentraggio per ruolo
+ricalcolato fresco a ogni run** -- e' questo che la rende dinamica, non una
+costante congelata.
+
+**Quindi**: l'atteso calibrato nudo NON e' piu' la produzione. Un test che
+misura su quello misura un modello che non esiste piu', e il suo verdetto non
+vale. Ogni griglia, backtest o confronto di parametri gira **col voto acceso**
+(`--con-grade` sul banco `taratura_confronto_parametri.py` e su
+`taratura_striscia_oro.py`; altrove `p12_backtest_formazione_grade.
+applica_gruppi_grade` con `modo='storica_completa'`, mai una formula
+riscritta a mano).
+
+**Errore reale che l'ha prodotta** (14/08): la griglia di `shrink_k` sul
+centrocampo, girata senza voto, dava un guadagno di ordinamento certo
+(correlazione +0,0026, nel 100% dei ricampionamenti). Col voto acceso lo
+stesso guadagno si sgonfiava a +0,0007 e non era piu' distinguibile dallo
+zero: **il voto stava gia' correggendo la maggior parte del difetto**. Senza
+la colonna col voto si sarebbe portato in produzione un parametro che non
+sposta niente.
+
+**Corollario, e vale prima del test**: si legge il CODICE di produzione per
+TUTTI i ruoli prima di progettare la misura, non solo per quello di cui si
+sta parlando. Sempre il 14/08 la griglia sul MID e' partita senza sapere che
+`SHRINK_K_OUTLIER` vale gia' 15 su DEF e FWD e 30 su GK, e 5 solo sul MID: il
+centrocampo non aveva un difetto misterioso, era rimasto indietro di un giro
+di taratura. Il valore vero si legge con un grep sulle costanti, costa un
+secondo, e cambia la domanda che ha senso porsi.
+
 ## Come si lavora: un orchestratore, piu' esecutori
 
 Modello di lavoro consolidato (dalla sessione 05-06/08, esteso 12/08 con
