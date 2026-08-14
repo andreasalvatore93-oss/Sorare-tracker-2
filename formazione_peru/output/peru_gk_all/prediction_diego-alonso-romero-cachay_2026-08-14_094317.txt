@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-14T09:43:17.882164Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) diego-alonso-romero-cachay: 47 pt attesi (37-68)
+   SQUADRA: universitario-lima | AVVERSARIO: fc-cajamarca-cajamarca
+======================================================================
+
+######################################################################
+# GIOCATORE: diego-alonso-romero-cachay
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: diego-alonso-romero-cachay (squadra: universitario-lima)
+Generato: 2026-08-14T09:43:17.881462Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 21
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: primera-division-pe (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-01 | UNI vs None | primera-division-pe | score=62.9 | peso=0.223
+  2026-02-08 | GAR vs UNI | primera-division-pe | score=52.0 | peso=0.250
+  2026-02-14 | UNI vs CIE | primera-division-pe | score=28.5 | peso=0.281
+  2026-02-21 | CRI vs UNI | primera-division-pe | score=45.0 | peso=0.315
+  2026-03-01 | UNI vs FCC | primera-division-pe | score=70.9 | peso=0.354
+  2026-03-08 | ROS vs UNI | primera-division-pe | score=30.7 | peso=0.397
+  2026-05-03 | JPC vs UNI | primera-division-pe | score=31.9 | peso=0.445
+  2026-05-12 | BOY vs UNI | primera-division-pe | score=73.1 | peso=0.500
+  2026-05-23 | UCM vs UNI | primera-division-pe | score=67.5 | peso=0.561
+  2026-05-31 | UNI vs HYO | primera-division-pe | score=44.6 | peso=0.630
+  2026-07-18 | None vs UNI | primera-division-pe | score=40.4 | peso=0.707
+  2026-07-25 | UNI vs GAR | primera-division-pe | score=40.1 | peso=0.794
+  2026-08-02 | CIE vs UNI | primera-division-pe | score=44.2 | peso=0.891
+  2026-08-08 | UNI vs CRI | primera-division-pe | score=36.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 46.15
+  di cui Punteggio decisivo (level_score) medio: 39.81 | Punteggio complessivo (granulari) medio: 6.34 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 42.50 (delta +2.69 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -0.56, delta avversario +1.20 | Possesso condizionato per venue: delta -0.55 | Goalkeeping condizionato per venue: delta +1.39 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 13.49
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.1 - 67.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.55 (differenza: +1.94)
+Media score in casa: 47.18 | Media score fuori casa: 48.10
+Fattore casa/trasferta applicato: 1.013 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.6
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 0.992 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.999
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.005
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.996
+Tasso storico clean sheet (porta inviolata nei primi 60'): 28.6% (bonus atteso incorporato nella media pesata: ~7.1pt)
+Fattore trend (media ultime 5: 40.8 vs media 5 PRECEDENTI: 55.8): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T20:30
+Casa: FC Cajamarca | Trasferta: Club Universitario de Deportes
+Competizione: primera-division-pe
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.1 (range 37.0 - 68.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.73
+Punteggio REALE ottenuto in quella partita: 36.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -11.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.9    31.9    -14.0    18.4        SI
+   7        7      31.8    73.1    +41.3    18.0        NO
+   8        8      52.2    67.5    +15.3    20.6        SI
+   9        9      67.1    44.6    -22.5    20.3        NO
+  10       10      64.3    40.4    -23.9    18.9        NO
+  11       11      48.0    40.1     -7.9    18.0        SI
+  12       12      35.3    44.2     +8.9    17.1        SI
+  13       13      38.2    36.1     -2.1    16.0        SI
+
+MAE (errore assoluto medio): 16.99
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
