@@ -3561,10 +3561,15 @@ cache committate, più il pip install. Se un giorno servisse scendere ancora,
    da 30 a 60 il MAE si muove di 0,017 e la correlazione resta ferma a
    0,079-0,080. Serve un'idea diversa, non un parametro diverso. È il
    candidato naturale se si riapre il portiere.
-3. **Esito della prima run col modello nuovo**: l'utente l'ha lanciata il
-   14/08 subito dopo il cambio. Da guardare se il mix di ruoli si è spostato
-   come previsto dalla misura (meno MID, più FWD) e se i consigli di acquisto
-   dello scouting reggono — è lì che cade il costo di correlazione del FWD.
+3. **Le giornate col modello nuovo, da qui in avanti.** La prima run
+   (31793942909, run217, 14/08) è andata: 38 formazioni, 20 arene, soglie
+   che non hanno bloccato niente, tabelle del voto rigenerate dentro la run.
+   Il mix di ruoli si è mosso nel verso previsto (MID 32,5% → 28,2%) ma
+   **non è una conferma**: fra le due run precedenti il centrocampo si era
+   già spostato di dieci punti da solo, il rumore fra giornate è più grande
+   dell'effetto. Serve guardarlo su più giornate. Resta da controllare che i
+   consigli di acquisto dello scouting reggano — è lì che cade il costo di
+   correlazione del FWD, e nessuno l'ha ancora guardato.
 4. **Il gradino di 2,5 punti a metà gennaio 2027**, quando il badge "nuovo
    campionato" si spegne per chi si è trasferito la scorsa estate (aperta dal
    13-14/08, vedi `docs/handoff/HANDOFF_PIPELINE_LOCKATE_GK_2026-08-14.txt`).

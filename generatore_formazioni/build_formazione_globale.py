@@ -3217,9 +3217,26 @@ def main():
     ts = datetime.datetime.utcnow().strftime('%Y-%m-%d_%H%M%S')
     run_suffix = f"_run{run_number}" if run_number else ""
     page_title = f"Generatore Formazioni{' — run #' + run_number if run_number else ''}"
+    # GENERATE, non solo richieste (14/08/2026). Questa riga mostrava `counts`,
+    # cioe' le formazioni RICHIESTE (la stessa variabile della stampa
+    # "Formazioni richieste" piu' sopra). Con le arene chieste a BUDGET DI
+    # ESSENZE (ESSENZE_ARENA invece di un numero) la richiesta per tipo e' 0
+    # per definizione: il report scriveva "Arena All Stars (cap 260)=0" sopra
+    # a diciotto arene davvero generate e spedite. Ha ingannato una sessione
+    # in due minuti (14/08) e ingannerebbe chiunque legga il report per sapere
+    # cosa e' stato fatto. Ora si mostrano le generate, con le richieste fra
+    # parentesi solo quando i due numeri non coincidono.
+    _generate = {}
+    for _r in all_results:
+        _generate[_r['tipo']] = _generate.get(_r['tipo'], 0) + 1
+
+    def _voce(t):
+        gen, req = _generate.get(t, 0), counts.get(t, 0)
+        return f"{LABELS[t]}={gen}" + (f" (chieste {req})" if gen != req else "")
+
     page_subhead = (f"Generato {datetime.datetime.utcnow().strftime('%d/%m/%Y %H:%M')}Z — "
-                     f"totale={num_totale} (" +
-                     ", ".join(f"{LABELS[t]}={counts[t]}" for t in PRIORITY_ORDER) + ")<br>"
+                     f"generate={sum(_generate.values())} su {num_totale} richieste (" +
+                     ", ".join(_voce(t) for t in PRIORITY_ORDER) + ")<br>"
                      f"Candidati non schierati in nessuna formazione: {tot_esclusi} (" +
                      ", ".join(f"{r}: {esclusi_per_ruolo[r]}" for r in ROLES) + ")")
     footer_html = (f"Fusione {len(LEAGUES)} campionati. Max 1 carta CLASSIC solo per In Season. "
