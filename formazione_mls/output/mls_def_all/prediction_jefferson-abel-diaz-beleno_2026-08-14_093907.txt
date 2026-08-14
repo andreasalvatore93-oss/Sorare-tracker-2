@@ -1,0 +1,121 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-14T09:39:07.069111Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) jefferson-abel-diaz-beleno: 46 pt attesi (25-67)
+   ORDINAMENTO: 45.10
+   SQUADRA: minnesota-united-minneapolis-saint-paul-minnesota | AVVERSARIO: real-salt-lake-salt-lake-city-utah
+======================================================================
+
+######################################################################
+# GIOCATORE: jefferson-abel-diaz-beleno
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jefferson-abel-diaz-beleno (squadra: minnesota-united-minneapolis-saint-paul-minnesota)
+Generato: 2026-08-14T09:39:07.063879Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-24 | RSL vs MIN | mlspa | score=29.1 | peso=0.616
+  2025-08-31 | MIN vs POR | mlspa | score=41.3 | peso=0.630
+  2025-09-28 | RAP vs MIN | mlspa | score=28.2 | peso=0.645
+  2025-10-05 | MIN vs SKC | mlspa | score=52.7 | peso=0.660
+  2025-10-19 | LA vs MIN | mlspa | score=51.6 | peso=0.675
+  2025-10-28 | MIN vs SEA | mlspa | score=70.0 | peso=0.691
+  2025-11-04 | SEA vs MIN | mlspa | score=24.5 | peso=0.707
+  2025-11-08 | MIN vs SEA | mlspa | score=64.9 | peso=0.724
+  2026-02-28 | MIN vs CIN | mlspa | score=39.7 | peso=0.741
+  2026-03-08 | NSH vs MIN | mlspa | score=70.8 | peso=0.758
+  2026-03-15 | VAN vs MIN | mlspa | score=0.0 | peso=0.776
+  2026-03-22 | MIN vs SEA | mlspa | score=47.7 | peso=0.794
+  2026-04-05 | LA vs MIN | mlspa | score=41.7 | peso=0.812
+  2026-04-12 | SD vs MIN | mlspa | score=28.5 | peso=0.831
+  2026-04-19 | MIN vs POR | mlspa | score=79.4 | peso=0.851
+  2026-04-23 | DAL vs MIN | mlspa | score=73.0 | peso=0.871
+  2026-04-25 | MIN vs LAFC | mlspa | score=86.5 | peso=0.891
+  2026-05-02 | CLB vs MIN | mlspa | score=60.0 | peso=0.912
+  2026-05-10 | MIN vs ATX | mlspa | score=61.5 | peso=0.933
+  2026-05-14 | MIN vs RAP | mlspa | score=46.6 | peso=0.955
+  2026-05-23 | MIN vs RSL | mlspa | score=40.2 | peso=0.977
+  2026-08-02 | MIN vs SD | mlspa | score=41.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 49.79
+  di cui Punteggio decisivo (level_score) medio: 39.84 | Punteggio complessivo (granulari) medio: 9.95 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -1.90, delta avversario -0.19 | Passaggio condizionato: delta venue -1.42, delta avversario +0.49 | Clean sheet/disimpegni condizionato: delta venue -1.07, delta avversario -0.10 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 20.15
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 28.5 - 70.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.84 (differenza: +4.31)
+Media score in casa: 56.03 | Media score fuori casa: 40.74
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.6
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 1.007 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.006
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.995
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
+Fattore gol subiti (goals_conceded, con cap): 0.991
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.995
+Fattore trend (media ultime 5: 49.8 vs media 5 PRECEDENTI: 62.4): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-16T01:30
+Casa: Real Salt Lake | Trasferta: Minnesota United
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.0 (range 24.7 - 67.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 45.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.27
+Punteggio REALE ottenuto in quella partita: 41.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      44.0    24.5    -19.5    16.1        NO
+   7        7      41.9    64.9    +22.9    17.1        NO
+   8        8      40.4    39.7     -0.7    18.0        SI
+   9        9      31.6    70.8    +39.2    17.0        NO
+  10       10      35.2     0.0    -35.2    18.3        NO
+  11       11      45.4    47.7     +2.3    23.6        SI
+  12       12      48.8    41.7     -7.1    22.5        SI
+  13       13      49.6    28.5    -21.1    21.5        SI
+  14       14      42.2    79.4    +37.2    21.0        NO
+  15       15      39.9    73.0    +33.1    23.0        NO
+  16       16      37.4    86.5    +49.0    23.6        NO
+  17       17      53.7    60.0     +6.3    25.3        SI
+  18       18      62.0    61.5     -0.5    24.6        SI
+  19       19      57.1    46.6    -10.5    24.0        SI
+  20       20      45.7    40.2     -5.5    23.2        SI
+  21       21      59.6    41.9    -17.7    22.7        SI
+
+MAE (errore assoluto medio): 19.25
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 56.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
