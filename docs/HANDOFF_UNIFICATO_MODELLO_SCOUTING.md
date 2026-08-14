@@ -3461,6 +3461,31 @@ produzione; **capitano**, richiuso con potenza vera su 12.677 formazioni
    File: `taratura_confronto_parametri.py`, `analisi_manager/
    p37_halflife_con_grade.py`, `analisi_manager/dati/
    halflife_con_grade_2026-08-14.json`.
+
+   **BOOTSTRAP SULLO SPOSTAMENTO FWD — fatto il 14/08/2026 su richiesta
+   dell'utente ("solo su FWD si sposta l'ottimo?"): NON REGGE.**
+   Domanda preliminare: lo spostamento (hl=6→12/16) è specifico di FWD o
+   generale? Guardando i quattro ruoli — GK segue la stessa direzione ma il
+   segnale è troppo debole per fidarsene (lift sempre <9%, ruolo già noto
+   come "tetto strutturale"); DEF è piatto (16,3→16,3 di picco, hl=30 di
+   produzione già lì); MID è piatto e va nella direzione OPPOSTA (picco a
+   hl=6, non più in là). **Solo FWD ha uno scarto reale e su un plateau
+   ampio (hl=9-60): è l'unico dove vale la pena testare.**
+   Bootstrap per GIOCATORE (non per riga: le partite dello stesso giocatore
+   non sono indipendenti, stesso principio del bootstrap-manager già in uso
+   altrove), 1.303 giocatori, 1.000 ricampionamenti, colonna col voto,
+   hl=16 contro hl=6 di produzione:
+   delta osservato sul campione intero **+1,48** punti di lift%; delta
+   MEDIO bootstrap **+0,79** (più piccolo del punto osservato: il grid
+   search aveva scelto il picco fra 11 candidati, un po' di ottimismo da
+   "il migliore di tanti tentativi" è normale); **IC95% [−0,53; +2,15]**,
+   86,5% dei ricampionamenti positivi. **L'intervallo include lo zero: non
+   passa il criterio del progetto** (serve che l'IC escluda lo zero per
+   decidere, vedi regola sui backtest). Produzione resta half_life=6 per
+   FWD: lo spostamento è un'ipotesi con più probabilità di essere vera che
+   falsa (86,5%), non una prova.
+   File: `analisi_manager/p73_bootstrap_fwd_halflife_grade.py`,
+   `analisi_manager/dati/bootstrap_fwd_halflife_grade_2026-08-14.json`.
 6. **Riga GK di `p37` NON VALIDA** (prodotta prima del fix del bug che
    scartava l'89,6% dei punti GK, §8quindecies): va rilanciata se quel numero
    serve. DEF/MID/FWD reggono.
