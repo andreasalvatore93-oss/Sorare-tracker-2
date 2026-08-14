@@ -1,3 +1,4 @@
+import itertools
 import json
 import os
 import re
@@ -14,6 +15,30 @@ import websocket  # pip install websocket-client
 # ---- Configurazione da variabili d'ambiente (secrets) ----
 COOKIES = os.environ.get('SORARE_COOKIE')
 CSRF_TOKEN = os.environ.get('SORARE_CSRF')
+# FIX 14/08/2026: SORARE_APIKEY si aggiunge al cookie (non lo sostituisce), alza il tetto da
+# 60 richieste/min (sessione col cookie) a 200/min per chiave. I workflow di
+# crafted_card_scanner/manager_bundle_scan/my_cards_underpriced/my_cards_profit/
+# snipe_pattern_analysis passano gia' questo secret nell'env da settimane, ma questo modulo non
+# lo leggeva mai: ogni query passava da qui restava bloccata sul tetto cookie-only, causa reale
+# dei 429 frequenti su my_cards_profit (2000 carte a run). Se sono presenti anche SORARE_APIKEY_2
+# e SORARE_APIKEY_3 (tetti indipendenti, si sommano -- verificato in laboratorio 12/08) si ruota
+# fra tutte per request, stesso pattern gia' in produzione in scanners/bot_profit.py. Additivo:
+# se nessuna chiave e' impostata il comportamento resta identico a prima (nessun header APIKEY).
+_APIKEYS = [k for k in (
+    os.environ.get('SORARE_APIKEY', '').strip(),
+    os.environ.get('SORARE_APIKEY_2', '').strip(),
+    os.environ.get('SORARE_APIKEY_3', '').strip(),
+) if k]
+_apikey_giro = itertools.cycle(_APIKEYS) if _APIKEYS else None
+_apikey_lock = threading.Lock()
+
+
+def _prossima_apikey():
+    """Chiave da usare per la prossima richiesta, a rotazione (thread-safe)."""
+    if not _apikey_giro:
+        return None
+    with _apikey_lock:
+        return next(_apikey_giro)
 EMAIL_USER = os.environ.get('GMAIL_ADDRESS')
 EMAIL_PASS = os.environ.get('GMAIL_APP_PASSWORD')
 NOTIFY_EMAIL = os.environ.get('NOTIFY_EMAIL')
@@ -466,6 +491,9 @@ def graphql_query(query, variables=None, max_retries=3):
         'x-csrf-token': CSRF_TOKEN,
         'User-Agent': 'Mozilla/5.0',
     }
+    apikey = _prossima_apikey()
+    if apikey:
+        headers['APIKEY'] = apikey
     payload = {"query": query, "variables": variables or {}}
     for attempt in range(max_retries):
         _graphql_throttle()

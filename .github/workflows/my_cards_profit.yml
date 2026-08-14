@@ -34,7 +34,19 @@ jobs:
         env:
           SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
           SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
+          # FIX 14/08: seconda e terza chiave, tetti indipendenti che si sommano (200/min a
+          # chiave). track.py ruota fra tutte quelle presenti -- vedi commento li' per il bug
+          # che teneva questo scanner bloccato sul tetto cookie-only (60/min) nonostante
+          # SORARE_APIKEY fosse gia' passata qui da settimane.
+          SORARE_APIKEY_2: ${{ secrets.SORARE_APIKEY_2 }}
+          SORARE_APIKEY_3: ${{ secrets.SORARE_APIKEY_3 }}
           SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          # FIX 14/08: con 3 chiavi a rotazione (600/min combinati contro 60/min di prima) il
+          # ritmo minimo fisso di track.py (0.35s = 171/min) e' troppo prudente -- alzato SOLO
+          # per questo workflow (env var letta da track.py, default globale invariato per gli
+          # altri scanner che non la impostano). 0.15s = ~400/min combinati, ~133/min a chiave,
+          # sotto il tetto di 200/min per chiave con margine.
+          GRAPHQL_MIN_INTERVAL_SECONDS: "0.15"
           # FIX 18/07: track.send_telegram_msg legge da TELEGRAM_TOKEN/TELEGRAM_CHAT_ID (i suoi
           # globali di modulo), non da BUNDLE_TELEGRAM_TOKEN/BUNDLE_TELEGRAM_CHAT_ID -- stesso
           # mapping gia' usato in manager_bundle_scan.yml, per finire nello stesso canale/bot.
