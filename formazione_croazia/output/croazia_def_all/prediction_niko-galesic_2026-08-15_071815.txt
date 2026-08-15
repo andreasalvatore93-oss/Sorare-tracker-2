@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-15T07:18:15.445448Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) niko-galesic: 54 pt attesi (47-68)
+   ORDINAMENTO: 56.29
+   SQUADRA: dinamo-zagreb-zagreb | AVVERSARIO: viking-stavanger
+======================================================================
+
+######################################################################
+# GIOCATORE: niko-galesic
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: niko-galesic (squadra: dinamo-zagreb-zagreb)
+Generato: 2026-08-15T07:18:15.444218Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 51
+Escluse (DID_NOT_PLAY): 21
+Escluse (minutaggio < 60', subentri): 11
+Competizione partita target: uefa-champions-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-27 | V91 vs DIN | 1-hnl | score=51.3 | peso=0.660
+  2025-12-14 | SLA vs DIN | 1-hnl | score=51.8 | peso=0.675
+  2025-12-20 | DIN vs LOK | 1-hnl | score=41.5 | peso=0.691
+  2026-01-22 | DIN vs FCS | uefa-europa-league | score=60.0 | peso=0.707
+  2026-01-25 | OSI vs DIN | 1-hnl | score=52.1 | peso=0.724
+  2026-01-29 | FCM vs DIN | uefa-europa-league | score=18.3 | peso=0.741
+  2026-02-02 | DIN vs V91 | 1-hnl | score=49.2 | peso=0.758
+  2026-02-22 | VAR vs DIN | 1-hnl | score=46.4 | peso=0.776
+  2026-02-26 | GNK vs DIN | uefa-europa-league | score=27.3 | peso=0.794
+  2026-03-21 | LOK vs DIN | 1-hnl | score=67.8 | peso=0.812
+  2026-04-04 | DIN vs OSI | 1-hnl | score=54.2 | peso=0.831
+  2026-04-13 | V91 vs DIN | 1-hnl | score=57.3 | peso=0.851
+  2026-04-18 | DIN vs RIJ | 1-hnl | score=46.9 | peso=0.871
+  2026-04-22 | IST vs DIN | 1-hnl | score=59.2 | peso=0.891
+  2026-05-02 | GOR vs DIN | 1-hnl | score=47.3 | peso=0.912
+  2026-05-09 | DIN vs HAJ | 1-hnl | score=68.0 | peso=0.933
+  2026-05-17 | SLA vs DIN | 1-hnl | score=64.0 | peso=0.955
+  2026-07-31 | DIN vs SLA | 1-hnl | score=63.6 | peso=0.977
+  2026-08-14 | DIN vs RUD | 1-hnl | score=77.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 53.72
+  di cui Punteggio decisivo (level_score) medio: 36.14 | Punteggio complessivo (granulari) medio: 17.59 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.59, delta avversario +0.00 | Passaggio condizionato: delta venue +0.95, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.79, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 13.67
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 46.4 - 67.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.11 (differenza: +3.57)
+Media score in casa: 57.60 | Media score fuori casa: 49.34
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.7
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.004
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.997
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.995
+Fattore gol subiti (goals_conceded, con cap): 1.004
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.004
+Fattore trend (media ultime 5: 64.3 vs media 5 PRECEDENTI: 56.9): 1.000
+P(gioca): 37.25% (fonte: tasso di presenza storico (19/51))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-18T19:00
+Casa: GNK Dinamo Zagreb | Trasferta: Viking FK
+Competizione: uefa-champions-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.9 (range 46.5 - 68.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 56.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.09
+Punteggio REALE ottenuto in quella partita: 77.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +25.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      52.8    49.2     -3.6    15.1        SI
+   7        7      44.0    46.4     +2.3    13.9        SI
+   8        8      47.5    27.3    -20.2    13.0        NO
+   9        9      38.9    67.8    +28.9    13.9        NO
+  10       10      40.5    54.2    +13.7    15.5        SI
+  11       11      54.6    57.3     +2.8    14.9        SI
+  12       12      45.3    46.9     +1.5    14.6        SI
+  13       13      48.6    59.2    +10.6    13.9        SI
+  14       14      54.6    47.3     -7.3    13.7        SI
+  15       15      50.7    68.0    +17.2    13.2        NO
+  16       16      56.9    64.0     +7.1    13.8        SI
+  17       17      58.1    63.6     +5.5    13.9        SI
+  18       18      58.8    77.5    +18.7    13.8        NO
+
+MAE (errore assoluto medio): 10.72
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 69.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

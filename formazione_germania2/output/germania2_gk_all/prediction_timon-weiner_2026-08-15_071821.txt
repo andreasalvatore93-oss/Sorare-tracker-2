@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-15T07:18:21.114793Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) timon-weiner: 46 pt attesi (23-76)
+   SQUADRA: holstein-kiel-kiel | AVVERSARIO: magdeburg-magdeburg
+======================================================================
+
+######################################################################
+# GIOCATORE: timon-weiner
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: timon-weiner (squadra: holstein-kiel-kiel)
+Generato: 2026-08-15T07:18:21.113976Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 20
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: 2-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-08 | H96 vs KIE | 2-bundesliga | score=41.4 | peso=0.223
+  2026-02-28 | KIE vs ELV | 2-bundesliga | score=36.2 | peso=0.250
+  2026-03-07 | SVD vs KIE | 2-bundesliga | score=21.6 | peso=0.281
+  2026-03-14 | KIE vs FCN | 2-bundesliga | score=42.5 | peso=0.315
+  2026-03-22 | BOC vs KIE | 2-bundesliga | score=77.6 | peso=0.354
+  2026-04-05 | KIE vs PRM | 2-bundesliga | score=75.8 | peso=0.397
+  2026-04-10 | F95 vs KIE | 2-bundesliga | score=24.3 | peso=0.445
+  2026-04-17 | KIE vs FCK | 2-bundesliga | score=73.9 | peso=0.500
+  2026-04-25 | BSC vs KIE | 2-bundesliga | score=80.5 | peso=0.561
+  2026-05-02 | KIE vs EBS | 2-bundesliga | score=80.4 | peso=0.630
+  2026-05-09 | KIE vs FCM | 2-bundesliga | score=39.1 | peso=0.707
+  2026-05-17 | SGD vs KIE | 2-bundesliga | score=28.1 | peso=0.794
+  2026-08-08 | SVD vs KIE | 2-bundesliga | score=36.9 | peso=0.891
+  2026-08-14 | KIE vs STP | 2-bundesliga | score=55.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 51.29
+  di cui Punteggio decisivo (level_score) medio: 40.89 | Punteggio complessivo (granulari) medio: 10.40 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 40.08 (delta -0.81 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -0.33, delta avversario -0.18 | Possesso condizionato per venue: delta -0.09 | Goalkeeping condizionato per venue: delta -1.88 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 20.73
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 28.1 - 80.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.29 (differenza: +1.44)
+Media score in casa: 57.59 | Media score fuori casa: 44.34
+Fattore casa/trasferta applicato: 0.960 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.4
+Ranking prossimo avversario: 18
+Fattore forza avversario applicato: 0.815 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.998
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.997
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.998
+Tasso storico clean sheet (porta inviolata nei primi 60'): 28.6% (bonus atteso incorporato nella media pesata: ~7.1pt)
+Fattore trend (media ultime 5: 46.9 vs media 5 PRECEDENTI: 66.7): 1.000
+P(gioca): 41.18% (fonte: tasso di presenza storico (14/34))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-30T11:30
+Casa: 1. FC Magdeburg | Trasferta: Kieler SV Holstein 1900
+Competizione: 2-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.5 (range 23.3 - 75.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.68
+Punteggio REALE ottenuto in quella partita: 55.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +4.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      63.4    24.3    -39.1    24.6        NO
+   7        7      55.1    73.9    +18.8    25.5        SI
+   8        8      36.7    80.5    +43.8    26.0        NO
+   9        9      42.0    80.4    +38.4    26.7        NO
+  10       10      87.9    39.1    -48.8    26.5        NO
+  11       11      65.2    28.1    -37.1    25.9        NO
+  12       12      45.8    36.9     -8.9    26.7        SI
+  13       13      54.5    55.2     +0.7    25.6        SI
+
+MAE (errore assoluto medio): 29.46
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 37.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
