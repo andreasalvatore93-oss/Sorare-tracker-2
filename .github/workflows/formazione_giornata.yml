@@ -786,6 +786,10 @@ jobs:
           # finestra e' quella e basta, nessuna tolleranza.
           GAMEWEEK: ${{ github.event.inputs.gameweek }}
           FIXTURE_SLUG: ${{ github.event.inputs.fixture_slug }}
+          # 18/08/2026: il generatore ora rispetta la soglia primaria (prima era
+          # 0.80 hardcoded qui dentro, la rispettava solo la discovery). Serve
+          # per far partire il pool primario da 0.70 quando richiesto.
+          MIN_STARTER_ODDS: ${{ github.event.inputs.starter_odds_min }}
           ARENE_EFFICIENTI: ${{ github.event.inputs.arene }}
           ESSENZE_ARENA: ${{ github.event.inputs.essenze_arena }}
           IN_SEASON: ${{ github.event.inputs.in_season }}

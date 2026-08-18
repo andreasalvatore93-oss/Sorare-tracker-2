@@ -1496,6 +1496,15 @@ def parse_league_qty(raw, field_name, valid_leagues=DEDICATED_LEAGUES):
 MATCH_WINDOW_DAYS = float(os.environ.get('MATCH_WINDOW_DAYS', '4'))
 REQUIRE_KICKOFF = os.environ.get('MATCH_WINDOW_REQUIRE_KICKOFF', '1').strip() not in ('0', 'false', 'no')
 
+# SOGLIA PRIMARIA STARTER-ODDS (18/08/2026, richiesta esplicita utente).
+# Fino a oggi il generatore rifiltrava SEMPRE il pool primario a >=0.80
+# hardcoded, quindi MIN_STARTER_ODDS lo rispettava solo la discovery (chi
+# ENTRA nel pool): abbassandolo a 0.70 i candidati 0.70-0.80 entravano nel
+# file ma il generatore li relegava al pool suppletivo (fallback), mai in
+# prima scelta. Ora il pool primario parte dalla stessa soglia della
+# discovery. Default 0.80 -> a run normali nulla cambia (no-op).
+MIN_ODDS_PRIMARIO = float(os.environ.get('MIN_STARTER_ODDS', '0.80') or '0.80')
+
 
 def _risolvi_finestra_esplicita():
     """(inizio, fine) ISO della giornata esplicita (GAMEWEEK/FIXTURE_SLUG),
@@ -1838,8 +1847,15 @@ def _sort_ordinamento(rows):
     # questa partizione e' un no-op -- il fix agisce solo quando la lista
     # contiene davvero le due bande, cioe' nel pool suppletivo.
     def _banda_alta(r):
+        # Soglia del pool PRIMARIO (default 0.80). In tornata primaria role_data
+        # e' gia' filtrato a >=MIN_ODDS_PRIMARIO, quindi qui e' un solo gruppo e
+        # la partizione e' un no-op: il fix agisce solo nel pool suppletivo, dove
+        # convivono la banda 0.60-0.70 e il residuo primario. Se non fosse legata
+        # a MIN_ODDS_PRIMARIO, con primario a 0.70 spingerebbe TUTTI gli 0.80+
+        # davanti ai 0.70-0.80 anche in prima scelta -- l'opposto di "valutali
+        # come i 0.80+".
         odds = r.get('starter_odds')
-        return odds is None or odds >= 0.80
+        return odds is None or odds >= MIN_ODDS_PRIMARIO
 
     ordinati = []
     for gruppo in (
@@ -2795,9 +2811,18 @@ def main():
     # ed esclusioni -- vedi fix sopra) e' letto SOLO dal passo POOL
     # SUPPLETIVO piu' sotto, mai dal resto.
     EXTEND_ODDS_060_070 = os.environ.get('EXTEND_ODDS_060_070', '0') == '1'
+    # Quando il pool primario parte gia' sotto 0.80 (MIN_STARTER_ODDS abbassato),
+    # il suppletivo 0.60-0.70 si SPEGNE da solo (richiesta utente 18/08): la
+    # banda bassa e' gia' dentro il primario, tenerlo acceso la conterebbe due
+    # volte (prima scelta + fallback) e reintrodurrebbe proprio il conflitto che
+    # abbiamo appena tolto.
+    if MIN_ODDS_PRIMARIO < 0.80 and EXTEND_ODDS_060_070:
+        print(f"[extend] pool primario a >={MIN_ODDS_PRIMARIO:.2f} (<0.80): "
+              f"suppletivo 0.60-0.70 disattivato (la banda bassa e' gia' nel primario).")
+        EXTEND_ODDS_060_070 = False
     role_data_ext = role_data
     role_data = {
-        lg: {role: [r for r in rows if r.get('starter_odds') is None or r['starter_odds'] >= 0.80]
+        lg: {role: [r for r in rows if r.get('starter_odds') is None or r['starter_odds'] >= MIN_ODDS_PRIMARIO]
              for role, rows in roles.items()}
         for lg, roles in role_data.items()
     }
