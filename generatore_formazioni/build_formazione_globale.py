@@ -3466,6 +3466,13 @@ def main():
     # parentesi solo quando i due numeri non coincidono.
     _generate = {}
     for _r in all_results:
+        # 'error' in r == formazione non generata (pool insufficiente, ecc.):
+        # e' un dict {'error': ...} senza 'tipo', va saltato come in tutti gli
+        # altri cicli su all_results (vedi 3201, 3403). Senza questa guardia
+        # bastava una sola arena non generata a far crashare l'intero report
+        # con KeyError: 'tipo' (run 32117513966, 18/08/2026).
+        if 'error' in _r:
+            continue
         _generate[_r['tipo']] = _generate.get(_r['tipo'], 0) + 1
 
     def _voce(t):
