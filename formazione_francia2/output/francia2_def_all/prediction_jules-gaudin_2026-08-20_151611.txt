@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:16:11.443160Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) jules-gaudin: 44 pt attesi (42-54)
+   ORDINAMENTO: 41.29
+   SQUADRA: laval-laval | AVVERSARIO: metz-metz
+======================================================================
+
+######################################################################
+# GIOCATORE: jules-gaudin
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jules-gaudin (squadra: laval-laval)
+Generato: 2026-08-20T15:16:11.442222Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 17
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: ligue-2-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-17 | GNK vs CHA | jupiler-pro-league | score=68.4 | peso=0.871
+  2025-12-26 | AND vs CHA | jupiler-pro-league | score=41.5 | peso=0.891
+  2026-02-07 | CHA vs CER | jupiler-pro-league | score=2.4 | peso=0.912
+  2026-03-07 | DEN vs CHA | jupiler-pro-league | score=53.1 | peso=0.933
+  2026-03-22 | ZWA vs CHA | jupiler-pro-league | score=41.8 | peso=0.955
+  2026-08-08 | ROD vs LAV | ligue-2-fr | score=52.8 | peso=0.977
+  2026-08-14 | LAV vs NAN | ligue-2-fr | score=41.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 42.94
+  di cui Punteggio decisivo (level_score) medio: 30.82 | Punteggio complessivo (granulari) medio: 12.12 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.85, delta avversario +0.48 | Passaggio condizionato: delta venue +0.56, delta avversario -0.93 | Clean sheet/disimpegni condizionato: delta venue -0.36, delta avversario -0.03 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 18.57
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.0 - 53.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 5.65 (differenza: +12.92)
+Media score in casa: 40.96 | Media score fuori casa: 52.76
+Fattore casa/trasferta applicato: 1.001 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.5
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 1.280 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.004
+Fattore gol subiti (goals_conceded, con cap): 0.998
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.999
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T12:00
+Casa: FC Metz | Trasferta: Stade Lavallois Mayenne FC
+Competizione: ligue-2-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.2 (range 42.2 - 54.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 41.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.29
+Punteggio REALE ottenuto in quella partita: 41.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -2.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      59.7    41.0    -18.8    22.2        SI
+
+MAE (errore assoluto medio): 18.76
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

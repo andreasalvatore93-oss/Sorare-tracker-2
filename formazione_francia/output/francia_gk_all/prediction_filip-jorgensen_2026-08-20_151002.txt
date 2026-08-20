@@ -1,0 +1,88 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:10:02.697256Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) filip-jorgensen: 43 pt attesi (32-83)
+   SQUADRA: strasbourg-strasbourg | AVVERSARIO: olympique-marseille-marseille
+======================================================================
+
+######################################################################
+# GIOCATORE: filip-jorgensen
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: filip-jorgensen (squadra: strasbourg-strasbourg)
+Generato: 2026-08-20T15:10:02.696574Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 55
+Escluse (DID_NOT_PLAY): 46
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: ligue-1-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-20 | MUN vs CHE | premier-league-gb-eng | score=38.1 | peso=0.500
+  2025-10-22 | CHE vs AJA | uefa-champions-league | score=33.6 | peso=0.561
+  2026-01-04 | MCI vs CHE | premier-league-gb-eng | score=49.2 | peso=0.630
+  2026-03-04 | AST vs CHE | premier-league-gb-eng | score=50.3 | peso=0.707
+  2026-03-11 | PSG vs CHE | uefa-champions-league | score=5.7 | peso=0.794
+  2026-05-09 | LIV vs CHE | premier-league-gb-eng | score=37.0 | peso=0.891
+  2026-06-03 | ? vs ? | friendlies | score=84.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 44.61
+  di cui Punteggio decisivo (level_score) medio: 36.80 | Punteggio complessivo (granulari) medio: 7.82 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 36.12 (delta -0.67 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -1.29, delta avversario +0.99 | Possesso condizionato per venue: delta -0.46 | Goalkeeping condizionato per venue: delta -0.11 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 24.27
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.6 - 84.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 6.77 (differenza: +17.50)
+Media score in casa: 33.60 | Media score fuori casa: 36.06
+Fattore casa/trasferta applicato: 0.957 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 3.3
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 1.216 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.003
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.000
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.997
+Tasso storico clean sheet (porta inviolata nei primi 60'): 14.3% (bonus atteso incorporato nella media pesata: ~3.6pt)
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-21T18:45
+Casa: Olympique de Marseille | Trasferta: RC Strasbourg Alsace
+Competizione: ligue-1-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.0 (range 32.0 - 83.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 34.77
+Punteggio REALE ottenuto in quella partita: 84.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +50.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      36.0    84.8    +48.8    17.8        NO
+
+MAE (errore assoluto medio): 48.80
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 0.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

@@ -1,0 +1,137 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:07:02.901074Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) aissa-mandi: 59 pt attesi (44-74)
+   ORDINAMENTO: 62.28
+   SQUADRA: levante-valencia | AVVERSARIO: osasuna-pamplona-irunea
+======================================================================
+
+######################################################################
+# GIOCATORE: aissa-mandi
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: aissa-mandi (squadra: levante-valencia)
+Generato: 2026-08-20T15:07:02.868519Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-24 | ? vs ? | africa-cup-of-nations | score=52.5 | peso=0.512
+  2025-12-28 | ? vs ? | africa-cup-of-nations | score=51.2 | peso=0.524
+  2026-01-06 | ? vs ? | africa-cup-of-nations | score=72.3 | peso=0.536
+  2026-01-10 | ? vs ? | africa-cup-of-nations | score=40.1 | peso=0.548
+  2026-01-16 | PSG vs LIL | ligue-1-fr | score=33.0 | peso=0.561
+  2026-01-22 | CEL vs LIL | uefa-europa-league | score=62.2 | peso=0.574
+  2026-01-25 | LIL vs STR | ligue-1-fr | score=36.7 | peso=0.588
+  2026-01-29 | LIL vs SCF | uefa-europa-league | score=66.3 | peso=0.602
+  2026-02-01 | OL vs LIL | ligue-1-fr | score=61.9 | peso=0.616
+  2026-02-06 | MET vs LIL | ligue-1-fr | score=67.7 | peso=0.630
+  2026-02-19 | LIL vs CZV | uefa-europa-league | score=32.2 | peso=0.645
+  2026-02-22 | SCO vs LIL | ligue-1-fr | score=83.8 | peso=0.660
+  2026-02-26 | CZV vs LIL | uefa-europa-league | score=71.2 | peso=0.675
+  2026-03-08 | LIL vs FCL | ligue-1-fr | score=72.9 | peso=0.691
+  2026-03-12 | LIL vs AST | uefa-europa-league | score=66.6 | peso=0.707
+  2026-03-15 | REN vs LIL | ligue-1-fr | score=47.5 | peso=0.724
+  2026-03-22 | OM vs LIL | ligue-1-fr | score=79.0 | peso=0.741
+  2026-03-31 | ? vs ? | friendlies | score=54.9 | peso=0.758
+  2026-04-04 | LIL vs RCL | ligue-1-fr | score=88.3 | peso=0.776
+  2026-04-12 | TFC vs LIL | ligue-1-fr | score=70.1 | peso=0.794
+  2026-04-18 | LIL vs NIC | ligue-1-fr | score=91.8 | peso=0.812
+  2026-04-26 | PAR vs LIL | ligue-1-fr | score=65.8 | peso=0.831
+  2026-05-03 | LIL vs HAC | ligue-1-fr | score=55.6 | peso=0.851
+  2026-05-10 | ASM vs LIL | ligue-1-fr | score=59.8 | peso=0.871
+  2026-05-17 | LIL vs AJA | ligue-1-fr | score=58.1 | peso=0.891
+  2026-06-17 | ? vs ? | global-cup | score=63.4 | peso=0.912
+  2026-06-23 | ? vs ? | global-cup | score=76.7 | peso=0.933
+  2026-06-28 | ? vs ? | global-cup | score=46.6 | peso=0.955
+  2026-07-03 | ? vs ? | global-cup | score=49.1 | peso=0.977
+  2026-08-16 | ESP vs LEV | laliga-es | score=60.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 61.83
+  di cui Punteggio decisivo (level_score) medio: 36.85 | Punteggio complessivo (granulari) medio: 24.97 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 | Passaggio condizionato: delta venue +0.00, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 14.68
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 47.5 - 76.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.94 (differenza: +1.74)
+Media score in casa: 60.18 | Media score fuori casa: 61.83
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 19.0
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.280 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.000
+Fattore trend (media ultime 5: 59.0 vs media 5 PRECEDENTI: 65.9): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-24T17:30
+Casa: CA Osasuna | Trasferta: Levante UD
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 58.7 (range 44.4 - 73.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 62.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 61.91
+Punteggio REALE ottenuto in quella partita: 60.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -1.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      51.8    36.7    -15.1    14.4        NO
+   7        7      49.5    66.3    +16.8    14.6        NO
+   8        8      51.8    61.9    +10.1    14.9        SI
+   9        9      53.0    67.7    +14.7    14.5        NO
+  10       10      54.6    32.2    -22.4    14.6        NO
+  11       11      52.3    83.8    +31.5    15.7        NO
+  12       12      55.3    71.2    +15.9    18.0        SI
+  13       13      56.7    72.9    +16.2    17.9        SI
+  14       14      58.1    66.6     +8.5    17.9        SI
+  15       15      58.7    47.5    -11.2    17.3        SI
+  16       16      57.9    79.0    +21.1    17.0        NO
+  17       17      59.4    54.9     -4.5    17.4        SI
+  18       18      59.1    88.3    +29.2    16.9        NO
+  19       19      60.9    70.1     +9.2    18.1        SI
+  20       20      61.5    91.8    +30.2    17.7        NO
+  21       21      63.3    65.8     +2.5    18.9        SI
+  22       22      63.5    55.6     -7.9    18.4        SI
+  23       23      63.0    59.8     -3.2    18.0        SI
+  24       24      62.8    58.1     -4.7    17.5        SI
+  25       25      62.6    63.4     +0.8    17.1        SI
+  26       26      62.6    76.7    +14.1    16.6        SI
+  27       27      63.3    46.6    -16.7    16.6        NO
+  28       28      62.5    49.1    -13.4    16.6        SI
+  29       29      61.9    60.2     -1.7    16.5        SI
+
+MAE (errore assoluto medio): 13.40
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:13.602601Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) miguel-angel-almiron-rejala: 66 pt attesi (44-83)
+   ORDINAMENTO: 68.96
+   SQUADRA: atlanta-united-atlanta-georgia | AVVERSARIO: sporting-kc-kansas-city-kansas
+======================================================================
+
+######################################################################
+# GIOCATORE: miguel-angel-almiron-rejala
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: miguel-angel-almiron-rejala (squadra: atlanta-united-atlanta-georgia)
+Generato: 2026-08-20T15:06:13.598840Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 28
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-24 | ATL vs TOR | mlspa | score=39.3 | peso=0.111
+  2025-08-31 | NSH vs ATL | mlspa | score=47.5 | peso=0.125
+  2025-09-13 | ATL vs CLB | mlspa | score=86.3 | peso=0.140
+  2025-09-20 | ATL vs SD | mlspa | score=67.2 | peso=0.157
+  2025-09-27 | NE vs ATL | mlspa | score=56.8 | peso=0.177
+  2025-10-06 | LAFC vs ATL | mlspa | score=41.9 | peso=0.198
+  2025-10-18 | ATL vs DC | mlspa | score=83.1 | peso=0.223
+  2026-02-21 | CIN vs ATL | mlspa | score=61.7 | peso=0.250
+  2026-03-01 | SJ vs ATL | mlspa | score=42.3 | peso=0.281
+  2026-03-08 | ATL vs RSL | mlspa | score=53.3 | peso=0.315
+  2026-03-14 | ATL vs PHI | mlspa | score=90.9 | peso=0.354
+  2026-03-21 | ATL vs DC | mlspa | score=43.8 | peso=0.397
+  2026-04-04 | ATL vs CLB | mlspa | score=44.4 | peso=0.445
+  2026-04-12 | CHI vs ATL | mlspa | score=63.0 | peso=0.500
+  2026-07-18 | NSH vs ATL | mlspa | score=64.5 | peso=0.561
+  2026-07-23 | CLT vs ATL | mlspa | score=78.0 | peso=0.630
+  2026-07-25 | NE vs ATL | mlspa | score=82.7 | peso=0.707
+  2026-08-01 | PHI vs ATL | mlspa | score=88.8 | peso=0.794
+  2026-08-15 | ATL vs RBNY | mlspa | score=74.0 | peso=0.891
+  2026-08-20 | MIN vs ATL | mlspa | score=47.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 65.64
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=20): 63.26 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 47.65 | Punteggio complessivo (granulari) medio: 17.99 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 8.07 (delta -0.72) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.81
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 44.4 - 83.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.13 (differenza: +0.69)
+Media score in casa: 64.70 | Media score fuori casa: 61.29
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.2
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.448 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 0.992
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.994
+Fattore trend (media ultime 5: 74.1 vs media 5 PRECEDENTI: 61.3): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T23:00
+Casa: Atlanta United | Trasferta: Sporting Kansas City 
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 65.5 (range 44.3 - 83.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 69.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 68.21
+Punteggio REALE ottenuto in quella partita: 47.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -21.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      60.6    83.1    +22.5    18.2        NO
+   7        7      58.5    61.7     +3.2    20.4        SI
+   8        8      52.8    42.3    -10.5    18.4        SI
+   9        9      55.4    53.3     -2.1    18.8        SI
+  10       10      70.9    90.9    +20.0    17.3        NO
+  11       11      67.1    43.8    -23.3    21.1        NO
+  12       12      67.8    44.4    -23.4    20.9        NO
+  13       13      50.8    63.0    +12.2    20.4        SI
+  14       14      46.0    64.5    +18.5    19.0        SI
+  15       15      60.0    78.0    +18.0    17.9        NO
+  16       16      53.9    82.7    +28.8    18.2        NO
+  17       17      79.3    88.8     +9.5    18.8        SI
+  18       18      68.7    74.0     +5.3    19.9        SI
+  19       19      78.7    47.0    -31.7    18.8        NO
+
+MAE (errore assoluto medio): 16.36
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

@@ -1,0 +1,93 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:10:29.740797Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) angel-recio-gutierrez: 42 pt attesi (30-60)
+   ORDINAMENTO: 34.82
+   SQUADRA: malaga-malaga | AVVERSARIO: deportivo-la-coruna-a-coruna
+======================================================================
+
+######################################################################
+# GIOCATORE: angel-recio-gutierrez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: angel-recio-gutierrez (squadra: malaga-malaga)
+Generato: 2026-08-20T15:10:29.739279Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 45
+Escluse (DID_NOT_PLAY): 35
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-13 | HUE vs MCF | segunda-division-es | score=38.3 | peso=0.851
+  2025-11-23 | MCF vs MIR | segunda-division-es | score=24.8 | peso=0.871
+  2025-11-29 | VLL vs MCF | segunda-division-es | score=28.9 | peso=0.891
+  2025-12-08 | MCF vs ZAR | segunda-division-es | score=7.4 | peso=0.912
+  2025-12-14 | ALB vs MCF | segunda-division-es | score=54.6 | peso=0.933
+  2026-02-02 | MIR vs MCF | segunda-division-es | score=40.1 | peso=0.955
+  2026-05-16 | ADC vs MCF | segunda-division-es | score=60.7 | peso=0.977
+  2026-08-19 | ATM vs MCF | laliga-es | score=33.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 36.42
+  di cui Punteggio decisivo (level_score) medio: 35.84 | Punteggio complessivo (granulari) medio: 0.58 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.41, delta avversario -0.41 | Passaggio condizionato: delta venue +0.02, delta avversario +0.02 | Clean sheet/disimpegni condizionato: delta venue -0.07, delta avversario -0.07 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.79
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 24.8 - 54.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.52 (differenza: +6.27)
+Media score in casa: 33.90 | Media score fuori casa: 36.42
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 18.0
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.665 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 0.997
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.999
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-24T19:30
+Casa: Málaga CF | Trasferta: Real Club Deportivo de La Coruña
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 41.9 (range 30.3 - 60.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 34.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 36.81
+Punteggio REALE ottenuto in quella partita: 33.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -2.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      32.5    60.7    +28.2    16.2        NO
+   7        7      36.8    33.9     -2.9    18.6        SI
+
+MAE (errore assoluto medio): 15.53
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

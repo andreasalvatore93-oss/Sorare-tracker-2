@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:15:19.239301Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) michael-frey: 48 pt attesi (36-71)
+   ORDINAMENTO: 46.53
+   SQUADRA: antwerp-deurne | AVVERSARIO: genk-genk
+======================================================================
+
+######################################################################
+# GIOCATORE: michael-frey
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: michael-frey (squadra: antwerp-deurne)
+Generato: 2026-08-20T15:15:19.238603Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 46
+Escluse (DID_NOT_PLAY): 19
+Escluse (minutaggio < 60', subentri): 13
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-01 | QPR vs OXF | football-league-championship | score=32.5 | peso=0.223
+  2025-10-18 | QPR vs MIL | football-league-championship | score=38.9 | peso=0.250
+  2026-01-31 | GCZ vs LUG | super-league-ch | score=38.2 | peso=0.281
+  2026-02-07 | GCZ vs YBB | super-league-ch | score=27.7 | peso=0.315
+  2026-03-01 | GCZ vs LUG | super-league-ch | score=40.3 | peso=0.354
+  2026-03-05 | BAS vs GCZ | super-league-ch | score=39.9 | peso=0.397
+  2026-03-08 | GCZ vs LAU | super-league-ch | score=31.7 | peso=0.445
+  2026-03-21 | SER vs GCZ | super-league-ch | score=49.5 | peso=0.500
+  2026-04-06 | GCZ vs SIO | super-league-ch | score=34.8 | peso=0.561
+  2026-04-11 | WIN vs GCZ | super-league-ch | score=69.8 | peso=0.630
+  2026-04-25 | GCZ vs LUZ | super-league-ch | score=37.7 | peso=0.707
+  2026-05-12 | GCZ vs WIN | super-league-ch | score=42.8 | peso=0.794
+  2026-08-09 | ANT vs WBE | jupiler-pro-league | score=84.2 | peso=0.891
+  2026-08-15 | KVK vs ANT | jupiler-pro-league | score=38.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 46.70
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=14): 50.34 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 40.18 | Punteggio complessivo (granulari) medio: 6.52 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.35 (delta -0.31) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.04
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.8 - 69.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.25 (differenza: +6.79)
+Media score in casa: 84.20 | Media score fuori casa: 38.60
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 13.0
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.832 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore trend (media ultime 5: 54.6 vs media 5 PRECEDENTI: 39.2): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T18:45
+Casa: Royal Antwerp FC | Trasferta: KRC Genk
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.0 (range 36.1 - 71.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 46.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.98
+Punteggio REALE ottenuto in quella partita: 38.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -9.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      36.6    31.7     -4.9     5.4        SI
+   7        7      35.6    49.5    +13.9     5.3        NO
+   8        8      38.1    34.8     -3.3     7.8        SI
+   9        9      37.6    69.8    +32.2     7.3        NO
+  10       10      42.7    37.7     -5.0    15.1        SI
+  11       11      41.9    42.8     +0.9    14.1        SI
+  12       12      42.1    84.2    +42.1    13.0        NO
+  13       13      64.5    38.6    -25.9    20.7        NO
+
+MAE (errore assoluto medio): 16.03
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

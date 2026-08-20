@@ -1,0 +1,93 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:06:33.788652Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) diogo-lobao-de-sousa: 46 pt attesi (30-61)
+   SQUADRA: strasbourg-strasbourg | AVVERSARIO: olympique-marseille-marseille
+======================================================================
+
+######################################################################
+# GIOCATORE: diogo-lobao-de-sousa
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: diogo-lobao-de-sousa (squadra: strasbourg-strasbourg)
+Generato: 2026-08-20T15:06:33.787973Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 32
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 13
+Competizione partita target: ligue-1-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-26 | FAM vs VIG | primeira-liga-pt | score=30.2 | peso=0.801
+  2025-11-01 | VIG vs SLB | primeira-liga-pt | score=37.6 | peso=0.824
+  2026-01-30 | VIG vs MOR | primeira-liga-pt | score=57.2 | peso=0.847
+  2026-02-07 | ARO vs VIG | primeira-liga-pt | score=25.2 | peso=0.871
+  2026-02-14 | VIG vs EST | primeira-liga-pt | score=64.6 | peso=0.895
+  2026-02-21 | BRA vs VIG | primeira-liga-pt | score=60.6 | peso=0.920
+  2026-03-08 | SCL vs VIG | primeira-liga-pt | score=57.2 | peso=0.946
+  2026-03-14 | VIG vs FAM | primeira-liga-pt | score=29.5 | peso=0.973
+  2026-04-18 | GIL vs VIG | primeira-liga-pt | score=48.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 45.83
+  di cui Punteggio decisivo (level_score) medio: 37.77 | Punteggio complessivo (granulari) medio: 8.06 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 36.39 (delta -1.39)
+  Efficacia offensiva condizionata: delta venue +0.19, delta avversario +0.35 | Passaggio condizionato: delta venue -0.13, delta avversario +0.26 | Gol subiti condizionato: delta venue -0.40, delta avversario +0.08 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 14.23
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.5 - 60.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.26 (differenza: +1.97)
+Media score in casa: 47.23 | Media score fuori casa: 44.28
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.2
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.826 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.005
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-21T18:45
+Casa: Olympique de Marseille | Trasferta: RC Strasbourg Alsace
+Competizione: ligue-1-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.9 (range 29.6 - 60.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.50
+Punteggio REALE ottenuto in quella partita: 48.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +2.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 3 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      40.7    57.2    +16.5    17.1        SI
+   7        7      53.5    29.5    -24.0    16.3        NO
+   8        8      45.2    48.2     +3.0    16.7        SI
+
+MAE (errore assoluto medio): 14.51
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

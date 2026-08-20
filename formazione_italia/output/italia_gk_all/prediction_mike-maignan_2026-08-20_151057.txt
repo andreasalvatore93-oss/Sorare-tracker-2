@@ -1,0 +1,134 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:10:57.047206Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) mike-maignan: 51 pt attesi (33-69)
+   SQUADRA: milan-milano | AVVERSARIO: torino-torino
+======================================================================
+
+######################################################################
+# GIOCATORE: mike-maignan
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mike-maignan (squadra: milan-milano)
+Generato: 2026-08-20T15:10:57.046554Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: serie-a-it (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-28 | ATA vs MIL | serie-a-it | score=34.0 | peso=0.035
+  2025-11-02 | MIL vs ROM | serie-a-it | score=89.2 | peso=0.039
+  2025-11-08 | PAR vs MIL | serie-a-it | score=36.6 | peso=0.044
+  2025-11-23 | INT vs MIL | serie-a-it | score=93.0 | peso=0.050
+  2025-11-29 | MIL vs LAZ | serie-a-it | score=82.8 | peso=0.056
+  2025-12-08 | TOR vs MIL | serie-a-it | score=28.4 | peso=0.062
+  2025-12-14 | MIL vs SAS | serie-a-it | score=31.9 | peso=0.070
+  2025-12-28 | MIL vs VER | serie-a-it | score=68.7 | peso=0.079
+  2026-01-02 | CAG vs MIL | serie-a-it | score=67.3 | peso=0.088
+  2026-01-08 | MIL vs GEN | serie-a-it | score=36.4 | peso=0.099
+  2026-01-11 | FIO vs MIL | serie-a-it | score=57.6 | peso=0.111
+  2026-01-15 | COM vs MIL | serie-a-it | score=70.1 | peso=0.125
+  2026-01-18 | MIL vs LEC | serie-a-it | score=64.3 | peso=0.140
+  2026-01-25 | ROM vs MIL | serie-a-it | score=53.1 | peso=0.157
+  2026-02-03 | BOL vs MIL | serie-a-it | score=68.7 | peso=0.177
+  2026-02-13 | PIS vs MIL | serie-a-it | score=36.1 | peso=0.198
+  2026-02-18 | MIL vs COM | serie-a-it | score=33.7 | peso=0.223
+  2026-02-22 | MIL vs PAR | serie-a-it | score=34.6 | peso=0.250
+  2026-03-01 | CRE vs MIL | serie-a-it | score=73.2 | peso=0.281
+  2026-03-08 | MIL vs INT | serie-a-it | score=78.6 | peso=0.315
+  2026-03-15 | LAZ vs MIL | serie-a-it | score=45.6 | peso=0.354
+  2026-03-21 | MIL vs TOR | serie-a-it | score=44.4 | peso=0.397
+  2026-04-06 | NAP vs MIL | serie-a-it | score=42.6 | peso=0.445
+  2026-04-11 | MIL vs UDI | serie-a-it | score=35.8 | peso=0.500
+  2026-04-19 | VER vs MIL | serie-a-it | score=68.9 | peso=0.561
+  2026-04-26 | MIL vs JUV | serie-a-it | score=83.9 | peso=0.630
+  2026-05-03 | SAS vs MIL | serie-a-it | score=36.0 | peso=0.707
+  2026-05-10 | MIL vs ATA | serie-a-it | score=33.5 | peso=0.794
+  2026-05-17 | GEN vs MIL | serie-a-it | score=41.0 | peso=0.891
+  2026-05-24 | MIL vs CAG | serie-a-it | score=60.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 51.68
+  di cui Punteggio decisivo (level_score) medio: 41.40 | Punteggio complessivo (granulari) medio: 10.28 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 40.92 (delta -0.48 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +1.36, delta avversario +0.19 | Possesso condizionato per venue: delta -0.41 | Goalkeeping condizionato per venue: delta -2.51 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 17.26
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.6 - 70.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.97 (differenza: +0.28)
+Media score in casa: 55.58 | Media score fuori casa: 53.26
+Fattore casa/trasferta applicato: 0.985 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.5
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.114 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.992
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.995
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.992
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.002
+Tasso storico clean sheet (porta inviolata nei primi 60'): 36.7% (bonus atteso incorporato nella media pesata: ~9.2pt)
+Fattore trend (media ultime 5: 50.2 vs media 5 PRECEDENTI: 48.4): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T18:45
+Casa: Torino FC | Trasferta: AC Milan
+Competizione: serie-a-it
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.5 (range 33.5 - 69.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.58
+Punteggio REALE ottenuto in quella partita: 60.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +9.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      87.0    31.9    -55.1    32.4        NO
+   7        7      88.7    68.7    -20.0    31.8        SI
+   8        8      55.0    67.3    +12.3    29.4        SI
+   9        9      81.2    36.4    -44.8    27.2        NO
+  10       10      58.4    57.6     -0.8    26.7        SI
+  11       11      39.1    70.1    +31.0    24.6        NO
+  12       12      75.1    64.3    -10.8    23.5        SI
+  13       13      40.3    53.1    +12.8    21.9        SI
+  14       14      50.1    68.7    +18.6    20.5        SI
+  15       15      75.8    36.1    -39.7    19.5        NO
+  16       16      46.1    33.7    -12.4    20.3        SI
+  17       17      60.3    34.6    -25.7    20.9        NO
+  18       18      64.0    73.2     +9.2    20.8        SI
+  19       19      35.2    78.6    +43.4    21.2        NO
+  20       20      53.3    45.6     -7.7    21.9        SI
+  21       21      60.0    44.4    -15.6    21.0        SI
+  22       22      38.1    42.6     +4.5    20.1        SI
+  23       23      53.8    35.8    -18.0    19.4        SI
+  24       24      66.4    68.9     +2.5    19.3        SI
+  25       25      44.6    83.9    +39.3    19.3        NO
+  26       26      57.1    36.0    -21.1    21.4        SI
+  27       27      49.3    33.5    -15.8    21.5        SI
+  28       28      61.6    41.0    -20.6    21.6        SI
+  29       29      58.0    60.3     +2.3    20.7        SI
+
+MAE (errore assoluto medio): 20.17
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

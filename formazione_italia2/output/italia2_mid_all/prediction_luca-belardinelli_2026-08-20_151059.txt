@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:10:59.997810Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) luca-belardinelli: 42 pt attesi (34-50)
+   SQUADRA: empoli-empoli | AVVERSARIO: cremonese-cremona
+======================================================================
+
+######################################################################
+# GIOCATORE: luca-belardinelli
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: luca-belardinelli (squadra: empoli-empoli)
+Generato: 2026-08-20T15:10:59.997450Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 39
+Escluse (DID_NOT_PLAY): 21
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: serie-b-it (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | EMP vs CPA | serie-b-it | score=35.4 | peso=0.824
+  2025-10-01 | EMP vs MON | serie-b-it | score=18.4 | peso=0.847
+  2025-11-01 | VIR vs EMP | serie-b-it | score=35.0 | peso=0.871
+  2026-02-01 | REG vs JST | serie-b-it | score=32.7 | peso=0.895
+  2026-02-10 | REG vs MAN | serie-b-it | score=25.9 | peso=0.920
+  2026-02-15 | EMP vs REG | serie-b-it | score=30.5 | peso=0.946
+  2026-04-06 | REG vs PES | serie-b-it | score=41.6 | peso=0.973
+  2026-04-25 | REG vs PAL | serie-b-it | score=46.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 33.60
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: -1.40 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 35.00 (delta +0.00)
+  Efficacia offensiva condizionata: delta venue +0.11, delta avversario -0.03 | Passaggio condizionato: delta venue +0.24, delta avversario +0.05 | Gol subiti condizionato: delta venue -0.22, delta avversario -0.57 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 8.30
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 25.9 - 41.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 4.91 (differenza: +3.39)
+Media score in casa: 36.75 | Media score fuori casa: 30.50
+Fattore casa/trasferta applicato: 1.007 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.0
+Ranking prossimo avversario: 18
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.007
+Fattore gol subiti (goals_conceded, con cap): 0.998
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T19:00
+Casa: Empoli FC | Trasferta: US Cremonese
+Competizione: serie-b-it
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 41.6 (range 33.9 - 49.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 31.49
+Punteggio REALE ottenuto in quella partita: 46.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +15.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      39.8    41.6     +1.8     6.4        SI
+   7        7      22.1    46.8    +24.7     7.6        NO
+
+MAE (errore assoluto medio): 13.25
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

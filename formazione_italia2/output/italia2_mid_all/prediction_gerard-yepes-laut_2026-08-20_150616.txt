@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:06:16.516808Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) gerard-yepes-laut: 52 pt attesi (39-72)
+   SQUADRA: empoli-empoli | AVVERSARIO: cremonese-cremona
+======================================================================
+
+######################################################################
+# GIOCATORE: gerard-yepes-laut
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: gerard-yepes-laut (squadra: empoli-empoli)
+Generato: 2026-08-20T15:06:16.516212Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 6
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: serie-b-it (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | EMP vs CPA | serie-b-it | score=57.5 | peso=0.559
+  2025-08-29 | REG vs EMP | serie-b-it | score=28.0 | peso=0.574
+  2025-09-28 | EMP vs CAR | serie-b-it | score=37.0 | peso=0.590
+  2025-10-19 | EMP vs VEN | serie-b-it | score=41.2 | peso=0.607
+  2025-10-24 | MOD vs EMP | serie-b-it | score=38.1 | peso=0.624
+  2025-11-01 | VIR vs EMP | serie-b-it | score=44.8 | peso=0.642
+  2025-11-08 | EMP vs CTZ | serie-b-it | score=40.6 | peso=0.660
+  2025-11-22 | AVE vs EMP | serie-b-it | score=35.0 | peso=0.678
+  2025-11-29 | EMP vs BAR | serie-b-it | score=83.7 | peso=0.697
+  2025-12-07 | EMP vs PAL | serie-b-it | score=43.6 | peso=0.717
+  2025-12-13 | JST vs EMP | serie-b-it | score=44.5 | peso=0.737
+  2025-12-21 | MAN vs EMP | serie-b-it | score=62.8 | peso=0.758
+  2026-01-23 | CAR vs EMP | serie-b-it | score=57.2 | peso=0.779
+  2026-02-11 | EMP vs JST | serie-b-it | score=40.5 | peso=0.801
+  2026-03-04 | BAR vs EMP | serie-b-it | score=30.1 | peso=0.824
+  2026-03-14 | EMP vs MAN | serie-b-it | score=70.6 | peso=0.847
+  2026-04-06 | SAM vs EMP | serie-b-it | score=46.7 | peso=0.871
+  2026-04-12 | CPA vs EMP | serie-b-it | score=47.8 | peso=0.895
+  2026-04-19 | EMP vs VIR | serie-b-it | score=41.5 | peso=0.920
+  2026-04-25 | VEN vs EMP | serie-b-it | score=51.6 | peso=0.946
+  2026-05-01 | EMP vs AVE | serie-b-it | score=75.5 | peso=0.973
+  2026-05-08 | MON vs EMP | serie-b-it | score=70.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 50.54
+  di cui Punteggio decisivo (level_score) medio: 37.50 | Punteggio complessivo (granulari) medio: 13.04 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 39.61 (delta +2.11)
+  Efficacia offensiva condizionata: delta venue +1.12, delta avversario -0.02 | Passaggio condizionato: delta venue +1.13, delta avversario +0.28 | Gol subiti condizionato: delta venue +0.22, delta avversario +0.15 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 14.81
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.1 - 70.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.97 (differenza: +1.84)
+Media score in casa: 53.17 | Media score fuori casa: 46.41
+Fattore casa/trasferta applicato: 1.007 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.3
+Ranking prossimo avversario: 18
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.010
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.007
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.994
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 1.003
+Fattore trend (media ultime 5: 57.8 vs media 5 PRECEDENTI: 49.1): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T19:00
+Casa: Empoli FC | Trasferta: US Cremonese
+Competizione: serie-b-it
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.8 (range 39.4 - 71.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.28
+Punteggio REALE ottenuto in quella partita: 70.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +21.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      34.1    40.6     +6.5     9.6        SI
+   7        7      38.5    35.0     -3.5     8.8        SI
+   8        8      51.6    83.7    +32.1     8.5        NO
+   9        9      36.8    43.6     +6.8    17.7        SI
+  10       10      40.5    44.5     +4.0    16.7        SI
+  11       11      43.8    62.8    +19.0    15.8        NO
+  12       12      50.7    57.2     +6.5    16.0        SI
+  13       13      44.1    40.5     -3.6    15.6        SI
+  14       14      59.5    30.1    -29.4    15.1        NO
+  15       15      45.0    70.6    +25.6    15.4        NO
+  16       16      52.3    46.7     -5.6    16.5        SI
+  17       17      47.0    47.8     +0.8    15.8        SI
+  18       18      55.3    41.5    -13.8    15.3        SI
+  19       19      31.9    51.6    +19.7    14.9        NO
+  20       20      45.3    75.5    +30.2    14.4        NO
+  21       21      37.5    70.3    +32.8    15.8        NO
+
+MAE (errore assoluto medio): 15.00
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 56.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

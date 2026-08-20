@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:11:16.089593Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) luke-o-nien: 41 pt attesi (40-66)
+   SQUADRA: sunderland-sunderland | AVVERSARIO: ipswich-town-ipswich-suffolk
+======================================================================
+
+######################################################################
+# GIOCATORE: luke-o-nien
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: luke-o-nien (squadra: sunderland-sunderland)
+Generato: 2026-08-20T15:11:16.088882Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 37
+Escluse (DID_NOT_PLAY): 25
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-03 | LEE vs SUN | premier-league-gb-eng | score=50.8 | peso=0.871
+  2026-03-22 | NEW vs SUN | premier-league-gb-eng | score=3.3 | peso=0.895
+  2026-04-12 | SUN vs TOT | premier-league-gb-eng | score=54.0 | peso=0.920
+  2026-04-19 | AST vs SUN | premier-league-gb-eng | score=46.0 | peso=0.946
+  2026-05-17 | EVE vs SUN | premier-league-gb-eng | score=44.2 | peso=0.973
+  2026-05-24 | SUN vs CHE | premier-league-gb-eng | score=70.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 45.32
+  di cui Punteggio decisivo (level_score) medio: 36.27 | Punteggio complessivo (granulari) medio: 9.06 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 33.54 (delta -2.72)
+  Efficacia offensiva condizionata: delta venue -0.03, delta avversario -0.04 | Passaggio condizionato: delta venue -0.56, delta avversario +0.85 | Gol subiti condizionato: delta venue -0.62, delta avversario -1.45 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 20.35
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 44.2 - 70.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 3.90 (differenza: +16.46)
+Media score in casa: 62.34 | Media score fuori casa: 36.06
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.7
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.767 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 0.998
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T14:00
+Casa: Ipswich Town FC | Trasferta: Sunderland AFC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 41.1 (range 40.0 - 66.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 39.82
+Punteggio REALE ottenuto in quella partita: 70.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +30.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

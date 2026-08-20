@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:10:21.041487Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) kristoffer-vassbakk-ajer: 43 pt attesi (31-52)
+   ORDINAMENTO: 40.48
+   SQUADRA: brentford-brentford-middlesex | AVVERSARIO: tottenham-hotspur-london
+======================================================================
+
+######################################################################
+# GIOCATORE: kristoffer-vassbakk-ajer
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: kristoffer-vassbakk-ajer (squadra: brentford-brentford-middlesex)
+Generato: 2026-08-20T15:10:21.040734Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 37
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-05 | BRE vs MCI | premier-league-gb-eng | score=40.6 | peso=0.660
+  2025-10-20 | WHU vs BRE | premier-league-gb-eng | score=63.3 | peso=0.675
+  2025-10-25 | BRE vs LIV | premier-league-gb-eng | score=45.1 | peso=0.691
+  2025-11-01 | CRY vs BRE | premier-league-gb-eng | score=32.7 | peso=0.707
+  2025-11-22 | BRI vs BRE | premier-league-gb-eng | score=38.2 | peso=0.724
+  2025-12-03 | ARS vs BRE | premier-league-gb-eng | score=17.3 | peso=0.741
+  2025-12-27 | BRE vs BOR | premier-league-gb-eng | score=43.8 | peso=0.758
+  2026-01-01 | BRE vs TOT | premier-league-gb-eng | score=65.6 | peso=0.776
+  2026-01-04 | EVE vs BRE | premier-league-gb-eng | score=34.1 | peso=0.794
+  2026-01-07 | BRE vs SUN | premier-league-gb-eng | score=28.1 | peso=0.812
+  2026-01-17 | CHE vs BRE | premier-league-gb-eng | score=41.5 | peso=0.831
+  2026-02-01 | AST vs BRE | premier-league-gb-eng | score=48.6 | peso=0.851
+  2026-02-07 | NEW vs BRE | premier-league-gb-eng | score=47.6 | peso=0.871
+  2026-02-12 | BRE vs ARS | premier-league-gb-eng | score=38.8 | peso=0.891
+  2026-02-21 | BRE vs BRI | premier-league-gb-eng | score=29.6 | peso=0.912
+  2026-02-28 | BUR vs BRE | premier-league-gb-eng | score=30.2 | peso=0.933
+  2026-03-03 | BOR vs BRE | premier-league-gb-eng | score=44.5 | peso=0.955
+  2026-05-09 | MCI vs BRE | premier-league-gb-eng | score=24.0 | peso=0.977
+  2026-05-17 | BRE vs CRY | premier-league-gb-eng | score=49.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 39.86
+  di cui Punteggio decisivo (level_score) medio: 33.96 | Punteggio complessivo (granulari) medio: 5.91 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.61, delta avversario -0.84 | Passaggio condizionato: delta venue -0.00, delta avversario +0.25 | Clean sheet/disimpegni condizionato: delta venue +0.16, delta avversario -0.93 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 11.68
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 28.1 - 48.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.37 (differenza: +2.32)
+Media score in casa: 42.58 | Media score fuori casa: 38.36
+Fattore casa/trasferta applicato: 0.996 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.1
+Ranking prossimo avversario: 17
+Fattore forza avversario applicato: 1.144 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
+Fattore gol subiti (goals_conceded, con cap): 1.004
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.001
+Fattore trend (media ultime 5: 35.6 vs media 5 PRECEDENTI: 41.1): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T16:30
+Casa: Brentford FC | Trasferta: Tottenham Hotspur FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.2 (range 31.4 - 51.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 40.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 39.24
+Punteggio REALE ottenuto in quella partita: 49.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +9.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      38.2    43.8     +5.6    15.2        SI
+   7        7      54.4    65.6    +11.2    14.1        SI
+   8        8      49.9    34.1    -15.8    16.3        SI
+   9        9      40.8    28.1    -12.7    15.7        SI
+  10       10      42.2    41.5     -0.6    15.5        SI
+  11       11      33.8    48.6    +14.8    14.7        NO
+  12       12      46.5    47.6     +1.2    14.2        SI
+  13       13      31.5    38.8     +7.3    13.7        SI
+  14       14      42.2    29.6    -12.6    13.2        SI
+  15       15      44.9    30.2    -14.8    13.2        NO
+  16       16      36.9    44.5     +7.6    13.0        SI
+  17       17      31.8    24.0     -7.9    12.6        SI
+  18       18      49.6    49.0     -0.7    13.0        SI
+
+MAE (errore assoluto medio): 8.66
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 84.6%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

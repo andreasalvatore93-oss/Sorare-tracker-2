@@ -1,0 +1,121 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:11:04.872204Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) damian-ariel-fernandez: 51 pt attesi (40-67)
+   ORDINAMENTO: 50.69
+   SQUADRA: defensa-y-justicia-florencio-varela-provincia-de-buenos-aires | AVVERSARIO: belgrano-ciudad-de-cordoba-provincia-de-cordoba
+======================================================================
+
+######################################################################
+# GIOCATORE: damian-ariel-fernandez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: damian-ariel-fernandez (squadra: defensa-y-justicia-florencio-varela-provincia-de-buenos-aires)
+Generato: 2026-08-20T15:11:04.870859Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 32
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-22 | BAC vs DYJ | superliga-argentina-de-futbol | score=55.8 | peso=0.616
+  2025-08-31 | DYJ vs BEL | superliga-argentina-de-futbol | score=43.5 | peso=0.630
+  2025-09-14 | DYJ vs PLA | superliga-argentina-de-futbol | score=55.7 | peso=0.645
+  2025-09-22 | EST vs DYJ | superliga-argentina-de-futbol | score=40.8 | peso=0.660
+  2025-09-27 | DYJ vs BOC | superliga-argentina-de-futbol | score=59.8 | peso=0.675
+  2025-10-03 | TIG vs DYJ | superliga-argentina-de-futbol | score=68.5 | peso=0.691
+  2025-10-10 | DYJ vs ARG | superliga-argentina-de-futbol | score=71.3 | peso=0.707
+  2025-10-21 | UNI vs DYJ | superliga-argentina-de-futbol | score=8.6 | peso=0.724
+  2025-11-03 | DYJ vs HUR | superliga-argentina-de-futbol | score=30.3 | peso=0.741
+  2026-01-22 | ALD vs DYJ | superliga-argentina-de-futbol | score=79.9 | peso=0.758
+  2026-02-08 | NOB vs DYJ | superliga-argentina-de-futbol | score=46.6 | peso=0.776
+  2026-02-14 | DYJ vs VEL | superliga-argentina-de-futbol | score=56.6 | peso=0.794
+  2026-02-24 | PLA vs DYJ | superliga-argentina-de-futbol | score=65.3 | peso=0.812
+  2026-03-16 | SLO vs DYJ | superliga-argentina-de-futbol | score=50.5 | peso=0.831
+  2026-04-13 | DYJ vs CAT | superliga-argentina-de-futbol | score=67.9 | peso=0.851
+  2026-04-18 | IND vs DYJ | superliga-argentina-de-futbol | score=51.0 | peso=0.871
+  2026-04-23 | DYJ vs BOC | superliga-argentina-de-futbol | score=40.7 | peso=0.891
+  2026-07-24 | DYJ vs ALD | superliga-argentina-de-futbol | score=57.1 | peso=0.912
+  2026-07-29 | DYJ vs RIE | superliga-argentina-de-futbol | score=66.4 | peso=0.933
+  2026-08-01 | EST vs DYJ | superliga-argentina-de-futbol | score=25.2 | peso=0.955
+  2026-08-09 | DYJ vs NOB | superliga-argentina-de-futbol | score=53.3 | peso=0.977
+  2026-08-17 | VEL vs DYJ | superliga-argentina-de-futbol | score=43.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 51.61
+  di cui Punteggio decisivo (level_score) medio: 34.75 | Punteggio complessivo (granulari) medio: 16.86 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.10, delta avversario -0.25 | Passaggio condizionato: delta venue -0.19, delta avversario +0.17 | Clean sheet/disimpegni condizionato: delta venue +0.20, delta avversario +0.12 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.92
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.7 - 67.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.43 (differenza: +3.49)
+Media score in casa: 54.78 | Media score fuori casa: 48.73
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.2
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.460 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.001
+Fattore trend (media ultime 5: 49.0 vs media 5 PRECEDENTI: 54.8): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T20:00
+Casa: CA Belgrano de Córdoba | Trasferta: CSD Defensa y Justicia
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.8 (range 39.9 - 67.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 50.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.08
+Punteggio REALE ottenuto in quella partita: 43.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      42.9    71.3    +28.4    10.5        NO
+   7        7      55.7     8.6    -47.1    11.8        NO
+   8        8      49.0    30.3    -18.8    21.2        SI
+   9        9      56.8    79.9    +23.1    21.1        NO
+  10       10      44.6    46.6     +2.0    22.8        SI
+  11       11      38.2    56.6    +18.4    21.7        SI
+  12       12      64.1    65.3     +1.2    20.7        SI
+  13       13      57.5    50.5     -7.0    20.2        SI
+  14       14      49.8    67.9    +18.1    19.4        SI
+  15       15      41.6    51.0     +9.4    19.2        SI
+  16       16      65.1    40.7    -24.4    18.5        NO
+  17       17      63.2    57.1     -6.1    18.2        SI
+  18       18      64.8    66.4     +1.6    17.6        SI
+  19       19      38.6    25.2    -13.4    17.4        SI
+  20       20      48.0    53.3     +5.3    18.5        SI
+  21       21      41.7    43.9     +2.2    17.9        SI
+
+MAE (errore assoluto medio): 14.15
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

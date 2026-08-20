@@ -1,0 +1,89 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:07:22.924629Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) john-warwick-iredale: 53 pt attesi (37-80)
+   ORDINAMENTO: 49.14
+   SQUADRA: gwangju-gwangju | AVVERSARIO: incheon-united-incheon
+======================================================================
+
+######################################################################
+# GIOCATORE: john-warwick-iredale
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: john-warwick-iredale (squadra: gwangju-gwangju)
+Generato: 2026-08-20T15:07:22.923228Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 7
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-07-11 | GWA vs POH | k-league-1 | score=36.0 | peso=0.500
+  2026-07-19 | ANY vs GWA | k-league-1 | score=69.1 | peso=0.561
+  2026-07-22 | GWA vs SAN | k-league-1 | score=61.7 | peso=0.630
+  2026-07-26 | GWA vs JEJ | k-league-1 | score=35.9 | peso=0.707
+  2026-08-02 | DJO vs GWA | k-league-1 | score=34.4 | peso=0.794
+  2026-08-08 | BUC vs GWA | k-league-1 | score=39.0 | peso=0.891
+  2026-08-15 | GWA vs POH | k-league-1 | score=78.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 51.52
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=7): 53.03 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 45.78 | Punteggio complessivo (granulari) medio: 5.75 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.71 (delta +0.15) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 18.01
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.9 - 78.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.67 (differenza: +4.34)
+Media score in casa: 53.10 | Media score fuori casa: 47.50
+Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.7
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 0.832 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T10:30
+Casa: Gwangju FC | Trasferta: Incheon United FC
+Competizione: k-league-1
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.7 (range 37.1 - 80.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.1
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.84
+Punteggio REALE ottenuto in quella partita: 78.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +34.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      41.6    78.8    +37.2    15.3        NO
+
+MAE (errore assoluto medio): 37.19
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 0.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

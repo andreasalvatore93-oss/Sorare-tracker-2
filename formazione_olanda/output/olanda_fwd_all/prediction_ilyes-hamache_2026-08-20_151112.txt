@@ -1,0 +1,101 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:11:12.052057Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) ilyes-hamache: 49 pt attesi (35-71)
+   ORDINAMENTO: 48.49
+   SQUADRA: cambuur-leeuwarden | AVVERSARIO: feyenoord-rotterdam
+======================================================================
+
+######################################################################
+# GIOCATORE: ilyes-hamache
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ilyes-hamache (squadra: cambuur-leeuwarden)
+Generato: 2026-08-20T15:11:12.050478Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 17
+Competizione partita target: eredivisie (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-23 | AMI vs STE | ligue-2-fr | score=38.2 | peso=0.250
+  2025-10-20 | NAN vs AMI | ligue-2-fr | score=61.9 | peso=0.281
+  2025-10-25 | AMI vs ROD | ligue-2-fr | score=72.7 | peso=0.315
+  2025-12-05 | LEM vs AMI | ligue-2-fr | score=33.4 | peso=0.354
+  2025-12-12 | PAU vs AMI | ligue-2-fr | score=76.4 | peso=0.397
+  2026-01-03 | AMI vs NAN | ligue-2-fr | score=36.5 | peso=0.445
+  2026-01-23 | AMI vs LAV | ligue-2-fr | score=38.4 | peso=0.500
+  2026-04-03 | SCB vs AMI | ligue-2-fr | score=35.9 | peso=0.561
+  2026-04-17 | ROD vs AMI | ligue-2-fr | score=72.4 | peso=0.630
+  2026-04-24 | AMI vs MON | ligue-2-fr | score=47.4 | peso=0.707
+  2026-05-02 | AMI vs RED | ligue-2-fr | score=48.4 | peso=0.794
+  2026-08-07 | CAM vs EXC | eredivisie | score=51.5 | peso=0.891
+  2026-08-15 | FOR vs CAM | eredivisie | score=46.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 50.13
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=13): 52.07 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 40.69 | Punteggio complessivo (granulari) medio: 9.44 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.59 (delta -0.38) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 13.03
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.5 - 72.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.44 (differenza: +1.59)
+Media score in casa: 51.50 | Media score fuori casa: 46.20
+Fattore casa/trasferta applicato: 0.999 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.5
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.832 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore trend (media ultime 5: 53.2 vs media 5 PRECEDENTI: 44.1): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T14:45
+Casa: SC Cambuur Leeuwarden | Trasferta: Feyenoord Rotterdam
+Competizione: eredivisie
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.0 (range 35.4 - 71.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 48.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.78
+Punteggio REALE ottenuto in quella partita: 46.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -4.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      53.0    38.4    -14.6    20.9        SI
+   7        7      50.1    35.9    -14.2    19.9        SI
+   8        8      47.6    72.4    +24.8    19.1        NO
+   9        9      51.7    47.4     -4.3    20.4        SI
+  10       10      51.1    48.4     -2.7    18.8        SI
+  11       11      50.7    51.5     +0.8    17.4        SI
+  12       12      42.0    46.2     +4.2    16.0        SI
+
+MAE (errore assoluto medio): 9.39
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 85.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

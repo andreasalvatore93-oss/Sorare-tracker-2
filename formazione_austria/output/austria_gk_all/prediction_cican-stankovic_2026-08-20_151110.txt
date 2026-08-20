@@ -1,0 +1,74 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:11:10.333774Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) cican-stankovic: 49 pt attesi (41-61)
+   SQUADRA: grazer-ak-graz | AVVERSARIO: ried-ried-im-innkreis
+======================================================================
+
+######################################################################
+# GIOCATORE: cican-stankovic
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: cican-stankovic (squadra: grazer-ak-graz)
+Generato: 2026-08-20T15:11:10.332766Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 3
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: austrian-bundesliga (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-07-31 | ASK vs GAK | austrian-bundesliga | score=52.8 | peso=0.794
+  2026-08-08 | GAK vs ALU | austrian-bundesliga | score=40.8 | peso=0.891
+  2026-08-16 | SCR vs GAK | austrian-bundesliga | score=32.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 41.26
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 6.26 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 35.00 (delta +0.00 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -2.27, delta avversario +2.67 | Possesso condizionato per venue: delta +0.28 | Goalkeeping condizionato per venue: delta +1.98 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 8.25
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.5 - 52.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 40.80 | Media score fuori casa: 42.65
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 2.7
+Ranking prossimo avversario: 10
+Fattore forza avversario applicato: 1.293 (gol fatti reali dell'avversario, ultime 10; delta granulare parate -0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.002
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.003
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.998
+Tasso storico clean sheet (porta inviolata nei primi 60'): 0.0% (bonus atteso incorporato nella media pesata: ~0.0pt)
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-21T17:30
+Casa: SV Guntamatic Ried | Trasferta: Liebherr Grazer AK
+Competizione: austrian-bundesliga
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.3 (range 40.5 - 60.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.45
+Punteggio REALE ottenuto in quella partita: 32.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

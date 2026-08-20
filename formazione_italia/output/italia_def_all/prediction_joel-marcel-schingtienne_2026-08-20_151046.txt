@@ -1,0 +1,137 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:10:46.068043Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) joel-marcel-schingtienne: 53 pt attesi (40-67)
+   ORDINAMENTO: 52.53
+   SQUADRA: venezia-mestre | AVVERSARIO: lecce-lecce
+======================================================================
+
+######################################################################
+# GIOCATORE: joel-marcel-schingtienne
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: joel-marcel-schingtienne (squadra: venezia-mestre)
+Generato: 2026-08-20T15:10:46.067563Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: serie-a-it (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-30 | PAL vs VEN | serie-b-it | score=54.2 | peso=0.512
+  2025-10-04 | VEN vs FRO | serie-b-it | score=63.3 | peso=0.524
+  2025-10-19 | EMP vs VEN | serie-b-it | score=49.0 | peso=0.536
+  2025-10-25 | CAR vs VEN | serie-b-it | score=48.0 | peso=0.548
+  2025-10-29 | VEN vs SUD | serie-b-it | score=56.2 | peso=0.561
+  2025-11-02 | CTZ vs VEN | serie-b-it | score=32.1 | peso=0.574
+  2025-11-08 | VEN vs SAM | serie-b-it | score=46.3 | peso=0.588
+  2025-11-22 | CPA vs VEN | serie-b-it | score=65.4 | peso=0.602
+  2025-11-29 | VEN vs MAN | serie-b-it | score=54.9 | peso=0.616
+  2025-12-08 | AVE vs VEN | serie-b-it | score=51.5 | peso=0.630
+  2025-12-13 | VEN vs MON | serie-b-it | score=60.9 | peso=0.645
+  2025-12-20 | MOD vs VEN | serie-b-it | score=47.0 | peso=0.660
+  2025-12-27 | VEN vs VIR | serie-b-it | score=51.7 | peso=0.675
+  2026-01-10 | REG vs VEN | serie-b-it | score=2.8 | peso=0.691
+  2026-01-24 | MAN vs VEN | serie-b-it | score=45.3 | peso=0.707
+  2026-01-31 | VEN vs CAR | serie-b-it | score=100.0 | peso=0.724
+  2026-02-07 | FRO vs VEN | serie-b-it | score=36.1 | peso=0.741
+  2026-02-14 | CES vs VEN | serie-b-it | score=42.4 | peso=0.758
+  2026-02-21 | VEN vs PES | serie-b-it | score=43.8 | peso=0.776
+  2026-02-28 | SUD vs VEN | serie-b-it | score=31.0 | peso=0.794
+  2026-03-03 | VEN vs AVE | serie-b-it | score=90.8 | peso=0.812
+  2026-03-07 | VEN vs REG | serie-b-it | score=62.0 | peso=0.831
+  2026-03-14 | SAM vs VEN | serie-b-it | score=54.3 | peso=0.851
+  2026-03-17 | VEN vs CPA | serie-b-it | score=54.2 | peso=0.871
+  2026-03-21 | MON vs VEN | serie-b-it | score=41.1 | peso=0.891
+  2026-04-06 | VEN vs JST | serie-b-it | score=43.8 | peso=0.912
+  2026-04-11 | VIR vs VEN | serie-b-it | score=18.4 | peso=0.933
+  2026-04-25 | VEN vs EMP | serie-b-it | score=69.8 | peso=0.955
+  2026-05-01 | SPE vs VEN | serie-b-it | score=38.2 | peso=0.977
+  2026-05-08 | VEN vs PAL | serie-b-it | score=43.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 49.56
+  di cui Punteggio decisivo (level_score) medio: 34.67 | Punteggio complessivo (granulari) medio: 14.88 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.85, delta avversario +0.00 | Passaggio condizionato: delta venue +0.50, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +0.92, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 18.53
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.1 - 63.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.26 (differenza: +4.27)
+Media score in casa: 60.07 | Media score fuori casa: 41.05
+Fattore casa/trasferta applicato: 1.007 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.5
+Ranking prossimo avversario: 17
+Fattore forza avversario applicato: 0.938 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.007
+Fattore duelli (casa/trasferta, da dati reali): 1.008
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.008
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.008
+Fattore gol subiti (goals_conceded, con cap): 1.008
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.005
+Fattore trend (media ultime 5: 42.8 vs media 5 PRECEDENTI: 60.0): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T16:30
+Casa: Venezia FC | Trasferta: US Lecce
+Competizione: serie-a-it
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 53.4 (range 39.9 - 67.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 52.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.85
+Punteggio REALE ottenuto in quella partita: 43.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      57.9    46.3    -11.6    10.7        NO
+   7        7      49.8    65.4    +15.6    10.0        NO
+   8        8      51.2    54.9     +3.7    11.0        SI
+   9        9      49.0    51.5     +2.6    10.4        SI
+  10       10      40.9    60.9    +20.0     9.8        NO
+  11       11      47.2    47.0     -0.2     9.8        SI
+  12       12      63.1    51.7    -11.4     9.5        NO
+  13       13      67.5     2.8    -64.7     9.1        NO
+  14       14      46.1    45.3     -0.8    17.3        SI
+  15       15      53.2   100.0    +46.8    16.7        NO
+  16       16      36.9    36.1     -0.8    21.9        SI
+  17       17      52.1    42.4     -9.7    21.6        SI
+  18       18      71.0    43.8    -27.2    21.0        NO
+  19       19      58.4    31.0    -27.4    20.4        NO
+  20       20      46.6    90.8    +44.2    20.4        NO
+  21       21      68.0    62.0     -6.0    22.6        SI
+  22       22      53.8    54.3     +0.5    22.1        SI
+  23       23      53.3    54.2     +0.9    21.5        SI
+  24       24      36.7    41.1     +4.3    20.9        SI
+  25       25      47.9    43.8     -4.1    20.5        SI
+  26       26      55.3    18.4    -36.9    20.1        NO
+  27       27      60.4    69.8     +9.4    21.1        SI
+  28       28      62.1    38.2    -23.8    21.1        NO
+  29       29      40.4    43.4     +3.0    20.8        SI
+
+MAE (errore assoluto medio): 15.66
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 54.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

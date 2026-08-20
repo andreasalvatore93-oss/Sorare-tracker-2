@@ -1,0 +1,131 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:15:23.230579Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) filippo-missori: 42 pt attesi (20-66)
+   ORDINAMENTO: 39.22
+   SQUADRA: sassuolo-sassuolo | AVVERSARIO: atalanta-ciserano
+======================================================================
+
+######################################################################
+# GIOCATORE: filippo-missori
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: filippo-missori (squadra: sassuolo-sassuolo)
+Generato: 2026-08-20T15:15:23.229920Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 40
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: serie-a-it (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-12 | AVE vs MON | serie-b-it | score=46.6 | peso=0.548
+  2025-09-21 | CAR vs AVE | serie-b-it | score=28.8 | peso=0.561
+  2025-09-27 | AVE vs VIR | serie-b-it | score=67.0 | peso=0.574
+  2025-09-30 | CPA vs AVE | serie-b-it | score=66.0 | peso=0.588
+  2025-10-04 | AVE vs MAN | serie-b-it | score=61.7 | peso=0.602
+  2025-10-25 | AVE vs SPE | serie-b-it | score=22.3 | peso=0.616
+  2025-10-28 | PES vs AVE | serie-b-it | score=26.6 | peso=0.630
+  2025-11-01 | AVE vs REG | serie-b-it | score=40.9 | peso=0.645
+  2025-11-09 | CES vs AVE | serie-b-it | score=52.2 | peso=0.660
+  2025-11-22 | AVE vs EMP | serie-b-it | score=18.7 | peso=0.675
+  2025-11-29 | SUD vs AVE | serie-b-it | score=44.6 | peso=0.691
+  2025-12-08 | AVE vs VEN | serie-b-it | score=70.1 | peso=0.707
+  2025-12-13 | CTZ vs AVE | serie-b-it | score=20.7 | peso=0.724
+  2025-12-20 | AVE vs PAL | serie-b-it | score=60.0 | peso=0.741
+  2025-12-27 | BAR vs AVE | serie-b-it | score=39.1 | peso=0.758
+  2026-01-10 | AVE vs SAM | serie-b-it | score=56.0 | peso=0.776
+  2026-01-17 | AVE vs CAR | serie-b-it | score=40.0 | peso=0.794
+  2026-01-24 | SPE vs AVE | serie-b-it | score=19.3 | peso=0.812
+  2026-01-31 | AVE vs CES | serie-b-it | score=76.3 | peso=0.831
+  2026-02-08 | MON vs AVE | serie-b-it | score=27.4 | peso=0.851
+  2026-02-15 | AVE vs PES | serie-b-it | score=43.7 | peso=0.871
+  2026-02-22 | REG vs AVE | serie-b-it | score=11.2 | peso=0.891
+  2026-02-28 | AVE vs JST | serie-b-it | score=56.1 | peso=0.912
+  2026-03-03 | VEN vs AVE | serie-b-it | score=19.1 | peso=0.933
+  2026-03-22 | SAM vs AVE | serie-b-it | score=23.0 | peso=0.955
+  2026-05-08 | AVE vs MOD | serie-b-it | score=69.1 | peso=0.977
+  2026-05-12 | CTZ vs AVE | serie-b-it | score=35.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 41.77
+  di cui Punteggio decisivo (level_score) medio: 37.50 | Punteggio complessivo (granulari) medio: 4.27 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -1.06, delta avversario +0.00 | Passaggio condizionato: delta venue -1.02, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue -0.85, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 19.03
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 19.3 - 66.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.26 (differenza: +1.78)
+Media score in casa: 52.03 | Media score fuori casa: 31.80
+Fattore casa/trasferta applicato: 0.995 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.2
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 1.280 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.995
+Fattore duelli (casa/trasferta, da dati reali): 0.993
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.990
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 0.993
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.994
+Fattore trend (media ultime 5: 40.5 vs media 5 PRECEDENTI: 35.4): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T18:45
+Casa: Atalanta Bergamasca Calcio | Trasferta: US Sassuolo Calcio
+Competizione: serie-a-it
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 42.2 (range 19.8 - 66.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 39.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 42.11
+Punteggio REALE ottenuto in quella partita: 35.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -7.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 21 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      62.7    26.6    -36.2    19.8        NO
+   7        7      55.0    40.9    -14.1    20.2        SI
+   8        8      40.7    52.2    +11.5    18.8        SI
+   9        9      49.6    18.7    -30.9    17.9        NO
+  10       10      46.4    44.6     -1.8    19.2        SI
+  11       11      24.8    70.1    +45.3    18.2        NO
+  12       12      33.4    20.7    -12.6    19.5        SI
+  13       13      32.3    60.0    +27.7    20.1        NO
+  14       14      52.3    39.1    -13.2    19.9        SI
+  15       15      47.3    56.0     +8.6    19.2        SI
+  16       16      46.6    40.0     -6.7    18.8        SI
+  17       17      54.8    19.3    -35.4    18.2        NO
+  18       18      42.3    76.3    +34.0    18.9        NO
+  19       19      30.2    27.4     -2.8    20.4        SI
+  20       20      58.3    43.7    -14.6    20.3        SI
+  21       21      51.7    11.2    -40.4    19.7        NO
+  22       22      35.6    56.1    +20.5    20.8        SI
+  23       23      25.6    19.1     -6.6    20.6        SI
+  24       24      42.0    23.0    -19.0    20.9        SI
+  25       25      34.1    69.1    +35.0    20.8        NO
+  26       26      31.3    35.2     +3.8    21.4        SI
+
+MAE (errore assoluto medio): 20.04
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 61.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

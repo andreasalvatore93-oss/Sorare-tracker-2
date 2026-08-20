@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:27.402873Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) juan-jose-caceres: 45 pt attesi (18-60)
+   ORDINAMENTO: 49.58
+   SQUADRA: dinamo-moskva-moskva | AVVERSARIO: rodina-moskva
+======================================================================
+
+######################################################################
+# GIOCATORE: juan-jose-caceres
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: juan-jose-caceres (squadra: dinamo-moskva-moskva)
+Generato: 2026-08-20T15:06:27.401873Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 29
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: russian-premier-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | DIN vs NZN | russian-premier-league | score=100.0 | peso=0.645
+  2025-08-31 | MAK vs DIN | russian-premier-league | score=48.4 | peso=0.660
+  2025-09-13 | DIN vs SPM | russian-premier-league | score=23.1 | peso=0.675
+  2025-09-21 | ORE vs DIN | russian-premier-league | score=54.3 | peso=0.691
+  2025-10-04 | DIN vs LOK | russian-premier-league | score=0.0 | peso=0.707
+  2025-10-19 | DIN vs AKH | russian-premier-league | score=41.4 | peso=0.724
+  2025-10-26 | ZEN vs DIN | russian-premier-league | score=7.5 | peso=0.741
+  2025-11-01 | RUB vs DIN | russian-premier-league | score=43.6 | peso=0.758
+  2025-11-08 | DIN vs AKR | russian-premier-league | score=62.7 | peso=0.776
+  2025-11-23 | DIN vs MAK | russian-premier-league | score=63.7 | peso=0.794
+  2026-03-08 | CSK vs DIN | russian-premier-league | score=81.7 | peso=0.812
+  2026-03-14 | ROS vs DIN | russian-premier-league | score=85.0 | peso=0.831
+  2026-03-22 | DIN vs ZEN | russian-premier-league | score=60.0 | peso=0.851
+  2026-04-18 | NZN vs DIN | russian-premier-league | score=52.4 | peso=0.871
+  2026-04-22 | DIN vs RUB | russian-premier-league | score=49.4 | peso=0.891
+  2026-04-26 | DIN vs SOC | russian-premier-league | score=60.7 | peso=0.912
+  2026-05-01 | LOK vs DIN | russian-premier-league | score=18.8 | peso=0.933
+  2026-05-11 | DIN vs KRA | russian-premier-league | score=65.1 | peso=0.955
+  2026-08-09 | DIN vs MAK | russian-premier-league | score=52.5 | peso=0.977
+  2026-08-16 | ZEN vs DIN | russian-premier-league | score=26.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 49.85
+  di cui Punteggio decisivo (level_score) medio: 40.44 | Punteggio complessivo (granulari) medio: 9.40 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.60, delta avversario -1.72 | Passaggio condizionato: delta venue +0.74, delta avversario -2.80 | Clean sheet/disimpegni condizionato: delta venue +0.00, delta avversario -1.02 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 23.96
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 23.1 - 65.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.97 (differenza: +3.99)
+Media score in casa: 52.60 | Media score fuori casa: 46.44
+Fattore casa/trasferta applicato: 1.001 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.2
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.995
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 0.997
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.000
+Fattore trend (media ultime 5: 44.5 vs media 5 PRECEDENTI: 65.3): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T12:15
+Casa: FC Dynamo Moscow | Trasferta: FK Rodina Moskva
+Competizione: russian-premier-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.7 (range 17.9 - 59.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 51.39
+Punteggio REALE ottenuto in quella partita: 26.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -25.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      32.4     7.5    -24.9    33.4        SI
+   7        7      38.6    43.6     +5.0    33.9        SI
+   8        8      49.0    62.7    +13.7    31.6        SI
+   9        9      35.7    63.7    +28.1    30.8        SI
+  10       10      39.2    81.7    +42.5    30.0        NO
+  11       11      45.0    85.0    +40.1    31.1        NO
+  12       12      39.7    60.0    +20.3    31.9        SI
+  13       13      65.1    52.4    -12.7    30.5        SI
+  14       14      52.7    49.4     -3.3    29.3        SI
+  15       15      64.9    60.7     -4.2    28.1        SI
+  16       16      60.3    18.8    -41.5    27.2        NO
+  17       17      36.0    65.1    +29.1    27.9        NO
+  18       18      42.9    52.5     +9.6    27.2        SI
+  19       19      39.6    26.4    -13.2    26.3        SI
+
+MAE (errore assoluto medio): 20.58
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 71.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

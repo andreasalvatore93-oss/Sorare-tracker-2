@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:10:42.198836Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) wouter-prins: 43 pt attesi (33-54)
+   ORDINAMENTO: 35.90
+   SQUADRA: groningen-groningen | AVVERSARIO: psv-eindhoven
+======================================================================
+
+######################################################################
+# GIOCATORE: wouter-prins
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: wouter-prins (squadra: groningen-groningen)
+Generato: 2026-08-20T15:10:42.196763Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 13
+Escluse (minutaggio < 60', subentri): 18
+Competizione partita target: eredivisie (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-08 | GRO vs PSV | eredivisie | score=35.0 | peso=0.933
+  2026-02-22 | TWE vs GRO | eredivisie | score=47.5 | peso=0.955
+  2026-08-09 | GRO vs UTR | eredivisie | score=37.5 | peso=0.977
+  2026-08-16 | ADO vs GRO | eredivisie | score=26.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 36.57
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 1.57 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.29, delta avversario -0.12 | Passaggio condizionato: delta venue +0.48, delta avversario -0.63 | Clean sheet/disimpegni condizionato: delta venue -0.89, delta avversario +0.47 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 7.46
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 26.7 - 47.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 36.26 | Media score fuori casa: 37.08
+Fattore casa/trasferta applicato: 1.001 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 13.5
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.280 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.996
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T12:30
+Casa: PSV Eindhoven | Trasferta: FC Groningen
+Competizione: eredivisie
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.3 (range 33.4 - 54.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 35.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 40.02
+Punteggio REALE ottenuto in quella partita: 26.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -13.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

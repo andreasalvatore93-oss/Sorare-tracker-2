@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:15:16.977916Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) ivan-dolcek: 51 pt attesi (36-65)
+   ORDINAMENTO: 58.99
+   SQUADRA: osijek-osijek | AVVERSARIO: hajduk-split-split
+======================================================================
+
+######################################################################
+# GIOCATORE: ivan-dolcek
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ivan-dolcek (squadra: osijek-osijek)
+Generato: 2026-08-20T15:15:16.976461Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 39
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 23
+Competizione partita target: 1-hnl (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-31 | DUN vs DUU | premiership-gb-sct | score=65.1 | peso=0.561
+  2025-09-13 | HIB vs DUU | premiership-gb-sct | score=74.6 | peso=0.630
+  2025-09-23 | DUU vs ABE | premiership-gb-sct | score=76.0 | peso=0.707
+  2025-11-09 | HEA vs DUU | premiership-gb-sct | score=46.2 | peso=0.794
+  2026-08-01 | GOR vs OSI | 1-hnl | score=63.0 | peso=0.891
+  2026-08-08 | RUD vs OSI | 1-hnl | score=49.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 61.07
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=6): 55.83 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 50.22 | Punteggio complessivo (granulari) medio: 10.85 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.93 (delta -0.14) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 11.33
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 46.2 - 74.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.08 (differenza: +2.24)
+Media score in casa: 61.07 | Media score fuori casa: 56.40
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.0
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.038 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T19:00
+Casa: HNK Hajduk Split | Trasferta: NK Osijek
+Competizione: 1-hnl
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.3 (range 36.5 - 64.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 59.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 64.21
+Punteggio REALE ottenuto in quella partita: 49.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

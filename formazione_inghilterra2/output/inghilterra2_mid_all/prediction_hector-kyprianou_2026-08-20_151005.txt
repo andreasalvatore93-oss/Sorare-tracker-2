@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:10:05.964662Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) hector-kyprianou: 44 pt attesi (34-57)
+   SQUADRA: watford-watford | AVVERSARIO: wrexham-wrexham-wrecsam
+======================================================================
+
+######################################################################
+# GIOCATORE: hector-kyprianou
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: hector-kyprianou (squadra: watford-watford)
+Generato: 2026-08-20T15:10:05.963608Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 45
+Escluse (DID_NOT_PLAY): 21
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | SWA vs WAT | football-league-championship | score=38.5 | peso=0.590
+  2025-08-30 | WAT vs SOT | football-league-championship | score=60.3 | peso=0.607
+  2025-09-13 | WAT vs BBR | football-league-championship | score=65.1 | peso=0.624
+  2025-09-22 | MIL vs WAT | football-league-championship | score=47.5 | peso=0.642
+  2025-10-18 | SHU vs WAT | football-league-championship | score=41.7 | peso=0.660
+  2025-10-22 | WAT vs WBA | football-league-championship | score=47.2 | peso=0.678
+  2025-11-01 | WAT vs MID | football-league-championship | score=35.3 | peso=0.697
+  2025-11-04 | IPS vs WAT | football-league-championship | score=35.0 | peso=0.717
+  2025-11-22 | DER vs WAT | football-league-championship | score=38.6 | peso=0.737
+  2025-11-25 | WAT vs PNE | football-league-championship | score=45.0 | peso=0.758
+  2025-12-01 | BIR vs WAT | football-league-championship | score=8.9 | peso=0.779
+  2025-12-13 | WRE vs WAT | football-league-championship | score=33.6 | peso=0.801
+  2025-12-20 | WAT vs STO | football-league-championship | score=79.4 | peso=0.824
+  2025-12-26 | LEI vs WAT | football-league-championship | score=37.5 | peso=0.847
+  2025-12-29 | NOR vs WAT | football-league-championship | score=44.0 | peso=0.871
+  2026-01-01 | WAT vs BIR | football-league-championship | score=55.9 | peso=0.895
+  2026-01-17 | WAT vs MIL | football-league-championship | score=36.9 | peso=0.920
+  2026-01-21 | WAT vs POR | football-league-championship | score=54.2 | peso=0.946
+  2026-01-24 | BBR vs WAT | football-league-championship | score=32.7 | peso=0.973
+  2026-08-16 | WAT vs SOT | football-league-championship | score=36.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 43.40
+  di cui Punteggio decisivo (level_score) medio: 35.32 | Punteggio complessivo (granulari) medio: 8.08 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 33.74 (delta -1.58)
+  Efficacia offensiva condizionata: delta venue -0.03, delta avversario -0.07 | Passaggio condizionato: delta venue -0.21, delta avversario -0.34 | Gol subiti condizionato: delta venue -0.28, delta avversario -0.05 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 14.26
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.6 - 55.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.15 (differenza: +5.11)
+Media score in casa: 51.62 | Media score fuori casa: 35.80
+Fattore casa/trasferta applicato: 0.994 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 13.3
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 1.305 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 0.991
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.992
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.993
+Fattore gol subiti (goals_conceded, con cap): 0.994
+Fattore trend (media ultime 5: 43.1 vs media 5 PRECEDENTI: 41.1): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T14:00
+Casa: Wrexham FC | Trasferta: Watford FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.2 (range 34.4 - 56.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.84
+Punteggio REALE ottenuto in quella partita: 36.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.0    35.3    -10.7    10.4        NO
+   7        7      35.4    35.0     -0.4    11.2        SI
+   8        8      58.7    38.6    -20.1    11.5        NO
+   9        9      61.2    45.0    -16.2    11.1        NO
+  10       10      51.5     8.9    -42.6    10.4        NO
+  11       11      43.6    33.6    -10.0    15.6        SI
+  12       12      56.0    79.4    +23.4    15.1        NO
+  13       13      59.4    37.5    -21.9    18.9        NO
+  14       14      53.1    44.0     -9.1    18.2        SI
+  15       15      48.1    55.9     +7.8    17.4        SI
+  16       16      28.4    36.9     +8.5    17.1        SI
+  17       17      60.4    54.2     -6.2    16.6        SI
+  18       18      37.1    32.7     -4.4    16.3        SI
+  19       19      63.4    36.9    -26.5    16.1        NO
+
+MAE (errore assoluto medio): 14.83
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

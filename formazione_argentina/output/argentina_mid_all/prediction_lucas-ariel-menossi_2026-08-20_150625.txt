@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:06:25.978587Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) lucas-ariel-menossi: 46 pt attesi (35-58)
+   SQUADRA: union-santa-fe-ciudad-de-santa-fe-provincia-de-santa-fe | AVVERSARIO: aldosivi-mar-del-plata-provincia-de-buenos-aires
+======================================================================
+
+######################################################################
+# GIOCATORE: lucas-ariel-menossi
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: lucas-ariel-menossi (squadra: union-santa-fe-ciudad-de-santa-fe-provincia-de-santa-fe)
+Generato: 2026-08-20T15:06:25.977479Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 32
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-04 | BEL vs TIG | superliga-argentina-de-futbol | score=46.5 | peso=0.824
+  2025-11-11 | ARG vs BEL | superliga-argentina-de-futbol | score=49.0 | peso=0.847
+  2025-11-17 | BEL vs UNI | superliga-argentina-de-futbol | score=40.2 | peso=0.871
+  2026-07-25 | PLA vs UNI | superliga-argentina-de-futbol | score=63.9 | peso=0.895
+  2026-08-01 | GMD vs UNI | superliga-argentina-de-futbol | score=44.5 | peso=0.920
+  2026-08-06 | UNI vs LAN | superliga-argentina-de-futbol | score=81.3 | peso=0.946
+  2026-08-11 | UNI vs CSE | superliga-argentina-de-futbol | score=60.0 | peso=0.973
+  2026-08-15 | SLO vs UNI | superliga-argentina-de-futbol | score=29.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 51.89
+  di cui Punteggio decisivo (level_score) medio: 39.06 | Punteggio complessivo (granulari) medio: 12.83 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 35.04 (delta -4.03)
+  Efficacia offensiva condizionata: delta venue -0.64, delta avversario +0.27 | Passaggio condizionato: delta venue -0.08, delta avversario -0.11 | Gol subiti condizionato: delta venue -0.09, delta avversario -0.38 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.38
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 40.2 - 63.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 8.53 (differenza: +6.85)
+Media score in casa: 70.65 | Media score fuori casa: 44.48
+Fattore casa/trasferta applicato: 0.994 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.5
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-21T17:30
+Casa: CA Aldosivi | Trasferta: CA Unión de Santa Fe
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.5 (range 34.8 - 58.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.49
+Punteggio REALE ottenuto in quella partita: 29.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -26.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      64.7    60.0     -4.7    15.9        SI
+   7        7      61.5    29.3    -32.2    14.8        NO
+
+MAE (errore assoluto medio): 18.48
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

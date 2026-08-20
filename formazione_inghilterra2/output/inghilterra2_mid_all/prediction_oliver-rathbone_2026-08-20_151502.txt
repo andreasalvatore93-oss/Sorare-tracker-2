@@ -1,0 +1,103 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:15:02.707645Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) oliver-rathbone: 51 pt attesi (36-62)
+   SQUADRA: wrexham-wrexham-wrecsam | AVVERSARIO: watford-watford
+======================================================================
+
+######################################################################
+# GIOCATORE: oliver-rathbone
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: oliver-rathbone (squadra: wrexham-wrexham-wrecsam)
+Generato: 2026-08-20T15:15:02.706630Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 45
+Escluse (DID_NOT_PLAY): 18
+Escluse (minutaggio < 60', subentri): 13
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-01 | BBR vs WRE | football-league-championship | score=100.0 | peso=0.697
+  2026-01-20 | WRE vs LEI | football-league-championship | score=33.9 | peso=0.717
+  2026-02-07 | WRE vs MIL | football-league-championship | score=42.1 | peso=0.737
+  2026-02-17 | BRC vs WRE | football-league-championship | score=62.3 | peso=0.758
+  2026-02-21 | WRE vs IPS | football-league-championship | score=37.5 | peso=0.779
+  2026-02-28 | CHA vs WRE | football-league-championship | score=79.2 | peso=0.801
+  2026-03-13 | WRE vs SWA | football-league-championship | score=39.8 | peso=0.824
+  2026-03-17 | WAT vs WRE | football-league-championship | score=60.0 | peso=0.847
+  2026-04-12 | BIR vs WRE | football-league-championship | score=30.4 | peso=0.871
+  2026-04-18 | WRE vs STO | football-league-championship | score=49.4 | peso=0.895
+  2026-04-21 | OXF vs WRE | football-league-championship | score=52.8 | peso=0.920
+  2026-04-26 | COV vs WRE | football-league-championship | score=60.0 | peso=0.946
+  2026-05-02 | WRE vs MID | football-league-championship | score=37.1 | peso=0.973
+  2026-08-17 | CAR vs WRE | football-league-championship | score=48.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 51.75
+  di cui Punteggio decisivo (level_score) medio: 43.60 | Punteggio complessivo (granulari) medio: 8.15 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 38.91 (delta -4.69)
+  Efficacia offensiva condizionata: delta venue +0.67, delta avversario +0.39 | Passaggio condizionato: delta venue +0.43, delta avversario -0.04 | Gol subiti condizionato: delta venue -0.25, delta avversario -0.46 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 17.57
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.1 - 62.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.48 (differenza: +5.09)
+Media score in casa: 39.97 | Media score fuori casa: 61.61
+Fattore casa/trasferta applicato: 0.991 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.1
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 1.604 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.006
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.004
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.993
+Fattore gol subiti (goals_conceded, con cap): 0.997
+Fattore trend (media ultime 5: 49.4 vs media 5 PRECEDENTI: 49.2): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T14:00
+Casa: Wrexham FC | Trasferta: Watford FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.1 (range 36.4 - 61.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.08
+Punteggio REALE ottenuto in quella partita: 48.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -3.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      42.1    39.8     -2.3    26.1        SI
+   7        7      54.2    60.0     +5.8    25.2        SI
+   8        8      68.7    30.4    -38.3    23.4        NO
+   9        9      72.3    49.4    -22.9    23.9        SI
+  10       10      73.5    52.8    -20.7    22.6        SI
+  11       11      32.9    60.0    +27.1    21.4        NO
+  12       12      45.3    37.1     -8.2    20.4        SI
+  13       13      58.3    48.2    -10.1    20.2        SI
+
+MAE (errore assoluto medio): 16.91
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

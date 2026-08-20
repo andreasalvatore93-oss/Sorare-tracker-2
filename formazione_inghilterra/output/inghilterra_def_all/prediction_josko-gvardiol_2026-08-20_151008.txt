@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:10:08.954000Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) josko-gvardiol: 56 pt attesi (39-78)
+   ORDINAMENTO: 60.93
+   SQUADRA: manchester-city-manchester | AVVERSARIO: afc-bournemouth-bournemouth-dorset
+======================================================================
+
+######################################################################
+# GIOCATORE: josko-gvardiol
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: josko-gvardiol (squadra: manchester-city-manchester)
+Generato: 2026-08-20T15:10:08.953491Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 37
+Escluse (DID_NOT_PLAY): 19
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-14 | MCI vs MUN | premier-league-gb-eng | score=47.3 | peso=0.741
+  2025-09-21 | ARS vs MCI | premier-league-gb-eng | score=64.8 | peso=0.758
+  2025-09-27 | MCI vs BUR | premier-league-gb-eng | score=51.4 | peso=0.776
+  2025-10-05 | BRE vs MCI | premier-league-gb-eng | score=95.8 | peso=0.794
+  2025-10-26 | AST vs MCI | premier-league-gb-eng | score=43.7 | peso=0.812
+  2025-11-02 | MCI vs BOR | premier-league-gb-eng | score=40.1 | peso=0.831
+  2025-11-09 | MCI vs LIV | premier-league-gb-eng | score=76.5 | peso=0.851
+  2025-11-22 | NEW vs MCI | premier-league-gb-eng | score=44.2 | peso=0.871
+  2025-11-29 | MCI vs LEE | premier-league-gb-eng | score=40.7 | peso=0.891
+  2025-12-02 | FUL vs MCI | premier-league-gb-eng | score=60.3 | peso=0.912
+  2025-12-06 | MCI vs SUN | premier-league-gb-eng | score=82.8 | peso=0.933
+  2025-12-14 | CRY vs MCI | premier-league-gb-eng | score=56.5 | peso=0.955
+  2025-12-20 | MCI vs WHU | premier-league-gb-eng | score=60.8 | peso=0.977
+  2025-12-27 | NOT vs MCI | premier-league-gb-eng | score=83.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 61.01
+  di cui Punteggio decisivo (level_score) medio: 44.28 | Punteggio complessivo (granulari) medio: 16.73 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.87, delta avversario +0.81 | Passaggio condizionato: delta venue -0.47, delta avversario -1.18 | Clean sheet/disimpegni condizionato: delta venue +0.61, delta avversario +1.36 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.22
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 43.7 - 82.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.66 (differenza: +2.55)
+Media score in casa: 57.09 | Media score fuori casa: 64.17
+Fattore casa/trasferta applicato: 0.998 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.9
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.993
+Fattore gol subiti (goals_conceded, con cap): 1.004
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.003
+Fattore trend (media ultime 5: 69.0 vs media 5 PRECEDENTI: 49.0): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T13:00
+Casa: Manchester City FC | Trasferta: AFC Bournemouth
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 55.9 (range 38.6 - 77.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 60.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.96
+Punteggio REALE ottenuto in quella partita: 83.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +24.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      54.9    76.5    +21.6    21.0        NO
+   7        7      74.3    44.2    -30.1    20.8        NO
+   8        8      72.4    40.7    -31.7    20.2        NO
+   9        9      64.0    60.3     -3.6    19.9        SI
+  10       10      54.5    82.8    +28.4    18.9        NO
+  11       11      74.9    56.5    -18.3    19.9        SI
+  12       12      61.9    60.8     -1.1    19.0        SI
+  13       13      75.3    83.8     +8.5    18.2        SI
+
+MAE (errore assoluto medio): 17.91
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

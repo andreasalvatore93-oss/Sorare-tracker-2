@@ -1,0 +1,123 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:08.883416Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) kylian-mbappe-lottin: 57 pt attesi (26-84)
+   ORDINAMENTO: 59.72
+   SQUADRA: real-madrid-madrid | AVVERSARIO: espanyol-barcelona
+======================================================================
+
+######################################################################
+# GIOCATORE: kylian-mbappe-lottin
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: kylian-mbappe-lottin (squadra: real-madrid-madrid)
+Generato: 2026-08-20T15:06:08.877735Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-23 | LEV vs RMA | laliga-es | score=92.5 | peso=0.070
+  2025-09-27 | ATM vs RMA | laliga-es | score=79.4 | peso=0.079
+  2025-10-04 | RMA vs VIL | laliga-es | score=86.5 | peso=0.088
+  2025-10-19 | GET vs RMA | laliga-es | score=78.0 | peso=0.099
+  2025-10-26 | RMA vs FCB | laliga-es | score=67.2 | peso=0.111
+  2025-11-01 | RMA vs VCF | laliga-es | score=88.6 | peso=0.125
+  2025-11-09 | RAY vs RMA | laliga-es | score=41.6 | peso=0.140
+  2025-11-23 | ELC vs RMA | laliga-es | score=85.6 | peso=0.157
+  2025-11-30 | GIR vs RMA | laliga-es | score=85.4 | peso=0.177
+  2025-12-03 | ATH vs RMA | laliga-es | score=100.0 | peso=0.198
+  2025-12-07 | RMA vs CEL | laliga-es | score=48.1 | peso=0.223
+  2025-12-14 | ALA vs RMA | laliga-es | score=72.4 | peso=0.250
+  2025-12-20 | RMA vs SEV | laliga-es | score=67.9 | peso=0.281
+  2026-01-17 | RMA vs LEV | laliga-es | score=80.1 | peso=0.315
+  2026-01-24 | VIL vs RMA | laliga-es | score=90.4 | peso=0.354
+  2026-02-01 | RMA vs RAY | laliga-es | score=62.4 | peso=0.397
+  2026-02-08 | VCF vs RMA | laliga-es | score=74.6 | peso=0.445
+  2026-02-21 | OSA vs RMA | laliga-es | score=41.4 | peso=0.500
+  2026-04-04 | MLL vs RMA | laliga-es | score=44.4 | peso=0.561
+  2026-04-10 | RMA vs GIR | laliga-es | score=30.1 | peso=0.630
+  2026-04-21 | RMA vs ALA | laliga-es | score=91.4 | peso=0.707
+  2026-04-24 | BET vs RMA | laliga-es | score=49.4 | peso=0.794
+  2026-05-17 | SEV vs RMA | laliga-es | score=27.0 | peso=0.891
+  2026-05-23 | RMA vs ATH | laliga-es | score=69.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 61.15
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=24): 58.30 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 50.33 | Punteggio complessivo (granulari) medio: 10.83 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 7.28 (delta -0.12) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 22.18
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.1 - 88.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.38 (differenza: +2.80)
+Media score in casa: 69.13 | Media score fuori casa: 68.72
+Fattore casa/trasferta applicato: 0.995 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.1
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 1.003 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 53.4 vs media 5 PRECEDENTI: 62.6): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T19:30
+Casa: RCD Espanyol de Barcelona | Trasferta: Real Madrid
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 56.7 (range 25.6 - 84.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 59.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 60.12
+Punteggio REALE ottenuto in quella partita: 69.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +8.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 18 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      94.9    41.6    -53.3     9.8        NO
+   7        7      60.9    85.6    +24.7    20.2        NO
+   8        8      64.4    85.4    +21.0    19.1        NO
+   9        9      69.9   100.0    +30.1    17.9        NO
+  10       10      79.0    48.1    -30.9    18.9        NO
+  11       11      51.4    72.4    +21.0    22.1        SI
+  12       12      57.4    67.9    +10.5    20.5        SI
+  13       13      95.6    80.1    -15.5    19.2        SI
+  14       14      63.4    90.4    +27.0    18.0        NO
+  15       15      93.1    62.4    -30.7    17.8        NO
+  16       16      89.9    74.6    -15.3    17.6        SI
+  17       17      78.3    41.4    -36.9    16.4        NO
+  18       18      53.8    44.4     -9.4    20.0        SI
+  19       19      60.3    30.1    -30.2    21.3        NO
+  20       20      43.4    91.4    +48.0    24.4        NO
+  21       21      73.5    49.4    -24.1    25.2        SI
+  22       22      50.7    27.0    -23.7    24.5        SI
+  23       23      57.2    69.0    +11.8    26.9        SI
+
+MAE (errore assoluto medio): 25.79
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 44.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

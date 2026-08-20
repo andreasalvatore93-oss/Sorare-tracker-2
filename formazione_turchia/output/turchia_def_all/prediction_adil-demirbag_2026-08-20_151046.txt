@@ -1,0 +1,121 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:10:46.595138Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) adil-demirbag: 49 pt attesi (26-78)
+   ORDINAMENTO: 48.21
+   SQUADRA: konyaspor-konya | AVVERSARIO: fenerbahce-istanbul
+======================================================================
+
+######################################################################
+# GIOCATORE: adil-demirbag
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: adil-demirbag (squadra: konyaspor-konya)
+Generato: 2026-08-20T15:10:46.593690Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: spor-toto-super-lig (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-13 | KON vs ALA | spor-toto-super-lig | score=47.0 | peso=0.616
+  2025-09-22 | GS vs KON | spor-toto-super-lig | score=34.6 | peso=0.630
+  2025-09-28 | KON vs IBFK | spor-toto-super-lig | score=57.2 | peso=0.645
+  2025-10-05 | KAS vs KON | spor-toto-super-lig | score=40.4 | peso=0.660
+  2025-10-18 | KON vs KOC | spor-toto-super-lig | score=60.0 | peso=0.675
+  2025-10-22 | KON vs BJK | spor-toto-super-lig | score=44.3 | peso=0.691
+  2025-10-26 | GNÇ vs KON | spor-toto-super-lig | score=80.6 | peso=0.707
+  2025-11-02 | KON vs SAM | spor-toto-super-lig | score=27.0 | peso=0.724
+  2026-01-19 | KON vs EYÜ | spor-toto-super-lig | score=59.6 | peso=0.741
+  2026-01-25 | GAZ vs KON | spor-toto-super-lig | score=53.6 | peso=0.758
+  2026-01-31 | BJK vs KON | spor-toto-super-lig | score=28.0 | peso=0.776
+  2026-02-08 | KON vs GÖZ | spor-toto-super-lig | score=72.9 | peso=0.794
+  2026-02-14 | ALA vs KON | spor-toto-super-lig | score=34.4 | peso=0.812
+  2026-02-21 | KON vs GS | spor-toto-super-lig | score=90.5 | peso=0.831
+  2026-02-27 | IBFK vs KON | spor-toto-super-lig | score=27.0 | peso=0.851
+  2026-03-19 | KON vs GNÇ | spor-toto-super-lig | score=51.8 | peso=0.871
+  2026-04-05 | SAM vs KON | spor-toto-super-lig | score=78.6 | peso=0.891
+  2026-04-12 | KON vs FAT | spor-toto-super-lig | score=83.4 | peso=0.912
+  2026-04-17 | ANT vs KON | spor-toto-super-lig | score=83.7 | peso=0.933
+  2026-04-27 | KON vs TS | spor-toto-super-lig | score=28.8 | peso=0.955
+  2026-05-09 | KON vs FB | spor-toto-super-lig | score=18.1 | peso=0.977
+  2026-08-15 | KON vs RIZ | spor-toto-super-lig | score=36.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 51.79
+  di cui Punteggio decisivo (level_score) medio: 41.30 | Punteggio complessivo (granulari) medio: 10.49 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.50, delta avversario +0.79 | Passaggio condizionato: delta venue -1.23, delta avversario -1.23 | Clean sheet/disimpegni condizionato: delta venue -0.66, delta avversario +1.42 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 22.22
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 28.0 - 80.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 20.02 (differenza: +2.21)
+Media score in casa: 52.10 | Media score fuori casa: 51.22
+Fattore casa/trasferta applicato: 1.004 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.4
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 0.733 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.995
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.002
+Fattore gol subiti (goals_conceded, con cap): 0.997
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.997
+Fattore trend (media ultime 5: 49.4 vs media 5 PRECEDENTI: 56.7): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T18:30
+Casa: Fenerbahçe Spor Kulübü | Trasferta: Tümosan Konyaspor Kulübü
+Competizione: spor-toto-super-lig
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.3 (range 25.5 - 78.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 48.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.71
+Punteggio REALE ottenuto in quella partita: 36.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -16.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 16 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      57.7    80.6    +22.9     9.8        NO
+   7        7      50.2    27.0    -23.2    16.0        NO
+   8        8      60.6    59.6     -1.1    17.7        SI
+   9        9      55.5    53.6     -1.9    17.0        SI
+  10       10      41.6    28.0    -13.6    16.1        SI
+  11       11      43.9    72.9    +29.1    17.0        NO
+  12       12      54.5    34.4    -20.2    18.0        NO
+  13       13      36.6    90.5    +53.8    17.9        NO
+  14       14      46.0    27.0    -19.0    21.2        SI
+  15       15      62.7    51.8    -10.8    21.7        SI
+  16       16      47.3    78.6    +31.3    20.9        NO
+  17       17      71.8    83.4    +11.6    21.6        SI
+  18       18      66.5    83.7    +17.1    22.6        SI
+  19       19      45.6    28.8    -16.7    23.2        SI
+  20       20      42.7    18.1    -24.6    23.6        NO
+  21       21      46.9    36.6    -10.3    24.8        SI
+
+MAE (errore assoluto medio): 19.20
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 56.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

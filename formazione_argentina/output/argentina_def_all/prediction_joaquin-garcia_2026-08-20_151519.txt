@@ -1,0 +1,111 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:15:19.822559Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) joaquin-garcia: 47 pt attesi (22-73)
+   ORDINAMENTO: 45.88
+   SQUADRA: velez-sarsfield-capital-federal-ciudad-de-buenos-aires | AVVERSARIO: river-plate-capital-federal-ciudad-de-buenos-aires
+======================================================================
+
+######################################################################
+# GIOCATORE: joaquin-garcia
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: joaquin-garcia (squadra: velez-sarsfield-capital-federal-ciudad-de-buenos-aires)
+Generato: 2026-08-20T15:15:19.821264Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-09 | VEL vs BOC | superliga-argentina-de-futbol | score=43.4 | peso=0.691
+  2026-02-14 | DYJ vs VEL | superliga-argentina-de-futbol | score=36.6 | peso=0.707
+  2026-02-22 | VEL vs RIV | superliga-argentina-de-futbol | score=74.1 | peso=0.724
+  2026-02-25 | VEL vs RIE | superliga-argentina-de-futbol | score=52.1 | peso=0.741
+  2026-03-02 | EST vs VEL | superliga-argentina-de-futbol | score=51.1 | peso=0.758
+  2026-03-21 | VEL vs LAN | superliga-argentina-de-futbol | score=22.2 | peso=0.776
+  2026-04-03 | GMD vs VEL | superliga-argentina-de-futbol | score=33.6 | peso=0.794
+  2026-04-14 | VEL vs CSE | superliga-argentina-de-futbol | score=72.4 | peso=0.812
+  2026-04-20 | SLO vs VEL | superliga-argentina-de-futbol | score=71.3 | peso=0.831
+  2026-04-27 | VEL vs UNI | superliga-argentina-de-futbol | score=75.1 | peso=0.851
+  2026-05-04 | VEL vs NOB | superliga-argentina-de-futbol | score=49.4 | peso=0.871
+  2026-05-11 | VEL vs GLP | superliga-argentina-de-futbol | score=6.5 | peso=0.891
+  2026-07-24 | VEL vs INS | superliga-argentina-de-futbol | score=78.7 | peso=0.912
+  2026-07-30 | CAT vs VEL | superliga-argentina-de-futbol | score=41.6 | peso=0.933
+  2026-08-03 | VEL vs IND | superliga-argentina-de-futbol | score=66.0 | peso=0.955
+  2026-08-08 | BOC vs VEL | superliga-argentina-de-futbol | score=23.8 | peso=0.977
+  2026-08-17 | VEL vs DYJ | superliga-argentina-de-futbol | score=27.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 48.22
+  di cui Punteggio decisivo (level_score) medio: 36.67 | Punteggio complessivo (granulari) medio: 11.55 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.50, delta avversario -0.09 | Passaggio condizionato: delta venue -0.73, delta avversario -0.05 | Clean sheet/disimpegni condizionato: delta venue -0.38, delta avversario +0.14 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 21.55
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 23.8 - 74.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.38 (differenza: +3.17)
+Media score in casa: 51.57 | Media score fuori casa: 43.01
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.0
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 0.802 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 0.997
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.998
+Fattore trend (media ultime 5: 47.0 vs media 5 PRECEDENTI: 54.2): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T22:15
+Casa: CA River Plate | Trasferta: Club Atlético Vélez Sarsfield
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.7 (range 22.3 - 72.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 45.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.79
+Punteggio REALE ottenuto in quella partita: 27.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -22.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 11 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      38.6    33.6     -5.0    17.6        SI
+   7        7      52.3    72.4    +20.2    17.0        NO
+   8        8      53.2    71.3    +18.2    19.0        SI
+   9        9      49.2    75.1    +25.8    19.6        NO
+  10       10      48.3    49.4     +1.1    20.3        SI
+  11       11      48.5     6.5    -42.0    19.3        NO
+  12       12      36.3    78.7    +42.5    23.7        NO
+  13       13      63.7    41.6    -22.1    24.5        SI
+  14       14      41.5    66.0    +24.5    23.7        NO
+  15       15      54.7    23.8    -30.9    23.2        NO
+  16       16      45.1    27.4    -17.7    23.7        SI
+
+MAE (errore assoluto medio): 22.72
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 45.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:07:14.399371Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) amir-rrahmani: 59 pt attesi (34-76)
+   ORDINAMENTO: 61.46
+   SQUADRA: napoli-castel-volturno | AVVERSARIO: genoa-genova
+======================================================================
+
+######################################################################
+# GIOCATORE: amir-rrahmani
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: amir-rrahmani (squadra: napoli-castel-volturno)
+Generato: 2026-08-20T15:07:14.398831Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 17
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: serie-a-it (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | SAS vs NAP | serie-a-it | score=74.1 | peso=0.630
+  2025-08-30 | NAP vs CAG | serie-a-it | score=74.2 | peso=0.645
+  2025-11-01 | NAP vs COM | serie-a-it | score=65.4 | peso=0.660
+  2025-11-09 | BOL vs NAP | serie-a-it | score=36.6 | peso=0.675
+  2025-11-22 | NAP vs ATA | serie-a-it | score=52.9 | peso=0.691
+  2025-11-30 | ROM vs NAP | serie-a-it | score=64.3 | peso=0.707
+  2025-12-07 | NAP vs JUV | serie-a-it | score=66.2 | peso=0.724
+  2025-12-14 | UDI vs NAP | serie-a-it | score=46.7 | peso=0.741
+  2025-12-28 | CRE vs NAP | serie-a-it | score=64.0 | peso=0.758
+  2026-01-04 | LAZ vs NAP | serie-a-it | score=78.4 | peso=0.776
+  2026-01-07 | NAP vs VER | serie-a-it | score=65.8 | peso=0.794
+  2026-01-11 | INT vs NAP | serie-a-it | score=27.8 | peso=0.812
+  2026-01-14 | NAP vs PAR | serie-a-it | score=83.6 | peso=0.831
+  2026-01-17 | NAP vs SAS | serie-a-it | score=47.8 | peso=0.851
+  2026-02-07 | GEN vs NAP | serie-a-it | score=79.5 | peso=0.871
+  2026-02-15 | NAP vs ROM | serie-a-it | score=19.1 | peso=0.891
+  2026-04-24 | NAP vs CRE | serie-a-it | score=62.4 | peso=0.912
+  2026-05-02 | COM vs NAP | serie-a-it | score=74.4 | peso=0.933
+  2026-05-11 | NAP vs BOL | serie-a-it | score=34.9 | peso=0.955
+  2026-05-17 | PIS vs NAP | serie-a-it | score=100.0 | peso=0.977
+  2026-05-24 | NAP vs UDI | serie-a-it | score=78.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 62.01
+  di cui Punteggio decisivo (level_score) medio: 38.26 | Punteggio complessivo (granulari) medio: 23.75 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.09, delta avversario -0.36 | Passaggio condizionato: delta venue -0.20, delta avversario +2.73 | Clean sheet/disimpegni condizionato: delta venue +0.45, delta avversario -0.29 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 20.47
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.6 - 78.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.36 (differenza: +4.11)
+Media score in casa: 59.21 | Media score fuori casa: 64.57
+Fattore casa/trasferta applicato: 1.006 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.1
+Ranking prossimo avversario: 16
+Fattore forza avversario applicato: 0.802 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.004
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.002
+Fattore trend (media ultime 5: 70.4 vs media 5 PRECEDENTI: 51.5): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T18:45
+Casa: Genoa CFC | Trasferta: SSC Napoli
+Competizione: serie-a-it
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 58.9 (range 33.5 - 75.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 61.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 60.94
+Punteggio REALE ottenuto in quella partita: 78.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +18.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      57.2    66.2     +9.0    14.4        SI
+   7        7      66.6    46.7    -19.9    13.4        NO
+   8        8      79.6    64.0    -15.6    13.7        NO
+   9        9      59.6    78.4    +18.8    12.9        NO
+  10       10      84.0    65.8    -18.2    13.7        NO
+  11       11      43.3    27.8    -15.5    13.1        NO
+  12       12      67.6    83.6    +16.0    16.7        SI
+  13       13      65.3    47.8    -17.5    17.7        SI
+  14       14      73.2    79.5     +6.3    17.4        SI
+  15       15      47.2    19.1    -28.1    17.6        NO
+  16       16      75.8    62.4    -13.3    21.0        SI
+  17       17      46.7    74.4    +27.7    20.2        NO
+  18       18      56.3    34.9    -21.4    20.0        NO
+  19       19      79.7   100.0    +20.3    20.5        SI
+  20       20      59.9    78.9    +19.0    22.7        SI
+
+MAE (errore assoluto medio): 17.76
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 46.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

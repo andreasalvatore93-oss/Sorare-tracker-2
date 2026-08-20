@@ -1,0 +1,106 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:10:07.352154Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) tommaso-martinelli: 50 pt attesi (31-70)
+   SQUADRA: avellino-avellino | AVVERSARIO: arezzo-arezzo
+======================================================================
+
+######################################################################
+# GIOCATORE: tommaso-martinelli
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: tommaso-martinelli (squadra: avellino-avellino)
+Generato: 2026-08-20T15:10:07.351514Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 20
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: serie-b-it (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-25 | CTZ vs SAM | serie-b-it | score=70.8 | peso=0.177
+  2026-01-31 | SAM vs SPE | serie-b-it | score=67.9 | peso=0.198
+  2026-02-07 | MOD vs SAM | serie-b-it | score=39.9 | peso=0.223
+  2026-02-10 | SAM vs PAL | serie-b-it | score=31.6 | peso=0.250
+  2026-02-14 | SAM vs CPA | serie-b-it | score=71.0 | peso=0.281
+  2026-03-04 | JST vs SAM | serie-b-it | score=41.5 | peso=0.315
+  2026-03-08 | FRO vs SAM | serie-b-it | score=56.5 | peso=0.354
+  2026-03-14 | SAM vs VEN | serie-b-it | score=72.7 | peso=0.397
+  2026-03-18 | CAR vs SAM | serie-b-it | score=32.8 | peso=0.445
+  2026-03-22 | SAM vs AVE | serie-b-it | score=32.3 | peso=0.500
+  2026-04-06 | SAM vs EMP | serie-b-it | score=62.8 | peso=0.561
+  2026-04-11 | PES vs SAM | serie-b-it | score=33.4 | peso=0.630
+  2026-04-17 | SAM vs MON | serie-b-it | score=30.5 | peso=0.707
+  2026-04-25 | CES vs SAM | serie-b-it | score=73.8 | peso=0.794
+  2026-05-01 | SAM vs SUD | serie-b-it | score=69.7 | peso=0.891
+  2026-05-08 | REG vs SAM | serie-b-it | score=40.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 51.01
+  di cui Punteggio decisivo (level_score) medio: 45.68 | Punteggio complessivo (granulari) medio: 5.33 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 45.68 (delta +0.00 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 | Possesso condizionato per venue: delta +0.00 | Goalkeeping condizionato per venue: delta +0.00 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 17.35
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.3 - 71.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.10 (differenza: +1.25)
+Media score in casa: 54.81 | Media score fuori casa: 48.59
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.8
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.000
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.000
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.000
+Tasso storico clean sheet (porta inviolata nei primi 60'): 43.8% (bonus atteso incorporato nella media pesata: ~10.9pt)
+Fattore trend (media ultime 5: 50.5 vs media 5 PRECEDENTI: 50.9): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T19:00
+Casa: US Avellino | Trasferta: Unione Sportiva Arezzo
+Competizione: serie-b-it
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.6 (range 30.9 - 69.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.64
+Punteggio REALE ottenuto in quella partita: 40.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -12.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      38.4    56.5    +18.1    18.8        SI
+   7        7      43.0    72.7    +29.7    16.9        NO
+   8        8      62.0    32.8    -29.2    17.6        NO
+   9        9      60.1    32.3    -27.8    19.1        NO
+  10       10      66.6    62.8     -3.8    19.5        SI
+  11       11      67.0    33.4    -33.6    18.8        NO
+  12       12      42.6    30.5    -12.1    18.8        SI
+  13       13      46.6    73.8    +27.2    18.9        NO
+  14       14      64.2    69.7     +5.5    20.7        SI
+  15       15      65.2    40.0    -25.2    20.7        NO
+
+MAE (errore assoluto medio): 21.22
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 40.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

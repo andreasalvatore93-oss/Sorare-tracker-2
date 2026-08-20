@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:15:03.654495Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) suat-serdar: 46 pt attesi (27-66)
+   SQUADRA: hellas-verona-verona | AVVERSARIO: ascoli-ascoli
+======================================================================
+
+######################################################################
+# GIOCATORE: suat-serdar
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: suat-serdar (squadra: hellas-verona-verona)
+Generato: 2026-08-20T15:15:03.653808Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 18
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: serie-b-it (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-25 | UDI vs VER | serie-a-it | score=66.2 | peso=0.758
+  2025-08-31 | LAZ vs VER | serie-a-it | score=53.3 | peso=0.779
+  2025-09-15 | VER vs CRE | serie-a-it | score=50.7 | peso=0.801
+  2025-09-20 | VER vs JUV | serie-a-it | score=48.5 | peso=0.824
+  2025-09-28 | ROM vs VER | serie-a-it | score=44.4 | peso=0.847
+  2025-10-03 | VER vs SAS | serie-a-it | score=29.3 | peso=0.871
+  2025-10-18 | PIS vs VER | serie-a-it | score=50.7 | peso=0.895
+  2025-10-26 | VER vs CAG | serie-a-it | score=27.2 | peso=0.920
+  2025-10-29 | COM vs VER | serie-a-it | score=78.6 | peso=0.946
+  2026-01-04 | VER vs TOR | serie-a-it | score=34.3 | peso=0.973
+  2026-01-26 | VER vs UDI | serie-a-it | score=26.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 45.80
+  di cui Punteggio decisivo (level_score) medio: 37.62 | Punteggio complessivo (granulari) medio: 8.18 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 34.43 (delta -3.19)
+  Efficacia offensiva condizionata: delta venue +0.08, delta avversario +0.54 | Passaggio condizionato: delta venue +0.14, delta avversario +1.31 | Gol subiti condizionato: delta venue +0.18, delta avversario +0.73 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 16.03
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 27.2 - 66.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.83 (differenza: +4.20)
+Media score in casa: 36.13 | Media score fuori casa: 58.64
+Fattore casa/trasferta applicato: 0.994 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.6
+Ranking prossimo avversario: 18
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 0.992
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.002
+Fattore trend (media ultime 5: 43.3 vs media 5 PRECEDENTI: 44.9): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T17:00
+Casa: Hellas Verona FC | Trasferta: Ascoli Picchio FC 1898
+Competizione: serie-b-it
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.1 (range 27.5 - 66.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.01
+Punteggio REALE ottenuto in quella partita: 26.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -21.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      65.2    50.7    -14.5    12.1        NO
+   7        7      54.0    27.2    -26.8    11.2        NO
+   8        8      34.1    78.6    +44.5    13.2        NO
+   9        9      52.0    34.3    -17.7    17.2        NO
+  10       10      46.6    26.8    -19.8    17.0        NO
+
+MAE (errore assoluto medio): 24.66
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 0.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

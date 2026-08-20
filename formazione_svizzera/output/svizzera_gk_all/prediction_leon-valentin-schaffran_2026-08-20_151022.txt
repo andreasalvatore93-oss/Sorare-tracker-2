@@ -1,0 +1,77 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:10:22.674070Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) leon-valentin-schaffran: 44 pt attesi (36-61)
+   SQUADRA: vaduz-vaduz | AVVERSARIO: young-boys-bern
+======================================================================
+
+######################################################################
+# GIOCATORE: leon-valentin-schaffran
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: leon-valentin-schaffran (squadra: vaduz-vaduz)
+Generato: 2026-08-20T15:10:22.673459Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 7
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: super-league-ch (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-07-23 | VAD vs ATL | uefa-europa-conference-league | score=60.0 | peso=0.561
+  2026-07-26 | LUG vs VAD | super-league-ch | score=34.1 | peso=0.630
+  2026-07-30 | ATL vs VAD | uefa-europa-conference-league | score=60.0 | peso=0.707
+  2026-08-06 | INT vs VAD | uefa-europa-conference-league | score=35.0 | peso=0.794
+  2026-08-09 | SIO vs VAD | super-league-ch | score=42.5 | peso=0.891
+  2026-08-13 | VAD vs INT | uefa-europa-conference-league | score=35.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 43.25
+  di cui Punteggio decisivo (level_score) medio: 39.17 | Punteggio complessivo (granulari) medio: 4.08 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 35.14 (delta -4.03 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -0.99, delta avversario -0.95 | Possesso condizionato per venue: delta -0.20 | Goalkeeping condizionato per venue: delta +2.02 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 10.77
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.0 - 60.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.67 (differenza: +1.10)
+Media score in casa: 47.50 | Media score fuori casa: 42.90
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 2.5
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.037 (gol fatti reali dell'avversario, ultime 10; delta granulare parate -0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.003
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.003
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.997
+Tasso storico clean sheet (porta inviolata nei primi 60'): 0.0% (bonus atteso incorporato nella media pesata: ~0.0pt)
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T12:00
+Casa: BSC Young Boys | Trasferta: FC Vaduz
+Competizione: super-league-ch
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 43.9 (range 35.6 - 60.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.56
+Punteggio REALE ottenuto in quella partita: 35.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -10.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

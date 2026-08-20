@@ -1,0 +1,102 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:11:05.841579Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) konstantinos-tzolakis: 48 pt attesi (31-77)
+   SQUADRA: hull-city-hull | AVVERSARIO: manchester-united-manchester
+======================================================================
+
+######################################################################
+# GIOCATORE: konstantinos-tzolakis
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: konstantinos-tzolakis (squadra: hull-city-hull)
+Generato: 2026-08-20T15:11:05.840906Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 21
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-05 | ? vs ? | wc-qualification-europe | score=42.1 | peso=0.223
+  2025-09-08 | ? vs ? | wc-qualification-europe | score=46.1 | peso=0.250
+  2025-10-01 | ARS vs OLY | uefa-champions-league | score=28.7 | peso=0.281
+  2025-10-09 | ? vs ? | wc-qualification-europe | score=3.3 | peso=0.315
+  2025-10-21 | FCB vs OLY | uefa-champions-league | score=0.0 | peso=0.354
+  2025-11-04 | OLY vs PSV | uefa-champions-league | score=35.9 | peso=0.397
+  2025-11-26 | OLY vs RMA | uefa-champions-league | score=29.2 | peso=0.445
+  2025-12-09 | KAI vs OLY | uefa-champions-league | score=69.3 | peso=0.500
+  2026-01-20 | OLY vs B04 | uefa-champions-league | score=77.4 | peso=0.561
+  2026-01-28 | AJA vs OLY | uefa-champions-league | score=36.9 | peso=0.630
+  2026-02-18 | OLY vs B04 | uefa-champions-league | score=42.2 | peso=0.707
+  2026-02-24 | B04 vs OLY | uefa-champions-league | score=64.8 | peso=0.794
+  2026-03-31 | ? vs ? | friendlies | score=75.3 | peso=0.891
+  2026-06-04 | ? vs ? | friendlies | score=34.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 46.43
+  di cui Punteggio decisivo (level_score) medio: 42.52 | Punteggio complessivo (granulari) medio: 3.91 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 43.90 (delta +1.38 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -0.51, delta avversario +1.59 | Possesso condizionato per venue: delta -0.59 | Goalkeeping condizionato per venue: delta +2.27 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 22.28
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.2 - 75.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.10 (differenza: +3.18)
+Media score in casa: 46.17 | Media score fuori casa: 39.94
+Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.8
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.815 (gol fatti reali dell'avversario, ultime 10; delta granulare parate -0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.994
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.002
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.007
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.000
+Tasso storico clean sheet (porta inviolata nei primi 60'): 28.6% (bonus atteso incorporato nella media pesata: ~7.1pt)
+Fattore trend (media ultime 5: 51.2 vs media 5 PRECEDENTI: 46.7): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T11:30
+Casa: Hull City AFC | Trasferta: Manchester United FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.9 (range 30.6 - 76.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.36
+Punteggio REALE ottenuto in quella partita: 34.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -14.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 8 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      44.7    29.2    -15.5    20.8        SI
+   7        7      15.5    69.3    +53.8    18.8        NO
+   8        8      31.2    77.4    +46.2    25.9        NO
+   9        9      30.4    36.9     +6.5    30.3        SI
+  10       10      45.3    42.2     -3.1    27.8        SI
+  11       11      33.1    64.8    +31.7    25.6        NO
+  12       12      40.8    75.3    +34.5    25.7        NO
+  13       13      44.9    34.2    -10.7    26.9        SI
+
+MAE (errore assoluto medio): 25.25
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

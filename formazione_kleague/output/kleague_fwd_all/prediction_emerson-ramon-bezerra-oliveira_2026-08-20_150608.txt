@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:08.203368Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) emerson-ramon-bezerra-oliveira: 58 pt attesi (41-80)
+   ORDINAMENTO: 62.39
+   SQUADRA: jeju-united-seogwipo-jeju-do | AVVERSARIO: pohang-steelers-pohang
+   AMBIGUO_FIXTURE: si
+======================================================================
+
+######################################################################
+# GIOCATORE: emerson-ramon-bezerra-oliveira
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: emerson-ramon-bezerra-oliveira (squadra: jeju-united-seogwipo-jeju-do)
+Generato: 2026-08-20T15:06:08.201480Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 23
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-01 | JEJ vs GWA | k-league-1 | score=51.6 | peso=0.111
+  2026-03-08 | ANY vs JEJ | k-league-1 | score=61.8 | peso=0.125
+  2026-03-15 | JEJ vs SEO | k-league-1 | score=41.3 | peso=0.140
+  2026-03-18 | JEJ vs ULS | k-league-1 | score=57.2 | peso=0.157
+  2026-03-22 | GAN vs JEJ | k-league-1 | score=32.7 | peso=0.177
+  2026-04-04 | JEJ vs BUC | k-league-1 | score=50.7 | peso=0.198
+  2026-04-11 | POH vs JEJ | k-league-1 | score=39.5 | peso=0.223
+  2026-04-18 | JEJ vs SAN | k-league-1 | score=49.2 | peso=0.250
+  2026-04-22 | DJO vs JEJ | k-league-1 | score=46.8 | peso=0.281
+  2026-04-25 | INC vs JEJ | k-league-1 | score=54.6 | peso=0.315
+  2026-05-02 | JEJ vs JMO | k-league-1 | score=44.4 | peso=0.354
+  2026-05-05 | BUC vs JEJ | k-league-1 | score=50.8 | peso=0.397
+  2026-05-09 | JEJ vs SEO | k-league-1 | score=83.8 | peso=0.445
+  2026-05-13 | ULS vs JEJ | k-league-1 | score=71.7 | peso=0.500
+  2026-05-17 | JEJ vs ANY | k-league-1 | score=72.9 | peso=0.561
+  2026-07-21 | JEJ vs GAN | k-league-1 | score=36.9 | peso=0.630
+  2026-07-26 | GWA vs JEJ | k-league-1 | score=47.5 | peso=0.707
+  2026-08-02 | JEJ vs INC | k-league-1 | score=81.5 | peso=0.794
+  2026-08-08 | JMO vs JEJ | k-league-1 | score=100.0 | peso=0.891
+  2026-08-15 | JEJ vs ANY | k-league-1 | score=53.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 61.70
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=20): 58.29 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 47.20 | Punteggio complessivo (granulari) medio: 14.50 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.52 (delta -0.41) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.63
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 44.4 - 83.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.96 (differenza: +4.67)
+Media score in casa: 56.62 | Media score fuori casa: 56.16
+Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.3
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.038 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.006
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.008
+Fattore trend (media ultime 5: 63.8 vs media 5 PRECEDENTI: 64.7): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-25T10:30
+Casa: Jeju SK FC | Trasferta: Pohang Steelers FC
+Competizione: k-league-1
+ATTENZIONE FIXTURE AMBIGUA: due partite future avevano GIA' le starter odds pubblicate insieme -- scelta quella piu' tardiva (caso limite mai visto prima del 10/08/2026, verificare a mano).
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 58.2 (range 40.9 - 80.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 62.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 62.86
+Punteggio REALE ottenuto in quella partita: 53.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -9.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      51.2    39.5    -11.7    11.3        NO
+   7        7      53.5    49.2     -4.3    10.9        SI
+   8        8      50.0    46.8     -3.2     9.9        SI
+   9        9      46.5    54.6     +8.1     9.1        SI
+  10       10      42.0    44.4     +2.4     8.9        SI
+  11       11      54.4    50.8     -3.6     8.3        SI
+  12       12      38.4    83.8    +45.4     7.8        NO
+  13       13      44.2    71.7    +27.5    16.0        NO
+  14       14      55.9    72.9    +17.0    16.5        NO
+  15       15      54.2    36.9    -17.3    16.8        NO
+  16       16      65.9    47.5    -18.4    17.7        NO
+  17       17      55.9    81.5    +25.6    16.8        NO
+  18       18      52.0   100.0    +48.0    18.8        NO
+  19       19      65.0    53.3    -11.7    23.8        SI
+
+MAE (errore assoluto medio): 17.45
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 42.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

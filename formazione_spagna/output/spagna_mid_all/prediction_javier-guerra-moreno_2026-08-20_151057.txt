@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:10:57.111701Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) javier-guerra-moreno: 51 pt attesi (37-68)
+   SQUADRA: valencia-valencia | AVVERSARIO: celta-de-vigo-vigo
+======================================================================
+
+######################################################################
+# GIOCATORE: javier-guerra-moreno
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: javier-guerra-moreno (squadra: valencia-valencia)
+Generato: 2026-08-20T15:10:57.110807Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 37
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-24 | OSA vs VCF | laliga-es | score=31.4 | peso=0.574
+  2025-08-29 | VCF vs GET | laliga-es | score=60.0 | peso=0.590
+  2025-09-20 | VCF vs ATH | laliga-es | score=71.6 | peso=0.607
+  2025-10-20 | ALA vs VCF | laliga-es | score=45.5 | peso=0.624
+  2025-10-25 | VCF vs VIL | laliga-es | score=27.2 | peso=0.642
+  2025-11-09 | VCF vs BET | laliga-es | score=31.4 | peso=0.660
+  2025-11-21 | VCF vs LEV | laliga-es | score=40.8 | peso=0.678
+  2025-12-07 | VCF vs SEV | laliga-es | score=33.9 | peso=0.697
+  2026-01-03 | CEL vs VCF | laliga-es | score=40.6 | peso=0.717
+  2026-02-22 | VIL vs VCF | laliga-es | score=53.8 | peso=0.737
+  2026-03-01 | VCF vs OSA | laliga-es | score=51.8 | peso=0.758
+  2026-03-08 | VCF vs ALA | laliga-es | score=62.8 | peso=0.779
+  2026-03-14 | OVI vs VCF | laliga-es | score=50.8 | peso=0.801
+  2026-03-21 | SEV vs VCF | laliga-es | score=45.8 | peso=0.824
+  2026-04-05 | VCF vs CEL | laliga-es | score=35.8 | peso=0.847
+  2026-04-25 | VCF vs GIR | laliga-es | score=60.6 | peso=0.871
+  2026-05-02 | VCF vs ATM | laliga-es | score=43.6 | peso=0.895
+  2026-05-10 | ATH vs VCF | laliga-es | score=42.1 | peso=0.920
+  2026-05-14 | VCF vs RAY | laliga-es | score=72.0 | peso=0.946
+  2026-05-17 | RSO vs VCF | laliga-es | score=74.1 | peso=0.973
+  2026-05-23 | VCF vs FCB | laliga-es | score=67.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 50.69
+  di cui Punteggio decisivo (level_score) medio: 44.53 | Punteggio complessivo (granulari) medio: 6.16 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 46.33 (delta +1.80)
+  Efficacia offensiva condizionata: delta venue -0.05, delta avversario +0.56 | Passaggio condizionato: delta venue -0.13, delta avversario -0.20 | Gol subiti condizionato: delta venue +0.06, delta avversario -0.11 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 14.17
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.8 - 67.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.71 (differenza: +1.45)
+Media score in casa: 50.65 | Media score fuori casa: 48.01
+Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.7
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.245 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.994
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore trend (media ultime 5: 60.2 vs media 5 PRECEDENTI: 51.1): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T17:30
+Casa: Valencia CF | Trasferta: RC Celta
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.5 (range 36.6 - 67.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.62
+Punteggio REALE ottenuto in quella partita: 67.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +17.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      57.2    40.8    -16.4    18.0        SI
+   7        7      32.2    33.9     +1.7    16.6        SI
+   8        8      43.0    40.6     -2.4    15.9        SI
+   9        9      35.5    53.8    +18.3    14.9        NO
+  10       10      45.6    51.8     +6.2    14.6        SI
+  11       11      31.2    62.8    +31.6    14.1        NO
+  12       12      48.7    50.8     +2.1    14.7        SI
+  13       13      37.7    45.8     +8.1    14.1        SI
+  14       14      48.5    35.8    -12.7    13.5        SI
+  15       15      42.7    60.6    +17.9    13.3        NO
+  16       16      36.0    43.6     +7.6    13.5        SI
+  17       17      47.2    42.1     -5.1    13.0        SI
+  18       18      58.1    72.0    +13.9    12.6        NO
+  19       19      57.9    74.1    +16.2    14.1        NO
+  20       20      49.4    67.0    +17.6    15.4        NO
+
+MAE (errore assoluto medio): 11.86
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:11:04.500078Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) einar-galilea-azaceta: 45 pt attesi (24-57)
+   ORDINAMENTO: 44.86
+   SQUADRA: malaga-malaga | AVVERSARIO: deportivo-la-coruna-a-coruna
+======================================================================
+
+######################################################################
+# GIOCATORE: einar-galilea-azaceta
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: einar-galilea-azaceta (squadra: malaga-malaga)
+Generato: 2026-08-20T15:11:04.498955Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 46
+Escluse (DID_NOT_PLAY): 20
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-21 | MCF vs CAD | segunda-division-es | score=37.9 | peso=0.645
+  2025-09-28 | BCF vs MCF | segunda-division-es | score=9.6 | peso=0.660
+  2025-10-12 | MCF vs DEP | segunda-division-es | score=53.8 | peso=0.675
+  2025-11-23 | MCF vs MIR | segunda-division-es | score=60.0 | peso=0.691
+  2025-11-29 | VLL vs MCF | segunda-division-es | score=52.8 | peso=0.707
+  2025-12-08 | MCF vs ZAR | segunda-division-es | score=76.7 | peso=0.724
+  2025-12-14 | ALB vs MCF | segunda-division-es | score=40.3 | peso=0.741
+  2025-12-21 | MCF vs UDA | segunda-division-es | score=40.9 | peso=0.758
+  2026-01-04 | RSG vs MCF | segunda-division-es | score=23.4 | peso=0.776
+  2026-01-11 | MCF vs ADC | segunda-division-es | score=50.1 | peso=0.794
+  2026-01-18 | COR vs MCF | segunda-division-es | score=56.8 | peso=0.812
+  2026-01-23 | MCF vs BCF | segunda-division-es | score=59.0 | peso=0.831
+  2026-02-02 | MIR vs MCF | segunda-division-es | score=52.9 | peso=0.851
+  2026-02-22 | MCF vs ALB | segunda-division-es | score=71.7 | peso=0.871
+  2026-04-25 | MCF vs CAS | segunda-division-es | score=24.1 | peso=0.891
+  2026-05-02 | EIB vs MCF | segunda-division-es | score=52.2 | peso=0.912
+  2026-05-16 | ADC vs MCF | segunda-division-es | score=26.1 | peso=0.933
+  2026-05-24 | MCF vs RAC | segunda-division-es | score=48.5 | peso=0.955
+  2026-05-31 | ZAR vs MCF | segunda-division-es | score=48.4 | peso=0.977
+  2026-08-19 | ATM vs MCF | laliga-es | score=46.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 46.66
+  di cui Punteggio decisivo (level_score) medio: 33.34 | Punteggio complessivo (granulari) medio: 13.32 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.03, delta avversario +0.03 | Passaggio condizionato: delta venue -0.79, delta avversario -0.79 | Clean sheet/disimpegni condizionato: delta venue -0.42, delta avversario -0.42 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.62
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 26.1 - 59.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.70 (differenza: +2.92)
+Media score in casa: 46.16 | Media score fuori casa: 46.66
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 18.0
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.665 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.999
+Fattore trend (media ultime 5: 44.3 vs media 5 PRECEDENTI: 52.7): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-24T19:30
+Casa: Málaga CF | Trasferta: Real Club Deportivo de La Coruña
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.9 (range 24.3 - 57.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 44.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.69
+Punteggio REALE ottenuto in quella partita: 46.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -0.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.1    40.3     -8.8    22.9        SI
+   7        7      47.8    40.9     -6.8    21.3        SI
+   8        8      46.8    23.4    -23.5    20.0        NO
+   9        9      44.0    50.1     +6.1    20.6        SI
+  10       10      44.7    56.8    +12.1    19.5        SI
+  11       11      45.9    59.0    +13.1    18.9        SI
+  12       12      47.1    52.9     +5.8    18.5        SI
+  13       13      47.6    71.7    +24.0    17.7        NO
+  14       14      49.6    24.1    -25.5    18.5        NO
+  15       15      47.6    52.2     +4.5    19.3        SI
+  16       16      48.0    26.1    -21.9    18.6        NO
+  17       17      46.4    48.5     +2.1    19.0        SI
+  18       18      46.6    48.4     +1.8    18.3        SI
+  19       19      46.7    46.2     -0.5    17.7        SI
+
+MAE (errore assoluto medio): 11.19
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 71.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

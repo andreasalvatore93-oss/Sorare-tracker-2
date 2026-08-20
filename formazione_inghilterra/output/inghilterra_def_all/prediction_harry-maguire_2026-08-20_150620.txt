@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:20.693660Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) harry-maguire: 50 pt attesi (41-59)
+   ORDINAMENTO: 51.24
+   SQUADRA: manchester-united-manchester | AVVERSARIO: hull-city-hull
+======================================================================
+
+######################################################################
+# GIOCATORE: harry-maguire
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: harry-maguire (squadra: manchester-united-manchester)
+Generato: 2026-08-20T15:06:20.693015Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 37
+Escluse (DID_NOT_PLAY): 15
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-20 | MUN vs CHE | premier-league-gb-eng | score=76.1 | peso=0.660
+  2025-09-27 | BRE vs MUN | premier-league-gb-eng | score=32.2 | peso=0.675
+  2025-10-19 | LIV vs MUN | premier-league-gb-eng | score=62.9 | peso=0.691
+  2025-11-08 | TOT vs MUN | premier-league-gb-eng | score=48.3 | peso=0.707
+  2026-01-17 | MUN vs MCI | premier-league-gb-eng | score=47.7 | peso=0.724
+  2026-01-25 | ARS vs MUN | premier-league-gb-eng | score=44.2 | peso=0.741
+  2026-02-01 | MUN vs FUL | premier-league-gb-eng | score=61.0 | peso=0.758
+  2026-02-07 | MUN vs TOT | premier-league-gb-eng | score=59.5 | peso=0.776
+  2026-02-10 | WHU vs MUN | premier-league-gb-eng | score=64.8 | peso=0.794
+  2026-02-23 | EVE vs MUN | premier-league-gb-eng | score=54.7 | peso=0.812
+  2026-03-01 | MUN vs CRY | premier-league-gb-eng | score=61.0 | peso=0.831
+  2026-03-04 | NEW vs MUN | premier-league-gb-eng | score=36.1 | peso=0.851
+  2026-03-15 | MUN vs AST | premier-league-gb-eng | score=49.9 | peso=0.871
+  2026-03-20 | BOR vs MUN | premier-league-gb-eng | score=5.6 | peso=0.891
+  2026-04-27 | MUN vs BRE | premier-league-gb-eng | score=90.5 | peso=0.912
+  2026-05-03 | MUN vs LIV | premier-league-gb-eng | score=48.5 | peso=0.933
+  2026-05-09 | SUN vs MUN | premier-league-gb-eng | score=62.8 | peso=0.955
+  2026-05-17 | MUN vs NOT | premier-league-gb-eng | score=54.8 | peso=0.977
+  2026-05-24 | BRI vs MUN | premier-league-gb-eng | score=54.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 53.36
+  di cui Punteggio decisivo (level_score) medio: 36.92 | Punteggio complessivo (granulari) medio: 16.44 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.28, delta avversario -0.18 | Passaggio condizionato: delta venue -0.99, delta avversario -0.20 | Clean sheet/disimpegni condizionato: delta venue +0.55, delta avversario -0.16 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.39
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 44.2 - 62.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.11 (differenza: +7.28)
+Media score in casa: 61.00 | Media score fuori casa: 46.55
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.3
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.733 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.994
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.994
+Fattore gol subiti (goals_conceded, con cap): 1.002
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.003
+Fattore trend (media ultime 5: 61.8 vs media 5 PRECEDENTI: 40.9): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T11:30
+Casa: Hull City AFC | Trasferta: Manchester United FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.7 (range 40.6 - 59.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 51.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.31
+Punteggio REALE ottenuto in quella partita: 54.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +0.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      58.6    61.0     +2.4    15.2        SI
+   7        7      70.9    59.5    -11.4    14.4        SI
+   8        8      54.8    64.8    +10.0    13.6        SI
+   9        9      62.0    54.7     -7.2    13.4        SI
+  10       10      66.4    61.0     -5.3    12.6        SI
+  11       11      59.1    36.1    -23.0    12.1        NO
+  12       12      43.1    49.9     +6.8    13.2        SI
+  13       13      46.2     5.6    -40.6    12.6        NO
+  14       14      49.9    90.5    +40.7    18.9        NO
+  15       15      45.9    48.5     +2.6    21.8        SI
+  16       16      47.4    62.8    +15.4    21.0        SI
+  17       17      67.5    54.8    -12.8    20.5        SI
+  18       18      49.6    54.0     +4.4    19.8        SI
+
+MAE (errore assoluto medio): 14.03
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 76.9%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

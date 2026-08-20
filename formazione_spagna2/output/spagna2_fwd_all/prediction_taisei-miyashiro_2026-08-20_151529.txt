@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:15:29.419157Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) taisei-miyashiro: 51 pt attesi (37-75)
+   ORDINAMENTO: 51.32
+   SQUADRA: las-palmas-las-palmas-de-gran-canaria | AVVERSARIO: ceuta-ceuta
+======================================================================
+
+######################################################################
+# GIOCATORE: taisei-miyashiro
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: taisei-miyashiro (squadra: las-palmas-las-palmas-de-gran-canaria)
+Generato: 2026-08-20T15:15:29.418434Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 24
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: segunda-division-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-15 | MIR vs LPA | segunda-division-es | score=34.3 | peso=0.177
+  2026-02-21 | LPA vs CAS | segunda-division-es | score=47.2 | peso=0.198
+  2026-03-01 | CUL vs LPA | segunda-division-es | score=31.7 | peso=0.223
+  2026-03-08 | LPA vs ADC | segunda-division-es | score=75.3 | peso=0.250
+  2026-03-16 | ALB vs LPA | segunda-division-es | score=70.2 | peso=0.281
+  2026-03-22 | LPA vs RSG | segunda-division-es | score=84.2 | peso=0.315
+  2026-03-29 | EIB vs LPA | segunda-division-es | score=34.1 | peso=0.354
+  2026-04-02 | LPA vs GCF | segunda-division-es | score=60.0 | peso=0.397
+  2026-04-05 | LPA vs HUE | segunda-division-es | score=36.1 | peso=0.445
+  2026-05-10 | FCA vs LPA | segunda-division-es | score=38.0 | peso=0.500
+  2026-05-16 | UDA vs LPA | segunda-division-es | score=40.8 | peso=0.561
+  2026-05-24 | LPA vs ZAR | segunda-division-es | score=36.9 | peso=0.630
+  2026-05-31 | DEP vs LPA | segunda-division-es | score=76.3 | peso=0.707
+  2026-06-07 | LPA vs MCF | segunda-division-es | score=44.9 | peso=0.794
+  2026-06-10 | MCF vs LPA | segunda-division-es | score=39.9 | peso=0.891
+  2026-08-16 | LPA vs ALB | segunda-division-es | score=67.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 51.40
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=16): 52.53 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 44.87 | Punteggio complessivo (granulari) medio: 6.53 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.01 (delta -0.66) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.44
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.9 - 75.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.18 (differenza: +1.25)
+Media score in casa: 56.47 | Media score fuori casa: 45.66
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.5
+Ranking prossimo avversario: 22
+Fattore forza avversario applicato: 1.174 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore trend (media ultime 5: 53.0 vs media 5 PRECEDENTI: 41.8): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T17:00
+Casa: Agrupación Deportiva Ceuta FC | Trasferta: UD Las Palmas
+Competizione: segunda-division-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.2 (range 36.7 - 75.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 51.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 49.06
+Punteggio REALE ottenuto in quella partita: 67.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +18.1
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.1    34.1    -15.0    23.4        SI
+   7        7      59.4    60.0     +0.6    24.3        SI
+   8        8      71.5    36.1    -35.4    22.0        NO
+   9        9      51.5    38.0    -13.5    21.9        SI
+  10       10      32.0    40.8     +8.8    21.0        SI
+  11       11      66.0    36.9    -29.1    19.8        NO
+  12       12      28.6    76.3    +47.7    18.9        NO
+  13       13      36.7    44.9     +8.2    21.0        SI
+  14       14      60.8    39.9    -20.9    19.7        NO
+  15       15      57.7    67.2     +9.5    18.8        SI
+
+MAE (errore assoluto medio): 18.88
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

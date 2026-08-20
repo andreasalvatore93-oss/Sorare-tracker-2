@@ -1,0 +1,137 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:15:21.555284Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) trai-hume: 44 pt attesi (27-63)
+   ORDINAMENTO: 42.72
+   SQUADRA: sunderland-sunderland | AVVERSARIO: ipswich-town-ipswich-suffolk
+======================================================================
+
+######################################################################
+# GIOCATORE: trai-hume
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: trai-hume (squadra: sunderland-sunderland)
+Generato: 2026-08-20T15:15:21.554509Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-13 | CRY vs SUN | premier-league-gb-eng | score=67.4 | peso=0.512
+  2025-09-21 | SUN vs AST | premier-league-gb-eng | score=53.8 | peso=0.524
+  2025-09-27 | NOT vs SUN | premier-league-gb-eng | score=45.2 | peso=0.536
+  2025-10-04 | MUN vs SUN | premier-league-gb-eng | score=30.3 | peso=0.548
+  2025-10-18 | SUN vs WOL | premier-league-gb-eng | score=69.7 | peso=0.561
+  2025-10-25 | CHE vs SUN | premier-league-gb-eng | score=43.9 | peso=0.574
+  2025-11-03 | SUN vs EVE | premier-league-gb-eng | score=26.5 | peso=0.588
+  2025-11-08 | SUN vs ARS | premier-league-gb-eng | score=39.9 | peso=0.602
+  2025-11-22 | FUL vs SUN | premier-league-gb-eng | score=64.1 | peso=0.616
+  2025-12-03 | LIV vs SUN | premier-league-gb-eng | score=31.5 | peso=0.630
+  2025-12-06 | MCI vs SUN | premier-league-gb-eng | score=48.2 | peso=0.645
+  2025-12-20 | BRI vs SUN | premier-league-gb-eng | score=77.6 | peso=0.660
+  2025-12-28 | SUN vs LEE | premier-league-gb-eng | score=60.0 | peso=0.675
+  2026-01-01 | SUN vs MCI | premier-league-gb-eng | score=28.3 | peso=0.691
+  2026-01-04 | TOT vs SUN | premier-league-gb-eng | score=64.5 | peso=0.707
+  2026-01-07 | BRE vs SUN | premier-league-gb-eng | score=22.7 | peso=0.724
+  2026-01-17 | SUN vs CRY | premier-league-gb-eng | score=26.6 | peso=0.741
+  2026-02-02 | SUN vs BUR | premier-league-gb-eng | score=43.7 | peso=0.758
+  2026-02-07 | ARS vs SUN | premier-league-gb-eng | score=35.2 | peso=0.776
+  2026-02-11 | SUN vs LIV | premier-league-gb-eng | score=32.4 | peso=0.794
+  2026-02-22 | SUN vs FUL | premier-league-gb-eng | score=34.8 | peso=0.812
+  2026-02-28 | BOR vs SUN | premier-league-gb-eng | score=60.0 | peso=0.831
+  2026-03-03 | LEE vs SUN | premier-league-gb-eng | score=63.6 | peso=0.851
+  2026-03-14 | SUN vs BRI | premier-league-gb-eng | score=31.7 | peso=0.871
+  2026-03-22 | NEW vs SUN | premier-league-gb-eng | score=42.4 | peso=0.891
+  2026-04-24 | SUN vs NOT | premier-league-gb-eng | score=19.3 | peso=0.912
+  2026-05-02 | WOL vs SUN | premier-league-gb-eng | score=37.5 | peso=0.933
+  2026-05-09 | SUN vs MUN | premier-league-gb-eng | score=46.2 | peso=0.955
+  2026-05-17 | EVE vs SUN | premier-league-gb-eng | score=30.5 | peso=0.977
+  2026-05-24 | SUN vs CHE | premier-league-gb-eng | score=87.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 45.18
+  di cui Punteggio decisivo (level_score) medio: 38.37 | Punteggio complessivo (granulari) medio: 6.80 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.21, delta avversario -0.44 | Passaggio condizionato: delta venue -1.24, delta avversario -0.69 | Clean sheet/disimpegni condizionato: delta venue -0.13, delta avversario -0.02 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.72
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 28.3 - 64.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.87 (differenza: +2.85)
+Media score in casa: 42.92 | Media score fuori casa: 47.78
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.3
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.733 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 1.007
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.993
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.008
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.999
+Fattore trend (media ultime 5: 44.9 vs media 5 PRECEDENTI: 46.4): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T14:00
+Casa: Ipswich Town FC | Trasferta: Sunderland AFC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.3 (range 27.5 - 63.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 42.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.13
+Punteggio REALE ottenuto in quella partita: 87.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +44.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      57.4    26.5    -30.9    15.2        NO
+   7        7      32.3    39.9     +7.6    17.1        SI
+   8        8      49.4    64.1    +14.7    16.2        SI
+   9        9      41.3    31.5     -9.8    16.4        SI
+  10       10      35.5    48.2    +12.7    16.6        SI
+  11       11      46.3    77.6    +31.2    15.7        NO
+  12       12      59.4    60.0     +0.6    17.9        SI
+  13       13      38.6    28.3    -10.3    17.4        SI
+  14       14      64.4    64.5     +0.1    18.0        SI
+  15       15      51.1    22.7    -28.4    17.9        NO
+  16       16      57.6    26.6    -31.0    18.9        NO
+  17       17      48.7    43.7     -5.0    19.2        SI
+  18       18      33.5    35.2     +1.8    18.6        SI
+  19       19      39.1    32.4     -6.6    18.2        SI
+  20       20      47.8    34.8    -12.9    18.0        SI
+  21       21      40.6    60.0    +19.4    17.7        NO
+  22       22      54.3    63.6     +9.2    17.6        SI
+  23       23      43.8    31.7    -12.1    17.7        SI
+  24       24      51.3    42.4     -8.9    17.6        SI
+  25       25      55.0    19.3    -35.7    17.2        NO
+  26       26      49.1    37.5    -11.6    17.9        SI
+  27       27      33.3    46.2    +12.9    17.5        SI
+  28       28      50.6    30.5    -20.1    17.1        NO
+  29       29      43.3    87.9    +44.6    16.9        NO
+
+MAE (errore assoluto medio): 15.76
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

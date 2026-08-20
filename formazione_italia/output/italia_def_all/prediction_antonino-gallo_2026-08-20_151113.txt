@@ -1,0 +1,137 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:11:13.273717Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) antonino-gallo: 47 pt attesi (27-66)
+   ORDINAMENTO: 44.68
+   SQUADRA: lecce-lecce | AVVERSARIO: venezia-mestre
+======================================================================
+
+######################################################################
+# GIOCATORE: antonino-gallo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: antonino-gallo (squadra: lecce-lecce)
+Generato: 2026-08-20T15:11:13.273112Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: serie-a-it (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-28 | LEC vs BOL | serie-a-it | score=46.2 | peso=0.512
+  2025-10-04 | PAR vs LEC | serie-a-it | score=79.2 | peso=0.524
+  2025-10-18 | LEC vs SAS | serie-a-it | score=56.6 | peso=0.536
+  2025-10-25 | UDI vs LEC | serie-a-it | score=21.2 | peso=0.548
+  2025-10-28 | LEC vs NAP | serie-a-it | score=63.6 | peso=0.561
+  2025-11-02 | FIO vs LEC | serie-a-it | score=54.4 | peso=0.574
+  2025-11-08 | LEC vs VER | serie-a-it | score=73.4 | peso=0.588
+  2025-11-23 | LAZ vs LEC | serie-a-it | score=26.7 | peso=0.602
+  2025-11-30 | LEC vs TOR | serie-a-it | score=58.4 | peso=0.616
+  2025-12-07 | CRE vs LEC | serie-a-it | score=44.0 | peso=0.630
+  2025-12-27 | LEC vs COM | serie-a-it | score=38.7 | peso=0.645
+  2026-01-03 | JUV vs LEC | serie-a-it | score=56.0 | peso=0.660
+  2026-01-06 | LEC vs ROM | serie-a-it | score=26.1 | peso=0.675
+  2026-01-14 | INT vs LEC | serie-a-it | score=47.7 | peso=0.691
+  2026-01-18 | MIL vs LEC | serie-a-it | score=50.2 | peso=0.707
+  2026-01-24 | LEC vs LAZ | serie-a-it | score=54.5 | peso=0.724
+  2026-02-01 | TOR vs LEC | serie-a-it | score=38.3 | peso=0.741
+  2026-02-08 | LEC vs UDI | serie-a-it | score=53.8 | peso=0.758
+  2026-02-16 | CAG vs LEC | serie-a-it | score=34.7 | peso=0.776
+  2026-02-21 | LEC vs INT | serie-a-it | score=37.6 | peso=0.794
+  2026-02-28 | COM vs LEC | serie-a-it | score=29.1 | peso=0.812
+  2026-03-08 | LEC vs CRE | serie-a-it | score=68.0 | peso=0.831
+  2026-03-14 | NAP vs LEC | serie-a-it | score=74.4 | peso=0.851
+  2026-03-22 | ROM vs LEC | serie-a-it | score=46.2 | peso=0.871
+  2026-04-20 | LEC vs FIO | serie-a-it | score=69.4 | peso=0.891
+  2026-04-25 | VER vs LEC | serie-a-it | score=50.7 | peso=0.912
+  2026-05-01 | PIS vs LEC | serie-a-it | score=32.4 | peso=0.933
+  2026-05-09 | LEC vs JUV | serie-a-it | score=40.6 | peso=0.955
+  2026-05-17 | SAS vs LEC | serie-a-it | score=26.2 | peso=0.977
+  2026-05-24 | LEC vs GEN | serie-a-it | score=62.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 48.36
+  di cui Punteggio decisivo (level_score) medio: 38.54 | Punteggio complessivo (granulari) medio: 9.82 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.37, delta avversario +0.00 | Passaggio condizionato: delta venue -1.13, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue -0.15, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 15.39
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.1 - 68.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.34 (differenza: +1.05)
+Media score in casa: 53.51 | Media score fuori casa: 44.46
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.9
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.460 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 0.997
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.993
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.995
+Fattore gol subiti (goals_conceded, con cap): 0.997
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.999
+Fattore trend (media ultime 5: 42.5 vs media 5 PRECEDENTI: 57.7): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T16:30
+Casa: Venezia FC | Trasferta: US Lecce
+Competizione: serie-a-it
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.7 (range 27.4 - 66.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 44.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.70
+Punteggio REALE ottenuto in quella partita: 62.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +14.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      70.3    73.4     +3.1    19.3        SI
+   7        7      51.8    26.7    -25.1    19.5        NO
+   8        8      55.4    58.4     +3.0    21.3        SI
+   9        9      64.8    44.0    -20.8    20.1        NO
+  10       10      39.1    38.7     -0.4    19.2        SI
+  11       11      41.3    56.0    +14.7    18.7        SI
+  12       12      38.5    26.1    -12.4    17.9        SI
+  13       13      33.5    47.7    +14.2    18.8        SI
+  14       14      41.2    50.2     +9.0    18.0        SI
+  15       15      49.4    54.5     +5.1    17.3        SI
+  16       16      54.0    38.3    -15.8    16.7        SI
+  17       17      50.4    53.8     +3.3    16.4        SI
+  18       18      56.4    34.7    -21.7    15.9        NO
+  19       19      34.3    37.6     +3.3    15.9        SI
+  20       20      38.8    29.1     -9.7    15.6        SI
+  21       21      61.6    68.0     +6.4    15.9        SI
+  22       22      35.1    74.4    +39.3    16.4        NO
+  23       23      38.6    46.2     +7.6    17.3        SI
+  24       24      60.2    69.4     +9.1    16.9        SI
+  25       25      66.4    50.7    -15.8    17.2        SI
+  26       26      67.6    32.4    -35.2    16.7        NO
+  27       27      43.5    40.6     -2.9    16.8        SI
+  28       28      50.4    26.2    -24.3    16.5        NO
+  29       29      59.2    62.3     +3.1    17.0        SI
+
+MAE (errore assoluto medio): 12.71
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

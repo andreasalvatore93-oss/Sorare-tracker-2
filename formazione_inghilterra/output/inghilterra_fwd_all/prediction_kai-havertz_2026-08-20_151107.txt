@@ -1,0 +1,77 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:11:07.291098Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) kai-havertz: 50 pt attesi (32-66)
+   ORDINAMENTO: 52.51
+   SQUADRA: arsenal-london | AVVERSARIO: coventry-city-coventry
+======================================================================
+
+######################################################################
+# GIOCATORE: kai-havertz
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: kai-havertz (squadra: arsenal-london)
+Generato: 2026-08-20T15:11:07.290613Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 36
+Escluse (DID_NOT_PLAY): 25
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-31 | LEE vs ARS | premier-league-gb-eng | score=37.0 | peso=0.630
+  2026-02-07 | ARS vs SUN | premier-league-gb-eng | score=72.1 | peso=0.707
+  2026-03-14 | ARS vs EVE | premier-league-gb-eng | score=38.4 | peso=0.794
+  2026-04-19 | MCI vs ARS | premier-league-gb-eng | score=60.0 | peso=0.891
+  2026-05-18 | ARS vs BUR | premier-league-gb-eng | score=67.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 56.03
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=5): 54.31 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 52.91 | Punteggio complessivo (granulari) medio: 3.12 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 5.47 (delta +0.63) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.05
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.4 - 72.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.95 (differenza: +2.10)
+Media score in casa: 59.20 | Media score fuori casa: 48.50
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.4
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.798 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 0.998
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-21T19:00
+Casa: Arsenal FC | Trasferta: Coventry City FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.9 (range 32.2 - 65.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 52.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.36
+Punteggio REALE ottenuto in quella partita: 67.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +14.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

@@ -1,0 +1,121 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:06:35.919495Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) aimar-oroz-huarte: 48 pt attesi (39-58)
+   SQUADRA: osasuna-pamplona-irunea | AVVERSARIO: levante-valencia
+======================================================================
+
+######################################################################
+# GIOCATORE: aimar-oroz-huarte
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: aimar-oroz-huarte (squadra: osasuna-pamplona-irunea)
+Generato: 2026-08-20T15:06:35.918554Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 37
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 7
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-24 | OSA vs VCF | laliga-es | score=56.8 | peso=0.543
+  2025-08-31 | ESP vs OSA | laliga-es | score=54.5 | peso=0.559
+  2025-09-14 | OSA vs RAY | laliga-es | score=42.1 | peso=0.574
+  2025-11-22 | OSA vs RSO | laliga-es | score=72.4 | peso=0.590
+  2025-11-29 | MLL vs OSA | laliga-es | score=32.7 | peso=0.607
+  2025-12-08 | OSA vs LEV | laliga-es | score=44.2 | peso=0.624
+  2025-12-13 | FCB vs OSA | laliga-es | score=35.2 | peso=0.642
+  2025-12-20 | OSA vs ALA | laliga-es | score=78.8 | peso=0.660
+  2026-01-03 | OSA vs ATH | laliga-es | score=41.7 | peso=0.678
+  2026-01-10 | GIR vs OSA | laliga-es | score=41.4 | peso=0.697
+  2026-01-17 | OSA vs OVI | laliga-es | score=33.6 | peso=0.717
+  2026-01-24 | RAY vs OSA | laliga-es | score=35.7 | peso=0.737
+  2026-02-06 | CEL vs OSA | laliga-es | score=37.3 | peso=0.758
+  2026-02-13 | ELC vs OSA | laliga-es | score=63.6 | peso=0.779
+  2026-02-21 | OSA vs RMA | laliga-es | score=37.1 | peso=0.801
+  2026-03-07 | OSA vs MLL | laliga-es | score=50.9 | peso=0.824
+  2026-03-15 | RSO vs OSA | laliga-es | score=39.2 | peso=0.847
+  2026-03-21 | OSA vs GIR | laliga-es | score=43.1 | peso=0.871
+  2026-04-05 | ALA vs OSA | laliga-es | score=35.1 | peso=0.895
+  2026-04-12 | OSA vs BET | laliga-es | score=48.0 | peso=0.920
+  2026-04-21 | ATH vs OSA | laliga-es | score=39.0 | peso=0.946
+  2026-04-26 | OSA vs SEV | laliga-es | score=35.9 | peso=0.973
+  2026-05-23 | GET vs OSA | laliga-es | score=48.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 44.86
+  di cui Punteggio decisivo (level_score) medio: 36.81 | Punteggio complessivo (granulari) medio: 8.05 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 38.05 (delta +1.23)
+  Efficacia offensiva condizionata: delta venue -0.37, delta avversario +0.22 | Passaggio condizionato: delta venue +1.12, delta avversario +1.13 | Gol subiti condizionato: delta venue +0.26, delta avversario -0.29 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 11.55
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 35.2 - 54.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.48 (differenza: +2.07)
+Media score in casa: 48.72 | Media score fuori casa: 41.98
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.3
+Ranking prossimo avversario: 19
+Fattore forza avversario applicato: 1.126 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.006
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.999
+Fattore gol subiti (goals_conceded, con cap): 1.004
+Fattore trend (media ultime 5: 41.3 vs media 5 PRECEDENTI: 46.6): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-24T17:30
+Casa: CA Osasuna | Trasferta: Levante UD
+Competizione: laliga-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.2 (range 38.5 - 57.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.66
+Punteggio REALE ottenuto in quella partita: 48.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +3.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 17 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.8    35.2    -11.6    14.1        SI
+   7        7      31.9    78.8    +46.9    14.2        NO
+   8        8      49.8    41.7     -8.1    17.7        SI
+   9        9      46.4    41.4     -5.0    17.0        SI
+  10       10      51.8    33.6    -18.2    16.3        NO
+  11       11      59.0    35.7    -23.3    16.4        NO
+  12       12      46.9    37.3     -9.6    16.1        SI
+  13       13      41.1    63.6    +22.5    15.6        NO
+  14       14      53.5    37.1    -16.4    15.9        NO
+  15       15      35.9    50.9    +15.0    15.5        SI
+  16       16      54.3    39.2    -15.1    15.0        NO
+  17       17      42.5    43.1     +0.6    14.6        SI
+  18       18      32.4    35.1     +2.7    14.1        SI
+  19       19      50.6    48.0     -2.6    14.0        SI
+  20       20      43.3    39.0     -4.3    13.5        SI
+  21       21      36.0    35.9     -0.1    13.2        SI
+  22       22      59.7    48.1    -11.6    13.1        SI
+
+MAE (errore assoluto medio): 12.56
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 64.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

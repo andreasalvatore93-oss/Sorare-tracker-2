@@ -1,0 +1,117 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:15:27.401684Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) mark-mcguinness: 49 pt attesi (36-64)
+   ORDINAMENTO: 47.42
+   SQUADRA: sheffield-united-sheffield | AVVERSARIO: swansea-city-swansea
+======================================================================
+
+######################################################################
+# GIOCATORE: mark-mcguinness
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mark-mcguinness (squadra: sheffield-united-sheffield)
+Generato: 2026-08-20T15:15:27.400530Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 43
+Escluse (DID_NOT_PLAY): 17
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-12 | IPS vs SHU | football-league-championship | score=14.1 | peso=0.645
+  2025-09-20 | SHU vs CHA | football-league-championship | score=54.9 | peso=0.660
+  2025-09-27 | OXF vs SHU | football-league-championship | score=63.9 | peso=0.675
+  2025-09-30 | SHU vs SOT | football-league-championship | score=35.8 | peso=0.691
+  2025-10-04 | HUL vs SHU | football-league-championship | score=34.4 | peso=0.707
+  2025-10-18 | SHU vs WAT | football-league-championship | score=60.9 | peso=0.724
+  2025-10-21 | BBR vs SHU | football-league-championship | score=49.2 | peso=0.741
+  2025-10-24 | PNE vs SHU | football-league-championship | score=45.0 | peso=0.758
+  2025-11-01 | SHU vs DER | football-league-championship | score=34.1 | peso=0.776
+  2025-11-04 | COV vs SHU | football-league-championship | score=34.6 | peso=0.794
+  2025-12-12 | WBA vs SHU | football-league-championship | score=66.3 | peso=0.812
+  2026-01-21 | SOT vs SHU | football-league-championship | score=41.2 | peso=0.831
+  2026-01-24 | SHU vs IPS | football-league-championship | score=26.0 | peso=0.851
+  2026-01-31 | MIL vs SHU | football-league-championship | score=34.3 | peso=0.871
+  2026-04-06 | BRC vs SHU | football-league-championship | score=50.5 | peso=0.891
+  2026-04-11 | SHU vs HUL | football-league-championship | score=77.7 | peso=0.912
+  2026-04-18 | WAT vs SHU | football-league-championship | score=53.3 | peso=0.933
+  2026-04-25 | SHU vs PNE | football-league-championship | score=55.0 | peso=0.955
+  2026-05-02 | DER vs SHU | football-league-championship | score=45.0 | peso=0.977
+  2026-08-15 | SHU vs BIR | football-league-championship | score=62.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 47.57
+  di cui Punteggio decisivo (level_score) medio: 35.36 | Punteggio complessivo (granulari) medio: 12.21 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.20, delta avversario +1.22 | Passaggio condizionato: delta venue -0.13, delta avversario +0.03 | Clean sheet/disimpegni condizionato: delta venue -0.00, delta avversario -0.32 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 14.87
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.3 - 62.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.77 (differenza: +3.10)
+Media score in casa: 50.88 | Media score fuori casa: 44.31
+Fattore casa/trasferta applicato: 0.998 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.7
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 1.212 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 0.994
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.000
+Fattore trend (media ultime 5: 58.5 vs media 5 PRECEDENTI: 43.5): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T14:00
+Casa: Swansea City AFC | Trasferta: Sheffield United FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.9 (range 35.6 - 63.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 47.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.58
+Punteggio REALE ottenuto in quella partita: 62.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +16.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      40.2    49.2     +9.1    19.1        SI
+   7        7      56.7    45.0    -11.7    17.7        SI
+   8        8      53.5    34.1    -19.3    16.5        NO
+   9        9      26.0    34.6     +8.5    15.9        SI
+  10       10      31.5    66.3    +34.8    15.3        NO
+  11       11      65.6    41.2    -24.4    16.5        NO
+  12       12      29.6    26.0     -3.5    15.8        SI
+  13       13      29.8    34.3     +4.5    16.2        SI
+  14       14      61.0    50.5    -10.5    15.7        SI
+  15       15      34.9    77.7    +42.8    15.3        NO
+  16       16      40.9    53.3    +12.5    17.8        SI
+  17       17      59.2    55.0     -4.2    17.3        SI
+  18       18      55.7    45.0    -10.7    16.9        SI
+  19       19      52.5    62.5    +10.0    16.3        SI
+
+MAE (errore assoluto medio): 14.76
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 71.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

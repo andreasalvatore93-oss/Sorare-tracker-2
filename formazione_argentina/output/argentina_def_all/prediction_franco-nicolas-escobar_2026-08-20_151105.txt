@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:11:05.350329Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) franco-nicolas-escobar: 51 pt attesi (39-59)
+   ORDINAMENTO: 47.26
+   SQUADRA: newell-s-old-boys-rosario-santa-fe | AVVERSARIO: banfield-lomas-de-zamora-provincia-de-buenos-aires
+======================================================================
+
+######################################################################
+# GIOCATORE: franco-nicolas-escobar
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: franco-nicolas-escobar (squadra: newell-s-old-boys-rosario-santa-fe)
+Generato: 2026-08-20T15:11:05.349160Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 19
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-04-10 | SFE vs PEN | conmebol-libertadores | score=34.7 | peso=0.871
+  2026-04-17 | PEN vs PLA | conmebol-libertadores | score=30.0 | peso=0.891
+  2026-05-07 | PLA vs PEN | conmebol-libertadores | score=41.7 | peso=0.912
+  2026-05-22 | PEN vs COR | conmebol-libertadores | score=54.0 | peso=0.933
+  2026-07-31 | IND vs NOB | superliga-argentina-de-futbol | score=49.8 | peso=0.955
+  2026-08-02 | NOB vs BOC | superliga-argentina-de-futbol | score=40.8 | peso=0.977
+  2026-08-15 | NOB vs RIE | superliga-argentina-de-futbol | score=69.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 46.24
+  di cui Punteggio decisivo (level_score) medio: 32.27 | Punteggio complessivo (granulari) medio: 13.97 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.16, delta avversario +0.76 | Passaggio condizionato: delta venue -0.56, delta avversario -0.05 | Clean sheet/disimpegni condizionato: delta venue +1.22, delta avversario +1.58 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 12.41
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.7 - 54.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 6.79 (differenza: +5.62)
+Media score in casa: 55.18 | Media score fuori casa: 49.82
+Fattore casa/trasferta applicato: 1.002 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.0
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.004
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.005
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T00:00
+Casa: Newell's Old Boys | Trasferta: CA Banfield
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.9 (range 39.4 - 58.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 47.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 42.04
+Punteggio REALE ottenuto in quella partita: 69.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +27.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      44.1    69.5    +25.5     9.0        NO
+
+MAE (errore assoluto medio): 25.46
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 0.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

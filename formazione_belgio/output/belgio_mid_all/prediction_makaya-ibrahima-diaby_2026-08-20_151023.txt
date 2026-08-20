@@ -1,0 +1,91 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:10:23.378259Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) makaya-ibrahima-diaby: 45 pt attesi (33-61)
+   SQUADRA: cercle-brugge-brugge | AVVERSARIO: club-brugge-brugge
+======================================================================
+
+######################################################################
+# GIOCATORE: makaya-ibrahima-diaby
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: makaya-ibrahima-diaby (squadra: cercle-brugge-brugge)
+Generato: 2026-08-20T15:10:23.377291Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 17
+Competizione partita target: jupiler-pro-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-08 | CER vs OHL | jupiler-pro-league | score=34.2 | peso=0.824
+  2026-01-31 | CER vs ANT | jupiler-pro-league | score=39.3 | peso=0.847
+  2026-04-19 | DEN vs CER | jupiler-pro-league | score=77.5 | peso=0.871
+  2026-04-24 | CER vs DEN | jupiler-pro-league | score=37.4 | peso=0.895
+  2026-05-01 | CER vs ZWA | jupiler-pro-league | score=61.7 | peso=0.920
+  2026-05-09 | LAL vs CER | jupiler-pro-league | score=27.4 | peso=0.946
+  2026-08-08 | STA vs CER | jupiler-pro-league | score=41.6 | peso=0.973
+  2026-08-14 | CER vs STV | jupiler-pro-league | score=49.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 46.06
+  di cui Punteggio decisivo (level_score) medio: 41.15 | Punteggio complessivo (granulari) medio: 4.90 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 41.77 (delta +0.62)
+  Efficacia offensiva condizionata: delta venue -0.06, delta avversario +0.30 | Passaggio condizionato: delta venue +0.17, delta avversario -0.17 | Gol subiti condizionato: delta venue -0.08, delta avversario -0.27 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 15.14
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.2 - 61.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.19 (differenza: +5.96)
+Media score in casa: 44.42 | Media score fuori casa: 48.83
+Fattore casa/trasferta applicato: 1.002 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.8
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.647 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.001
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.998
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.997
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T16:30
+Casa: Club Brugge KV | Trasferta: Cercle Brugge KSV
+Competizione: jupiler-pro-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.1 (range 33.3 - 60.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.51
+Punteggio REALE ottenuto in quella partita: 49.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +4.0
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 2 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      43.2    41.6     -1.6    19.3        SI
+   7        7      45.6    49.5     +3.9    17.9        SI
+
+MAE (errore assoluto medio): 2.77
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

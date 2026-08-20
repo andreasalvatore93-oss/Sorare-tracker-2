@@ -1,0 +1,110 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:06:36.740155Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) pierce-charles: 47 pt attesi (39-62)
+   SQUADRA: queens-park-rangers-london | AVVERSARIO: bolton-wanderers-bolton
+======================================================================
+
+######################################################################
+# GIOCATORE: pierce-charles
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: pierce-charles (squadra: queens-park-rangers-london)
+Generato: 2026-08-20T15:06:36.739555Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 45
+Escluse (DID_NOT_PLAY): 26
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-09 | WAT vs SHW | football-league-championship | score=53.9 | peso=0.140
+  2025-12-15 | SHW vs DER | football-league-championship | score=35.7 | peso=0.157
+  2025-12-20 | IPS vs SHW | football-league-championship | score=31.9 | peso=0.177
+  2025-12-26 | SHW vs HUL | football-league-championship | score=63.5 | peso=0.198
+  2025-12-29 | SHW vs BBR | football-league-championship | score=72.0 | peso=0.223
+  2026-01-01 | PNE vs SHW | football-league-championship | score=36.9 | peso=0.250
+  2026-01-04 | QPR vs SHW | football-league-championship | score=40.3 | peso=0.281
+  2026-03-07 | DER vs SHW | football-league-championship | score=33.7 | peso=0.315
+  2026-03-10 | SHW vs WAT | football-league-championship | score=42.4 | peso=0.354
+  2026-03-14 | SHW vs IPS | football-league-championship | score=34.9 | peso=0.397
+  2026-03-21 | HUL vs SHW | football-league-championship | score=43.6 | peso=0.445
+  2026-04-03 | STO vs SHW | football-league-championship | score=44.7 | peso=0.500
+  2026-04-06 | SHW vs LEI | football-league-championship | score=69.5 | peso=0.561
+  2026-04-11 | COV vs SHW | football-league-championship | score=60.0 | peso=0.630
+  2026-04-18 | SHW vs CHA | football-league-championship | score=39.1 | peso=0.707
+  2026-04-25 | OXF vs SHW | football-league-championship | score=38.9 | peso=0.794
+  2026-05-02 | SHW vs WBA | football-league-championship | score=37.4 | peso=0.891
+  2026-08-15 | POR vs QPR | football-league-championship | score=42.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 44.93
+  di cui Punteggio decisivo (level_score) medio: 38.28 | Punteggio complessivo (granulari) medio: 6.66 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 41.57 (delta +3.30 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +1.53, delta avversario -0.29 | Possesso condizionato per venue: delta -0.58 | Goalkeeping condizionato per venue: delta +0.52 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 11.07
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.9 - 60.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.16 (differenza: +0.90)
+Media score in casa: 49.31 | Media score fuori casa: 42.66
+Fattore casa/trasferta applicato: 1.012 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.7
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 1.000 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.996
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.997
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.001
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.006
+Tasso storico clean sheet (porta inviolata nei primi 60'): 11.1% (bonus atteso incorporato nella media pesata: ~2.8pt)
+Fattore trend (media ultime 5: 42.8 vs media 5 PRECEDENTI: 48.6): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T14:00
+Casa: Queens Park Rangers FC | Trasferta: Bolton Wanderers FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.2 (range 39.2 - 62.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.28
+Punteggio REALE ottenuto in quella partita: 42.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -2.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      47.0    40.3     -6.7    17.9        SI
+   7        7      34.8    33.7     -1.1    16.6        SI
+   8        8      62.4    42.4    -20.0    16.3        NO
+   9        9      34.3    34.9     +0.6    14.9        SI
+  10       10      31.9    43.6    +11.7    14.2        SI
+  11       11      47.5    44.7     -2.8    13.1        SI
+  12       12      67.8    69.5     +1.7    12.1        SI
+  13       13      25.7    60.0    +34.3    15.3        NO
+  14       14      68.7    39.1    -29.6    15.1        NO
+  15       15      59.3    38.9    -20.4    14.6        NO
+  16       16      65.9    37.4    -28.5    14.0        NO
+  17       17      42.0    42.5     +0.5    13.6        SI
+
+MAE (errore assoluto medio): 13.16
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 58.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

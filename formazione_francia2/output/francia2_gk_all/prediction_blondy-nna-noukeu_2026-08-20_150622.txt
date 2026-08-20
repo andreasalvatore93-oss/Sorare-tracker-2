@@ -1,0 +1,106 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:06:22.551213Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) blondy-nna-noukeu: 46 pt attesi (29-72)
+   SQUADRA: boulogne-boulogne-sur-mer | AVVERSARIO: red-star-saint-ouen
+======================================================================
+
+######################################################################
+# GIOCATORE: blondy-nna-noukeu
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: blondy-nna-noukeu (squadra: boulogne-boulogne-sur-mer)
+Generato: 2026-08-20T15:06:22.550333Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 40
+Escluse (DID_NOT_PLAY): 24
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: ligue-2-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-24 | RED vs BOU | ligue-2-fr | score=15.8 | peso=0.177
+  2026-01-31 | STE vs BOU | ligue-2-fr | score=62.7 | peso=0.198
+  2026-02-06 | BOU vs ROD | ligue-2-fr | score=36.9 | peso=0.223
+  2026-02-13 | PAU vs BOU | ligue-2-fr | score=43.3 | peso=0.250
+  2026-02-20 | BOU vs CLE | ligue-2-fr | score=42.9 | peso=0.281
+  2026-02-27 | GRE vs BOU | ligue-2-fr | score=63.6 | peso=0.315
+  2026-03-06 | BOU vs AMI | ligue-2-fr | score=43.0 | peso=0.354
+  2026-03-13 | SCB vs BOU | ligue-2-fr | score=68.5 | peso=0.397
+  2026-03-20 | BOU vs NAN | ligue-2-fr | score=76.3 | peso=0.445
+  2026-04-04 | SR vs BOU | ligue-2-fr | score=69.6 | peso=0.500
+  2026-04-11 | BOU vs LEM | ligue-2-fr | score=61.4 | peso=0.561
+  2026-04-18 | TRO vs BOU | ligue-2-fr | score=45.1 | peso=0.630
+  2026-04-27 | BOU vs DUN | ligue-2-fr | score=0.0 | peso=0.707
+  2026-05-02 | BOU vs ANN | ligue-2-fr | score=29.0 | peso=0.794
+  2026-08-08 | BOU vs NAN | ligue-2-fr | score=72.0 | peso=0.891
+  2026-08-14 | EAG vs BOU | ligue-2-fr | score=31.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 46.55
+  di cui Punteggio decisivo (level_score) medio: 43.42 | Punteggio complessivo (granulari) medio: 3.13 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 38.43 (delta -4.99 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -1.56, delta avversario -2.03 | Possesso condizionato per venue: delta +0.22 | Goalkeeping condizionato per venue: delta +0.02 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 22.43
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 29.0 - 72.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.01 (differenza: +5.42)
+Media score in casa: 45.19 | Media score fuori casa: 50.06
+Fattore casa/trasferta applicato: 0.990 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.9
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 0.994 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.003
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.000
+Fattore gol subiti (goals_conceded, con cap, non applicato): 0.995
+Tasso storico clean sheet (porta inviolata nei primi 60'): 43.8% (bonus atteso incorporato nella media pesata: ~10.9pt)
+Fattore trend (media ultime 5: 36.7 vs media 5 PRECEDENTI: 64.5): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-21T18:00
+Casa: US Boulogne-sur-Mer Côte d'Opale | Trasferta: Red Star FC 93
+Competizione: ligue-2-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.4 (range 28.9 - 71.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.73
+Punteggio REALE ottenuto in quella partita: 31.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -16.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      55.7    43.0    -12.7    17.6        SI
+   7        7      59.4    68.5     +9.1    15.8        SI
+   8        8      47.1    76.3    +29.2    17.6        NO
+   9        9      54.0    69.6    +15.6    19.7        SI
+  10       10      36.9    61.4    +24.5    19.2        NO
+  11       11      39.3    45.1     +5.8    17.8        SI
+  12       12      42.5     0.0    -42.5    17.2        NO
+  13       13      32.5    29.0     -3.5    27.3        SI
+  14       14      45.7    72.0    +26.3    26.4        SI
+  15       15      50.8    31.9    -18.9    26.8        SI
+
+MAE (errore assoluto medio): 18.82
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

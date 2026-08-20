@@ -1,0 +1,101 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:18.858982Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) santiago-hidalgo-massa: 50 pt attesi (36-62)
+   ORDINAMENTO: 49.66
+   SQUADRA: toulouse-toulouse | AVVERSARIO: olympique-lyonnais-lyon
+======================================================================
+
+######################################################################
+# GIOCATORE: santiago-hidalgo-massa
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: santiago-hidalgo-massa (squadra: toulouse-toulouse)
+Generato: 2026-08-20T15:06:18.858418Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 15
+Competizione partita target: ligue-1-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-13 | PAR vs TFC | ligue-1-fr | score=61.4 | peso=0.250
+  2026-01-17 | TFC vs NIC | ligue-1-fr | score=78.5 | peso=0.281
+  2026-01-25 | BRE vs TFC | ligue-1-fr | score=29.4 | peso=0.315
+  2026-02-01 | TFC vs AJA | ligue-1-fr | score=30.1 | peso=0.354
+  2026-02-08 | SCO vs TFC | ligue-1-fr | score=40.8 | peso=0.397
+  2026-02-15 | HAC vs TFC | ligue-1-fr | score=35.9 | peso=0.445
+  2026-02-21 | TFC vs PAR | ligue-1-fr | score=72.2 | peso=0.500
+  2026-02-28 | REN vs TFC | ligue-1-fr | score=45.6 | peso=0.561
+  2026-03-15 | MET vs TFC | ligue-1-fr | score=61.1 | peso=0.630
+  2026-03-21 | TFC vs FCL | ligue-1-fr | score=34.8 | peso=0.707
+  2026-04-25 | TFC vs ASM | ligue-1-fr | score=37.6 | peso=0.794
+  2026-05-03 | STR vs TFC | ligue-1-fr | score=49.7 | peso=0.891
+  2026-05-10 | TFC vs OL | ligue-1-fr | score=60.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 48.90
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=13): 51.49 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 44.73 | Punteggio complessivo (granulari) medio: 4.17 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 2.53 (delta +0.01) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 13.86
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.8 - 61.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.39 (differenza: +1.47)
+Media score in casa: 52.20 | Media score fuori casa: 46.27
+Fattore casa/trasferta applicato: 1.003 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.1
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 1.140 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.994
+Fattore trend (media ultime 5: 48.6 vs media 5 PRECEDENTI: 44.9): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T18:45
+Casa: Toulouse FC | Trasferta: Olympique Lyonnais
+Competizione: ligue-1-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.0 (range 35.9 - 62.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.09
+Punteggio REALE ottenuto in quella partita: 60.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +12.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 7 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      40.3    72.2    +31.9    19.4        NO
+   7        7      37.0    45.6     +8.6    21.7        SI
+   8        8      36.4    61.1    +24.7    19.7        NO
+   9        9      46.7    34.8    -11.9    18.7        SI
+  10       10      41.4    37.6     -3.8    18.4        SI
+  11       11      42.0    49.7     +7.7    17.5        SI
+  12       12      36.4    60.0    +23.6    16.3        NO
+
+MAE (errore assoluto medio): 16.04
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 57.1%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

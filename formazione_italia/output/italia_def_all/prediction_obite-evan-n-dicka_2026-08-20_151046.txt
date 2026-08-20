@@ -1,0 +1,129 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:10:46.717177Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) obite-evan-n-dicka: 59 pt attesi (45-73)
+   ORDINAMENTO: 60.02
+   SQUADRA: roma-roma | AVVERSARIO: fiorentina-firenze
+======================================================================
+
+######################################################################
+# GIOCATORE: obite-evan-n-dicka
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: obite-evan-n-dicka (squadra: roma-roma)
+Generato: 2026-08-20T15:10:46.716602Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 7
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: serie-a-it (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-21 | LAZ vs ROM | serie-a-it | score=43.2 | peso=0.561
+  2025-09-28 | ROM vs VER | serie-a-it | score=55.7 | peso=0.574
+  2025-10-05 | FIO vs ROM | serie-a-it | score=33.0 | peso=0.588
+  2025-10-26 | SAS vs ROM | serie-a-it | score=62.6 | peso=0.602
+  2025-10-29 | ROM vs PAR | serie-a-it | score=60.8 | peso=0.616
+  2025-11-02 | MIL vs ROM | serie-a-it | score=50.7 | peso=0.630
+  2025-11-09 | ROM vs UDI | serie-a-it | score=56.7 | peso=0.645
+  2025-11-23 | CRE vs ROM | serie-a-it | score=35.4 | peso=0.660
+  2025-11-30 | ROM vs NAP | serie-a-it | score=48.2 | peso=0.675
+  2025-12-07 | CAG vs ROM | serie-a-it | score=60.0 | peso=0.691
+  2025-12-15 | ROM vs COM | serie-a-it | score=52.4 | peso=0.707
+  2026-01-18 | TOR vs ROM | serie-a-it | score=61.8 | peso=0.724
+  2026-01-25 | ROM vs MIL | serie-a-it | score=57.8 | peso=0.741
+  2026-02-02 | UDI vs ROM | serie-a-it | score=60.4 | peso=0.758
+  2026-02-09 | ROM vs CAG | serie-a-it | score=57.8 | peso=0.776
+  2026-02-15 | NAP vs ROM | serie-a-it | score=48.5 | peso=0.794
+  2026-02-22 | ROM vs CRE | serie-a-it | score=84.2 | peso=0.812
+  2026-03-01 | ROM vs JUV | serie-a-it | score=73.0 | peso=0.831
+  2026-03-08 | GEN vs ROM | serie-a-it | score=60.0 | peso=0.851
+  2026-03-22 | ROM vs LEC | serie-a-it | score=64.3 | peso=0.871
+  2026-04-05 | INT vs ROM | serie-a-it | score=8.6 | peso=0.891
+  2026-04-10 | ROM vs PIS | serie-a-it | score=71.3 | peso=0.912
+  2026-04-18 | ROM vs ATA | serie-a-it | score=71.2 | peso=0.933
+  2026-04-25 | BOL vs ROM | serie-a-it | score=58.5 | peso=0.955
+  2026-05-04 | ROM vs FIO | serie-a-it | score=100.0 | peso=0.977
+  2026-05-10 | PAR vs ROM | serie-a-it | score=33.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 57.25
+  di cui Punteggio decisivo (level_score) medio: 39.36 | Punteggio complessivo (granulari) medio: 17.88 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +1.14, delta avversario +0.98 | Passaggio condizionato: delta venue +1.30, delta avversario -0.49 | Clean sheet/disimpegni condizionato: delta venue +1.03, delta avversario +0.68 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 18.38
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 43.2 - 71.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.47 (differenza: +5.91)
+Media score in casa: 65.64 | Media score fuori casa: 47.35
+Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.9
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 0.870 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.004
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.010
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 1.006
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.006
+Fattore trend (media ultime 5: 66.6 vs media 5 PRECEDENTI: 57.3): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-24T18:45
+Casa: AS Roma | Trasferta: ACF Fiorentina
+Competizione: serie-a-it
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 59.3 (range 45.3 - 73.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 60.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.54
+Punteggio REALE ottenuto in quella partita: 33.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -25.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 20 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      48.1    56.7     +8.6    11.3        SI
+   7        7      62.3    35.4    -26.9    10.6        NO
+   8        8      32.4    48.2    +15.8    11.7        NO
+   9        9      53.3    60.0     +6.7    11.0        SI
+  10       10      38.0    52.4    +14.5    11.0        NO
+  11       11      52.0    61.8     +9.8    10.4        SI
+  12       12      41.7    57.8    +16.0    10.5        NO
+  13       13      50.7    60.4     +9.7    10.2        SI
+  14       14      60.2    57.8     -2.4    10.1        SI
+  15       15      36.9    48.5    +11.6     9.8        NO
+  16       16      68.4    84.2    +15.8     9.5        NO
+  17       17      47.4    73.0    +25.7    12.7        NO
+  18       18      66.0    60.0     -6.0    13.2        SI
+  19       19      70.5    64.3     -6.2    12.8        SI
+  20       20      36.6     8.6    -28.0    12.5        NO
+  21       21      74.0    71.3     -2.7    17.5        SI
+  22       22      49.2    71.2    +22.0    17.6        NO
+  23       23      49.0    58.5     +9.4    17.5        SI
+  24       24      66.8   100.0    +33.2    17.1        NO
+  25       25      60.5    33.0    -27.5    19.8        NO
+
+MAE (errore assoluto medio): 14.92
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 45.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

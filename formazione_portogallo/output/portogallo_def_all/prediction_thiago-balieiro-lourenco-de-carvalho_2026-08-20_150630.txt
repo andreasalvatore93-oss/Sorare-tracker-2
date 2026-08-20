@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:30.629295Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) thiago-balieiro-lourenco-de-carvalho: 50 pt attesi (29-69)
+   ORDINAMENTO: 45.26
+   SQUADRA: vitoria-guimaraes-guimaraes | AVVERSARIO: nacional-funchal-ilha-da-madeira
+======================================================================
+
+######################################################################
+# GIOCATORE: thiago-balieiro-lourenco-de-carvalho
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: thiago-balieiro-lourenco-de-carvalho (squadra: vitoria-guimaraes-guimaraes)
+Generato: 2026-08-20T15:06:30.627795Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 19
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: primeira-liga-pt (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-23 | VIG vs SCP | primeira-liga-pt | score=60.0 | peso=0.724
+  2026-02-14 | VIG vs EST | primeira-liga-pt | score=86.3 | peso=0.741
+  2026-02-21 | BRA vs VIG | primeira-liga-pt | score=25.0 | peso=0.758
+  2026-02-28 | VIG vs ALV | primeira-liga-pt | score=23.2 | peso=0.776
+  2026-03-08 | SCL vs VIG | primeira-liga-pt | score=53.2 | peso=0.794
+  2026-03-14 | VIG vs FAM | primeira-liga-pt | score=26.9 | peso=0.812
+  2026-03-21 | SLB vs VIG | primeira-liga-pt | score=40.0 | peso=0.831
+  2026-04-03 | VIG vs TON | primeira-liga-pt | score=55.0 | peso=0.851
+  2026-04-11 | AVS vs VIG | primeira-liga-pt | score=40.4 | peso=0.871
+  2026-04-18 | GIL vs VIG | primeira-liga-pt | score=50.3 | peso=0.891
+  2026-04-25 | VIG vs RIO | primeira-liga-pt | score=63.2 | peso=0.912
+  2026-05-04 | SCP vs VIG | primeira-liga-pt | score=11.6 | peso=0.933
+  2026-05-16 | NAC vs VIG | primeira-liga-pt | score=39.0 | peso=0.955
+  2026-08-08 | VIG vs ARO | primeira-liga-pt | score=76.4 | peso=0.977
+  2026-08-14 | SCP vs VIG | primeira-liga-pt | score=11.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 43.70
+  di cui Punteggio decisivo (level_score) medio: 36.29 | Punteggio complessivo (granulari) medio: 7.40 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +1.51, delta avversario +1.82 | Passaggio condizionato: delta venue -0.30, delta avversario -0.43 | Clean sheet/disimpegni condizionato: delta venue +0.48, delta avversario +0.48 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 21.63
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 23.2 - 63.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.19 (differenza: +3.43)
+Media score in casa: 55.85 | Media score fuori casa: 33.90
+Fattore casa/trasferta applicato: 1.007 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.5
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 0.870 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.003
+Fattore gol subiti (goals_conceded, con cap): 1.006
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.003
+Fattore trend (media ultime 5: 40.2 vs media 5 PRECEDENTI: 42.8): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T14:30
+Casa: Vitória Guimarães SC | Trasferta: CD Nacional Funchal
+Competizione: primeira-liga-pt
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.0 (range 29.4 - 69.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 45.3
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 46.41
+Punteggio REALE ottenuto in quella partita: 11.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -34.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      39.9    40.0     +0.2    25.2        SI
+   7        7      56.6    55.0     -1.6    23.3        SI
+   8        8      58.5    40.4    -18.1    22.0        SI
+   9        9      40.8    50.3     +9.6    20.7        SI
+  10       10      55.6    63.2     +7.6    19.6        SI
+  11       11      40.7    11.6    -29.1    19.5        NO
+  12       12      33.5    39.0     +5.5    21.9        SI
+  13       13      29.9    76.4    +46.5    20.9        NO
+  14       14      41.5    11.7    -29.8    22.4        NO
+
+MAE (errore assoluto medio): 16.44
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

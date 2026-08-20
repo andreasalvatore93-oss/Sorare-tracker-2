@@ -1,0 +1,137 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:10:42.604110Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) pablo-vazquez-perez: 61 pt attesi (42-74)
+   ORDINAMENTO: 58.85
+   SQUADRA: sporting-gijon-gijon | AVVERSARIO: burgos-burgos
+======================================================================
+
+######################################################################
+# GIOCATORE: pablo-vazquez-perez
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: pablo-vazquez-perez (squadra: sporting-gijon-gijon)
+Generato: 2026-08-20T15:10:42.603115Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: segunda-division-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-20 | UDA vs RSG | segunda-division-es | score=34.0 | peso=0.512
+  2025-09-28 | RSG vs ALB | segunda-division-es | score=35.5 | peso=0.524
+  2025-10-05 | CAS vs RSG | segunda-division-es | score=28.1 | peso=0.536
+  2025-10-12 | RSG vs RAC | segunda-division-es | score=60.0 | peso=0.548
+  2025-10-19 | VLL vs RSG | segunda-division-es | score=52.5 | peso=0.561
+  2025-10-26 | RSG vs ZAR | segunda-division-es | score=58.4 | peso=0.574
+  2025-11-02 | RSG vs LPA | segunda-division-es | score=76.5 | peso=0.588
+  2025-11-07 | MIR vs RSG | segunda-division-es | score=53.0 | peso=0.602
+  2025-11-16 | RSG vs EIB | segunda-division-es | score=52.0 | peso=0.616
+  2025-12-13 | RSG vs GCF | segunda-division-es | score=65.0 | peso=0.630
+  2025-12-20 | LEG vs RSG | segunda-division-es | score=62.4 | peso=0.645
+  2026-01-04 | RSG vs MCF | segunda-division-es | score=39.4 | peso=0.660
+  2026-01-17 | CUL vs RSG | segunda-division-es | score=71.3 | peso=0.675
+  2026-01-24 | RSG vs MIR | segunda-division-es | score=76.4 | peso=0.691
+  2026-02-15 | ALB vs RSG | segunda-division-es | score=47.6 | peso=0.707
+  2026-02-22 | RSG vs VLL | segunda-division-es | score=80.7 | peso=0.724
+  2026-03-02 | RSG vs LEG | segunda-division-es | score=70.3 | peso=0.741
+  2026-03-15 | RSG vs CAS | segunda-division-es | score=30.9 | peso=0.758
+  2026-03-22 | LPA vs RSG | segunda-division-es | score=46.1 | peso=0.776
+  2026-03-28 | RSG vs DEP | segunda-division-es | score=70.6 | peso=0.794
+  2026-04-01 | RAC vs RSG | segunda-division-es | score=27.4 | peso=0.812
+  2026-04-06 | RSG vs RS2 | segunda-division-es | score=65.4 | peso=0.831
+  2026-04-11 | BCF vs RSG | segunda-division-es | score=58.2 | peso=0.851
+  2026-04-19 | RSG vs CAD | segunda-division-es | score=71.5 | peso=0.871
+  2026-04-26 | COR vs RSG | segunda-division-es | score=53.7 | peso=0.891
+  2026-05-09 | MCF vs RSG | segunda-division-es | score=70.2 | peso=0.912
+  2026-05-17 | ZAR vs RSG | segunda-division-es | score=72.3 | peso=0.933
+  2026-05-24 | RSG vs UDA | segunda-division-es | score=63.8 | peso=0.955
+  2026-05-30 | GCF vs RSG | segunda-division-es | score=56.2 | peso=0.977
+  2026-08-17 | RSG vs SAB | segunda-division-es | score=59.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 57.83
+  di cui Punteggio decisivo (level_score) medio: 39.73 | Punteggio complessivo (granulari) medio: 18.10 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +1.24, delta avversario +1.15 | Passaggio condizionato: delta venue +0.66, delta avversario +0.58 | Clean sheet/disimpegni condizionato: delta venue +1.57, delta avversario +1.39 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 14.53
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.4 - 71.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.09 (differenza: +1.44)
+Media score in casa: 60.98 | Media score fuori casa: 52.35
+Fattore casa/trasferta applicato: 0.998 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 13.0
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 0.597 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.005
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.003
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 1.009
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.009
+Fattore trend (media ultime 5: 64.2 vs media 5 PRECEDENTI: 55.5): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T17:00
+Casa: Real Sporting de Gijón | Trasferta: Burgos CF
+Competizione: segunda-division-es
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 60.7 (range 42.2 - 74.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 58.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 57.75
+Punteggio REALE ottenuto in quella partita: 59.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +1.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      35.7    76.5    +40.7    13.9        NO
+   7        7      62.4    53.0     -9.3    17.8        SI
+   8        8      62.6    52.0    -10.7    16.6        SI
+   9        9      51.0    65.0    +13.9    15.6        SI
+  10       10      44.5    62.4    +17.9    15.5        NO
+  11       11      63.5    39.4    -24.2    15.1        NO
+  12       12      65.6    71.3     +5.7    15.0        SI
+  13       13      63.6    76.4    +12.9    15.6        SI
+  14       14      60.7    47.6    -13.1    16.4        SI
+  15       15      66.2    80.7    +14.5    16.0        SI
+  16       16      46.3    70.3    +24.1    17.1        NO
+  17       17      43.7    30.9    -12.9    16.9        SI
+  18       18      40.3    46.1     +5.8    17.9        SI
+  19       19      43.4    70.6    +27.1    17.5        NO
+  20       20      39.7    27.4    -12.3    17.5        SI
+  21       21      65.7    65.4     -0.3    18.5        SI
+  22       22      39.0    58.2    +19.2    18.2        NO
+  23       23      61.0    71.5    +10.4    17.7        SI
+  24       24      60.8    53.7     -7.2    17.7        SI
+  25       25      64.2    70.2     +6.0    17.2        SI
+  26       26      72.3    72.3     +0.1    17.1        SI
+  27       27      35.8    63.8    +28.0    17.1        NO
+  28       28      56.3    56.2     -0.1    16.7        SI
+  29       29      61.2    59.4     -1.8    16.4        SI
+
+MAE (errore assoluto medio): 13.26
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.8%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

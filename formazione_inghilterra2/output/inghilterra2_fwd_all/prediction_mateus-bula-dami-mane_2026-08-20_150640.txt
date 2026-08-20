@@ -1,0 +1,113 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:40.107827Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) mateus-bula-dami-mane: 48 pt attesi (41-56)
+   ORDINAMENTO: 45.19
+   SQUADRA: wolverhampton-wanderers-wolverhampton | AVVERSARIO: preston-north-end-preston
+======================================================================
+
+######################################################################
+# GIOCATORE: mateus-bula-dami-mane
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: mateus-bula-dami-mane (squadra: wolverhampton-wanderers-wolverhampton)
+Generato: 2026-08-20T15:06:40.106875Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-12-27 | LIV vs WOL | premier-league-gb-eng | score=27.5 | peso=0.125
+  2025-12-30 | MUN vs WOL | premier-league-gb-eng | score=41.8 | peso=0.140
+  2026-01-03 | WOL vs WHU | premier-league-gb-eng | score=84.5 | peso=0.157
+  2026-01-07 | EVE vs WOL | premier-league-gb-eng | score=61.6 | peso=0.177
+  2026-01-18 | WOL vs NEW | premier-league-gb-eng | score=25.6 | peso=0.198
+  2026-01-24 | MCI vs WOL | premier-league-gb-eng | score=46.4 | peso=0.223
+  2026-01-31 | WOL vs BOR | premier-league-gb-eng | score=51.1 | peso=0.250
+  2026-02-07 | WOL vs CHE | premier-league-gb-eng | score=36.8 | peso=0.281
+  2026-02-11 | NOT vs WOL | premier-league-gb-eng | score=44.2 | peso=0.315
+  2026-02-18 | WOL vs ARS | premier-league-gb-eng | score=21.7 | peso=0.354
+  2026-02-22 | CRY vs WOL | premier-league-gb-eng | score=43.1 | peso=0.397
+  2026-02-27 | WOL vs AST | premier-league-gb-eng | score=42.0 | peso=0.445
+  2026-03-03 | WOL vs LIV | premier-league-gb-eng | score=32.0 | peso=0.500
+  2026-04-25 | WOL vs TOT | premier-league-gb-eng | score=42.3 | peso=0.561
+  2026-05-02 | WOL vs SUN | premier-league-gb-eng | score=47.0 | peso=0.630
+  2026-05-09 | BRI vs WOL | premier-league-gb-eng | score=37.7 | peso=0.707
+  2026-05-17 | WOL vs FUL | premier-league-gb-eng | score=51.3 | peso=0.794
+  2026-05-24 | BUR vs WOL | premier-league-gb-eng | score=54.5 | peso=0.891
+  2026-08-14 | WOL vs BBR | football-league-championship | score=39.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 43.45
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=19): 47.99 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 36.22 | Punteggio complessivo (granulari) medio: 7.23 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 7.29 (delta +0.45) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 10.45
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.8 - 51.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 7.74 (differenza: +2.72)
+Media score in casa: 43.05 | Media score fuori casa: 44.60
+Fattore casa/trasferta applicato: 0.999 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.7
+Ranking prossimo avversario: 19
+Fattore forza avversario applicato: 1.209 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 45.9 vs media 5 PRECEDENTI: 36.2): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T14:00
+Casa: Preston North End FC | Trasferta: Wolverhampton Wanderers FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 47.8 (range 41.2 - 55.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 45.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 44.04
+Punteggio REALE ottenuto in quella partita: 39.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -4.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.1    51.1     +6.0    22.8        SI
+   7        7      53.2    36.8    -16.4    20.5        SI
+   8        8      59.7    44.2    -15.5    19.2        SI
+   9        9      34.2    21.7    -12.5    17.6        SI
+  10       10      52.7    43.1     -9.6    19.1        SI
+  11       11      35.7    42.0     +6.3    17.6        SI
+  12       12      37.6    32.0     -5.6    16.3        SI
+  13       13      53.4    42.3    -11.1    15.6        SI
+  14       14      38.7    47.0     +8.3    14.5        SI
+  15       15      41.4    37.7     -3.7    13.7        SI
+  16       16      44.9    51.3     +6.4    12.9        SI
+  17       17      46.2    54.5     +8.3    12.7        SI
+  18       18      44.3    39.2     -5.1    12.7        SI
+
+MAE (errore assoluto medio): 8.83
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

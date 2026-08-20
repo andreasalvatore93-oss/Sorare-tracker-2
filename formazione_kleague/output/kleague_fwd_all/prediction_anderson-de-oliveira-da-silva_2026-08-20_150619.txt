@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:19.059518Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) anderson-de-oliveira-da-silva: 50 pt attesi (38-72)
+   ORDINAMENTO: 49.50
+   SQUADRA: seoul-seoul | AVVERSARIO: bucheon-1995-bucheon
+   AMBIGUO_FIXTURE: si
+======================================================================
+
+######################################################################
+# GIOCATORE: anderson-de-oliveira-da-silva
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: anderson-de-oliveira-da-silva (squadra: seoul-seoul)
+Generato: 2026-08-20T15:06:19.057700Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 5
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: k-league-1 (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-24 | SEO vs ULS | k-league-1 | score=64.5 | peso=0.099
+  2025-08-31 | SEO vs ANY | k-league-1 | score=43.9 | peso=0.111
+  2025-09-13 | GAN vs SEO | k-league-1 | score=47.4 | peso=0.125
+  2025-09-21 | SEO vs GWA | k-league-1 | score=50.2 | peso=0.140
+  2025-09-27 | SEO vs JMO | k-league-1 | score=48.3 | peso=0.157
+  2025-10-05 | SCI vs SEO | k-league-1 | score=49.8 | peso=0.177
+  2025-10-26 | SEO vs GAN | k-league-1 | score=48.1 | peso=0.198
+  2025-11-09 | POH vs SEO | k-league-1 | score=37.8 | peso=0.223
+  2025-11-22 | SEO vs SAN | k-league-1 | score=43.9 | peso=0.250
+  2026-02-28 | INC vs SEO | k-league-1 | score=82.0 | peso=0.281
+  2026-03-15 | JEJ vs SEO | k-league-1 | score=42.7 | peso=0.315
+  2026-03-18 | POH vs SEO | k-league-1 | score=48.1 | peso=0.354
+  2026-05-02 | SEO vs SAN | k-league-1 | score=38.0 | peso=0.397
+  2026-05-12 | GWA vs SEO | k-league-1 | score=58.2 | peso=0.445
+  2026-05-16 | DJO vs SEO | k-league-1 | score=80.4 | peso=0.500
+  2026-07-05 | SEO vs INC | k-league-1 | score=42.6 | peso=0.561
+  2026-07-12 | SEO vs GAN | k-league-1 | score=43.6 | peso=0.630
+  2026-07-22 | SEO vs POH | k-league-1 | score=72.1 | peso=0.707
+  2026-08-01 | JMO vs SEO | k-league-1 | score=45.0 | peso=0.794
+  2026-08-08 | SAN vs SEO | k-league-1 | score=29.7 | peso=0.891
+  2026-08-15 | SEO vs DJO | k-league-1 | score=48.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 49.99
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=21): 51.55 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 39.75 | Punteggio complessivo (granulari) medio: 10.24 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 6.78 (delta +0.03) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 14.32
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.0 - 72.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.08 (differenza: +2.24)
+Media score in casa: 49.46 | Media score fuori casa: 52.11
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.0
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 0.935 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.995
+Fattore trend (media ultime 5: 47.9 vs media 5 PRECEDENTI: 53.5): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-25T10:30
+Casa: FC Seoul | Trasferta: Bucheon FC 1995
+Competizione: k-league-1
+ATTENZIONE FIXTURE AMBIGUA: due partite future avevano GIA' le starter odds pubblicate insieme -- scelta quella piu' tardiva (caso limite mai visto prima del 10/08/2026, verificare a mano).
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.3 (range 38.3 - 72.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.14
+Punteggio REALE ottenuto in quella partita: 48.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -1.2
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      44.9    48.1     +3.2     6.6        SI
+   7        7      52.4    37.8    -14.6     5.9        NO
+   8        8      54.7    43.9    -10.8     7.6        NO
+   9        9      46.6    82.0    +35.4     7.1        NO
+  10       10      56.2    42.7    -13.5    16.1        SI
+  11       11      52.5    48.1     -4.4    15.4        SI
+  12       12      56.6    38.0    -18.6    14.3        NO
+  13       13      58.3    58.2     -0.1    14.2        SI
+  14       14      54.1    80.4    +26.3    13.7        NO
+  15       15      51.1    42.6     -8.5    17.4        SI
+  16       16      44.4    43.6     -0.8    16.8        SI
+  17       17      50.8    72.1    +21.3    16.1        NO
+  18       18      47.7    45.0     -2.7    17.0        SI
+  19       19      61.8    29.7    -32.1    16.2        NO
+  20       20      55.0    48.9     -6.1    17.5        SI
+
+MAE (errore assoluto medio): 13.23
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 53.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

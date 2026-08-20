@@ -1,0 +1,75 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:16:05.215551Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) killian-basba-geeke-nikiema: 46 pt attesi (35-61)
+   SQUADRA: ado-den-haag-den-haag | AVVERSARIO: go-ahead-eagles-deventer
+======================================================================
+
+######################################################################
+# GIOCATORE: killian-basba-geeke-nikiema
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: killian-basba-geeke-nikiema (squadra: ado-den-haag-den-haag)
+Generato: 2026-08-20T15:16:05.214267Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 13
+Escluse (DID_NOT_PLAY): 8
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: eredivisie (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-08 | ? vs ? | wc-qualification-africa | score=60.0 | peso=0.707
+  2026-06-05 | ? vs ? | friendlies | score=34.9 | peso=0.794
+  2026-08-08 | AZ vs ADO | eredivisie | score=33.5 | peso=0.891
+  2026-08-16 | ADO vs GRO | eredivisie | score=51.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 44.63
+  di cui Punteggio decisivo (level_score) medio: 40.21 | Punteggio complessivo (granulari) medio: 4.42 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 39.34 (delta -0.87 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.34, delta avversario -1.33 | Possesso condizionato per venue: delta -0.11 | Goalkeeping condizionato per venue: delta -0.54 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 10.84
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.5 - 60.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 51.40 | Media score fuori casa: 33.50
+Fattore casa/trasferta applicato: 0.988 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 1.5
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.874 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.000
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.999
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.000
+Tasso storico clean sheet (porta inviolata nei primi 60'): 0.0% (bonus atteso incorporato nella media pesata: ~0.0pt)
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T10:15
+Casa: Go Ahead Eagles | Trasferta: HFC ADO Den Haag
+Competizione: eredivisie
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.9 (range 34.8 - 61.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 41.80
+Punteggio REALE ottenuto in quella partita: 51.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +9.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

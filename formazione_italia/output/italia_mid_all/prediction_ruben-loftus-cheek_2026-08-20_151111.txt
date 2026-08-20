@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:11:11.381809Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) ruben-loftus-cheek: 47 pt attesi (30-61)
+   SQUADRA: milan-milano | AVVERSARIO: torino-torino
+======================================================================
+
+######################################################################
+# GIOCATORE: ruben-loftus-cheek
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ruben-loftus-cheek (squadra: milan-milano)
+Generato: 2026-08-20T15:11:11.381224Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 18
+Competizione partita target: serie-a-it (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | MIL vs CRE | serie-a-it | score=36.5 | peso=0.779
+  2025-08-29 | LEC vs MIL | serie-a-it | score=64.6 | peso=0.801
+  2025-09-14 | MIL vs BOL | serie-a-it | score=30.2 | peso=0.824
+  2025-12-08 | TOR vs MIL | serie-a-it | score=39.8 | peso=0.847
+  2025-12-14 | MIL vs SAS | serie-a-it | score=60.0 | peso=0.871
+  2025-12-28 | MIL vs VER | serie-a-it | score=45.5 | peso=0.895
+  2026-01-02 | CAG vs MIL | serie-a-it | score=40.2 | peso=0.920
+  2026-01-11 | FIO vs MIL | serie-a-it | score=28.7 | peso=0.946
+  2026-02-03 | BOL vs MIL | serie-a-it | score=60.0 | peso=0.973
+  2026-02-13 | PIS vs MIL | serie-a-it | score=61.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 46.97
+  di cui Punteggio decisivo (level_score) medio: 45.29 | Punteggio complessivo (granulari) medio: 1.68 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 46.57 (delta +1.28)
+  Efficacia offensiva condizionata: delta venue +0.06, delta avversario -0.21 | Passaggio condizionato: delta venue -0.50, delta avversario -0.26 | Gol subiti condizionato: delta venue +0.20, delta avversario -0.10 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 13.01
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.2 - 61.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.46 (differenza: +1.55)
+Media score in casa: 43.05 | Media score fuori casa: 49.17
+Fattore casa/trasferta applicato: 1.002 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 14.2
+Ranking prossimo avversario: 12
+Fattore forza avversario applicato: 1.245 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.001
+Fattore gol subiti (goals_conceded, con cap): 1.002
+Fattore trend (media ultime 5: 47.5 vs media 5 PRECEDENTI: 46.3): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T18:45
+Casa: Torino FC | Trasferta: AC Milan
+Competizione: serie-a-it
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.6 (range 29.8 - 61.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.09
+Punteggio REALE ottenuto in quella partita: 61.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +16.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      46.2    40.2     -6.0    13.5        SI
+   7        7      47.0    28.7    -18.3    12.6        NO
+   8        8      33.8    60.0    +26.2    13.3        NO
+   9        9      55.2    61.7     +6.5    13.9        SI
+
+MAE (errore assoluto medio): 14.22
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

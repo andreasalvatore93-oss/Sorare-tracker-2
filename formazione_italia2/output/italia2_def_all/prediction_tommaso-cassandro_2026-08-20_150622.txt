@@ -1,0 +1,137 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:22.273605Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) tommaso-cassandro: 57 pt attesi (36-83)
+   ORDINAMENTO: 57.72
+   SQUADRA: palermo-palermo | AVVERSARIO: juve-stabia-castellammare-di-stabia
+======================================================================
+
+######################################################################
+# GIOCATORE: tommaso-cassandro
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: tommaso-cassandro (squadra: palermo-palermo)
+Generato: 2026-08-20T15:06:22.273032Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: serie-b-it (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-25 | CTZ vs PAL | serie-b-it | score=48.1 | peso=0.512
+  2025-10-29 | MAN vs CTZ | serie-b-it | score=41.2 | peso=0.524
+  2025-11-02 | CTZ vs VEN | serie-b-it | score=41.5 | peso=0.536
+  2025-11-29 | CTZ vs VIR | serie-b-it | score=81.7 | peso=0.548
+  2025-12-08 | MOD vs CTZ | serie-b-it | score=37.0 | peso=0.561
+  2025-12-13 | CTZ vs AVE | serie-b-it | score=52.8 | peso=0.574
+  2025-12-19 | BAR vs CTZ | serie-b-it | score=57.5 | peso=0.588
+  2025-12-27 | CTZ vs CES | serie-b-it | score=87.6 | peso=0.602
+  2026-01-10 | FRO vs CTZ | serie-b-it | score=54.9 | peso=0.616
+  2026-01-17 | VEN vs CTZ | serie-b-it | score=31.0 | peso=0.630
+  2026-01-25 | CTZ vs SAM | serie-b-it | score=35.4 | peso=0.645
+  2026-01-31 | SUD vs CTZ | serie-b-it | score=56.3 | peso=0.660
+  2026-02-07 | CTZ vs REG | serie-b-it | score=40.9 | peso=0.675
+  2026-02-10 | PES vs CTZ | serie-b-it | score=71.1 | peso=0.691
+  2026-02-14 | CTZ vs MAN | serie-b-it | score=72.9 | peso=0.707
+  2026-02-21 | VIR vs CTZ | serie-b-it | score=52.4 | peso=0.724
+  2026-03-01 | CTZ vs FRO | serie-b-it | score=45.5 | peso=0.741
+  2026-03-04 | CAR vs CTZ | serie-b-it | score=68.3 | peso=0.758
+  2026-03-08 | CTZ vs EMP | serie-b-it | score=100.0 | peso=0.776
+  2026-03-14 | CPA vs CTZ | serie-b-it | score=53.9 | peso=0.794
+  2026-03-21 | CES vs CTZ | serie-b-it | score=60.9 | peso=0.812
+  2026-04-06 | CTZ vs MON | serie-b-it | score=34.7 | peso=0.831
+  2026-04-14 | CTZ vs MOD | serie-b-it | score=28.7 | peso=0.851
+  2026-04-18 | JST vs CTZ | serie-b-it | score=34.9 | peso=0.871
+  2026-04-25 | CTZ vs SPE | serie-b-it | score=60.0 | peso=0.891
+  2026-05-12 | CTZ vs AVE | serie-b-it | score=95.2 | peso=0.912
+  2026-05-17 | CTZ vs PAL | serie-b-it | score=85.4 | peso=0.933
+  2026-05-20 | PAL vs CTZ | serie-b-it | score=46.7 | peso=0.955
+  2026-05-24 | CTZ vs MON | serie-b-it | score=34.6 | peso=0.977
+  2026-05-29 | MON vs CTZ | serie-b-it | score=48.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 55.52
+  di cui Punteggio decisivo (level_score) medio: 41.43 | Punteggio complessivo (granulari) medio: 14.09 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.78, delta avversario +0.00 | Passaggio condizionato: delta venue +0.56, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +1.08, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 19.78
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.9 - 81.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.78 (differenza: +1.99)
+Media score in casa: 59.05 | Media score fuori casa: 51.00
+Fattore casa/trasferta applicato: 1.004 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.0
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.006
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.004
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.992
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.993
+Fattore gol subiti (goals_conceded, con cap): 1.006
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.007
+Fattore trend (media ultime 5: 61.3 vs media 5 PRECEDENTI: 43.8): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T19:00
+Casa: US Città di Palermo | Trasferta: SS Juve Stabia
+Competizione: serie-b-it
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 56.8 (range 36.1 - 82.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 57.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 55.88
+Punteggio REALE ottenuto in quella partita: 48.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -7.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      67.1    57.5     -9.7    16.5        SI
+   7        7      56.5    87.6    +31.1    15.4        NO
+   8        8      42.6    54.9    +12.3    19.7        SI
+   9        9      42.0    31.0    -11.0    18.5        SI
+  10       10      65.1    35.4    -29.7    19.5        NO
+  11       11      65.2    56.3     -8.9    19.4        SI
+  12       12      69.9    40.9    -29.0    18.6        NO
+  13       13      69.4    71.1     +1.7    18.1        SI
+  14       14      51.1    72.9    +21.8    18.3        NO
+  15       15      61.5    52.4     -9.1    18.6        SI
+  16       16      39.2    45.5     +6.3    17.9        SI
+  17       17      57.4    68.3    +10.9    17.4        SI
+  18       18      64.5   100.0    +35.5    17.3        NO
+  19       19      56.7    53.9     -2.8    20.8        SI
+  20       20      58.4    60.9     +2.5    20.1        SI
+  21       21      43.8    34.7     -9.1    19.5        SI
+  22       22      49.1    28.7    -20.4    19.8        NO
+  23       23      49.5    34.9    -14.6    20.5        SI
+  24       24      71.4    60.0    -11.4    20.5        SI
+  25       25      50.5    95.2    +44.7    20.0        NO
+  26       26      45.0    85.4    +40.4    21.9        NO
+  27       27      45.7    46.7     +1.0    22.5        SI
+  28       28      44.9    34.6    -10.3    22.1        SI
+  29       29      43.4    48.0     +4.5    22.2        SI
+
+MAE (errore assoluto medio): 15.78
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

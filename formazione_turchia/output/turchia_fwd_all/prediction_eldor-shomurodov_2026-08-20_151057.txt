@@ -1,0 +1,135 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:10:57.062780Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) eldor-shomurodov: 56 pt attesi (38-71)
+   ORDINAMENTO: 57.21
+   SQUADRA: istanbul-basaksehir-istanbul | AVVERSARIO: trabzonspor-trabzon
+======================================================================
+
+######################################################################
+# GIOCATORE: eldor-shomurodov
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: eldor-shomurodov (squadra: istanbul-basaksehir-istanbul)
+Generato: 2026-08-20T15:10:57.061715Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: spor-toto-super-lig (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-28 | KON vs IBFK | spor-toto-super-lig | score=67.8 | peso=0.035
+  2025-10-05 | GÖZ vs IBFK | spor-toto-super-lig | score=18.1 | peso=0.039
+  2025-10-18 | IBFK vs GS | spor-toto-super-lig | score=60.7 | peso=0.044
+  2025-10-22 | RIZ vs IBFK | spor-toto-super-lig | score=49.4 | peso=0.050
+  2025-10-26 | ANT vs IBFK | spor-toto-super-lig | score=70.0 | peso=0.056
+  2025-10-31 | IBFK vs KOC | spor-toto-super-lig | score=62.8 | peso=0.062
+  2025-11-07 | GNÇ vs IBFK | spor-toto-super-lig | score=68.9 | peso=0.070
+  2025-11-24 | IBFK vs TS | spor-toto-super-lig | score=63.2 | peso=0.079
+  2025-11-29 | KAS vs IBFK | spor-toto-super-lig | score=71.3 | peso=0.088
+  2025-12-06 | IBFK vs FB | spor-toto-super-lig | score=42.5 | peso=0.099
+  2025-12-14 | SAM vs IBFK | spor-toto-super-lig | score=80.9 | peso=0.111
+  2025-12-22 | IBFK vs GAZ | spor-toto-super-lig | score=78.8 | peso=0.125
+  2026-01-17 | IBFK vs FAT | spor-toto-super-lig | score=65.0 | peso=0.140
+  2026-01-24 | KAY vs IBFK | spor-toto-super-lig | score=76.8 | peso=0.157
+  2026-01-31 | IBFK vs RIZ | spor-toto-super-lig | score=69.3 | peso=0.177
+  2026-02-08 | EYÜ vs IBFK | spor-toto-super-lig | score=78.7 | peso=0.198
+  2026-02-15 | IBFK vs BJK | spor-toto-super-lig | score=45.4 | peso=0.223
+  2026-02-21 | ALA vs IBFK | spor-toto-super-lig | score=60.0 | peso=0.250
+  2026-02-27 | IBFK vs KON | spor-toto-super-lig | score=43.1 | peso=0.281
+  2026-03-07 | IBFK vs GÖZ | spor-toto-super-lig | score=35.4 | peso=0.315
+  2026-03-14 | GS vs IBFK | spor-toto-super-lig | score=33.7 | peso=0.354
+  2026-03-18 | IBFK vs ANT | spor-toto-super-lig | score=32.2 | peso=0.397
+  2026-04-06 | KOC vs IBFK | spor-toto-super-lig | score=44.8 | peso=0.445
+  2026-04-11 | IBFK vs GNÇ | spor-toto-super-lig | score=74.4 | peso=0.500
+  2026-04-19 | TS vs IBFK | spor-toto-super-lig | score=43.4 | peso=0.561
+  2026-04-24 | IBFK vs KAS | spor-toto-super-lig | score=72.8 | peso=0.630
+  2026-05-02 | FB vs IBFK | spor-toto-super-lig | score=42.0 | peso=0.707
+  2026-05-09 | IBFK vs SAM | spor-toto-super-lig | score=83.4 | peso=0.794
+  2026-05-16 | GAZ vs IBFK | spor-toto-super-lig | score=68.4 | peso=0.891
+  2026-08-16 | IBFK vs KOC | spor-toto-super-lig | score=69.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 59.79
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 57.77 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 52.63 | Punteggio complessivo (granulari) medio: 7.15 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 4.74 (delta +0.32) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.79
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 42.0 - 74.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.59 (differenza: +1.20)
+Media score in casa: 59.89 | Media score fuori casa: 58.28
+Fattore casa/trasferta applicato: 0.992 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.5
+Ranking prossimo avversario: 13
+Fattore forza avversario applicato: 0.867 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 1.008
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.994
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 67.2 vs media 5 PRECEDENTI: 45.7): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T16:00
+Casa: Trabzonspor Kulübü | Trasferta: İstanbul Başakşehir Futbol Kulübü
+Competizione: spor-toto-super-lig
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 56.1 (range 38.3 - 70.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 57.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.58
+Punteggio REALE ottenuto in quella partita: 69.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +10.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      67.2    68.9     +1.7    19.0        SI
+   7        7      45.9    63.2    +17.3    18.0        SI
+   8        8      69.1    71.3     +2.2    16.5        SI
+   9        9      46.5    42.5     -4.0    15.9        SI
+  10       10      56.3    80.9    +24.6    16.6        NO
+  11       11      69.6    78.8     +9.2    17.9        SI
+  12       12      85.1    65.0    -20.1    17.9        NO
+  13       13      82.2    76.8     -5.4    16.6        SI
+  14       14      61.6    69.3     +7.7    16.2        SI
+  15       15      79.3    78.7     -0.6    15.1        SI
+  16       16      53.6    45.4     -8.2    14.9        SI
+  17       17      68.9    60.0     -8.9    16.4        SI
+  18       18      62.7    43.1    -19.6    15.5        NO
+  19       19      53.7    35.4    -18.3    16.6        NO
+  20       20      42.0    33.7     -8.3    18.5        SI
+  21       21      68.7    32.2    -36.5    19.7        NO
+  22       22      54.6    44.8     -9.8    20.4        SI
+  23       23      59.6    74.4    +14.8    19.4        SI
+  24       24      42.6    43.4     +0.8    20.1        SI
+  25       25      59.5    72.8    +13.3    19.3        SI
+  26       26      41.6    42.0     +0.4    19.5        SI
+  27       27      49.4    83.4    +34.0    19.0        NO
+  28       28      63.5    68.4     +4.9    20.9        SI
+  29       29      73.8    69.3     -4.5    20.1        SI
+
+MAE (errore assoluto medio): 11.45
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 75.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

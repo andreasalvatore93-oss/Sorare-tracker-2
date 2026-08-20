@@ -1,0 +1,125 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:15:56.140988Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) ryoya-yamashita: 52 pt attesi (40-62)
+   ORDINAMENTO: 51.88
+   SQUADRA: gamba-osaka-suita-shi-suita | AVVERSARIO: nagoya-grampus-nagoya
+======================================================================
+
+######################################################################
+# GIOCATORE: ryoya-yamashita
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ryoya-yamashita (squadra: gamba-osaka-suita-shi-suita)
+Generato: 2026-08-20T15:15:56.139907Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 33
+Escluse (DID_NOT_PLAY): 2
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: j1-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | GAM vs YFC | j1-league | score=39.4 | peso=0.062
+  2025-09-13 | GAM vs RED | j1-league | score=53.2 | peso=0.070
+  2025-09-27 | GAM vs ALB | j1-league | score=65.9 | peso=0.079
+  2025-10-05 | ANT vs GAM | j1-league | score=40.6 | peso=0.088
+  2025-10-25 | GRA vs GAM | j1-league | score=64.0 | peso=0.099
+  2025-11-09 | GAM vs VIS | j1-league | score=48.9 | peso=0.111
+  2025-11-30 | AVI vs GAM | j1-league | score=49.1 | peso=0.125
+  2025-12-06 | GAM vs VER | j1-league | score=78.1 | peso=0.140
+  2026-02-07 | CER vs GAM | j1-100-year-vision-league | score=38.8 | peso=0.157
+  2026-02-15 | GAM vs GRA | j1-100-year-vision-league | score=50.3 | peso=0.177
+  2026-02-22 | FAG vs GAM | j1-100-year-vision-league | score=43.0 | peso=0.198
+  2026-03-08 | GAM vs VVN | j1-100-year-vision-league | score=50.1 | peso=0.223
+  2026-03-18 | VIS vs GAM | j1-100-year-vision-league | score=71.3 | peso=0.250
+  2026-04-04 | GAM vs SAN | j1-100-year-vision-league | score=48.4 | peso=0.281
+  2026-04-11 | GAM vs CER | j1-100-year-vision-league | score=37.9 | peso=0.315
+  2026-04-19 | GAM vs FAG | j1-100-year-vision-league | score=38.9 | peso=0.354
+  2026-04-22 | GAM vs AVI | j1-100-year-vision-league | score=82.9 | peso=0.397
+  2026-04-25 | VVN vs GAM | j1-100-year-vision-league | score=80.9 | peso=0.445
+  2026-04-29 | SAN vs GAM | j1-100-year-vision-league | score=49.9 | peso=0.500
+  2026-05-02 | GAM vs VIS | j1-100-year-vision-league | score=57.5 | peso=0.561
+  2026-05-06 | GRA vs GAM | j1-100-year-vision-league | score=42.4 | peso=0.630
+  2026-05-10 | GAM vs SFR | j1-100-year-vision-league | score=55.3 | peso=0.707
+  2026-05-24 | SSP vs GAM | j1-100-year-vision-league | score=41.4 | peso=0.794
+  2026-08-11 | GAN vs GAM | afc-champions-league | score=60.0 | peso=0.891
+  2026-08-15 | HOL vs GAM | j1-league | score=52.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 53.89
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=25): 53.83 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 41.65 | Punteggio complessivo (granulari) medio: 12.24 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 5.94 (delta -0.02) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 12.56
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 41.4 - 64.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 10.91 (differenza: +1.65)
+Media score in casa: 54.37 | Media score fuori casa: 52.82
+Fattore casa/trasferta applicato: 1.003 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 6.4
+Ranking prossimo avversario: 18
+Fattore forza avversario applicato: 1.174 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 0.993
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.991
+Fattore trend (media ultime 5: 50.3 vs media 5 PRECEDENTI: 62.0): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T10:00
+Casa: Nagoya Grampus | Trasferta: Gamba Osaka
+Competizione: j1-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.1 (range 39.6 - 62.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 51.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.07
+Punteggio REALE ottenuto in quella partita: 52.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -1.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 19 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      55.3    49.1     -6.2    11.6        SI
+   7        7      45.9    78.1    +32.2    10.5        NO
+   8        8      44.4    38.8     -5.6    15.0        SI
+   9        9      46.1    50.3     +4.2    15.7        SI
+  10       10      50.7    43.0     -7.7    14.5        SI
+  11       11      56.1    50.1     -6.0    13.9        SI
+  12       12      40.1    71.3    +31.2    12.9        NO
+  13       13      57.6    48.4     -9.2    14.4        SI
+  14       14      45.4    37.9     -7.5    13.6        SI
+  15       15      51.3    38.9    -12.4    14.0        SI
+  16       16      56.5    82.9    +26.4    13.9        NO
+  17       17      57.6    80.9    +23.3    18.2        NO
+  18       18      59.4    49.9     -9.5    19.9        SI
+  19       19      45.5    57.5    +12.0    18.8        SI
+  20       20      49.3    42.4     -6.9    17.6        SI
+  21       21      51.0    55.3     +4.3    17.4        SI
+  22       22      55.7    41.4    -14.3    16.3        SI
+  23       23      46.6    60.0    +13.4    16.1        SI
+  24       24      69.4    52.5    -16.9    15.3        NO
+
+MAE (errore assoluto medio): 13.11
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 73.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

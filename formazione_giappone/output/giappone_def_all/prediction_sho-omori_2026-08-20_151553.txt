@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:15:53.142078Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) sho-omori: 45 pt attesi (34-63)
+   ORDINAMENTO: 40.36
+   SQUADRA: mito-hollyhock-mito | AVVERSARIO: kyoto-sanga-kyoto-kyoto
+======================================================================
+
+######################################################################
+# GIOCATORE: sho-omori
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: sho-omori (squadra: mito-hollyhock-mito)
+Generato: 2026-08-20T15:15:53.140362Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 22
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: j1-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-08 | VER vs HOL | j1-100-year-vision-league | score=29.4 | peso=0.660
+  2026-02-14 | MAC vs HOL | j1-100-year-vision-league | score=30.0 | peso=0.675
+  2026-02-22 | HOL vs JEF | j1-100-year-vision-league | score=30.4 | peso=0.691
+  2026-03-01 | FRO vs HOL | j1-100-year-vision-league | score=40.1 | peso=0.707
+  2026-03-07 | RED vs HOL | j1-100-year-vision-league | score=32.8 | peso=0.724
+  2026-03-14 | HOL vs TOK | j1-100-year-vision-league | score=40.8 | peso=0.741
+  2026-03-18 | HOL vs FMA | j1-100-year-vision-league | score=47.3 | peso=0.758
+  2026-03-22 | REY vs HOL | j1-100-year-vision-league | score=30.0 | peso=0.776
+  2026-04-19 | HOL vs REY | j1-100-year-vision-league | score=57.9 | peso=0.794
+  2026-04-29 | HOL vs MAC | j1-100-year-vision-league | score=37.8 | peso=0.812
+  2026-05-02 | FMA vs HOL | j1-100-year-vision-league | score=64.3 | peso=0.831
+  2026-05-06 | ANT vs HOL | j1-100-year-vision-league | score=23.5 | peso=0.851
+  2026-05-09 | HOL vs RED | j1-100-year-vision-league | score=11.0 | peso=0.871
+  2026-05-16 | HOL vs VER | j1-100-year-vision-league | score=51.9 | peso=0.891
+  2026-05-24 | HOL vs FRO | j1-100-year-vision-league | score=34.9 | peso=0.912
+  2026-05-30 | VVN vs HOL | j1-100-year-vision-league | score=59.7 | peso=0.933
+  2026-06-06 | HOL vs VVN | j1-100-year-vision-league | score=60.2 | peso=0.955
+  2026-08-08 | REY vs HOL | j1-league | score=50.3 | peso=0.977
+  2026-08-15 | HOL vs GAM | j1-league | score=34.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 40.95
+  di cui Punteggio decisivo (level_score) medio: 33.88 | Punteggio complessivo (granulari) medio: 7.07 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.74, delta avversario -0.54 | Passaggio condizionato: delta venue +0.73, delta avversario +0.49 | Clean sheet/disimpegni condizionato: delta venue -0.74, delta avversario -0.72 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 14.10
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.0 - 59.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 11.58 (differenza: +2.52)
+Media score in casa: 40.71 | Media score fuori casa: 40.03
+Fattore casa/trasferta applicato: 1.003 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.9
+Ranking prossimo avversario: 14
+Fattore forza avversario applicato: 1.280 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.992
+Fattore gol subiti (goals_conceded, con cap): 0.996
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.994
+Fattore trend (media ultime 5: 48.0 vs media 5 PRECEDENTI: 37.6): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T10:00
+Casa: Kyoto Sanga FC | Trasferta: Mito Hollyhock
+Competizione: j1-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 44.6 (range 33.6 - 63.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 40.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 41.37
+Punteggio REALE ottenuto in quella partita: 34.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      26.8    47.3    +20.5     5.2        NO
+   7        7      23.0    30.0     +7.0     7.1        SI
+   8        8      24.4    57.9    +33.6     7.0        NO
+   9        9      25.1    37.8    +12.7    10.5        NO
+  10       10      34.7    64.3    +29.6     9.9        NO
+  11       11      32.1    23.5     -8.6    12.8        SI
+  12       12      52.5    11.0    -41.5    13.4        NO
+  13       13      44.2    51.9     +7.7    15.5        SI
+  14       14      41.4    34.9     -6.5    15.5        SI
+  15       15      36.3    59.7    +23.4    14.9        NO
+  16       16      38.4    60.2    +21.8    15.7        NO
+  17       17      29.8    50.3    +20.5    16.3        NO
+  18       18      34.1    34.8     +0.8    15.9        SI
+
+MAE (errore assoluto medio): 18.02
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 38.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

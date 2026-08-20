@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:15.226475Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) armando-izzo: 59 pt attesi (43-75)
+   ORDINAMENTO: 64.35
+   SQUADRA: avellino-avellino | AVVERSARIO: arezzo-arezzo
+======================================================================
+
+######################################################################
+# GIOCATORE: armando-izzo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: armando-izzo (squadra: avellino-avellino)
+Generato: 2026-08-20T15:06:15.225828Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 40
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: serie-b-it (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | MON vs MAN | serie-b-it | score=94.3 | peso=0.630
+  2025-09-12 | AVE vs MON | serie-b-it | score=47.9 | peso=0.645
+  2025-09-27 | MON vs CPA | serie-b-it | score=54.2 | peso=0.660
+  2025-10-04 | MON vs CTZ | serie-b-it | score=65.3 | peso=0.675
+  2025-10-18 | FRO vs MON | serie-b-it | score=72.4 | peso=0.691
+  2025-10-28 | PAL vs MON | serie-b-it | score=95.8 | peso=0.707
+  2025-11-02 | MON vs SPE | serie-b-it | score=47.6 | peso=0.724
+  2025-11-23 | MON vs CES | serie-b-it | score=77.6 | peso=0.741
+  2025-11-30 | JST vs MON | serie-b-it | score=60.0 | peso=0.758
+  2025-12-08 | MON vs SUD | serie-b-it | score=55.4 | peso=0.776
+  2025-12-13 | VEN vs MON | serie-b-it | score=62.4 | peso=0.794
+  2025-12-26 | MOD vs MON | serie-b-it | score=10.6 | peso=0.812
+  2026-03-07 | AVE vs CPA | serie-b-it | score=76.5 | peso=0.831
+  2026-03-15 | VIR vs AVE | serie-b-it | score=78.0 | peso=0.851
+  2026-03-18 | AVE vs SUD | serie-b-it | score=73.7 | peso=0.871
+  2026-03-22 | SAM vs AVE | serie-b-it | score=38.1 | peso=0.891
+  2026-04-18 | MAN vs AVE | serie-b-it | score=98.4 | peso=0.912
+  2026-04-24 | AVE vs BAR | serie-b-it | score=59.8 | peso=0.933
+  2026-05-01 | EMP vs AVE | serie-b-it | score=40.7 | peso=0.955
+  2026-05-08 | AVE vs MOD | serie-b-it | score=68.8 | peso=0.977
+  2026-05-12 | CTZ vs AVE | serie-b-it | score=45.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 62.50
+  di cui Punteggio decisivo (level_score) medio: 42.38 | Punteggio complessivo (granulari) medio: 20.12 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.34, delta avversario +0.00 | Passaggio condizionato: delta venue +1.61, delta avversario +0.00 | Clean sheet/disimpegni condizionato: delta venue +1.01, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 20.68
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 45.7 - 78.0 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 15.93 (differenza: +4.76)
+Media score in casa: 65.34 | Media score fuori casa: 60.20
+Fattore casa/trasferta applicato: 0.997 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.8
+Ranking prossimo avversario: None
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.003
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.004
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.005
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 1.002
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.004
+Fattore trend (media ultime 5: 62.2 vs media 5 PRECEDENTI: 55.6): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T19:00
+Casa: US Avellino | Trasferta: Unione Sportiva Arezzo
+Competizione: serie-b-it
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 59.4 (range 42.6 - 74.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 64.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 63.55
+Punteggio REALE ottenuto in quella partita: 45.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -17.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      71.9    47.6    -24.3    20.0        NO
+   7        7      68.1    77.6     +9.4    20.8        SI
+   8        8      69.4    60.0     -9.4    19.7        SI
+   9        9      68.3    55.4    -12.8    18.7        SI
+  10       10      66.8    62.4     -4.4    18.2        SI
+  11       11      66.4    10.6    -55.8    17.3        NO
+  12       12      75.2    76.5     +1.3    24.4        SI
+  13       13      78.6    78.0     -0.6    23.8        SI
+  14       14      79.4    73.7     -5.7    23.2        SI
+  15       15      69.7    38.1    -31.5    22.5        NO
+  16       16      57.4    98.4    +41.0    22.9        NO
+  17       17      79.4    59.8    -19.6    24.3        SI
+  18       18      72.3    40.7    -31.5    23.5        NO
+  19       19      50.2    68.8    +18.6    23.7        SI
+  20       20      49.2    45.7     -3.5    23.0        SI
+
+MAE (errore assoluto medio): 17.97
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

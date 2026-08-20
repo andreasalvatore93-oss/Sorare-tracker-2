@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:32.982849Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) guido-marcelo-carrillo: 50 pt attesi (33-73)
+   ORDINAMENTO: 49.81
+   SQUADRA: estudiantes-la-plata-provincia-de-buenos-aires | AVVERSARIO: sarmiento-junin-provincia-de-buenos-aires
+======================================================================
+
+######################################################################
+# GIOCATORE: guido-marcelo-carrillo
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: guido-marcelo-carrillo (squadra: estudiantes-la-plata-provincia-de-buenos-aires)
+Generato: 2026-08-20T15:06:32.943652Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 10
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-25 | EST vs ALD | superliga-argentina-de-futbol | score=36.7 | peso=0.111
+  2025-08-30 | CSE vs EST | superliga-argentina-de-futbol | score=46.2 | peso=0.125
+  2025-10-05 | EST vs BAC | superliga-argentina-de-futbol | score=74.4 | peso=0.140
+  2025-10-12 | BEL vs EST | superliga-argentina-de-futbol | score=45.3 | peso=0.157
+  2025-10-19 | EST vs GLP | superliga-argentina-de-futbol | score=60.0 | peso=0.177
+  2025-11-02 | EST vs BOC | superliga-argentina-de-futbol | score=34.6 | peso=0.198
+  2025-12-14 | RAC vs EST | superliga-argentina-de-futbol | score=72.1 | peso=0.223
+  2026-01-23 | IND vs EST | superliga-argentina-de-futbol | score=37.3 | peso=0.250
+  2026-01-29 | EST vs BOC | superliga-argentina-de-futbol | score=34.2 | peso=0.281
+  2026-02-09 | EST vs RIE | superliga-argentina-de-futbol | score=70.9 | peso=0.315
+  2026-02-15 | GLP vs EST | superliga-argentina-de-futbol | score=40.5 | peso=0.354
+  2026-02-20 | EST vs SAR | superliga-argentina-de-futbol | score=43.4 | peso=0.397
+  2026-03-02 | EST vs VEL | superliga-argentina-de-futbol | score=56.2 | peso=0.445
+  2026-03-13 | EST vs LAN | superliga-argentina-de-futbol | score=43.0 | peso=0.500
+  2026-03-18 | GMD vs EST | superliga-argentina-de-futbol | score=65.1 | peso=0.561
+  2026-03-23 | EST vs CSE | superliga-argentina-de-futbol | score=57.5 | peso=0.630
+  2026-04-18 | INS vs EST | superliga-argentina-de-futbol | score=31.9 | peso=0.707
+  2026-05-10 | EST vs RAC | superliga-argentina-de-futbol | score=29.5 | peso=0.794
+  2026-07-26 | EST vs IND | superliga-argentina-de-futbol | score=36.6 | peso=0.891
+  2026-08-01 | EST vs DYJ | superliga-argentina-de-futbol | score=77.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 49.54
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=20): 51.34 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 43.53 | Punteggio complessivo (granulari) medio: 6.01 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.55 (delta -0.42) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 16.54
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 31.9 - 72.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.29 (differenza: +3.25)
+Media score in casa: 50.34 | Media score fuori casa: 48.34
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.6
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.991
+Fattore duelli (casa/trasferta, da dati reali): 0.995
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 46.6 vs media 5 PRECEDENTI: 49.6): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T17:45
+Casa: CA Sarmiento | Trasferta: Club Estudiantes de La Plata
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.2 (range 32.6 - 72.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.70
+Punteggio REALE ottenuto in quella partita: 77.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +31.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 14 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      42.5    72.1    +29.6    15.9        NO
+   7        7      40.1    37.3     -2.8    17.6        SI
+   8        8      59.9    34.2    -25.7    17.5        NO
+   9        9      57.1    70.9    +13.8    17.5        SI
+  10       10      52.5    40.5    -12.0    18.7        SI
+  11       11      56.8    43.4    -13.4    17.9        SI
+  12       12      33.3    56.2    +22.9    16.7        NO
+  13       13      45.7    43.0     -2.7    15.8        SI
+  14       14      38.5    65.1    +26.6    14.9        NO
+  15       15      58.4    57.5     -0.9    15.2        SI
+  16       16      50.0    31.9    -18.1    14.4        NO
+  17       17      44.5    29.5    -15.0    15.5        SI
+  18       18      35.9    36.6     +0.7    16.4        SI
+  19       19      48.2    77.4    +29.2    15.8        NO
+
+MAE (errore assoluto medio): 15.24
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 57.1%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

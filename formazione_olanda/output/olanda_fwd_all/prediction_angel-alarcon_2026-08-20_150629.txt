@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:29.589939Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) angel-alarcon: 49 pt attesi (37-68)
+   ORDINAMENTO: 47.98
+   SQUADRA: utrecht-utrecht | AVVERSARIO: sparta-rotterdam-rotterdam
+======================================================================
+
+######################################################################
+# GIOCATORE: angel-alarcon
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: angel-alarcon (squadra: utrecht-utrecht)
+Generato: 2026-08-20T15:06:29.588816Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 42
+Escluse (DID_NOT_PLAY): 21
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: eredivisie (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-02 | POR vs CZV | uefa-europa-league | score=37.0 | peso=0.198
+  2026-02-01 | HEE vs UTR | eredivisie | score=67.5 | peso=0.223
+  2026-02-11 | NEC vs UTR | eredivisie | score=61.2 | peso=0.250
+  2026-02-14 | GRO vs UTR | eredivisie | score=45.8 | peso=0.281
+  2026-02-22 | UTR vs ZWO | eredivisie | score=78.3 | peso=0.315
+  2026-03-01 | UTR vs AZ | eredivisie | score=40.2 | peso=0.354
+  2026-03-06 | HER vs UTR | eredivisie | score=54.3 | peso=0.397
+  2026-03-15 | TWE vs UTR | eredivisie | score=72.6 | peso=0.445
+  2026-03-22 | UTR vs GAE | eredivisie | score=66.8 | peso=0.500
+  2026-04-04 | PSV vs UTR | eredivisie | score=64.0 | peso=0.561
+  2026-04-11 | UTR vs TEL | eredivisie | score=48.8 | peso=0.630
+  2026-04-26 | EXC vs UTR | eredivisie | score=36.2 | peso=0.707
+  2026-05-02 | UTR vs NAC | eredivisie | score=36.4 | peso=0.794
+  2026-08-09 | GRO vs UTR | eredivisie | score=15.1 | peso=0.891
+  2026-08-15 | UTR vs AZ | eredivisie | score=47.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 47.48
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=15): 50.61 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 40.24 | Punteggio complessivo (granulari) medio: 7.24 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.32 (delta -0.57) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.23
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.2 - 66.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.23 (differenza: +5.00)
+Media score in casa: 52.92 | Media score fuori casa: 52.09
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.4
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.277 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.996
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.995
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore trend (media ultime 5: 36.7 vs media 5 PRECEDENTI: 59.6): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T16:45
+Casa: Sparta Rotterdam | Trasferta: FC Utrecht
+Competizione: eredivisie
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.6 (range 37.3 - 67.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 48.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.56
+Punteggio REALE ottenuto in quella partita: 47.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -0.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      75.6    54.3    -21.3    17.6        NO
+   7        7      60.8    72.6    +11.8    15.8        SI
+   8        8      45.7    66.8    +21.1    16.3        NO
+   9        9      54.2    64.0     +9.8    15.3        SI
+  10       10      70.8    48.8    -22.0    14.2        NO
+  11       11      59.0    36.2    -22.8    13.9        NO
+  12       12      71.6    36.4    -35.2    15.7        NO
+  13       13      39.0    15.1    -23.9    16.4        NO
+  14       14      35.0    47.0    +12.0    21.3        SI
+
+MAE (errore assoluto medio): 19.98
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 33.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

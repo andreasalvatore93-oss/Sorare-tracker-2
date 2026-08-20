@@ -1,0 +1,115 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:11:18.167248Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) martin-adrian-satriano-costa: 51 pt attesi (37-72)
+   ORDINAMENTO: 48.87
+   SQUADRA: getafe-getafe-madrid | AVVERSARIO: racing-santander-santander
+   AMBIGUO_FIXTURE: si
+======================================================================
+
+######################################################################
+# GIOCATORE: martin-adrian-satriano-costa
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: martin-adrian-satriano-costa (squadra: getafe-getafe-madrid)
+Generato: 2026-08-20T15:11:18.166429Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 20
+Escluse (DID_NOT_PLAY): 1
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: laliga-es (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-18 | GET vs VCF | laliga-es | score=36.1 | peso=0.125
+  2026-01-26 | GIR vs GET | laliga-es | score=53.2 | peso=0.140
+  2026-02-01 | GET vs CEL | laliga-es | score=35.8 | peso=0.157
+  2026-02-08 | ALA vs GET | laliga-es | score=44.1 | peso=0.177
+  2026-02-14 | GET vs VIL | laliga-es | score=60.0 | peso=0.198
+  2026-02-22 | GET vs SEV | laliga-es | score=52.8 | peso=0.223
+  2026-03-02 | RMA vs GET | laliga-es | score=68.9 | peso=0.250
+  2026-03-08 | GET vs BET | laliga-es | score=60.0 | peso=0.281
+  2026-03-14 | ATM vs GET | laliga-es | score=42.8 | peso=0.315
+  2026-03-21 | ESP vs GET | laliga-es | score=47.0 | peso=0.354
+  2026-04-05 | GET vs ATH | laliga-es | score=92.4 | peso=0.397
+  2026-04-13 | LEV vs GET | laliga-es | score=42.9 | peso=0.445
+  2026-04-22 | RSO vs GET | laliga-es | score=28.8 | peso=0.500
+  2026-04-25 | GET vs FCB | laliga-es | score=32.5 | peso=0.561
+  2026-05-03 | GET vs RAY | laliga-es | score=33.4 | peso=0.630
+  2026-05-10 | OVI vs GET | laliga-es | score=39.6 | peso=0.707
+  2026-05-13 | GET vs MLL | laliga-es | score=79.2 | peso=0.794
+  2026-05-17 | ELC vs GET | laliga-es | score=38.7 | peso=0.891
+  2026-08-15 | ALA vs GET | laliga-es | score=38.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 47.51
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=19): 50.26 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 42.35 | Punteggio complessivo (granulari) medio: 5.15 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 2.78 (delta -0.40) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.41
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 33.4 - 68.9 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.30 (differenza: +3.10)
+Media score in casa: 53.58 | Media score fuori casa: 44.49
+Fattore casa/trasferta applicato: 1.010 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.9
+Ranking prossimo avversario: 5
+Fattore forza avversario applicato: 1.003 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.007
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.996
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore trend (media ultime 5: 46.0 vs media 5 PRECEDENTI: 48.7): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T17:30
+Casa: Getafe CF | Trasferta: Real Racing Club de Santander
+Competizione: laliga-es
+ATTENZIONE FIXTURE AMBIGUA: due partite future avevano GIA' le starter odds pubblicate insieme -- scelta quella piu' tardiva (caso limite mai visto prima del 10/08/2026, verificare a mano).
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.1 (range 37.0 - 72.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 48.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 48.71
+Punteggio REALE ottenuto in quella partita: 38.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -9.8
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 13 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      34.0    68.9    +34.9    10.3        NO
+   7        7      43.7    60.0    +16.3    13.2        NO
+   8        8      45.2    42.8     -2.4    12.5        SI
+   9        9      57.3    47.0    -10.3    12.3        SI
+  10       10      56.2    92.4    +36.2    11.4        NO
+  11       11      71.9    42.9    -29.0    20.1        NO
+  12       12      56.6    28.8    -27.8    19.4        NO
+  13       13      36.2    32.5     -3.7    20.9        SI
+  14       14      47.1    33.4    -13.7    20.8        SI
+  15       15      65.3    39.6    -25.7    20.3        NO
+  16       16      58.9    79.2    +20.3    19.1        NO
+  17       17      58.9    38.7    -20.2    22.0        SI
+  18       18      34.8    38.9     +4.1    21.0        SI
+
+MAE (errore assoluto medio): 18.81
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 46.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

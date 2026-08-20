@@ -1,0 +1,78 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:10:15.776191Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) josh-sheehan: 52 pt attesi (46-58)
+   SQUADRA: bolton-wanderers-bolton | AVVERSARIO: queens-park-rangers-london
+======================================================================
+
+######################################################################
+# GIOCATORE: josh-sheehan
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: josh-sheehan (squadra: bolton-wanderers-bolton)
+Generato: 2026-08-20T15:10:15.775535Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 10
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 1
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-04 | ? vs ? | wc-qualification-europe | score=48.7 | peso=0.871
+  2025-11-18 | ? vs ? | wc-qualification-europe | score=48.0 | peso=0.895
+  2026-03-31 | ? vs ? | friendlies | score=55.2 | peso=0.920
+  2026-06-02 | ? vs ? | friendlies | score=44.3 | peso=0.946
+  2026-06-06 | ? vs ? | friendlies | score=55.6 | peso=0.973
+  2026-08-15 | BOL vs PNE | football-league-championship | score=47.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 49.93
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 14.93 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 35.00 (delta +0.00)
+  Efficacia offensiva condizionata: delta venue +0.00, delta avversario +0.00 | Passaggio condizionato: delta venue +0.00, delta avversario +0.00 | Gol subiti condizionato: delta venue +0.00, delta avversario +0.00 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 4.15
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 44.3 - 55.6 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 3.09 (differenza: +1.06)
+Media score in casa: 47.70 | Media score fuori casa: 49.93
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 19.0
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 1.126 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T14:00
+Casa: Queens Park Rangers FC | Trasferta: Bolton Wanderers FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.0 (range 46.3 - 57.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 50.42
+Punteggio REALE ottenuto in quella partita: 47.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -2.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

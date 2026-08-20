@@ -1,0 +1,76 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:43.632716Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) andres-vombergar: 46 pt attesi (39-50)
+   ORDINAMENTO: 32.97
+   SQUADRA: aldosivi-mar-del-plata-provincia-de-buenos-aires | AVVERSARIO: union-santa-fe-ciudad-de-santa-fe-provincia-de-santa-fe
+======================================================================
+
+######################################################################
+# GIOCATORE: andres-vombergar
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: andres-vombergar (squadra: aldosivi-mar-del-plata-provincia-de-buenos-aires)
+Generato: 2026-08-20T15:06:43.631928Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 16
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 3
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-12 | RAC vs SLO | superliga-argentina-de-futbol | score=33.4 | peso=0.707
+  2026-08-02 | ALD vs GLP | superliga-argentina-de-futbol | score=35.1 | peso=0.794
+  2026-08-07 | ROS vs ALD | superliga-argentina-de-futbol | score=25.9 | peso=0.891
+  2026-08-15 | ALD vs TIG | superliga-argentina-de-futbol | score=36.7 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 32.80
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=4): 49.33 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: -2.20 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 3.06 (delta +0.17) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 4.28
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 25.9 - 36.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard trimmed: N/D (servono almeno 5 partite distinte)
+Media score in casa: 35.90 | Media score fuori casa: 25.90
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 4.3
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 0.995 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.997
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-21T17:30
+Casa: CA Aldosivi | Trasferta: CA Unión de Santa Fe
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 45.8 (range 38.9 - 49.7, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 33.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 31.17
+Punteggio REALE ottenuto in quella partita: 36.7
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +5.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

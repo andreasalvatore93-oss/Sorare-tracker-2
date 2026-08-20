@@ -1,0 +1,111 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:07:12.319740Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) brais-mendez-portela: 49 pt attesi (29-64)
+   SQUADRA: columbus-crew-columbus-ohio | AVVERSARIO: nashville-sc
+======================================================================
+
+######################################################################
+# GIOCATORE: brais-mendez-portela
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: brais-mendez-portela (squadra: columbus-crew-columbus-ohio)
+Generato: 2026-08-20T15:07:12.314689Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 44
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 15
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-19 | BET vs RSO | laliga-es | score=70.3 | peso=0.624
+  2025-09-24 | RSO vs MLL | laliga-es | score=31.5 | peso=0.642
+  2025-10-05 | RSO vs RAY | laliga-es | score=42.3 | peso=0.660
+  2025-10-19 | CEL vs RSO | laliga-es | score=40.8 | peso=0.678
+  2025-10-24 | RSO vs SEV | laliga-es | score=40.0 | peso=0.697
+  2025-11-01 | RSO vs ATH | laliga-es | score=73.7 | peso=0.717
+  2025-11-07 | ELC vs RSO | laliga-es | score=62.8 | peso=0.737
+  2025-11-22 | OSA vs RSO | laliga-es | score=64.4 | peso=0.758
+  2025-11-30 | RSO vs VIL | laliga-es | score=52.9 | peso=0.779
+  2025-12-06 | ALA vs RSO | laliga-es | score=57.8 | peso=0.801
+  2025-12-12 | RSO vs GIR | laliga-es | score=31.2 | peso=0.824
+  2026-01-04 | RSO vs ATM | laliga-es | score=46.0 | peso=0.847
+  2026-02-21 | RSO vs OVI | laliga-es | score=32.4 | peso=0.871
+  2026-03-15 | RSO vs OSA | laliga-es | score=66.6 | peso=0.895
+  2026-03-20 | VIL vs RSO | laliga-es | score=41.6 | peso=0.920
+  2026-08-07 | CLB vs PAC | leagues-cup-mls | score=65.8 | peso=0.946
+  2026-08-11 | CLB vs PUM | leagues-cup-mls | score=68.1 | peso=0.973
+  2026-08-19 | CLB vs MTL | mlspa | score=48.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 52.22
+  di cui Punteggio decisivo (level_score) medio: 44.05 | Punteggio complessivo (granulari) medio: 8.18 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 44.05 (delta +0.00)
+  Efficacia offensiva condizionata: delta venue +0.00, delta avversario -0.25 | Passaggio condizionato: delta venue +0.00, delta avversario +0.03 | Gol subiti condizionato: delta venue +0.00, delta avversario +0.08 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 13.84
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 32.4 - 68.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 12.66 (differenza: +1.18)
+Media score in casa: 60.67 | Media score fuori casa: 52.22
+Fattore casa/trasferta applicato: 1.000 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.3
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 0.767 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 1.000
+Fattore trend (media ultime 5: 58.0 vs media 5 PRECEDENTI: 43.8): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T00:30
+Casa: Nashville SC | Trasferta: Columbus Crew
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.6 (range 28.8 - 64.5, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.53
+Punteggio REALE ottenuto in quella partita: 48.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -4.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 12 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.9    62.8    +12.9    17.7        SI
+   7        7      51.9    64.4    +12.5    17.1        SI
+   8        8      53.6    52.9     -0.7    16.6        SI
+   9        9      53.5    57.8     +4.3    15.5        SI
+  10       10      54.0    31.2    -22.8    14.7        NO
+  11       11      51.6    46.0     -5.6    15.9        SI
+  12       12      51.1    32.4    -18.7    15.2        NO
+  13       13      49.4    66.6    +17.2    15.6        NO
+  14       14      50.9    41.6     -9.3    15.9        SI
+  15       15      50.1    65.8    +15.7    15.5        NO
+  16       16      35.5    68.1    +32.6    15.6        NO
+  17       17      62.9    48.1    -14.8    15.7        SI
+
+MAE (errore assoluto medio): 13.92
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 58.3%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

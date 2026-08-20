@@ -1,0 +1,107 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:15:06.495355Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) sota-nakamura: 55 pt attesi (37-77)
+   ORDINAMENTO: 59.04
+   SQUADRA: le-havre-harfleur | AVVERSARIO: monaco-monaco
+======================================================================
+
+######################################################################
+# GIOCATORE: sota-nakamura
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: sota-nakamura (squadra: le-havre-harfleur)
+Generato: 2026-08-20T15:15:06.494949Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 41
+Escluse (DID_NOT_PLAY): 11
+Escluse (minutaggio < 60', subentri): 14
+Competizione partita target: ligue-1-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | VER vs SFR | j1-league | score=63.7 | peso=0.177
+  2025-10-21 | ULS vs SFR | afc-champions-league | score=37.8 | peso=0.198
+  2025-11-09 | SFR vs RED | j1-league | score=38.4 | peso=0.223
+  2025-11-25 | QIA vs SFR | afc-champions-league | score=66.5 | peso=0.250
+  2025-11-30 | FRO vs SFR | j1-league | score=78.7 | peso=0.281
+  2025-12-06 | SFR vs BEL | j1-league | score=59.0 | peso=0.315
+  2025-12-10 | SFR vs SHE | afc-champions-league | score=42.4 | peso=0.354
+  2026-03-14 | SFR vs GAM | j1-100-year-vision-league | score=86.8 | peso=0.397
+  2026-03-18 | GRA vs SFR | j1-100-year-vision-league | score=46.1 | peso=0.445
+  2026-03-27 | VIS vs SFR | j1-100-year-vision-league | score=39.1 | peso=0.500
+  2026-04-05 | SFR vs AVI | j1-100-year-vision-league | score=39.3 | peso=0.561
+  2026-05-06 | SFR vs VIS | j1-100-year-vision-league | score=28.2 | peso=0.630
+  2026-05-10 | GAM vs SFR | j1-100-year-vision-league | score=38.8 | peso=0.707
+  2026-05-17 | SAN vs SFR | j1-100-year-vision-league | score=84.7 | peso=0.794
+  2026-05-23 | SFR vs GRA | j1-100-year-vision-league | score=64.8 | peso=0.891
+  2026-05-30 | SFR vs FRO | j1-100-year-vision-league | score=72.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 56.79
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=16): 55.31 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 48.29 | Punteggio complessivo (granulari) medio: 8.50 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 6.04 (delta +0.02) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 18.98
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.8 - 78.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.86 (differenza: +2.12)
+Media score in casa: 53.89 | Media score fuori casa: 56.93
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.8
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 1.277 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.002
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.996
+Fattore trend (media ultime 5: 57.7 vs media 5 PRECEDENTI: 50.7): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T15:15
+Casa: Le Havre AC | Trasferta: AS Monaco
+Competizione: ligue-1-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.7 (range 36.7 - 76.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 59.0
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.50
+Punteggio REALE ottenuto in quella partita: 72.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +17.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 10 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      55.0    42.4    -12.6    16.9        SI
+   7        7      42.8    86.8    +44.0    16.8        NO
+   8        8      76.3    46.1    -30.2    20.6        NO
+   9        9      47.2    39.1     -8.1    19.9        SI
+  10       10      48.5    39.3     -9.2    20.0        SI
+  11       11      45.0    28.2    -16.8    19.6        SI
+  12       12      40.7    38.8     -1.9    20.7        SI
+  13       13      54.8    84.7    +29.9    19.7        NO
+  14       14      67.3    64.8     -2.5    23.3        SI
+  15       15      58.9    72.2    +13.3    22.2        SI
+
+MAE (errore assoluto medio): 16.83
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 70.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

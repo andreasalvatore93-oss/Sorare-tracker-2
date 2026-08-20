@@ -1,0 +1,131 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:10:09.298189Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) ryan-giles: 50 pt attesi (31-70)
+   ORDINAMENTO: 46.56
+   SQUADRA: hull-city-hull | AVVERSARIO: manchester-united-manchester
+======================================================================
+
+######################################################################
+# GIOCATORE: ryan-giles
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: ryan-giles (squadra: hull-city-hull)
+Generato: 2026-08-20T15:10:09.297426Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 47
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | HUL vs BBR | football-league-championship | score=34.5 | peso=0.548
+  2025-08-30 | BRC vs HUL | football-league-championship | score=17.9 | peso=0.561
+  2025-09-13 | SWA vs HUL | football-league-championship | score=63.7 | peso=0.574
+  2025-09-20 | HUL vs SOT | football-league-championship | score=66.4 | peso=0.588
+  2025-09-27 | WAT vs HUL | football-league-championship | score=31.8 | peso=0.602
+  2025-09-30 | HUL vs PNE | football-league-championship | score=77.4 | peso=0.616
+  2025-10-04 | HUL vs SHU | football-league-championship | score=53.3 | peso=0.630
+  2025-10-18 | BIR vs HUL | football-league-championship | score=21.2 | peso=0.645
+  2025-10-25 | HUL vs CHA | football-league-championship | score=42.6 | peso=0.660
+  2025-11-01 | NOR vs HUL | football-league-championship | score=57.0 | peso=0.675
+  2025-11-04 | DER vs HUL | football-league-championship | score=35.3 | peso=0.691
+  2025-11-08 | HUL vs POR | football-league-championship | score=27.8 | peso=0.707
+  2025-11-22 | QPR vs HUL | football-league-championship | score=60.7 | peso=0.724
+  2025-11-25 | HUL vs IPS | football-league-championship | score=9.4 | peso=0.741
+  2025-11-29 | STO vs HUL | football-league-championship | score=21.7 | peso=0.758
+  2025-12-05 | HUL vs MID | football-league-championship | score=27.5 | peso=0.776
+  2025-12-10 | HUL vs WRE | football-league-championship | score=91.8 | peso=0.794
+  2025-12-13 | MIL vs HUL | football-league-championship | score=33.4 | peso=0.812
+  2025-12-20 | HUL vs WBA | football-league-championship | score=61.9 | peso=0.831
+  2025-12-26 | SHW vs HUL | football-league-championship | score=35.0 | peso=0.851
+  2026-02-21 | HUL vs QPR | football-league-championship | score=48.2 | peso=0.871
+  2026-04-21 | LEI vs HUL | football-league-championship | score=25.4 | peso=0.891
+  2026-04-25 | CHA vs HUL | football-league-championship | score=28.7 | peso=0.912
+  2026-05-02 | HUL vs NOR | football-league-championship | score=41.5 | peso=0.933
+  2026-05-08 | HUL vs MIL | football-league-championship | score=65.2 | peso=0.955
+  2026-05-11 | MIL vs HUL | football-league-championship | score=48.5 | peso=0.977
+  2026-05-23 | HUL vs MID | football-league-championship | score=61.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 44.26
+  di cui Punteggio decisivo (level_score) medio: 39.36 | Punteggio complessivo (granulari) medio: 4.91 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.57, delta avversario +1.21 | Passaggio condizionato: delta venue +0.89, delta avversario -0.32 | Clean sheet/disimpegni condizionato: delta venue +0.82, delta avversario +0.72 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 19.43
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 25.4 - 63.7 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.28 (differenza: +3.16)
+Media score in casa: 50.63 | Media score fuori casa: 36.94
+Fattore casa/trasferta applicato: 1.002 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.7
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.938 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 1.005
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.001
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.007
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.006
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.004
+Fattore gol subiti (goals_conceded, con cap): 1.003
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.005
+Fattore trend (media ultime 5: 49.4 vs media 5 PRECEDENTI: 40.6): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T11:30
+Casa: Hull City AFC | Trasferta: Manchester United FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 50.2 (range 31.4 - 69.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 46.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.38
+Punteggio REALE ottenuto in quella partita: 61.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +17.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 21 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      52.7    53.3     +0.6    23.8        SI
+   7        7      49.7    21.2    -28.6    22.0        NO
+   8        8      33.0    42.6     +9.6    23.1        SI
+   9        9      54.1    57.0     +2.9    21.7        SI
+  10       10      50.2    35.3    -14.9    20.8        SI
+  11       11      58.5    27.8    -30.7    20.1        NO
+  12       12      22.1    60.7    +38.6    20.0        NO
+  13       13      26.9     9.4    -17.4    19.8        SI
+  14       14      53.5    21.7    -31.8    21.9        NO
+  15       15      31.6    27.5     -4.2    21.9        SI
+  16       16      39.7    91.8    +52.1    21.4        NO
+  17       17      26.1    33.4     +7.3    25.3        SI
+  18       18      30.5    61.9    +31.4    24.6        NO
+  19       19      60.7    35.0    -25.7    24.3        NO
+  20       20      26.3    48.2    +21.9    23.7        SI
+  21       21      58.4    25.4    -33.0    23.0        NO
+  22       22      31.9    28.7     -3.2    22.8        SI
+  23       23      54.5    41.5    -13.0    22.4        SI
+  24       24      27.2    65.2    +38.0    21.8        NO
+  25       25      26.8    48.5    +21.8    22.0        SI
+  26       26      37.3    61.3    +24.0    21.5        NO
+
+MAE (errore assoluto medio): 21.46
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 52.4%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

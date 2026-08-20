@@ -1,0 +1,133 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:24.409458Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) steven-shpendi: 52 pt attesi (25-74)
+   ORDINAMENTO: 51.22
+   SQUADRA: empoli-empoli | AVVERSARIO: cremonese-cremona
+======================================================================
+
+######################################################################
+# GIOCATORE: steven-shpendi
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: steven-shpendi (squadra: empoli-empoli)
+Generato: 2026-08-20T15:06:24.408917Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 38
+Escluse (DID_NOT_PLAY): 3
+Escluse (minutaggio < 60', subentri): 6
+Competizione partita target: serie-b-it (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-14 | EMP vs SPE | serie-b-it | score=36.3 | peso=0.039
+  2025-09-21 | PES vs EMP | serie-b-it | score=33.0 | peso=0.044
+  2025-09-28 | EMP vs CAR | serie-b-it | score=63.1 | peso=0.050
+  2025-10-01 | EMP vs MON | serie-b-it | score=33.2 | peso=0.056
+  2025-10-05 | SUD vs EMP | serie-b-it | score=64.8 | peso=0.062
+  2025-10-19 | EMP vs VEN | serie-b-it | score=60.0 | peso=0.070
+  2025-10-28 | EMP vs SAM | serie-b-it | score=35.3 | peso=0.079
+  2025-11-08 | EMP vs CTZ | serie-b-it | score=62.5 | peso=0.088
+  2025-11-22 | AVE vs EMP | serie-b-it | score=31.7 | peso=0.099
+  2025-11-29 | EMP vs BAR | serie-b-it | score=63.5 | peso=0.111
+  2025-12-07 | EMP vs PAL | serie-b-it | score=38.0 | peso=0.125
+  2025-12-13 | JST vs EMP | serie-b-it | score=39.2 | peso=0.140
+  2025-12-27 | EMP vs FRO | serie-b-it | score=25.4 | peso=0.157
+  2026-01-10 | CES vs EMP | serie-b-it | score=32.9 | peso=0.177
+  2026-01-23 | CAR vs EMP | serie-b-it | score=45.1 | peso=0.198
+  2026-02-07 | PAL vs EMP | serie-b-it | score=46.3 | peso=0.223
+  2026-02-15 | EMP vs REG | serie-b-it | score=76.7 | peso=0.250
+  2026-02-20 | FRO vs EMP | serie-b-it | score=87.5 | peso=0.281
+  2026-02-28 | EMP vs CES | serie-b-it | score=65.6 | peso=0.315
+  2026-03-04 | BAR vs EMP | serie-b-it | score=64.5 | peso=0.354
+  2026-03-14 | EMP vs MAN | serie-b-it | score=72.4 | peso=0.397
+  2026-03-17 | SPE vs EMP | serie-b-it | score=44.6 | peso=0.445
+  2026-03-22 | EMP vs PES | serie-b-it | score=79.0 | peso=0.500
+  2026-04-06 | SAM vs EMP | serie-b-it | score=33.4 | peso=0.561
+  2026-04-12 | CPA vs EMP | serie-b-it | score=18.5 | peso=0.630
+  2026-04-19 | EMP vs VIR | serie-b-it | score=67.3 | peso=0.707
+  2026-04-25 | VEN vs EMP | serie-b-it | score=24.0 | peso=0.794
+  2026-05-01 | EMP vs AVE | serie-b-it | score=31.1 | peso=0.891
+  2026-05-08 | MON vs EMP | serie-b-it | score=73.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 50.57
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=29): 51.65 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 48.84 | Punteggio complessivo (granulari) medio: 1.72 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 2.83 (delta +0.14) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 21.47
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 24.0 - 73.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 19.56 (differenza: +1.91)
+Media score in casa: 53.96 | Media score fuori casa: 45.62
+Fattore casa/trasferta applicato: 1.005 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.3
+Ranking prossimo avversario: 18
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.002
+Fattore duelli (casa/trasferta, da dati reali): 1.008
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.005
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.002
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore trend (media ultime 5: 42.8 vs media 5 PRECEDENTI: 58.8): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T19:00
+Casa: Empoli FC | Trasferta: US Cremonese
+Competizione: serie-b-it
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.8 (range 25.2 - 74.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 51.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 47.68
+Punteggio REALE ottenuto in quella partita: 73.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +25.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 23 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      52.1    35.3    -16.8    16.4        NO
+   7        7      35.8    62.5    +26.7    16.2        NO
+   8        8      44.7    31.7    -13.0    16.1        SI
+   9        9      57.1    63.5     +6.4    16.7        SI
+  10       10      37.1    38.0     +0.9    16.8        SI
+  11       11      41.4    39.2     -2.2    16.2        SI
+  12       12      33.0    25.4     -7.6    15.4        SI
+  13       13      45.6    32.9    -12.7    16.6        SI
+  14       14      45.4    45.1     -0.3    16.0        SI
+  15       15      34.0    46.3    +12.3    14.9        SI
+  16       16      54.8    76.7    +21.9    14.0        NO
+  17       17      34.2    87.5    +53.3    18.4        NO
+  18       18      54.1    65.6    +11.5    23.0        SI
+  19       19      68.1    64.5     -3.6    22.1        SI
+  20       20      52.6    72.4    +19.8    21.1        SI
+  21       21      75.5    44.6    -30.9    20.8        NO
+  22       22      73.5    79.0     +5.5    20.1        SI
+  23       23      63.2    33.4    -29.8    20.8        NO
+  24       24      53.9    18.5    -35.4    21.6        NO
+  25       25      56.9    67.3    +10.4    24.5        SI
+  26       26      34.6    24.0    -10.6    23.7        SI
+  27       27      45.7    31.1    -14.6    24.8        SI
+  28       28      35.0    73.2    +38.2    24.3        NO
+
+MAE (errore assoluto medio): 16.71
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 65.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

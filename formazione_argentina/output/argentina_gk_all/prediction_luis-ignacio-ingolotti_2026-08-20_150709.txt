@@ -1,0 +1,116 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:07:09.358203Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) luis-ignacio-ingolotti: 52 pt attesi (27-73)
+   SQUADRA: atletico-tucuman-san-miguel-de-tucuman-provincia-de-tucuman | AVVERSARIO: instituto-ciudad-de-cordoba-provincia-de-cordoba
+======================================================================
+
+######################################################################
+# GIOCATORE: luis-ignacio-ingolotti
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: luis-ignacio-ingolotti (squadra: atletico-tucuman-san-miguel-de-tucuman-provincia-de-tucuman)
+Generato: 2026-08-20T15:07:09.356929Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 35
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: superliga-argentina-de-futbol (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-01-24 | IND vs TUC | superliga-argentina-de-futbol | score=35.9 | peso=0.099
+  2026-01-28 | TUC vs CSE | superliga-argentina-de-futbol | score=68.0 | peso=0.111
+  2026-02-01 | TUC vs HUR | superliga-argentina-de-futbol | score=34.5 | peso=0.125
+  2026-02-08 | SAR vs TUC | superliga-argentina-de-futbol | score=41.3 | peso=0.140
+  2026-02-15 | TUC vs ERC | superliga-argentina-de-futbol | score=65.9 | peso=0.157
+  2026-02-20 | INS vs TUC | superliga-argentina-de-futbol | score=24.2 | peso=0.177
+  2026-02-25 | BEL vs TUC | superliga-argentina-de-futbol | score=29.9 | peso=0.198
+  2026-03-04 | TUC vs RAC | superliga-argentina-de-futbol | score=20.3 | peso=0.223
+  2026-03-12 | TUC vs ALD | superliga-argentina-de-futbol | score=30.1 | peso=0.250
+  2026-03-16 | BAC vs TUC | superliga-argentina-de-futbol | score=28.1 | peso=0.281
+  2026-03-21 | TUC vs GLP | superliga-argentina-de-futbol | score=60.0 | peso=0.315
+  2026-04-05 | ROS vs TUC | superliga-argentina-de-futbol | score=81.8 | peso=0.354
+  2026-04-12 | TUC vs TIG | superliga-argentina-de-futbol | score=73.5 | peso=0.397
+  2026-04-19 | ARG vs TUC | superliga-argentina-de-futbol | score=27.6 | peso=0.445
+  2026-04-26 | TUC vs BAN | superliga-argentina-de-futbol | score=33.8 | peso=0.500
+  2026-05-03 | RIV vs TUC | superliga-argentina-de-futbol | score=76.3 | peso=0.561
+  2026-07-26 | TUC vs IND | superliga-argentina-de-futbol | score=69.6 | peso=0.630
+  2026-07-31 | CSE vs TUC | superliga-argentina-de-futbol | score=75.8 | peso=0.707
+  2026-08-04 | HUR vs TUC | superliga-argentina-de-futbol | score=64.7 | peso=0.794
+  2026-08-08 | TUC vs SAR | superliga-argentina-de-futbol | score=38.9 | peso=0.891
+  2026-08-17 | ERC vs TUC | superliga-argentina-de-futbol | score=63.5 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 54.78
+  di cui Punteggio decisivo (level_score) medio: 49.82 | Punteggio complessivo (granulari) medio: 4.96 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 43.86 (delta -5.96 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue -0.50, delta avversario -2.26 | Possesso condizionato per venue: delta -0.12 | Goalkeeping condizionato per venue: delta -0.77 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 19.26
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.1 - 75.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 18.20 (differenza: +1.06)
+Media score in casa: 49.46 | Media score fuori casa: 49.92
+Fattore casa/trasferta applicato: 0.967 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.5
+Ranking prossimo avversario: 1
+Fattore forza avversario applicato: 1.054 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 1.001
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 0.997
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.004
+Tasso storico clean sheet (porta inviolata nei primi 60'): 42.9% (bonus atteso incorporato nella media pesata: ~10.7pt)
+Fattore trend (media ultime 5: 61.4 vs media 5 PRECEDENTI: 57.6): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T19:00
+Casa: CA Tucumán | Trasferta: Instituto AC Córdoba
+Competizione: superliga-argentina-de-futbol
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 52.0 (range 27.3 - 73.0, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.59
+Punteggio REALE ottenuto in quella partita: 63.5
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +9.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      26.0    29.9     +3.9    19.3        SI
+   7        7      60.6    20.3    -40.3    18.5        NO
+   8        8      55.1    30.1    -25.0    19.2        NO
+   9        9      27.1    28.1     +1.0    17.8        SI
+  10       10      37.2    60.0    +22.8    16.7        NO
+  11       11      26.0    81.8    +55.8    18.5        NO
+  12       12      48.8    73.5    +24.7    24.4        NO
+  13       13      36.4    27.6     -8.8    25.3        SI
+  14       14      58.8    33.8    -25.0    25.0        SI
+  15       15      48.1    76.3    +28.2    23.8        NO
+  16       16      54.8    69.6    +14.8    25.4        SI
+  17       17      55.0    75.8    +20.8    25.0        SI
+  18       18      53.2    64.7    +11.5    25.2        SI
+  19       19      48.0    38.9     -9.1    23.9        SI
+  20       20      61.8    63.5     +1.7    23.3        SI
+
+MAE (errore assoluto medio): 19.57
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

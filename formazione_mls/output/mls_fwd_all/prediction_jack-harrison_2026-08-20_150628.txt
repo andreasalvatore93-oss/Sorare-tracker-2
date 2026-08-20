@@ -1,0 +1,109 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:28.825336Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) jack-harrison: 59 pt attesi (40-89)
+   ORDINAMENTO: 61.47
+   SQUADRA: new-england-foxborough-massachusetts | AVVERSARIO: new-york-city-new-york-new-york
+======================================================================
+
+######################################################################
+# GIOCATORE: jack-harrison
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jack-harrison (squadra: new-england-foxborough-massachusetts)
+Generato: 2026-08-20T15:06:28.821529Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 48
+Escluse (DID_NOT_PLAY): 14
+Escluse (minutaggio < 60', subentri): 17
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-18 | BUR vs LEE | premier-league-gb-eng | score=46.3 | peso=0.157
+  2026-02-14 | COM vs FIO | serie-a-it | score=34.4 | peso=0.177
+  2026-02-19 | JAG vs FIO | uefa-europa-conference-league | score=46.5 | peso=0.198
+  2026-02-23 | FIO vs PIS | serie-a-it | score=43.1 | peso=0.223
+  2026-02-26 | FIO vs JAG | uefa-europa-conference-league | score=57.9 | peso=0.250
+  2026-03-02 | UDI vs FIO | serie-a-it | score=43.6 | peso=0.281
+  2026-03-08 | FIO vs PAR | serie-a-it | score=45.6 | peso=0.315
+  2026-03-19 | RAK vs FIO | uefa-europa-conference-league | score=57.5 | peso=0.354
+  2026-04-04 | VER vs FIO | serie-a-it | score=60.0 | peso=0.397
+  2026-04-09 | CRY vs FIO | uefa-europa-conference-league | score=43.5 | peso=0.445
+  2026-04-13 | FIO vs LAZ | serie-a-it | score=67.5 | peso=0.500
+  2026-04-16 | FIO vs CRY | uefa-europa-conference-league | score=51.0 | peso=0.561
+  2026-04-20 | LEC vs FIO | serie-a-it | score=60.1 | peso=0.630
+  2026-04-26 | FIO vs SAS | serie-a-it | score=36.6 | peso=0.707
+  2026-05-22 | FIO vs ATA | serie-a-it | score=60.9 | peso=0.794
+  2026-08-15 | TOR vs NE | mlspa | score=92.5 | peso=0.891
+  2026-08-19 | DC vs NE | mlspa | score=96.6 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 62.22
+  Corretta per shrinkage outlier/hot-streak (k=5.0, prior ruolo 53.74, n=17): 60.29 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 47.11 | Punteggio complessivo (granulari) medio: 15.10 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 8.35 (delta +0.00) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 20.20
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 43.5 - 92.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.23 (differenza: +3.97)
+Media score in casa: 62.22 | Media score fuori casa: 94.55
+Fattore casa/trasferta applicato: 1.000 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.0
+Ranking prossimo avversario: 7
+Fattore forza avversario applicato: 0.935 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 69.3 vs media 5 PRECEDENTI: 55.9): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T20:30
+Casa: New England Revolution | Trasferta: New York City FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 58.8 (range 40.1 - 89.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 61.5
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 57.22
+Punteggio REALE ottenuto in quella partita: 96.6
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +39.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 11 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      45.8    45.6     -0.2     8.0        SI
+   7        7      45.8    57.5    +11.7     7.2        NO
+   8        8      47.9    60.0    +12.1     8.3        NO
+   9        9      49.9    43.5     -6.4     9.2        SI
+  10       10      48.9    67.5    +18.6     8.9        NO
+  11       11      51.7    51.0     -0.7    11.2        SI
+  12       12      51.6    60.1     +8.5    10.4        SI
+  13       13      52.8    36.6    -16.2    10.2        NO
+  14       14      50.6    60.9    +10.3    11.4        SI
+  15       15      52.0    92.5    +40.5    11.4        NO
+  16       16      54.2    96.6    +42.4    18.9        NO
+
+MAE (errore assoluto medio): 15.24
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 45.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

@@ -1,0 +1,95 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:06:32.901785Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) jacques-julien-siwe: 49 pt attesi (31-71)
+   ORDINAMENTO: 47.38
+   SQUADRA: rubin-kazan-kazan | AVVERSARIO: baltika-kaliningrad
+======================================================================
+
+######################################################################
+# GIOCATORE: jacques-julien-siwe
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jacques-julien-siwe (squadra: rubin-kazan-kazan)
+Generato: 2026-08-20T15:06:32.901007Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 26
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 12
+Competizione partita target: russian-premier-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-20 | AKR vs RUB | russian-premier-league | score=70.4 | peso=0.354
+  2025-09-27 | LOK vs RUB | russian-premier-league | score=47.6 | peso=0.397
+  2025-11-30 | ZEN vs RUB | russian-premier-league | score=27.5 | peso=0.445
+  2026-02-28 | MAK vs RUB | russian-premier-league | score=33.3 | peso=0.500
+  2026-03-08 | RUB vs KRA | russian-premier-league | score=68.0 | peso=0.561
+  2026-03-22 | KRY vs RUB | russian-premier-league | score=35.3 | peso=0.630
+  2026-04-22 | DIN vs RUB | russian-premier-league | score=60.0 | peso=0.707
+  2026-04-25 | RUB vs CSK | russian-premier-league | score=36.5 | peso=0.794
+  2026-05-17 | RUB vs NZN | russian-premier-league | score=30.2 | peso=0.891
+  2026-08-15 | ROS vs RUB | russian-premier-league | score=72.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 48.37
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=10): 51.59 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 45.44 | Punteggio complessivo (granulari) medio: 2.93 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 2.29 (delta +0.02) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 17.29
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 30.2 - 70.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.85 (differenza: +2.44)
+Media score in casa: 44.90 | Media score fuori casa: 49.49
+Fattore casa/trasferta applicato: 1.003 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.7
+Ranking prossimo avversario: 6
+Fattore forza avversario applicato: 1.000 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 1.001
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.002
+Fattore trend (media ultime 5: 46.9 vs media 5 PRECEDENTI: 49.4): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-24T17:30
+Casa: FK Baltika Kaliningrad | Trasferta: FK Rubin Kazan
+Competizione: russian-premier-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.0 (range 30.9 - 71.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 47.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 43.83
+Punteggio REALE ottenuto in quella partita: 72.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +28.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 4 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      49.0    60.0    +11.0    19.0        SI
+   7        7      43.6    36.5     -7.1    18.2        SI
+   8        8      58.1    30.2    -27.9    17.3        NO
+   9        9      44.4    72.3    +27.9    17.3        NO
+
+MAE (errore assoluto medio): 18.48
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 50.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

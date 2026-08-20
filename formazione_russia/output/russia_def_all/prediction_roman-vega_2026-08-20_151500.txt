@@ -1,0 +1,79 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:15:00.767143Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) roman-vega: 50 pt attesi (43-59)
+   ORDINAMENTO: 58.75
+   SQUADRA: zenit-sankt-peterburg-st-petersburg | AVVERSARIO: spartak-moskva-moskva
+======================================================================
+
+######################################################################
+# GIOCATORE: roman-vega
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: roman-vega (squadra: zenit-sankt-peterburg-st-petersburg)
+Generato: 2026-08-20T15:15:00.766080Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 29
+Escluse (DID_NOT_PLAY): 16
+Escluse (minutaggio < 60', subentri): 8
+Competizione partita target: russian-premier-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-23 | NZN vs ZEN | russian-premier-league | score=64.1 | peso=0.912
+  2026-04-04 | ZEN vs KRY | russian-premier-league | score=53.5 | peso=0.933
+  2026-07-25 | AKR vs ZEN | russian-premier-league | score=66.8 | peso=0.955
+  2026-08-09 | ZEN vs ROD | russian-premier-league | score=50.5 | peso=0.977
+  2026-08-16 | ZEN vs DIN | russian-premier-league | score=53.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 57.53
+  di cui Punteggio decisivo (level_score) medio: 35.00 | Punteggio complessivo (granulari) medio: 22.53 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue +0.69, delta avversario +0.40 | Passaggio condizionato: delta venue -0.42, delta avversario -2.16 | Clean sheet/disimpegni condizionato: delta venue +1.24, delta avversario +0.85 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 6.53
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 50.5 - 66.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 5.03 (differenza: +1.50)
+Media score in casa: 52.43 | Media score fuori casa: 65.48
+Fattore casa/trasferta applicato: 0.995 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 12.4
+Ranking prossimo avversario: 3
+Fattore forza avversario applicato: 0.870 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.000
+Fattore duelli (casa/trasferta, da dati reali): 1.004
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 1.003
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 1.003
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T17:00
+Casa: FK Spartak Moskva | Trasferta: FK Zenit St. Petersburg
+Competizione: russian-premier-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 49.8 (range 42.8 - 59.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 58.8
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.66
+Punteggio REALE ottenuto in quella partita: 53.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -5.4
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Dati insufficienti per il backtest rigoroso (serve più storico, minimo 6+1 partite).
+
+======================================================================

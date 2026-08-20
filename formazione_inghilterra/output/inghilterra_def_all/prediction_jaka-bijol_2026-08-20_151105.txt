@@ -1,0 +1,119 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:11:05.756028Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) jaka-bijol: 48 pt attesi (30-66)
+   ORDINAMENTO: 49.69
+   SQUADRA: leeds-united-leeds-west-yorkshire | AVVERSARIO: nottingham-forest-nottingham
+======================================================================
+
+######################################################################
+# GIOCATORE: jaka-bijol
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jaka-bijol (squadra: leeds-united-leeds-west-yorkshire)
+Generato: 2026-08-20T15:11:05.755282Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 37
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 4
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-24 | LEE vs WHU | premier-league-gb-eng | score=58.3 | peso=0.630
+  2025-11-01 | BRI vs LEE | premier-league-gb-eng | score=33.5 | peso=0.645
+  2025-11-09 | NOT vs LEE | premier-league-gb-eng | score=46.6 | peso=0.660
+  2025-12-03 | LEE vs CHE | premier-league-gb-eng | score=73.2 | peso=0.675
+  2025-12-06 | LEE vs LIV | premier-league-gb-eng | score=41.2 | peso=0.691
+  2025-12-14 | BRE vs LEE | premier-league-gb-eng | score=50.6 | peso=0.707
+  2025-12-20 | LEE vs CRY | premier-league-gb-eng | score=82.7 | peso=0.724
+  2025-12-28 | SUN vs LEE | premier-league-gb-eng | score=50.5 | peso=0.741
+  2026-01-01 | LIV vs LEE | premier-league-gb-eng | score=92.1 | peso=0.758
+  2026-01-04 | LEE vs MUN | premier-league-gb-eng | score=63.3 | peso=0.776
+  2026-01-07 | NEW vs LEE | premier-league-gb-eng | score=29.2 | peso=0.794
+  2026-02-10 | CHE vs LEE | premier-league-gb-eng | score=16.2 | peso=0.812
+  2026-03-15 | CRY vs LEE | premier-league-gb-eng | score=47.2 | peso=0.831
+  2026-03-21 | LEE vs BRE | premier-league-gb-eng | score=69.5 | peso=0.851
+  2026-04-13 | MUN vs LEE | premier-league-gb-eng | score=66.1 | peso=0.871
+  2026-04-18 | LEE vs WOL | premier-league-gb-eng | score=53.7 | peso=0.891
+  2026-04-22 | BOR vs LEE | premier-league-gb-eng | score=46.7 | peso=0.912
+  2026-05-01 | LEE vs BUR | premier-league-gb-eng | score=71.2 | peso=0.933
+  2026-05-11 | TOT vs LEE | premier-league-gb-eng | score=54.3 | peso=0.955
+  2026-05-17 | LEE vs BRI | premier-league-gb-eng | score=45.5 | peso=0.977
+  2026-05-24 | WHU vs LEE | premier-league-gb-eng | score=34.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 53.42
+  di cui Punteggio decisivo (level_score) medio: 39.92 | Punteggio complessivo (granulari) medio: 13.50 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.78, delta avversario -0.56 | Passaggio condizionato: delta venue -0.07, delta avversario -0.75 | Clean sheet/disimpegni condizionato: delta venue -0.49, delta avversario +0.52 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 17.63
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.9 - 71.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 13.96 (differenza: +3.67)
+Media score in casa: 62.06 | Media score fuori casa: 47.32
+Fattore casa/trasferta applicato: 0.996 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.6
+Ranking prossimo avversario: 16
+Fattore forza avversario applicato: 0.665 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.999
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.000
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.993
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 0.995
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.997
+Fattore trend (media ultime 5: 50.3 vs media 5 PRECEDENTI: 51.0): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T14:00
+Casa: Nottingham Forest FC | Trasferta: Leeds United FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.3 (range 29.8 - 66.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.7
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 54.59
+Punteggio REALE ottenuto in quella partita: 34.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -19.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 15 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      60.7    82.7    +22.0    13.9        NO
+   7        7      48.0    50.5     +2.4    18.1        SI
+   8        8      44.6    92.1    +47.5    16.9        NO
+   9        9      46.5    63.3    +16.8    20.8        SI
+  10       10      65.8    29.2    -36.5    19.6        NO
+  11       11      57.6    16.2    -41.4    21.2        NO
+  12       12      62.4    47.2    -15.2    24.0        SI
+  13       13      52.3    69.5    +17.1    23.0        SI
+  14       14      40.6    66.1    +25.5    22.6        NO
+  15       15      61.6    53.7     -8.0    22.0        SI
+  16       16      47.3    46.7     -0.7    21.2        SI
+  17       17      59.1    71.2    +12.1    20.6        SI
+  18       18      68.4    54.3    -14.1    20.4        SI
+  19       19      53.4    45.5     -7.9    19.7        SI
+  20       20      54.3    34.9    -19.4    19.3        NO
+
+MAE (errore assoluto medio): 19.11
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

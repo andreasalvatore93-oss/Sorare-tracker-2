@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:15:04.099055Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) boubacar-kamara: 51 pt attesi (34-77)
+   SQUADRA: aston-villa-birmingham | AVVERSARIO: brighton-hove-albion-brighton-east-sussex
+======================================================================
+
+######################################################################
+# GIOCATORE: boubacar-kamara
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: boubacar-kamara (squadra: aston-villa-birmingham)
+Generato: 2026-08-20T15:15:04.098629Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 37
+Escluse (DID_NOT_PLAY): 20
+Escluse (minutaggio < 60', subentri): 2
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-21 | SUN vs AST | premier-league-gb-eng | score=84.4 | peso=0.678
+  2025-10-05 | AST vs BUR | premier-league-gb-eng | score=72.5 | peso=0.697
+  2025-10-19 | TOT vs AST | premier-league-gb-eng | score=66.5 | peso=0.717
+  2025-10-26 | AST vs MCI | premier-league-gb-eng | score=41.9 | peso=0.737
+  2025-11-01 | LIV vs AST | premier-league-gb-eng | score=39.9 | peso=0.758
+  2025-11-09 | AST vs BOR | premier-league-gb-eng | score=50.0 | peso=0.779
+  2025-11-23 | LEE vs AST | premier-league-gb-eng | score=60.5 | peso=0.801
+  2025-11-30 | AST vs WOL | premier-league-gb-eng | score=69.5 | peso=0.824
+  2025-12-03 | BRI vs AST | premier-league-gb-eng | score=44.3 | peso=0.847
+  2025-12-06 | AST vs ARS | premier-league-gb-eng | score=92.6 | peso=0.871
+  2025-12-14 | WHU vs AST | premier-league-gb-eng | score=38.9 | peso=0.895
+  2025-12-21 | AST vs MUN | premier-league-gb-eng | score=29.2 | peso=0.920
+  2025-12-27 | CHE vs AST | premier-league-gb-eng | score=28.8 | peso=0.946
+  2026-01-03 | AST vs NOT | premier-league-gb-eng | score=82.4 | peso=0.973
+  2026-01-07 | CRY vs AST | premier-league-gb-eng | score=55.4 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 56.57
+  di cui Punteggio decisivo (level_score) medio: 41.87 | Punteggio complessivo (granulari) medio: 14.70 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 39.21 (delta -2.66)
+  Efficacia offensiva condizionata: delta venue -0.24, delta avversario -0.14 | Passaggio condizionato: delta venue -0.33, delta avversario -1.08 | Gol subiti condizionato: delta venue -0.36, delta avversario -0.10 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 19.91
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 38.9 - 82.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.00 (differenza: +2.91)
+Media score in casa: 62.59 | Media score fuori casa: 52.34
+Fattore casa/trasferta applicato: 0.995 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.1
+Ranking prossimo avversario: 8
+Fattore forza avversario applicato: 0.886 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 1.005
+Fattore duelli (casa/trasferta, da dati reali): 1.002
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.999
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.998
+Fattore gol subiti (goals_conceded, con cap): 0.994
+Fattore trend (media ultime 5: 47.4 vs media 5 PRECEDENTI: 63.8): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T13:00
+Casa: Brighton & Hove Albion FC | Trasferta: Aston Villa FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.3 (range 33.6 - 77.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 56.67
+Punteggio REALE ottenuto in quella partita: 55.4
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -1.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      71.2    60.5    -10.7    17.9        SI
+   7        7      64.5    69.5     +5.0    16.5        SI
+   8        8      58.1    44.3    -13.8    15.8        SI
+   9        9      41.8    92.6    +50.8    15.9        NO
+  10       10      65.9    38.9    -27.0    19.2        NO
+  11       11      48.7    29.2    -19.5    19.8        SI
+  12       12      61.0    28.8    -32.2    21.2        NO
+  13       13      69.1    82.4    +13.3    22.1        SI
+  14       14      68.2    55.4    -12.8    22.8        SI
+
+MAE (errore assoluto medio): 20.55
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

@@ -1,0 +1,105 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-20T15:11:13.750750Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) vitaly-janelt: 55 pt attesi (35-80)
+   SQUADRA: brentford-brentford-middlesex | AVVERSARIO: tottenham-hotspur-london
+======================================================================
+
+######################################################################
+# GIOCATORE: vitaly-janelt
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: vitaly-janelt (squadra: brentford-brentford-middlesex)
+Generato: 2026-08-20T15:11:13.750268Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 37
+Escluse (DID_NOT_PLAY): 12
+Escluse (minutaggio < 60', subentri): 10
+Competizione partita target: premier-league-gb-eng (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-10-25 | BRE vs LIV | premier-league-gb-eng | score=39.2 | peso=0.678
+  2025-12-03 | ARS vs BRE | premier-league-gb-eng | score=40.4 | peso=0.697
+  2025-12-14 | BRE vs LEE | premier-league-gb-eng | score=64.7 | peso=0.717
+  2025-12-20 | WOL vs BRE | premier-league-gb-eng | score=100.0 | peso=0.737
+  2025-12-27 | BRE vs BOR | premier-league-gb-eng | score=51.8 | peso=0.758
+  2026-01-01 | BRE vs TOT | premier-league-gb-eng | score=57.0 | peso=0.779
+  2026-01-04 | EVE vs BRE | premier-league-gb-eng | score=90.0 | peso=0.801
+  2026-01-07 | BRE vs SUN | premier-league-gb-eng | score=78.2 | peso=0.824
+  2026-01-17 | CHE vs BRE | premier-league-gb-eng | score=61.3 | peso=0.847
+  2026-01-25 | BRE vs NOT | premier-league-gb-eng | score=43.5 | peso=0.871
+  2026-02-01 | AST vs BRE | premier-league-gb-eng | score=53.5 | peso=0.895
+  2026-02-07 | NEW vs BRE | premier-league-gb-eng | score=84.1 | peso=0.920
+  2026-02-12 | BRE vs ARS | premier-league-gb-eng | score=36.2 | peso=0.946
+  2026-05-17 | BRE vs CRY | premier-league-gb-eng | score=39.4 | peso=0.973
+  2026-05-24 | LIV vs BRE | premier-league-gb-eng | score=51.2 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 58.98
+  di cui Punteggio decisivo (level_score) medio: 41.89 | Punteggio complessivo (granulari) medio: 17.09 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 38.31 (delta -3.58)
+  Efficacia offensiva condizionata: delta venue -0.79, delta avversario +0.22 | Passaggio condizionato: delta venue -0.08, delta avversario +1.08 | Gol subiti condizionato: delta venue +0.07, delta avversario -0.29 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 19.29
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.4 - 84.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 16.40 (differenza: +2.89)
+Media score in casa: 51.25 | Media score fuori casa: 68.64
+Fattore casa/trasferta applicato: 0.995 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 9.2
+Ranking prossimo avversario: 17
+Fattore forza avversario applicato: 1.126 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.992
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.000
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 0.995
+Fattore gol subiti (goals_conceded, con cap): 1.001
+Fattore trend (media ultime 5: 52.6 vs media 5 PRECEDENTI: 65.7): 1.000
+P(gioca): 80.00% (fonte: starterOddsBasisPoints (8000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T16:30
+Casa: Brentford FC | Trasferta: Tottenham Hotspur FC
+Competizione: premier-league-gb-eng
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 54.7 (range 35.1 - 79.8, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 59.66
+Punteggio REALE ottenuto in quella partita: 51.2
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -8.5
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 9 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      67.5    90.0    +22.5    22.4        NO
+   7        7      57.6    78.2    +20.6    24.0        SI
+   8        8      67.8    61.3     -6.5    22.9        SI
+   9        9      79.5    43.5    -36.0    21.5        NO
+  10       10      50.4    53.5     +3.1    21.6        SI
+  11       11      68.1    84.1    +16.0    20.7        SI
+  12       12      44.2    36.2     -8.0    21.0        SI
+  13       13      72.8    39.4    -33.4    21.8        NO
+  14       14      51.6    51.2     -0.4    22.0        SI
+
+MAE (errore assoluto medio): 16.26
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 66.7%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

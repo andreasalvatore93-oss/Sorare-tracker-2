@@ -1,0 +1,137 @@
+======================================================================
+CONSIGLIO DIFENSORI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-20T15:15:13.557249Z
+Parametri fissi per tutti: half_life=30.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) callum-brittain: 51 pt attesi (34-73)
+   ORDINAMENTO: 48.88
+   SQUADRA: middlesbrough-middlesbrough | AVVERSARIO: blackburn-rovers-blackburn-lancashire
+======================================================================
+
+######################################################################
+# GIOCATORE: callum-brittain
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: callum-brittain (squadra: middlesbrough-middlesbrough)
+Generato: 2026-08-20T15:15:13.556477Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 4
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: football-league-championship (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-11-25 | MID vs COV | football-league-championship | score=36.5 | peso=0.512
+  2025-11-29 | MID vs DER | football-league-championship | score=37.1 | peso=0.524
+  2025-12-05 | HUL vs MID | football-league-championship | score=57.8 | peso=0.536
+  2025-12-09 | CHA vs MID | football-league-championship | score=33.7 | peso=0.548
+  2025-12-13 | MID vs QPR | football-league-championship | score=60.5 | peso=0.561
+  2025-12-20 | BRC vs MID | football-league-championship | score=44.1 | peso=0.574
+  2025-12-26 | MID vs BBR | football-league-championship | score=58.7 | peso=0.588
+  2025-12-29 | MID vs HUL | football-league-championship | score=51.1 | peso=0.602
+  2026-01-01 | DER vs MID | football-league-championship | score=53.3 | peso=0.616
+  2026-01-31 | MID vs NOR | football-league-championship | score=59.8 | peso=0.630
+  2026-02-09 | SHU vs MID | football-league-championship | score=30.3 | peso=0.645
+  2026-02-16 | COV vs MID | football-league-championship | score=58.1 | peso=0.660
+  2026-02-21 | MID vs OXF | football-league-championship | score=70.1 | peso=0.675
+  2026-02-24 | MID vs LEI | football-league-championship | score=77.5 | peso=0.691
+  2026-03-02 | BIR vs MID | football-league-championship | score=36.2 | peso=0.707
+  2026-03-08 | QPR vs MID | football-league-championship | score=82.7 | peso=0.724
+  2026-03-11 | MID vs CHA | football-league-championship | score=61.6 | peso=0.741
+  2026-03-14 | MID vs BRC | football-league-championship | score=34.3 | peso=0.758
+  2026-03-21 | BBR vs MID | football-league-championship | score=38.3 | peso=0.776
+  2026-04-03 | MID vs MIL | football-league-championship | score=44.9 | peso=0.794
+  2026-04-06 | SWA vs MID | football-league-championship | score=77.0 | peso=0.812
+  2026-04-11 | MID vs POR | football-league-championship | score=52.4 | peso=0.831
+  2026-04-19 | IPS vs MID | football-league-championship | score=27.5 | peso=0.851
+  2026-04-22 | MID vs SHW | football-league-championship | score=77.0 | peso=0.871
+  2026-04-25 | MID vs WAT | football-league-championship | score=50.3 | peso=0.891
+  2026-05-02 | WRE vs MID | football-league-championship | score=34.9 | peso=0.912
+  2026-05-09 | MID vs SOT | football-league-championship | score=74.5 | peso=0.933
+  2026-05-12 | SOT vs MID | football-league-championship | score=63.8 | peso=0.955
+  2026-05-23 | HUL vs MID | football-league-championship | score=44.4 | peso=0.977
+  2026-08-15 | MID vs LIN | football-league-championship | score=37.8 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 30.0 partite): 52.46
+  di cui Punteggio decisivo (level_score) medio: 37.02 | Punteggio complessivo (granulari) medio: 15.44 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Gol subiti condizionato: delta venue -0.78, delta avversario +0.51 | Passaggio condizionato: delta venue -1.80, delta avversario +0.93 | Clean sheet/disimpegni condizionato: delta venue -0.60, delta avversario +0.75 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca); level_score NON condizionato, nessun segnale utile per DEF)
+Deviazione standard pesata: 16.03
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 34.9 - 74.5 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.77 (differenza: +1.26)
+Media score in casa: 55.27 | Media score fuori casa: 48.71
+Fattore casa/trasferta applicato: 1.005 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 11.7
+Ranking prossimo avversario: 9
+Fattore forza avversario applicato: 0.733 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.993
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.993
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.992
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.005
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.006
+Fattore gol subiti (goals_conceded, con cap): 0.994
+Fattore clean sheet/disimpegni (clean_sheet_60/effective_clearance): 0.996
+Fattore trend (media ultime 5: 51.0 vs media 5 PRECEDENTI: 56.7): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T14:00
+Casa: Blackburn Rovers FC | Trasferta: Middlesbrough FC
+Competizione: football-league-championship
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 51.3 (range 33.7 - 73.3, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 48.9
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 53.16
+Punteggio REALE ottenuto in quella partita: 37.8
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -15.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=30.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 45 posseduti)' (half_life=30.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      61.1    58.7     -2.3    11.6        SI
+   7        7      38.6    51.1    +12.5    12.0        NO
+   8        8      42.4    53.3    +10.9    11.2        SI
+   9        9      46.3    59.8    +13.6    10.7        NO
+  10       10      53.5    30.3    -23.3    10.8        NO
+  11       11      31.3    58.1    +26.8    12.1        NO
+  12       12      70.2    70.1     -0.0    12.0        SI
+  13       13      72.9    77.5     +4.7    13.3        SI
+  14       14      48.8    36.2    -12.6    15.1        SI
+  15       15      56.3    82.7    +26.4    15.3        NO
+  16       16      68.4    61.6     -6.8    17.3        SI
+  17       17      55.0    34.3    -20.7    16.8        NO
+  18       18      66.2    38.3    -27.9    17.1        NO
+  19       19      35.5    44.9     +9.4    17.0        SI
+  20       20      48.8    77.0    +28.2    16.6        NO
+  21       21      64.6    52.4    -12.3    17.4        SI
+  22       22      33.9    27.5     -6.4    16.9        SI
+  23       23      74.2    77.0     +2.8    17.6        SI
+  24       24      60.5    50.3    -10.3    18.3        SI
+  25       25      42.1    34.9     -7.3    17.8        SI
+  26       26      37.7    74.5    +36.8    17.9        NO
+  27       27      37.6    63.8    +26.2    18.2        NO
+  28       28      42.3    44.4     +2.2    18.0        SI
+  29       29      66.3    37.8    -28.4    17.7        NO
+
+MAE (errore assoluto medio): 14.95
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 54.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
