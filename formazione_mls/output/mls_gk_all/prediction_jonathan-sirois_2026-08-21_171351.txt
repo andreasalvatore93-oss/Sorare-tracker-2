@@ -1,0 +1,88 @@
+======================================================================
+CONSIGLIO PORTIERI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-21T17:13:51.733709Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) jonathan-sirois: 49 pt attesi (29-62)
+   SQUADRA: dallas-frisco-texas | AVVERSARIO: vancouver-whitecaps-vancouver-british-columbia
+======================================================================
+
+######################################################################
+# GIOCATORE: jonathan-sirois
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jonathan-sirois (squadra: dallas-frisco-texas)
+Generato: 2026-08-21T17:13:51.731112Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 27
+Escluse (DID_NOT_PLAY): 20
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-13 | MTL vs STL | mlspa | score=42.6 | peso=0.500
+  2026-05-17 | SJ vs DAL | mlspa | score=69.3 | peso=0.561
+  2026-05-24 | RAP vs DAL | mlspa | score=43.0 | peso=0.630
+  2026-07-26 | SD vs DAL | mlspa | score=60.0 | peso=0.707
+  2026-08-02 | LA vs DAL | mlspa | score=98.2 | peso=0.794
+  2026-08-17 | ATX vs DAL | mlspa | score=48.7 | peso=0.891
+  2026-08-20 | RSL vs DAL | mlspa | score=36.9 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 56.65
+  di cui Punteggio decisivo (level_score) medio: 41.66 | Punteggio complessivo (granulari) medio: 14.98 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per forza prossimo avversario: 42.33 (delta +0.66 vs media generica, Stadio D -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07 dopo backtest walk-forward: peggiorava il MAE reale del +4.21%)
+  Gol subiti condizionato: delta venue +0.16, delta avversario -1.71 | Possesso condizionato per venue: delta -0.17 | Goalkeeping condizionato per venue: delta +0.56 (Stadio D approfondimento -- SOLO DIAGNOSTICO, rimosso da score_atteso il 26/07)
+Deviazione standard pesata: 20.47
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.9 - 69.3 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.81 (differenza: +10.66)
+Media score in casa: 56.65 | Media score fuori casa: 59.35
+Fattore casa/trasferta applicato: 1.006 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.2
+Ranking prossimo avversario: 2
+Fattore forza avversario applicato: 0.695 (gol fatti reali dell'avversario, ultime 10; delta granulare parate +0.00 pt)
+NOTA: i fattori granulari seguenti sono SOLO DIAGNOSTICI, NON entrano nello score atteso (calibrazione 25/07: peggioravano il MAE per il portiere). Falli/efficacia offensiva/eventi rari rimossi il 26/07 (peso 0.0% su 268 partite reali, vedi inspect_granular_weights.py).
+Fattore possesso (casa/trasferta, da dati reali, non applicato): 0.997
+Fattore passaggio (accurate_pass/final_third/att_assist, non applicato): 0.997
+Fattore goalkeeping (saves/saved_ibox/good_high_claim/ecc., 8 voci, non applicato): 1.001
+Fattore gol subiti (goals_conceded, con cap, non applicato): 1.001
+Tasso storico clean sheet (porta inviolata nei primi 60'): 14.3% (bonus atteso incorporato nella media pesata: ~3.6pt)
+Fattore trend: N/D (servono almeno 10 partite nella finestra)
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T01:30
+Casa: Vancouver Whitecaps FC | Trasferta: FC Dallas
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.9 (range 29.2 - 61.6, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 61.48
+Punteggio REALE ottenuto in quella partita: 36.9
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -24.6
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA 12 posseduti)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 1 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      58.1    36.9    -21.2    23.1        SI
+
+MAE (errore assoluto medio): 21.22
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 100.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================
