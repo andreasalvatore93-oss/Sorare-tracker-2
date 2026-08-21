@@ -1,0 +1,26 @@
+name: Diagnostica auth Sorare
+
+# Gira SUL RUNNER la stessa query pubblica che fa fallire la pipeline
+# (so5Fixtures), una combinazione di header per volta: anonimo, sola APIKEY,
+# solo cookie, cookie+APIKEY, completo. Serve a distinguere cookie scaduto /
+# chiave revocata / IP dei runner strozzato senza bruciare una run intera di
+# "Formazione giornata". Dura ~40 secondi. Vedi CLAUDE_ERRORS.md E1.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Probe auth
+        env:
+          SORARE_COOKIE: ${{ secrets.SORARE_COOKIE }}
+          SORARE_APIKEY: ${{ secrets.SORARE_APIKEY }}
+          SORARE_CSRF: ${{ secrets.SORARE_CSRF }}
+          PYTHONUNBUFFERED: '1'
+        run: python diagnostica_auth_runner.py
