@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO CENTROCAMPISTI — ORDINATO PER PROJECTED SCORE
+Generato: 2026-08-21T17:14:33.443048Z
+Parametri fissi per tutti: half_life=25.0, range_mult=1.1, min_starter_odds=0%
+======================================================================
+1) keaton-alexander-parks: 47 pt attesi (38-52)
+   SQUADRA: new-york-city-new-york-new-york | AVVERSARIO: new-england-foxborough-massachusetts
+======================================================================
+
+######################################################################
+# GIOCATORE: keaton-alexander-parks
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: keaton-alexander-parks (squadra: new-york-city-new-york-new-york)
+Generato: 2026-08-21T17:14:33.437092Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 34
+Escluse (DID_NOT_PLAY): 18
+Escluse (minutaggio < 60', subentri): 5
+Competizione partita target: mlspa (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-03-01 | PHI vs NYC | mlspa | score=46.3 | peso=0.758
+  2026-03-07 | NYC vs ORL | mlspa | score=78.0 | peso=0.779
+  2026-03-14 | NYC vs RAP | mlspa | score=38.5 | peso=0.801
+  2026-03-22 | NYC vs MIA | mlspa | score=36.7 | peso=0.824
+  2026-04-04 | NYC vs STL | mlspa | score=39.2 | peso=0.847
+  2026-04-11 | VAN vs NYC | mlspa | score=44.6 | peso=0.871
+  2026-04-25 | MTL vs NYC | mlspa | score=36.2 | peso=0.895
+  2026-05-10 | NYC vs CLB | mlspa | score=50.8 | peso=0.920
+  2026-05-13 | CLT vs NYC | mlspa | score=43.9 | peso=0.946
+  2026-08-16 | NYC vs PHI | mlspa | score=46.5 | peso=0.973
+  2026-08-19 | CIN vs NYC | mlspa | score=39.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 25.0 partite): 45.14
+  di cui Punteggio decisivo (level_score) medio: 37.84 | Punteggio complessivo (granulari) medio: 7.31 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Punteggio decisivo condizionato per venue: 36.42 (delta -1.42)
+  Efficacia offensiva condizionata: delta venue -0.11, delta avversario -0.34 | Passaggio condizionato: delta venue +0.63, delta avversario +0.15 | Gol subiti condizionato: delta venue -0.08, delta avversario -0.26 (Stadio D approfondimento -- APPLICATI a score_atteso, scalati per P(gioca))
+Deviazione standard pesata: 10.73
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 36.7 - 50.8 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 4.43 (differenza: +6.31)
+Media score in casa: 48.28 | Media score fuori casa: 42.02
+Fattore casa/trasferta applicato: 0.997 (TRASFERTA nella prossima partita)
+Ranking medio avversari affrontati (storico): 8.2
+Ranking prossimo avversario: 4
+Fattore forza avversario applicato: 1.006 (gol subiti reali dell'avversario, ultime 10)
+Fattore falli (casa/trasferta, da dati reali): 0.994
+Fattore duelli (casa/trasferta, da dati reali): 1.000
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.999
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.005
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore azioni difensive (won_tackle/blocked_cross/outfielder_block): 1.000
+Fattore gol subiti (goals_conceded, con cap): 0.999
+Fattore trend (media ultime 5: 43.3 vs media 5 PRECEDENTI: 47.0): 1.000
+P(gioca): 70.00% (fonte: starterOddsBasisPoints (7000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T20:30
+Casa: New England Revolution | Trasferta: New York City FC
+Competizione: mlspa
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 46.8 (range 38.3 - 52.4, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 45.84
+Punteggio REALE ottenuto in quella partita: 39.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -6.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DI PARTENZA (riusati dagli attaccanti, in fase di ricalibrazione) ---
+half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0 (usati per la predizione sopra)
+Il grid search COMPLETO (72 combinazioni) gira per questo giocatore e i risultati vengono salvati su disco per l'aggregazione cross-player nel job 'aggregate' — i parametri sopra restano quelli di partenza finche' l'aggregazione non ne fissa di nuovi.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=25.0+range=1.1x+opp_sens=29.0+trend_int=0.0 (FISSATA 19 posseduti)' (half_life=25.0, range_mult=1.1, opp_sens=29.0, trend_int=0.0)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      59.0    36.2    -22.8    15.4        NO
+   7        7      52.0    50.8     -1.2    14.7        SI
+   8        8      42.3    43.9     +1.6    13.9        SI
+   9        9      53.9    46.5     -7.4    13.0        SI
+  10       10      40.1    39.1     -1.0    12.2        SI
+
+MAE (errore assoluto medio): 6.80
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 80.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. Questa e' la MIGLIORE combinazione trovata dal grid search per QUESTO giocatore — la combinazione vincente definitiva emergera' dall'aggregazione cross-player nel job 'aggregate'.
+
+======================================================================

@@ -1,0 +1,135 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-21T17:14:40.708528Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) yuki-soma: 58 pt attesi (38-71)
+   ORDINAMENTO: 61.64
+   SQUADRA: machida-zelvia-tokyo | AVVERSARIO: urawa-reds-saitama
+======================================================================
+
+######################################################################
+# GIOCATORE: yuki-soma
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: yuki-soma (squadra: machida-zelvia-tokyo)
+Generato: 2026-08-21T17:14:40.707323Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 48
+Escluse (DID_NOT_PLAY): 9
+Escluse (minutaggio < 60', subentri): 9
+Competizione partita target: j1-league (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-08-23 | FMA vs MAC | j1-league | score=52.1 | peso=0.035
+  2025-08-31 | FRO vs MAC | j1-league | score=92.4 | peso=0.039
+  2025-09-12 | MAC vs YFC | j1-league | score=81.7 | peso=0.044
+  2025-09-16 | MAC vs SEO | afc-champions-league | score=48.7 | peso=0.050
+  2025-09-23 | SAN vs MAC | j1-league | score=49.6 | peso=0.056
+  2025-09-30 | DAR vs MAC | afc-champions-league | score=48.8 | peso=0.062
+  2025-10-04 | SFR vs MAC | j1-league | score=70.6 | peso=0.070
+  2025-10-18 | MAC vs AVI | j1-league | score=46.2 | peso=0.079
+  2025-10-21 | SHE vs MAC | afc-champions-league | score=76.9 | peso=0.088
+  2025-10-25 | RED vs MAC | j1-league | score=41.9 | peso=0.099
+  2025-11-04 | MAC vs MCT | afc-champions-league | score=88.3 | peso=0.111
+  2025-11-09 | MAC vs TOK | j1-league | score=47.6 | peso=0.125
+  2025-11-30 | MAC vs GRA | j1-league | score=47.8 | peso=0.140
+  2025-12-06 | REY vs MAC | j1-league | score=51.1 | peso=0.157
+  2026-02-06 | FMA vs MAC | j1-100-year-vision-league | score=72.4 | peso=0.177
+  2026-02-10 | SHE vs MAC | afc-champions-league | score=95.1 | peso=0.198
+  2026-02-14 | MAC vs HOL | j1-100-year-vision-league | score=71.3 | peso=0.223
+  2026-02-21 | VER vs MAC | j1-100-year-vision-league | score=76.4 | peso=0.250
+  2026-02-27 | MAC vs JEF | j1-100-year-vision-league | score=75.7 | peso=0.281
+  2026-03-03 | GAN vs MAC | afc-champions-league | score=44.5 | peso=0.315
+  2026-03-22 | RED vs MAC | j1-100-year-vision-league | score=76.5 | peso=0.354
+  2026-03-28 | MAC vs FRO | j1-100-year-vision-league | score=74.1 | peso=0.397
+  2026-04-01 | MAC vs TOK | j1-100-year-vision-league | score=47.6 | peso=0.445
+  2026-04-05 | TOK vs MAC | j1-100-year-vision-league | score=43.5 | peso=0.500
+  2026-04-21 | MAC vs AHL | afc-champions-league | score=68.0 | peso=0.561
+  2026-04-25 | AHL vs MAC | afc-champions-league | score=42.5 | peso=0.630
+  2026-05-30 | GRA vs MAC | j1-100-year-vision-league | score=71.6 | peso=0.707
+  2026-06-06 | MAC vs GRA | j1-100-year-vision-league | score=47.2 | peso=0.794
+  2026-08-08 | TOK vs MAC | j1-league | score=77.4 | peso=0.891
+  2026-08-15 | JEF vs MAC | j1-league | score=80.0 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 64.27
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 60.76 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 50.45 | Punteggio complessivo (granulari) medio: 13.82 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 5.84 (delta -0.30) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 15.60
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 44.5 - 77.4 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 14.96 (differenza: +0.64)
+Media score in casa: 62.02 | Media score fuori casa: 64.63
+Fattore casa/trasferta applicato: 0.995 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 7.3
+Ranking prossimo avversario: 19
+Fattore forza avversario applicato: 1.003 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.992
+Fattore duelli (casa/trasferta, da dati reali): 1.003
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.997
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 0.999
+Fattore trend (media ultime 5: 63.7 vs media 5 PRECEDENTI: 61.9): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T10:30
+Casa: FC Machida Zelvia | Trasferta: Urawa Red Diamonds
+Competizione: j1-league
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 58.1 (range 38.3 - 71.2, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 61.6
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 62.27
+Punteggio REALE ottenuto in quella partita: 80.0
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +17.7
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      53.1    70.6    +17.5    19.7        SI
+   7        7      68.6    46.2    -22.4    18.3        NO
+   8        8      69.2    76.9     +7.7    18.1        SI
+   9        9      58.5    41.9    -16.6    18.1        SI
+  10       10      58.8    88.3    +29.5    18.7        NO
+  11       11      50.8    47.6     -3.2    21.0        SI
+  12       12      52.2    47.8     -4.4    20.5        SI
+  13       13      62.2    51.1    -11.1    19.7        SI
+  14       14      58.7    72.4    +13.7    18.6        SI
+  15       15      73.1    95.1    +22.0    18.2        NO
+  16       16      67.7    71.3     +3.6    21.7        SI
+  17       17      60.4    76.4    +16.0    20.4        SI
+  18       18      72.3    75.7     +3.4    19.6        SI
+  19       19      58.0    44.5    -13.5    18.6        SI
+  20       20      62.8    76.5    +13.7    19.5        SI
+  21       21      58.7    74.1    +15.4    18.8        SI
+  22       22      55.2    47.6     -7.6    17.9        SI
+  23       23      54.9    43.5    -11.4    18.3        SI
+  24       24      62.1    68.0     +5.9    19.0        SI
+  25       25      63.7    42.5    -21.2    18.0        NO
+  26       26      53.6    71.6    +18.0    18.5        SI
+  27       27      84.3    47.2    -37.1    17.9        NO
+  28       28      61.1    77.4    +16.3    17.7        SI
+  29       29      91.2    80.0    -11.2    17.8        SI
+
+MAE (errore assoluto medio): 14.27
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 79.2%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================

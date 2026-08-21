@@ -1,0 +1,97 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-21T17:15:01.549438Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) giacomo-raspadori: 49 pt attesi (36-62)
+   ORDINAMENTO: 49.36
+   SQUADRA: atalanta-ciserano | AVVERSARIO: sassuolo-sassuolo
+======================================================================
+
+######################################################################
+# GIOCATORE: giacomo-raspadori
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: giacomo-raspadori (squadra: atalanta-ciserano)
+Generato: 2026-08-21T17:15:01.548518Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 57
+Escluse (DID_NOT_PLAY): 23
+Escluse (minutaggio < 60', subentri): 23
+Competizione partita target: serie-a-it (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2025-09-21 | MLL vs ATM | laliga-es | score=36.8 | peso=0.315
+  2025-10-11 | ? vs ? | wc-qualification-europe | score=37.8 | peso=0.354
+  2025-11-13 | ? vs ? | wc-qualification-europe | score=51.9 | peso=0.397
+  2026-01-25 | ATA vs PAR | serie-a-it | score=64.9 | peso=0.445
+  2026-02-09 | ATA vs CRE | serie-a-it | score=81.9 | peso=0.500
+  2026-04-18 | ROM vs ATA | serie-a-it | score=45.9 | peso=0.561
+  2026-04-27 | CAG vs ATA | serie-a-it | score=43.6 | peso=0.630
+  2026-05-10 | MIL vs ATA | serie-a-it | score=63.1 | peso=0.707
+  2026-05-17 | ATA vs BOL | serie-a-it | score=39.2 | peso=0.794
+  2026-05-22 | FIO vs ATA | serie-a-it | score=54.5 | peso=0.891
+  2026-08-20 | ATA vs HTA | uefa-europa-conference-league | score=37.1 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 50.05
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=11): 52.18 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 41.27 | Punteggio complessivo (granulari) medio: 8.79 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 6.11 (delta -0.34) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 13.21
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 37.1 - 63.1 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 9.88 (differenza: +3.33)
+Media score in casa: 55.77 | Media score fuori casa: 51.77
+Fattore casa/trasferta applicato: 1.001 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 10.9
+Ranking prossimo avversario: 11
+Fattore forza avversario applicato: 1.003 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo -0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 0.998
+Fattore duelli (casa/trasferta, da dati reali): 0.996
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 1.003
+Fattore passaggio (accurate_pass/final_third/att_assist): 0.998
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.000
+Fattore trend (media ultime 5: 47.5 vs media 5 PRECEDENTI: 56.5): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-23T18:45
+Casa: Atalanta Bergamasca Calcio | Trasferta: US Sassuolo Calcio
+Competizione: serie-a-it
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 48.8 (range 35.9 - 61.9, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 49.4
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 52.37
+Punteggio REALE ottenuto in quella partita: 37.1
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): -15.3
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 5 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      59.7    43.6    -16.1    18.5        SI
+   7        7      39.7    63.1    +23.4    17.4        NO
+   8        8      50.3    39.2    -11.1    16.4        SI
+   9        9      60.3    54.5     -5.8    16.3        SI
+  10       10      52.6    37.1    -15.5    15.0        NO
+
+MAE (errore assoluto medio): 14.39
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 60.0%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
