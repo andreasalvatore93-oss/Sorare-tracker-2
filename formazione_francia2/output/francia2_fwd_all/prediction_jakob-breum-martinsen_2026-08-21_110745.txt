@@ -1,0 +1,135 @@
+======================================================================
+CONSIGLIO ATTACCANTI — ordinato per score di ordinamento (senza shrinkage; il generatore poi riordina per punteggio calibrato)
+Generato: 2026-08-21T11:07:45.469460Z
+Parametri fissi per tutti: half_life=6.0, range_mult=1.15, min_starter_odds=0%
+======================================================================
+1) jakob-breum-martinsen: 58 pt attesi (38-82)
+   ORDINAMENTO: 60.20
+   SQUADRA: saint-etienne-saint-etienne | AVVERSARIO: grenoble-foot-38-grenoble
+======================================================================
+
+######################################################################
+# GIOCATORE: jakob-breum-martinsen
+######################################################################
+======================================================================
+TOOL_FORMAZIONE_OWUSU - Prototipo v1
+Giocatore: jakob-breum-martinsen (squadra: saint-etienne-saint-etienne)
+Generato: 2026-08-21T11:07:45.468447Z
+======================================================================
+
+--- FINESTRA DI ANALISI ---
+Partite considerate: 30
+Escluse (DID_NOT_PLAY): 0
+Escluse (minutaggio < 60', subentri): 0
+Competizione partita target: ligue-2-fr (finestra filtrata per stessa competizione quando ci sono abbastanza dati)
+Partite usate nella media (dalla piu' vecchia alla piu' recente):
+  2026-02-08 | GAE vs TEL | eredivisie | score=76.2 | peso=0.035
+  2026-02-08 | GAE vs TEL | eredivisie | score=79.8 | peso=0.039
+  2026-02-11 | GAE vs HEE | eredivisie | score=100.0 | peso=0.044
+  2026-02-11 | GAE vs HEE | eredivisie | score=98.6 | peso=0.050
+  2026-02-15 | FEY vs GAE | eredivisie | score=45.4 | peso=0.056
+  2026-02-15 | FEY vs GAE | eredivisie | score=47.5 | peso=0.062
+  2026-02-22 | GAE vs HER | eredivisie | score=90.2 | peso=0.070
+  2026-02-22 | GAE vs HER | eredivisie | score=83.3 | peso=0.079
+  2026-03-01 | EXC vs GAE | eredivisie | score=44.1 | peso=0.088
+  2026-03-01 | EXC vs GAE | eredivisie | score=45.3 | peso=0.099
+  2026-03-08 | GAE vs TWE | eredivisie | score=80.2 | peso=0.111
+  2026-03-08 | GAE vs TWE | eredivisie | score=84.3 | peso=0.125
+  2026-03-15 | GAE vs NAC | eredivisie | score=98.2 | peso=0.140
+  2026-03-15 | GAE vs NAC | eredivisie | score=99.7 | peso=0.157
+  2026-03-22 | UTR vs GAE | eredivisie | score=50.6 | peso=0.177
+  2026-03-22 | UTR vs GAE | eredivisie | score=54.3 | peso=0.198
+  2026-04-05 | GAE vs ZWO | eredivisie | score=82.6 | peso=0.223
+  2026-04-05 | GAE vs ZWO | eredivisie | score=86.6 | peso=0.250
+  2026-04-11 | GRO vs GAE | eredivisie | score=38.3 | peso=0.281
+  2026-04-11 | GRO vs GAE | eredivisie | score=42.1 | peso=0.315
+  2026-04-23 | GAE vs AZ | eredivisie | score=50.9 | peso=0.354
+  2026-04-23 | GAE vs AZ | eredivisie | score=47.2 | peso=0.397
+  2026-05-03 | SPA vs GAE | eredivisie | score=39.0 | peso=0.445
+  2026-05-03 | SPA vs GAE | eredivisie | score=43.3 | peso=0.500
+  2026-05-10 | GAE vs PSV | eredivisie | score=61.8 | peso=0.561
+  2026-05-10 | GAE vs PSV | eredivisie | score=68.7 | peso=0.630
+  2026-05-17 | NEC vs GAE | eredivisie | score=33.0 | peso=0.707
+  2026-05-17 | NEC vs GAE | eredivisie | score=42.8 | peso=0.794
+  2026-08-08 | SOC vs STE | ligue-2-fr | score=83.2 | peso=0.891
+  2026-08-14 | STE vs CLE | ligue-2-fr | score=68.3 | peso=1.000
+
+--- CALCOLO FATTORI ---
+Media pesata esponenziale (half-life 6.0 partite): 59.47
+  Corretta per shrinkage outlier/hot-streak (k=15.0, prior ruolo 53.74, n=30): 57.56 (usata in score_atteso, vedi SHRINK_K_OUTLIER_FWD)
+  di cui Punteggio decisivo (level_score) medio: 48.87 | Punteggio complessivo (granulari) medio: 10.60 (Stadio A: questa componente E' APPLICATA a score_atteso, moltiplicata per il fattore trend granulare -- vedi compute_score_atteso_*)
+  Passaggio condizionato per venue: 9.30 (delta +0.72) (Stadio D approfondimento -- APPLICATO a score_atteso, scalato per P(gioca); level_score, forza avversario e le altre sotto-categorie granulari NON condizionati, nessun segnale abbastanza solido per FWD)
+Deviazione standard pesata: 19.09
+  Range a percentili pesati (16-84, si adatta a distribuzioni non a campana): 39.0 - 83.2 (Stadio B -- forma usata dallo Stadio C per il range di confidenza finale)
+Deviazione standard pesata TRIMMED (esclusi min/max della finestra): 17.99 (differenza: +1.09)
+Media score in casa: 68.30 | Media score fuori casa: 83.20
+Fattore casa/trasferta applicato: 1.001 (CASA nella prossima partita)
+Ranking medio avversari affrontati (storico): 16.5
+Ranking prossimo avversario: 15
+Fattore forza avversario applicato: 1.003 (gol subiti reali dell'avversario, ultime 10; delta granulare offensivo +0.00 pt)
+Fattore falli (casa/trasferta, da dati reali): 1.001
+Fattore duelli (casa/trasferta, da dati reali): 0.999
+Fattore efficacia offensiva (casa/trasferta, da dati reali): 0.998
+Fattore passaggio (accurate_pass/final_third/att_assist): 1.003
+Fattore difesa/eventi rarissimi (double-double, tackle, ecc., con cap): 1.001
+Fattore trend (media ultime 5: 59.2 vs media 5 PRECEDENTI: 48.4): 1.000
+P(gioca): 90.00% (fonte: starterOddsBasisPoints (9000))
+
+--- PROSSIMA PARTITA ---
+Data: 2026-08-22T18:00
+Casa: AS Saint-Étienne | Trasferta: Grenoble Foot 38
+Competizione: ligue-2-fr
+
+======================================================================
+PREDIZIONE
+======================================================================
+Score atteso: 58.4 (range 37.9 - 82.1, Stadio C: percentili pesati ri-centrati sull'avversario/trend)
+Score di ordinamento (senza shrinkage, usato SOLO per la DIAGNOSTICO, non usato per la classifica: il generatore ordina per 'sort_score'/'atteso' dal revert del 30/07): 60.2
+
+--- BACKTEST SEMPLICE (verifica su ultima partita reale nota) ---
+Media pesata calcolata SENZA l'ultima partita: 58.35
+Punteggio REALE ottenuto in quella partita: 68.3
+Errore (reale - predetto, solo componente media, senza fattori casa/trasferta/avversario applicati a ritroso): +9.9
+NOTA: questo backtest confronta solo la componente 'media pesata' con il punteggio reale, senza applicare P(gioca)/fattore avversario/casa-trasferta storici a quella specifica partita passata. Vedi sezione successiva per il backtest rigoroso che applica l'intera formula.
+
+--- PARAMETRI DEL MODELLO (fissati, 25/07) ---
+half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0
+Combinazione scelta tramite grid search aggregato su 14 giocatori (MAE medio 18.13, copertura media 68.93%). Il grid search non gira piu' ad ogni esecuzione: questi valori sono ora costanti nel codice.
+
+--- BACKTEST RIGOROSO (migliore combinazione dal grid search) ---
+Combinazione usata: 'hl=6.0+range=1.15x+opp_sens=29.0+trend_int=0.0 (FISSATA)' (half_life=6.0, range_mult=1.15, opp_sens=29.0, trend_int=0.0)
+Partite testate: 24 (min. 6 partite di storico richieste per ognuna)
+P(gioca) fissato a 100% per ogni test (sappiamo gia' che ha giocato, essendo storico)
+
+ idx  storico  predetto   reale   errore   range  in_range
+   6        6      72.0    90.2    +18.2    26.3        SI
+   7        7      75.6    83.3     +7.7    25.0        SI
+   8        8      77.0    44.1    -32.9    22.9        NO
+   9        9      71.4    45.3    -26.1    25.2        NO
+  10       10      67.3    80.2    +12.9    25.6        SI
+  11       11      69.2    84.3    +15.1    24.2        SI
+  12       12      71.4    98.2    +26.8    23.2        NO
+  13       13      75.2    99.7    +24.5    24.0        NO
+  14       14      78.5    50.6    -27.9    24.3        NO
+  15       15      74.8    54.3    -20.5    25.1        SI
+  16       16      72.2    82.6    +10.4    24.7        SI
+  17       17      73.5    86.6    +13.1    23.5        SI
+  18       18      75.1    38.3    -36.8    22.5        NO
+  19       19      70.6    42.1    -28.5    25.2        NO
+  20       20      67.1    50.9    -16.2    26.0        SI
+  21       21      65.2    47.2    -18.0    25.1        SI
+  22       22      63.1    39.0    -24.1    24.5        SI
+  23       23      60.2    43.3    -16.9    24.7        SI
+  24       24      58.3    61.8     +3.5    24.0        SI
+  25       25      58.7    68.7    +10.0    22.6        SI
+  26       26      59.8    33.0    -26.8    21.6        NO
+  27       27      56.8    42.8    -14.0    22.6        SI
+  28       28      55.2    83.2    +28.0    21.9        NO
+  29       29      56.3    68.3    +12.0    23.0        SI
+
+MAE (errore assoluto medio): 19.63
+% di volte in cui il punteggio reale rientra nel range di confidenza predetto: 62.5%
+
+NOTA: questo e' il backtest rigoroso vero e proprio — per ogni partita storica, la formula COMPLETA (media pesata + fattore casa/trasferta + fattore forza avversario) viene ricalcolata usando SOLO i dati disponibili PRIMA di quella partita, poi confrontata con lo score reale ottenuto. I parametri sono FISSATI (25/07) tramite grid search aggregato su 14 giocatori — non variano piu' da esecuzione a esecuzione.
+
+======================================================================
